@@ -2,9 +2,9 @@
 /*! \file proof_manager.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Haniel Barbosa, Gereon Kremer
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -14,17 +14,22 @@
 
 #include "smt/proof_manager.h"
 
+#include "expr/proof_checker.h"
 #include "expr/proof_node_algorithm.h"
+#include "expr/proof_node_manager.h"
 #include "options/base_options.h"
-#include "options/smt_options.h"
+#include "options/proof_options.h"
+#include "proof/dot/dot_printer.h"
 #include "smt/assertions.h"
 #include "smt/defined_function.h"
+#include "smt/preprocess_proof_generator.h"
+#include "smt/proof_post_processor.h"
 
 namespace CVC4 {
 namespace smt {
 
 PfManager::PfManager(context::UserContext* u, SmtEngine* smte)
-    : d_pchecker(new ProofChecker(options::proofNewPedantic())),
+    : d_pchecker(new ProofChecker(options::proofPedantic())),
       d_pnm(new ProofNodeManager(d_pchecker.get())),
       d_pppg(new PreprocessProofGenerator(
           d_pnm.get(), u, "smt::PreprocessProofGenerator")),
@@ -118,11 +123,18 @@ void PfManager::printProof(std::ostream& out,
   std::shared_ptr<ProofNode> fp = getFinalProof(pfn, as, df);
   // TODO (proj #37) according to the proof format, post process the proof node
   // TODO (proj #37) according to the proof format, print the proof node
-  out << "(proof\n";
-  out << *fp;
-  out << "\n)\n";
+  
+  if (options::proofFormatMode() == options::ProofFormatMode::DOT)
+  {
+    proof::DotPrinter::print(out, fp.get());
+  }
+  else
+  {
+    out << "(proof\n";
+    out << *fp;
+    out << "\n)\n";
+  }
 }
-
 void PfManager::checkProof(std::shared_ptr<ProofNode> pfn,
                            Assertions& as,
                            DefinedFunctionMap& df)

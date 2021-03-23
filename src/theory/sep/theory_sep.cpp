@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Tim King, Mudathir Mohamed
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -24,6 +24,7 @@
 #include "options/sep_options.h"
 #include "options/smt_options.h"
 #include "smt/logic_exception.h"
+#include "theory/decision_manager.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
@@ -49,7 +50,7 @@ TheorySep::TheorySep(context::Context* c,
       d_lemmas_produced_c(u),
       d_bounds_init(false),
       d_state(c, u, valuation),
-      d_im(*this, d_state, nullptr),
+      d_im(*this, d_state, nullptr, "theory::sep"),
       d_notify(*this),
       d_reduce(u),
       d_spatial_assertions(c)
@@ -127,19 +128,7 @@ Node TheorySep::mkAnd( std::vector< TNode >& assumptions ) {
 
 bool TheorySep::propagateLit(TNode literal)
 {
-  Debug("sep") << "TheorySep::propagateLit(" << literal << ")" << std::endl;
-  // If already in conflict, no more propagation
-  if (d_state.isInConflict())
-  {
-    Debug("sep") << "TheorySep::propagateLit(" << literal
-                 << "): already in conflict" << std::endl;
-    return false;
-  }
-  bool ok = d_out->propagate(literal);
-  if (!ok) {
-    d_state.notifyInConflict();
-  }
-  return ok;
+  return d_im.propagateLit(literal);
 }
 
 TrustNode TheorySep::explain(TNode literal)
@@ -344,7 +333,7 @@ void TheorySep::reduceFact(TNode atom, bool polarity, TNode fact)
     }
     Trace("sep-lemma-debug")
         << "Sep::Lemma : base reduction : " << lem << std::endl;
-    d_out->lemma(lem);
+    d_im.lemma(lem, InferenceId::SEP_LABEL_INTRO);
     return;
   }
   Trace("sep-lemma-debug") << "Reducing assertion " << fact << std::endl;
@@ -413,13 +402,13 @@ void TheorySep::reduceFact(TNode atom, bool polarity, TNode fact)
         Trace("sep-lemma")
             << "Sep::Lemma: sep.nil not in wand antecedant heap : " << nrlem
             << std::endl;
-        d_out->lemma(nrlem);
+        d_im.lemma(nrlem, InferenceId::SEP_NIL_NOT_IN_HEAP);
       }
       // send out definitional lemmas for introduced sets
       for (const Node& clem : c_lems)
       {
         Trace("sep-lemma") << "Sep::Lemma : definition : " << clem << std::endl;
-        d_out->lemma(clem);
+        d_im.lemma(clem, InferenceId::SEP_LABEL_DEF);
       }
       conc = nm->mkNode(AND, children);
     }
@@ -453,7 +442,7 @@ void TheorySep::reduceFact(TNode atom, bool polarity, TNode fact)
         lem = nm->mkNode(OR, fact.negate(), econc);
       }
       Trace("sep-lemma") << "Sep::Lemma : emp : " << lem << std::endl;
-      d_out->lemma(lem);
+      d_im.lemma(lem, InferenceId::SEP_EMP);
     }
     else
     {
@@ -491,14 +480,14 @@ void TheorySep::reduceFact(TNode atom, bool polarity, TNode fact)
     // Node lem = nm->mkNode( EQUAL, lit, conc );
     Node lem = nm->mkNode(OR, lit.negate(), conc);
     Trace("sep-lemma") << "Sep::Lemma : (neg) reduction : " << lem << std::endl;
-    d_out->lemma(lem);
+    d_im.lemma(lem, InferenceId::SEP_NEG_REDUCTION);
   }
   else
   {
     // reduce based on implication
     Node lem = nm->mkNode(OR, fact.negate(), conc);
     Trace("sep-lemma") << "Sep::Lemma : reduction : " << lem << std::endl;
-    d_out->lemma(lem);
+    d_im.lemma(lem, InferenceId::SEP_POS_REDUCTION);
   }
 }
 
@@ -655,25 +644,7 @@ void TheorySep::postCheck(Effort level)
   }
   if (Trace.isOn("sep-eqc"))
   {
-    eq::EqClassesIterator eqcs2_i = eq::EqClassesIterator(d_equalityEngine);
-    Trace("sep-eqc") << "EQC:" << std::endl;
-    while (!eqcs2_i.isFinished())
-    {
-      Node eqc = (*eqcs2_i);
-      eq::EqClassIterator eqc2_i = eq::EqClassIterator(eqc, d_equalityEngine);
-      Trace("sep-eqc") << "Eqc( " << eqc << " ) : { ";
-      while (!eqc2_i.isFinished())
-      {
-        if ((*eqc2_i) != eqc)
-        {
-          Trace("sep-eqc") << (*eqc2_i) << " ";
-        }
-        ++eqc2_i;
-      }
-      Trace("sep-eqc") << " } " << std::endl;
-      ++eqcs2_i;
-    }
-    Trace("sep-eqc") << std::endl;
+    Trace("sep-eqc") << d_equalityEngine->debugPrintEqc();
   }
 
   bool addedLemma = false;
@@ -816,7 +787,7 @@ void TheorySep::postCheck(Effort level)
                              << ") : " << lem << std::endl;
         Trace("sep-lemma") << "Sep::Lemma : negated star/wand refinement : "
                            << lem << std::endl;
-        d_out->lemma(lem);
+        d_im.lemma(lem, InferenceId::SEP_REFINEMENT);
         addedLemma = true;
       }
       else
@@ -885,7 +856,7 @@ void TheorySep::postCheck(Effort level)
             nm->mkNode(SEP_STAR, nm->mkNode(SEP_PTO, ll, dsk), d_true));
         Trace("sep-lemma") << "Sep::Lemma : witness finite data-pto : " << lem
                            << std::endl;
-        d_out->lemma(lem);
+        d_im.lemma(lem, InferenceId::SEP_WITNESS_FINITE_DATA);
         addedLemma = true;
       }
       else
@@ -923,7 +894,7 @@ void TheorySep::postCheck(Effort level)
 
   if (needAddLemma)
   {
-    d_out->setIncomplete();
+    d_im.setIncomplete();
   }
   Trace("sep-check") << "Sep::check(): " << level
                      << " done, conflict=" << d_state.isInConflict()
@@ -1236,7 +1207,7 @@ Node TheorySep::getBaseLabel( TypeNode tn ) {
         //ensure that it is distinct from all other references so far
         for( unsigned j=0; j<d_type_references_all[tn].size(); j++ ){
           Node eq = NodeManager::currentNM()->mkNode( kind::EQUAL, e, d_type_references_all[tn][j] );
-          d_out->lemma( eq.negate() );
+          d_im.lemma(eq.negate(), InferenceId::SEP_DISTINCT_REF);
         }
         d_type_references_all[tn].push_back( e );
       }
@@ -1254,11 +1225,8 @@ Node TheorySep::getBaseLabel( TypeNode tn ) {
 
       Node slem = NodeManager::currentNM()->mkNode( kind::SUBSET, d_base_label[tn], d_reference_bound_max[tn] );
       Trace("sep-lemma") << "Sep::Lemma: reference bound for " << tn << " : " << slem << std::endl;
-      d_out->lemma( slem );
-      //slem = NodeManager::currentNM()->mkNode( kind::SUBSET, d_base_label[tn], d_reference_bound_max[tn] );
-      //Trace("sep-lemma") << "Sep::Lemma: base reference bound for " << tn << " : " << slem << std::endl;
-      //d_out->lemma( slem );
-      
+      d_im.lemma(slem, InferenceId::SEP_REF_BOUND);
+
       //symmetry breaking
       if( d_type_references_card[tn].size()>1 ){
         std::map< unsigned, Node > lit_mem_map;
@@ -1274,7 +1242,7 @@ Node TheorySep::getBaseLabel( TypeNode tn ) {
             Node sym_lem = children.size()==1 ? children[0] : NodeManager::currentNM()->mkNode( kind::AND, children );
             sym_lem = NodeManager::currentNM()->mkNode( kind::IMPLIES, lit_mem_map[i].negate(), sym_lem );
             Trace("sep-lemma") << "Sep::Lemma: symmetry breaking lemma : " << sym_lem << std::endl;
-            d_out->lemma( sym_lem );
+            d_im.lemma(sym_lem, InferenceId::SEP_SYM_BREAK);
           }
         }
       }
@@ -1284,8 +1252,8 @@ Node TheorySep::getBaseLabel( TypeNode tn ) {
     Node nr = getNilRef( tn );
     Node nrlem = NodeManager::currentNM()->mkNode( kind::MEMBER, nr, n_lbl ).negate();
     Trace("sep-lemma") << "Sep::Lemma: sep.nil not in base label " << tn << " : " << nrlem << std::endl;
-    d_out->lemma( nrlem );
-    
+    d_im.lemma(nrlem, InferenceId::SEP_NIL_NOT_IN_HEAP);
+
     return n_lbl;
   }else{
     return it->second;
@@ -1745,7 +1713,7 @@ void TheorySep::addPto( HeapAssertInfo * ei, Node ei_n, Node p, bool polarity ) 
       Node n_conc = conc.empty() ? d_false : ( conc.size()==1 ? conc[0] : NodeManager::currentNM()->mkNode( kind::OR, conc ) );
       Trace("sep-pto")  << "Conclusion is " << n_conc << std::endl;
       // propagation for (pto x y) ^ ~(pto z w) ^ x = z => y != w
-      sendLemma( exp, n_conc, "PTO_NEG_PROP" );
+      sendLemma( exp, n_conc, InferenceId::SEP_PTO_NEG_PROP);
     }
   }else{
     if( polarity ){
@@ -1770,30 +1738,30 @@ void TheorySep::mergePto( Node p1, Node p2 ) {
     exp.push_back( p1 );
     exp.push_back( p2 );
     //enforces injectiveness of pto : (pto x y) ^ (pto y w) ^ x = y => y = w
-    sendLemma( exp, p1[0][1].eqNode( p2[0][1] ), "PTO_PROP" );
+    sendLemma( exp, p1[0][1].eqNode( p2[0][1] ), InferenceId::SEP_PTO_PROP);
   }
 }
 
-void TheorySep::sendLemma( std::vector< Node >& ant, Node conc, const char * c, bool infer ) {
+void TheorySep::sendLemma( std::vector< Node >& ant, Node conc, InferenceId id, bool infer ) {
   Trace("sep-lemma-debug") << "Do rewrite on inference : " << conc << std::endl;
   conc = Rewriter::rewrite( conc );
   Trace("sep-lemma-debug") << "Got : " << conc << std::endl;
   if( conc!=d_true ){
     if( infer && conc!=d_false ){
       Node ant_n = NodeManager::currentNM()->mkAnd(ant);
-      Trace("sep-lemma") << "Sep::Infer: " << conc << " from " << ant_n << " by " << c << std::endl;
-      d_im.addPendingFact(conc, ant_n);
+      Trace("sep-lemma") << "Sep::Infer: " << conc << " from " << ant_n << " by " << id << std::endl;
+      d_im.addPendingFact(conc, id, ant_n);
     }else{
       if( conc==d_false ){
-        Trace("sep-lemma") << "Sep::Conflict: " << ant << " by " << c
+        Trace("sep-lemma") << "Sep::Conflict: " << ant << " by " << id
                            << std::endl;
-        d_im.conflictExp(ant, nullptr);
+        d_im.conflictExp(id, ant, nullptr);
       }else{
         Trace("sep-lemma") << "Sep::Lemma: " << conc << " from " << ant
-                           << " by " << c << std::endl;
+                           << " by " << id << std::endl;
         TrustNode trn = d_im.mkLemmaExp(conc, ant, {});
         d_im.addPendingLemma(
-            trn.getNode(), LemmaProperty::NONE, trn.getGenerator());
+            trn.getNode(), id, LemmaProperty::NONE, trn.getGenerator());
       }
     }
   }

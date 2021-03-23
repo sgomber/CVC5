@@ -3,7 +3,7 @@
 ## Top contributors (to current version):
 ##   Mathias Preiner, Aina Niemetz, Gereon Kremer
 ## This file is part of the CVC4 project.
-## Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+## Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
 ## in the top-level source directory and their institutional affiliations.
 ## All rights reserved.  See the file COPYING in the top-level source
 ## directory for licensing information.
@@ -37,8 +37,11 @@ endif()
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
 # Generate compile_commands.json, which can be used for various code completion
 # plugins.
@@ -66,9 +69,6 @@ if(CADICAL_DIR)
 endif()
 if(CRYPTOMINISAT_DIR)
   list(APPEND CMAKE_PREFIX_PATH "${CRYPTOMINISAT_DIR}")
-endif()
-if(CXXTEST_DIR)
-  list(APPEND CMAKE_PREFIX_PATH "${CXXTEST_DIR}")
 endif()
 if(DRAT2ER_DIR)
   list(APPEND CMAKE_PREFIX_PATH "${DRAT2ER_DIR}")
@@ -152,8 +152,7 @@ option(USE_DRAT2ER            "Include drat2er for making eager BV proofs")
 option(USE_LFSC               "Use LFSC proof checker")
 option(USE_POLY               "Use LibPoly for polynomial arithmetic")
 option(USE_SYMFPU             "Use SymFPU for floating point support")
-option(USE_PYTHON2            "Prefer using Python 2 (for Python bindings)")
-option(USE_PYTHON3            "Prefer using Python 3 (for Python bindings)")
+option(USE_PYTHON2            "Force Python 2 (deprecated)")
 
 # Custom install directories for dependencies
 # If no directory is provided by the user, we first check if the dependency was
@@ -164,7 +163,6 @@ set(ABC_DIR           "" CACHE STRING "Set ABC install directory")
 set(ANTLR_DIR         "" CACHE STRING "Set ANTLR3 install directory")
 set(CADICAL_DIR       "" CACHE STRING "Set CaDiCaL install directory")
 set(CRYPTOMINISAT_DIR "" CACHE STRING "Set CryptoMiniSat install directory")
-set(CXXTEST_DIR       "" CACHE STRING "Set CxxTest install directory")
 set(DRAT2ER_DIR       "" CACHE STRING "Set drat2er install directory")
 set(GLPK_DIR          "" CACHE STRING "Set GLPK install directory")
 set(GMP_DIR           "" CACHE STRING "Set GMP install directory")
@@ -234,8 +232,8 @@ include(Config${CMAKE_BUILD_TYPE})
 
 add_check_c_cxx_flag("-O${OPTIMIZATION_LEVEL}")
 add_check_c_cxx_flag("-Wall")
+add_check_c_cxx_flag("-Wno-unused-private-field")
 add_check_c_flag("-fexceptions")
-add_check_c_cxx_flag("-Wno-deprecated")
 add_check_cxx_flag("-Wsuggest-override")
 add_check_cxx_flag("-Wnon-virtual-dtor")
 add_check_c_cxx_flag("-Wimplicit-fallthrough")
@@ -275,16 +273,6 @@ else()
 endif()
 
 #-----------------------------------------------------------------------------#
-# Set options for best configuration
-
-if(ENABLE_BEST)
-  cvc4_set_option(USE_ABC ON)
-  cvc4_set_option(USE_CADICAL ON)
-  cvc4_set_option(USE_CLN ON)
-  cvc4_set_option(USE_CRYPTOMINISAT ON)
-  cvc4_set_option(USE_GLPK ON)
-  cvc4_set_option(USE_EDITLINE ON)
-endif()
 
 # Only enable unit testing if assertions are enabled. Otherwise, unit tests
 # that expect AssertionException to be thrown will fail.
@@ -304,6 +292,12 @@ if(ENABLE_SHARED)
   if(ENABLE_STATIC_BINARY)
     set(ENABLE_STATIC_BINARY OFF)
     message(WARNING "Disabling static binary since shared build is enabled.")
+  endif()
+
+  # Set visibility to default if unit tests are enabled
+  if(ENABLE_UNIT_TESTING)
+    set(CMAKE_CXX_VISIBILITY_PRESET default)
+    set(CMAKE_VISIBILITY_INLINES_HIDDEN 0)
   endif()
 
   # Embed the installation prefix as an RPATH in the executable such that the
@@ -354,32 +348,12 @@ endif()
 enable_testing()
 
 #-----------------------------------------------------------------------------#
-# Check GCC version.
-#
-# GCC version 4.5.1 builds MiniSat incorrectly with -O2, which results in
-# incorrect answers.
-
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  execute_process(
-    COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
-    OUTPUT_VARIABLE GCC_VERSION
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if(GCC_VERSION VERSION_EQUAL "4.5.1")
-    message(FATAL_ERROR
-      "GCC 4.5.1's optimizer is known to build MiniSat incorrectly "
-      "(and by extension CVC4).")
-  endif()
-endif()
-
-#-----------------------------------------------------------------------------#
 # Check options, find packages and configure build.
 
 if(USE_PYTHON2)
   find_package(PythonInterp 2.7 REQUIRED)
-elseif(USE_PYTHON3)
-  find_package(PythonInterp 3 REQUIRED)
 else()
-  find_package(PythonInterp REQUIRED)
+  find_package(PythonInterp 3 REQUIRED)
 endif()
 
 find_package(GMP REQUIRED)
@@ -456,7 +430,6 @@ if(ENABLE_PROFILING)
 endif()
 
 if(ENABLE_PROOFS)
-  set(RUN_REGRESSION_ARGS ${RUN_REGRESSION_ARGS} --enable-proof)
   add_definitions(-DCVC4_PROOF)
 endif()
 
@@ -521,7 +494,6 @@ if(USE_KISSAT)
 endif()
 
 if(USE_LFSC)
-  set(RUN_REGRESSION_ARGS ${RUN_REGRESSION_ARGS} --with-lfsc)
   find_package(LFSC REQUIRED)
   add_definitions(-DCVC4_USE_LFSC)
 endif()
@@ -560,6 +532,11 @@ if(GPL_LIBS)
 endif()
 
 #-----------------------------------------------------------------------------#
+# Provide targets to inspect iwyu suggestions
+
+include(IWYU)
+
+#-----------------------------------------------------------------------------#
 # Generate CVC4's cvc4autoconfig.h header
 
 include(ConfigureCVC4)
@@ -588,8 +565,8 @@ if(BUILD_BINDINGS_PYTHON)
 endif()
 
 if(BUILD_BINDINGS_JAVA)
-  message(FATAL_ERROR
-    "Java bindings for the new API are not implemented yet.")
+  add_subdirectory(src/api/java)
+  message(WARNING "Java API is currently under development.")
 endif()
 
 #-----------------------------------------------------------------------------#
@@ -690,7 +667,6 @@ endif()
 message("")
 print_config("GPL                       :" ENABLE_GPL)
 print_config("Best configuration        :" ENABLE_BEST)
-print_config("Optimization level        :" OPTIMIZATION_LEVEL)
 message("")
 print_config("Assertions                :" ENABLE_ASSERTIONS)
 print_config("Debug symbols             :" ENABLE_DEBUG_SYMBOLS)
@@ -715,7 +691,6 @@ print_config("Static binary             :" ENABLE_STATIC_BINARY)
 print_config("Python bindings           :" BUILD_BINDINGS_PYTHON)
 print_config("Java bindings             :" BUILD_BINDINGS_JAVA)
 print_config("Python2                   :" USE_PYTHON2)
-print_config("Python3                   :" USE_PYTHON3)
 message("")
 print_config("ABC                       :" USE_ABC)
 print_config("CaDiCaL                   :" USE_CADICAL)
@@ -726,7 +701,7 @@ print_config("Kissat                    :" USE_KISSAT)
 print_config("LFSC                      :" USE_LFSC)
 print_config("LibPoly                   :" USE_POLY)
 message("")
-print_config("BUILD_LIB_ONLY            :" BUILD_LIB_ONLY)
+print_config("Build libcvc4 only        :" BUILD_LIB_ONLY)
 
 if(CVC4_USE_CLN_IMP)
   message("MP library                : cln")

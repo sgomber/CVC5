@@ -1,9 +1,9 @@
 #####################
 ## CMakeLists.txt
 ## Top contributors (to current version):
-##   Aina Niemetz, Mathias Preiner, Andrew Reynolds
+##   Aina Niemetz, Andrew Reynolds, Mathias Preiner
 ## This file is part of the CVC4 project.
-## Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+## Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
 ## in the top-level source directory and their institutional affiliations.
 ## All rights reserved.  See the file COPYING in the top-level source
 ## directory for licensing information.
@@ -54,7 +54,6 @@ set(regress_0_tests
   regress0/arith/issue1399.smt2
   regress0/arith/issue3412.smt2
   regress0/arith/issue3413.smt2
-  regress0/arith/issue3480.smt2
   regress0/arith/issue3683.smt2
   regress0/arith/issue4367.smt2
   regress0/arith/issue4525.smt2
@@ -127,7 +126,6 @@ set(regress_0_tests
   regress0/aufbv/fuzz02.delta01.smtv1.smt2
   regress0/aufbv/fuzz02.smtv1.smt2
   regress0/aufbv/fuzz03.delta01.smtv1.smt2
-  regress0/aufbv/fuzz03.smtv1.smt2
   regress0/aufbv/fuzz04.delta01.smtv1.smt2
   regress0/aufbv/fuzz04.smtv1.smt2
   regress0/aufbv/fuzz05.delta01.smtv1.smt2
@@ -365,9 +363,7 @@ set(regress_0_tests
   regress0/bv/fuzz18.delta01.smtv1.smt2
   regress0/bv/fuzz18.delta02.smtv1.smt2
   regress0/bv/fuzz18.delta03.smtv1.smt2
-  regress0/bv/fuzz18.smtv1.smt2
   regress0/bv/fuzz19.delta01.smtv1.smt2
-  regress0/bv/fuzz19.smtv1.smt2
   regress0/bv/fuzz20.delta01.smtv1.smt2
   regress0/bv/fuzz20.smtv1.smt2
   regress0/bv/fuzz21.delta01.smtv1.smt2
@@ -516,7 +512,6 @@ set(regress_0_tests
   regress0/decision/bitvec0.smtv1.smt2
   regress0/decision/bitvec5.smtv1.smt2
   regress0/decision/bug347.smtv1.smt2
-  regress0/decision/bug374a.smtv1.smt2
   regress0/decision/bug374b.smt2
   regress0/decision/error122.delta01.smtv1.smt2
   regress0/decision/error122.smtv1.smt2
@@ -547,7 +542,6 @@ set(regress_0_tests
   regress0/fmf/Arrow_Order-smtlib.778341.smtv1.smt2
   regress0/fmf/bounded_sets.smt2
   regress0/fmf/bug-041417-set-options.cvc
-  regress0/fmf/bug652.smt2
   regress0/fmf/bug782.smt2
   regress0/fmf/cruanes-no-minimal-unk.smt2
   regress0/fmf/fc-simple.smt2
@@ -561,6 +555,7 @@ set(regress_0_tests
   regress0/fmf/issue4850-force-card.smt2
   regress0/fmf/issue4872-qf_ufc.smt2
   regress0/fmf/issue5239-uf-ss-tot.smt2
+  regress0/fmf/issue5922-fmf-not-x.smt2
   regress0/fmf/krs-sat.smt2
   regress0/fmf/no-minimal-sat.smt2
   regress0/fmf/QEpres-uf.855035.smtv1.smt2
@@ -578,7 +573,6 @@ set(regress_0_tests
   regress0/fp/issue3536.smt2
   regress0/fp/issue3619.smt2
   regress0/fp/issue4277-assign-func.smt2
-  regress0/fp/rti_3_5_bug_report.smt2
   regress0/fp/rti_3_5_bug.smt2
   regress0/fp/simple.smt2
   regress0/fp/wrong-model.smt2
@@ -637,6 +631,7 @@ set(regress_0_tests
   regress0/issue5099-model-1.smt2
   regress0/issue5099-model-2.smt2
   regress0/issue5144-resetAssertions.smt2
+  regress0/issue5187-div-justification.smt2
   regress0/issue5370.smt2
   regress0/issue5462.smt2
   regress0/issue5540-2-dump-model.smt2
@@ -650,7 +645,6 @@ set(regress_0_tests
   regress0/ite2.smt2
   regress0/ite3.smt2
   regress0/ite4.smt2
-  regress0/lang_opts_2_5.smt2
   regress0/lang_opts_2_6_1.smt2
   regress0/lemmas/clocksynchro_5clocks.main_invar.base.model.smtv1.smt2
   regress0/lemmas/fs_not_sc_seen.induction.smtv1.smt2
@@ -670,7 +664,6 @@ set(regress_0_tests
   regress0/named-expr-use.smt2
   regress0/nl/all-logic.smt2
   regress0/nl/coeff-sat.smt2
-  regress0/nl/ext-rew-aggr-test.smt2
   regress0/nl/iand-no-init.smt2
   regress0/nl/issue3003.smt2
   regress0/nl/issue3407.smt2
@@ -714,6 +707,7 @@ set(regress_0_tests
   regress0/nl/very-simple-unsat.smt2
   regress0/opt-abd-no-use.smt2
   regress0/options/invalid_dump.smt2
+  regress0/options/set-and-get-options.smt2
   regress0/parallel-let.smt2
   regress0/parser/as.smt2
   regress0/parser/bv_arity_smt2.6.smt2
@@ -751,6 +745,8 @@ set(regress_0_tests
   regress0/precedence/xor-assoc.cvc
   regress0/precedence/xor-or.cvc
   regress0/preprocess/circuit-prop.smt2
+  regress0/preprocess/issue5729-rewritten-assertions.smt2
+  regress0/preprocess/issue5943-non-clausal-simp.smt2
   regress0/preprocess/preprocess_00.cvc
   regress0/preprocess/preprocess_01.cvc
   regress0/preprocess/preprocess_02.cvc
@@ -847,6 +843,7 @@ set(regress_0_tests
   regress0/quantifiers/issue4437-unc-quant.smt2
   regress0/quantifiers/issue4576.smt2
   regress0/quantifiers/issue5645-dt-cm-spurious.smt2
+  regress0/quantifiers/issue5693-prenex.smt2
   regress0/quantifiers/lra-triv-gn.smt2
   regress0/quantifiers/macros-int-real.smt2
   regress0/quantifiers/macros-real-arg.smt2
@@ -888,8 +885,6 @@ set(regress_0_tests
   regress0/quantifiers/selector-trigger.smt2
   regress0/quantifiers/simp-len.smt2
   regress0/quantifiers/simp-typ-test.smt2
-  regress0/quantifiers/sygus-inst-nia-psyco-060.smt2
-  regress0/quantifiers/sygus-inst-ufnia-sat-t3_rw1505.smt2
   regress0/quantifiers/ufnia-fv-delta.smt2
   regress0/rec-fun-const-parse-bug.smt2
   regress0/rels/addr_book_0.cvc
@@ -1113,6 +1108,8 @@ set(regress_0_tests
   regress0/strings/issue5745-eager-pp.smt2
   regress0/strings/issue5767-eager-pp.smt2
   regress0/strings/issue5771-eager-pp.smt2
+  regress0/strings/issue5816-re-kind.smt2
+  regress0/strings/issue5915-repl-ctn-rewrite.smt2
   regress0/strings/itos-entail.smt2
   regress0/strings/large-model.smt2
   regress0/strings/leadingzero001.smt2
@@ -1155,10 +1152,7 @@ set(regress_0_tests
   regress0/strings/unicode-esc.smt2
   regress0/strings/unsound-0908.smt2
   regress0/strings/unsound-repl-rewrite.smt2
-  regress0/sygus/aig-si.sy
   regress0/sygus/array-grammar-select.sy
-  regress0/sygus/array-grammar-store.sy
-  regress0/sygus/c100.sy
   regress0/sygus/ccp16.lus.sy
   regress0/sygus/cegqi-si-string-triv-2fun.sy
   regress0/sygus/cegqi-si-string-triv.sy
@@ -1180,7 +1174,6 @@ set(regress_0_tests
   regress0/sygus/no-logic.sy
   regress0/sygus/no-syntax-test-bool.sy
   regress0/sygus/no-syntax-test.sy
-  regress0/sygus/parity-AIG-d0.sy
   regress0/sygus/parse-bv-let.sy
   regress0/sygus/pbe-pred-contra.sy
   regress0/sygus/pLTL-sygus-syntax-err.sy
@@ -1270,7 +1263,6 @@ set(regress_0_tests
   regress0/uflia/diseqprop.05.smtv1.smt2
   regress0/uflia/diseqprop.06.smtv1.smt2
   regress0/uflia/error0.delta01.smtv1.smt2
-  regress0/uflia/error1.smtv1.smt2
   regress0/uflia/error30.smtv1.smt2
   regress0/uflia/stalmark_e7_27_e7_31.ec.minimized.smt2
   regress0/uflia/tiny.smt2
@@ -1400,6 +1392,7 @@ set(regress_1_tests
   regress1/arith/div.06.smt2
   regress1/arith/div.08.smt2
   regress1/arith/div.09.smt2
+  regress1/arith/issue3480.smt2
   regress1/arith/issue3952-rew-eq.smt2
   regress1/arith/issue4985-model-success.smt2
   regress1/arith/issue4985b-model-success.smt2
@@ -1413,6 +1406,7 @@ set(regress_1_tests
   regress1/arrayinuf_error.smt2
   regress1/aufbv/bug348.smtv1.smt2
   regress1/aufbv/bug580.smt2
+  regress1/aufbv/fuzz03.smtv1.smt2
   regress1/aufbv/fuzz10.smtv1.smt2
   regress1/auflia/bug330.smt2
   regress1/boolean-terms-kernel2.smt2
@@ -1456,6 +1450,8 @@ set(regress_1_tests
   regress1/bv/cmu-rdk-3.smt2
   regress1/bv/decision-weight00.smt2
   regress1/bv/divtest.smt2
+  regress1/bv/fuzz18.smtv1.smt2
+  regress1/bv/fuzz19.smtv1.smt2
   regress1/bv/fuzz34.smtv1.smt2
   regress1/bv/fuzz38.smtv1.smt2
   regress1/bv/incorrect1.smtv1.smt2
@@ -1477,10 +1473,13 @@ set(regress_1_tests
   regress1/datatypes/non-simple-rec.smt2
   regress1/datatypes/non-simple-rec-mut-unsat.smt2
   regress1/datatypes/non-simple-rec-param.smt2
+  regress1/datatypes/tuple_projection.smt2
+  regress1/decision/bug374a.smtv1.smt2
   regress1/decision/error3.smtv1.smt2
   regress1/decision/quant-Arrays_Q1-noinfer.smt2
   regress1/error.cvc
   regress1/errorcrash.smt2
+  regress1/fp/rti_3_5_bug_report.smt2
   regress1/fmf-fun-dbu.smt2
   regress1/fmf/ALG008-1.smt2
   regress1/fmf/Hoare-z3.931718.smtv1.smt2
@@ -1582,6 +1581,7 @@ set(regress_1_tests
   regress1/nl/exp-soundness-bound.smt2
   regress1/nl/exp1-lb.smt2
   regress1/nl/exp_monotone.smt2
+  regress1/nl/ext-rew-aggr-test.smt2
   regress1/nl/factor_agg_s.smt2
   regress1/nl/iand-native-1.smt2
   regress1/nl/iand-native-2.smt2
@@ -1594,6 +1594,8 @@ set(regress_1_tests
   regress1/nl/issue3803-nl-check-model.smt2
   regress1/nl/issue3955-ee-double-notify.smt2
   regress1/nl/issue5372-2-no-m-presolve.smt2
+  regress1/nl/issue5662-nl-tc.smt2
+  regress1/nl/issue5662-nl-tc-min.smt2
   regress1/nl/metitarski-1025.smt2
   regress1/nl/metitarski-3-4.smt2
   regress1/nl/metitarski_3_4_2e.smt2
@@ -1629,6 +1631,7 @@ set(regress_1_tests
   regress1/nl/sugar-ident-3.smt2
   regress1/nl/sugar-ident.smt2
   regress1/nl/tan-rewrite2.smt2
+  regress1/nl/ufnia-factor-open-proof.smt2
   regress1/nl/zero-subset.smt2
   regress1/non-fatal-errors.smt2
   regress1/parsing_ringer.cvc
@@ -1770,6 +1773,7 @@ set(regress_1_tests
   regress1/quantifiers/issue5484b-qe.smt2
   regress1/quantifiers/issue5506-qe.smt2
   regress1/quantifiers/issue5507-qe.smt2
+  regress1/quantifiers/issue5658-qe.smt2
   regress1/quantifiers/issue5766-wrong-sel-trigger.smt2
   regress1/quantifiers/issue993.smt2
   regress1/quantifiers/javafe.ast.StmtVec.009.smt2
@@ -1784,6 +1788,7 @@ set(regress_1_tests
   regress1/quantifiers/nra-interleave-inst.smt2
   regress1/quantifiers/opisavailable-12.smt2
   regress1/quantifiers/parametric-lists.smt2
+  regress1/quantifiers/prenex-scholl-smt08_RNDPRE_RNDPRE_4_6.smt2
   regress1/quantifiers/psyco-001-bv.smt2
   regress1/quantifiers/psyco-107-bv.smt2
   regress1/quantifiers/psyco-196.smt2
@@ -1828,6 +1833,8 @@ set(regress_1_tests
   regress1/quantifiers/smtlibe99bbe.smt2
   regress1/quantifiers/smtlibf957ea.smt2
   regress1/quantifiers/sygus-infer-nested.smt2
+  regress1/quantifiers/sygus-inst-nia-psyco-060.smt2
+  regress1/quantifiers/sygus-inst-ufnia-sat-t3_rw1505.smt2
   regress1/quantifiers/symmetric_unsat_7.smt2
   regress1/quantifiers/tpp-unit-fail-qbv.smt2
   regress1/quantifiers/var-eq-trigger.smt2
@@ -2020,7 +2027,16 @@ set(regress_1_tests
   regress1/strings/issue5483-pp-leq.smt2
   regress1/strings/issue5510-re-consume.smt2
   regress1/strings/issue5520-re-consume.smt2
+  regress1/strings/issue5610-infer-proxy.smt2
+  regress1/strings/issue5610-2-infer-proxy.smt2
   regress1/strings/issue5611-deq-norm-emp.smt2
+  regress1/strings/issue5692-infer-proxy.smt2
+  regress1/strings/issue5940-skc-len-conc.smt2
+  regress1/strings/issue5940-2-skc-len-conc.smt2
+  regress1/strings/issue6072-inc-no-const-reg.smt2
+  regress1/strings/issue6075-repl-len-one-rr.smt2
+  regress1/strings/issue6132-non-unique-skolem.smt2
+  regress1/strings/issue6142-repl-inv-rew.smt2
   regress1/strings/kaluza-fl.smt2
   regress1/strings/loop002.smt2
   regress1/strings/loop003.smt2
@@ -2105,6 +2121,7 @@ set(regress_1_tests
   regress1/sygus/abduction_1255.corecstrs.readable.smt2
   regress1/sygus/abduction_streq.readable.smt2
   regress1/sygus/abv.sy
+  regress1/sygus/array-grammar-store.sy
   regress1/sygus/array_search_5-Q-easy.sy
   regress1/sygus/bvudiv-by-2.sy
   regress1/sygus/cegar1.sy
@@ -2187,6 +2204,12 @@ set(regress_1_tests
   regress1/sygus/max.sy
   regress1/sygus/max2-bv.sy
   regress1/sygus/multi-fun-polynomial2.sy
+  regress1/sygus/complex-no-rewrite.sy
+  regress1/sygus/complex-rewrite-in-db.sy
+  regress1/sygus/no-var-in-sol.sy
+  regress1/sygus/simple-no-rewrite.sy
+  regress1/sygus/simple-rewrite-in-db.sy
+  regress1/sygus/simple-rewrite-not-in-db.sy
   regress1/sygus/nflat-fwd-3.sy
   regress1/sygus/nflat-fwd.sy
   regress1/sygus/nia-max-square-ns.sy
@@ -2195,7 +2218,6 @@ set(regress_1_tests
   regress1/sygus/no-mention.sy
   regress1/sygus/once_2.sy
   regress1/sygus/only-const-grammar.sy
-  regress1/sygus/parity-si-rcons.sy
   regress1/sygus/pbe_multi.sy
   regress1/sygus/phone-1-long.sy
   regress1/sygus/planning-unif.sy
@@ -2262,6 +2284,7 @@ set(regress_1_tests
   regress1/uflia/DRAGON_11_e1_2450.ec.minimized.smt2
   regress1/uflia/FIREFLY_3_e2_2236_e7_3681.ec.core.smt2
   regress1/uflia/FIREFLY_luke_1b_e2_3049_e7_1173.ec.minimized.smt2
+  regress1/uflia/error1.smtv1.smt2
   regress1/uflia/microwave21.ec.minimized.smt2
   regress1/uflia/simple_cyclic2.smt2
   regress1/uflia/speed2_e8_449_e8_517.ec.smt2
@@ -2535,10 +2558,19 @@ set(regression_disabled_tests
   regress1/sygus/interpol_from_pono_3.smt2
   regress1/sygus/interpol_dt.smt2
   regress1/sygus/inv_gen_fig8.sy
-  # rely on heuristic solution reconstruction TODO #3146 revisit
+  # new reconstruct algorithm is slow at reconstructing random constants (see wishue #82)
+  regress0/sygus/c100.sy
+  # For the six regressions below, solution terms require rewrites not in
+  # database and are too big to enumerate
+  regress0/sygus/aig-si.sy
+  regress0/sygus/parity-AIG-d0.sy
   regress1/sygus/array_search_2.sy
   regress1/sygus/array_sum_2_5.sy
   regress1/sygus/crcy-si-rcons.sy
+  regress1/sygus/parity-si-rcons.sy
+  # should print a better error message to indicate that a term is not in the
+  # provided grammar
+  regress1/sygus/simple-not-in-grammar.sy
   # previously sygus inference did not apply, now (correctly) times out
   regress1/sygus/issue3498.smt2
   regress2/arith/miplib-opt1217--27.smt2

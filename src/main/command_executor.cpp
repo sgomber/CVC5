@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Kshitij Bansal, Andrew Reynolds, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -18,7 +18,6 @@
 #  include <sys/resource.h>
 #endif /* ! __WIN32__ */
 
-#include <cassert>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -51,9 +50,7 @@ void printStatsIncremental(std::ostream& out, const std::string& prvsStatsString
 CommandExecutor::CommandExecutor(Options& options)
     : d_solver(new api::Solver(&options)),
       d_symman(new SymbolManager(d_solver.get())),
-      d_smtEngine(d_solver->getSmtEngine()),
       d_options(options),
-      d_stats("driver"),
       d_result()
 {
 }
@@ -67,15 +64,13 @@ CommandExecutor::~CommandExecutor()
 void CommandExecutor::flushStatistics(std::ostream& out) const
 {
   // SmtEngine + node manager flush statistics is part of the call below
-  d_smtEngine->flushStatistics(out);
-  d_stats.flushInformation(out);
+  getSmtEngine()->flushStatistics(out);
 }
 
 void CommandExecutor::safeFlushStatistics(int fd) const
 {
   // SmtEngine + node manager flush statistics is part of the call below
-  d_smtEngine->safeFlushStatistics(fd);
-  d_stats.safeFlushInformation(fd);
+  getSmtEngine()->safeFlushStatistics(fd);
 }
 
 bool CommandExecutor::doCommand(Command* cmd)
@@ -163,7 +158,7 @@ bool CommandExecutor::doCommandSingleton(Command* cmd)
     if (d_options.getDumpModels()
         && (res.isSat()
             || (res.isSatUnknown()
-                && res.getResult().whyUnknown() == Result::INCOMPLETE)))
+                && res.getUnknownExplanation() == api::Result::INCOMPLETE)))
     {
       getterCommands.emplace_back(new GetModelCommand());
     }
@@ -176,7 +171,8 @@ bool CommandExecutor::doCommandSingleton(Command* cmd)
         && ((d_options.getInstFormatMode() != options::InstFormatMode::SZS
              && (res.isSat()
                  || (res.isSatUnknown()
-                     && res.getResult().whyUnknown() == Result::INCOMPLETE)))
+                     && res.getUnknownExplanation()
+                            == api::Result::INCOMPLETE)))
             || isResultUnsat))
     {
       getterCommands.emplace_back(new GetInstantiationsCommand());

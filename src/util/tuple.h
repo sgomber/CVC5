@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Tim King, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -20,13 +20,13 @@
 #define CVC4__TUPLE_H
 
 #include <iostream>
-#include <string>
 #include <vector>
 #include <utility>
 
 namespace CVC4 {
 
-class CVC4_PUBLIC TupleUpdate {
+class TupleUpdate
+{
   unsigned d_index;
 
  public:
@@ -34,15 +34,16 @@ class CVC4_PUBLIC TupleUpdate {
   unsigned getIndex() const { return d_index; }
   bool operator==(const TupleUpdate& t) const { return d_index == t.d_index; }
   bool operator!=(const TupleUpdate& t) const { return d_index != t.d_index; }
-};/* class TupleUpdate */
+}; /* class TupleUpdate */
 
-struct CVC4_PUBLIC TupleUpdateHashFunction {
+struct TupleUpdateHashFunction
+{
   inline size_t operator()(const TupleUpdate& t) const {
     return t.getIndex();
   }
-};/* struct TupleUpdateHashFunction */
+}; /* struct TupleUpdateHashFunction */
 
-std::ostream& operator<<(std::ostream& out, const TupleUpdate& t) CVC4_PUBLIC;
+std::ostream& operator<<(std::ostream& out, const TupleUpdate& t);
 
 inline std::ostream& operator<<(std::ostream& out, const TupleUpdate& t) {
   return out << "[" << t.getIndex() << "]";

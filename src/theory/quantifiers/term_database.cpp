@@ -2,9 +2,9 @@
 /*! \file term_database.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner, Tim King
+ **   Andrew Reynolds, Mathias Preiner, Gereon Kremer
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -21,6 +21,9 @@
 #include "options/uf_options.h"
 #include "theory/quantifiers/ematching/trigger_term_info.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
+#include "theory/quantifiers/quantifiers_inference_manager.h"
+#include "theory/quantifiers/quantifiers_registry.h"
+#include "theory/quantifiers/quantifiers_state.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/theory_engine.h"
@@ -34,104 +37,109 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
-TermDb::TermDb(QuantifiersState& qs,
-               QuantifiersInferenceManager& qim,
-               QuantifiersEngine* qe)
-    : d_quantEngine(qe),
-      d_qstate(qs),
-      d_qim(qim),
+TermDb::TermDb(QuantifiersState& qs, QuantifiersRegistry& qr)
+    : d_qstate(qs),
+      d_qim(nullptr),
+      d_qreg(qr),
+      d_termsContext(),
+      d_termsContextUse(options::termDbCd() ? qs.getSatContext()
+                                            : &d_termsContext),
+      d_processed(d_termsContextUse),
+      d_typeMap(d_termsContextUse),
+      d_ops(d_termsContextUse),
+      d_opMap(d_termsContextUse),
       d_inactive_map(qs.getSatContext())
 {
   d_consistent_ee = true;
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
+  if (!options::termDbCd())
+  {
+    // when not maintaining terms in a context-dependent manner, we clear during
+    // each presolve, which requires maintaining a single outermost level
+    d_termsContext.push();
+  }
 }
 
 TermDb::~TermDb(){
 
 }
 
+void TermDb::finishInit(QuantifiersInferenceManager* qim) { d_qim = qim; }
+
 void TermDb::registerQuantifier( Node q ) {
-  Assert(q[0].getNumChildren()
-         == d_quantEngine->getTermUtil()->getNumInstantiationConstants(q));
-  for( unsigned i=0; i<q[0].getNumChildren(); i++ ){
-    Node ic = d_quantEngine->getTermUtil()->getInstantiationConstant( q, i );
+  Assert(q[0].getNumChildren() == d_qreg.getNumInstantiationConstants(q));
+  for (size_t i = 0, nvars = q[0].getNumChildren(); i < nvars; i++)
+  {
+    Node ic = d_qreg.getInstantiationConstant(q, i);
     setTermInactive( ic );
   }
 }
 
-unsigned TermDb::getNumOperators() { return d_ops.size(); }
-Node TermDb::getOperator(unsigned i)
+size_t TermDb::getNumOperators() const { return d_ops.size(); }
+
+Node TermDb::getOperator(size_t i) const
 {
   Assert(i < d_ops.size());
   return d_ops[i];
 }
 
 /** ground terms */
-unsigned TermDb::getNumGroundTerms(Node f) const
+size_t TermDb::getNumGroundTerms(Node f) const
 {
-  std::map<Node, std::vector<Node> >::const_iterator it = d_op_map.find(f);
-  if( it!=d_op_map.end() ){
-    return it->second.size();
-  }else{
-    return 0;
+  NodeDbListMap::const_iterator it = d_opMap.find(f);
+  if (it != d_opMap.end())
+  {
+    return it->second->d_list.size();
   }
+  return 0;
 }
 
-Node TermDb::getGroundTerm(Node f, unsigned i) const
+Node TermDb::getGroundTerm(Node f, size_t i) const
 {
-  std::map<Node, std::vector<Node> >::const_iterator it = d_op_map.find(f);
-  if (it != d_op_map.end())
+  NodeDbListMap::const_iterator it = d_opMap.find(f);
+  if (it != d_opMap.end())
   {
-    Assert(i < it->second.size());
-    return it->second[i];
+    Assert(i < it->second->d_list.size());
+    return it->second->d_list[i];
   }
-  else
-  {
-    Assert(false);
-    return Node::null();
-  }
+  Assert(false);
+  return Node::null();
 }
 
-unsigned TermDb::getNumTypeGroundTerms(TypeNode tn) const
+size_t TermDb::getNumTypeGroundTerms(TypeNode tn) const
 {
-  std::map<TypeNode, std::vector<Node> >::const_iterator it =
-      d_type_map.find(tn);
-  if( it!=d_type_map.end() ){
-    return it->second.size();
-  }else{
-    return 0;
+  TypeNodeDbListMap::const_iterator it = d_typeMap.find(tn);
+  if (it != d_typeMap.end())
+  {
+    return it->second->d_list.size();
   }
+  return 0;
 }
 
-Node TermDb::getTypeGroundTerm(TypeNode tn, unsigned i) const
+Node TermDb::getTypeGroundTerm(TypeNode tn, size_t i) const
 {
-  std::map<TypeNode, std::vector<Node> >::const_iterator it =
-      d_type_map.find(tn);
-  if (it != d_type_map.end())
+  TypeNodeDbListMap::const_iterator it = d_typeMap.find(tn);
+  if (it != d_typeMap.end())
   {
-    Assert(i < it->second.size());
-    return it->second[i];
+    Assert(i < it->second->d_list.size());
+    return it->second->d_list[i];
   }
-  else
-  {
-    Assert(false);
-    return Node::null();
-  }
+  Assert(false);
+  return Node::null();
 }
 
 Node TermDb::getOrMakeTypeGroundTerm(TypeNode tn, bool reqVar)
 {
-  std::map<TypeNode, std::vector<Node> >::const_iterator it =
-      d_type_map.find(tn);
-  if (it != d_type_map.end())
+  TypeNodeDbListMap::const_iterator it = d_typeMap.find(tn);
+  if (it != d_typeMap.end())
   {
-    Assert(!it->second.empty());
+    Assert(!it->second->d_list.empty());
     if (!reqVar)
     {
-      return it->second[0];
+      return it->second->d_list[0];
     }
-    for (const Node& v : it->second)
+    for (const Node& v : it->second->d_list)
     {
       if (v.isVar())
       {
@@ -208,7 +216,8 @@ void TermDb::addTerm(Node n)
   if (!TermUtil::hasInstConstAttr(n))
   {
     Trace("term-db-debug") << "register term : " << n << std::endl;
-    d_type_map[n.getType()].push_back(n);
+    DbList* dlt = getOrMkDbListForType(n.getType());
+    dlt->d_list.push_back(n);
     // if this is an atomic trigger, consider adding it
     if (inst::TriggerTermInfo::isAtomicTrigger(n))
     {
@@ -216,11 +225,8 @@ void TermDb::addTerm(Node n)
 
       Node op = getMatchOperator(n);
       Trace("term-db-debug") << "  match operator is : " << op << std::endl;
-      if (d_op_map.find(op) == d_op_map.end())
-      {
-        d_ops.push_back(op);
-      }
-      d_op_map[op].push_back(n);
+      DbList* dlo = getOrMkDbListForOp(op);
+      dlo->d_list.push_back(n);
       // If we are higher-order, we may need to register more terms.
       if (options::ufHo())
       {
@@ -239,6 +245,32 @@ void TermDb::addTerm(Node n)
       addTerm(nc);
     }
   }
+}
+
+DbList* TermDb::getOrMkDbListForType(TypeNode tn)
+{
+  TypeNodeDbListMap::iterator it = d_typeMap.find(tn);
+  if (it != d_typeMap.end())
+  {
+    return it->second.get();
+  }
+  std::shared_ptr<DbList> dl = std::make_shared<DbList>(d_termsContextUse);
+  d_typeMap.insert(tn, dl);
+  return dl.get();
+}
+
+DbList* TermDb::getOrMkDbListForOp(TNode op)
+{
+  NodeDbListMap::iterator it = d_opMap.find(op);
+  if (it != d_opMap.end())
+  {
+    return it->second.get();
+  }
+  std::shared_ptr<DbList> dl = std::make_shared<DbList>(d_termsContextUse);
+  d_opMap.insert(op, dl);
+  Assert(op.getKind() != BOUND_VARIABLE);
+  d_ops.push_back(op);
+  return dl.get();
 }
 
 void TermDb::computeArgReps( TNode n ) {
@@ -270,7 +302,8 @@ void TermDb::computeUfEqcTerms( TNode f ) {
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
   for (TNode ff : ops)
   {
-    for (const Node& n : d_op_map[ff])
+    DbList* dbl = getOrMkDbListForOp(ff);
+    for (const Node& n : dbl->d_list)
     {
       if (hasTermCurrent(n) && isTermActive(n))
       {
@@ -305,14 +338,14 @@ void TermDb::computeUfTerms( TNode f ) {
   NodeManager* nm = NodeManager::currentNM();
   for (TNode ff : ops)
   {
-    std::map<Node, std::vector<Node> >::iterator it = d_op_map.find(ff);
-    if (it == d_op_map.end())
+    NodeDbListMap::iterator it = d_opMap.find(ff);
+    if (it == d_opMap.end())
     {
       // no terms for this operator
       continue;
     }
     Trace("term-db-debug") << "Adding terms for operator " << ff << std::endl;
-    for (const Node& n : it->second)
+    for (const Node& n : it->second->d_list)
     {
       // to be added to term index, term must be relevant, and exist in EE
       if (!hasTermCurrent(n) || !d_qstate.hasTerm(n))
@@ -405,7 +438,7 @@ void TermDb::computeUfTerms( TNode f ) {
             }
             Trace("term-db-lemma") << "  add lemma : " << lem << std::endl;
           }
-          d_quantEngine->addLemma(lem);
+          d_qim->addPendingLemma(lem, InferenceId::UNKNOWN);
           d_qstate.notifyInConflict();
           d_consistent_ee = false;
           return;
@@ -422,7 +455,8 @@ void TermDb::computeUfTerms( TNode f ) {
                    << (nonCongruentCount + congruentCount
                        + alreadyCongruentCount)
                    << " / ";
-      Trace("tdb") << relevantCount << " / " << it->second.size() << std::endl;
+      Trace("tdb") << relevantCount << " / " << it->second->d_list.size()
+                   << std::endl;
     }
   }
 }
@@ -466,7 +500,8 @@ void TermDb::addTermHo(Node n)
       Trace("term-db") << "register term in db (via purify) " << p_n
                        << std::endl;
       // also add this one internally
-      d_op_map[psk].push_back(p_n);
+      DbList* dblp = getOrMkDbListForOp(psk);
+      dblp->d_list.push_back(p_n);
       // maintain backwards mapping
       d_ho_purify_to_term[p_n] = n;
     }
@@ -656,10 +691,10 @@ Node TermDb::evaluateTerm2(TNode n,
         {
           if (ret.getKind() == EQUAL || ret.getKind() == GEQ)
           {
-            TheoryEngine* te = d_quantEngine->getTheoryEngine();
+            Valuation& val = d_qstate.getValuation();
             for (unsigned j = 0; j < 2; j++)
             {
-              std::pair<bool, Node> et = te->entailmentCheck(
+              std::pair<bool, Node> et = val.entailmentCheck(
                   options::TheoryOfMode::THEORY_OF_TYPE_BASED,
                   j == 0 ? ret : ret.negate());
               if (et.first)
@@ -902,7 +937,8 @@ bool TermDb::isTermEligibleForInstantiation(TNode n, TNode f)
 {
   if( options::instMaxLevel()!=-1 ){
     if( n.hasAttribute(InstLevelAttribute()) ){
-      int fml = f.isNull() ? -1 : d_quantEngine->getQuantAttributes()->getQuantInstLevel( f );
+      int64_t fml =
+          f.isNull() ? -1 : d_qreg.getQuantAttributes().getQuantInstLevel(f);
       unsigned ml = fml>=0 ? fml : options::instMaxLevel();
 
       if( n.getAttribute(InstLevelAttribute())>ml ){
@@ -960,13 +996,10 @@ void TermDb::setHasTerm( Node n ) {
 }
 
 void TermDb::presolve() {
-  if( options::incrementalSolving() ){
-    // reset the caches that are SAT context-independent but user
-    // context-dependent
-    d_ops.clear();
-    d_op_map.clear();
-    d_type_map.clear();
-    d_processed.clear();
+  if (options::incrementalSolving() && !options::termDbCd())
+  {
+    d_termsContext.pop();
+    d_termsContext.push();
   }
 }
 
@@ -1015,7 +1048,7 @@ bool TermDb::reset( Theory::Effort effort ){
           // equality is sent out as a lemma here.
           Trace("term-db-lemma")
               << "Purify equality lemma: " << eq << std::endl;
-          d_quantEngine->addLemma(eq);
+          d_qim->addPendingLemma(eq, InferenceId::UNKNOWN);
           d_qstate.notifyInConflict();
           d_consistent_ee = false;
           return false;
@@ -1051,19 +1084,16 @@ bool TermDb::reset( Theory::Effort effort ){
       }
       ++eqcs_i;
     }
-    TheoryEngine* te = d_quantEngine->getTheoryEngine();
-    const LogicInfo& logicInfo = te->getLogicInfo();
+    const LogicInfo& logicInfo = d_qstate.getLogicInfo();
     for (TheoryId theoryId = THEORY_FIRST; theoryId < THEORY_LAST; ++theoryId)
     {
       if (!logicInfo.isTheoryEnabled(theoryId))
       {
         continue;
       }
-      Theory* theory = te->theoryOf(theoryId);
-      Assert(theory != nullptr);
       for (context::CDList<Assertion>::const_iterator
-               it = theory->facts_begin(),
-               it_end = theory->facts_end();
+               it = d_qstate.factsBegin(theoryId),
+               it_end = d_qstate.factsEnd(theoryId);
            it != it_end;
            ++it)
       {
@@ -1102,7 +1132,7 @@ bool TermDb::reset( Theory::Effort effort ){
           }
           Trace("quant-ho") << "  - process " << n_use << ", from " << n
                             << std::endl;
-          if (!n_use.isNull() && d_op_map.find(n_use) != d_op_map.end())
+          if (!n_use.isNull() && d_opMap.find(n_use) != d_opMap.end())
           {
             if (first.isNull())
             {
@@ -1125,15 +1155,6 @@ bool TermDb::reset( Theory::Effort effort ){
     Trace("quant-ho") << "...finished compute equal functions." << std::endl;
   }
 
-/*
-  //rebuild d_func/pred_map_trie for each operation, this will calculate all congruent terms
-  for( std::map< Node, std::vector< Node > >::iterator it = d_op_map.begin(); it != d_op_map.end(); ++it ){
-    computeUfTerms( it->first );
-    if( !d_consistent_ee ){
-      return false;
-    }
-  }
-*/  
   return true;
 }
 

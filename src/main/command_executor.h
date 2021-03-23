@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Kshitij Bansal, Aina Niemetz
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -52,9 +52,7 @@ class CommandExecutor
    * symbol manager.
    */
   std::unique_ptr<SymbolManager> d_symman;
-  SmtEngine* d_smtEngine;
   Options& d_options;
-  StatisticsRegistry d_stats;
   api::Result d_result;
 
  public:
@@ -82,11 +80,7 @@ class CommandExecutor
   api::Result getResult() const { return d_result; }
   void reset();
 
-  StatisticsRegistry& getStatisticsRegistry() {
-    return d_stats;
-  }
-
-  SmtEngine* getSmtEngine() { return d_smtEngine; }
+  SmtEngine* getSmtEngine() const { return d_solver->getSmtEngine(); }
 
   /**
    * Flushes statistics to a file descriptor.

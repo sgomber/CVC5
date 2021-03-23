@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Andres Noetzli, Tianyi Liang
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -33,7 +33,7 @@ namespace CVC4 {
 namespace theory {
 namespace strings {
 
-SequencesRewriter::SequencesRewriter(HistogramStat<Rewrite>* statistics)
+SequencesRewriter::SequencesRewriter(IntegralHistogramStat<Rewrite>* statistics)
     : d_statistics(statistics), d_stringsEntail(*this)
 {
 }
@@ -309,7 +309,7 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
         }
 
         // (= "" (str.replace x "A" "")) ---> (str.prefix x "A")
-        if (StringsEntail::checkLengthOne(ne[1]) && ne[2] == empty)
+        if (StringsEntail::checkLengthOne(ne[1], true) && ne[2] == empty)
         {
           Node ret = nm->mkNode(STRING_PREFIX, ne[0], ne[1]);
           return returnRewrite(node, ret, Rewrite::STR_EMP_REPL_EMP);
@@ -2206,7 +2206,7 @@ Node SequencesRewriter::rewriteContains(Node node)
     // if (str.contains z w) ---> false and (str.len w) = 1
     if (StringsEntail::checkLengthOne(node[1]))
     {
-      Node ctn = d_stringsEntail.checkContains(node[1], node[0][2]);
+      Node ctn = d_stringsEntail.checkContains(node[0][2], node[1]);
       if (!ctn.isNull() && !ctn.getConst<bool>())
       {
         Node empty = Word::mkEmptyWord(stype);
@@ -2558,7 +2558,7 @@ Node SequencesRewriter::rewriteReplace(Node node)
   // check if contains definitely does (or does not) hold
   Node cmp_con = nm->mkNode(kind::STRING_STRCTN, node[0], node[1]);
   Node cmp_conr = Rewriter::rewrite(cmp_con);
-  if (!d_stringsEntail.checkContains(node[0], node[1]).isNull())
+  if (cmp_conr.isConst())
   {
     if (cmp_conr.getConst<bool>())
     {
@@ -2862,7 +2862,7 @@ Node SequencesRewriter::rewriteReplace(Node node)
     {
       // str.contains( z, w ) ----> false implies
       // str.replace( x, w, str.replace( z, x, y ) ) ---> str.replace( x, w, z )
-      Node cmp_con2 = d_stringsEntail.checkContains(node[1], node[2][0]);
+      Node cmp_con2 = d_stringsEntail.checkContains(node[2][0], node[1]);
       if (!cmp_con2.isNull() && !cmp_con2.getConst<bool>())
       {
         Node res =

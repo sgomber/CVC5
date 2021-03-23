@@ -2,9 +2,9 @@
 /*! \file smt_engine.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Aina Niemetz
+ **   Andrew Reynolds, Morgan Deters, Abdalrhman Mohamed
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -16,31 +16,35 @@
 
 #include "smt/smt_engine.h"
 
-#include "api/cvc4cpp.h"
 #include "base/check.h"
 #include "base/exception.h"
 #include "base/modal_exception.h"
 #include "base/output.h"
 #include "decision/decision_engine.h"
+#include "expr/bound_var_manager.h"
 #include "expr/node.h"
 #include "options/base_options.h"
 #include "options/language.h"
 #include "options/main_options.h"
 #include "options/printer_options.h"
+#include "options/proof_options.h"
 #include "options/smt_options.h"
 #include "options/theory_options.h"
 #include "printer/printer.h"
 #include "proof/proof_manager.h"
 #include "proof/unsat_core.h"
+#include "prop/prop_engine.h"
 #include "smt/abduction_solver.h"
 #include "smt/abstract_values.h"
 #include "smt/assertions.h"
 #include "smt/check_models.h"
 #include "smt/defined_function.h"
+#include "smt/dump.h"
 #include "smt/dump_manager.h"
+#include "smt/env.h"
 #include "smt/interpolation_solver.h"
 #include "smt/listeners.h"
-#include "smt/logic_request.h"
+#include "smt/logic_exception.h"
 #include "smt/model_blocker.h"
 #include "smt/model_core_builder.h"
 #include "smt/node_command.h"
@@ -56,10 +60,10 @@
 #include "smt/unsat_core_manager.h"
 #include "theory/quantifiers/instantiation_list.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
+#include "theory/quantifiers_engine.h"
 #include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
 #include "theory/theory_engine.h"
-#include "theory/quantifiers_engine.h"
 #include "util/random.h"
 #include "util/resource_manager.h"
 
@@ -77,32 +81,27 @@ using namespace CVC4::theory;
 namespace CVC4 {
 
 SmtEngine::SmtEngine(NodeManager* nm, Options* optr)
-    : d_state(new SmtEngineState(*this)),
-      d_nodeManager(nm),
-      d_absValues(new AbstractValues(d_nodeManager)),
+    : d_env(new Env(nm)),
+      d_state(new SmtEngineState(getContext(), getUserContext(), *this)),
+      d_absValues(new AbstractValues(getNodeManager())),
       d_asserts(new Assertions(getUserContext(), *d_absValues.get())),
-      d_dumpm(new DumpManager(getUserContext())),
       d_routListener(new ResourceOutListener(*this)),
-      d_snmListener(new SmtNodeManagerListener(*d_dumpm.get(), d_outMgr)),
+      d_snmListener(new SmtNodeManagerListener(*getDumpManager(), d_outMgr)),
       d_smtSolver(nullptr),
       d_proofManager(nullptr),
       d_model(nullptr),
       d_checkModels(nullptr),
       d_pfManager(nullptr),
       d_ucManager(nullptr),
-      d_rewriter(new theory::Rewriter()),
       d_definedFunctions(nullptr),
       d_sygusSolver(nullptr),
       d_abductSolver(nullptr),
       d_interpolSolver(nullptr),
       d_quantElimSolver(nullptr),
-      d_logic(),
       d_originalOptions(),
       d_isInternalSubsolver(false),
-      d_statisticsRegistry(nullptr),
       d_stats(nullptr),
       d_outMgr(this),
-      d_resourceManager(nullptr),
       d_optm(nullptr),
       d_pp(nullptr),
       d_scope(nullptr)
@@ -120,20 +119,15 @@ SmtEngine::SmtEngine(NodeManager* nm, Options* optr)
   // On the other hand, this hack breaks use cases where multiple SmtEngine
   // objects are created by the user.
   d_scope.reset(new SmtScope(this));
-  if (optr != nullptr)
-  {
-    // if we provided a set of options, copy their values to the options
-    // owned by this SmtEngine.
-    d_options.copyValues(*optr);
-  }
-  d_statisticsRegistry.reset(new StatisticsRegistry());
-  d_resourceManager.reset(
-      new ResourceManager(*d_statisticsRegistry.get(), d_options));
-  d_optm.reset(new smt::OptionsManager(&d_options, d_resourceManager.get()));
+  // Set options in the environment, which makes a deep copy of optr if
+  // non-null. This may throw an options exception.
+  d_env->setOptions(optr);
+  // set the options manager
+  d_optm.reset(new smt::OptionsManager(&getOptions(), getResourceManager()));
   // listen to node manager events
-  d_nodeManager->subscribeEvents(d_snmListener.get());
+  getNodeManager()->subscribeEvents(d_snmListener.get());
   // listen to resource out
-  d_resourceManager->registerListener(d_routListener.get());
+  getResourceManager()->registerListener(d_routListener.get());
   // make statistics
   d_stats.reset(new SmtEngineStatistics());
   // reset the preprocessor
@@ -141,7 +135,7 @@ SmtEngine::SmtEngine(NodeManager* nm, Options* optr)
       *this, getUserContext(), *d_absValues.get(), *d_stats));
   // make the SMT solver
   d_smtSolver.reset(
-      new SmtSolver(*this, *d_state, d_resourceManager.get(), *d_pp, *d_stats));
+      new SmtSolver(*this, *d_state, getResourceManager(), *d_pp, *d_stats));
   // make the SyGuS solver
   d_sygusSolver.reset(
       new SygusSolver(*d_smtSolver, *d_pp, getUserContext(), d_outMgr));
@@ -181,9 +175,9 @@ Result SmtEngine::getStatusOfLastCommand() const
 }
 context::UserContext* SmtEngine::getUserContext()
 {
-  return d_state->getUserContext();
+  return d_env->getUserContext();
 }
-context::Context* SmtEngine::getContext() { return d_state->getContext(); }
+context::Context* SmtEngine::getContext() { return d_env->getContext(); }
 
 TheoryEngine* SmtEngine::getTheoryEngine()
 {
@@ -208,7 +202,8 @@ void SmtEngine::finishInit()
   // of SMT-LIB 2.6 standard.
 
   // set the logic
-  if (!d_logic.isLocked())
+  const LogicInfo& logic = getLogicInfo();
+  if (!logic.isLocked())
   {
     setLogicInternal();
   }
@@ -219,19 +214,22 @@ void SmtEngine::finishInit()
   // Call finish init on the options manager. This inializes the resource
   // manager based on the options, and sets up the best default options
   // based on our heuristics.
-  d_optm->finishInit(d_logic, d_isInternalSubsolver);
+  d_optm->finishInit(d_env->d_logic, d_isInternalSubsolver);
 
   ProofNodeManager* pnm = nullptr;
-  if (options::proofNew())
+  if (options::produceProofs())
   {
+    // ensure bound variable uses canonical bound variables
+    getNodeManager()->getBoundVarManager()->enableKeepCacheValues();
+    // make the proof manager
     d_pfManager.reset(new PfManager(getUserContext(), this));
     PreprocessProofGenerator* pppg = d_pfManager->getPreprocessProofGenerator();
     // start the unsat core manager
     d_ucManager.reset(new UnsatCoreManager());
     // use this proof node manager
     pnm = d_pfManager->getProofNodeManager();
-    // enable proof support in the rewriter
-    d_rewriter->setProofNodeManager(pnm);
+    // enable proof support in the environment/rewriter
+    d_env->setProofNodeManager(pnm);
     // enable it in the assertions pipeline
     d_asserts->setProofGenerator(pppg);
     // enable it in the SmtSolver
@@ -241,7 +239,7 @@ void SmtEngine::finishInit()
   }
 
   Trace("smt-debug") << "SmtEngine::finishInit" << std::endl;
-  d_smtSolver->finishInit(const_cast<const LogicInfo&>(d_logic));
+  d_smtSolver->finishInit(logic);
 
   // now can construct the SMT-level model object
   TheoryEngine* te = d_smtSolver->getTheoryEngine();
@@ -267,17 +265,17 @@ void SmtEngine::finishInit()
   {
       LogicInfo everything;
       everything.lock();
-      getOutputManager().getPrinter().toStreamCmdComment(
+      getPrinter().toStreamCmdComment(
           getOutputManager().getDumpOut(),
           "CVC4 always dumps the most general, all-supported logic (below), as "
           "some internals might require the use of a logic more general than "
           "the input.");
-      getOutputManager().getPrinter().toStreamCmdSetBenchmarkLogic(
-          getOutputManager().getDumpOut(), everything.getLogicString());
+      getPrinter().toStreamCmdSetBenchmarkLogic(getOutputManager().getDumpOut(),
+                                                everything.getLogicString());
   }
 
   // initialize the dump manager
-  d_dumpm->finishInit();
+  getDumpManager()->finishInit();
 
   // subsolvers
   if (options::produceAbducts())
@@ -295,7 +293,7 @@ void SmtEngine::finishInit()
       << "The PropEngine has pushed but the SmtEngine "
          "hasn't finished initializing!";
 
-  Assert(d_logic.isLocked());
+  Assert(getLogicInfo().isLocked());
 
   // store that we are finished initializing
   d_state->finishInit();
@@ -306,6 +304,8 @@ void SmtEngine::shutdown() {
   d_state->shutdown();
 
   d_smtSolver->shutdown();
+
+  d_env->shutdown();
 }
 
 SmtEngine::~SmtEngine()
@@ -326,7 +326,7 @@ SmtEngine::~SmtEngine()
 
     // d_proofManager is always created when proofs are enabled at configure
     // time.  Because of this, this code should not be wrapped in PROOF() which
-    // additionally checks flags such as options::proof().
+    // additionally checks flags such as options::produceProofs().
     //
     // Note: the proof manager must be destroyed before the theory engine.
     // Because the destruction of the proofs depends on contexts owned be the
@@ -334,13 +334,11 @@ SmtEngine::~SmtEngine()
 #ifdef CVC4_PROOF
     d_proofManager.reset(nullptr);
 #endif
-    d_rewriter.reset(nullptr);
     d_pfManager.reset(nullptr);
     d_ucManager.reset(nullptr);
 
     d_absValues.reset(nullptr);
     d_asserts.reset(nullptr);
-    d_dumpm.reset(nullptr);
     d_model.reset(nullptr);
 
     d_sygusSolver.reset(nullptr);
@@ -348,16 +346,15 @@ SmtEngine::~SmtEngine()
     d_smtSolver.reset(nullptr);
 
     d_stats.reset(nullptr);
-    d_nodeManager->unsubscribeEvents(d_snmListener.get());
+    getNodeManager()->unsubscribeEvents(d_snmListener.get());
     d_snmListener.reset(nullptr);
     d_routListener.reset(nullptr);
     d_optm.reset(nullptr);
     d_pp.reset(nullptr);
-    // d_resourceManager must be destroyed before d_statisticsRegistry
-    d_resourceManager.reset(nullptr);
-    d_statisticsRegistry.reset(nullptr);
     // destroy the state
     d_state.reset(nullptr);
+    // destroy the environment
+    d_env.reset(nullptr);
   } catch(Exception& e) {
     Warning() << "CVC4 threw an exception during cleanup." << endl
               << e << endl;
@@ -372,7 +369,7 @@ void SmtEngine::setLogic(const LogicInfo& logic)
     throw ModalException("Cannot set logic in SmtEngine after the engine has "
                          "finished initializing.");
   }
-  d_logic = logic;
+  d_env->d_logic = logic;
   d_userLogic = logic;
   setLogicInternal();
 }
@@ -386,8 +383,8 @@ void SmtEngine::setLogic(const std::string& s)
     // dump out a set-logic command
     if (Dump.isOn("raw-benchmark"))
     {
-      getOutputManager().getPrinter().toStreamCmdSetBenchmarkLogic(
-          getOutputManager().getDumpOut(), d_logic.getLogicString());
+      getPrinter().toStreamCmdSetBenchmarkLogic(
+          getOutputManager().getDumpOut(), getLogicInfo().getLogicString());
     }
   }
   catch (IllegalArgumentException& e)
@@ -398,7 +395,10 @@ void SmtEngine::setLogic(const std::string& s)
 
 void SmtEngine::setLogic(const char* logic) { setLogic(string(logic)); }
 
-const LogicInfo& SmtEngine::getLogicInfo() const { return d_logic; }
+const LogicInfo& SmtEngine::getLogicInfo() const
+{
+  return d_env->getLogicInfo();
+}
 
 LogicInfo SmtEngine::getUserLogicInfo() const
 {
@@ -409,74 +409,75 @@ LogicInfo SmtEngine::getUserLogicInfo() const
   return res;
 }
 
-void SmtEngine::notifyStartParsing(std::string filename)
+void SmtEngine::notifyStartParsing(const std::string& filename)
 {
   d_state->setFilename(filename);
+  d_stats->d_driverFilename.set(filename);
   // Copy the original options. This is called prior to beginning parsing.
   // Hence reset should revert to these options, which note is after reading
   // the command line.
-  d_originalOptions.copyValues(d_options);
+  d_originalOptions.copyValues(getOptions());
 }
 
 const std::string& SmtEngine::getFilename() const
 {
   return d_state->getFilename();
 }
+
+void SmtEngine::setResultStatistic(const std::string& result) {
+    d_stats->d_driverResult.set(result);
+}
+
+void SmtEngine::setTotalTimeStatistic(double seconds) {
+  d_stats->d_driverTotalTime.set(seconds);
+}
+
 void SmtEngine::setLogicInternal()
 {
   Assert(!d_state->isFullyInited())
       << "setting logic in SmtEngine but the engine has already"
          " finished initializing for this run";
-  d_logic.lock();
+  d_env->d_logic.lock();
   d_userLogic.lock();
 }
 
-void SmtEngine::setInfo(const std::string& key, const CVC4::SExpr& value)
+void SmtEngine::setInfo(const std::string& key, const std::string& value)
 {
   SmtScope smts(this);
 
   Trace("smt") << "SMT setInfo(" << key << ", " << value << ")" << endl;
 
-  if(Dump.isOn("benchmark")) {
-    if(key == "status") {
-      string s = value.getValue();
+  if (Dump.isOn("benchmark"))
+  {
+    if (key == "status")
+    {
       Result::Sat status =
-          (s == "sat") ? Result::SAT
-                       : ((s == "unsat") ? Result::UNSAT : Result::SAT_UNKNOWN);
-      getOutputManager().getPrinter().toStreamCmdSetBenchmarkStatus(
+          (value == "sat")
+              ? Result::SAT
+              : ((value == "unsat") ? Result::UNSAT : Result::SAT_UNKNOWN);
+      getPrinter().toStreamCmdSetBenchmarkStatus(
           getOutputManager().getDumpOut(), status);
-    } else {
-      getOutputManager().getPrinter().toStreamCmdSetInfo(
+    }
+    else
+    {
+      getPrinter().toStreamCmdSetInfo(
           getOutputManager().getDumpOut(), key, value);
     }
   }
 
-  // Check for standard info keys (SMT-LIB v1, SMT-LIB v2, ...)
-  if (key == "source" || key == "category" || key == "difficulty"
-      || key == "notes" || key == "name" || key == "license")
+  if (key == "filename")
   {
-    // ignore these
-    return;
-  }
-  else if (key == "filename")
-  {
-    d_state->setFilename(value.getValue());
-    return;
+    d_state->setFilename(value);
   }
   else if (key == "smt-lib-version" && !options::inputLanguage.wasSetByUser())
   {
-    language::input::Language ilang = language::input::LANG_AUTO;
-    if( (value.isInteger() && value.getIntegerValue() == Integer(2)) ||
-        (value.isRational() && value.getRationalValue() == Rational(2)) ||
-        value.getValue() == "2" ||
-        value.getValue() == "2.0" ) {
-      ilang = language::input::LANG_SMTLIB_V2_0;
-    } else if( (value.isRational() && value.getRationalValue() == Rational(5, 2)) ||
-               value.getValue() == "2.5" ) {
-      ilang = language::input::LANG_SMTLIB_V2_5;
-    } else if( (value.isRational() && value.getRationalValue() == Rational(13, 5)) ||
-               value.getValue() == "2.6" ) {
-      ilang = language::input::LANG_SMTLIB_V2_6;
+    language::input::Language ilang = language::input::LANG_SMTLIB_V2_6;
+
+    if (value != "2" && value != "2.6")
+    {
+      Warning() << "SMT-LIB version " << value
+                << " unsupported, defaulting to language (and semantics of) "
+                   "SMT-LIB 2.6\n";
     }
     options::inputLanguage.set(ilang);
     // also update the output language
@@ -489,18 +490,10 @@ void SmtEngine::setInfo(const std::string& key, const CVC4::SExpr& value)
         *options::out() << language::SetLanguage(olang);
       }
     }
-    return;
-  } else if(key == "status") {
-    string s;
-    if(value.isAtom()) {
-      s = value.getValue();
-    }
-    if(s != "sat" && s != "unsat" && s != "unknown") {
-      throw OptionException("argument to (set-info :status ..) must be "
-                            "`sat' or `unsat' or `unknown'");
-    }
-    d_state->notifyExpectedStatus(s);
-    return;
+  }
+  else if (key == "status")
+  {
+    d_state->notifyExpectedStatus(value);
   }
 }
 
@@ -524,17 +517,8 @@ CVC4::SExpr SmtEngine::getInfo(const std::string& key) const
   if (key == "all-statistics")
   {
     vector<SExpr> stats;
-    StatisticsRegistry* sr = d_nodeManager->getStatisticsRegistry();
-    for (StatisticsRegistry::const_iterator i = sr->begin(); i != sr->end();
-         ++i)
-    {
-      vector<SExpr> v;
-      v.push_back((*i).first);
-      v.push_back((*i).second);
-      stats.push_back(v);
-    }
-    for (StatisticsRegistry::const_iterator i = d_statisticsRegistry->begin();
-         i != d_statisticsRegistry->end();
+    for (StatisticsRegistry::const_iterator i = d_env->getStatisticsRegistry()->begin();
+         i != d_env->getStatisticsRegistry()->end();
          ++i)
     {
       vector<SExpr> v;
@@ -618,7 +602,7 @@ void SmtEngine::debugCheckFormals(const std::vector<Node>& formals, Node func)
          << "definition of function " << func << ", formal\n"
          << "  " << *i << "\n"
          << "has kind " << (*i).getKind();
-      throw TypeCheckingException(func.toExpr(), ss.str());
+      throw TypeCheckingExceptionPrivate(func, ss.str());
     }
   }
 }
@@ -643,7 +627,7 @@ void SmtEngine::debugCheckFunctionBody(Node formula,
          << "Declared type : " << rangeType << "\n"
          << "The body      : " << formula << "\n"
          << "Body type     : " << formulaType;
-      throw TypeCheckingException(func.toExpr(), ss.str());
+      throw TypeCheckingExceptionPrivate(func, ss.str());
     }
   } else {
     if(! formulaType.isComparableTo(funcType)) {
@@ -653,7 +637,7 @@ void SmtEngine::debugCheckFunctionBody(Node formula,
          << "Declared type  : " << funcType << "\n"
          << "The definition : " << formula << "\n"
          << "Definition type: " << formulaType;
-      throw TypeCheckingException(func.toExpr(), ss.str());
+      throw TypeCheckingExceptionPrivate(func, ss.str());
     }
   }
 }
@@ -682,7 +666,7 @@ void SmtEngine::defineFunction(Node func,
   }
 
   DefineFunctionNodeCommand nc(ss.str(), func, nFormals, formula);
-  d_dumpm->addToDump(nc, "declarations");
+  getDumpManager()->addToDump(nc, "declarations");
 
   // type check body
   debugCheckFunctionBody(formula, formals, func);
@@ -737,7 +721,7 @@ void SmtEngine::defineFunctionsRec(
 
   if (Dump.isOn("raw-benchmark"))
   {
-    getOutputManager().getPrinter().toStreamCmdDefineFunctionRec(
+    getPrinter().toStreamCmdDefineFunctionRec(
         getOutputManager().getDumpOut(), funcs, formals, formulas);
   }
 
@@ -902,8 +886,8 @@ Result SmtEngine::checkSat(const Node& assumption, bool inUnsatCore)
 {
   if (Dump.isOn("benchmark"))
   {
-    getOutputManager().getPrinter().toStreamCmdCheckSat(
-        getOutputManager().getDumpOut(), assumption);
+    getPrinter().toStreamCmdCheckSat(getOutputManager().getDumpOut(),
+                                     assumption);
   }
   std::vector<Node> assump;
   if (!assumption.isNull())
@@ -920,13 +904,12 @@ Result SmtEngine::checkSat(const std::vector<Node>& assumptions,
   {
     if (assumptions.empty())
     {
-      getOutputManager().getPrinter().toStreamCmdCheckSat(
-          getOutputManager().getDumpOut());
+      getPrinter().toStreamCmdCheckSat(getOutputManager().getDumpOut());
     }
     else
     {
-      getOutputManager().getPrinter().toStreamCmdCheckSatAssuming(
-          getOutputManager().getDumpOut(), assumptions);
+      getPrinter().toStreamCmdCheckSatAssuming(getOutputManager().getDumpOut(),
+                                               assumptions);
     }
   }
   return checkSatInternal(assumptions, inUnsatCore, false);
@@ -936,8 +919,7 @@ Result SmtEngine::checkEntailed(const Node& node, bool inUnsatCore)
 {
   if (Dump.isOn("benchmark"))
   {
-    getOutputManager().getPrinter().toStreamCmdQuery(
-        getOutputManager().getDumpOut(), node);
+    getPrinter().toStreamCmdQuery(getOutputManager().getDumpOut(), node);
   }
   return checkSatInternal(
              node.isNull() ? std::vector<Node>() : std::vector<Node>{node},
@@ -979,15 +961,15 @@ Result SmtEngine::checkSatInternal(const std::vector<Node>& assumptions,
       }
     }
     // Check that UNSAT results generate a proof correctly.
-    if (options::checkProofsNew() || options::proofNewEagerChecking())
+    if (options::checkProofs() || options::proofEagerChecking())
     {
       if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
       {
-        if ((options::checkProofsNew() || options::proofNewEagerChecking())
-            && !options::proofNew())
+        if ((options::checkProofs() || options::proofEagerChecking())
+            && !options::produceProofs())
         {
           throw ModalException(
-              "Cannot check-proofs-new because proof-new was disabled.");
+              "Cannot check-proofs because proofs were disabled.");
         }
         checkProof();
       }
@@ -1003,13 +985,15 @@ Result SmtEngine::checkSatInternal(const std::vector<Node>& assumptions,
     }
 
     return r;
-  } catch (UnsafeInterruptException& e) {
-    AlwaysAssert(d_resourceManager->out());
+  }
+  catch (UnsafeInterruptException& e)
+  {
+    AlwaysAssert(getResourceManager()->out());
     // Notice that we do not notify the state of this result. If we wanted to
     // make the solver resume a working state after an interupt, then we would
     // implement a different callback and use it here, e.g.
     // d_state.notifyCheckSatInterupt.
-    Result::UnknownExplanation why = d_resourceManager->outOfResources()
+    Result::UnknownExplanation why = getResourceManager()->outOfResources()
                                          ? Result::RESOURCEOUT
                                          : Result::TIMEOUT;
     return Result(Result::SAT_UNKNOWN, why, d_state->getFilename());
@@ -1035,7 +1019,7 @@ std::vector<Node> SmtEngine::getUnsatAssumptions(void)
   finishInit();
   if (Dump.isOn("benchmark"))
   {
-    getOutputManager().getPrinter().toStreamCmdGetUnsatAssumptions(
+    getPrinter().toStreamCmdGetUnsatAssumptions(
         getOutputManager().getDumpOut());
   }
   UnsatCore core = getUnsatCoreInternal();
@@ -1059,9 +1043,9 @@ Result SmtEngine::assertFormula(const Node& formula, bool inUnsatCore)
 
   Trace("smt") << "SmtEngine::assertFormula(" << formula << ")" << endl;
 
-  if (Dump.isOn("raw-benchmark")) {
-    getOutputManager().getPrinter().toStreamCmdAssert(
-        getOutputManager().getDumpOut(), formula);
+  if (Dump.isOn("raw-benchmark"))
+  {
+    getPrinter().toStreamCmdAssert(getOutputManager().getDumpOut(), formula);
   }
 
   // Substitute out any abstract values in ex
@@ -1083,7 +1067,7 @@ void SmtEngine::declareSygusVar(Node var)
   d_sygusSolver->declareSygusVar(var);
   if (Dump.isOn("raw-benchmark"))
   {
-    getOutputManager().getPrinter().toStreamCmdDeclareVar(
+    getPrinter().toStreamCmdDeclareVar(
         getOutputManager().getDumpOut(), var, var.getType());
   }
   // don't need to set that the conjecture is stale
@@ -1104,7 +1088,7 @@ void SmtEngine::declareSynthFun(Node func,
 
   if (Dump.isOn("raw-benchmark"))
   {
-    getOutputManager().getPrinter().toStreamCmdSynthFun(
+    getPrinter().toStreamCmdSynthFun(
         getOutputManager().getDumpOut(), func, vars, isInv, sygusType);
   }
 }
@@ -1124,8 +1108,8 @@ void SmtEngine::assertSygusConstraint(Node constraint)
   d_sygusSolver->assertSygusConstraint(constraint);
   if (Dump.isOn("raw-benchmark"))
   {
-    getOutputManager().getPrinter().toStreamCmdConstraint(
-        getOutputManager().getDumpOut(), constraint);
+    getPrinter().toStreamCmdConstraint(getOutputManager().getDumpOut(),
+                                       constraint);
   }
 }
 
@@ -1139,7 +1123,7 @@ void SmtEngine::assertSygusInvConstraint(Node inv,
   d_sygusSolver->assertSygusInvConstraint(inv, pre, trans, post);
   if (Dump.isOn("raw-benchmark"))
   {
-    getOutputManager().getPrinter().toStreamCmdInvConstraint(
+    getPrinter().toStreamCmdInvConstraint(
         getOutputManager().getDumpOut(), inv, pre, trans, post);
   }
 }
@@ -1169,7 +1153,8 @@ Node SmtEngine::simplify(const Node& ex)
 
 Node SmtEngine::expandDefinitions(const Node& ex, bool expandOnly)
 {
-  d_resourceManager->spendResource(ResourceManager::Resource::PreprocessStep);
+  getResourceManager()->spendResource(
+      ResourceManager::Resource::PreprocessStep);
 
   SmtScope smts(this);
   finishInit();
@@ -1183,8 +1168,9 @@ Node SmtEngine::getValue(const Node& ex) const
   SmtScope smts(this);
 
   Trace("smt") << "SMT getValue(" << ex << ")" << endl;
-  if(Dump.isOn("benchmark")) {
-    d_outMgr.getPrinter().toStreamCmdGetValue(d_outMgr.getDumpOut(), {ex});
+  if (Dump.isOn("benchmark"))
+  {
+    getPrinter().toStreamCmdGetValue(d_outMgr.getDumpOut(), {ex});
   }
   TypeNode expectedType = ex.getType();
 
@@ -1248,9 +1234,9 @@ Model* SmtEngine::getModel() {
 
   finishInit();
 
-  if(Dump.isOn("benchmark")) {
-    getOutputManager().getPrinter().toStreamCmdGetModel(
-        getOutputManager().getDumpOut());
+  if (Dump.isOn("benchmark"))
+  {
+    getPrinter().toStreamCmdGetModel(getOutputManager().getDumpOut());
   }
 
   Model* m = getAvailableModel("get model");
@@ -1286,8 +1272,7 @@ Result SmtEngine::blockModel()
 
   if (Dump.isOn("benchmark"))
   {
-    getOutputManager().getPrinter().toStreamCmdBlockModel(
-        getOutputManager().getDumpOut());
+    getPrinter().toStreamCmdBlockModel(getOutputManager().getDumpOut());
   }
 
   Model* m = getAvailableModel("block model");
@@ -1315,8 +1300,8 @@ Result SmtEngine::blockModelValues(const std::vector<Node>& exprs)
 
   if (Dump.isOn("benchmark"))
   {
-    getOutputManager().getPrinter().toStreamCmdBlockModelValues(
-        getOutputManager().getDumpOut(), exprs);
+    getPrinter().toStreamCmdBlockModelValues(getOutputManager().getDumpOut(),
+                                             exprs);
   }
 
   Model* m = getAvailableModel("block model values");
@@ -1334,14 +1319,14 @@ Result SmtEngine::blockModelValues(const std::vector<Node>& exprs)
 
 std::pair<Node, Node> SmtEngine::getSepHeapAndNilExpr(void)
 {
-  if (!d_logic.isTheoryEnabled(THEORY_SEP))
+  if (!getLogicInfo().isTheoryEnabled(THEORY_SEP))
   {
     const char* msg =
         "Cannot obtain separation logic expressions if not using the "
         "separation logic theory.";
     throw RecoverableModalException(msg);
   }
-  NodeManagerScope nms(d_nodeManager);
+  NodeManagerScope nms(getNodeManager());
   Node heap;
   Node nil;
   Model* m = getAvailableModel("get separation logic heap and nil");
@@ -1372,7 +1357,7 @@ std::vector<Node> SmtEngine::getExpandedAssertions()
 
 void SmtEngine::declareSepHeap(TypeNode locT, TypeNode dataT)
 {
-  if (!d_logic.isTheoryEnabled(THEORY_SEP))
+  if (!getLogicInfo().isTheoryEnabled(THEORY_SEP))
   {
     const char* msg =
         "Cannot declare heap if not using the separation logic theory.";
@@ -1398,16 +1383,25 @@ Node SmtEngine::getSepNilExpr() { return getSepHeapAndNilExpr().second; }
 
 void SmtEngine::checkProof()
 {
-  Assert(options::proofNew());
+  Assert(options::produceProofs());
   // internal check the proof
   PropEngine* pe = getPropEngine();
   Assert(pe != nullptr);
+  if (options::proofEagerChecking())
+  {
+    pe->checkProof(d_asserts->getAssertionList());
+  }
   Assert(pe->getProof() != nullptr);
   std::shared_ptr<ProofNode> pePfn = pe->getProof();
-  if (options ::checkProofsNew())
+  if (options::checkProofs())
   {
     d_pfManager->checkProof(pePfn, *d_asserts, *d_definedFunctions);
   }
+}
+
+StatisticsRegistry* SmtEngine::getStatisticsRegistry()
+{
+  return d_env->getStatisticsRegistry();
 }
 
 UnsatCore SmtEngine::getUnsatCoreInternal()
@@ -1458,9 +1452,8 @@ void SmtEngine::checkUnsatCore() {
   initializeSubsolver(coreChecker);
   coreChecker->getOptions().set(options::checkUnsatCores, false);
   // disable all proof options
-  coreChecker->getOptions().set(options::proofNew, false);
+  coreChecker->getOptions().set(options::produceProofs, false);
   coreChecker->getOptions().set(options::checkUnsatCoresNew, false);
-
   // set up separation logic heap if necessary
   TypeNode sepLocType, sepDataType;
   if (getSepHeapTypes(sepLocType, sepDataType))
@@ -1519,10 +1512,22 @@ UnsatCore SmtEngine::getUnsatCore() {
   finishInit();
   if (Dump.isOn("benchmark"))
   {
-    getOutputManager().getPrinter().toStreamCmdGetUnsatCore(
-        getOutputManager().getDumpOut());
+    getPrinter().toStreamCmdGetUnsatCore(getOutputManager().getDumpOut());
   }
   return getUnsatCoreInternal();
+}
+
+void SmtEngine::getRelevantInstantiationTermVectors(
+    std::map<Node, std::vector<std::vector<Node>>>& insts)
+{
+  Assert(d_state->getMode() == SmtMode::UNSAT);
+  // generate with new proofs
+  PropEngine* pe = getPropEngine();
+  Assert(pe != nullptr);
+  Assert(pe->getProof() != nullptr);
+  std::shared_ptr<ProofNode> pfn = d_pfManager->getFinalProof(
+      pe->getProof(), *d_asserts, *d_definedFunctions);
+  d_ucManager->getRelevantInstantiations(pfn, insts);
 }
 
 std::string SmtEngine::getProof()
@@ -1532,13 +1537,12 @@ std::string SmtEngine::getProof()
   finishInit();
   if (Dump.isOn("benchmark"))
   {
-    getOutputManager().getPrinter().toStreamCmdGetProof(
-        getOutputManager().getDumpOut());
+    getPrinter().toStreamCmdGetProof(getOutputManager().getDumpOut());
   }
 #if IS_PROOFS_BUILD
-  if (!options::proofNew())
+  if (!options::produceProofs())
   {
-    throw ModalException("Cannot get a proof when proof-new option is off.");
+    throw ModalException("Cannot get a proof when proof option is off.");
   }
   if (d_state->getMode() != SmtMode::UNSAT)
   {
@@ -1637,9 +1641,10 @@ void SmtEngine::getInstantiationTermVectors(
 {
   SmtScope smts(this);
   finishInit();
-  if (options::proofNew() && getSmtMode() == SmtMode::UNSAT)
+  if (options::produceProofs() && getSmtMode() == SmtMode::UNSAT)
   {
-    // TODO (project #37): minimize instantiations based on proof manager
+    // minimize instantiations based on proof manager
+    getRelevantInstantiationTermVectors(insts);
   }
   else
   {
@@ -1667,8 +1672,11 @@ Node SmtEngine::getQuantifierElimination(Node q, bool doFull, bool strict)
 {
   SmtScope smts(this);
   finishInit();
-  if(!d_logic.isPure(THEORY_ARITH) && strict){
-    Warning() << "Unexpected logic for quantifier elimination " << d_logic << endl;
+  const LogicInfo& logic = getLogicInfo();
+  if (!logic.isPure(THEORY_ARITH) && strict)
+  {
+    Warning() << "Unexpected logic for quantifier elimination " << logic
+              << endl;
   }
   return d_quantElimSolver->getQuantifierElimination(
       *d_asserts, q, doFull, d_isInternalSubsolver);
@@ -1734,9 +1742,9 @@ std::vector<Node> SmtEngine::getAssertions()
   SmtScope smts(this);
   finishInit();
   d_state->doPendingPops();
-  if(Dump.isOn("benchmark")) {
-    getOutputManager().getPrinter().toStreamCmdGetAssertions(
-        getOutputManager().getDumpOut());
+  if (Dump.isOn("benchmark"))
+  {
+    getPrinter().toStreamCmdGetAssertions(getOutputManager().getDumpOut());
   }
   Trace("smt") << "SMT getAssertions()" << endl;
   if(!options::produceAssertions()) {
@@ -1763,8 +1771,7 @@ void SmtEngine::push()
   Trace("smt") << "SMT push()" << endl;
   d_smtSolver->processAssertions(*d_asserts);
   if(Dump.isOn("benchmark")) {
-    getOutputManager().getPrinter().toStreamCmdPush(
-        getOutputManager().getDumpOut());
+    getPrinter().toStreamCmdPush(getOutputManager().getDumpOut());
   }
   d_state->userPush();
 }
@@ -1773,9 +1780,9 @@ void SmtEngine::pop() {
   SmtScope smts(this);
   finishInit();
   Trace("smt") << "SMT pop()" << endl;
-  if(Dump.isOn("benchmark")) {
-    getOutputManager().getPrinter().toStreamCmdPop(
-        getOutputManager().getDumpOut());
+  if (Dump.isOn("benchmark"))
+  {
+    getPrinter().toStreamCmdPop(getOutputManager().getDumpOut());
   }
   d_state->userPop();
 
@@ -1792,17 +1799,18 @@ void SmtEngine::pop() {
 
 void SmtEngine::reset()
 {
-  SmtScope smts(this);
+  // save pointer to the current node manager
+  NodeManager* nm = getNodeManager();
   Trace("smt") << "SMT reset()" << endl;
-  if(Dump.isOn("benchmark")) {
-    getOutputManager().getPrinter().toStreamCmdReset(
-        getOutputManager().getDumpOut());
+  if (Dump.isOn("benchmark"))
+  {
+    getPrinter().toStreamCmdReset(getOutputManager().getDumpOut());
   }
   std::string filename = d_state->getFilename();
   Options opts;
   opts.copyValues(d_originalOptions);
   this->~SmtEngine();
-  new (this) SmtEngine(d_nodeManager, &opts);
+  new (this) SmtEngine(nm, &opts);
   // Restore data set after creation
   notifyStartParsing(filename);
 }
@@ -1817,7 +1825,7 @@ void SmtEngine::resetAssertions()
     // (see solver execution modes in the SMT-LIB standard)
     Assert(getContext()->getLevel() == 0);
     Assert(getUserContext()->getLevel() == 0);
-    d_dumpm->resetAssertions();
+    getDumpManager()->resetAssertions();
     return;
   }
 
@@ -1825,13 +1833,12 @@ void SmtEngine::resetAssertions()
   Trace("smt") << "SMT resetAssertions()" << endl;
   if (Dump.isOn("benchmark"))
   {
-    getOutputManager().getPrinter().toStreamCmdResetAssertions(
-        getOutputManager().getDumpOut());
+    getPrinter().toStreamCmdResetAssertions(getOutputManager().getDumpOut());
   }
 
   d_asserts->clearCurrent();
   d_state->notifyResetAssertions();
-  d_dumpm->resetAssertions();
+  getDumpManager()->resetAssertions();
   // push the state to maintain global context around everything
   d_state->setup();
 
@@ -1848,49 +1855,53 @@ void SmtEngine::interrupt()
   d_smtSolver->interrupt();
 }
 
-void SmtEngine::setResourceLimit(unsigned long units, bool cumulative) {
-  d_resourceManager->setResourceLimit(units, cumulative);
+void SmtEngine::setResourceLimit(unsigned long units, bool cumulative)
+{
+  getResourceManager()->setResourceLimit(units, cumulative);
 }
 void SmtEngine::setTimeLimit(unsigned long milis)
 {
-  d_resourceManager->setTimeLimit(milis);
+  getResourceManager()->setTimeLimit(milis);
 }
 
-unsigned long SmtEngine::getResourceUsage() const {
-  return d_resourceManager->getResourceUsage();
+unsigned long SmtEngine::getResourceUsage() const
+{
+  return getResourceManager()->getResourceUsage();
 }
 
-unsigned long SmtEngine::getTimeUsage() const {
-  return d_resourceManager->getTimeUsage();
+unsigned long SmtEngine::getTimeUsage() const
+{
+  return getResourceManager()->getTimeUsage();
 }
 
 unsigned long SmtEngine::getResourceRemaining() const
 {
-  return d_resourceManager->getResourceRemaining();
+  return getResourceManager()->getResourceRemaining();
 }
 
-NodeManager* SmtEngine::getNodeManager() const { return d_nodeManager; }
+NodeManager* SmtEngine::getNodeManager() const
+{
+  return d_env->getNodeManager();
+}
 
 Statistics SmtEngine::getStatistics() const
 {
-  return Statistics(*d_statisticsRegistry);
+  return Statistics(*d_env->getStatisticsRegistry());
 }
 
 SExpr SmtEngine::getStatistic(std::string name) const
 {
-  return d_statisticsRegistry->getStatistic(name);
+  return d_env->getStatisticsRegistry()->getStatistic(name);
 }
 
 void SmtEngine::flushStatistics(std::ostream& out) const
 {
-  d_nodeManager->getStatisticsRegistry()->flushInformation(out);
-  d_statisticsRegistry->flushInformation(out);
+  d_env->getStatisticsRegistry()->flushInformation(out);
 }
 
 void SmtEngine::safeFlushStatistics(int fd) const
 {
-  d_nodeManager->getStatisticsRegistry()->safeFlushInformation(fd);
-  d_statisticsRegistry->safeFlushInformation(fd);
+  d_env->getStatisticsRegistry()->safeFlushInformation(fd);
 }
 
 void SmtEngine::setUserAttribute(const std::string& attr,
@@ -1905,124 +1916,149 @@ void SmtEngine::setUserAttribute(const std::string& attr,
   te->setUserAttribute(attr, expr, expr_values, str_value);
 }
 
-void SmtEngine::setOption(const std::string& key, const CVC4::SExpr& value)
+void SmtEngine::setOption(const std::string& key, const std::string& value)
 {
-  // Always check whether the SmtEngine has been initialized (which is done
-  // upon entering Assert mode the first time). No option can  be set after
-  // initialized.
-  if (d_state->isFullyInited())
-  {
-    throw ModalException("SmtEngine::setOption called after initialization.");
-  }
-  NodeManagerScope nms(d_nodeManager);
+  NodeManagerScope nms(getNodeManager());
   Trace("smt") << "SMT setOption(" << key << ", " << value << ")" << endl;
 
-  if(Dump.isOn("benchmark")) {
-    getOutputManager().getPrinter().toStreamCmdSetOption(
+  if (Dump.isOn("benchmark"))
+  {
+    getPrinter().toStreamCmdSetOption(
         getOutputManager().getDumpOut(), key, value);
   }
 
-  if(key == "command-verbosity") {
-    if(!value.isAtom()) {
-      const vector<SExpr>& cs = value.getChildren();
-      if(cs.size() == 2 &&
-         (cs[0].isKeyword() || cs[0].isString()) &&
-         cs[1].isInteger()) {
-        string c = cs[0].getValue();
-        const Integer& v = cs[1].getIntegerValue();
-        if(v < 0 || v > 2) {
-          throw OptionException("command-verbosity must be 0, 1, or 2");
-        }
-        d_commandVerbosity[c] = v;
-        return;
+  if (key == "command-verbosity")
+  {
+    size_t fstIndex = value.find(" ");
+    size_t sndIndex = value.find(" ", fstIndex + 1);
+    if (sndIndex == std::string::npos)
+    {
+      string c = value.substr(1, fstIndex - 1);
+      int v =
+          std::stoi(value.substr(fstIndex + 1, value.length() - fstIndex - 1));
+      if (v < 0 || v > 2)
+      {
+        throw OptionException("command-verbosity must be 0, 1, or 2");
       }
+      d_commandVerbosity[c] = v;
+      return;
     }
-    throw OptionException("command-verbosity value must be a tuple (command-name, integer)");
+    throw OptionException(
+        "command-verbosity value must be a tuple (command-name integer)");
   }
 
-  if(!value.isAtom()) {
+  if (value.find(" ") != std::string::npos)
+  {
     throw OptionException("bad value for :" + key);
   }
 
-  string optionarg = value.getValue();
-  d_options.setOption(key, optionarg);
+  std::string optionarg = value;
+  getOptions().setOption(key, optionarg);
 }
 
 void SmtEngine::setIsInternalSubsolver() { d_isInternalSubsolver = true; }
 
 bool SmtEngine::isInternalSubsolver() const { return d_isInternalSubsolver; }
 
-CVC4::SExpr SmtEngine::getOption(const std::string& key) const
+Node SmtEngine::getOption(const std::string& key) const
 {
-  NodeManagerScope nms(d_nodeManager);
+  NodeManagerScope nms(getNodeManager());
+  NodeManager* nm = d_env->getNodeManager();
 
   Trace("smt") << "SMT getOption(" << key << ")" << endl;
 
-  if(key.length() >= 18 &&
-     key.compare(0, 18, "command-verbosity:") == 0) {
-    map<string, Integer>::const_iterator i = d_commandVerbosity.find(key.c_str() + 18);
-    if(i != d_commandVerbosity.end()) {
-      return SExpr((*i).second);
+  if (key.length() >= 18 && key.compare(0, 18, "command-verbosity:") == 0)
+  {
+    map<string, Integer>::const_iterator i =
+        d_commandVerbosity.find(key.c_str() + 18);
+    if (i != d_commandVerbosity.end())
+    {
+      return nm->mkConst(Rational(i->second));
     }
     i = d_commandVerbosity.find("*");
-    if(i != d_commandVerbosity.end()) {
-      return SExpr((*i).second);
+    if (i != d_commandVerbosity.end())
+    {
+      return nm->mkConst(Rational(i->second));
     }
-    return SExpr(Integer(2));
+    return nm->mkConst(Rational(2));
   }
 
-  if(Dump.isOn("benchmark")) {
-    d_outMgr.getPrinter().toStreamCmdGetOption(d_outMgr.getDumpOut(), key);
+  if (Dump.isOn("benchmark"))
+  {
+    getPrinter().toStreamCmdGetOption(d_outMgr.getDumpOut(), key);
   }
 
-  if(key == "command-verbosity") {
-    vector<SExpr> result;
-    SExpr defaultVerbosity;
-    for(map<string, Integer>::const_iterator i = d_commandVerbosity.begin();
-        i != d_commandVerbosity.end();
-        ++i) {
-      vector<SExpr> v;
-      v.push_back(SExpr((*i).first));
-      v.push_back(SExpr((*i).second));
-      if((*i).first == "*") {
+  if (key == "command-verbosity")
+  {
+    vector<Node> result;
+    Node defaultVerbosity;
+    for (map<string, Integer>::const_iterator i = d_commandVerbosity.begin();
+         i != d_commandVerbosity.end();
+         ++i)
+    {
+      // treat the command name as a variable name as opposed to a string
+      // constant to avoid printing double quotes around the name
+      Node name = nm->mkBoundVar(i->first, nm->integerType());
+      Node value = nm->mkConst(Rational(i->second));
+      if ((*i).first == "*")
+      {
         // put the default at the end of the SExpr
-        defaultVerbosity = SExpr(v);
-      } else {
-        result.push_back(SExpr(v));
+        defaultVerbosity = nm->mkNode(Kind::SEXPR, name, value);
+      }
+      else
+      {
+        result.push_back(nm->mkNode(Kind::SEXPR, name, value));
       }
     }
-    // put the default at the end of the SExpr
-    if(!defaultVerbosity.isAtom()) {
-      result.push_back(defaultVerbosity);
-    } else {
-      // ensure the default is always listed
-      vector<SExpr> v;
-      v.push_back(SExpr("*"));
-      v.push_back(SExpr(Integer(2)));
-      result.push_back(SExpr(v));
+    // ensure the default is always listed
+    if (defaultVerbosity.isNull())
+    {
+      defaultVerbosity = nm->mkNode(Kind::SEXPR,
+                                    nm->mkBoundVar("*", nm->integerType()),
+                                    nm->mkConst(Rational(2)));
     }
-    return SExpr(result);
+    result.push_back(defaultVerbosity);
+    return nm->mkNode(Kind::SEXPR, result);
   }
 
-  return SExpr::parseAtom(d_options.getOption(key));
+  // parse atom string
+  std::string atom = getOptions().getOption(key);
+
+  if (atom == "true")
+  {
+    return nm->mkConst<bool>(true);
+  }
+  else if (atom == "false")
+  {
+    return nm->mkConst<bool>(false);
+  }
+  try
+  {
+    Integer z(atom);
+    return nm->mkConst(Rational(z));
+  }
+  catch (std::invalid_argument&)
+  {
+    // Fall through to the next case
+  }
+  return nm->mkConst(String(atom));
 }
 
-Options& SmtEngine::getOptions() { return d_options; }
+Options& SmtEngine::getOptions() { return d_env->d_options; }
 
-const Options& SmtEngine::getOptions() const { return d_options; }
+const Options& SmtEngine::getOptions() const { return d_env->getOptions(); }
 
-ResourceManager* SmtEngine::getResourceManager()
+ResourceManager* SmtEngine::getResourceManager() const
 {
-  return d_resourceManager.get();
+  return d_env->getResourceManager();
 }
 
-DumpManager* SmtEngine::getDumpManager() { return d_dumpm.get(); }
+DumpManager* SmtEngine::getDumpManager() { return d_env->getDumpManager(); }
 
-const Printer* SmtEngine::getPrinter() const
-{
-  return Printer::getPrinter(d_options[options::outputLanguage]);
-}
+const Printer& SmtEngine::getPrinter() const { return d_env->getPrinter(); }
 
 OutputManager& SmtEngine::getOutputManager() { return d_outMgr; }
+
+theory::Rewriter* SmtEngine::getRewriter() { return d_env->getRewriter(); }
 
 }/* CVC4 namespace */

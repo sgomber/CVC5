@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Mathias Preiner, Morgan Deters
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -13,6 +13,9 @@
  **/
 
 #include "theory/quantifiers/quant_split.h"
+
+#include "expr/dtype.h"
+#include "expr/dtype_cons.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/quantifiers/first_order_model.h"
@@ -45,6 +48,7 @@ void QuantDSplit::checkOwnership(Node q)
   }
   bool takeOwnership = false;
   bool doSplit = false;
+  QuantifiersBoundInference& qbi = d_qreg.getQuantifiersBoundInference();
   Trace("quant-dsplit-debug") << "Check split quantified formula : " << q << std::endl;
   for( unsigned i=0; i<q[0].getNumChildren(); i++ ){
     TypeNode tn = q[0][i].getType();
@@ -64,7 +68,7 @@ void QuantDSplit::checkOwnership(Node q)
         else if (options::quantDynamicSplit()
                  == options::QuantDSplitMode::DEFAULT)
         {
-          if (!d_quantEngine->isFiniteBound(q, q[0][i]))
+          if (!qbi.isFiniteBound(q, q[0][i]))
           {
             if (dt.isInterpretedFinite(tn))
             {
@@ -198,7 +202,7 @@ void QuantDSplit::check(Theory::Effort e, QEffort quant_e)
   for (const Node& lem : lemmas)
   {
     Trace("quant-dsplit") << "QuantDSplit lemma : " << lem << std::endl;
-    d_quantEngine->addLemma(lem, false);
+    d_qim.addPendingLemma(lem, InferenceId::UNKNOWN);
   }
   Trace("quant-dsplit") << "QuantDSplit::check finished" << std::endl;
 }

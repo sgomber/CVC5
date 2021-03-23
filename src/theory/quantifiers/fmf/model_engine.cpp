@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Morgan Deters, Kshitij Bansal
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -21,7 +21,6 @@
 #include "theory/quantifiers/quant_rep_bound_ext.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/term_database.h"
-#include "theory/quantifiers/term_util.h"
 #include "theory/quantifiers_engine.h"
 
 using namespace std;
@@ -70,7 +69,7 @@ void ModelEngine::check(Theory::Effort e, QEffort quant_e)
 {
   bool doCheck = false;
   if( options::mbqiInterleave() ){
-    doCheck = quant_e == QEFFORT_STANDARD && d_quantEngine->hasAddedLemma();
+    doCheck = quant_e == QEFFORT_STANDARD && d_qim.hasPendingLemma();
   }
   if( !doCheck ){
     doCheck = quant_e == QEFFORT_MODEL;
@@ -167,7 +166,7 @@ int ModelEngine::checkModel(){
       Trace("model-engine-debug") << std::endl;
       Trace("model-engine-debug") << "   Term reps : ";
       for( size_t i=0; i<it->second.size(); i++ ){
-        Node r = d_quantEngine->getInternalRepresentative( it->second[i], Node::null(), 0 );
+        Node r = fm->getInternalRepresentative(it->second[i], Node::null(), 0);
         if (r.isNull())
         {
           // there was an invalid equivalence class
@@ -252,7 +251,8 @@ void ModelEngine::exhaustiveInstantiate( Node f, int effort ){
   quantifiers::QModelBuilder * mb = d_quantEngine->getModelBuilder();
   unsigned prev_alem = mb->getNumAddedLemmas();
   unsigned prev_tlem = mb->getNumTriedLemmas();
-  int retEi = mb->doExhaustiveInstantiation( d_quantEngine->getModel(), f, effort );
+  FirstOrderModel* fm = d_quantEngine->getModel();
+  int retEi = mb->doExhaustiveInstantiation(fm, f, effort);
   if( retEi!=0 ){
     if( retEi<0 ){
       Trace("fmf-exh-inst") << "-> Builder determined complete instantiation was impossible." << std::endl;
@@ -262,19 +262,19 @@ void ModelEngine::exhaustiveInstantiate( Node f, int effort ){
     }
     d_triedLemmas += mb->getNumTriedLemmas()-prev_tlem;
     d_addedLemmas += mb->getNumAddedLemmas()-prev_alem;
-    d_quantEngine->d_statistics.d_instantiations_fmf_mbqi +=
-        (mb->getNumAddedLemmas() - prev_alem);
   }else{
     if( Trace.isOn("fmf-exh-inst-debug") ){
       Trace("fmf-exh-inst-debug") << "   Instantiation Constants: ";
       for( size_t i=0; i<f[0].getNumChildren(); i++ ){
-        Trace("fmf-exh-inst-debug") << d_quantEngine->getTermUtil()->getInstantiationConstant( f, i ) << " ";
+        Trace("fmf-exh-inst-debug")
+            << d_qreg.getInstantiationConstant(f, i) << " ";
       }
       Trace("fmf-exh-inst-debug") << std::endl;
     }
+    QuantifiersBoundInference& qbi = d_qreg.getQuantifiersBoundInference();
     //create a rep set iterator and iterate over the (relevant) domain of the quantifier
-    QRepBoundExt qrbe(d_quantEngine);
-    RepSetIterator riter(d_quantEngine->getModel()->getRepSet(), &qrbe);
+    QRepBoundExt qrbe(qbi, fm);
+    RepSetIterator riter(fm->getRepSet(), &qrbe);
     if( riter.setQuantifier( f ) ){
       Trace("fmf-exh-inst") << "...exhaustive instantiation set, incomplete=" << riter.isIncomplete() << "..." << std::endl;
       if( !riter.isIncomplete() ){
@@ -291,7 +291,8 @@ void ModelEngine::exhaustiveInstantiate( Node f, int effort ){
           Debug("fmf-model-eval") << "* Add instantiation " << m << std::endl;
           triedLemmas++;
           //add as instantiation
-          if (inst->addInstantiation(f, m, true))
+          if (inst->addInstantiation(
+                  f, m.d_vals, InferenceId::QUANTIFIERS_INST_FMF_EXH, true))
           {
             addedLemmas++;
             if (d_qstate.isInConflict())
@@ -305,7 +306,6 @@ void ModelEngine::exhaustiveInstantiate( Node f, int effort ){
         }
         d_addedLemmas += addedLemmas;
         d_triedLemmas += triedLemmas;
-        d_quantEngine->d_statistics.d_instantiations_fmf_exh += addedLemmas;
       }
     }else{
       Trace("fmf-exh-inst") << "...exhaustive instantiation did set, incomplete=" << riter.isIncomplete() << "..." << std::endl;

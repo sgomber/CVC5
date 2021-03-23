@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds, Mathias Preiner, Haniel Barbosa
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -20,7 +20,6 @@
 
 #include <memory>
 
-#include "theory/decision_manager.h"
 #include "theory/quantifiers/expr_miner_manager.h"
 #include "theory/quantifiers/sygus/ce_guided_single_inv.h"
 #include "theory/quantifiers/sygus/cegis.h"
@@ -28,8 +27,6 @@
 #include "theory/quantifiers/sygus/cegis_unif.h"
 #include "theory/quantifiers/sygus/example_eval_cache.h"
 #include "theory/quantifiers/sygus/example_infer.h"
-#include "theory/quantifiers/sygus/sygus_grammar_cons.h"
-#include "theory/quantifiers/sygus/sygus_pbe.h"
 #include "theory/quantifiers/sygus/sygus_process_conj.h"
 #include "theory/quantifiers/sygus/sygus_repair_const.h"
 #include "theory/quantifiers/sygus/sygus_stats.h"
@@ -39,6 +36,8 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+class CegGrammarConstructor;
+class SygusPbe;
 class SygusStatistics;
 
 /**
@@ -84,6 +83,8 @@ class SynthConjecture
  public:
   SynthConjecture(QuantifiersEngine* qe,
                   QuantifiersState& qs,
+                  QuantifiersInferenceManager& qim,
+                  QuantifiersRegistry& qr,
                   SygusStatistics& s);
   ~SynthConjecture();
   /** presolve */
@@ -198,11 +199,18 @@ class SynthConjecture
    */
   bool checkSideCondition(const std::vector<Node>& cvals) const;
 
+  /** get a reference to the statistics of parent */
+  SygusStatistics& getSygusStatistics() { return d_stats; };
+
  private:
   /** reference to quantifier engine */
   QuantifiersEngine* d_qe;
   /** Reference to the quantifiers state */
   QuantifiersState& d_qstate;
+  /** Reference to the quantifiers inference manager */
+  QuantifiersInferenceManager& d_qim;
+  /** The quantifiers registry */
+  QuantifiersRegistry& d_qreg;
   /** reference to the statistics of parent */
   SygusStatistics& d_stats;
   /** term database sygus of d_qe */
@@ -382,7 +390,7 @@ class SynthConjecture
    * the sygus datatype constructor corresponding to variable x.
    */
   bool getSynthSolutionsInternal(std::vector<Node>& sols,
-                                 std::vector<int>& status);
+                                 std::vector<int8_t>& status);
   //-------------------------------- sygus stream
   /**
    * Prints the current synthesis solution to the output stream indicated by

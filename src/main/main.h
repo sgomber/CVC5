@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Tim King, Mathias Preiner
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
  ** in the top-level source directory and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -20,8 +20,6 @@
 #include "base/exception.h"
 #include "cvc4autoconfig.h"
 #include "options/options.h"
-#include "util/statistics.h"
-#include "util/statistics_registry.h"
 
 #ifndef CVC4__MAIN__MAIN_H
 #define CVC4__MAIN__MAIN_H
@@ -39,9 +37,6 @@ extern const std::string* progName;
 
 /** A reference for use by the signal handlers to print statistics */
 extern CVC4::main::CommandExecutor* pExecutor;
-
-/** A reference for use by the signal handlers to print statistics */
-extern CVC4::TimerStat* pTotalTime;
 
 /**
  * If true, will not spin on segfault even when CVC4_DEBUG is on.
