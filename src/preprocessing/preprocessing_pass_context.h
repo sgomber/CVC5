@@ -21,8 +21,8 @@
 #ifndef CVC4__PREPROCESSING__PREPROCESSING_PASS_CONTEXT_H
 #define CVC4__PREPROCESSING__PREPROCESSING_PASS_CONTEXT_H
 
-#include "preprocessing/learned_literal_manager.h"
 #include "context/cdhashset.h"
+#include "preprocessing/learned_literal_manager.h"
 #include "smt/smt_engine.h"
 #include "theory/trust_substitutions.h"
 #include "util/resource_manager.h"
