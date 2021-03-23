@@ -27,7 +27,7 @@ namespace preprocessing {
 namespace passes {
 
 LearnedRewrite::LearnedRewrite(PreprocessingPassContext* preprocContext)
-    : PreprocessingPass(preprocContext, "delay-expand-def"){};
+    : PreprocessingPass(preprocContext, "learned-rewrite"){};
 
 PreprocessingPassResult LearnedRewrite::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
