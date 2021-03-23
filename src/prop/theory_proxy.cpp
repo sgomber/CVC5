@@ -144,7 +144,7 @@ void TheoryProxy::theoryCheck(theory::Theory::Effort effort) {
       // which triggers their definitions to becoming relevant
       std::vector<TNode> activatedSkolems;
       d_skdm->notifyAsserted(assertion, activatedSkolems);
-      for (const Node& k : activatedSkolems)
+      for (TNode k : activatedSkolems)
       {
         TNode def = d_skdm->getDefinitionForSkolem(k);
         d_satRlv->notifyActivatedSkolemDef(def, d_queue);
