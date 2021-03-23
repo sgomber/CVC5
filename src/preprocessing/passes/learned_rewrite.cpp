@@ -17,6 +17,7 @@
 #include "expr/skolem_manager.h"
 #include "expr/term_context_stack.h"
 #include "theory/rewriter.h"
+#include "preprocessing/assertion_pipeline.h"
 
 using namespace CVC4::theory;
 using namespace CVC4::kind;

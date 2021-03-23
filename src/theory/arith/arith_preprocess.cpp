@@ -18,8 +18,6 @@
 #include "theory/arith/inference_manager.h"
 #include "theory/skolem_lemma.h"
 
-using namespace CVC4::kind;
-
 namespace CVC4 {
 namespace theory {
 namespace arith {
@@ -55,18 +53,11 @@ bool ArithPreprocess::reduceAssertion(TNode atom)
   }
   if (tn.isNull())
   {
-    Trace("arith-pp-debug")
-        << "ArithPreprocess::reduceAssertion: no reduction for " << atom
-        << std::endl;
     // did not reduce
     d_reduced[atom] = false;
     return false;
   }
   Assert(tn.getKind() == TrustNodeKind::REWRITE);
-  Trace("arith-pp-debug") << "ArithPreprocess::reduceAssertion: reduction for "
-                          << atom << std::endl;
-  Trace("arith-pp") << "ArithPreprocess::reduceAssertion: lemma "
-                    << tn.getProven() << std::endl;
   // tn is of kind REWRITE, turn this into a LEMMA here
   TrustNode tlem = TrustNode::mkTrustLemma(tn.getProven(), tn.getGenerator());
   // send the trusted lemma
@@ -85,65 +76,6 @@ bool ArithPreprocess::isReduced(TNode atom) const
     return false;
   }
   return (*it).second;
-}
-
-TrustNode ArithPreprocess::preprocess(Node n)
-{
-  NodeManager* nm = NodeManager::currentNM();
-  std::unordered_map<TNode, Node, TNodeHashFunction> visited;
-  std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
-  std::vector<TNode> visit;
-  TNode cur;
-  visit.push_back(n);
-  do
-  {
-    cur = visit.back();
-    visit.pop_back();
-    it = visited.find(cur);
-
-    if (it == visited.end())
-    {
-      visited[cur] = Node::null();
-      visit.push_back(cur);
-      visit.insert(visit.end(), cur.begin(), cur.end());
-    }
-    else if (it->second.isNull())
-    {
-      Node ret = cur;
-      bool childChanged = false;
-      std::vector<Node> children;
-      if (cur.getMetaKind() == metakind::PARAMETERIZED)
-      {
-        children.push_back(cur.getOperator());
-      }
-      for (const Node& cn : cur)
-      {
-        it = visited.find(cn);
-        Assert(it != visited.end());
-        Assert(!it->second.isNull());
-        childChanged = childChanged || cn != it->second;
-        children.push_back(it->second);
-      }
-      if (childChanged)
-      {
-        ret = nm->mkNode(cur.getKind(), children);
-      }
-      TrustNode tn = eliminate(ret);
-      if (!tn.isNull())
-      {
-        ret = tn.getNode();
-      }
-      visited[cur] = ret;
-    }
-  } while (!visit.empty());
-  Assert(visited.find(n) != visited.end());
-  Assert(!visited.find(n)->second.isNull());
-  Node ret = visited[n];
-  if (ret == n)
-  {
-    return TrustNode::null();
-  }
-  return TrustNode::mkTrustRewrite(n, ret, nullptr);
 }
 
 }  // namespace arith

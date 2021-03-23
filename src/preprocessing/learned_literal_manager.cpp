@@ -15,6 +15,7 @@
 #include "preprocessing/learned_literal_manager.h"
 
 #include "theory/theory_engine.h"
+#include "preprocessing/assertion_pipeline.h"
 
 namespace CVC4 {
 namespace preprocessing {
