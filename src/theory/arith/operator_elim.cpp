@@ -302,6 +302,14 @@ Node OperatorElim::eliminateOperators(Node node,
         Node denEq0 = nm->mkNode(EQUAL, den, nm->mkConst(Rational(0)));
         ret = nm->mkNode(ITE, denEq0, modZeroNum, ret);
       }
+      // if option is set, we case split on whether there is any overflow
+      if (options::modSplitOverflow())
+      {
+        Node zero = nm->mkConst(Rational(0));
+        Node cond = nm->mkNode(
+            AND, nm->mkNode(LEQ, zero, num), nm->mkNode(LT, num, den));
+        ret = nm->mkNode(ITE, cond, num, ret);
+      }
       return ret;
       break;
     }
