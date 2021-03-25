@@ -1258,7 +1258,7 @@ bool MatchGen::reset_round()
   }
   if( d_type==typ_ground ){
     // modified
-    NodeManager * nm = NodeManager::currentNM();
+    NodeManager* nm = NodeManager::currentNM();
     TermDb* tdb = d_parent->getTermDatabase();
     QuantifiersState& qs = d_parent->getState();
     for (unsigned i = 0; i < 2; i++)
@@ -1313,14 +1313,15 @@ void MatchGen::reset(bool tgt, QuantInfo* qi)
   d_child_counter = -1;
   d_use_children = true;
   d_tgt_orig = d_tgt;
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
 
   //set up processing matches
   if( d_type==typ_invalid ){
     d_use_children = false;
   }else if( d_type==typ_ground ){
     d_use_children = false;
-    if (d_ground_eval[0].isConst() && d_ground_eval[0].getConst<bool>()==d_tgt)
+    if (d_ground_eval[0].isConst()
+        && d_ground_eval[0].getConst<bool>() == d_tgt)
     {
       d_child_counter = 0;
     }
@@ -1341,8 +1342,7 @@ void MatchGen::reset(bool tgt, QuantInfo* qi)
     }else{
       //unassigned, set match to true/false
       d_qni_bound[0] = vn;
-      qi->setMatch(
-          vn, nm->mkConst(d_tgt), false, true);
+      qi->setMatch(vn, nm->mkConst(d_tgt), false, true);
       d_child_counter = 0;
     }
     if( d_child_counter==0 ){
