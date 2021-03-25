@@ -35,7 +35,7 @@ class QuantInfo;
 //match generator
 class MatchGen {
   friend class QuantInfo;
-private:
+ private:
   /** The quant info that owns this */
   QuantInfo* d_qi;
   //current children information
@@ -67,7 +67,7 @@ private:
   //determine variable order
   void determineVariableOrder( QuantInfo * qi, std::vector< int >& bvars );
   void collectBoundVar( QuantInfo * qi, Node n, std::vector< int >& cbvars, std::map< Node, bool >& visited, bool& hasNested );
-public:
+ public:
   //type of the match generator
   enum {
     typ_invalid,
@@ -81,7 +81,7 @@ public:
     typ_tsym,
   };
   void debugPrintType( const char * c, short typ, bool isTrace = false );
-public:
+ public:
   MatchGen();
   MatchGen( QuantInfo * qi, Node n, bool isVar = false );
   bool d_tgt;
