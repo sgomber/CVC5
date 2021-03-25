@@ -36,6 +36,8 @@ class QuantInfo;
 class MatchGen {
   friend class QuantInfo;
 private:
+  /** The quant info that owns this */
+  QuantInfo* d_qi;
   //current children information
   int d_child_counter;
   bool d_use_children;
@@ -47,7 +49,7 @@ private:
   //current matching information
   std::vector<TNodeTrie*> d_qn;
   std::vector<std::map<TNode, TNodeTrie>::iterator> d_qni;
-  bool doMatching(QuantInfo* qi);
+  bool doMatching();
   //for matching : each index is either a variable or a ground term
   unsigned d_qni_size;
   std::map< int, int > d_qni_var_num;
@@ -96,8 +98,8 @@ public:
    * failed, e.g. if a conflict was encountered during term indexing.
    */
   bool reset_round();
-  void reset(bool tgt, QuantInfo* qi);
-  bool getNextMatch(QuantInfo* qi);
+  void reset(bool tgt);
+  bool getNextMatch();
   bool isValid() { return d_type!=typ_invalid; }
   void setInvalid();
 
@@ -134,8 +136,13 @@ public:
 public:
   QuantInfo();
   ~QuantInfo();
+  /** Get the quantifiers state */
+  QuantifiersState& getState();
   /** Get quantifiers inference manager */
   QuantifiersInferenceManager& getInferenceManager();
+  /** Get term database */
+  TermDb* getTermDatabase();
+  
   std::vector< TNode > d_vars;
   std::vector< TypeNode > d_var_types;
   std::map< TNode, int > d_var_num;
@@ -158,7 +165,7 @@ public:
   bool containsVarMg(int i) const { return var_mg_find(i) != var_mg_end(); }
 
   bool matchGeneratorIsValid() const { return d_mg->isValid(); }
-  bool getNextMatch() { return d_mg->getNextMatch(this); }
+  bool getNextMatch() { return d_mg->getNextMatch(); }
 
   Node d_q;
   bool reset_round();
