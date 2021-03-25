@@ -47,7 +47,7 @@ private:
   //current matching information
   std::vector<TNodeTrie*> d_qn;
   std::vector<std::map<TNode, TNodeTrie>::iterator> d_qni;
-  bool doMatching( QuantConflictFind * p, QuantInfo * qi );
+  bool doMatching(  QuantInfo * qi );
   //for matching : each index is either a variable or a ground term
   unsigned d_qni_size;
   std::map< int, int > d_qni_var_num;
@@ -96,15 +96,15 @@ public:
    * failed, e.g. if a conflict was encountered during term indexing.
    */
   bool reset_round(QuantConflictFind* p);
-  void reset( QuantConflictFind * p, bool tgt, QuantInfo * qi );
-  bool getNextMatch( QuantConflictFind * p, QuantInfo * qi );
+  void reset(  bool tgt, QuantInfo * qi );
+  bool getNextMatch(  QuantInfo * qi );
   bool isValid() { return d_type!=typ_invalid; }
   void setInvalid();
 
   // is this term treated as UF application?
   static bool isHandledBoolConnective( TNode n );
   static bool isHandledUfTerm( TNode n );
-  static Node getMatchOperator( QuantConflictFind * p, Node n );
+  static Node getMatchOperator(  Node n );
   //can this node be handled by the algorithm
   static bool isHandled( TNode n );
 };
@@ -122,7 +122,7 @@ private: //for completing match
   std::vector< int > d_una_eqc_count;
   //optimization: track which arguments variables appear under UF terms in
   std::map< int, std::map< TNode, std::vector< unsigned > > > d_var_rel_dom;
-  void getPropagateVars( QuantConflictFind * p, std::vector< TNode >& vars, TNode n, bool pol, std::map< TNode, bool >& visited );
+  void getPropagateVars(  std::vector< TNode >& vars, TNode n, bool pol, std::map< TNode, bool >& visited );
   //optimization: number of variables set, to track when we can stop
   std::map< int, bool > d_vars_set;
   std::vector< Node > d_extra_var;
@@ -155,15 +155,15 @@ public:
   bool containsVarMg(int i) const { return var_mg_find(i) != var_mg_end(); }
 
   bool matchGeneratorIsValid() const { return d_mg->isValid(); }
-  bool getNextMatch( QuantConflictFind * p ) {
-    return d_mg->getNextMatch(p, this);
+  bool getNextMatch( ) {
+    return d_mg->getNextMatch(this);
   }
 
   Node d_q;
-  bool reset_round( QuantConflictFind * p );
+  bool reset_round( );
 public:
   //initialize
-  void initialize( QuantConflictFind * p, Node q, Node qn );
+  void initialize( QuantConflictFind* p, Node q, Node qn );
   //current constraints
   std::vector< TNode > d_match;
   std::vector< TNode > d_match_term;
@@ -172,16 +172,16 @@ public:
   int getCurrentRepVar( int v );
   TNode getCurrentValue( TNode n );
   TNode getCurrentExpValue( TNode n );
-  bool getCurrentCanBeEqual( QuantConflictFind * p, int v, TNode n, bool chDiseq = false );
-  int addConstraint( QuantConflictFind * p, int v, TNode n, bool polarity );
-  int addConstraint( QuantConflictFind * p, int v, TNode n, int vn, bool polarity, bool doRemove );
-  bool setMatch( QuantConflictFind * p, int v, TNode n, bool isGroundRep, bool isGround );
-  void unsetMatch( QuantConflictFind * p, int v );
-  bool isMatchSpurious( QuantConflictFind * p );
-  bool isTConstraintSpurious( QuantConflictFind * p, std::vector< Node >& terms );
-  bool entailmentTest( QuantConflictFind * p, Node lit, bool chEnt = true );
-  bool completeMatch( QuantConflictFind * p, std::vector< int >& assigned, bool doContinue = false );
-  void revertMatch( QuantConflictFind * p, std::vector< int >& assigned );
+  bool getCurrentCanBeEqual(  int v, TNode n, bool chDiseq = false );
+  int addConstraint(  int v, TNode n, bool polarity );
+  int addConstraint(  int v, TNode n, int vn, bool polarity, bool doRemove );
+  bool setMatch(  int v, TNode n, bool isGroundRep, bool isGround );
+  void unsetMatch(  int v );
+  bool isMatchSpurious( );
+  bool isTConstraintSpurious(  std::vector< Node >& terms );
+  bool entailmentTest(  Node lit, bool chEnt = true );
+  bool completeMatch(  std::vector< int >& assigned, bool doContinue = false );
+  void revertMatch(  std::vector< int >& assigned );
   void debugPrintMatch( const char * c );
   bool isConstrainedVar( int v );
 public:
