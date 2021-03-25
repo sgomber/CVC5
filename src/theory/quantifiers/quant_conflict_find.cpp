@@ -58,7 +58,7 @@ QuantifiersInferenceManager& QuantInfo::getInferenceManager()
   return d_parent->getInferenceManager();
 }
 
-void QuantInfo::initialize(QuantConflictFind* Node q, Node qn)
+void QuantInfo::initialize(QuantConflictFind* p, Node q, Node qn)
 {
   d_parent = p;
   d_q = q;
@@ -586,7 +586,7 @@ bool QuantInfo::isMatchSpurious()
   for( int i=0; i<getNumVars(); i++ ){
     //std::map< int, TNode >::iterator it = d_match.find( i );
     if( !d_match[i].isNull() ){
-      if (!getCurrentCanBeEqual(p, i, d_match[i], d_parent->atConflictEffort()))
+      if (!getCurrentCanBeEqual(i, d_match[i], d_parent->atConflictEffort()))
       {
         return true;
       }
@@ -595,8 +595,7 @@ bool QuantInfo::isMatchSpurious()
   return false;
 }
 
-bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
-                                      std::vector<Node>& terms)
+bool QuantInfo::isTConstraintSpurious(std::vector<Node>& terms)
 {
   if( options::qcfEagerTest() ){
     //check whether the instantiation evaluates as expected
@@ -666,7 +665,7 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
       Node cons = d_parent->getQuantifiersRegistry().substituteBoundVariables(
           it->first, d_q, terms);
       cons = it->second ? cons : cons.negate();
-      if (!entailmentTest(p, cons, d_parent->atConflictEffort()))
+      if (!entailmentTest(cons, d_parent->atConflictEffort()))
       {
         return true;
       }
@@ -1248,7 +1247,7 @@ void MatchGen::determineVariableOrder( QuantInfo * qi, std::vector< int >& bvars
   }
 }
 
-bool MatchGen::reset_round(QuantConflictFind* p)
+bool MatchGen::reset_round()
 {
   d_wasSet = false;
   for( unsigned i=0; i<d_children.size(); i++ ){
@@ -1258,20 +1257,15 @@ bool MatchGen::reset_round(QuantConflictFind* p)
     }
   }
   if( d_type==typ_ground ){
-    // int e = d_parent->evaluate( d_n );
-    // if( e==1 ){
-    //  d_ground_eval[0] = d_parent->d_true;
-    //}else if( e==-1 ){
-    //  d_ground_eval[0] = d_parent->d_false;
-    //}
     // modified
+    NodeManager * nm = NodeManager::currentNM();
     TermDb* tdb = d_parent->getTermDatabase();
     QuantifiersState& qs = d_parent->getState();
     for (unsigned i = 0; i < 2; i++)
     {
       if (tdb->isEntailed(d_n, i == 0))
       {
-        d_ground_eval[0] = i == 0 ? d_parent->d_true : d_parent->d_false;
+        d_ground_eval[0] = nm->mkConst(i == 0);
       }
       if (qs.isInConflict())
       {
@@ -1319,13 +1313,14 @@ void MatchGen::reset(bool tgt, QuantInfo* qi)
   d_child_counter = -1;
   d_use_children = true;
   d_tgt_orig = d_tgt;
+  NodeManager * nm = NodeManager::currentNM();
 
   //set up processing matches
   if( d_type==typ_invalid ){
     d_use_children = false;
   }else if( d_type==typ_ground ){
     d_use_children = false;
-    if (d_ground_eval[0] == (d_tgt ? d_parent->d_true : d_parent->d_false))
+    if (d_ground_eval[0].isConst() && d_ground_eval[0].getConst<bool>()==d_tgt)
     {
       d_child_counter = 0;
     }
@@ -1338,10 +1333,6 @@ void MatchGen::reset(bool tgt, QuantInfo* qi)
     int vn = qi->getCurrentRepVar( qi->getVarNum( n ) );
     if( vn==-1 ){
       // evaluate the value, see if it is compatible
-      // int e = d_parent->evaluate( n );
-      // if( ( e==1 && d_tgt ) || ( e==0 && !d_tgt ) ){
-      //  d_child_counter = 0;
-      //}
       // modified
       if (d_parent->getTermDatabase()->isEntailed(n, d_tgt))
       {
@@ -1351,7 +1342,7 @@ void MatchGen::reset(bool tgt, QuantInfo* qi)
       //unassigned, set match to true/false
       d_qni_bound[0] = vn;
       qi->setMatch(
-          vn, d_tgt ? d_parent->d_true : d_parent->d_false, false, true);
+          vn, nm->mkConst(d_tgt), false, true);
       d_child_counter = 0;
     }
     if( d_child_counter==0 ){
@@ -1389,7 +1380,7 @@ void MatchGen::reset(bool tgt, QuantInfo* qi)
     if( d_type==typ_pred ){
       nn[0] = qi->getCurrentValue( d_n );
       vn[0] = qi->getCurrentRepVar( qi->getVarNum( nn[0] ) );
-      nn[1] = d_tgt ? d_parent->d_true : d_parent->d_false;
+      nn[1] = nm->mkConst(d_tgt);
       vn[1] = -1;
       d_tgt = true;
     }else{
