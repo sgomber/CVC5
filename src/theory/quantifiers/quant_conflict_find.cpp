@@ -287,7 +287,7 @@ bool QuantInfo::reset_round()
 
   d_mg->reset_round();
   for( std::map< int, MatchGen * >::iterator it = d_var_mg.begin(); it != d_var_mg.end(); ++it ){
-    if (!it->second->reset_round(p))
+    if (!it->second->reset_round())
     {
       return false;
     }
@@ -1251,7 +1251,7 @@ bool MatchGen::reset_round()
 {
   d_wasSet = false;
   for( unsigned i=0; i<d_children.size(); i++ ){
-    if (!d_children[i].reset_round(p))
+    if (!d_children[i].reset_round())
     {
       return false;
     }
