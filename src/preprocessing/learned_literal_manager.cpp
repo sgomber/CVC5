@@ -47,6 +47,7 @@ std::vector<Node>& LearnedLiteralManager::getLearnedLiterals()
     Node tlsNode = d_topLevelSubstitutions.get().apply(*it);
     tlsNode = theory::Rewriter::rewrite(tlsNode);
     d_currLearnedLits.push_back(tlsNode);
+    Trace("pp-llm") << "Learned literal : " << tlsNode << " from " << (*it) << std::endl;
   }
   return d_currLearnedLits;
 }

@@ -37,6 +37,7 @@ PreprocessingPassResult LearnedRewrite::applyInternal(
 {
   arith::BoundInference binfer;
   std::vector<Node>& learnedLits = d_preprocContext->getLearnedLiterals();
+  std::vector<Node> llrw;
   if (learnedLits.empty())
   {
     Trace("learned-rewrite-ll") << "No learned literals" << std::endl;
@@ -52,9 +53,11 @@ PreprocessingPassResult LearnedRewrite::applyInternal(
       if (k == EQUAL || k == GEQ)
       {
         binfer.add(e);
+        llrw.push_back(e);
       }
       Trace("learned-rewrite-ll") << "- " << e << std::endl;
     }
+    Trace("learned-rewrite-ll") << "end" << std::endl;
   }
   size_t size = assertionsToPreprocess->size();
   for (size_t i = 0; i < size; ++i)
@@ -69,6 +72,14 @@ PreprocessingPassResult LearnedRewrite::applyInternal(
           << ".......................: " << e << std::endl;
       assertionsToPreprocess->replace(i, e);
     }
+  }
+  // add the conjunction of learned literals back to assertions
+  if (!llrw.empty())
+  {
+    NodeManager* nm = NodeManager::currentNM();
+    Node llc = nm->mkAnd(llrw);
+    Trace("learned-rewrite-assert") << "Re-add rewritten learned conjunction: " << llc << std::endl;
+    assertionsToPreprocess->push_back(llc);
   }
 
   return PreprocessingPassResult::NO_CONFLICT;
@@ -214,25 +225,27 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
       Rational ub(0);
       bool lbSuccess = true;
       bool ubSuccess = true;
+      Rational one(1);
       for (const std::pair<const Node, Node>& m : msum)
       {
-        Assert(m.second.isConst());
+        bool isOneCoeff = m.second.isNull();
+        Assert(isOneCoeff || m.second.isConst());
         if (m.first.isNull())
         {
-          lb = lb + m.second.getConst<Rational>();
-          ub = ub + m.second.getConst<Rational>();
+          lb = lb + (isOneCoeff ? one : m.second.getConst<Rational>());
+          ub = ub + (isOneCoeff ? one : m.second.getConst<Rational>());
         }
         else
         {
-          Rational coeff = m.second.getConst<Rational>();
-          arith::Bounds db = binfer.get(m.first);
-          bool isNeg = coeff.sgn() == -1;
+          arith::Bounds b = binfer.get(m.first);
+          bool isNeg = !isOneCoeff && m.second.getConst<Rational>().sgn() == -1;
           // flip lower/upper if negative coefficient
-          TNode l = isNeg ? db.upper_value : db.lower_value;
-          TNode u = isNeg ? db.lower_value : db.upper_value;
+          TNode l = isNeg ? b.upper_value : b.lower_value;
+          TNode u = isNeg ? b.lower_value : b.upper_value;
           if (lbSuccess && !l.isNull())
           {
-            lb = lb + Rational(l.getConst<Rational>() * coeff);
+            Rational lc = l.getConst<Rational>();
+            lb = lb + (isOneCoeff ? lc : Rational(lc * m.second.getConst<Rational>()));
           }
           else
           {
@@ -240,7 +253,8 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
           }
           if (ubSuccess && !u.isNull())
           {
-            ub = ub + Rational(u.getConst<Rational>() * coeff);
+            Rational uc = u.getConst<Rational>();
+            ub = ub + (isOneCoeff ? uc : Rational(uc * m.second.getConst<Rational>()));
           }
           else
           {
@@ -258,13 +272,13 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
         {
           // if positive lower bound, then GEQ is true, EQUAL is false
           Node ret = nm->mkConst(k == GEQ);
-          nr = returnRewriteLearned(nr, ret, "pos_lb");
+          nr = returnRewriteLearned(nr, ret, "pred_pos_lb");
         }
         else if (lb.sgn() == 0 && k == GEQ)
         {
           // zero lower bound, GEQ is true
           Node ret = nm->mkConst(true);
-          nr = returnRewriteLearned(nr, ret, "zero_lb");
+          nr = returnRewriteLearned(nr, ret, "pred_zero_lb");
         }
       }
       else if (ubSuccess)
@@ -273,7 +287,7 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
         {
           // if negative upper bound, then GEQ and EQUAL are false
           Node ret = nm->mkConst(false);
-          nr = returnRewriteLearned(nr, ret, "neg_ub");
+          nr = returnRewriteLearned(nr, ret, "pred_neg_ub");
         }
       }
     }
