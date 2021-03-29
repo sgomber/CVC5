@@ -24,7 +24,6 @@
 #include "context/cdhashset.h"
 #include "preprocessing/learned_literal_manager.h"
 #include "smt/smt_engine.h"
-#include "theory/trust_substitutions.h"
 #include "util/resource_manager.h"
 
 namespace CVC4 {
@@ -104,9 +103,6 @@ class PreprocessingPassContext
 
   /** Pointer to the ResourceManager for this context. */
   ResourceManager* d_resourceManager;
-
-  /* The top level substitutions */
-  theory::TrustSubstitutionMap d_topLevelSubstitutions;
 
   /** Instance of the circuit propagator */
   theory::booleans::CircuitPropagator* d_circuitPropagator;

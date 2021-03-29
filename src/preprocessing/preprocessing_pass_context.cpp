@@ -27,10 +27,9 @@ PreprocessingPassContext::PreprocessingPassContext(
     ProofNodeManager* pnm)
     : d_smt(smt),
       d_resourceManager(smt->getResourceManager()),
-      d_topLevelSubstitutions(smt->getUserContext(), pnm),
       d_circuitPropagator(circuitPropagator),
-      d_llm(smt, this, smt->getUserContext()),
       d_pnm(pnm),
+      d_llm(this, smt->getUserContext(), pnm),
       d_symsInAssertions(smt->getUserContext())
 {
 }
@@ -38,7 +37,7 @@ PreprocessingPassContext::PreprocessingPassContext(
 theory::TrustSubstitutionMap&
 PreprocessingPassContext::getTopLevelSubstitutions()
 {
-  return d_topLevelSubstitutions;
+  return d_llm.getTopLevelSubstitutions();
 }
 
 void PreprocessingPassContext::recordSymbolsInAssertions(

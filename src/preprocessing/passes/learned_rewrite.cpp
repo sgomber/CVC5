@@ -18,6 +18,7 @@
 #include "expr/term_context_stack.h"
 #include "theory/rewriter.h"
 #include "preprocessing/assertion_pipeline.h"
+#include "theory/arith/arith_msum.h"
 
 using namespace CVC4::theory;
 using namespace CVC4::kind;
@@ -123,12 +124,13 @@ Node LearnedRewrite::rewriteLearnedRec(Node n, arith::BoundInference& binfer)
 }
 
 Node LearnedRewrite::rewriteLearned(Node n,
-                                    theory::arith::BoundInference& binfer)
+                                    arith::BoundInference& binfer)
 {
   NodeManager* nm = NodeManager::currentNM();
   Trace("learned-rewrite-rr-debug") << "Rewrite " << n << std::endl;
   Node nr = Rewriter::rewrite(n);
   Kind k = nr.getKind();
+  arith::Bounds db;
   if (k == INTS_DIVISION || k == INTS_MODULUS || k == DIVISION)
   {
     // simpler if we know the divisor is non-zero
@@ -143,15 +145,15 @@ Node LearnedRewrite::rewriteLearned(Node n,
     {
       arith::Bounds db = binfer.get(den);
       Trace("learned-rewrite-rr-debug")
-          << "Bounds for " << den << " : " << db.lower_bound << " "
-          << db.upper_bound << std::endl;
-      if (!db.lower_bound.isNull()
-          && db.lower_bound.getConst<Rational>().sgn() == 1)
+          << "Bounds for " << den << " : " << db.lower_value << " "
+          << db.upper_value << std::endl;
+      if (!db.lower_value.isNull()
+          && db.lower_value.getConst<Rational>().sgn() == 1)
       {
         isNonZeroDen = true;
       }
-      else if (!db.upper_bound.isNull()
-               && db.upper_bound.getConst<Rational>().sgn() == -1)
+      else if (!db.upper_value.isNull()
+               && db.upper_value.getConst<Rational>().sgn() == -1)
       {
         isNonZeroDen = true;
       }
@@ -174,16 +176,24 @@ Node LearnedRewrite::rewriteLearned(Node n,
       Trace("learned-rewrite-rr")
           << "LearnedRewrite::Rewrite : " << n << " == " << nr << std::endl;
       nr = Rewriter::rewrite(nr);
+      k = nr.getKind();
     }
   }
-  // constant int div / mod elimination by bound inference
-  if (k == INTS_DIVISION_TOTAL || k == INTS_MODULUS_TOTAL)
+  // constant int mod elimination by bound inference
+  if (k == INTS_MODULUS_TOTAL)
   {
     Node num = n[0];
     Node den = n[1];
-    if (den.isConst())
+    arith::Bounds db = binfer.get(den);
+    // if the numerator is bound [0...den), then we can eliminate the operator
+    arith::Bounds nb = binfer.get(num);
+  }
+  else if (k==GEQ || k==EQUAL)
+  {
+    std::map<Node, Node> msum;
+    if (ArithMSum::getMonomialSumLit(nr, msum))
     {
-      arith::Bounds db = binfer.get(num);
+      
     }
   }
   return nr;

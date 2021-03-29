@@ -17,9 +17,9 @@
 #ifndef CVC4__PREPROCESSING__LEARNED_LITERAL_MANAGER_H
 #define CVC4__PREPROCESSING__LEARNED_LITERAL_MANAGER_H
 
-#include "context/cdhashmap.h"
+#include "context/cdhashset.h"
 #include "expr/node.h"
-#include "smt/smt_engine.h"
+#include "theory/trust_substitutions.h"
 
 namespace CVC4 {
 namespace preprocessing {
@@ -29,11 +29,9 @@ class PreprocessingPassContext;
 class LearnedLiteralManager
 {
  public:
-  LearnedLiteralManager(SmtEngine* smt,
-                        PreprocessingPassContext* pcontext,
-                        context::UserContext* u);
-
-  SmtEngine* getSmt() { return d_smt; }
+  LearnedLiteralManager(PreprocessingPassContext* pcontext,
+                        context::UserContext* u,
+      ProofNodeManager* pnm);
   /**
    * Process learned literal. This method is called when a literal is
    * entailed by the current set of assertions.
@@ -44,16 +42,17 @@ class LearnedLiteralManager
   void notifyLearnedLiteral(Node lit);
   /** Get learned literals */
   std::vector<Node>& getLearnedLiterals();
-
+  /** Gets a reference to the top-level substitution map */
+  theory::TrustSubstitutionMap& getTopLevelSubstitutions();
  private:
   /** Learned literal map */
-  typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeBoolMap;
-  /** Pointer to the SmtEngine that this context was created in. */
-  SmtEngine* d_smt;
+  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
   /** Pointer to the preprocessing context */
   PreprocessingPassContext* d_pcontext;
+  /* The top level substitutions */
+  theory::TrustSubstitutionMap d_topLevelSubstitutions;
   /** Learned literals */
-  NodeBoolMap d_learnedLits;
+  NodeSet d_learnedLits;
   /** Current */
   std::vector<Node> d_currLearnedLits;
 };

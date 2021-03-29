@@ -102,10 +102,6 @@ class ProcessAssertions
                      std::unique_ptr<preprocessing::PreprocessingPass>>
       d_passes;
   /**
-   * The kinds we are delaying to expand
-   */
-  std::unordered_set<Kind, kind::KindHashFunction> d_delayExpKinds;
-  /**
    * Number of calls of simplify assertions active.
    */
   unsigned d_simplifyAssertionsDepth;
