@@ -54,6 +54,14 @@ header = "options/smt_options.h"
   help       = "use static learning (on by default)"
 
 [[option]]
+  name       = "learnedRewrite"
+  category   = "regular"
+  long       = "learned-rewrite"
+  type       = "bool"
+  default    = "false"
+  help       = "rewrite the input based on learned literals"
+
+[[option]]
   name       = "expandDefinitions"
   smt_name   = "expand-definitions"
   category   = "regular"

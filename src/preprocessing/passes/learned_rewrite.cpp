@@ -28,7 +28,8 @@ namespace preprocessing {
 namespace passes {
 
 LearnedRewrite::LearnedRewrite(PreprocessingPassContext* preprocContext)
-    : PreprocessingPass(preprocContext, "learned-rewrite"){};
+    : PreprocessingPass(preprocContext, "learned-rewrite"){
+    }
 
 PreprocessingPassResult LearnedRewrite::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
@@ -170,10 +171,8 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
       }
       std::vector<Node> children;
       children.insert(children.end(), n.begin(), n.end());
-      nr = nm->mkNode(nk, children);
-      Trace("learned-rewrite-rr")
-          << "LearnedRewrite::Rewrite: (non-zero denominator) " << n
-          << " == " << nr << std::endl;
+      Node ret = nm->mkNode(nk, children);
+      nr = returnRewriteLearned(nr, ret, "non_zero_den");
       nr = Rewriter::rewrite(nr);
       k = nr.getKind();
     }
@@ -199,10 +198,7 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
         Rational bnum = nb.upper_value.getConst<Rational>();
         if (bnum.sgn() != -1 && bnum < bden)
         {
-          nr = nr[0];
-          Trace("learned-rewrite-rr")
-              << "LearnedRewrite::Rewrite: (int modulus bound) " << n
-              << " == " << nr << std::endl;
+          nr = returnRewriteLearned(nr, nr[0], "int_mod_range");
         }
       }
       // could also do num + k*den checks
@@ -213,28 +209,84 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
     std::map<Node, Node> msum;
     if (ArithMSum::getMonomialSumLit(nr, msum))
     {
-      std::vector<Node> ubounds;
-      std::vector<Node> lbounds;
-      bool boundSuccess = true;
+      Rational lb(0);
+      Rational ub(0);
+      bool lbSuccess = true;
+      bool ubSuccess = true;
       for (const std::pair<const Node, Node>& m : msum)
       {
+        Assert(m.second.isConst());
         if (m.first.isNull())
         {
-          lbounds.push_back(m.second);
-          ubounds.push_back(m.second);
+          lb = lb + m.second.getConst<Rational>();
+          ub = ub + m.second.getConst<Rational>();
         }
         else
         {
-          Assert(m.first.isConst());
-          if (m.first.getConst<Rational>().sgn() == -1)
+          Rational coeff = m.second.getConst<Rational>();
+          arith::Bounds db = binfer.get(m.first);
+          bool isNeg = coeff.sgn()==-1;
+          // flip lower/upper if negative coefficient
+          TNode l = isNeg ? db.upper_value : db.lower_value;
+          TNode u = isNeg ? db.lower_value : db.upper_value;
+          if (lbSuccess && !l.isNull())
           {
+            lb = lb + Rational(l.getConst<Rational>() * coeff);
           }
           else
           {
+            lbSuccess = false;
+          }
+          if (ubSuccess && !u.isNull())
+          {
+            ub = ub + Rational(u.getConst<Rational>() * coeff);
+          }
+          else
+          {
+            ubSuccess = false;
+          }
+          if (!lbSuccess && !ubSuccess)
+          {
+            break;
           }
         }
       }
+      if (lbSuccess)
+      {
+        if (lb.sgn()==1)
+        {
+          // if positive lower bound, then GEQ is true, EQUAL is false
+          Node ret = nm->mkConst(k==GEQ);
+          nr = returnRewriteLearned(nr, ret, "pos_lb");
+        }
+        else if (lb.sgn()==0 && k==GEQ)
+        {
+          // zero lower bound, GEQ is true
+          Node ret = nm->mkConst(true);
+          nr = returnRewriteLearned(nr, ret, "zero_lb");
+        }
+      }
+      else if (ubSuccess)
+      {
+        if (ub.sgn()==-1)
+        {
+          // if negative upper bound, then GEQ and EQUAL are false
+          Node ret = nm->mkConst(false);
+          nr = returnRewriteLearned(nr, ret, "neg_ub");
+        }
+      }
     }
+  }
+  return nr;
+}
+
+Node LearnedRewrite::returnRewriteLearned(Node n, Node nr, const char * c)
+{
+  if (Trace.isOn("learned-rewrite-rr"))
+  {
+    Trace("learned-rewrite-rr")
+        << "LearnedRewrite::Rewrite: (" << c << ") " << n
+        << " == " << nr << std::endl;
   }
   return nr;
 }
