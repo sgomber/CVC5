@@ -178,7 +178,7 @@ void SynthConjecture::assign(Node q)
   Trace("cegqi") << "Base quantified formula is : " << d_embed_quant
                  << std::endl;
   // construct base instantiation
-  d_base_inst = Rewriter::rewrite(d_qe->getInstantiate()->getInstantiation(
+  d_base_inst = Rewriter::rewrite(d_qim.getInstantiate()->getInstantiation(
       d_embed_quant, vars, d_candidates));
   if (!d_embedSideCondition.isNull())
   {
@@ -246,7 +246,7 @@ void SynthConjecture::assign(Node q)
                                     d_feasible_guard,
                                     d_qstate.getSatContext(),
                                     d_qstate.getValuation()));
-  d_qe->getDecisionManager()->registerStrategy(
+  d_qim.getDecisionManager()->registerStrategy(
       DecisionManager::STRAT_QUANT_SYGUS_FEASIBLE, d_feasible_strategy.get());
   // this must be called, both to ensure that the feasible guard is
   // decided on with true polariy, but also to ensure that output channel
