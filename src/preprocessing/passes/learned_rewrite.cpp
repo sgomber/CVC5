@@ -28,8 +28,9 @@ namespace preprocessing {
 namespace passes {
 
 LearnedRewrite::LearnedRewrite(PreprocessingPassContext* preprocContext)
-    : PreprocessingPass(preprocContext, "learned-rewrite"){
-    }
+    : PreprocessingPass(preprocContext, "learned-rewrite")
+{
+}
 
 PreprocessingPassResult LearnedRewrite::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
@@ -225,7 +226,7 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
         {
           Rational coeff = m.second.getConst<Rational>();
           arith::Bounds db = binfer.get(m.first);
-          bool isNeg = coeff.sgn()==-1;
+          bool isNeg = coeff.sgn() == -1;
           // flip lower/upper if negative coefficient
           TNode l = isNeg ? db.upper_value : db.lower_value;
           TNode u = isNeg ? db.lower_value : db.upper_value;
@@ -253,13 +254,13 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
       }
       if (lbSuccess)
       {
-        if (lb.sgn()==1)
+        if (lb.sgn() == 1)
         {
           // if positive lower bound, then GEQ is true, EQUAL is false
-          Node ret = nm->mkConst(k==GEQ);
+          Node ret = nm->mkConst(k == GEQ);
           nr = returnRewriteLearned(nr, ret, "pos_lb");
         }
-        else if (lb.sgn()==0 && k==GEQ)
+        else if (lb.sgn() == 0 && k == GEQ)
         {
           // zero lower bound, GEQ is true
           Node ret = nm->mkConst(true);
@@ -268,7 +269,7 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
       }
       else if (ubSuccess)
       {
-        if (ub.sgn()==-1)
+        if (ub.sgn() == -1)
         {
           // if negative upper bound, then GEQ and EQUAL are false
           Node ret = nm->mkConst(false);
@@ -280,13 +281,12 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
   return nr;
 }
 
-Node LearnedRewrite::returnRewriteLearned(Node n, Node nr, const char * c)
+Node LearnedRewrite::returnRewriteLearned(Node n, Node nr, const char* c)
 {
   if (Trace.isOn("learned-rewrite-rr"))
   {
-    Trace("learned-rewrite-rr")
-        << "LearnedRewrite::Rewrite: (" << c << ") " << n
-        << " == " << nr << std::endl;
+    Trace("learned-rewrite-rr") << "LearnedRewrite::Rewrite: (" << c << ") "
+                                << n << " == " << nr << std::endl;
   }
   return nr;
 }

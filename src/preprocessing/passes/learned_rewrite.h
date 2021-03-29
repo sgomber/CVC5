@@ -47,7 +47,7 @@ class LearnedRewrite : public PreprocessingPass
    */
   Node rewriteLearned(Node n, theory::arith::BoundInference& binfer);
   /** Return learned rewrite */
-  Node returnRewriteLearned(Node n, Node nr, const char * c);
+  Node returnRewriteLearned(Node n, Node nr, const char* c);
   /** static upper/lower bounds */
   std::map<Node, std::pair<Node, Node> > d_bounds;
 };
