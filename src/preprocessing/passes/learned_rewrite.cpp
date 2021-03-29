@@ -129,7 +129,6 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
   Trace("learned-rewrite-rr-debug") << "Rewrite " << n << std::endl;
   Node nr = Rewriter::rewrite(n);
   Kind k = nr.getKind();
-  arith::Bounds db;
   if (k == INTS_DIVISION || k == INTS_MODULUS || k == DIVISION)
   {
     // simpler if we know the divisor is non-zero
@@ -173,7 +172,7 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
       children.insert(children.end(), n.begin(), n.end());
       nr = nm->mkNode(nk, children);
       Trace("learned-rewrite-rr")
-          << "LearnedRewrite::Rewrite : " << n << " == " << nr << std::endl;
+          << "LearnedRewrite::Rewrite: (non-zero denominator) " << n << " == " << nr << std::endl;
       nr = Rewriter::rewrite(nr);
       k = nr.getKind();
     }
@@ -184,14 +183,53 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
     Node num = n[0];
     Node den = n[1];
     arith::Bounds db = binfer.get(den);
-    // if the numerator is bound [0...den), then we can eliminate the operator
-    arith::Bounds nb = binfer.get(num);
+    if ((!db.lower_value.isNull() && db.lower_value.getConst<Rational>().sgn()==1) ||
+      (!db.upper_value.isNull() && db.upper_value.getConst<Rational>().sgn()==-1))
+    {
+      Rational bden = db.lower_value.isNull() ? db.lower_value.getConst<Rational>() : db.upper_value.getConst<Rational>().abs();
+      // if 0 <= UB(num) < LB(den) or 0 <= UB(num) < -UB(den)
+      arith::Bounds nb = binfer.get(num);
+      if (!nb.upper_value.isNull())
+      {
+        Rational bnum = nb.upper_value.getConst<Rational>();
+        if (bnum.sgn()!=-1 && bnum < bden)
+        {
+          nr = nr[0];
+          Trace("learned-rewrite-rr")
+              << "LearnedRewrite::Rewrite: (int modulus bound) " << n << " == " << nr << std::endl;
+        }
+      }
+      // could also do num + k*den checks
+    }
   }
   else if (k == GEQ || k == EQUAL)
   {
     std::map<Node, Node> msum;
     if (ArithMSum::getMonomialSumLit(nr, msum))
     {
+      std::vector<Node> ubounds;
+      std::vector<Node> lbounds;
+      bool boundSuccess = true;
+      for (const std::pair<const Node, Node >& m : msum)
+      {
+        if (m.first.isNull())
+        {
+          lbounds.push_back(m.second);
+          ubounds.push_back(m.second);
+        }
+        else
+        {
+          Assert (m.first.isConst());
+          if (m.first.getConst<Rational>().sgn()==-1)
+          {
+            
+          }
+          else
+          {
+            
+          }
+        }
+      }
     }
   }
   return nr;
