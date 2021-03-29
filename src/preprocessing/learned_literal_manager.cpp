@@ -14,18 +14,17 @@
 
 #include "preprocessing/learned_literal_manager.h"
 
-#include "theory/theory_engine.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "theory/rewriter.h"
+#include "theory/theory_engine.h"
 
 namespace CVC4 {
 namespace preprocessing {
 
 LearnedLiteralManager::LearnedLiteralManager(PreprocessingPassContext* pcontext,
                                              context::UserContext* u,
-      ProofNodeManager* pnm)
-    : d_pcontext(pcontext),
-      d_topLevelSubstitutions(u, pnm), d_learnedLits(u)
+                                             ProofNodeManager* pnm)
+    : d_pcontext(pcontext), d_topLevelSubstitutions(u, pnm), d_learnedLits(u)
 {
 }
 
@@ -40,7 +39,7 @@ std::vector<Node>& LearnedLiteralManager::getLearnedLiterals()
   // refresh the set of learned literals
   d_currLearnedLits.clear();
   for (NodeSet::const_iterator it = d_learnedLits.begin(),
-                                   itEnd = d_learnedLits.end();
+                               itEnd = d_learnedLits.end();
        it != itEnd;
        ++it)
   {

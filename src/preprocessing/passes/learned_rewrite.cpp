@@ -16,9 +16,9 @@
 
 #include "expr/skolem_manager.h"
 #include "expr/term_context_stack.h"
-#include "theory/rewriter.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "theory/arith/arith_msum.h"
+#include "theory/rewriter.h"
 
 using namespace CVC4::theory;
 using namespace CVC4::kind;
@@ -123,8 +123,7 @@ Node LearnedRewrite::rewriteLearnedRec(Node n, arith::BoundInference& binfer)
   return visited[n];
 }
 
-Node LearnedRewrite::rewriteLearned(Node n,
-                                    arith::BoundInference& binfer)
+Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
 {
   NodeManager* nm = NodeManager::currentNM();
   Trace("learned-rewrite-rr-debug") << "Rewrite " << n << std::endl;
@@ -188,12 +187,11 @@ Node LearnedRewrite::rewriteLearned(Node n,
     // if the numerator is bound [0...den), then we can eliminate the operator
     arith::Bounds nb = binfer.get(num);
   }
-  else if (k==GEQ || k==EQUAL)
+  else if (k == GEQ || k == EQUAL)
   {
     std::map<Node, Node> msum;
     if (ArithMSum::getMonomialSumLit(nr, msum))
     {
-      
     }
   }
   return nr;

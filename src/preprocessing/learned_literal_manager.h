@@ -31,7 +31,7 @@ class LearnedLiteralManager
  public:
   LearnedLiteralManager(PreprocessingPassContext* pcontext,
                         context::UserContext* u,
-      ProofNodeManager* pnm);
+                        ProofNodeManager* pnm);
   /**
    * Process learned literal. This method is called when a literal is
    * entailed by the current set of assertions.
@@ -44,6 +44,7 @@ class LearnedLiteralManager
   std::vector<Node>& getLearnedLiterals();
   /** Gets a reference to the top-level substitution map */
   theory::TrustSubstitutionMap& getTopLevelSubstitutions();
+
  private:
   /** Learned literal map */
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
