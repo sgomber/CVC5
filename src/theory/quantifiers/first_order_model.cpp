@@ -23,12 +23,10 @@
 #include "theory/quantifiers/term_registry.h"
 #include "theory/quantifiers/term_util.h"
 
-using namespace std;
-using namespace CVC4::kind;
-using namespace CVC4::context;
-using namespace CVC4::theory::quantifiers::fmcheck;
+using namespace CVC5::kind;
+using namespace CVC5::context;
 
-namespace CVC4 {
+namespace CVC5 {
 namespace theory {
 namespace quantifiers {
 
@@ -51,6 +49,7 @@ FirstOrderModel::FirstOrderModel(QuantifiersState& qs,
       d_qe(nullptr),
       d_qreg(qr),
       d_treg(tr),
+      d_eq_query(qs, this),
       d_forall_asserts(qs.getSatContext()),
       d_forallRlvComputed(false)
 {
@@ -58,6 +57,11 @@ FirstOrderModel::FirstOrderModel(QuantifiersState& qs,
 
 //!!!!!!!!!!!!!!!!!!!!! temporary (project #15)
 void FirstOrderModel::finishInit(QuantifiersEngine* qe) { d_qe = qe; }
+
+Node FirstOrderModel::getInternalRepresentative(Node a, Node q, size_t index)
+{
+  return d_eq_query.getInternalRepresentative(a, q, index);
+}
 
 void FirstOrderModel::assertQuantifier( Node n ){
   if( n.getKind()==FORALL ){
@@ -162,6 +166,8 @@ bool FirstOrderModel::isModelBasis(TNode n)
 {
   return n.getAttribute(ModelBasisAttribute());
 }
+
+EqualityQuery* FirstOrderModel::getEqualityQuery() { return &d_eq_query; }
 
 /** needs check */
 bool FirstOrderModel::checkNeeded() {
@@ -355,6 +361,6 @@ unsigned FirstOrderModel::getModelBasisArg(Node n)
   return n.getAttribute(ModelBasisArgAttribute());
 }
 
-} /* CVC4::theory::quantifiers namespace */
-} /* CVC4::theory namespace */
-} /* CVC4 namespace */
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace CVC5

@@ -29,10 +29,10 @@
 #include "theory/valuation.h"
 
 using namespace std;
-using namespace CVC4::context;
-using namespace CVC4::kind;
+using namespace CVC5::context;
+using namespace CVC5::kind;
 
-namespace CVC4 {
+namespace CVC5 {
 namespace theory {
 namespace strings {
 
@@ -187,7 +187,7 @@ void TheoryStrings::presolve() {
     d_stringsFmf.presolve();
     // This strategy is local to a check-sat call, since we refresh the strategy
     // on every call to presolve.
-    getDecisionManager()->registerStrategy(
+    d_im.getDecisionManager()->registerStrategy(
         DecisionManager::STRAT_STRINGS_SUM_LENGTHS,
         d_stringsFmf.getDecisionStrategy(),
         DecisionManager::STRAT_SCOPE_LOCAL_SOLVE);
@@ -1086,6 +1086,6 @@ std::string TheoryStrings::debugPrintStringsEqc()
   return ss.str();
 }
 
-}/* CVC4::theory::strings namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace strings
+}  // namespace theory
+}  // namespace CVC5

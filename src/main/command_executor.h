@@ -24,7 +24,7 @@
 #include "smt/smt_engine.h"
 #include "util/statistics_registry.h"
 
-namespace CVC4 {
+namespace CVC5 {
 
 class Command;
 
@@ -52,9 +52,7 @@ class CommandExecutor
    * symbol manager.
    */
   std::unique_ptr<SymbolManager> d_symman;
-  SmtEngine* d_smtEngine;
   Options& d_options;
-  StatisticsRegistry d_stats;
   api::Result d_result;
 
  public:
@@ -67,9 +65,10 @@ class CommandExecutor
    * sequence.  Eventually uses doCommandSingleton (which can be
    * overridden by a derived class).
    */
-  bool doCommand(CVC4::Command* cmd);
+  bool doCommand(CVC5::Command* cmd);
 
-  bool doCommand(std::unique_ptr<CVC4::Command>& cmd) {
+  bool doCommand(std::unique_ptr<CVC5::Command>& cmd)
+  {
     return doCommand(cmd.get());
   }
 
@@ -82,11 +81,7 @@ class CommandExecutor
   api::Result getResult() const { return d_result; }
   void reset();
 
-  StatisticsRegistry& getStatisticsRegistry() {
-    return d_stats;
-  }
-
-  SmtEngine* getSmtEngine() { return d_smtEngine; }
+  SmtEngine* getSmtEngine() const { return d_solver->getSmtEngine(); }
 
   /**
    * Flushes statistics to a file descriptor.
@@ -106,7 +101,7 @@ class CommandExecutor
 
 protected:
   /** Executes treating cmd as a singleton */
-  virtual bool doCommandSingleton(CVC4::Command* cmd);
+ virtual bool doCommandSingleton(CVC5::Command* cmd);
 
 private:
   CommandExecutor();
@@ -118,7 +113,7 @@ bool solverInvoke(api::Solver* solver,
                   Command* cmd,
                   std::ostream* out);
 
-}/* CVC4::main namespace */
-}/* CVC4 namespace */
+}  // namespace main
+}  // namespace CVC5
 
 #endif  /* CVC4__MAIN__COMMAND_EXECUTOR_H */

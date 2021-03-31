@@ -18,6 +18,7 @@
 #include "expr/node_manager.h"
 
 #include <algorithm>
+#include <sstream>
 #include <stack>
 #include <utility>
 
@@ -32,12 +33,11 @@
 #include "expr/skolem_manager.h"
 #include "expr/type_checker.h"
 #include "util/resource_manager.h"
-#include "util/statistics_registry.h"
 
 using namespace std;
-using namespace CVC4::expr;
+using namespace CVC5::expr;
 
-namespace CVC4 {
+namespace CVC5 {
 
 thread_local NodeManager* NodeManager::s_current = NULL;
 
@@ -87,14 +87,13 @@ struct NVReclaim {
 
 namespace attr {
   struct LambdaBoundVarListTag { };
-}/* CVC4::attr namespace */
+  }  // namespace attr
 
 // attribute that stores the canonical bound variable list for function types
 typedef expr::Attribute<attr::LambdaBoundVarListTag, Node> LambdaBoundVarListAttr;
 
 NodeManager::NodeManager()
-    : d_statisticsRegistry(new StatisticsRegistry()),
-      d_skManager(new SkolemManager),
+    : d_skManager(new SkolemManager),
       d_bvManager(new BoundVarManager),
       next_id(0),
       d_attrManager(new expr::attr::AttributeManager()),
@@ -164,6 +163,11 @@ TypeNode NodeManager::builtinOperatorType()
 TypeNode NodeManager::mkBitVectorType(unsigned size)
 {
   return mkTypeConst<BitVectorSize>(BitVectorSize(size));
+}
+
+TypeNode NodeManager::sExprType()
+{
+  return mkTypeConst<TypeConstant>(SEXPR_TYPE);
 }
 
 TypeNode NodeManager::mkFloatingPointType(unsigned exp, unsigned sig)
@@ -264,8 +268,6 @@ NodeManager::~NodeManager() {
   }
 
   // defensive coding, in case destruction-order issues pop up (they often do)
-  delete d_statisticsRegistry;
-  d_statisticsRegistry = NULL;
   delete d_attrManager;
   d_attrManager = NULL;
 }
@@ -371,7 +373,7 @@ void NodeManager::reclaimZombies() {
       if(mk == kind::metakind::CONSTANT) {
         // Destroy (call the destructor for) the C++ type representing
         // the constant in this NodeValue.  This is needed for
-        // e.g. CVC4::Rational, since it has a gmp internal
+        // e.g. CVC5::Rational, since it has a gmp internal
         // representation that mallocs memory and should be cleaned
         // up.  (This won't delete a pointer value if used as a
         // constant, but then, you should probably use a smart-pointer
@@ -676,7 +678,7 @@ std::vector<TypeNode> NodeManager::mkMutualDatatypeTypes(
             << "malformed selector in datatype post-resolution";
         // This next one's a "hard" check, performed in non-debug builds
         // as well; the other ones should all be guaranteed by the
-        // CVC4::DType class, but this actually needs to be checked.
+        // CVC5::DType class, but this actually needs to be checked.
         AlwaysAssert(!selectorType.getRangeType().isFunctionLike())
             << "cannot put function-like things in datatypes";
       }
@@ -1168,4 +1170,4 @@ Kind NodeManager::getKindForFunction(TNode fun)
   return kind::UNDEFINED_KIND;
 }
 
-}/* CVC4 namespace */
+}  // namespace CVC5

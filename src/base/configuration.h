@@ -25,7 +25,7 @@
 
 #include "cvc4_export.h"
 
-namespace CVC4 {
+namespace CVC5 {
 
 /**
  * Represents the (static) configuration of CVC4.
@@ -57,8 +57,6 @@ public:
   static bool isMuzzledBuild();
 
   static bool isAssertionBuild();
-
-  static bool isProofBuild();
 
   static bool isCoverageBuild();
 
@@ -106,11 +104,7 @@ public:
 
   static bool isBuiltWithKissat();
 
-  static bool isBuiltWithDrat2Er();
-
   static bool isBuiltWithEditline();
-
-  static bool isBuiltWithLfsc();
 
   static bool isBuiltWithPoly();
 
@@ -141,6 +135,6 @@ public:
 
 }; /* class Configuration */
 
-}/* CVC4 namespace */
+}  // namespace CVC5
 
 #endif /* CVC4__CONFIGURATION_H */

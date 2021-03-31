@@ -32,12 +32,11 @@
 #include "parser/parser_builder.h"
 #include "parser/parser_exception.h"
 #include "util/result.h"
-#include "util/statistics.h"
 
 using namespace std;
-using namespace CVC4;
-using namespace CVC4::main;
-using namespace CVC4::language;
+using namespace CVC5;
+using namespace CVC5::main;
+using namespace CVC5::language;
 
 /**
  * CVC4's main() routine is just an exception-safe wrapper around CVC4.
@@ -67,8 +66,9 @@ int main(int argc, char* argv[]) {
     } else {
       *opts.getErr() << "(error \"" << e << "\")" << endl;
     }
-    if(opts.getStatistics() && pExecutor != NULL) {
-      pTotalTime->stop();
+    if (opts.getStatistics() && pExecutor != nullptr)
+    {
+      totalTime.reset();
       pExecutor->flushStatistics(*opts.getErr());
     }
   }

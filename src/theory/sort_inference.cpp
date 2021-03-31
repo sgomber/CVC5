@@ -21,6 +21,7 @@
 
 #include "theory/sort_inference.h"
 
+#include <sstream>
 #include <vector>
 
 #include "options/quantifiers_options.h"
@@ -29,11 +30,11 @@
 #include "theory/rewriter.h"
 #include "theory/quantifiers/quant_util.h"
 
-using namespace CVC4;
-using namespace CVC4::kind;
+using namespace CVC5;
+using namespace CVC5::kind;
 using namespace std;
 
-namespace CVC4 {
+namespace CVC5 {
 namespace theory {
 
 void SortInference::UnionFind::print(const char * c){
@@ -868,4 +869,4 @@ bool SortInference::isHandledApplyUf(Kind k) const
 }
 
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace CVC5

@@ -22,8 +22,9 @@
 #include "theory/quantifiers/inst_match.h"
 #include "theory/quantifiers/ematching/im_generator.h"
 
-namespace CVC4 {
+namespace CVC5 {
 namespace theory {
+namespace quantifiers {
 namespace inst {
 
 class CandidateGenerator;
@@ -321,8 +322,9 @@ class InstMatchGenerator : public IMGenerator {
                                                    Node n);
 };/* class InstMatchGenerator */
 
+}  // namespace inst
 }
 }
-}
+}  // namespace CVC5
 
 #endif

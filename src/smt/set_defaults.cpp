@@ -14,6 +14,8 @@
 
 #include "smt/set_defaults.h"
 
+#include <sstream>
+
 #include "base/output.h"
 #include "options/arith_options.h"
 #include "options/arrays_options.h"
@@ -39,9 +41,9 @@
 #include "smt/logic_exception.h"
 #include "theory/theory.h"
 
-using namespace CVC4::theory;
+using namespace CVC5::theory;
 
-namespace CVC4 {
+namespace CVC5 {
 namespace smt {
 
 void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
@@ -1478,4 +1480,4 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
 }
 
 }  // namespace smt
-}  // namespace CVC4
+}  // namespace CVC5

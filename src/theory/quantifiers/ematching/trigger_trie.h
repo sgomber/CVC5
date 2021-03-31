@@ -22,9 +22,9 @@
 #include "expr/node.h"
 #include "theory/quantifiers/ematching/trigger.h"
 
-namespace CVC4 {
+namespace CVC5 {
 namespace theory {
-
+namespace quantifiers {
 namespace inst {
 
 /** A trie of triggers.
@@ -56,7 +56,8 @@ class TriggerTrie
 }; /* class inst::Trigger::TriggerTrie */
 
 }  // namespace inst
+}  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace CVC5
 
 #endif /* CVC4__THEORY__QUANTIFIERS__TRIGGER_TRIE_H */

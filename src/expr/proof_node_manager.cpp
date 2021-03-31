@@ -14,6 +14,8 @@
 
 #include "expr/proof_node_manager.h"
 
+#include <sstream>
+
 #include "expr/proof.h"
 #include "expr/proof_checker.h"
 #include "expr/proof_node.h"
@@ -21,9 +23,9 @@
 #include "options/proof_options.h"
 #include "theory/rewriter.h"
 
-using namespace CVC4::kind;
+using namespace CVC5::kind;
 
-namespace CVC4 {
+namespace CVC5 {
 
 ProofNodeManager::ProofNodeManager(ProofChecker* pc)
     : d_checker(pc)
@@ -354,4 +356,4 @@ bool ProofNodeManager::updateNodeInternal(
   return true;
 }
 
-}  // namespace CVC4
+}  // namespace CVC5

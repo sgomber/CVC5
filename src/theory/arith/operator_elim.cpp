@@ -14,6 +14,8 @@
 
 #include "theory/arith/operator_elim.h"
 
+#include <sstream>
+
 #include "expr/attribute.h"
 #include "expr/bound_var_manager.h"
 #include "expr/skolem_manager.h"
@@ -24,9 +26,9 @@
 #include "theory/rewriter.h"
 #include "theory/theory.h"
 
-using namespace CVC4::kind;
+using namespace CVC5::kind;
 
-namespace CVC4 {
+namespace CVC5 {
 namespace theory {
 namespace arith {
 
@@ -497,4 +499,4 @@ Node OperatorElim::mkWitnessTerm(Node v,
 
 }  // namespace arith
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace CVC5

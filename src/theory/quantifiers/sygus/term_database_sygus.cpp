@@ -14,6 +14,8 @@
 
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 
+#include <sstream>
+
 #include "base/check.h"
 #include "expr/dtype_cons.h"
 #include "expr/sygus_datatype.h"
@@ -28,9 +30,9 @@
 #include "theory/quantifiers/term_util.h"
 #include "theory/rewriter.h"
 
-using namespace CVC4::kind;
+using namespace CVC5::kind;
 
-namespace CVC4 {
+namespace CVC5 {
 namespace theory {
 namespace quantifiers {
 
@@ -1087,6 +1089,6 @@ bool TermDbSygus::isEvaluationPoint(Node n) const
   return true;
 }
 
-}/* CVC4::theory::quantifiers namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace CVC5

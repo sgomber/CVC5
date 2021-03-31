@@ -30,7 +30,7 @@
 #include "options/printer_modes.h"
 #include "options/quantifiers_options.h"
 
-namespace CVC4 {
+namespace CVC5 {
 
 class Options;
 
@@ -86,8 +86,6 @@ public:
    * initialization.
    */
   void setProduceAssertions(std::string option, bool value);
-  void proofEnabledBuild(std::string option, bool value);
-  void LFSCEnabledBuild(std::string option, bool value);
 
   void statsEnabledBuild(std::string option, bool value);
 
@@ -135,7 +133,7 @@ void OptionsHandler::checkSatSolverEnabled(std::string option, T m)
 #endif
 }
 
-}/* CVC4::options namespace */
-}/* CVC4 namespace */
+}  // namespace options
+}  // namespace CVC5
 
 #endif /*  CVC4__OPTIONS__OPTIONS_HANDLER_H */

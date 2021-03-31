@@ -20,7 +20,6 @@
 #define CVC4__THEORY__QUANTIFIERS__THEORY_QUANTIFIERS_H
 
 #include "expr/node.h"
-#include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/proof_checker.h"
 #include "theory/quantifiers/quantifiers_inference_manager.h"
 #include "theory/quantifiers/quantifiers_registry.h"
@@ -31,7 +30,7 @@
 #include "theory/theory.h"
 #include "theory/valuation.h"
 
-namespace CVC4 {
+namespace CVC5 {
 namespace theory {
 namespace quantifiers {
 
@@ -89,8 +88,6 @@ class TheoryQuantifiers : public Theory {
   QuantifiersState d_qstate;
   /** The quantifiers registry */
   QuantifiersRegistry d_qreg;
-  /** extended model object */
-  std::unique_ptr<FirstOrderModel> d_qmodel;
   /** The term registry */
   TermRegistry d_treg;
   /** The quantifiers inference manager */
@@ -99,8 +96,8 @@ class TheoryQuantifiers : public Theory {
   std::unique_ptr<QuantifiersEngine> d_qengine;
 };/* class TheoryQuantifiers */
 
-}/* CVC4::theory::quantifiers namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace CVC5
 
 #endif /* CVC4__THEORY__QUANTIFIERS__THEORY_QUANTIFIERS_H */

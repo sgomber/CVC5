@@ -20,7 +20,7 @@
 #include "util/statistics_registry.h"
 #include "util/stats_timer.h"
 
-namespace CVC4 {
+namespace CVC5 {
 namespace smt {
 
 struct SmtEngineStatistics
@@ -50,9 +50,16 @@ struct SmtEngineStatistics
 
   /** Has something simplified to false? */
   IntStat d_simplifiedToFalse;
+
+  /** Name of the input file */
+  BackedStat<std::string> d_driverFilename;
+  /** Result of the last check */
+  BackedStat<std::string> d_driverResult;
+  /** Total time of the current run */
+  BackedStat<double> d_driverTotalTime;
 }; /* struct SmtEngineStatistics */
 
 }  // namespace smt
-}  // namespace CVC4
+}  // namespace CVC5
 
 #endif /* CVC4__SMT__SMT_ENGINE_STATS_H */

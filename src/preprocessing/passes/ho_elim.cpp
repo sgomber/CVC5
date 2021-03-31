@@ -16,15 +16,17 @@
 
 #include "preprocessing/passes/ho_elim.h"
 
+#include <sstream>
+
 #include "expr/node_algorithm.h"
 #include "options/quantifiers_options.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "theory/rewriter.h"
 #include "theory/uf/theory_uf_rewriter.h"
 
-using namespace CVC4::kind;
+using namespace CVC5::kind;
 
-namespace CVC4 {
+namespace CVC5 {
 namespace preprocessing {
 namespace passes {
 
@@ -537,4 +539,4 @@ TypeNode HoElim::getUSort(TypeNode tn)
 
 }  // namespace passes
 }  // namespace preprocessing
-}  // namespace CVC4
+}  // namespace CVC5

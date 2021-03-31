@@ -14,15 +14,25 @@
 
 #include "theory/quantifiers/fmf/first_order_model_fmc.h"
 
+#include "expr/attribute.h"
 #include "theory/quantifiers/fmf/full_model_check.h"
 #include "theory/rewriter.h"
 
-using namespace CVC4::kind;
+using namespace CVC5::kind;
 
-namespace CVC4 {
+namespace CVC5 {
 namespace theory {
 namespace quantifiers {
 namespace fmcheck {
+
+/**
+ * Marks that a term represents the entire domain of quantified formula for
+ * the finite model finding fmc algorithm.
+ */
+struct IsStarAttributeId
+{
+};
+using IsStarAttribute = expr::Attribute<IsStarAttributeId, bool>;
 
 FirstOrderModelFmc::FirstOrderModelFmc(QuantifiersState& qs,
                                        QuantifiersRegistry& qr,
@@ -146,4 +156,4 @@ Node FirstOrderModelFmc::getFunctionValue(Node op, const char* argPrefix)
 }  // namespace fmcheck
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace CVC5

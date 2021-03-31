@@ -25,9 +25,11 @@
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_enumeration.h"
 
-namespace CVC4 {
+namespace CVC5 {
 namespace theory {
 namespace quantifiers {
+
+class FirstOrderModel;
 
 /**
  * Term Registry, which manages notifying modules within quantifiers about
@@ -54,16 +56,35 @@ class TermRegistry
    */
   void addTerm(Node n, bool withinQuant = false);
 
+  /** get term for type
+   *
+   * This returns an arbitrary term for type tn.
+   * This term is chosen heuristically to be the best
+   * term for instantiation. Currently, this
+   * heuristic enumerates the first term of the
+   * type if the type is closed enumerable, otherwise
+   * an existing ground term from the term database if
+   * one exists, or otherwise a fresh variable.
+   */
+  Node getTermForType(TypeNode tn);
+
+  /** Whether we use the full model check builder and corresponding model */
+  bool useFmcModel() const;
+
   /** get term database */
   TermDb* getTermDatabase() const;
   /** get term database sygus */
   TermDbSygus* getTermDatabaseSygus() const;
   /** get term enumeration utility */
   TermEnumeration* getTermEnumeration() const;
+  /** get the model utility */
+  FirstOrderModel* getModel() const;
 
  private:
   /** has presolve been called */
   context::CDO<bool> d_presolve;
+  /** Whether we are using the fmc model */
+  bool d_useFmcModel;
   /** the set of terms we have seen before presolve */
   NodeSet d_presolveCache;
   /** term enumeration utility */
@@ -72,10 +93,12 @@ class TermRegistry
   std::unique_ptr<TermDb> d_termDb;
   /** sygus term database */
   std::unique_ptr<TermDbSygus> d_sygusTdb;
+  /** extended model object */
+  std::unique_ptr<FirstOrderModel> d_qmodel;
 };
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace CVC5
 
 #endif /* CVC4__THEORY__QUANTIFIERS__TERM_REGISTRY_H */
