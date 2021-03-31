@@ -29,6 +29,7 @@
 #include "expr/node.h"
 #include "util/hash.h"
 #include "util/statistics_registry.h"
+#include "util/stats_histogram.h"
 
 namespace CVC4 {
 namespace preprocessing {
@@ -305,7 +306,7 @@ class ITESimplifier
     IntStat d_specialEqualityFolds;
     IntStat d_simpITEVisits;
 
-    HistogramStat<uint32_t> d_inSmaller;
+    IntegralHistogramStat<uint32_t> d_inSmaller;
 
     Statistics();
     ~Statistics();

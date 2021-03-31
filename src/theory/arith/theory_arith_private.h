@@ -212,8 +212,10 @@ private:
     return d_partialModel.isAuxiliary(x);
   }
 
-  inline bool isIntegerInput(ArithVar x) const {
-    return d_partialModel.isIntegerInput(x);
+  inline bool isIntegerInput(ArithVar x) const
+  {
+    return d_partialModel.isIntegerInput(x)
+           && d_preregisteredNodes.contains(d_partialModel.asNode(x));
   }
 
   /**
@@ -267,6 +269,11 @@ private:
 
   context::CDQueue<ConstraintP> d_learnedBounds;
 
+  /**
+   * Contains all nodes that have been preregistered
+   */
+  context::CDHashSet<Node, NodeHashFunction> d_preregisteredNodes;
+
 
   /**
    * Manages information about the assignment and upper and lower bounds on
@@ -309,7 +316,7 @@ private:
 
 
   /** This is only used by simplex at the moment. */
-  context::CDList<ConstraintCP> d_conflicts;
+  context::CDList<std::pair<ConstraintCP, InferenceId>> d_conflicts;
 
   /** This is only used by simplex at the moment. */
   context::CDO<Node> d_blackBoxConflict;
@@ -323,7 +330,7 @@ private:
    * This adds the constraint a to the queue of conflicts in d_conflicts.
    * Both a and ~a must have a proof.
    */
-  void raiseConflict(ConstraintCP a);
+  void raiseConflict(ConstraintCP a, InferenceId id);
 
   // inline void raiseConflict(const ConstraintCPVec& cv){
   //   d_conflicts.push_back(cv);
@@ -417,9 +424,6 @@ private:
    */
   DeltaRational getDeltaValue(TNode term) const
       /* throw(DeltaRationalException, ModelException) */;
-
-  Node axiomIteForTotalDivision(Node div_tot);
-  Node axiomIteForTotalIntDivision(Node int_div_like);
  public:
   TheoryArithPrivate(TheoryArith& containing,
                      context::Context* c,
@@ -547,7 +551,7 @@ private:
    *
    * If there is no such variable, returns ARITHVAR_SENTINEL;
    */
-  ArithVar nextIntegerViolatation(bool assumeBounds) const;
+  ArithVar nextIntegerViolation(bool assumeBounds) const;
 
   /**
    * Issues branches for non-auxiliary integer variables with non-integer assignments.
@@ -693,10 +697,10 @@ private:
   inline TheoryId theoryOf(TNode x) const { return d_containing.theoryOf(x); }
   inline void debugPrintFacts() const { d_containing.debugPrintFacts(); }
   inline context::Context* getSatContext() const { return d_containing.getSatContext(); }
-  void outputTrustedLemma(TrustNode lem);
-  void outputLemma(TNode lem);
-  void outputTrustedConflict(TrustNode conf);
-  void outputConflict(TNode lit);
+  void outputTrustedLemma(TrustNode lem, InferenceId id);
+  void outputLemma(TNode lem, InferenceId id);
+  void outputTrustedConflict(TrustNode conf, InferenceId id);
+  void outputConflict(TNode lit, InferenceId id);
   void outputPropagate(TNode lit);
   void outputRestart();
 
@@ -855,9 +859,9 @@ private:
     IntStat d_cutsRejectedDuringReplay;
     IntStat d_cutsRejectedDuringLemmas;
 
-    HistogramStat<uint32_t> d_satPivots;
-    HistogramStat<uint32_t> d_unsatPivots;
-    HistogramStat<uint32_t> d_unknownPivots;
+    IntegralHistogramStat<uint32_t> d_satPivots;
+    IntegralHistogramStat<uint32_t> d_unsatPivots;
+    IntegralHistogramStat<uint32_t> d_unknownPivots;
 
 
     IntStat d_solveIntModelsAttempts;

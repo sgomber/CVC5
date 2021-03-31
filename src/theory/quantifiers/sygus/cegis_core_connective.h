@@ -26,6 +26,9 @@
 #include "util/result.h"
 
 namespace CVC4 {
+
+class SmtEngine;
+
 namespace theory {
 namespace quantifiers {
 
@@ -156,8 +159,8 @@ class VariadicTrie
 class CegisCoreConnective : public Cegis
 {
  public:
-  CegisCoreConnective(QuantifiersEngine* qe,
-                      QuantifiersInferenceManager& qim,
+  CegisCoreConnective(QuantifiersInferenceManager& qim,
+                      TermDbSygus* tds,
                       SynthConjecture* p);
   ~CegisCoreConnective() {}
   /**

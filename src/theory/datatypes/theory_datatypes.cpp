@@ -122,8 +122,7 @@ void TheoryDatatypes::finishInit()
   {
     quantifiers::TermDbSygus* tds =
         getQuantifiersEngine()->getTermDatabaseSygus();
-    d_sygusExtension.reset(
-        new SygusExtension(d_state, d_im, tds, getDecisionManager()));
+    d_sygusExtension.reset(new SygusExtension(d_state, d_im, tds));
     // do congruence on evaluation functions
     d_equalityEngine->addFunctionKind(kind::DT_SYGUS_EVAL);
   }
@@ -190,9 +189,7 @@ void TheoryDatatypes::postCheck(Effort level)
   if (level == EFFORT_LAST_CALL)
   {
     Assert(d_sygusExtension != nullptr);
-    std::vector<Node> lemmas;
-    d_sygusExtension->check(lemmas);
-    d_im.sendLemmas(lemmas, InferenceId::UNKNOWN);
+    d_sygusExtension->check();
     return;
   }
   else if (level == EFFORT_FULL && !d_state.isInConflict()
@@ -335,7 +332,7 @@ void TheoryDatatypes::postCheck(Effort level)
                     nb << test << test.notNode();
                     Node lemma = nb;
                     d_im.lemma(lemma, InferenceId::DATATYPES_BINARY_SPLIT);
-                    d_out->requirePhase( test, true );
+                    d_im.requirePhase(test, true);
                   }else{
                     Trace("dt-split") << "*************Split for constructors on " << n <<  endl;
                     Node lemma = utils::mkSplit(n, dt);
@@ -403,9 +400,7 @@ void TheoryDatatypes::notifyFact(TNode atom,
   // could be sygus-specific
   if (d_sygusExtension)
   {
-    std::vector< Node > lemmas;
-    d_sygusExtension->assertFact(atom, polarity, lemmas);
-    d_im.sendLemmas(lemmas, InferenceId::UNKNOWN);
+    d_sygusExtension->assertFact(atom, polarity);
   }
   //add to tester if applicable
   Node t_arg;
@@ -425,10 +420,8 @@ void TheoryDatatypes::notifyFact(TNode atom,
       if (d_sygusExtension)
       {
         Trace("dt-tester") << "Assert tester to sygus : " << atom << std::endl;
-        std::vector< Node > lemmas;
-        d_sygusExtension->assertTester(tindex, t_arg, atom, lemmas);
+        d_sygusExtension->assertTester(tindex, t_arg, atom);
         Trace("dt-tester") << "Done assert tester to sygus." << std::endl;
-        d_im.sendLemmas(lemmas, InferenceId::UNKNOWN);
       }
     }
   }else{
@@ -486,9 +479,7 @@ void TheoryDatatypes::preRegisterTerm(TNode n)
     d_equalityEngine->addTerm(n);
     if (d_sygusExtension)
     {
-      std::vector< Node > lemmas;
-      d_sygusExtension->preRegisterTerm(n, lemmas);
-      d_im.sendLemmas(lemmas, InferenceId::UNKNOWN);
+      d_sygusExtension->preRegisterTerm(n);
     }
     break;
   }
@@ -609,7 +600,7 @@ TrustNode TheoryDatatypes::expandDefinition(Node n)
   return TrustNode::null();
 }
 
-TrustNode TheoryDatatypes::ppRewrite(TNode in)
+TrustNode TheoryDatatypes::ppRewrite(TNode in, std::vector<SkolemLemma>& lems)
 {
   Debug("tuprec") << "TheoryDatatypes::ppRewrite(" << in << ")" << endl;
   // first, see if we need to expand definitions

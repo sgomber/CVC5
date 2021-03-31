@@ -119,8 +119,13 @@ protected:
   std::map<TypeNode, bool> d_preinitialized_types;
   //--------------------end for preinitialization
   Node normalizeArgReps(FirstOrderModelFmc * fm, Node op, Node n);
-  bool exhaustiveInstantiate(FirstOrderModelFmc * fm, Node f, Node c, int c_index);
-private:
+  /**
+   * Exhaustively instantiate quantified formula q based on condition c, which
+   * indicate the domain to instantiate.
+   */
+  bool exhaustiveInstantiate(FirstOrderModelFmc* fm, Node q, Node c);
+
+ private:
   void doCheck(FirstOrderModelFmc * fm, Node f, Def & d, Node n );
 
   void doNegate( Def & dc );
@@ -149,7 +154,9 @@ private:
   Node getSomeDomainElement( FirstOrderModelFmc * fm, TypeNode tn );
 
  public:
-  FullModelChecker(QuantifiersEngine* qe, QuantifiersState& qs);
+  FullModelChecker(QuantifiersState& qs,
+                   QuantifiersRegistry& qr,
+                   QuantifiersInferenceManager& qim);
 
   void debugPrintCond(const char * tr, Node n, bool dispStar = false);
   void debugPrint(const char * tr, Node n, bool dispStar = false);

@@ -12,6 +12,7 @@
 # Collect libcvc4 source files
 
 libcvc4_add_sources(
+  api/checks.h
   api/cvc4cpp.cpp
   api/cvc4cpp.h
   api/cvc4cppkind.h
@@ -139,6 +140,8 @@ libcvc4_add_sources(
   proof/clause_id.h
   proof/cnf_proof.cpp
   proof/cnf_proof.h
+  proof/dot/dot_printer.cpp
+  proof/dot/dot_printer.h
   proof/proof_manager.cpp
   proof/proof_manager.h
   proof/sat_proof.h
@@ -206,6 +209,8 @@ libcvc4_add_sources(
   prop/sat_solver_factory.h
   prop/sat_solver_types.cpp
   prop/sat_solver_types.h
+  prop/skolem_def_manager.cpp
+  prop/skolem_def_manager.h
   prop/theory_proxy.cpp
   prop/theory_proxy.h
   smt/abduction_solver.cpp
@@ -223,6 +228,8 @@ libcvc4_add_sources(
   smt/dump.h
   smt/dump_manager.cpp
   smt/dump_manager.h
+  smt/env.cpp
+  smt/env.h
   smt/expand_definitions.cpp
   smt/expand_definitions.h
   smt/listeners.cpp
@@ -483,6 +490,7 @@ libcvc4_add_sources(
   theory/bags/theory_bags_type_enumerator.cpp
   theory/bags/theory_bags_type_enumerator.h
   theory/bags/theory_bags_type_rules.h
+  theory/bags/theory_bags_type_rules.cpp
   theory/booleans/circuit_propagator.cpp
   theory/booleans/circuit_propagator.h
   theory/booleans/proof_circuit_propagator.cpp
@@ -542,6 +550,7 @@ libcvc4_add_sources(
   theory/bv/bv_subtheory_core.h
   theory/bv/bv_subtheory_inequality.cpp
   theory/bv/bv_subtheory_inequality.h
+  theory/bv/int_blaster.h
   theory/bv/proof_checker.cpp
   theory/bv/proof_checker.h
   theory/bv/slicer.cpp
@@ -616,6 +625,7 @@ libcvc4_add_sources(
   theory/fp/theory_fp_rewriter.cpp
   theory/fp/theory_fp_rewriter.h
   theory/fp/theory_fp_type_rules.h
+  theory/fp/theory_fp_type_rules.cpp
   theory/fp/type_enumerator.h
   theory/interrupted.h
   theory/inference_id.cpp
@@ -666,6 +676,8 @@ libcvc4_add_sources(
   theory/quantifiers/ematching/candidate_generator.h
   theory/quantifiers/ematching/ho_trigger.cpp
   theory/quantifiers/ematching/ho_trigger.h
+  theory/quantifiers/ematching/im_generator.cpp
+  theory/quantifiers/ematching/im_generator.h
   theory/quantifiers/ematching/inst_match_generator.cpp
   theory/quantifiers/ematching/inst_match_generator.h
   theory/quantifiers/ematching/inst_match_generator_multi.cpp
@@ -686,6 +698,8 @@ libcvc4_add_sources(
   theory/quantifiers/ematching/pattern_term_selector.h
   theory/quantifiers/ematching/trigger.cpp
   theory/quantifiers/ematching/trigger.h
+  theory/quantifiers/ematching/trigger_database.cpp
+  theory/quantifiers/ematching/trigger_database.h
   theory/quantifiers/ematching/trigger_term_info.cpp
   theory/quantifiers/ematching/trigger_term_info.h
   theory/quantifiers/ematching/trigger_trie.cpp
@@ -714,6 +728,8 @@ libcvc4_add_sources(
   theory/quantifiers/fmf/model_engine.h
   theory/quantifiers/fun_def_evaluator.cpp
   theory/quantifiers/fun_def_evaluator.h
+  theory/quantifiers/index_trie.cpp
+  theory/quantifiers/index_trie.h
   theory/quantifiers/inst_match.cpp
   theory/quantifiers/inst_match.h
   theory/quantifiers/inst_match_trie.cpp
@@ -728,6 +744,8 @@ libcvc4_add_sources(
   theory/quantifiers/lazy_trie.h
   theory/quantifiers/proof_checker.cpp
   theory/quantifiers/proof_checker.h
+  theory/quantifiers/quant_bound_inference.cpp
+  theory/quantifiers/quant_bound_inference.h
   theory/quantifiers/quant_conflict_find.cpp
   theory/quantifiers/quant_conflict_find.h
   theory/quantifiers/quant_relevance.cpp
@@ -752,6 +770,8 @@ libcvc4_add_sources(
   theory/quantifiers/quantifiers_rewriter.h
   theory/quantifiers/quantifiers_state.cpp
   theory/quantifiers/quantifiers_state.h
+  theory/quantifiers/quantifiers_statistics.cpp
+  theory/quantifiers/quantifiers_statistics.h
   theory/quantifiers/query_generator.cpp
   theory/quantifiers/query_generator.h
   theory/quantifiers/relevant_domain.cpp
@@ -762,10 +782,10 @@ libcvc4_add_sources(
   theory/quantifiers/skolemize.h
   theory/quantifiers/solution_filter.cpp
   theory/quantifiers/solution_filter.h
+  theory/quantifiers/term_tuple_enumerator.cpp
+  theory/quantifiers/term_tuple_enumerator.h
   theory/quantifiers/sygus/ce_guided_single_inv.cpp
   theory/quantifiers/sygus/ce_guided_single_inv.h
-  theory/quantifiers/sygus/ce_guided_single_inv_sol.cpp
-  theory/quantifiers/sygus/ce_guided_single_inv_sol.h
   theory/quantifiers/sygus/cegis.cpp
   theory/quantifiers/sygus/cegis.h
   theory/quantifiers/sygus/cegis_core_connective.cpp
@@ -784,6 +804,10 @@ libcvc4_add_sources(
   theory/quantifiers/sygus/example_infer.h
   theory/quantifiers/sygus/example_min_eval.cpp
   theory/quantifiers/sygus/example_min_eval.h
+  theory/quantifiers/sygus/rcons_obligation_info.cpp
+  theory/quantifiers/sygus/rcons_obligation_info.h
+  theory/quantifiers/sygus/rcons_type_info.cpp
+  theory/quantifiers/sygus/rcons_type_info.h
   theory/quantifiers/sygus/sygus_abduct.cpp
   theory/quantifiers/sygus/sygus_abduct.h
   theory/quantifiers/sygus/sygus_enumerator.cpp
@@ -810,6 +834,8 @@ libcvc4_add_sources(
   theory/quantifiers/sygus/sygus_pbe.h
   theory/quantifiers/sygus/sygus_process_conj.cpp
   theory/quantifiers/sygus/sygus_process_conj.h
+  theory/quantifiers/sygus/sygus_reconstruct.cpp
+  theory/quantifiers/sygus/sygus_reconstruct.h
   theory/quantifiers/sygus/sygus_qe_preproc.cpp
   theory/quantifiers/sygus/sygus_qe_preproc.h
   theory/quantifiers/sygus/sygus_repair_const.cpp
@@ -902,6 +928,7 @@ libcvc4_add_sources(
   theory/shared_solver_test.h
   theory/shared_terms_database.cpp
   theory/shared_terms_database.h
+  theory/skolem_lemma.cpp
   theory/skolem_lemma.h
   theory/smt_engine_subsolver.cpp
   theory/smt_engine_subsolver.h
@@ -1081,6 +1108,9 @@ target_include_directories(cvc4
     $<INSTALL_INTERFACE:include>
 )
 
+include(GenerateExportHeader)
+generate_export_header(cvc4)
+
 install(TARGETS cvc4
   EXPORT cvc4-targets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -1101,55 +1131,41 @@ if(ENABLE_VALGRIND)
   target_include_directories(cvc4 PRIVATE ${Valgrind_INCLUDE_DIR})
 endif()
 if(USE_ABC)
-  target_link_libraries(cvc4 ${ABC_LIBRARIES})
+  target_link_libraries(cvc4 PRIVATE ${ABC_LIBRARIES})
   target_include_directories(cvc4 PRIVATE ${ABC_INCLUDE_DIR})
 endif()
 if(USE_CADICAL)
-  target_link_libraries(cvc4 ${CaDiCaL_LIBRARIES})
-  target_include_directories(cvc4 PRIVATE ${CaDiCaL_INCLUDE_DIR})
+  target_link_libraries(cvc4 PRIVATE CaDiCaL)
 endif()
 if(USE_CLN)
-  target_link_libraries(cvc4 ${CLN_LIBRARIES})
-  target_include_directories(cvc4 PUBLIC $<BUILD_INTERFACE:${CLN_INCLUDE_DIR}>)
+  target_link_libraries(cvc4 PRIVATE ${CLN_LIBRARIES})
+  target_include_directories(cvc4 PRIVATE $<BUILD_INTERFACE:${CLN_INCLUDE_DIR}>)
 endif()
 if(USE_CRYPTOMINISAT)
-  target_link_libraries(cvc4 ${CryptoMiniSat_LIBRARIES})
-  target_include_directories(cvc4 PRIVATE ${CryptoMiniSat_INCLUDE_DIR})
+  target_link_libraries(cvc4 PRIVATE CryptoMiniSat)
 endif()
 if(USE_KISSAT)
-  target_link_libraries(cvc4 ${Kissat_LIBRARIES})
-  target_include_directories(cvc4 PRIVATE ${Kissat_INCLUDE_DIR})
-endif()
-if(USE_DRAT2ER)
-  target_link_libraries(cvc4 ${Drat2Er_LIBRARIES})
-  target_include_directories(cvc4 PRIVATE ${Drat2Er_INCLUDE_DIR})
+  target_link_libraries(cvc4 PRIVATE Kissat)
 endif()
 if(USE_GLPK)
-  target_link_libraries(cvc4 ${GLPK_LIBRARIES})
+  target_link_libraries(cvc4 PRIVATE ${GLPK_LIBRARIES})
   target_include_directories(cvc4 PRIVATE ${GLPK_INCLUDE_DIR})
 endif()
-if(USE_LFSC)
-  target_link_libraries(cvc4 ${LFSC_LIBRARIES})
-  target_include_directories(cvc4 PRIVATE ${LFSC_INCLUDE_DIR})
-endif()
 if(USE_POLY)
-  target_link_libraries(cvc4 ${POLY_LIBRARIES})
-  target_include_directories(cvc4 PRIVATE ${POLY_INCLUDE_DIR})
+  target_link_libraries(cvc4 PRIVATE Polyxx)
 endif()
 if(USE_SYMFPU)
-  target_include_directories(cvc4
-    PUBLIC $<BUILD_INTERFACE:${SymFPU_INCLUDE_DIR}>)
+  target_link_libraries(cvc4 PRIVATE SymFPU)
 endif()
 
 # Note: When linked statically GMP needs to be linked after CLN since CLN
 # depends on GMP.
-target_link_libraries(cvc4 ${GMP_LIBRARIES})
-target_include_directories(cvc4 PUBLIC $<BUILD_INTERFACE:${GMP_INCLUDE_DIR}>)
+target_link_libraries(cvc4 PRIVATE GMP)
 
 # Add rt library
 # Note: For glibc < 2.17 we have to additionally link against rt (man clock_gettime).
 #       RT_LIBRARIES should be empty for glibc >= 2.17
-target_link_libraries(cvc4 ${RT_LIBRARIES})
+target_link_libraries(cvc4 PRIVATE ${RT_LIBRARIES})
 
 #-----------------------------------------------------------------------------#
 # Visit main subdirectory after creating target cvc4. For target main, we have
@@ -1162,120 +1178,17 @@ if (NOT BUILD_LIB_ONLY)
 endif()
 
 #-----------------------------------------------------------------------------#
-# Note:
-# We define all install commands for all public headers here in one
-# place so that we can easily remove them as soon as we enforce the new
-# C++ API.
-#
-# All (generated) headers that either include cvc4_public.h or
-# cvc4parser_public.h need to be listed explicitly here.
-#
+# Install public API headers
+
 install(FILES
           api/cvc4cpp.h
           api/cvc4cppkind.h
         DESTINATION
           ${CMAKE_INSTALL_INCLUDEDIR}/cvc4/api)
 install(FILES
-          base/configuration.h
-          base/exception.h
-          base/listener.h
-          base/modal_exception.h
+          ${CMAKE_CURRENT_BINARY_DIR}/cvc4_export.h
         DESTINATION
-          ${CMAKE_INSTALL_INCLUDEDIR}/cvc4/base)
-install(FILES
-          context/cdhashmap_forward.h
-          context/cdhashset_forward.h
-          context/cdinsert_hashmap_forward.h
-          context/cdlist_forward.h
-        DESTINATION
-          ${CMAKE_INSTALL_INCLUDEDIR}/cvc4/context)
-install(FILES
-          include/cvc4.h
-          include/cvc4_public.h
-          include/cvc4parser_public.h
-        DESTINATION
-          ${CMAKE_INSTALL_INCLUDEDIR}/cvc4)
-install(FILES
-          expr/array_store_all.h
-          expr/ascription_type.h
-          expr/emptyset.h
-          expr/expr_iomanip.h
-          expr/record.h
-          expr/sequence.h
-          expr/symbol_manager.h
-          expr/symbol_table.h
-          expr/type.h
-          expr/uninterpreted_constant.h
-          expr/variable_type_map.h
-          ${CMAKE_CURRENT_BINARY_DIR}/expr/expr.h
-          ${CMAKE_CURRENT_BINARY_DIR}/expr/kind.h
-          ${CMAKE_CURRENT_BINARY_DIR}/expr/expr_manager.h
-        DESTINATION
-          ${CMAKE_INSTALL_INCLUDEDIR}/cvc4/expr)
-install(FILES
-          options/language.h
-          options/option_exception.h
-          options/options.h
-          options/printer_modes.h
-          options/set_language.h
-        DESTINATION
-          ${CMAKE_INSTALL_INCLUDEDIR}/cvc4/options)
-install(FILES
-          parser/input.h
-          parser/parser.h
-          parser/parser_builder.h
-          parser/parser_exception.h
-          parser/parse_op.h
-        DESTINATION
-          ${CMAKE_INSTALL_INCLUDEDIR}/cvc4/parser)
-install(FILES
-        DESTINATION
-          ${CMAKE_INSTALL_INCLUDEDIR}/cvc4/printer)
-install(FILES
-          proof/unsat_core.h
-        DESTINATION
-          ${CMAKE_INSTALL_INCLUDEDIR}/cvc4/proof)
-install(FILES
-          smt/command.h
-          smt/logic_exception.h
-          smt/smt_engine.h
-        DESTINATION
-          ${CMAKE_INSTALL_INCLUDEDIR}/cvc4/smt)
-install(FILES
-          theory/logic_info.h
-          theory/theory_id.h
-        DESTINATION
-          ${CMAKE_INSTALL_INCLUDEDIR}/cvc4/theory)
-install(FILES
-          util/abstract_value.h
-          util/bitvector.h
-          util/bool.h
-          util/cardinality.h
-          util/divisible.h
-          util/gmp_util.h
-          util/hash.h
-          util/iand.h
-          util/integer_cln_imp.h
-          util/integer_gmp_imp.h
-          util/maybe.h
-          util/poly_util.h
-          util/rational_cln_imp.h
-          util/rational_gmp_imp.h
-          util/real_algebraic_number_poly_imp.h
-          util/regexp.h
-          util/resource_manager.h
-          util/result.h
-          util/sexpr.h
-          util/statistics.h
-          util/string.h
-          util/tuple.h
-          util/unsafe_interrupt_exception.h
-          ${CMAKE_CURRENT_BINARY_DIR}/util/integer.h
-          ${CMAKE_CURRENT_BINARY_DIR}/util/rational.h
-          ${CMAKE_CURRENT_BINARY_DIR}/util/real_algebraic_number.h
-          ${CMAKE_CURRENT_BINARY_DIR}/util/floatingpoint_literal_symfpu.h
-        DESTINATION
-          ${CMAKE_INSTALL_INCLUDEDIR}/cvc4/util)
+          ${CMAKE_INSTALL_INCLUDEDIR}/cvc4/)
 
 # Fix include paths for all public headers.
 # Note: This is a temporary fix until the new C++ API is in place.

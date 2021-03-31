@@ -275,17 +275,6 @@ void CvcPrinter::toStreamNode(std::ostream& out,
       out << " ENDIF";
       return;
       break;
-    case kind::SEXPR_TYPE:
-      out << '[';
-      for (unsigned i = 0; i < n.getNumChildren(); ++ i) {
-        if (i > 0) {
-          out << ", ";
-        }
-        toStreamNode(out, n[i], depth, false, lbind);
-      }
-      out << ']';
-      return;
-      break;
     case kind::SEXPR:
       // no-op
       break;
@@ -401,7 +390,7 @@ void CvcPrinter::toStreamNode(std::ostream& out,
             out << "TUPLE";
           }
         }
-        else if (t.toType().isRecord())
+        else if (t.isRecord())
         {
           const DType& dt = t.getDType();
           const DTypeConstructor& recCons = dt[0];
@@ -448,11 +437,11 @@ void CvcPrinter::toStreamNode(std::ostream& out,
             int sindex;
             if (n.getKind() == kind::APPLY_SELECTOR)
             {
-              sindex = DType::indexOf(opn.toExpr());
+              sindex = DType::indexOf(opn);
             }
             else
             {
-              sindex = dt[0].getSelectorIndexInternal(opn.toExpr());
+              sindex = dt[0].getSelectorIndexInternal(opn);
             }
             Assert(sindex >= 0);
             out << sindex;
@@ -468,7 +457,7 @@ void CvcPrinter::toStreamNode(std::ostream& out,
       }
       break;
     case kind::APPLY_TESTER: {
-      Assert(!n.getType().isTuple() && !n.getType().toType().isRecord());
+      Assert(!n.getType().isTuple() && !n.getType().isRecord());
       op << "is_";
       unsigned cindex = DType::indexOf(n.getOperator());
       const DType& dt = DType::datatypeOf(n.getOperator());
@@ -733,14 +722,14 @@ void CvcPrinter::toStreamNode(std::ostream& out,
       unsigned child = 0;
       while (child < numc) {
         out << "BVPLUS(";
-        out << BitVectorType(n.getType().toType()).getSize();
+        out << n.getType().getBitVectorSize();
         out << ',';
         toStreamNode(out, n[child], depth, false, lbind);
         out << ',';
         ++child;
       }
       out << "BVPLUS(";
-      out << BitVectorType(n.getType().toType()).getSize();
+      out << n.getType().getBitVectorSize();
       out << ',';
       toStreamNode(out, n[child], depth, false, lbind);
       out << ',';
@@ -756,7 +745,7 @@ void CvcPrinter::toStreamNode(std::ostream& out,
     case kind::BITVECTOR_SUB:
       out << "BVSUB(";
       Assert(n.getType().isBitVector());
-      out << BitVectorType(n.getType().toType()).getSize();
+      out << n.getType().getBitVectorSize();
       out << ',';
       toStreamNode(out, n[0], depth, false, lbind);
       out << ',';
@@ -770,14 +759,14 @@ void CvcPrinter::toStreamNode(std::ostream& out,
       unsigned child = 0;
       while (child < numc) {
         out << "BVMULT(";
-        out << BitVectorType(n.getType().toType()).getSize();
+        out << n.getType().getBitVectorSize();
         out << ',';
         toStreamNode(out, n[child], depth, false, lbind);
         out << ',';
         ++child;
         }
       out << "BVMULT(";
-      out << BitVectorType(n.getType().toType()).getSize();
+      out << n.getType().getBitVectorSize();
       out << ',';
       toStreamNode(out, n[child], depth, false, lbind);
       out << ',';
@@ -813,7 +802,7 @@ void CvcPrinter::toStreamNode(std::ostream& out,
     case kind::BITVECTOR_SIGN_EXTEND:
       out << "SX(";
       toStreamNode(out, n[0], depth, false, lbind);
-      out << ", " << BitVectorType(n.getType().toType()).getSize() << ')';
+      out << ", " << n.getType().getBitVectorSize() << ')';
       return;
       break;
     case kind::BITVECTOR_ROTATE_LEFT:

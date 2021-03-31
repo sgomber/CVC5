@@ -30,9 +30,6 @@
 
 namespace CVC4 {
 namespace theory {
-
-class QuantifiersEngine;
-
 namespace quantifiers {
 
 class QuantifiersState;
@@ -67,7 +64,6 @@ class DbList
  * lazily for performance reasons.
  */
 class TermDb : public QuantifiersUtil {
-  friend class ::CVC4::theory::QuantifiersEngine;
   using NodeBoolMap = context::CDHashMap<Node, bool, NodeHashFunction>;
   using NodeList = context::CDList<Node>;
   using NodeSet = context::CDHashSet<Node, NodeHashFunction>;
@@ -78,9 +74,10 @@ class TermDb : public QuantifiersUtil {
 
  public:
   TermDb(QuantifiersState& qs,
-         QuantifiersInferenceManager& qim,
          QuantifiersRegistry& qr);
   ~TermDb();
+  /** Finish init, which sets the inference manager */
+  void finishInit(QuantifiersInferenceManager* qim);
   /** presolve (called once per user check-sat) */
   void presolve();
   /** reset (calculate which terms are active) */
@@ -294,8 +291,8 @@ class TermDb : public QuantifiersUtil {
  private:
   /** The quantifiers state object */
   QuantifiersState& d_qstate;
-  /** The quantifiers inference manager */
-  QuantifiersInferenceManager& d_qim;
+  /** Pointer to the quantifiers inference manager */
+  QuantifiersInferenceManager* d_qim;
   /** The quantifiers registry */
   QuantifiersRegistry& d_qreg;
   /** A context for the data structures below, when not context-dependent */

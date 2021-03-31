@@ -9,46 +9,50 @@ jobs:
         name: [
           production,
           production-clang,
-          debug,
-          debug-cln-clang
+          production-dbg,
+          production-dbg-clang
         ]
 
         exclude:
           - name: production-clang
             os: macos-latest
-          - name: debug
+          - name: production-dbg
             os: macos-latest
-          - name: debug-cln-clang
+          - name: production-dbg-clang
             os: macos-latest
 
         include:
           - name: production
-            config: production --all-bindings --lfsc --editline --poly
+            config: production --all-bindings --editline --poly --symfpu
             cache-key: production
             python-bindings: true
             check-examples: true
             exclude_regress: 3-4
+            run_regression_args: --no-check-unsat-cores --no-check-proofs
 
           - name: production-clang
             config: production
-            cache-key: production-clang
+            cache-key: productionclang
             check-examples: true
             env: CC=clang CXX=clang++
             os: ubuntu-latest
-            exclude_regress: 1-4
+            exclude_regress: 3-4
+            run_regression_args: --no-check-unsat-cores --no-check-proofs
 
-          - name: debug
-            config: debug --symfpu --lfsc --no-debug-symbols --editline
-            cache-key: debug
+          - name: production-dbg
+            config: production --assertions --tracing --unit-testing --symfpu --editline
+            cache-key: dbg
             os: ubuntu-latest
-            exclude_regress: 1-4
+            exclude_regress: 3-4
+            run_regression_args: --no-check-unsat-cores
 
-          - name: debug-cln-clang
-            config: debug --symfpu --cln --gpl --no-debug-symbols --no-proofs --poly
-            cache-key: debug-cln-clang
+          - name: production-dbg-clang
+            config: production --assertions --tracing --unit-testing --symfpu --cln --gpl --poly
+            cache-key: dbgclang
             env: CC=clang CXX=clang++
             os: ubuntu-latest
-            exclude_regress: 1-4
+            exclude_regress: 3-4
+            run_regression_args: --no-check-proofs
 
     name: ${{ matrix.os }}:${{ matrix.name }}
     runs-on: ${{ matrix.os }}
@@ -114,17 +118,7 @@ jobs:
     - name: Setup Dependencies
       if: steps.restore-deps.outputs.cache-hit != 'true'
       run: |
-        ./contrib/get-antlr-3.4
-        ./contrib/get-poly
-        ./contrib/get-symfpu
-        ./contrib/get-cadical
-        ./contrib/get-cryptominisat
         ./contrib/get-lfsc-checker
-
-    - name: List dependencies
-      run: |
-        find deps/install -type f
-        cat deps/install/bin/antlr3
 
     # GitHub actions currently does not support modifying an already existing
     # cache. Hence, we create a new cache for each commit with key
@@ -168,6 +162,7 @@ jobs:
       env:
         ARGS: --output-on-failure -LE regress[${{ matrix.exclude_regress }}]
         CVC4_REGRESSION_ARGS: --no-early-exit
+        RUN_REGRESSION_ARGS: ${{ matrix.run_regression_args }}
       working-directory: build
 
     - name: Install Check
@@ -193,4 +188,3 @@ jobs:
         make -j2
         ctest -j2 --output-on-failure
       working-directory: examples
-

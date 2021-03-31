@@ -31,6 +31,7 @@
 #include "proof/clause_id.h"
 #include "proof/proof_manager.h"
 #include "util/statistics_registry.h"
+#include "util/stats_histogram.h"
 
 // Forward declarations.
 namespace CVC4 {
@@ -285,10 +286,10 @@ class TSatProof {
     IntStat d_numLearnedInProof;
     IntStat d_numLemmasInProof;
     AverageStat d_avgChainLength;
-    HistogramStat<uint64_t> d_resChainLengths;
-    HistogramStat<uint64_t> d_usedResChainLengths;
-    HistogramStat<uint64_t> d_clauseGlue;
-    HistogramStat<uint64_t> d_usedClauseGlue;
+    IntegralHistogramStat<uint64_t> d_resChainLengths;
+    IntegralHistogramStat<uint64_t> d_usedResChainLengths;
+    IntegralHistogramStat<uint64_t> d_clauseGlue;
+    IntegralHistogramStat<uint64_t> d_usedClauseGlue;
     Statistics(const std::string& name);
     ~Statistics();
   };

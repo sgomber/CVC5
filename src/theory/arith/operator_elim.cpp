@@ -14,6 +14,8 @@
 
 #include "theory/arith/operator_elim.h"
 
+#include <sstream>
+
 #include "expr/attribute.h"
 #include "expr/bound_var_manager.h"
 #include "expr/skolem_manager.h"
@@ -479,9 +481,19 @@ Node OperatorElim::mkWitnessTerm(Node v,
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
   // we mark that we should send a lemma
-  Node k = sm->mkSkolem(
-      v, pred, prefix, comment, NodeManager::SKOLEM_DEFAULT, this, true);
-  // TODO: (project #37) add to lems
+  Node k =
+      sm->mkSkolem(v, pred, prefix, comment, NodeManager::SKOLEM_DEFAULT, this);
+  if (d_pnm != nullptr)
+  {
+    Node lem = SkolemLemma::getSkolemLemmaFor(k);
+    TrustNode tlem =
+        mkTrustNode(lem, PfRule::THEORY_PREPROCESS_LEMMA, {}, {lem});
+    lems.push_back(SkolemLemma(tlem, k));
+  }
+  else
+  {
+    lems.push_back(SkolemLemma(k, nullptr));
+  }
   return k;
 }
 

@@ -38,6 +38,7 @@
 #include <ostream>
 
 #include "base/exception.h"
+#include "cvc4_export.h"
 
 // Define CVC4_NO_RETURN macro replacement for [[noreturn]].
 #if defined(SWIG)
@@ -91,7 +92,7 @@ namespace CVC4 {
 
 // Class that provides an ostream and whose destructor aborts! Direct usage of
 // this class is discouraged.
-class FatalStream
+class CVC4_EXPORT FatalStream
 {
  public:
   FatalStream(const char* function, const char* file, int line);
@@ -158,7 +159,7 @@ class OstreamVoider
 #else
 #define Assert(cond) \
   CVC4_FATAL_IF(false, __PRETTY_FUNCTION__, __FILE__, __LINE__)
-#endif /* CVC4_DEBUG */
+#endif
 
 class AssertArgumentException : public Exception
 {
