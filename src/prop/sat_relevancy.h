@@ -28,7 +28,7 @@
 #include "theory/theory.h"
 #include "util/statistics_registry.h"
 
-namespace CVC4 {
+namespace CVC5 {
 
 class DecisionEngine;
 class TheoryEngine;
@@ -253,6 +253,6 @@ class SatRelevancy
 };
 
 }  // namespace prop
-}  // namespace CVC4
+}  // namespace CVC5
 
 #endif /* CVC4__PROP__SAT_RELEVANCY_H */
