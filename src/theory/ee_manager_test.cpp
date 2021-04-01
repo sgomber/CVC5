@@ -19,7 +19,7 @@
 #include "theory/theory_engine.h"
 #include "theory/theory_state.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 
 EqEngineManagerTest::EqEngineManagerTest(TheoryEngine& te, SharedSolver& shs)
@@ -270,4 +270,4 @@ void EqEngineManagerTest::notifyInConflict()
 }
 
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
