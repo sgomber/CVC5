@@ -19,9 +19,9 @@
 #include "prop/sat_solver.h"
 #include "theory/theory_engine.h"
 
-using namespace CVC5::kind;
+using namespace cvc5::kind;
 
-namespace CVC5 {
+namespace cvc5 {
 namespace prop {
 
 RlvProperty operator|(RlvProperty lhs, RlvProperty rhs)
@@ -801,4 +801,4 @@ void SatRelevancy::enqueue(TNode atom,
 }
 
 }  // namespace prop
-}  // namespace CVC5
+}  // namespace cvc5
