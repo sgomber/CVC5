@@ -26,7 +26,7 @@
 #include "smt/smt_engine.h"
 #include "util/resource_manager.h"
 
-namespace CVC4 {
+namespace cvc5 {
 class SmtEngine;
 class TheoryEngine;
 namespace theory::booleans {
@@ -123,6 +123,6 @@ class PreprocessingPassContext
 };  // class PreprocessingPassContext
 
 }  // namespace preprocessing
-}  // namespace CVC4
+}  // namespace cvc5
 
 #endif /* CVC4__PREPROCESSING__PREPROCESSING_PASS_CONTEXT_H */

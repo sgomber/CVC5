@@ -35,23 +35,22 @@ namespace hashsmt {
 class Word {
 
   /** Expression managaer we're using for all word expressions */
-  static CVC4::ExprManager* s_manager;
+  static cvc5::ExprManager* s_manager;
 
-protected:
+ protected:
 
   /** The expression of this word */
-  CVC4::Expr d_expr;
+  cvc5::Expr d_expr;
 
   /** Get the expression manager words are using */
-  static CVC4::ExprManager* em();
+  static cvc5::ExprManager* em();
 
-  Word(CVC4::Expr expr = CVC4::Expr())
-  : d_expr(expr) {}
+  Word(cvc5::Expr expr = cvc5::Expr()) : d_expr(expr) {}
 
   /** Extend the representing expression to the given size >= size() */
-  CVC4::Expr extendToSize(unsigned size) const;
+  cvc5::Expr extendToSize(unsigned size) const;
 
-public:
+ public:
 
   Word(unsigned size, unsigned value = 0);
   Word(unsigned size, std::string name);
@@ -71,12 +70,10 @@ public:
 
   void print(std::ostream& out) const;
 
-  CVC4::Expr getExpr() const {
-    return d_expr;
-  }
+  cvc5::Expr getExpr() const { return d_expr; }
 
-  /** Returns the comparison expression */  
-  CVC4::Expr operator == (const Word& b) const;
+  /** Returns the comparison expression */
+  cvc5::Expr operator==(const Word& b) const;
 
   /** Concatenate the given words */
   static Word concat(const Word words[], unsigned size);
