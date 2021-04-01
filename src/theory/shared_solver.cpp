@@ -19,7 +19,7 @@
 #include "theory/logic_info.h"
 #include "theory/theory_engine.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 
 // Always creates shared terms database. In all cases, shared terms
@@ -148,4 +148,4 @@ void SharedSolver::sendLemma(TrustNode trn, TheoryId atomsTo)
 void SharedSolver::sendConflict(TrustNode trn) { d_out.trustedConflict(trn); }
 
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

@@ -26,7 +26,7 @@
 #include "theory/shared_solver_test.h"
 #include "theory/theory_engine.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 
 CombinationEngine::CombinationEngine(TheoryEngine& te,
@@ -123,4 +123,4 @@ void CombinationEngine::resetRound()
 }
 
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

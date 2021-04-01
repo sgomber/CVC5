@@ -22,7 +22,7 @@
 
 #include "expr/type_node.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 
 namespace eq {
@@ -110,6 +110,6 @@ struct EeSetupInfo
 };
 
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
 #endif /* CVC4__THEORY__EE_SETUP_INFO__H */
