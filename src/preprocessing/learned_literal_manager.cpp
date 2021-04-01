@@ -18,7 +18,7 @@
 #include "theory/rewriter.h"
 #include "theory/theory_engine.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace preprocessing {
 
 LearnedLiteralManager::LearnedLiteralManager(PreprocessingPassContext* pcontext,
@@ -58,4 +58,4 @@ theory::TrustSubstitutionMap& LearnedLiteralManager::getTopLevelSubstitutions()
 }
 
 }  // namespace preprocessing
-}  // namespace CVC4
+}  // namespace cvc5

@@ -22,7 +22,7 @@
 #include "theory/arith/bound_inference.h"
 #include "theory/trust_node.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
@@ -54,6 +54,6 @@ class LearnedRewrite : public PreprocessingPass
 
 }  // namespace passes
 }  // namespace preprocessing
-}  // namespace CVC4
+}  // namespace cvc5
 
 #endif /* CVC4__PREPROCESSING__PASSES__LEARNED_REWRITE_H */

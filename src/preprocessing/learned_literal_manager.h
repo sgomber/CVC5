@@ -21,7 +21,7 @@
 #include "expr/node.h"
 #include "theory/trust_substitutions.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace preprocessing {
 
 class PreprocessingPassContext;
@@ -59,6 +59,6 @@ class LearnedLiteralManager
 };
 
 }  // namespace preprocessing
-}  // namespace CVC4
+}  // namespace cvc5
 
 #endif /* CVC4__PREPROCESSING__LEARNED_LITERAL_MANAGER_H */

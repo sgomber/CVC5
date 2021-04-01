@@ -20,10 +20,10 @@
 #include "theory/arith/arith_msum.h"
 #include "theory/rewriter.h"
 
-using namespace CVC4::theory;
-using namespace CVC4::kind;
+using namespace cvc5::theory;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
@@ -307,4 +307,4 @@ Node LearnedRewrite::returnRewriteLearned(Node n, Node nr, const char* c)
 
 }  // namespace passes
 }  // namespace preprocessing
-}  // namespace CVC4
+}  // namespace cvc5
