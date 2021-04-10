@@ -195,18 +195,20 @@ Node BuiltinProofRuleChecker::applySubstitution(Node n, Node exp, MethodId ids)
   {
     return Node::null();
   }
-  Node ns = n;
-  // apply substitution one at a time, in reverse order
+  std::vector<Node> svars;
+  std::vector<Node> ssubs;
   for (size_t i = 0, nvars = vars.size(); i < nvars; i++)
   {
-    TNode v = vars[nvars - 1 - i];
-    TNode s = subs[nvars - 1 - i];
-    Trace("builtin-pfcheck-debug")
-        << "applySubstitution (" << ids << "): " << v << " -> " << s
-        << " (from " << exp << ")" << std::endl;
-    ns = ns.substitute(v, s);
+    TNode v = vars[i];
+    TNode s = subs[i];
+    for (size_t j=0, nsvars = svars.size(); j<nsvars; j++)
+    {
+      ssubs[j] = ssubs[j].substitute(v, s);
+    }
+    svars.push_back(v);
+    ssubs.push_back(s);
   }
-  return ns;
+  return n.substitute(svars.begin(), svars.end(), ssubs.begin(), ssubs.end());
 }
 
 Node BuiltinProofRuleChecker::applySubstitution(Node n,
