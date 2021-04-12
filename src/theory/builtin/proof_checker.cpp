@@ -188,12 +188,26 @@ bool BuiltinProofRuleChecker::getSubstitutionFor(Node exp,
 
 Node BuiltinProofRuleChecker::applySubstitution(Node n, Node exp, MethodId ids)
 {
+  return applySubstitution(n, {exp}, ids);
+}
+
+Node BuiltinProofRuleChecker::applySubstitution(Node n,
+                                                const std::vector<Node>& exp,
+                                                MethodId ids)
+{
   std::vector<TNode> vars;
   std::vector<TNode> subs;
   std::vector<TNode> from;
-  if (!getSubstitutionFor(exp, vars, subs, from, ids))
+  for (size_t i = 0, nexp = exp.size(); i < nexp; i++)
   {
-    return Node::null();
+    if (exp[i].isNull())
+    {
+      return Node::null();
+    }
+    if (!getSubstitutionFor(exp[i], vars, subs, from, ids))
+    {
+      return Node::null();
+    }
   }
   std::vector<Node> svars;
   std::vector<Node> ssubs;
@@ -209,27 +223,6 @@ Node BuiltinProofRuleChecker::applySubstitution(Node n, Node exp, MethodId ids)
     ssubs.push_back(s);
   }
   return n.substitute(svars.begin(), svars.end(), ssubs.begin(), ssubs.end());
-}
-
-Node BuiltinProofRuleChecker::applySubstitution(Node n,
-                                                const std::vector<Node>& exp,
-                                                MethodId ids)
-{
-  Node curr = n;
-  // apply substitution one at a time, in reverse order
-  for (size_t i = 0, nexp = exp.size(); i < nexp; i++)
-  {
-    if (exp[nexp - 1 - i].isNull())
-    {
-      return Node::null();
-    }
-    curr = applySubstitution(curr, exp[nexp - 1 - i], ids);
-    if (curr.isNull())
-    {
-      break;
-    }
-  }
-  return curr;
 }
 
 bool BuiltinProofRuleChecker::getMethodId(TNode n, MethodId& i)
