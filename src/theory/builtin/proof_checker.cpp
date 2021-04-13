@@ -222,6 +222,8 @@ Node BuiltinProofRuleChecker::applySubstitution(Node n,
     svars.push_back(v);
     ssubs.push_back(s);
   }
+  std::reverse(svars.begin(), svars.end());
+  std::reverse(ssubs.begin(), ssubs.end());
   return n.substitute(svars.begin(), svars.end(), ssubs.begin(), ssubs.end());
 }
 
