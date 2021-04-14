@@ -196,6 +196,8 @@ Node BuiltinProofRuleChecker::applySubstitution(Node n,
                                                 const std::vector<Node>& exp,
                                                 MethodId ids)
 {
+  // Build a simultaneous subsitution, built in reverse order. This is done
+  // for performance reasons, so that only one Node::substitute call is made.
   std::vector<TNode> vars;
   std::vector<TNode> subs;
   std::vector<TNode> from;
@@ -214,8 +216,8 @@ Node BuiltinProofRuleChecker::applySubstitution(Node n,
   std::vector<Node> ssubs;
   for (size_t i = 0, nvars = vars.size(); i < nvars; i++)
   {
-    TNode v = vars[i];
-    TNode s = subs[i];
+    TNode v = vars[(nvars-1)-i];
+    TNode s = subs[(nvars-1)-i];
     for (size_t j=0, nsvars = svars.size(); j<nsvars; j++)
     {
       ssubs[j] = ssubs[j].substitute(v, s);
@@ -223,8 +225,6 @@ Node BuiltinProofRuleChecker::applySubstitution(Node n,
     svars.push_back(v);
     ssubs.push_back(s);
   }
-  std::reverse(svars.begin(), svars.end());
-  std::reverse(ssubs.begin(), ssubs.end());
   return n.substitute(svars.begin(), svars.end(), ssubs.begin(), ssubs.end());
 }
 
