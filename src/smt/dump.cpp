@@ -1,31 +1,31 @@
-/*********************                                                        */
-/*! \file dump.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andres Noetzli, Morgan Deters, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Dump utility classes and functions
- **
- ** Dump utility classes and functions.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andres Noetzli, Morgan Deters, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Dump utility classes and functions.
+ */
 
 #include "smt/dump.h"
 
 #include "base/configuration.h"
 #include "base/output.h"
 #include "lib/strtok_r.h"
+#include "options/option_exception.h"
 #include "preprocessing/preprocessing_pass_registry.h"
 #include "smt/command.h"
 #include "smt/node_command.h"
 
 namespace cvc5 {
 
-#if defined(CVC4_DUMPING) && !defined(CVC4_MUZZLE)
+#if defined(CVC5_DUMPING) && !defined(CVC5_MUZZLE)
 
 CVC4dumpstream& CVC4dumpstream::operator<<(const Command& c)
 {
@@ -53,7 +53,7 @@ CVC4dumpstream& CVC4dumpstream::operator<<(const NodeCommand& nc)
   return *this;
 }
 
-#endif /* CVC4_DUMPING && !CVC4_MUZZLE */
+#endif /* CVC5_DUMPING && !CVC5_MUZZLE */
 
 DumpC DumpChannel;
 
