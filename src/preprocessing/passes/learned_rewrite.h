@@ -3,7 +3,7 @@
  ** \verbatim
  ** Top contributors (to current version):
  **   Andrew Reynolds
- ** This file is part of the CVC4 project.
+ ** This file is part of the CVC5 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
@@ -12,10 +12,10 @@
  ** \brief Rewriting based on learned literals
  **/
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__PREPROCESSING__PASSES__LEARNED_REWRITE_H
-#define CVC4__PREPROCESSING__PASSES__LEARNED_REWRITE_H
+#ifndef CVC5__PREPROCESSING__PASSES__LEARNED_REWRITE_H
+#define CVC5__PREPROCESSING__PASSES__LEARNED_REWRITE_H
 
 #include "preprocessing/preprocessing_pass.h"
 #include "preprocessing/preprocessing_pass_context.h"
@@ -56,4 +56,4 @@ class LearnedRewrite : public PreprocessingPass
 }  // namespace preprocessing
 }  // namespace cvc5
 
-#endif /* CVC4__PREPROCESSING__PASSES__LEARNED_REWRITE_H */
+#endif /* CVC5__PREPROCESSING__PASSES__LEARNED_REWRITE_H */

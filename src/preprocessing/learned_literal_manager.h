@@ -3,7 +3,7 @@
  ** \verbatim
  ** Top contributors (to current version):
  **   AAndrew Reynolds
- ** This file is part of the CVC4 project.
+ ** This file is part of the CVC5 project.
  ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
@@ -12,10 +12,10 @@
  ** \brief The learned literal manager
  **/
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__PREPROCESSING__LEARNED_LITERAL_MANAGER_H
-#define CVC4__PREPROCESSING__LEARNED_LITERAL_MANAGER_H
+#ifndef CVC5__PREPROCESSING__LEARNED_LITERAL_MANAGER_H
+#define CVC5__PREPROCESSING__LEARNED_LITERAL_MANAGER_H
 
 #include "context/cdhashset.h"
 #include "expr/node.h"
@@ -61,4 +61,4 @@ class LearnedLiteralManager
 }  // namespace preprocessing
 }  // namespace cvc5
 
-#endif /* CVC4__PREPROCESSING__LEARNED_LITERAL_MANAGER_H */
+#endif /* CVC5__PREPROCESSING__LEARNED_LITERAL_MANAGER_H */
