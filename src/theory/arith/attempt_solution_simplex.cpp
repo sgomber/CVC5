@@ -1,19 +1,20 @@
-/*********************                                                        */
-/*! \file attempt_solution_simplex.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Tim King, Aina Niemetz, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief [[ Add one-line brief description here ]]
- **
- ** [[ Add lengthier description here ]]
- ** \todo document this file
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Tim King, Aina Niemetz, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * [[ Add one-line brief description here ]]
+ *
+ * [[ Add lengthier description here ]]
+ * \todo document this file
+ */
 #include "theory/arith/attempt_solution_simplex.h"
 
 #include "base/output.h"
@@ -35,20 +36,14 @@ AttemptSolutionSDP::AttemptSolutionSDP(LinearEqualityModule& linEq, ErrorSet& er
   , d_statistics()
 { }
 
-AttemptSolutionSDP::Statistics::Statistics():
-  d_searchTime("theory::arith::attempt::searchTime"),
-  d_queueTime("theory::arith::attempt::queueTime"),
-  d_conflicts("theory::arith::attempt::conflicts", 0)
+AttemptSolutionSDP::Statistics::Statistics()
+    : d_searchTime(smtStatisticsRegistry().registerTimer(
+        "theory::arith::attempt::searchTime")),
+      d_queueTime(smtStatisticsRegistry().registerTimer(
+          "theory::arith::attempt::queueTime")),
+      d_conflicts(smtStatisticsRegistry().registerInt(
+          "theory::arith::attempt::conflicts"))
 {
-  smtStatisticsRegistry()->registerStat(&d_searchTime);
-  smtStatisticsRegistry()->registerStat(&d_queueTime);
-  smtStatisticsRegistry()->registerStat(&d_conflicts);
-}
-
-AttemptSolutionSDP::Statistics::~Statistics(){
-  smtStatisticsRegistry()->unregisterStat(&d_searchTime);
-  smtStatisticsRegistry()->unregisterStat(&d_queueTime);
-  smtStatisticsRegistry()->unregisterStat(&d_conflicts);
 }
 
 bool AttemptSolutionSDP::matchesNewValue(const DenseMap<DeltaRational>& nv, ArithVar v) const{

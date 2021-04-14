@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file cardinality_extension.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of theory of UF with cardinality.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of theory of UF with cardinality.
+ */
 
 #include "theory/uf/cardinality_extension.h"
 
@@ -1747,23 +1748,16 @@ void CardinalityExtension::checkCombinedCardinality()
 }
 
 CardinalityExtension::Statistics::Statistics()
-    : d_clique_conflicts("CardinalityExtension::Clique_Conflicts", 0),
-      d_clique_lemmas("CardinalityExtension::Clique_Lemmas", 0),
-      d_split_lemmas("CardinalityExtension::Split_Lemmas", 0),
-      d_max_model_size("CardinalityExtension::Max_Model_Size", 1)
+    : d_clique_conflicts(smtStatisticsRegistry().registerInt(
+        "CardinalityExtension::Clique_Conflicts")),
+      d_clique_lemmas(smtStatisticsRegistry().registerInt(
+          "CardinalityExtension::Clique_Lemmas")),
+      d_split_lemmas(smtStatisticsRegistry().registerInt(
+          "CardinalityExtension::Split_Lemmas")),
+      d_max_model_size(smtStatisticsRegistry().registerInt(
+          "CardinalityExtension::Max_Model_Size"))
 {
-  smtStatisticsRegistry()->registerStat(&d_clique_conflicts);
-  smtStatisticsRegistry()->registerStat(&d_clique_lemmas);
-  smtStatisticsRegistry()->registerStat(&d_split_lemmas);
-  smtStatisticsRegistry()->registerStat(&d_max_model_size);
-}
-
-CardinalityExtension::Statistics::~Statistics()
-{
-  smtStatisticsRegistry()->unregisterStat(&d_clique_conflicts);
-  smtStatisticsRegistry()->unregisterStat(&d_clique_lemmas);
-  smtStatisticsRegistry()->unregisterStat(&d_split_lemmas);
-  smtStatisticsRegistry()->unregisterStat(&d_max_model_size);
+  d_max_model_size.maxAssign(1);
 }
 
 }  // namespace uf
