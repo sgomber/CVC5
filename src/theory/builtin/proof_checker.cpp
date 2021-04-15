@@ -60,7 +60,8 @@ Node mkMethodId(MethodId id)
 
 bool isSubsMethodIdSimultaneous(MethodId id)
 {
-  return id ==MethodId::SB_DEFAULT_SIMUL || id == MethodId::SB_LITERAL_SIMUL || id == MethodId::SB_FORMULA_SIMUL;
+  return id == MethodId::SB_DEFAULT_SIMUL || id == MethodId::SB_LITERAL_SIMUL
+         || id == MethodId::SB_FORMULA_SIMUL;
 }
 
 namespace builtin {
