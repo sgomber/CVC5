@@ -27,8 +27,8 @@ Node ProofCheckerCache::lookup(PfRule id,
     return Node::null();
   }
   std::map<Node, ProofCheckerCacheTrie>::const_iterator itc;
-  ProofCheckerCacheTrie* pcct = &it->second;
-  for (const Node& c : cchildren)
+  const ProofCheckerCacheTrie* pcct = &it->second;
+  for (const Node& c : children)
   {
     itc = pcct->d_children.find(c);
     if (itc == pcct->d_children.end())
@@ -46,7 +46,7 @@ Node ProofCheckerCache::lookup(PfRule id,
   pcct = &itc->second;
   for (const Node& a : args)
   {
-    itc = pcct->d_children.find(c);
+    itc = pcct->d_children.find(a);
     if (itc == pcct->d_children.end())
     {
       return Node::null();
@@ -62,7 +62,7 @@ void ProofCheckerCache::store(PfRule id,
                               Node res)
 {
   ProofCheckerCacheTrie* pcct = &d_data[id];
-  for (const Node& c : cchildren)
+  for (const Node& c : children)
   {
     pcct = &pcct->d_children[c];
   }
@@ -76,5 +76,3 @@ void ProofCheckerCache::store(PfRule id,
 }
 
 }  // namespace cvc5
-
-#endif /* CVC5__EXPR__PROOF_CHECKER_H */

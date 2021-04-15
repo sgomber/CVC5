@@ -185,6 +185,11 @@ Node ProofChecker::checkInternal(PfRule id,
                                  bool useTrustedChecker,
                                  bool enableOutput)
 {
+  Node res = d_pcCache.lookup(id, cchildren, args);
+  if (!res.isNull())
+  {
+    return res;
+  }
   std::map<PfRule, ProofRuleChecker*>::iterator it = d_checker.find(id);
   if (it == d_checker.end())
   {
@@ -213,7 +218,7 @@ Node ProofChecker::checkInternal(PfRule id,
     }
   }
   // check it with the corresponding checker
-  Node res = it->second->check(id, cchildren, args);
+  res = it->second->check(id, cchildren, args);
   if (!expected.isNull())
   {
     Node expectedw = expected;
@@ -258,6 +263,7 @@ Node ProofChecker::checkInternal(PfRule id,
       return Node::null();
     }
   }
+  d_pcCache.store(id, cchildren, args, res);
   return res;
 }
 

@@ -23,6 +23,7 @@
 #include "expr/node.h"
 #include "expr/proof_rule.h"
 #include "util/statistics_stats.h"
+#include "expr/proof_checker_cache.h"
 
 namespace cvc5 {
 
@@ -186,6 +187,8 @@ class ProofChecker
   std::map<PfRule, uint32_t> d_plevel;
   /** The pedantic level of this checker */
   uint32_t d_pclevel;
+  /** A cache for checkInternal */
+  ProofCheckerCache d_pcCache;
   /**
    * Check internal. This is used by check and checkDebug above. It writes
    * checking errors on out when enableOutput is true. We treat trusted checkers
