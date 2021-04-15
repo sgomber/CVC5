@@ -21,9 +21,9 @@
 #include <map>
 
 #include "expr/node.h"
+#include "expr/proof_checker_cache.h"
 #include "expr/proof_rule.h"
 #include "util/statistics_stats.h"
-#include "expr/proof_checker_cache.h"
 
 namespace cvc5 {
 
