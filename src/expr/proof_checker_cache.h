@@ -28,7 +28,7 @@ namespace cvc5 {
 
 class ProofCheckerCacheTrie
 {
-public:
+ public:
   /** The children of the trie */
   std::map<Node, ProofCheckerCacheTrie> d_children;
   /** The result of what the current rule checks */
@@ -39,21 +39,21 @@ public:
 class ProofCheckerCache
 {
  public:
-  ProofCheckerCache(){}
+  ProofCheckerCache() {}
   ~ProofCheckerCache() {}
   /** Lookup */
   Node lookup(PfRule id,
-                     const std::vector<Node>& cchildren,
-                     const std::vector<Node>& args) const;
+              const std::vector<Node>& cchildren,
+              const std::vector<Node>& args) const;
   /** Store */
   void store(PfRule id,
-                     const std::vector<Node>& cchildren,
-                     const std::vector<Node>& args,
-                     Node res
-            );
+             const std::vector<Node>& cchildren,
+             const std::vector<Node>& args,
+             Node res);
+
  private:
-   /** The cache of proof checking */
-  std::map< PfRule,  ProofCheckerCacheTrie > d_data;
+  /** The cache of proof checking */
+  std::map<PfRule, ProofCheckerCacheTrie> d_data;
 };
 
 }  // namespace cvc5

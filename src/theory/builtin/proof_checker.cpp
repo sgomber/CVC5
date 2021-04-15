@@ -216,9 +216,9 @@ Node BuiltinProofRuleChecker::applySubstitution(Node n,
   std::vector<Node> ssubs;
   for (size_t i = 0, nvars = vars.size(); i < nvars; i++)
   {
-    TNode v = vars[(nvars-1)-i];
-    TNode s = subs[(nvars-1)-i];
-    for (size_t j=0, nsvars = svars.size(); j<nsvars; j++)
+    TNode v = vars[(nvars - 1) - i];
+    TNode s = subs[(nvars - 1) - i];
+    for (size_t j = 0, nsvars = svars.size(); j < nsvars; j++)
     {
       ssubs[j] = ssubs[j].substitute(v, s);
     }

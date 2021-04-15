@@ -18,20 +18,20 @@
 namespace cvc5 {
 
 Node ProofCheckerCache::lookup(PfRule id,
-                    const std::vector<Node>& children,
-                    const std::vector<Node>& args) const
+                               const std::vector<Node>& children,
+                               const std::vector<Node>& args) const
 {
-  std::map< PfRule,  ProofCheckerCacheTrie >::const_iterator it = d_data.find(id);
-  if (it==d_data.end())
+  std::map<PfRule, ProofCheckerCacheTrie>::const_iterator it = d_data.find(id);
+  if (it == d_data.end())
   {
     return Node::null();
   }
   std::map<Node, ProofCheckerCacheTrie>::const_iterator itc;
-  ProofCheckerCacheTrie * pcct = &it->second;
+  ProofCheckerCacheTrie* pcct = &it->second;
   for (const Node& c : cchildren)
   {
     itc = pcct->d_children.find(c);
-    if (itc==pcct->d_children.end())
+    if (itc == pcct->d_children.end())
     {
       return Node::null();
     }
@@ -39,7 +39,7 @@ Node ProofCheckerCache::lookup(PfRule id,
   }
   Node nullNode;
   itc = pcct->d_children.find(nullNode);
-  if (itc==pcct->d_children.end())
+  if (itc == pcct->d_children.end())
   {
     return Node::null();
   }
@@ -47,7 +47,7 @@ Node ProofCheckerCache::lookup(PfRule id,
   for (const Node& a : args)
   {
     itc = pcct->d_children.find(c);
-    if (itc==pcct->d_children.end())
+    if (itc == pcct->d_children.end())
     {
       return Node::null();
     }
@@ -57,12 +57,11 @@ Node ProofCheckerCache::lookup(PfRule id,
 }
 
 void ProofCheckerCache::store(PfRule id,
-                    const std::vector<Node>& children,
-                    const std::vector<Node>& args,
-                    Node res
-          )
+                              const std::vector<Node>& children,
+                              const std::vector<Node>& args,
+                              Node res)
 {
-  ProofCheckerCacheTrie * pcct = &d_data[id];
+  ProofCheckerCacheTrie* pcct = &d_data[id];
   for (const Node& c : cchildren)
   {
     pcct = &pcct->d_children[c];
@@ -75,7 +74,6 @@ void ProofCheckerCache::store(PfRule id,
   }
   pcct->d_res = res;
 }
-
 
 }  // namespace cvc5
 
