@@ -62,6 +62,8 @@ libcvc4_add_sources(
   proof.h
   proof_checker.cpp
   proof_checker.h
+  proof_checker_cache.cpp
+  proof_checker_cache.h
   proof_ensure_closed.cpp
   proof_ensure_closed.h
   proof_generator.cpp
