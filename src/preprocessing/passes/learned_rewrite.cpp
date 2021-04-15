@@ -216,7 +216,7 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
       // could also do num + k*den checks
     }
   }
-  else if (k == GEQ || k == EQUAL)
+  else if (k == GEQ || (k == EQUAL && nr[0].getType().isReal()))
   {
     std::map<Node, Node> msum;
     if (ArithMSum::getMonomialSumLit(nr, msum))
