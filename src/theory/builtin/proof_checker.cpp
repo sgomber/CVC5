@@ -40,6 +40,9 @@ const char* toString(MethodId id)
     case MethodId::SB_DEFAULT: return "SB_DEFAULT";
     case MethodId::SB_LITERAL: return "SB_LITERAL";
     case MethodId::SB_FORMULA: return "SB_FORMULA";
+    case MethodId::SB_DEFAULT_SIMUL: return "SB_DEFAULT_SIMUL";
+    case MethodId::SB_LITERAL_SIMUL: return "SB_LITERAL_SIMUL";
+    case MethodId::SB_FORMULA_SIMUL: return "SB_FORMULA_SIMUL";
     default: return "MethodId::Unknown";
   };
 }
@@ -53,6 +56,11 @@ std::ostream& operator<<(std::ostream& out, MethodId id)
 Node mkMethodId(MethodId id)
 {
   return NodeManager::currentNM()->mkConst(Rational(static_cast<uint32_t>(id)));
+}
+
+bool isSubsMethodIdSimultaneous(MethodId id)
+{
+  return id ==MethodId::SB_DEFAULT_SIMUL || id == MethodId::SB_LITERAL_SIMUL || id == MethodId::SB_FORMULA_SIMUL;
 }
 
 namespace builtin {
@@ -127,7 +135,7 @@ bool BuiltinProofRuleChecker::getSubstitutionForLit(Node exp,
                                                     TNode& subs,
                                                     MethodId ids)
 {
-  if (ids == MethodId::SB_DEFAULT)
+  if (ids == MethodId::SB_DEFAULT || ids == MethodId::SB_DEFAULT_SIMUL)
   {
     if (exp.getKind() != EQUAL)
     {
@@ -136,13 +144,13 @@ bool BuiltinProofRuleChecker::getSubstitutionForLit(Node exp,
     var = exp[0];
     subs = exp[1];
   }
-  else if (ids == MethodId::SB_LITERAL)
+  else if (ids == MethodId::SB_LITERAL || ids == MethodId::SB_LITERAL_SIMUL)
   {
     bool polarity = exp.getKind() != NOT;
     var = polarity ? exp : exp[0];
     subs = NodeManager::currentNM()->mkConst(polarity);
   }
-  else if (ids == MethodId::SB_FORMULA)
+  else if (ids == MethodId::SB_FORMULA || ids == MethodId::SB_FORMULA_SIMUL)
   {
     var = exp;
     subs = NodeManager::currentNM()->mkConst(true);
@@ -211,6 +219,10 @@ Node BuiltinProofRuleChecker::applySubstitution(Node n,
     {
       return Node::null();
     }
+  }
+  if (isSubsMethodIdSimultaneous(ids))
+  {
+    return n.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
   }
   std::vector<Node> svars;
   std::vector<Node> ssubs;

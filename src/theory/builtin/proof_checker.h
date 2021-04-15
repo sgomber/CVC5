@@ -64,6 +64,11 @@ enum class MethodId : uint32_t
   SB_LITERAL,
   // P is interpreted as P -> true using Node::substitute
   SB_FORMULA,
+  // same as above, but applied as a simultaneous substitution when multiple
+  // substitutions are present
+  SB_DEFAULT_SIMUL,
+  SB_LITERAL_SIMUL,
+  SB_FORMULA_SIMUL,
 };
 /** Converts a rewriter id to a string. */
 const char* toString(MethodId id);
@@ -71,6 +76,8 @@ const char* toString(MethodId id);
 std::ostream& operator<<(std::ostream& out, MethodId id);
 /** Make a method id node */
 Node mkMethodId(MethodId id);
+/** Is the substitution id a simultaneous substitution? */
+bool isSubsMethodIdSimultaneous(MethodId id);
 
 namespace builtin {
 
