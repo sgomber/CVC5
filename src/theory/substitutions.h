@@ -54,7 +54,7 @@ private:
   typedef std::unordered_map<Node, Node, NodeHashFunction> NodeCache;
   /** A dummy context used by this class if none is provided */
   context::Context d_context;
-  
+
   /** The variables, in order of addition */
   NodeMap d_substitutions;
 
