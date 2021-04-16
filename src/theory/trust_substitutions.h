@@ -18,8 +18,8 @@
 #ifndef CVC5__THEORY__TRUST_SUBSTITUTIONS_H
 #define CVC5__THEORY__TRUST_SUBSTITUTIONS_H
 
-#include "context/cdlist.h"
 #include "context/cdhashmap.h"
+#include "context/cdlist.h"
 #include "context/context.h"
 #include "expr/lazy_proof.h"
 #include "expr/proof_node_manager.h"
@@ -39,6 +39,7 @@ namespace theory {
 class TrustSubstitutionMap : public ProofGenerator
 {
   using NodeUIntMap = context::CDHashMap<Node, size_t, NodeHashFunction>;
+
  public:
   TrustSubstitutionMap(context::Context* c,
                        ProofNodeManager* pnm,
@@ -91,6 +92,7 @@ class TrustSubstitutionMap : public ProofGenerator
   std::shared_ptr<ProofNode> getProofFor(Node f) override;
   /** Identify */
   std::string identify() const override;
+
  private:
   /** Are proofs enabled? */
   bool isProofEnabled() const;

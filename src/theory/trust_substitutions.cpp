@@ -160,7 +160,7 @@ TrustNode TrustSubstitutionMap::apply(Node n, bool doRewrite)
 
 std::shared_ptr<ProofNode> TrustSubstitutionMap::getProofFor(Node eq)
 {
-  Assert (eq.getKind()==EQUAL);
+  Assert(eq.getKind() == EQUAL);
   Node n = eq[0];
   Node ns = eq[1];
   // Easy case: if n is in the domain of the substitution, maybe it is already
@@ -180,7 +180,7 @@ std::shared_ptr<ProofNode> TrustSubstitutionMap::getProofFor(Node eq)
     return d_subsPg->getProofFor(eq);
   }
   NodeUIntMap::iterator it = d_eqtIndex.find(eq);
-  Assert (it != d_eqtIndex.end());
+  Assert(it != d_eqtIndex.end());
   Node cs = getSubstitution(it->second);
   Assert(eq != cs);
   std::vector<Node> pfChildren;
@@ -228,10 +228,7 @@ std::shared_ptr<ProofNode> TrustSubstitutionMap::getProofFor(Node eq)
   return d_applyPg->getProofFor(eq);
 }
 
-std::string TrustSubstitutionMap::identify() const
-{
-  return d_name;
-}
+std::string TrustSubstitutionMap::identify() const { return d_name; }
 
 SubstitutionMap& TrustSubstitutionMap::get() { return d_subs; }
 
@@ -242,9 +239,9 @@ bool TrustSubstitutionMap::isProofEnabled() const
 
 Node TrustSubstitutionMap::getSubstitution(size_t index)
 {
-  Assert (index<=d_tsubs.size());
+  Assert(index <= d_tsubs.size());
   std::vector<Node> csubsChildren;
-  for (size_t i=0; i<index; i++)
+  for (size_t i = 0; i < index; i++)
   {
     csubsChildren.push_back(d_tsubs[i].getProven());
   }
