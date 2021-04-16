@@ -231,7 +231,7 @@ std::shared_ptr<ProofNode> TConvProofGenerator::getProofFor(Node f)
   Trace("tconv-pf-gen") << "... success" << std::endl;
   Assert (pfn!=nullptr);
   Trace("tconv-pf-gen-debug") << "... proof is " << *pfn << std::endl;
-  Assert (!hasFreeAssumption(pfn));
+  Assert(!hasFreeAssumption(pfn));
   return pfn;
 }
 
@@ -241,7 +241,7 @@ std::shared_ptr<ProofNode> TConvProofGenerator::getProofForRewriting(Node n)
       d_proof.getManager(), &d_proof, nullptr, d_name + "::LazyCDProofRew");
   Node conc = getProofForRewriting(n, lpf, d_tcontext);
   Node eq = n.eqNode(conc);
-  if (conc==n)
+  if (conc == n)
   {
     // assertion failure in debug
     Assert(false) << "TConvProofGenerator::getProofForRewriting: " << identify()
@@ -249,9 +249,9 @@ std::shared_ptr<ProofNode> TConvProofGenerator::getProofForRewriting(Node n)
     lpf.addStep(eq, PfRule::REFL, {}, {n});
   }
   std::shared_ptr<ProofNode> pfn = lpf.getProofFor(eq);
-  Assert (pfn!=nullptr);
+  Assert(pfn != nullptr);
   Trace("tconv-pf-gen-debug") << "... proof is " << *pfn << std::endl;
-  Assert (!hasFreeAssumption(pfn));
+  Assert(!hasFreeAssumption(pfn));
   return pfn;
 }
 

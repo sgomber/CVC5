@@ -136,7 +136,7 @@ void getFreeAssumptionsMap(
   } while (!visit.empty());
 }
 
-bool hasFreeAssumption(ProofNode * pn)
+bool hasFreeAssumption(ProofNode* pn)
 {
   std::vector<Node> assump;
   getFreeAssumptions(pn, assump);

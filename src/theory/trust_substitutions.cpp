@@ -181,7 +181,8 @@ std::shared_ptr<ProofNode> TrustSubstitutionMap::getProofFor(Node eq)
   }
   NodeUIntMap::iterator it = d_eqtIndex.find(eq);
   Assert(it != d_eqtIndex.end());
-  Trace("trust-subs-pf") << "TrustSubstitutionMap::getProofFor, # assumptions= " << it->second << std::endl;
+  Trace("trust-subs-pf") << "TrustSubstitutionMap::getProofFor, # assumptions= "
+                         << it->second << std::endl;
   Node cs = getSubstitution(it->second);
   Assert(eq != cs);
   std::vector<Node> pfChildren;

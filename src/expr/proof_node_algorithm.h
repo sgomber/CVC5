@@ -58,7 +58,7 @@ void getFreeAssumptionsMap(
 /**
  * Returns true if pn has a free assumption.
  */
-bool hasFreeAssumption(ProofNode * pn);
+bool hasFreeAssumption(ProofNode* pn);
 
 /**
  * @return true if pn contains pnc.
