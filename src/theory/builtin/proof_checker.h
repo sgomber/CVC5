@@ -64,12 +64,21 @@ enum class MethodId : uint32_t
   SB_LITERAL,
   // P is interpreted as P -> true using Node::substitute
   SB_FORMULA,
-  // substitution is applied sequentially
+  //---------------------------- Substitution applications
+  // multiple substitutions are applied sequentially
   SBA_SEQUENTIAL,
-  // substitution is applied simultaneously
+  // multiple substitutions are applied simultaneously
   SBA_SIMUL,
-  // substitution is applied to fix point
+  // multiple substitutions are applied to fix point
   SBA_FIXPOINT
+  // For example, for x -> u, y -> f(z), z -> g(x), applying this substituion to
+  // y gives:
+  // - f(g(x)) for SBA_SEQUENTIAL
+  // - f(z) for SBA_SIMUL
+  // - f(g(u)) for SBA_FIXPOINT
+  // Notice that SBA_FIXPOINT should provide a terminating rewrite system
+  // as a substitution, or else non-termination will occur during proof
+  // checking.
 };
 /** Converts a rewriter id to a string. */
 const char* toString(MethodId id);
