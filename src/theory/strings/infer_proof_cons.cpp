@@ -150,7 +150,7 @@ void InferProofCons::convert(InferenceId infer,
       }
       // may need the "extended equality rewrite"
       Node mainEqSRew2 = psb.applyPredElim(
-          mainEqSRew, {}, MethodId::SB_DEFAULT, MethodId::RW_REWRITE_EQ_EXT);
+          mainEqSRew, {}, MethodId::SB_DEFAULT, MethodId::SBA_SEQUENTIAL, MethodId::RW_REWRITE_EQ_EXT);
       if (mainEqSRew2 == conc)
       {
         useBuffer = true;
@@ -286,6 +286,7 @@ void InferProofCons::convert(InferenceId infer,
                                    conc,
                                    cexp,
                                    MethodId::SB_DEFAULT,
+                                   MethodId::SBA_SEQUENTIAL,
                                    MethodId::RW_REWRITE_EQ_EXT))
         {
           Trace("strings-ipc-core") << "Transformed to " << conc

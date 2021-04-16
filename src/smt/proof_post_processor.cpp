@@ -427,19 +427,27 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
     {
       std::vector<Node> sargs;
       sargs.push_back(t);
-      MethodId sid = MethodId::SB_DEFAULT;
+      MethodId ids = MethodId::SB_DEFAULT;
       if (args.size() >= 2)
       {
-        if (builtin::BuiltinProofRuleChecker::getMethodId(args[1], sid))
+        if (builtin::BuiltinProofRuleChecker::getMethodId(args[1], ids))
         {
           sargs.push_back(args[1]);
         }
       }
+      MethodId ida = MethodId::SB_DEFAULT;
+      if (args.size() >= 3)
+      {
+        if (builtin::BuiltinProofRuleChecker::getMethodId(args[2], ida))
+        {
+          sargs.push_back(args[2]);
+        }
+      }
       ts =
-          builtin::BuiltinProofRuleChecker::applySubstitution(t, children, sid);
+          builtin::BuiltinProofRuleChecker::applySubstitution(t, children, ids, ida);
       Trace("smt-proof-pp-debug")
           << "...eq intro subs equality is " << t << " == " << ts << ", from "
-          << sid << std::endl;
+          << ids << " " << ida << std::endl;
       if (ts != t)
       {
         Node eq = t.eqNode(ts);
@@ -460,11 +468,11 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
     std::vector<Node> rargs;
     rargs.push_back(ts);
     MethodId rid = MethodId::RW_REWRITE;
-    if (args.size() >= 3)
+    if (args.size() >= 4)
     {
-      if (builtin::BuiltinProofRuleChecker::getMethodId(args[2], rid))
+      if (builtin::BuiltinProofRuleChecker::getMethodId(args[3], rid))
       {
-        rargs.push_back(args[2]);
+        rargs.push_back(args[3]);
       }
     }
     builtin::BuiltinProofRuleChecker* builtinPfC =

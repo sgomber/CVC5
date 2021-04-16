@@ -64,11 +64,12 @@ enum class MethodId : uint32_t
   SB_LITERAL,
   // P is interpreted as P -> true using Node::substitute
   SB_FORMULA,
-  // same as above, but applied as a simultaneous substitution when multiple
-  // substitutions are present
-  SB_DEFAULT_SIMUL,
-  SB_LITERAL_SIMUL,
-  SB_FORMULA_SIMUL,
+  // substitution is applied sequentially
+  SBA_SEQUENTIAL,
+  // substitution is applied simultaneously
+  SBA_SIMUL,
+  // substitution is applied to fix point
+  SBA_FIXPOINT
 };
 /** Converts a rewriter id to a string. */
 const char* toString(MethodId id);
@@ -76,8 +77,6 @@ const char* toString(MethodId id);
 std::ostream& operator<<(std::ostream& out, MethodId id);
 /** Make a method id node */
 Node mkMethodId(MethodId id);
-/** Is the substitution id a simultaneous substitution? */
-bool isSubsMethodIdSimultaneous(MethodId id);
 
 namespace builtin {
 
@@ -133,10 +132,13 @@ class BuiltinProofRuleChecker : public ProofRuleChecker
    */
   static Node applySubstitution(Node n,
                                 Node exp,
-                                MethodId ids = MethodId::SB_DEFAULT);
+                                MethodId ids = MethodId::SB_DEFAULT,
+                                MethodId ida = MethodId::SBA_SEQUENTIAL
+                               );
   static Node applySubstitution(Node n,
                                 const std::vector<Node>& exp,
-                                MethodId ids = MethodId::SB_DEFAULT);
+                                MethodId ids = MethodId::SB_DEFAULT,
+                                MethodId ida = MethodId::SBA_SEQUENTIAL);
   /** Apply substitution + rewriting
    *
    * Combines the above two steps.
@@ -150,6 +152,7 @@ class BuiltinProofRuleChecker : public ProofRuleChecker
   Node applySubstitutionRewrite(Node n,
                                 const std::vector<Node>& exp,
                                 MethodId ids = MethodId::SB_DEFAULT,
+                                MethodId ida = MethodId::SBA_SEQUENTIAL,
                                 MethodId idr = MethodId::RW_REWRITE);
   /** get a method identifier from a node, return false if we fail */
   static bool getMethodId(TNode n, MethodId& i);
@@ -160,13 +163,15 @@ class BuiltinProofRuleChecker : public ProofRuleChecker
    */
   bool getMethodIds(const std::vector<Node>& args,
                     MethodId& ids,
+                    MethodId& ida,
                     MethodId& idr,
                     size_t index);
   /**
    * Add method identifiers ids and idr as nodes to args. This does not add ids
    * or idr if their values are the default ones.
    */
-  static void addMethodIds(std::vector<Node>& args, MethodId ids, MethodId idr);
+  static void addMethodIds(std::vector<Node>& args, MethodId ids, 
+                    MethodId ida, MethodId idr);
 
   /** get a TheoryId from a node, return false if we fail */
   static bool getTheoryId(TNode n, TheoryId& tid);
