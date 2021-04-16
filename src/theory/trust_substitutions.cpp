@@ -20,8 +20,6 @@
 namespace cvc5 {
 namespace theory {
 
-// substitution steps are added to a TConvProofGenerator with FIXPOINT, DYNAMIC
-
 TrustSubstitutionMap::TrustSubstitutionMap(context::Context* c,
                                            ProofNodeManager* pnm,
                                            std::string name,

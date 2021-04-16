@@ -239,6 +239,7 @@ Node BuiltinProofRuleChecker::applySubstitution(Node n,
     return ns;
   }
   Assert(ida == MethodId::SBA_SEQUENTIAL);
+  // we prefer n traversals of the term to n^2/2 traversals of range terms
   Node ns = n;
   for (size_t i = 0, nvars = vars.size(); i < nvars; i++)
   {
@@ -247,22 +248,6 @@ Node BuiltinProofRuleChecker::applySubstitution(Node n,
     ns = ns.substitute(v, s);
   }
   return ns;
-  /*
-  std::vector<Node> svars;
-  std::vector<Node> ssubs;
-  for (size_t i = 0, nvars = vars.size(); i < nvars; i++)
-  {
-    TNode v = vars[(nvars - 1) - i];
-    TNode s = subs[(nvars - 1) - i];
-    for (size_t j = 0, nsvars = svars.size(); j < nsvars; j++)
-    {
-      ssubs[j] = ssubs[j].substitute(v, s);
-    }
-    svars.push_back(v);
-    ssubs.push_back(s);
-  }
-  return n.substitute(svars.begin(), svars.end(), ssubs.begin(), ssubs.end());
-  */
 }
 
 bool BuiltinProofRuleChecker::getMethodId(TNode n, MethodId& i)
