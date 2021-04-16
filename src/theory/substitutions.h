@@ -87,6 +87,7 @@ private:
 
   /** A dummy context used by this class if none is provided */
   context::Context d_context;
+
  public:
   SubstitutionMap(context::Context* context = nullptr);
 

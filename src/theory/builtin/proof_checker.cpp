@@ -19,8 +19,8 @@
 #include "smt/term_formula_removal.h"
 #include "theory/evaluator.h"
 #include "theory/rewriter.h"
-#include "theory/theory.h"
 #include "theory/substitutions.h"
+#include "theory/theory.h"
 
 using namespace cvc5::kind;
 
@@ -228,10 +228,10 @@ Node BuiltinProofRuleChecker::applySubstitution(Node n,
   {
     return n.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
   }
-  else if (ida==MethodId::SBA_FIXPOINT)
+  else if (ida == MethodId::SBA_FIXPOINT)
   {
     SubstitutionMap sm;
-    for (size_t i=0, nvars=vars.size(); i<nvars; i++)
+    for (size_t i = 0, nvars = vars.size(); i < nvars; i++)
     {
       sm.addSubstitution(vars[i], subs[i]);
     }

@@ -22,7 +22,6 @@ using namespace std;
 namespace cvc5 {
 namespace theory {
 
-
 SubstitutionMap::SubstitutionMap(context::Context* context)
     : d_substitutions(context ? context : &d_context),
       d_substitutionCache(),

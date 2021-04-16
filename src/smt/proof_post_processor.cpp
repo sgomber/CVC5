@@ -443,8 +443,8 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
           sargs.push_back(args[2]);
         }
       }
-      ts =
-          builtin::BuiltinProofRuleChecker::applySubstitution(t, children, ids, ida);
+      ts = builtin::BuiltinProofRuleChecker::applySubstitution(
+          t, children, ids, ida);
       Trace("smt-proof-pp-debug")
           << "...eq intro subs equality is " << t << " == " << ts << ", from "
           << ids << " " << ida << std::endl;
@@ -847,7 +847,7 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
           << "...process " << var << " -> " << subs << " (" << childFrom << ", "
           << ids << ")" << std::endl;
       // apply the current substitution to the range
-      if (!vvec.empty() && ida==MethodId::SBA_SEQUENTIAL)
+      if (!vvec.empty() && ida == MethodId::SBA_SEQUENTIAL)
       {
         Node ss =
             subs.substitute(vvec.begin(), vvec.end(), svec.begin(), svec.end());
@@ -903,14 +903,15 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
       pgs.push_back(cdp);
     }
     // should be implied by the substitution now
-    TConvPolicy tcpolicy = ida==MethodId::SBA_FIXPOINT ? TConvPolicy::FIXPOINT : TConvPolicy::ONCE;
+    TConvPolicy tcpolicy = ida == MethodId::SBA_FIXPOINT ? TConvPolicy::FIXPOINT
+                                                         : TConvPolicy::ONCE;
     TConvProofGenerator tcpg(d_pnm,
-                              nullptr,
-                              tcpolicy,
-                              TConvCachePolicy::NEVER,
-                              "SUBS_TConvProofGenerator",
-                              nullptr,
-                              true);
+                             nullptr,
+                             tcpolicy,
+                             TConvCachePolicy::NEVER,
+                             "SUBS_TConvProofGenerator",
+                             nullptr,
+                             true);
     for (unsigned j = 0, nvars = vvec.size(); j < nvars; j++)
     {
       // substitutions are pre-rewrites
@@ -919,9 +920,10 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
     // add the proof constructed by the term conversion utility
     std::shared_ptr<ProofNode> pfn = tcpg.getProofForRewriting(t);
     Node eq = pfn->getResult();
-    Node ts = builtin::BuiltinProofRuleChecker::applySubstitution(t, children, ids, ida);
+    Node ts = builtin::BuiltinProofRuleChecker::applySubstitution(
+        t, children, ids, ida);
     Node eqq = t.eqNode(ts);
-    if (eq!=eqq)
+    if (eq != eqq)
     {
       pfn = nullptr;
     }
@@ -930,7 +932,10 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
     Assert(pfn != nullptr);
     if (pfn == nullptr)
     {
-      AlwaysAssert(false) << "resort to TRUST_SUBS" << std::endl << eq << std::endl << eqq << std::endl << "from " << children << " applied to " << t;
+      AlwaysAssert(false) << "resort to TRUST_SUBS" << std::endl
+                          << eq << std::endl
+                          << eqq << std::endl
+                          << "from " << children << " applied to " << t;
       cdp->addStep(eqq, PfRule::TRUST_SUBS, {}, {eqq});
     }
     else
