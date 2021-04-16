@@ -160,7 +160,7 @@ TrustNode TrustSubstitutionMap::apply(Node n, bool doRewrite)
 
 std::shared_ptr<ProofNode> TrustSubstitutionMap::getProofFor(Node eq)
 {
-  Assert(eq.getKind() == EQUAL);
+  Assert(eq.getKind() == kind::EQUAL);
   Node n = eq[0];
   Node ns = eq[1];
   // Easy case: if n is in the domain of the substitution, maybe it is already
@@ -181,6 +181,7 @@ std::shared_ptr<ProofNode> TrustSubstitutionMap::getProofFor(Node eq)
   }
   NodeUIntMap::iterator it = d_eqtIndex.find(eq);
   Assert(it != d_eqtIndex.end());
+  Trace("trust-subs-pf") << "TrustSubstitutionMap::getProofFor, # assumptions= " << it->second << std::endl;
   Node cs = getSubstitution(it->second);
   Assert(eq != cs);
   std::vector<Node> pfChildren;
@@ -203,11 +204,13 @@ std::shared_ptr<ProofNode> TrustSubstitutionMap::getProofFor(Node eq)
       d_applyPg->addLazyStep(cs, d_subsPg.get());
     }
   }
+  Trace("trust-subs-pf") << "...apply eq intro" << std::endl;
   if (!d_tspb->applyEqIntro(n, ns, pfChildren, d_ids))
   {
     // if we fail for any reason, we must use a trusted step instead
     d_tspb->addStep(PfRule::TRUST_SUBS_MAP, pfChildren, {eq}, eq);
   }
+  Trace("trust-subs-pf") << "...made steps" << std::endl;
   // -------        ------- from external proof generators
   // x1 = t1 ...    xn = tn
   // ----------------------- AND_INTRO
@@ -225,6 +228,7 @@ std::shared_ptr<ProofNode> TrustSubstitutionMap::getProofFor(Node eq)
   // notice this proof is reused.
   d_applyPg->addSteps(*d_tspb.get());
   d_tspb->clear();
+  Trace("trust-subs-pf") << "...finish, make proof" << std::endl;
   return d_applyPg->getProofFor(eq);
 }
 

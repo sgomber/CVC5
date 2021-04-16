@@ -55,6 +55,10 @@ void getFreeAssumptions(ProofNode* pn, std::vector<Node>& assump);
 void getFreeAssumptionsMap(
     std::shared_ptr<ProofNode> pn,
     std::map<Node, std::vector<std::shared_ptr<ProofNode>>>& amap);
+/**
+ * Returns true if pn has a free assumption.
+ */
+bool hasFreeAssumption(ProofNode * pn);
 
 /**
  * @return true if pn contains pnc.

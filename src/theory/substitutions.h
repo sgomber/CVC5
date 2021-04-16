@@ -59,9 +59,6 @@ private:
   /** Cache of the already performed substitutions */
   NodeCache d_substitutionCache;
 
-  /** Whether or not to substitute under quantifiers */
-  bool d_substituteUnderQuantifiers;
-
   /** Has the cache been invalidated? */
   bool d_cacheInvalidated;
 
@@ -89,11 +86,9 @@ private:
   CacheInvalidator d_cacheInvalidator;
 
 public:
- SubstitutionMap(context::Context* context,
-                 bool substituteUnderQuantifiers = true)
+ SubstitutionMap(context::Context* context)
      : d_substitutions(context),
        d_substitutionCache(),
-       d_substituteUnderQuantifiers(substituteUnderQuantifiers),
        d_cacheInvalidated(false),
        d_cacheInvalidator(context, d_cacheInvalidated)
  {

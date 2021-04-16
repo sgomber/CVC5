@@ -19,6 +19,7 @@
 
 #include "expr/proof_checker.h"
 #include "expr/proof_node.h"
+#include "expr/proof_node_algorithm.h"
 #include "expr/term_context.h"
 #include "expr/term_context_stack.h"
 
@@ -230,6 +231,27 @@ std::shared_ptr<ProofNode> TConvProofGenerator::getProofFor(Node f)
   Trace("tconv-pf-gen") << "... success" << std::endl;
   Assert (pfn!=nullptr);
   Trace("tconv-pf-gen-debug") << "... proof is " << *pfn << std::endl;
+  Assert (!hasFreeAssumption(pfn));
+  return pfn;
+}
+
+std::shared_ptr<ProofNode> TConvProofGenerator::getProofForRewriting(Node n)
+{
+  LazyCDProof lpf(
+      d_proof.getManager(), &d_proof, nullptr, d_name + "::LazyCDProofRew");
+  Node conc = getProofForRewriting(n, lpf, d_tcontext);
+  Node eq = n.eqNode(conc);
+  if (conc==n)
+  {
+    // assertion failure in debug
+    Assert(false) << "TConvProofGenerator::getProofForRewriting: " << identify()
+                  << ": don't ask for trivial proofs";
+    lpf.addStep(eq, PfRule::REFL, {}, {n});
+  }
+  std::shared_ptr<ProofNode> pfn = lpf.getProofFor(eq);
+  Assert (pfn!=nullptr);
+  Trace("tconv-pf-gen-debug") << "... proof is " << *pfn << std::endl;
+  Assert (!hasFreeAssumption(pfn));
   return pfn;
 }
 

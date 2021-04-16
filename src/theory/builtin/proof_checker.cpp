@@ -225,6 +225,15 @@ Node BuiltinProofRuleChecker::applySubstitution(Node n,
   {
     return n.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
   }
+  Node ns = n;
+  for (size_t i = 0, nvars = vars.size(); i < nvars; i++)
+  {
+    TNode v = vars[(nvars - 1) - i];
+    TNode s = subs[(nvars - 1) - i];
+    ns = ns.substitute(v, s);
+  }
+  return ns;
+  /*
   std::vector<Node> svars;
   std::vector<Node> ssubs;
   for (size_t i = 0, nvars = vars.size(); i < nvars; i++)
@@ -239,6 +248,7 @@ Node BuiltinProofRuleChecker::applySubstitution(Node n,
     ssubs.push_back(s);
   }
   return n.substitute(svars.begin(), svars.end(), ssubs.begin(), ssubs.end());
+  */
 }
 
 bool BuiltinProofRuleChecker::getMethodId(TNode n, MethodId& i)

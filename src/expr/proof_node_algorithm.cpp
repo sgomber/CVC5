@@ -136,6 +136,13 @@ void getFreeAssumptionsMap(
   } while (!visit.empty());
 }
 
+bool hasFreeAssumption(ProofNode * pn)
+{
+  std::vector<Node> assump;
+  getFreeAssumptions(pn, assump);
+  return !assump.empty();
+}
+
 bool containsSubproof(ProofNode* pn, ProofNode* pnc)
 {
   std::unordered_set<const ProofNode*> visited;
