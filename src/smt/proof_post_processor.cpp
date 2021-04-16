@@ -808,7 +808,7 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
     MethodId ida = MethodId::SBA_SEQUENTIAL;
     if (args.size() >= 3)
     {
-      builtin::BuiltinProofRuleChecker::getMethodId(args[2], ids);
+      builtin::BuiltinProofRuleChecker::getMethodId(args[2], ida);
     }
     std::vector<std::shared_ptr<CDProof>> pfs;
     std::vector<TNode> vsList;

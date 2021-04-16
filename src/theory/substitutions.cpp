@@ -23,7 +23,8 @@ namespace cvc5 {
 namespace theory {
 
 SubstitutionMap::SubstitutionMap(context::Context* context)
-    : d_substitutions(context ? context : &d_context),
+    : d_context(),
+      d_substitutions(context ? context : &d_context),
       d_substitutionCache(),
       d_cacheInvalidated(false),
       d_cacheInvalidator(context ? context : &d_context, d_cacheInvalidated)
