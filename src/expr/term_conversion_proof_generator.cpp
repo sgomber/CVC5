@@ -231,7 +231,7 @@ std::shared_ptr<ProofNode> TConvProofGenerator::getProofFor(Node f)
   Trace("tconv-pf-gen") << "... success" << std::endl;
   Assert (pfn!=nullptr);
   Trace("tconv-pf-gen-debug") << "... proof is " << *pfn << std::endl;
-  //Assert(!expr::hasFreeAssumption(pfn.get()));
+  // Assert(!expr::hasFreeAssumption(pfn.get()));
   return pfn;
 }
 
@@ -250,7 +250,7 @@ std::shared_ptr<ProofNode> TConvProofGenerator::getProofForRewriting(Node n)
   std::shared_ptr<ProofNode> pfn = lpf.getProofFor(conc);
   Assert(pfn != nullptr);
   Trace("tconv-pf-gen-debug") << "... proof is " << *pfn << std::endl;
-  //Assert(!expr::hasFreeAssumption(pfn.get()));
+  // Assert(!expr::hasFreeAssumption(pfn.get()));
   return pfn;
 }
 

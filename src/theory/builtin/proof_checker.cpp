@@ -87,7 +87,11 @@ void BuiltinProofRuleChecker::registerTo(ProofChecker* pc)
 }
 
 Node BuiltinProofRuleChecker::applySubstitutionRewrite(
-    Node n, const std::vector<Node>& exp, MethodId ids, MethodId ida, MethodId idr)
+    Node n,
+    const std::vector<Node>& exp,
+    MethodId ids,
+    MethodId ida,
+    MethodId idr)
 {
   Node nks = applySubstitution(n, exp, ids, ida);
   return applyRewrite(nks, idr);
@@ -190,7 +194,9 @@ bool BuiltinProofRuleChecker::getSubstitutionFor(Node exp,
   return ret;
 }
 
-Node BuiltinProofRuleChecker::applySubstitution(Node n, Node exp, MethodId ids,
+Node BuiltinProofRuleChecker::applySubstitution(Node n,
+                                                Node exp,
+                                                MethodId ids,
                                                 MethodId ida)
 {
   return applySubstitution(n, {exp}, ids, ida);
@@ -217,11 +223,11 @@ Node BuiltinProofRuleChecker::applySubstitution(Node n,
       return Node::null();
     }
   }
-  if (ida==MethodId::SBA_SIMUL)
+  if (ida == MethodId::SBA_SIMUL)
   {
     return n.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
   }
-  Assert (ida==MethodId::SBA_SEQUENTIAL || ida==MethodId::SBA_FIXPOINT);
+  Assert(ida == MethodId::SBA_SEQUENTIAL || ida == MethodId::SBA_FIXPOINT);
   Node ns = n;
   for (size_t i = 0, nvars = vars.size(); i < nvars; i++)
   {
@@ -462,15 +468,15 @@ bool BuiltinProofRuleChecker::getMethodIds(const std::vector<Node>& args,
   ids = MethodId::SB_DEFAULT;
   ida = MethodId::SBA_SEQUENTIAL;
   idr = MethodId::RW_REWRITE;
-  for (size_t offset = 0; offset<=2; offset++)
+  for (size_t offset = 0; offset <= 2; offset++)
   {
-    if (args.size() > index+offset)
+    if (args.size() > index + offset)
     {
-      MethodId& id = offset==0 ? ids : ( offset==1 ? ida : idr);
-      if (!getMethodId(args[index+offset], id))
+      MethodId& id = offset == 0 ? ids : (offset == 1 ? ida : idr);
+      if (!getMethodId(args[index + offset], id))
       {
         Trace("builtin-pfcheck")
-            << "Failed to get id from " << args[index+offset] << std::endl;
+            << "Failed to get id from " << args[index + offset] << std::endl;
         return false;
       }
     }

@@ -443,8 +443,8 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
           sargs.push_back(args[2]);
         }
       }
-      ts =
-          builtin::BuiltinProofRuleChecker::applySubstitution(t, children, ids, ida);
+      ts = builtin::BuiltinProofRuleChecker::applySubstitution(
+          t, children, ids, ida);
       Trace("smt-proof-pp-debug")
           << "...eq intro subs equality is " << t << " == " << ts << ", from "
           << ids << " " << ida << std::endl;

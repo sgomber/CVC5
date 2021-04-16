@@ -133,8 +133,7 @@ class BuiltinProofRuleChecker : public ProofRuleChecker
   static Node applySubstitution(Node n,
                                 Node exp,
                                 MethodId ids = MethodId::SB_DEFAULT,
-                                MethodId ida = MethodId::SBA_SEQUENTIAL
-                               );
+                                MethodId ida = MethodId::SBA_SEQUENTIAL);
   static Node applySubstitution(Node n,
                                 const std::vector<Node>& exp,
                                 MethodId ids = MethodId::SB_DEFAULT,
@@ -170,8 +169,10 @@ class BuiltinProofRuleChecker : public ProofRuleChecker
    * Add method identifiers ids and idr as nodes to args. This does not add ids
    * or idr if their values are the default ones.
    */
-  static void addMethodIds(std::vector<Node>& args, MethodId ids, 
-                    MethodId ida, MethodId idr);
+  static void addMethodIds(std::vector<Node>& args,
+                           MethodId ids,
+                           MethodId ida,
+                           MethodId idr);
 
   /** get a TheoryId from a node, return false if we fail */
   static bool getTheoryId(TNode n, TheoryId& tid);
