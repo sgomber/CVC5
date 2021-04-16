@@ -39,10 +39,10 @@ TrustSubstitutionMap::TrustSubstitutionMap(context::Context* c,
                           pnm, nullptr, c, "TrustSubstitutionMap::applyPg")
                     : nullptr),
       d_helperPf(pnm, c),
-      d_currentSubs(c),
       d_name(name),
       d_trustId(trustId),
-      d_ids(ids)
+      d_ids(ids),
+      d_eqtIndex(c)
 {
 }
 
@@ -55,8 +55,6 @@ void TrustSubstitutionMap::addSubstitution(TNode x, TNode t, ProofGenerator* pg)
   {
     TrustNode tnl = TrustNode::mkTrustRewrite(x, t, pg);
     d_tsubs.push_back(tnl);
-    // current substitution node is no longer valid.
-    d_currentSubs = Node::null();
     // add to lazy proof
     d_subsPg->addLazyStep(tnl.getProven(), pg, d_trustId);
   }
@@ -153,10 +151,18 @@ TrustNode TrustSubstitutionMap::apply(Node n, bool doRewrite)
     // no proofs, use null generator
     return TrustNode::mkTrustRewrite(n, ns, nullptr);
   }
-  Node cs = getCurrentSubstitution();
-  Trace("trust-subs")
-      << "TrustSubstitutionMap::addSubstitution: current substitution is " << cs
-      << std::endl;
+  Node eq = n.eqNode(ns);
+  // remember the index
+  d_eqtIndex[eq] = d_tsubs.size();
+  // this class will provide a proof if asked
+  return TrustNode::mkTrustRewrite(n, ns, this);
+}
+
+std::shared_ptr<ProofNode> TrustSubstitutionMap::getProofFor(Node eq)
+{
+  Assert (eq.getKind()==EQUAL);
+  Node n = eq[0];
+  Node ns = eq[1];
   // Easy case: if n is in the domain of the substitution, maybe it is already
   // a proof in the substitution proof generator. This is moreover required
   // to avoid cyclic proofs below. For example, if { x -> 5 } is a substitution,
@@ -169,11 +175,13 @@ TrustNode TrustSubstitutionMap::apply(Node n, bool doRewrite)
   // ---------- MACRO_SR_EQ_INTRO{x}
   // (= x 5)
   // by taking the premise proof directly.
-  Node eq = n.eqNode(ns);
   if (d_subsPg->hasStep(eq) || d_subsPg->hasGenerator(eq))
   {
-    return TrustNode::mkTrustRewrite(n, ns, d_subsPg.get());
+    return d_subsPg->getProofFor(eq);
   }
+  NodeUIntMap::iterator it = d_eqtIndex.find(eq);
+  Assert (it != d_eqtIndex.end());
+  Node cs = getSubstitution(it->second);
   Assert(eq != cs);
   std::vector<Node> pfChildren;
   if (!cs.isConst())
@@ -217,7 +225,12 @@ TrustNode TrustSubstitutionMap::apply(Node n, bool doRewrite)
   // notice this proof is reused.
   d_applyPg->addSteps(*d_tspb.get());
   d_tspb->clear();
-  return TrustNode::mkTrustRewrite(n, ns, d_applyPg.get());
+  return d_applyPg->getProofFor(eq);
+}
+
+std::string TrustSubstitutionMap::identify() const
+{
+  return d_name;
 }
 
 SubstitutionMap& TrustSubstitutionMap::get() { return d_subs; }
@@ -227,25 +240,21 @@ bool TrustSubstitutionMap::isProofEnabled() const
   return d_subsPg != nullptr;
 }
 
-Node TrustSubstitutionMap::getCurrentSubstitution()
+Node TrustSubstitutionMap::getSubstitution(size_t index)
 {
-  Assert(isProofEnabled());
-  if (!d_currentSubs.get().isNull())
-  {
-    return d_currentSubs;
-  }
+  Assert (index<=d_tsubs.size());
   std::vector<Node> csubsChildren;
-  for (const TrustNode& tns : d_tsubs)
+  for (size_t i=0; i<index; i++)
   {
-    csubsChildren.push_back(tns.getProven());
+    csubsChildren.push_back(d_tsubs[i].getProven());
   }
   std::reverse(csubsChildren.begin(),csubsChildren.end());
-  d_currentSubs = NodeManager::currentNM()->mkAnd(csubsChildren);
-  if (d_currentSubs.get().getKind() == kind::AND)
+  Node cs = NodeManager::currentNM()->mkAnd(csubsChildren);
+  if (cs.getKind() == kind::AND)
   {
-    d_subsPg->addStep(d_currentSubs, PfRule::AND_INTRO, csubsChildren, {});
+    d_subsPg->addStep(cs, PfRule::AND_INTRO, csubsChildren, {});
   }
-  return d_currentSubs;
+  return cs;
 }
 
 }  // namespace theory
