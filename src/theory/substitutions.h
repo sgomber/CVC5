@@ -85,14 +85,10 @@ private:
    */
   CacheInvalidator d_cacheInvalidator;
 
-public:
- SubstitutionMap(context::Context* context)
-     : d_substitutions(context),
-       d_substitutionCache(),
-       d_cacheInvalidated(false),
-       d_cacheInvalidator(context, d_cacheInvalidated)
- {
-  }
+  /** A dummy context used by this class if none is provided */
+  context::Context d_context;
+ public:
+  SubstitutionMap(context::Context* context = nullptr);
 
   /**
    * Adds a substitution from x to t.
