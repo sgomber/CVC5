@@ -1,23 +1,29 @@
-/*********************                                                        */
-/*! \file proof_ensure_closed.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of debug checks for ensuring proofs are closed
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Haniel Barbosa
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of debug checks for ensuring proofs are closed.
+ */
 
 #include "expr/proof_ensure_closed.h"
 
+#include <sstream>
+
+#include "expr/proof_generator.h"
+#include "expr/proof_node.h"
 #include "expr/proof_node_algorithm.h"
+#include "options/proof_options.h"
 #include "options/smt_options.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 /**
  * Ensure closed with respect to assumptions, internal version, which
@@ -31,13 +37,13 @@ void ensureClosedWrtInternal(Node proven,
                              const char* ctx,
                              bool reqGen)
 {
-  if (!options::proofNew())
+  if (!options::produceProofs())
   {
     // proofs not enabled, do not do check
     return;
   }
   bool isTraceDebug = Trace.isOn(c);
-  if (!options::proofNewEagerChecking() && !isTraceDebug)
+  if (!options::proofEagerChecking() && !isTraceDebug)
   {
     // trace is off and proof new eager checking is off, do not do check
     return;
@@ -174,4 +180,4 @@ void pfnEnsureClosedWrt(ProofNode* pn,
   ensureClosedWrtInternal(Node::null(), nullptr, pn, assumps, c, ctx, false);
 }
 
-}  // namespace CVC4
+}  // namespace cvc5

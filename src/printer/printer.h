@@ -1,40 +1,37 @@
-/*********************                                                        */
-/*! \file printer.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Abdalrhman Mohamed, Andrew Reynolds, Aina Niemetz
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Base of the pretty-printer interface
- **
- ** Base of the pretty-printer interface.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Abdalrhman Mohamed, Andrew Reynolds, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Base of the pretty-printer interface.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__PRINTER__PRINTER_H
-#define CVC4__PRINTER__PRINTER_H
+#ifndef CVC5__PRINTER__PRINTER_H
+#define CVC5__PRINTER__PRINTER_H
 
-#include <map>
 #include <string>
 
 #include "expr/node.h"
 #include "options/language.h"
 #include "smt/model.h"
 #include "util/result.h"
-#include "util/sexpr.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 class Command;
 class CommandStatus;
 class UnsatCore;
-class InstantiationList;
-class SkolemList;
+struct InstantiationList;
+struct SkolemList;
 
 class Printer
 {
@@ -90,6 +87,11 @@ class Printer
   virtual void toStreamCmdDeclareFunction(std::ostream& out,
                                           const std::string& id,
                                           TypeNode type) const;
+  /** Print declare-pool command */
+  virtual void toStreamCmdDeclarePool(std::ostream& out,
+                                      const std::string& id,
+                                      TypeNode type,
+                                      const std::vector<Node>& initValue) const;
 
   /** Print declare-sort command */
   virtual void toStreamCmdDeclareType(std::ostream& out,
@@ -217,7 +219,7 @@ class Printer
   /** Print set-info command */
   virtual void toStreamCmdSetInfo(std::ostream& out,
                                   const std::string& flag,
-                                  SExpr sexpr) const;
+                                  const std::string& value) const;
 
   /** Print get-info command */
   virtual void toStreamCmdGetInfo(std::ostream& out,
@@ -226,7 +228,7 @@ class Printer
   /** Print set-option command */
   virtual void toStreamCmdSetOption(std::ostream& out,
                                     const std::string& flag,
-                                    SExpr sexpr) const;
+                                    const std::string& value) const;
 
   /** Print get-option command */
   virtual void toStreamCmdGetOption(std::ostream& out,
@@ -310,6 +312,6 @@ class Printer
 
 }; /* class Printer */
 
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__PRINTER__PRINTER_H */
+#endif /* CVC5__PRINTER__PRINTER_H */

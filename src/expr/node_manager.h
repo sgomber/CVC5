@@ -1,32 +1,27 @@
-/*********************                                                        */
-/*! \file node_manager.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Morgan Deters, Andrew Reynolds, Christopher L. Conway
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief A manager for Nodes
- **
- ** A manager for Nodes.
- **
- ** Reviewed by Chris Conway, Apr 5 2010 (bug #65).
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Morgan Deters, Andrew Reynolds, Christopher L. Conway
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * A manager for Nodes.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
 /* circular dependency; force node.h first */
 //#include "expr/attribute.h"
 #include "expr/node.h"
 #include "expr/type_node.h"
-#include "expr/expr.h"
-#include "expr/expr_manager.h"
 
-#ifndef CVC4__NODE_MANAGER_H
-#define CVC4__NODE_MANAGER_H
+#ifndef CVC5__NODE_MANAGER_H
+#define CVC5__NODE_MANAGER_H
 
 #include <vector>
 #include <string>
@@ -36,11 +31,13 @@
 #include "expr/kind.h"
 #include "expr/metakind.h"
 #include "expr/node_value.h"
-#include "options/options.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
-class StatisticsRegistry;
+namespace api {
+class Solver;
+}
+
 class ResourceManager;
 class SkolemManager;
 class BoundVarManager;
@@ -51,10 +48,10 @@ namespace expr {
   namespace attr {
     class AttributeUniqueId;
     class AttributeManager;
-  }/* CVC4::expr::attr namespace */
+    }  // namespace attr
 
   class TypeChecker;
-}/* CVC4::expr namespace */
+  }  // namespace expr
 
 /**
  * An interface that an interested party can implement and then subscribe
@@ -82,16 +79,25 @@ class NodeManagerListener {
   virtual void nmNotifyDeleteNode(TNode n) {}
 }; /* class NodeManagerListener */
 
-class NodeManager {
-  template <unsigned nchild_thresh> friend class CVC4::NodeBuilder;
-  friend class NodeManagerScope;
+class NodeManager
+{
+  friend class api::Solver;
   friend class expr::NodeValue;
   friend class expr::TypeChecker;
+  friend class SkolemManager;
 
-  // friends so they can access mkVar() here, which is private
-  friend Expr ExprManager::mkVar(const std::string&, Type);
-  friend Expr ExprManager::mkVar(Type);
+  friend class NodeBuilder;
+  friend class NodeManagerScope;
 
+ public:
+  /**
+   * Return true if given kind is n-ary. The test is based on n-ary kinds
+   * having their maximal arity as the maximal possible number of children
+   * of a node.
+   */
+  static bool isNAryKind(Kind k);
+
+ private:
   /** Predicate for use with STL algorithms */
   struct NodeValueReferenceCountNonZero {
     bool operator()(expr::NodeValue* nv) { return nv->d_rc > 0; }
@@ -106,8 +112,6 @@ class NodeManager {
 
   static thread_local NodeManager* s_current;
 
-  StatisticsRegistry* d_statisticsRegistry;
-
   /** The skolem manager */
   std::unique_ptr<SkolemManager> d_skManager;
   /** The bound variable manager */
@@ -118,9 +122,6 @@ class NodeManager {
   size_t next_id;
 
   expr::attr::AttributeManager* d_attrManager;
-
-  /** The associated ExprManager */
-  ExprManager* d_exprManager;
 
   /**
    * The node value we're currently freeing.  This unique node value
@@ -159,7 +160,7 @@ class NodeManager {
    * PLUS, are APPLYs of a PLUS operator to arguments.  This array
    * holds the set of operators for these things.  A PLUS operator is
    * a Node with kind "BUILTIN", and if you call
-   * plusOperator->getConst<CVC4::Kind>(), you get kind::PLUS back.
+   * plusOperator->getConst<cvc5::Kind>(), you get kind::PLUS back.
    */
   Node d_operators[kind::LAST_KIND];
 
@@ -171,12 +172,8 @@ class NodeManager {
    */
   std::vector<NodeManagerListener*> d_listeners;
 
-  /** A list of datatypes registered by its corresponding expr manager.
-   * !!! this member should be deleted when the Expr-layer is deleted.
-   */
-  std::vector<std::shared_ptr<DType> > d_registeredDTypes;
   /** A list of datatypes owned by this node manager */
-  std::vector<std::unique_ptr<DType> > d_ownedDTypes;
+  std::vector<std::unique_ptr<DType> > d_dtypes;
 
   /**
    * A map of tuple and record types to their corresponding datatype.
@@ -281,14 +278,10 @@ class NodeManager {
     // `d_zombies` uses the node id to hash and compare nodes. If `d_zombies`
     // already contains a node value with the same id as `nv`, but the pointers
     // are different, then the wrong `NodeManager` was in scope for one of the
-    // two nodes when it reached refcount zero. This can happen for example if
-    // you create a node with a `NodeManager` n1 and then call `Node::toExpr()`
-    // on that node while a different `NodeManager` n2 is in scope. When that
-    // `Expr` is deleted and the node reaches refcount zero in the `Expr`'s
-    // destructor, then `markForDeletion()` will be called on n2.
+    // two nodes when it reached refcount zero.
     Assert(d_zombies.find(nv) == d_zombies.end() || *d_zombies.find(nv) == nv);
 
-    d_zombies.insert(nv);  // FIXME multithreading
+    d_zombies.insert(nv);
 
     if(safeToReclaimZombies()) {
       if(d_zombies.size() > 5000) {
@@ -345,20 +338,6 @@ class NodeManager {
     expr::NodeValue* child[N];
   };/* struct NodeManager::NVStorage<N> */
 
-  /* A note on isAtomic() and isAtomicFormula() (in CVC3 parlance)..
-   *
-   * It has been decided for now to hold off on implementations of
-   * these functions, as they may only be needed in CNF conversion,
-   * where it's pointless to do a lazy isAtomic determination by
-   * searching through the DAG, and storing it, since the result will
-   * only be used once.  For more details see the 4/27/2010 CVC4
-   * developer's meeting notes at:
-   *
-   * http://cvc4.cs.stanford.edu/wiki/Meeting_Minutes_-_April_27,_2010#isAtomic.28.29_and_isAtomicFormula.28.29
-   */
-  // bool containsDecision(TNode); // is "atomic"
-  // bool properlyContainsDecision(TNode); // all children are atomic
-
   // undefined private copy constructor (disallow copy)
   NodeManager(const NodeManager&) = delete;
 
@@ -371,7 +350,7 @@ class NodeManager {
    * lookup is done on the name.  If you mkVar("a", type) and then
    * mkVar("a", type) again, you have two variables.  The NodeManager
    * version of this is private to avoid internal uses of mkVar() from
-   * within CVC4.  Such uses should employ mkSkolem() instead.
+   * within cvc5.  Such uses should employ SkolemManager::mkSkolem() instead.
    */
   Node mkVar(const std::string& name, const TypeNode& type);
   Node* mkVarPtr(const std::string& name, const TypeNode& type);
@@ -380,23 +359,29 @@ class NodeManager {
   Node mkVar(const TypeNode& type);
   Node* mkVarPtr(const TypeNode& type);
 
- public:
+  /**
+   * Create a skolem constant with the given name, type, and comment. For
+   * details, see SkolemManager::mkDummySkolem, which calls this method.
+   *
+   * This method is intentionally private. To create skolems, one should
+   * call a method from SkolemManager for allocating a skolem in a standard
+   * way, or otherwise use SkolemManager::mkDummySkolem.
+   */
+  Node mkSkolem(const std::string& prefix,
+                const TypeNode& type,
+                const std::string& comment = "",
+                int flags = SKOLEM_DEFAULT);
 
-  explicit NodeManager(ExprManager* exprManager);
+ public:
+  explicit NodeManager();
   ~NodeManager();
 
-  /** The node manager in the current public-facing CVC4 library context */
+  /** The node manager in the current public-facing cvc5 library context */
   static NodeManager* currentNM() { return s_current; }
   /** Get this node manager's skolem manager */
   SkolemManager* getSkolemManager() { return d_skManager.get(); }
   /** Get this node manager's bound variable manager */
   BoundVarManager* getBoundVarManager() { return d_bvManager.get(); }
-
-  /** Get this node manager's statistics registry */
-  StatisticsRegistry* getStatisticsRegistry() const
-  {
-    return d_statisticsRegistry;
-  }
 
   /** Subscribe to NodeManager events */
   void subscribeEvents(NodeManagerListener* listener) {
@@ -413,10 +398,6 @@ class NodeManager {
     d_listeners.erase(elt);
   }
 
-  /** register that datatype dt was constructed by the expression manager
-   * !!! this interface should be deleted when the Expr-layer is deleted.
-   */
-  size_t registerDatatype(std::shared_ptr<DType> dt);
   /**
    * Return the datatype at the given index owned by this class. Type nodes are
    * associated with datatypes through the DatatypeIndexConstant class. The
@@ -594,27 +575,6 @@ class NodeManager {
     SKOLEM_BOOL_TERM_VAR = 8 /**< vars requiring kind BOOLEAN_TERM_VARIABLE */
   };                         /* enum SkolemFlags */
 
-  /**
-   * Create a skolem constant with the given name, type, and comment.
-   *
-   * @param prefix the name of the new skolem variable is the prefix
-   * appended with a unique ID.  This way a family of skolem variables
-   * can be made with unique identifiers, used in dump, tracing, and
-   * debugging output.  Use SKOLEM_EXECT_NAME flag if you don't want
-   * a unique ID appended and use prefix as the name.
-   *
-   * @param type the type of the skolem variable to create
-   *
-   * @param comment a comment for dumping output; if declarations are
-   * being dumped, this is included in a comment before the declaration
-   * and can be quite useful for debugging
-   *
-   * @param flags an optional mask of bits from SkolemFlags to control
-   * mkSkolem() behavior
-   */
-  Node mkSkolem(const std::string& prefix, const TypeNode& type,
-                const std::string& comment = "", int flags = SKOLEM_DEFAULT);
-
   /** Create a instantiation constant with the given type. */
   Node mkInstConstant(const TypeNode& type);
 
@@ -675,7 +635,7 @@ class NodeManager {
   /**
    * Get the (singleton) operator of an OPERATOR-kinded kind.  The
    * returned node n will have kind BUILTIN, and calling
-   * n.getConst<CVC4::Kind>() will yield k.
+   * n.getConst<cvc5::Kind>() will yield k.
    */
   inline TNode operatorOf(Kind k) {
     AssertArgument( kind::metaKindOf(k) == kind::metakind::OPERATOR, k,
@@ -886,9 +846,15 @@ class NodeManager {
    *
    * @param domain the domain type
    * @param range the range type
+   * @param reqFlat If true, we require flat function types, e.g. the
+   * range type cannot be a function. User-generated function types and those
+   * used in solving must be flat, although some use cases (e.g. LFSC proof
+   * conversion) require non-flat function types.
    * @returns the functional type domain -> range
    */
-  TypeNode mkFunctionType(const TypeNode& domain, const TypeNode& range);
+  TypeNode mkFunctionType(const TypeNode& domain,
+                          const TypeNode& range,
+                          bool reqFlat = true);
 
   /**
    * Make a function type with input types from
@@ -896,18 +862,25 @@ class NodeManager {
    *
    * @param argTypes the domain is a tuple (argTypes[0], ..., argTypes[n])
    * @param range the range type
+   * @param reqFlat Same as above
    * @returns the functional type (argTypes[0], ..., argTypes[n]) -> range
    */
   TypeNode mkFunctionType(const std::vector<TypeNode>& argTypes,
-                          const TypeNode& range);
+                          const TypeNode& range,
+                          bool reqFlat = true);
 
   /**
    * Make a function type with input types from
    * <code>sorts[0..sorts.size()-2]</code> and result type
    * <code>sorts[sorts.size()-1]</code>. <code>sorts</code> must have
    * at least 2 elements.
+   *
+   * @param sorts The argument and range sort of the function type, where the
+   * range type is the last in this vector.
+   * @param reqFlat Same as above
    */
-  TypeNode mkFunctionType(const std::vector<TypeNode>& sorts);
+  TypeNode mkFunctionType(const std::vector<TypeNode>& sorts,
+                          bool reqFlat = true);
 
   /**
    * Make a predicate type with input types from
@@ -915,7 +888,8 @@ class NodeManager {
    * <code>BOOLEAN</code>. <code>sorts</code> must have at least one
    * element.
    */
-  TypeNode mkPredicateType(const std::vector<TypeNode>& sorts);
+  TypeNode mkPredicateType(const std::vector<TypeNode>& sorts,
+                           bool reqFlat = true);
 
   /**
    * Make a tuple type with types from
@@ -936,14 +910,9 @@ class NodeManager {
   TypeNode mkRecordType(const Record& rec);
 
   /**
-   * Make a symbolic expression type with types from
-   * <code>types</code>. <code>types</code> may have any number of
-   * elements.
-   *
-   * @param types a vector of types
-   * @returns the symbolic expression type (types[0], ..., types[n])
+   * @returns the symbolic expression type
    */
-  inline TypeNode mkSExprType(const std::vector<TypeNode>& types);
+  TypeNode sExprType();
 
   /** Make the type of floating-point with <code>exp</code> bit exponent and
       <code>sig</code> bit significand */
@@ -1082,37 +1051,6 @@ class NodeManager {
    */
   TypeNode getType(TNode n, bool check = false);
 
-  /**
-   * Convert a node to an expression.  Uses the ExprManager
-   * associated to this NodeManager.
-   */
-  inline Expr toExpr(TNode n);
-
-  /**
-   * Convert an expression to a node.
-   */
-  static inline Node fromExpr(const Expr& e);
-
-  /**
-   * Convert a node manager to an expression manager.
-   */
-  inline ExprManager* toExprManager();
-
-  /**
-   * Convert an expression manager to a node manager.
-   */
-  static inline NodeManager* fromExprManager(ExprManager* exprManager);
-
-  /**
-   * Convert a type node to a type.
-   */
-  inline Type toType(const TypeNode& tn);
-
-  /**
-   * Convert a type to a type node.
-   */
-  static inline TypeNode fromType(Type t);
-
   /** Reclaim zombies while there are more than k nodes in the pool (if possible).*/
   void reclaimZombiesUntil(uint32_t k);
 
@@ -1127,13 +1065,13 @@ class NodeManager {
 
   /**
    * This function gives developers a hook into the NodeManager.
-   * This can be changed in node_manager.cpp without recompiling most of cvc4.
+   * This can be changed in node_manager.cpp without recompiling most of cvc5.
    *
    * debugHook is a debugging only function, and should not be present in
    * any published code!
    */
   void debugHook(int debugFlag);
-};/* class NodeManager */
+}; /* class NodeManager */
 
 /**
  * This class changes the "current" thread-global
@@ -1141,11 +1079,10 @@ class NodeManager {
  * previous thread-global <code>NodeManager</code> when it is
  * destroyed, effectively maintaining a set of nested
  * <code>NodeManager</code> scopes.  This is especially useful on
- * public-interface calls into the CVC4 library, where CVC4's notion
+ * public-interface calls into the cvc5 library, where cvc5's notion
  * of the "current" <code>NodeManager</code> should be set to match
  * the calling context.  See, for example, the implementations of
- * public calls in the <code>ExprManager</code> and
- * <code>SmtEngine</code> classes.
+ * public calls in the <code>SmtEngine</code> class.
  *
  * The client must be careful to create and destroy
  * <code>NodeManagerScope</code> objects in a well-nested manner (such
@@ -1162,10 +1099,6 @@ class NodeManagerScope {
 public:
  NodeManagerScope(NodeManager* nm) : d_oldNodeManager(NodeManager::s_current)
  {
-   // There are corner cases where nm can be NULL and it's ok.
-   // For example, if you write { Expr e; }, then when the null
-   // Expr is destructed, there's no active node manager.
-   // Assert(nm != NULL);
    NodeManager::s_current = nm;
    Debug("current") << "node manager scope: " << NodeManager::s_current << "\n";
   }
@@ -1176,14 +1109,6 @@ public:
                      << "returning to " << NodeManager::s_current << "\n";
   }
 };/* class NodeManagerScope */
-
-inline TypeNode NodeManager::mkSExprType(const std::vector<TypeNode>& types) {
-  std::vector<TypeNode> typeNodes;
-  for (unsigned i = 0; i < types.size(); ++ i) {
-    typeNodes.push_back(types[i]);
-  }
-  return mkTypeNode(kind::SEXPR_TYPE, typeNodes);
-}
 
 inline TypeNode NodeManager::mkArrayType(TypeNode indexType,
                                          TypeNode constituentType) {
@@ -1253,40 +1178,15 @@ inline void NodeManager::poolRemove(expr::NodeValue* nv) {
   d_nodeValuePool.erase(nv);// FIXME multithreading
 }
 
-inline Expr NodeManager::toExpr(TNode n) {
-  return Expr(d_exprManager, new Node(n));
-}
+}  // namespace cvc5
 
-inline Node NodeManager::fromExpr(const Expr& e) {
-  return e.getNode();
-}
-
-inline ExprManager* NodeManager::toExprManager() {
-  return d_exprManager;
-}
-
-inline NodeManager* NodeManager::fromExprManager(ExprManager* exprManager) {
-  return exprManager->getNodeManager();
-}
-
-inline Type NodeManager::toType(const TypeNode& tn)
-{
-  return Type(this, new TypeNode(tn));
-}
-
-inline TypeNode NodeManager::fromType(Type t) {
-  return *Type::getTypeNode(t);
-}
-
-}/* CVC4 namespace */
-
-#define CVC4__NODE_MANAGER_NEEDS_CONSTANT_MAP
+#define CVC5__NODE_MANAGER_NEEDS_CONSTANT_MAP
 #include "expr/metakind.h"
-#undef CVC4__NODE_MANAGER_NEEDS_CONSTANT_MAP
+#undef CVC5__NODE_MANAGER_NEEDS_CONSTANT_MAP
 
 #include "expr/node_builder.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 // general expression-builders
 
@@ -1314,67 +1214,67 @@ inline Kind NodeManager::operatorToKind(TNode n) {
 }
 
 inline Node NodeManager::mkNode(Kind kind, TNode child1) {
-  NodeBuilder<1> nb(this, kind);
+  NodeBuilder nb(this, kind);
   nb << child1;
   return nb.constructNode();
 }
 
 inline Node* NodeManager::mkNodePtr(Kind kind, TNode child1) {
-  NodeBuilder<1> nb(this, kind);
+  NodeBuilder nb(this, kind);
   nb << child1;
   return nb.constructNodePtr();
 }
 
 inline Node NodeManager::mkNode(Kind kind, TNode child1, TNode child2) {
-  NodeBuilder<2> nb(this, kind);
+  NodeBuilder nb(this, kind);
   nb << child1 << child2;
   return nb.constructNode();
 }
 
 inline Node* NodeManager::mkNodePtr(Kind kind, TNode child1, TNode child2) {
-  NodeBuilder<2> nb(this, kind);
+  NodeBuilder nb(this, kind);
   nb << child1 << child2;
   return nb.constructNodePtr();
 }
 
 inline Node NodeManager::mkNode(Kind kind, TNode child1, TNode child2,
                                 TNode child3) {
-  NodeBuilder<3> nb(this, kind);
+  NodeBuilder nb(this, kind);
   nb << child1 << child2 << child3;
   return nb.constructNode();
 }
 
 inline Node* NodeManager::mkNodePtr(Kind kind, TNode child1, TNode child2,
                                 TNode child3) {
-  NodeBuilder<3> nb(this, kind);
+  NodeBuilder nb(this, kind);
   nb << child1 << child2 << child3;
   return nb.constructNodePtr();
 }
 
 inline Node NodeManager::mkNode(Kind kind, TNode child1, TNode child2,
                                 TNode child3, TNode child4) {
-  NodeBuilder<4> nb(this, kind);
+  NodeBuilder nb(this, kind);
   nb << child1 << child2 << child3 << child4;
   return nb.constructNode();
 }
 
 inline Node* NodeManager::mkNodePtr(Kind kind, TNode child1, TNode child2,
                                 TNode child3, TNode child4) {
-  NodeBuilder<4> nb(this, kind);
+  NodeBuilder nb(this, kind);
   nb << child1 << child2 << child3 << child4;
   return nb.constructNodePtr();
 }
 
 inline Node NodeManager::mkNode(Kind kind, TNode child1, TNode child2,
                                 TNode child3, TNode child4, TNode child5) {
-  NodeBuilder<5> nb(this, kind);
+  NodeBuilder nb(this, kind);
   nb << child1 << child2 << child3 << child4 << child5;
   return nb.constructNode();
 }
 
 inline Node* NodeManager::mkNodePtr(Kind kind, TNode child1, TNode child2,
                                     TNode child3, TNode child4, TNode child5) {
-  NodeBuilder<5> nb(this, kind);
+  NodeBuilder nb(this, kind);
   nb << child1 << child2 << child3 << child4 << child5;
   return nb.constructNodePtr();
 }
@@ -1384,7 +1284,7 @@ template <bool ref_count>
 inline Node NodeManager::mkNode(Kind kind,
                                 const std::vector<NodeTemplate<ref_count> >&
                                 children) {
-  NodeBuilder<> nb(this, kind);
+  NodeBuilder nb(this, kind);
   nb.append(children);
   return nb.constructNode();
 }
@@ -1421,14 +1321,14 @@ template <bool ref_count>
 inline Node* NodeManager::mkNodePtr(Kind kind,
                                 const std::vector<NodeTemplate<ref_count> >&
                                 children) {
-  NodeBuilder<> nb(this, kind);
+  NodeBuilder nb(this, kind);
   nb.append(children);
   return nb.constructNodePtr();
 }
 
 // for operators
 inline Node NodeManager::mkNode(TNode opNode) {
-  NodeBuilder<1> nb(this, operatorToKind(opNode));
+  NodeBuilder nb(this, operatorToKind(opNode));
   if(opNode.getKind() != kind::BUILTIN) {
     nb << opNode;
   }
@@ -1436,7 +1336,7 @@ inline Node NodeManager::mkNode(TNode opNode) {
 }
 
 inline Node* NodeManager::mkNodePtr(TNode opNode) {
-  NodeBuilder<1> nb(this, operatorToKind(opNode));
+  NodeBuilder nb(this, operatorToKind(opNode));
   if(opNode.getKind() != kind::BUILTIN) {
     nb << opNode;
   }
@@ -1444,7 +1344,7 @@ inline Node* NodeManager::mkNodePtr(TNode opNode) {
 }
 
 inline Node NodeManager::mkNode(TNode opNode, TNode child1) {
-  NodeBuilder<2> nb(this, operatorToKind(opNode));
+  NodeBuilder nb(this, operatorToKind(opNode));
   if(opNode.getKind() != kind::BUILTIN) {
     nb << opNode;
   }
@@ -1453,7 +1353,7 @@ inline Node NodeManager::mkNode(TNode opNode, TNode child1) {
 }
 
 inline Node* NodeManager::mkNodePtr(TNode opNode, TNode child1) {
-  NodeBuilder<2> nb(this, operatorToKind(opNode));
+  NodeBuilder nb(this, operatorToKind(opNode));
   if(opNode.getKind() != kind::BUILTIN) {
     nb << opNode;
   }
@@ -1462,7 +1362,7 @@ inline Node* NodeManager::mkNodePtr(TNode opNode, TNode child1) {
 }
 
 inline Node NodeManager::mkNode(TNode opNode, TNode child1, TNode child2) {
-  NodeBuilder<3> nb(this, operatorToKind(opNode));
+  NodeBuilder nb(this, operatorToKind(opNode));
   if(opNode.getKind() != kind::BUILTIN) {
     nb << opNode;
   }
@@ -1471,7 +1371,7 @@ inline Node NodeManager::mkNode(TNode opNode, TNode child1, TNode child2) {
 }
 
 inline Node* NodeManager::mkNodePtr(TNode opNode, TNode child1, TNode child2) {
-  NodeBuilder<3> nb(this, operatorToKind(opNode));
+  NodeBuilder nb(this, operatorToKind(opNode));
   if(opNode.getKind() != kind::BUILTIN) {
     nb << opNode;
   }
@@ -1481,7 +1381,7 @@ inline Node* NodeManager::mkNodePtr(TNode opNode, TNode child1, TNode child2) {
 
 inline Node NodeManager::mkNode(TNode opNode, TNode child1, TNode child2,
                                 TNode child3) {
-  NodeBuilder<4> nb(this, operatorToKind(opNode));
+  NodeBuilder nb(this, operatorToKind(opNode));
   if(opNode.getKind() != kind::BUILTIN) {
     nb << opNode;
   }
@@ -1491,7 +1391,7 @@ inline Node NodeManager::mkNode(TNode opNode, TNode child1, TNode child2,
 
 inline Node* NodeManager::mkNodePtr(TNode opNode, TNode child1, TNode child2,
                                 TNode child3) {
-  NodeBuilder<4> nb(this, operatorToKind(opNode));
+  NodeBuilder nb(this, operatorToKind(opNode));
   if(opNode.getKind() != kind::BUILTIN) {
     nb << opNode;
   }
@@ -1501,7 +1401,7 @@ inline Node* NodeManager::mkNodePtr(TNode opNode, TNode child1, TNode child2,
 
 inline Node NodeManager::mkNode(TNode opNode, TNode child1, TNode child2,
                                 TNode child3, TNode child4) {
-  NodeBuilder<5> nb(this, operatorToKind(opNode));
+  NodeBuilder nb(this, operatorToKind(opNode));
   if(opNode.getKind() != kind::BUILTIN) {
     nb << opNode;
   }
@@ -1511,7 +1411,7 @@ inline Node NodeManager::mkNode(TNode opNode, TNode child1, TNode child2,
 
 inline Node* NodeManager::mkNodePtr(TNode opNode, TNode child1, TNode child2,
                                 TNode child3, TNode child4) {
-  NodeBuilder<5> nb(this, operatorToKind(opNode));
+  NodeBuilder nb(this, operatorToKind(opNode));
   if(opNode.getKind() != kind::BUILTIN) {
     nb << opNode;
   }
@@ -1521,7 +1421,7 @@ inline Node* NodeManager::mkNodePtr(TNode opNode, TNode child1, TNode child2,
 
 inline Node NodeManager::mkNode(TNode opNode, TNode child1, TNode child2,
                                 TNode child3, TNode child4, TNode child5) {
-  NodeBuilder<6> nb(this, operatorToKind(opNode));
+  NodeBuilder nb(this, operatorToKind(opNode));
   if(opNode.getKind() != kind::BUILTIN) {
     nb << opNode;
   }
@@ -1531,7 +1431,7 @@ inline Node NodeManager::mkNode(TNode opNode, TNode child1, TNode child2,
 
 inline Node* NodeManager::mkNodePtr(TNode opNode, TNode child1, TNode child2,
                                     TNode child3, TNode child4, TNode child5) {
-  NodeBuilder<6> nb(this, operatorToKind(opNode));
+  NodeBuilder nb(this, operatorToKind(opNode));
   if(opNode.getKind() != kind::BUILTIN) {
     nb << opNode;
   }
@@ -1544,7 +1444,7 @@ template <bool ref_count>
 inline Node NodeManager::mkNode(TNode opNode,
                                 const std::vector<NodeTemplate<ref_count> >&
                                 children) {
-  NodeBuilder<> nb(this, operatorToKind(opNode));
+  NodeBuilder nb(this, operatorToKind(opNode));
   if(opNode.getKind() != kind::BUILTIN) {
     nb << opNode;
   }
@@ -1556,7 +1456,7 @@ template <bool ref_count>
 inline Node* NodeManager::mkNodePtr(TNode opNode,
                                     const std::vector<NodeTemplate<ref_count> >&
                                     children) {
-  NodeBuilder<> nb(this, operatorToKind(opNode));
+  NodeBuilder nb(this, operatorToKind(opNode));
   if(opNode.getKind() != kind::BUILTIN) {
     nb << opNode;
   }
@@ -1566,23 +1466,24 @@ inline Node* NodeManager::mkNodePtr(TNode opNode,
 
 
 inline TypeNode NodeManager::mkTypeNode(Kind kind, TypeNode child1) {
-  return (NodeBuilder<1>(this, kind) << child1).constructTypeNode();
+  return (NodeBuilder(this, kind) << child1).constructTypeNode();
 }
 
 inline TypeNode NodeManager::mkTypeNode(Kind kind, TypeNode child1,
                                         TypeNode child2) {
-  return (NodeBuilder<2>(this, kind) << child1 << child2).constructTypeNode();
+  return (NodeBuilder(this, kind) << child1 << child2).constructTypeNode();
 }
 
 inline TypeNode NodeManager::mkTypeNode(Kind kind, TypeNode child1,
                                         TypeNode child2, TypeNode child3) {
-  return (NodeBuilder<3>(this, kind) << child1 << child2 << child3).constructTypeNode();
+  return (NodeBuilder(this, kind) << child1 << child2 << child3)
+      .constructTypeNode();
 }
 
 // N-ary version for types
 inline TypeNode NodeManager::mkTypeNode(Kind kind,
                                         const std::vector<TypeNode>& children) {
-  return NodeBuilder<>(this, kind).append(children).constructTypeNode();
+  return NodeBuilder(this, kind).append(children).constructTypeNode();
 }
 
 template <class T>
@@ -1652,6 +1553,6 @@ NodeClass NodeManager::mkConstInternal(const T& val) {
   return NodeClass(nv);
 }
 
-}/* CVC4 namespace */
+}  // namespace cvc5
 
-#endif /* CVC4__NODE_MANAGER_H */
+#endif /* CVC5__NODE_MANAGER_H */

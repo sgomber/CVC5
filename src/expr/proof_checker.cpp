@@ -1,26 +1,28 @@
-/*********************                                                        */
-/*! \file proof_checker.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of proof checker
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of proof checker.
+ */
 
 #include "expr/proof_checker.h"
 
+#include "expr/proof_node.h"
 #include "expr/skolem_manager.h"
-#include "options/smt_options.h"
+#include "options/proof_options.h"
 #include "smt/smt_statistics_registry.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 
 Node ProofRuleChecker::check(PfRule id,
                              const std::vector<Node>& children,
@@ -75,17 +77,11 @@ Node ProofRuleChecker::mkKindNode(Kind k)
 }
 
 ProofCheckerStatistics::ProofCheckerStatistics()
-    : d_ruleChecks("ProofCheckerStatistics::ruleChecks"),
-    d_totalRuleChecks("ProofCheckerStatistics::totalRuleChecks", 0)
+    : d_ruleChecks(smtStatisticsRegistry().registerHistogram<PfRule>(
+        "ProofCheckerStatistics::ruleChecks")),
+      d_totalRuleChecks(smtStatisticsRegistry().registerInt(
+          "ProofCheckerStatistics::totalRuleChecks"))
 {
-  smtStatisticsRegistry()->registerStat(&d_ruleChecks);
-  smtStatisticsRegistry()->registerStat(&d_totalRuleChecks);
-}
-
-ProofCheckerStatistics::~ProofCheckerStatistics()
-{
-  smtStatisticsRegistry()->unregisterStat(&d_ruleChecks);
-  smtStatisticsRegistry()->unregisterStat(&d_totalRuleChecks);
 }
 
 Node ProofChecker::check(ProofNode* pn, Node expected)
@@ -243,7 +239,7 @@ Node ProofChecker::checkInternal(PfRule id,
     }
   }
   // fails if pedantic level is not met
-  if (options::proofNewEagerChecking())
+  if (options::proofEagerChecking())
   {
     std::stringstream serr;
     if (isPedanticFailure(id, serr, enableOutput))
@@ -251,11 +247,11 @@ Node ProofChecker::checkInternal(PfRule id,
       if (enableOutput)
       {
         out << serr.str() << std::endl;
-        if (Trace.isOn("proof-new-pedantic"))
+        if (Trace.isOn("proof-pedantic"))
         {
-          Trace("proof-new-pedantic")
+          Trace("proof-pedantic")
               << "Failed pedantic check for " << id << std::endl;
-          Trace("proof-new-pedantic") << "Expected: " << expected << std::endl;
+          Trace("proof-pedantic") << "Expected: " << expected << std::endl;
           out << "Expected: " << expected << std::endl;
         }
       }
@@ -334,10 +330,10 @@ bool ProofChecker::isPedanticFailure(PfRule id,
         out << "pedantic level for " << id << " not met (rule level is "
             << itp->second << " which is at or below the pedantic level "
             << d_pclevel << ")";
-        bool pedanticTraceEnabled = Trace.isOn("proof-new-pedantic");
+        bool pedanticTraceEnabled = Trace.isOn("proof-pedantic");
         if (!pedanticTraceEnabled)
         {
-          out << ", use -t proof-new-pedantic for details";
+          out << ", use -t proof-pedantic for details";
         }
       }
       return true;
@@ -346,4 +342,4 @@ bool ProofChecker::isPedanticFailure(PfRule id,
   return false;
 }
 
-}  // namespace CVC4
+}  // namespace cvc5

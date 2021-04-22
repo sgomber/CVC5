@@ -1,59 +1,55 @@
-/*********************                                                        */
-/*! \file inst_match_generator.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of inst match generator class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of inst match generator class.
+ */
 
 #include "theory/quantifiers/ematching/inst_match_generator.h"
 
+#include "expr/dtype_cons.h"
 #include "options/quantifiers_options.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
 #include "theory/quantifiers/ematching/candidate_generator.h"
 #include "theory/quantifiers/ematching/inst_match_generator_multi.h"
 #include "theory/quantifiers/ematching/inst_match_generator_multi_linear.h"
 #include "theory/quantifiers/ematching/inst_match_generator_simple.h"
-#include "theory/quantifiers/ematching/trigger.h"
+#include "theory/quantifiers/ematching/pattern_term_selector.h"
 #include "theory/quantifiers/ematching/var_match_generator.h"
 #include "theory/quantifiers/instantiate.h"
+#include "theory/quantifiers/quantifiers_state.h"
 #include "theory/quantifiers/term_database.h"
+#include "theory/quantifiers/term_registry.h"
 #include "theory/quantifiers/term_util.h"
-#include "theory/quantifiers_engine.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
+namespace quantifiers {
 namespace inst {
 
-bool IMGenerator::sendInstantiation(Trigger* tparent, InstMatch& m)
+InstMatchGenerator::InstMatchGenerator(Trigger* tparent, Node pat)
+    : IMGenerator(tparent)
 {
-  return tparent->sendInstantiation(m);
-}
-
-InstMatchGenerator::InstMatchGenerator( Node pat ){
   d_cg = nullptr;
   d_needsReset = true;
   d_active_add = true;
-  Assert(quantifiers::TermUtil::hasInstConstAttr(pat));
+  Assert(pat.isNull() || quantifiers::TermUtil::hasInstConstAttr(pat));
   d_pattern = pat;
   d_match_pattern = pat;
-  d_match_pattern_type = pat.getType();
-  d_next = nullptr;
-  d_independent_gen = false;
-}
-
-InstMatchGenerator::InstMatchGenerator() {
-  d_cg = nullptr;
-  d_needsReset = true;
-  d_active_add = true;
+  if (!pat.isNull())
+  {
+    d_match_pattern_type = pat.getType();
+  }
   d_next = nullptr;
   d_independent_gen = false;
 }
@@ -74,17 +70,21 @@ void InstMatchGenerator::setActiveAdd(bool val){
   }
 }
 
-int InstMatchGenerator::getActiveScore( QuantifiersEngine * qe ) {
+int InstMatchGenerator::getActiveScore()
+{
   if( d_match_pattern.isNull() ){
     return -1;
-  }else if( Trigger::isAtomicTrigger( d_match_pattern ) ){
-    Node f = qe->getTermDatabase()->getMatchOperator( d_match_pattern );
-    unsigned ngt = qe->getTermDatabase()->getNumGroundTerms( f );
+  }
+  quantifiers::TermDb* tdb = d_treg.getTermDatabase();
+  if (TriggerTermInfo::isAtomicTrigger(d_match_pattern))
+  {
+    Node f = tdb->getMatchOperator(d_match_pattern);
+    unsigned ngt = tdb->getNumGroundTerms(f);
     Trace("trigger-active-sel-debug") << "Number of ground terms for " << f << " is " << ngt << std::endl;
     return ngt;
   }else if( d_match_pattern.getKind()==INST_CONSTANT ){
     TypeNode tn = d_match_pattern.getType();
-    unsigned ngtt = qe->getTermDatabase()->getNumTypeGroundTerms( tn );
+    unsigned ngtt = tdb->getNumTypeGroundTerms(tn);
     Trace("trigger-active-sel-debug") << "Number of ground terms for " << tn << " is " << ngtt << std::endl;
     return ngtt;
   }
@@ -92,7 +92,6 @@ int InstMatchGenerator::getActiveScore( QuantifiersEngine * qe ) {
 }
 
 void InstMatchGenerator::initialize(Node q,
-                                    QuantifiersEngine* qe,
                                     std::vector<InstMatchGenerator*>& gens)
 {
   if (d_pattern.isNull())
@@ -159,7 +158,8 @@ void InstMatchGenerator::initialize(Node q,
   d_match_pattern_type = d_match_pattern.getType();
   Trace("inst-match-gen") << "Pattern is " << d_pattern << ", match pattern is "
                           << d_match_pattern << std::endl;
-  d_match_pattern_op = qe->getTermDatabase()->getMatchOperator(d_match_pattern);
+  quantifiers::TermDb* tdb = d_treg.getTermDatabase();
+  d_match_pattern_op = tdb->getMatchOperator(d_match_pattern);
 
   // now, collect children of d_match_pattern
   Kind mpk = d_match_pattern.getKind();
@@ -182,7 +182,7 @@ void InstMatchGenerator::initialize(Node q,
         }
         else
         {
-          InstMatchGenerator* cimg = getInstMatchGenerator(q, pat);
+          InstMatchGenerator* cimg = getInstMatchGenerator(d_tparent, q, pat);
           if (cimg)
           {
             d_children.push_back(cimg);
@@ -207,9 +207,10 @@ void InstMatchGenerator::initialize(Node q,
   {
     // candidates for apply selector are a union of correctly and incorrectly
     // applied selectors
-    d_cg = new inst::CandidateGeneratorSelector(qe, d_match_pattern);
+    d_cg =
+        new inst::CandidateGeneratorSelector(d_qstate, d_treg, d_match_pattern);
   }
-  else if (Trigger::isAtomicTriggerKind(mpk))
+  else if (TriggerTermInfo::isAtomicTriggerKind(mpk))
   {
     if (mpk == APPLY_CONSTRUCTOR)
     {
@@ -218,12 +219,14 @@ void InstMatchGenerator::initialize(Node q,
       const DType& dt = d_match_pattern.getType().getDType();
       if (dt.getNumConstructors() == 1)
       {
-        d_cg = new inst::CandidateGeneratorConsExpand(qe, d_match_pattern);
+        d_cg = new inst::CandidateGeneratorConsExpand(
+            d_qstate, d_treg, d_match_pattern);
       }
     }
     if (d_cg == nullptr)
     {
-      CandidateGeneratorQE* cg = new CandidateGeneratorQE(qe, d_match_pattern);
+      CandidateGeneratorQE* cg =
+          new CandidateGeneratorQE(d_qstate, d_treg, d_match_pattern);
       // we will be scanning lists trying to find ground terms whose operator
       // is the same as d_match_operator's.
       d_cg = cg;
@@ -240,7 +243,7 @@ void InstMatchGenerator::initialize(Node q,
   {
     if (d_pattern.getKind() == APPLY_SELECTOR_TOTAL)
     {
-      Node selectorExpr = qe->getTermDatabase()->getMatchOperator(d_pattern);
+      Node selectorExpr = tdb->getMatchOperator(d_pattern);
       size_t selectorIndex = datatypes::utils::cindexOf(selectorExpr);
       const DType& dt = datatypes::utils::datatypeOf(selectorExpr);
       const DTypeConstructor& c = dt[selectorIndex];
@@ -248,9 +251,9 @@ void InstMatchGenerator::initialize(Node q,
       Trace("inst-match-gen")
           << "Purify dt trigger " << d_pattern << ", will match terms of op "
           << cOp << std::endl;
-      d_cg = new inst::CandidateGeneratorQE(qe, cOp);
+      d_cg = new inst::CandidateGeneratorQE(d_qstate, d_treg, cOp);
     }else{
-      d_cg = new CandidateGeneratorQEAll(qe, d_match_pattern);
+      d_cg = new CandidateGeneratorQEAll(d_qstate, d_treg, d_match_pattern);
     }
   }
   else if (mpk == EQUAL)
@@ -259,7 +262,8 @@ void InstMatchGenerator::initialize(Node q,
     if (d_pattern.getKind() == NOT)
     {
       // candidates will be all disequalities
-      d_cg = new inst::CandidateGeneratorQELitDeq(qe, d_match_pattern);
+      d_cg = new inst::CandidateGeneratorQELitDeq(
+          d_qstate, d_treg, d_match_pattern);
     }
   }
   else
@@ -271,8 +275,7 @@ void InstMatchGenerator::initialize(Node q,
 }
 
 /** get match (not modulo equality) */
-int InstMatchGenerator::getMatch(
-    Node f, Node t, InstMatch& m, QuantifiersEngine* qe, Trigger* tparent)
+int InstMatchGenerator::getMatch(Node f, Node t, InstMatch& m)
 {
   Trace("matching") << "Matching " << t << " against pattern " << d_match_pattern << " ("
                     << m << ")" << ", " << d_children.size() << ", pattern is " << d_pattern << std::endl;
@@ -282,7 +285,6 @@ int InstMatchGenerator::getMatch(
     Trace("matching-fail") << "Internal error for match generator." << std::endl;
     return -2;
   }
-  EqualityQuery* q = qe->getEqualityQuery();
   bool success = true;
   std::vector<int> prev;
   // if t is null
@@ -300,7 +302,7 @@ int InstMatchGenerator::getMatch(
       Trace("matching-debug2")
           << "Setting " << ct << " to " << t[i] << "..." << std::endl;
       bool addToPrev = m.get(ct).isNull();
-      if (!m.set(q, ct, t[i]))
+      if (!m.set(d_qstate, ct, t[i]))
       {
         // match is in conflict
         Trace("matching-fail")
@@ -316,7 +318,7 @@ int InstMatchGenerator::getMatch(
     }
     else if (ct == -1)
     {
-      if (!q->areEqual(d_match_pattern[i], t[i]))
+      if (!d_qstate.areEqual(d_match_pattern[i], t[i]))
       {
         Trace("matching-fail") << "Match fail arg: " << d_match_pattern[i]
                                << " and " << t[i] << std::endl;
@@ -332,7 +334,7 @@ int InstMatchGenerator::getMatch(
   if (d_match_pattern.getKind() == INST_CONSTANT)
   {
     bool addToPrev = m.get(d_children_types[0]).isNull();
-    if (!m.set(q, d_children_types[0], t))
+    if (!m.set(d_qstate, d_children_types[0], t))
     {
       success = false;
     }
@@ -368,7 +370,7 @@ int InstMatchGenerator::getMatch(
       {
         if (t.getType().isBoolean())
         {
-          t_match = nm->mkConst(!q->areEqual(nm->mkConst(true), t));
+          t_match = nm->mkConst(!d_qstate.areEqual(nm->mkConst(true), t));
         }
         else
         {
@@ -388,7 +390,7 @@ int InstMatchGenerator::getMatch(
     if (!t_match.isNull())
     {
       bool addToPrev = m.get(v).isNull();
-      if (!m.set(q, v, t_match))
+      if (!m.set(d_qstate, v, t_match))
       {
         success = false;
       }
@@ -406,7 +408,7 @@ int InstMatchGenerator::getMatch(
     // we will be requesting candidates for matching terms for each child
     for (size_t i = 0, size = d_children.size(); i < size; i++)
     {
-      if (!d_children[i]->reset(t[d_children_index[i]], qe))
+      if (!d_children[i]->reset(t[d_children_index[i]]))
       {
         success = false;
         break;
@@ -415,7 +417,8 @@ int InstMatchGenerator::getMatch(
     if (success)
     {
       Trace("matching-debug2") << "Continue next " << d_next << std::endl;
-      ret_val = continueNextMatch(f, m, qe, tparent);
+      ret_val =
+          continueNextMatch(f, m, InferenceId::QUANTIFIERS_INST_E_MATCHING);
     }
   }
   if (ret_val < 0)
@@ -430,21 +433,21 @@ int InstMatchGenerator::getMatch(
 
 int InstMatchGenerator::continueNextMatch(Node q,
                                           InstMatch& m,
-                                          QuantifiersEngine* qe,
-                                          Trigger* tparent)
+                                          InferenceId id)
 {
   if( d_next!=NULL ){
-    return d_next->getNextMatch(q, m, qe, tparent);
+    return d_next->getNextMatch(q, m);
   }
   if (d_active_add)
   {
-    return sendInstantiation(tparent, m) ? 1 : -1;
+    return sendInstantiation(m, id) ? 1 : -1;
   }
   return 1;
 }
 
 /** reset instantiation round */
-void InstMatchGenerator::resetInstantiationRound( QuantifiersEngine* qe ){
+void InstMatchGenerator::resetInstantiationRound()
+{
   if( !d_match_pattern.isNull() ){
     Trace("matching-debug2") << this << " reset instantiation round." << std::endl;
     d_needsReset = true;
@@ -453,18 +456,19 @@ void InstMatchGenerator::resetInstantiationRound( QuantifiersEngine* qe ){
     }
   }
   if( d_next ){
-    d_next->resetInstantiationRound( qe );
+    d_next->resetInstantiationRound();
   }
   d_curr_exclude_match.clear();
 }
 
-bool InstMatchGenerator::reset( Node eqc, QuantifiersEngine* qe ){
+bool InstMatchGenerator::reset(Node eqc)
+{
   if (d_cg == nullptr)
   {
     // we did not properly initialize the candidate generator, thus we fail
     return false;
   }
-  eqc = qe->getEqualityQuery()->getRepresentative( eqc );
+  eqc = d_qstate.getRepresentative(eqc);
   Trace("matching-debug2") << this << " reset " << eqc << "." << std::endl;
   if( !d_eq_class_rel.isNull() && d_eq_class_rel.getKind()!=INST_CONSTANT ){
     d_eq_class = d_eq_class_rel;
@@ -491,14 +495,11 @@ bool InstMatchGenerator::reset( Node eqc, QuantifiersEngine* qe ){
   return !d_curr_first_candidate.isNull();
 }
 
-int InstMatchGenerator::getNextMatch(Node f,
-                                     InstMatch& m,
-                                     QuantifiersEngine* qe,
-                                     Trigger* tparent)
+int InstMatchGenerator::getNextMatch(Node f, InstMatch& m)
 {
   if( d_needsReset ){
     Trace("matching") << "Reset not done yet, must do the reset..." << std::endl;
-    reset( d_eq_class, qe );
+    reset(d_eq_class);
   }
   d_curr_matched = Node::null();
   Trace("matching") << this << " " << d_match_pattern << " get next match " << m << " in eq class " << d_eq_class << std::endl;
@@ -506,13 +507,13 @@ int InstMatchGenerator::getNextMatch(Node f,
   Node t = d_curr_first_candidate;
   do{
     Trace("matching-debug2") << "Matching candidate : " << t << std::endl;
-    Assert(!qe->inConflict());
+    Assert(!d_qstate.isInConflict());
     //if t not null, try to fit it into match m
     if( !t.isNull() ){
       if( d_curr_exclude_match.find( t )==d_curr_exclude_match.end() ){
         Assert(t.getType().isComparableTo(d_match_pattern_type));
         Trace("matching-summary") << "Try " << d_match_pattern << " : " << t << std::endl;
-        success = getMatch(f, t, m, qe, tparent);
+        success = getMatch(f, t, m);
         if( d_independent_gen && success<0 ){
           Assert(d_eq_class.isNull() || !d_eq_class_rel.isNull());
           d_curr_exclude_match[t] = true;
@@ -520,7 +521,7 @@ int InstMatchGenerator::getNextMatch(Node f,
       }
       //get the next candidate term t
       if( success<0 ){
-        t = qe->inConflict() ? Node::null() : d_cg->getNextCandidate();
+        t = d_qstate.isInConflict() ? Node::null() : d_cg->getNextCandidate();
       }else{
         d_curr_first_candidate = d_cg->getNextCandidate();
       }
@@ -531,33 +532,33 @@ int InstMatchGenerator::getNextMatch(Node f,
     Trace("matching-summary") << "..." << d_match_pattern << " failed, reset." << std::endl;
     Trace("matching") << this << " failed, reset " << d_eq_class << std::endl;
     //we failed, must reset
-    reset( d_eq_class, qe );
+    reset(d_eq_class);
   }else{
     Trace("matching-summary") << "..." << d_match_pattern << " success." << std::endl;
   }
   return success;
 }
 
-uint64_t InstMatchGenerator::addInstantiations(Node f,
-                                               QuantifiersEngine* qe,
-                                               Trigger* tparent)
+uint64_t InstMatchGenerator::addInstantiations(Node f)
 {
   //try to add instantiation for each match produced
   uint64_t addedLemmas = 0;
   InstMatch m( f );
-  while (getNextMatch(f, m, qe, tparent) > 0)
+  while (getNextMatch(f, m) > 0)
   {
     if( !d_active_add ){
-      if (sendInstantiation(tparent, m))
+      if (sendInstantiation(m, InferenceId::UNKNOWN))
       {
         addedLemmas++;
-        if( qe->inConflict() ){
+        if (d_qstate.isInConflict())
+        {
           break;
         }
       }
     }else{
       addedLemmas++;
-      if( qe->inConflict() ){
+      if (d_qstate.isInConflict())
+      {
         break;
       }
     }
@@ -567,19 +568,24 @@ uint64_t InstMatchGenerator::addInstantiations(Node f,
   return addedLemmas;
 }
 
-
-InstMatchGenerator* InstMatchGenerator::mkInstMatchGenerator( Node q, Node pat, QuantifiersEngine* qe ) {
+InstMatchGenerator* InstMatchGenerator::mkInstMatchGenerator(Trigger* tparent,
+                                                             Node q,
+                                                             Node pat)
+{
   std::vector< Node > pats;
   pats.push_back( pat );
   std::map< Node, InstMatchGenerator * > pat_map_init;
-  return mkInstMatchGenerator( q, pats, qe, pat_map_init );
+  return mkInstMatchGenerator(tparent, q, pats, pat_map_init);
 }
 
-InstMatchGenerator* InstMatchGenerator::mkInstMatchGeneratorMulti( Node q, std::vector< Node >& pats, QuantifiersEngine* qe ) {
+InstMatchGenerator* InstMatchGenerator::mkInstMatchGeneratorMulti(
+    Trigger* tparent, Node q, std::vector<Node>& pats)
+{
   Assert(pats.size() > 1);
-  InstMatchGeneratorMultiLinear * imgm = new InstMatchGeneratorMultiLinear( q, pats, qe );
+  InstMatchGeneratorMultiLinear* imgm =
+      new InstMatchGeneratorMultiLinear(tparent, q, pats);
   std::vector< InstMatchGenerator* > gens;
-  imgm->initialize(q, qe, gens);
+  imgm->initialize(q, gens);
   Assert(gens.size() == pats.size());
   std::vector< Node > patsn;
   std::map< Node, InstMatchGenerator * > pat_map_init;
@@ -589,13 +595,16 @@ InstMatchGenerator* InstMatchGenerator::mkInstMatchGeneratorMulti( Node q, std::
     patsn.push_back( pn );
     pat_map_init[pn] = g;
   }
-  //return mkInstMatchGenerator( q, patsn, qe, pat_map_init );
-  imgm->d_next = mkInstMatchGenerator( q, patsn, qe, pat_map_init );
+  imgm->d_next = mkInstMatchGenerator(tparent, q, patsn, pat_map_init);
   return imgm;
 }
 
-InstMatchGenerator* InstMatchGenerator::mkInstMatchGenerator( Node q, std::vector< Node >& pats, QuantifiersEngine* qe, 
-                                                              std::map< Node, InstMatchGenerator * >& pat_map_init ) {
+InstMatchGenerator* InstMatchGenerator::mkInstMatchGenerator(
+    Trigger* tparent,
+    Node q,
+    std::vector<Node>& pats,
+    std::map<Node, InstMatchGenerator*>& pat_map_init)
+{
   size_t pCounter = 0;
   InstMatchGenerator* prev = NULL;
   InstMatchGenerator* oinit = NULL;
@@ -605,7 +614,7 @@ InstMatchGenerator* InstMatchGenerator::mkInstMatchGenerator( Node q, std::vecto
     InstMatchGenerator* init;
     std::map< Node, InstMatchGenerator * >::iterator iti = pat_map_init.find( pats[pCounter] );
     if( iti==pat_map_init.end() ){
-      init = new InstMatchGenerator(pats[pCounter]);
+      init = new InstMatchGenerator(tparent, pats[pCounter]);
     }else{
       init = iti->second;
     }
@@ -619,7 +628,7 @@ InstMatchGenerator* InstMatchGenerator::mkInstMatchGenerator( Node q, std::vecto
       if( prev ){
         prev->d_next = curr;
       }
-      curr->initialize(q, qe, gens);
+      curr->initialize(q, gens);
       prev = curr;
       counter++;
     }
@@ -628,7 +637,9 @@ InstMatchGenerator* InstMatchGenerator::mkInstMatchGenerator( Node q, std::vecto
   return oinit;
 }
 
-InstMatchGenerator* InstMatchGenerator::getInstMatchGenerator(Node q, Node n)
+InstMatchGenerator* InstMatchGenerator::getInstMatchGenerator(Trigger* tparent,
+                                                              Node q,
+                                                              Node n)
 {
   if (n.getKind() != INST_CONSTANT)
   {
@@ -637,7 +648,7 @@ InstMatchGenerator* InstMatchGenerator::getInstMatchGenerator(Node q, Node n)
     Node x;
     if (options::purifyTriggers())
     {
-      Node xi = Trigger::getInversionVariable(n);
+      Node xi = PatternTermSelector::getInversionVariable(n);
       if (!xi.isNull())
       {
         Node qa = quantifiers::TermUtil::getInstConstAttr(xi);
@@ -649,16 +660,18 @@ InstMatchGenerator* InstMatchGenerator::getInstMatchGenerator(Node q, Node n)
     }
     if (!x.isNull())
     {
-      Node s = Trigger::getInversion(n, x);
-      VarMatchGeneratorTermSubs* vmg = new VarMatchGeneratorTermSubs(x, s);
+      Node s = PatternTermSelector::getInversion(n, x);
+      VarMatchGeneratorTermSubs* vmg =
+          new VarMatchGeneratorTermSubs(tparent, x, s);
       Trace("var-trigger") << "Term substitution trigger : " << n
                            << ", var = " << x << ", subs = " << s << std::endl;
       return vmg;
     }
   }
-  return new InstMatchGenerator(n);
+  return new InstMatchGenerator(tparent, n);
 }
 
-}/* CVC4::theory::inst namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace inst
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace cvc5

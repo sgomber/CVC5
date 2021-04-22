@@ -1,18 +1,21 @@
-/*********************                                                        */
-/*! \file extended_rewrite.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of extended rewriting techniques
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of extended rewriting techniques.
+ */
 
 #include "theory/quantifiers/extended_rewrite.h"
+
+#include <sstream>
 
 #include "theory/arith/arith_msum.h"
 #include "theory/bv/theory_bv_utils.h"
@@ -20,11 +23,12 @@
 #include "theory/quantifiers/term_util.h"
 #include "theory/rewriter.h"
 #include "theory/strings/sequences_rewriter.h"
+#include "theory/theory.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 using namespace std;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
@@ -183,9 +187,10 @@ Node ExtendedRewriter::extendedRewrite(Node n)
         // we may have subsumed children down to one
         ret = children[0];
       }
-      else if (isAssoc && children.size() > kind::metakind::getUpperBoundForKind(k))
+      else if (isAssoc
+               && children.size() > kind::metakind::getMaxArityForKind(k))
       {
-        Assert(kind::metakind::getUpperBoundForKind(k) >= 2);
+        Assert(kind::metakind::getMaxArityForKind(k) >= 2);
         // kind may require binary construction
         ret = children[0];
         for (unsigned i = 1, nchild = children.size(); i < nchild; i++)
@@ -1720,6 +1725,6 @@ void ExtendedRewriter::debugExtendedRewrite(Node n,
   }
 }
 
-} /* CVC4::theory::quantifiers namespace */
-} /* CVC4::theory namespace */
-} /* CVC4 namespace */
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace cvc5

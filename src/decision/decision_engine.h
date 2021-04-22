@@ -1,48 +1,38 @@
-/*********************                                                        */
-/*! \file decision_engine.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Kshitij Bansal, Morgan Deters, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Decision engine
- **
- ** Decision engine
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Kshitij Bansal, Andrew Reynolds, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Decision engine.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__DECISION__DECISION_ENGINE_H
-#define CVC4__DECISION__DECISION_ENGINE_H
-
-#include <vector>
+#ifndef CVC5__DECISION__DECISION_ENGINE_H
+#define CVC5__DECISION__DECISION_ENGINE_H
 
 #include "base/output.h"
+#include "context/cdo.h"
 #include "decision/decision_strategy.h"
 #include "expr/node.h"
 #include "prop/cnf_stream.h"
-#include "prop/prop_engine.h"
+#include "prop/sat_solver.h"
 #include "prop/sat_solver_types.h"
-#include "smt/smt_engine_scope.h"
-#include "smt/term_formula_removal.h"
+#include "util/result.h"
 
-using namespace std;
-using namespace CVC4::prop;
-using namespace CVC4::decision;
+using namespace cvc5::prop;
+using namespace cvc5::decision;
 
-namespace CVC4 {
+namespace cvc5 {
 
 class DecisionEngine {
-  std::unique_ptr<ITEDecisionStrategy> d_enabledITEStrategy;
-  vector <ITEDecisionStrategy* > d_needIteSkolemMap;
-  RelevancyStrategy* d_relevancyStrategy;
-
-  typedef context::CDList<Node> AssertionsList;
-  AssertionsList d_assertions;
 
   // PropEngine* d_propEngine;
   CnfStream* d_cnfStream;
@@ -105,15 +95,6 @@ class DecisionEngine {
   /** Gets the next decision based on strategies that are enabled */
   SatLiteral getNext(bool& stopSearch);
 
-  /** Is a sat variable relevant */
-  bool isRelevant(SatVariable var);
-
-  /**
-   * Try to get tell SAT solver what polarity to try for a
-   * decision. Return SAT_VALUE_UNKNOWN if it can't help
-   */
-  SatValue getPolarity(SatVariable var);
-
   /** Is the DecisionEngine in a state where it has solved everything? */
   bool isDone() {
     Trace("decision") << "DecisionEngine::isDone() returning "
@@ -142,23 +123,18 @@ class DecisionEngine {
   // External World helping us help the Strategies
 
   /**
-   * Add a list of assertions, as well as lemmas coming from preprocessing
-   * (ppLemmas) and pairwise the skolems they constrain (ppSkolems).
+   * Notify this class that assertion is an (input) assertion, not corresponding
+   * to a skolem definition.
    */
-  void addAssertions(const std::vector<Node>& assertions,
-                     const std::vector<Node>& ppLemmas,
-                     const std::vector<Node>& ppSkolems);
+  void addAssertion(TNode assertion);
+  /**
+   * Notify this class  that lem is the skolem definition for skolem, which is
+   * a part of the current assertions.
+   */
+  void addSkolemDefinition(TNode lem, TNode skolem);
 
   // Interface for Strategies to use stuff stored in Decision Engine
   // (which was possibly requested by them on initialization)
-
-  /**
-   * Get the assertions. Strategies are notified when these are available.
-   */
-  AssertionsList& getAssertions() {
-    return d_assertions;
-  }
-
 
   // Interface for Strategies to get information about External World
 
@@ -177,8 +153,12 @@ class DecisionEngine {
   Node getNode(SatLiteral l) {
     return d_cnfStream->getNode(l);
   }
+
+ private:
+  /** The ITE decision strategy we have allocated */
+  std::unique_ptr<ITEDecisionStrategy> d_enabledITEStrategy;
 };/* DecisionEngine class */
 
-}/* CVC4 namespace */
+}  // namespace cvc5
 
-#endif /* CVC4__DECISION__DECISION_ENGINE_H */
+#endif /* CVC5__DECISION__DECISION_ENGINE_H */

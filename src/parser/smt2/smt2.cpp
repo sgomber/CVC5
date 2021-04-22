@@ -1,18 +1,17 @@
-/*********************                                                        */
-/*! \file smt2.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Definitions of SMT2 constants.
- **
- ** Definitions of SMT2 constants.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Morgan Deters
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Definitions of SMT2 constants.
+ */
 #include "parser/smt2/smt2.h"
 
 #include <algorithm>
@@ -22,13 +21,12 @@
 #include "parser/antlr_input.h"
 #include "parser/parser.h"
 #include "parser/smt2/smt2_input.h"
-#include "util/bitvector.h"
 
 // ANTLR defines these, which is really bad!
 #undef true
 #undef false
 
-namespace CVC4 {
+namespace cvc5 {
 namespace parser {
 
 Smt2::Smt2(api::Solver* solver,
@@ -82,10 +80,6 @@ void Smt2::addTranscendentalOperators()
 
 void Smt2::addQuantifiersOperators()
 {
-  if (!strictModeEnabled())
-  {
-    addOperator(api::INST_CLOSURE, "inst-closure");
-  }
 }
 
 void Smt2::addBitvectorOperators() {
@@ -184,26 +178,12 @@ void Smt2::addStringOperators() {
     addOperator(api::SEQ_UNIT, "seq.unit");
     addOperator(api::SEQ_NTH, "seq.nth");
   }
-  // at the moment, we only use this syntax for smt2.6
-  if (getLanguage() == language::input::LANG_SMTLIB_V2_6
-      || getLanguage() == language::input::LANG_SYGUS_V2)
-  {
-    addOperator(api::STRING_FROM_INT, "str.from_int");
-    addOperator(api::STRING_TO_INT, "str.to_int");
-    addOperator(api::STRING_IN_REGEXP, "str.in_re");
-    addOperator(api::STRING_TO_REGEXP, "str.to_re");
-    addOperator(api::STRING_TO_CODE, "str.to_code");
-    addOperator(api::STRING_REPLACE_ALL, "str.replace_all");
-  }
-  else
-  {
-    addOperator(api::STRING_FROM_INT, "int.to.str");
-    addOperator(api::STRING_TO_INT, "str.to.int");
-    addOperator(api::STRING_IN_REGEXP, "str.in.re");
-    addOperator(api::STRING_TO_REGEXP, "str.to.re");
-    addOperator(api::STRING_TO_CODE, "str.code");
-    addOperator(api::STRING_REPLACE_ALL, "str.replaceall");
-  }
+  addOperator(api::STRING_FROM_INT, "str.from_int");
+  addOperator(api::STRING_TO_INT, "str.to_int");
+  addOperator(api::STRING_IN_REGEXP, "str.in_re");
+  addOperator(api::STRING_TO_REGEXP, "str.to_re");
+  addOperator(api::STRING_TO_CODE, "str.to_code");
+  addOperator(api::STRING_REPLACE_ALL, "str.replace_all");
 
   addOperator(api::REGEXP_CONCAT, "re.++");
   addOperator(api::REGEXP_UNION, "re.union");
@@ -660,15 +640,7 @@ Command* Smt2::setLogic(std::string name, bool fromCommand)
     defineType("RegLan", d_solver->getRegExpSort(), true, true);
     defineType("Int", d_solver->getIntegerSort(), true, true);
 
-    if (getLanguage() == language::input::LANG_SMTLIB_V2_6
-        || getLanguage() == language::input::LANG_SYGUS_V2)
-    {
-      defineVar("re.none", d_solver->mkRegexpEmpty());
-    }
-    else
-    {
-      defineVar("re.nostr", d_solver->mkRegexpEmpty());
-    }
+    defineVar("re.none", d_solver->mkRegexpEmpty());
     defineVar("re.allchar", d_solver->mkRegexpSigma());
 
     // Boolean is a placeholder
@@ -759,7 +731,7 @@ void Smt2::checkThatLogicIsSet()
       else
       {
         warning("No set-logic command was given before this point.");
-        warning("CVC4 will make all theories available.");
+        warning("cvc5 will make all theories available.");
         warning(
             "Consider setting a stricter logic for (likely) better "
             "performance.");
@@ -804,11 +776,11 @@ static bool newInputStream(const std::string& filename, pANTLR3_LEXER lexer) {
   // in C target runtime.
   //
   pANTLR3_INPUT_STREAM    in;
-#ifdef CVC4_ANTLR3_OLD_INPUT_STREAM
+#ifdef CVC5_ANTLR3_OLD_INPUT_STREAM
   in = antlr3AsciiFileStreamNew((pANTLR3_UINT8) filename.c_str());
-#else /* CVC4_ANTLR3_OLD_INPUT_STREAM */
+#else  /* CVC5_ANTLR3_OLD_INPUT_STREAM */
   in = antlr3FileStreamNew((pANTLR3_UINT8) filename.c_str(), ANTLR3_ENC_8BIT);
-#endif /* CVC4_ANTLR3_OLD_INPUT_STREAM */
+#endif /* CVC5_ANTLR3_OLD_INPUT_STREAM */
   if( in == NULL ) {
     Debug("parser") << "Can't open " << filename << std::endl;
     return false;
@@ -862,7 +834,7 @@ bool Smt2::isAbstractValue(const std::string& name)
 
 api::Term Smt2::mkAbstractValue(const std::string& name)
 {
-  assert(isAbstractValue(name));
+  Assert(isAbstractValue(name));
   // remove the '@'
   return d_solver->mkAbstractValue(name.substr(1));
 }
@@ -939,7 +911,7 @@ api::Term Smt2::parseOpToExpr(ParseOp& p)
   {
     expr = getExpressionForName(p.d_name);
   }
-  assert(!expr.isNull());
+  Assert(!expr.isNull());
   return expr;
 }
 
@@ -1101,6 +1073,12 @@ api::Term Smt2::applyParseOp(ParseOp& p, std::vector<api::Term>& args)
     Debug("parser") << "applyParseOp: return selector " << ret << std::endl;
     return ret;
   }
+  else if (p.d_kind == api::TUPLE_PROJECT)
+  {
+    api::Term ret = d_solver->mkTerm(p.d_op, args[0]);
+    Debug("parser") << "applyParseOp: return projection " << ret << std::endl;
+    return ret;
+  }
   else if (p.d_kind != api::NULL_EXPR)
   {
     // it should not have an expression or type specified at this point
@@ -1229,4 +1207,4 @@ api::Term Smt2::mkAnd(const std::vector<api::Term>& es)
 }
 
 }  // namespace parser
-}/* CVC4 namespace */
+}  // namespace cvc5

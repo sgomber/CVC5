@@ -1,25 +1,29 @@
-/*********************                                                        */
-/*! \file tangent_plane_check.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of tangent_plane check
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Gereon Kremer, Andrew Reynolds, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of tangent_plane check.
+ */
 
 #include "theory/arith/nl/ext/tangent_plane_check.h"
 
 #include "expr/node.h"
+#include "expr/proof.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/arith/inference_manager.h"
 #include "theory/arith/nl/nl_model.h"
+#include "theory/arith/nl/ext/ext_state.h"
+#include "theory/rewriter.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arith {
 namespace nl {
@@ -146,8 +150,10 @@ void TangentPlaneCheck::check(bool asWaitingLemmas)
                                 b_v,
                                 nm->mkConst(Rational(d == 0 ? -1 : 1))});
               }
-              d_data->d_im.addPendingArithLemma(
-                  tlem, InferenceId::NL_TANGENT_PLANE, proof, asWaitingLemmas);
+              d_data->d_im.addPendingLemma(tlem,
+                                           InferenceId::ARITH_NL_TANGENT_PLANE,
+                                           proof,
+                                           asWaitingLemmas);
             }
           }
         }
@@ -159,4 +165,4 @@ void TangentPlaneCheck::check(bool asWaitingLemmas)
 }  // namespace nl
 }  // namespace arith
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

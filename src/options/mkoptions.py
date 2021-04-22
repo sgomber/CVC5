@@ -1,14 +1,17 @@
 #!/usr/bin/env python
-#####################
-## mkoptions.py
-## Top contributors (to current version):
-##   Mathias Preiner
-## This file is part of the CVC4 project.
-## Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
-## in the top-level source directory and their institutional affiliations.
-## All rights reserved.  See the file COPYING in the top-level source
-## directory for licensing information.
+###############################################################################
+# Top contributors (to current version):
+#   Mathias Preiner, Everett Maus
+#
+# This file is part of the cvc5 project.
+#
+# Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+# in the top-level source directory and their institutional affiliations.
+# All rights reserved.  See the file COPYING in the top-level source
+# directory for licensing information.
+# #############################################################################
 ##
+
 """
     Generate option handling code and documentation in one pass. The generated
     files are only written to the destination file if the contents of the file
@@ -20,7 +23,7 @@
       <tpl-src> location of all *_template.{cpp,h} files
       <tpl-doc> location of all *_template documentation files
       <dst>     destination directory for the generated source code files
-      <toml>+   one or more *_optios.toml files
+      <toml>+   one or more *_options.toml files
 
 
     Directory <tpl-src> must contain:
@@ -30,7 +33,7 @@
         - module_template.h
 
     Directory <tpl-doc> must contain:
-        - cvc4.1_template
+        - cvc5.1_template
         - options.3cvc_template
         - SmtEngine.3cvc_template
     These files get generated during autogen.sh from the corresponding *.in
@@ -46,7 +49,7 @@
         - <dst>/MODULE_options.cpp
         - <dst>/options_holder.h
         - <dst>/options.cpp
-        - <tpl-doc>/cvc4.1
+        - <tpl-doc>/cvc5.1
         - <tpl-doc>/options.3
         - <tpl-doc>/SmtEngine.3
 """
@@ -92,7 +95,7 @@ g_getopt_long_start = 256
 
 ### Source code templates
 
-TPL_HOLDER_MACRO_NAME = 'CVC4_OPTIONS__{id}__FOR_OPTION_HOLDER'
+TPL_HOLDER_MACRO_NAME = 'CVC5_OPTIONS__{id}__FOR_OPTION_HOLDER'
 
 TPL_RUN_HANDLER = \
 """template <> options::{name}__option_t::type runHandlerAndPredicates(
@@ -168,23 +171,23 @@ TPL_HOLDER_MACRO_ATTR += "  bool {name}__setByUser__;"
 
 
 TPL_OPTION_STRUCT_RW = \
-"""extern struct CVC4_PUBLIC {name}__option_t
+"""extern struct {name}__option_t
 {{
   typedef {type} type;
   type operator()() const;
   bool wasSetByUser() const;
   void set(const type& v);
   const char* getName() const;
-}} thread_local {name} CVC4_PUBLIC;"""
+}} thread_local {name};"""
 
 TPL_OPTION_STRUCT_RO = \
-"""extern struct CVC4_PUBLIC {name}__option_t
+"""extern struct {name}__option_t
 {{
   typedef {type} type;
   type operator()() const;
   bool wasSetByUser() const;
   const char* getName() const;
-}} thread_local {name} CVC4_PUBLIC;"""
+}} thread_local {name};"""
 
 
 TPL_DECL_SET = \
@@ -258,9 +261,9 @@ enum class {type}
 TPL_DECL_MODE_FUNC = \
 """
 std::ostream&
-operator<<(std::ostream& os, {type} mode) CVC4_PUBLIC;"""
+operator<<(std::ostream& os, {type} mode);"""
 
-TPL_IMPL_MODE_FUNC = TPL_DECL_MODE_FUNC[:-len(" CVC4_PUBLIC;")] + \
+TPL_IMPL_MODE_FUNC = TPL_DECL_MODE_FUNC[:-len(";")] + \
 """
 {{
   os << "{type}::";
@@ -1130,7 +1133,7 @@ def codegen_all_modules(modules, dst_dir, tpl_options, tpl_options_holder,
         getoption_handlers='\n'.join(getoption_handlers)
     ))
 
-    write_file(doc_dir, 'cvc4.1', tpl_man_cvc.format(
+    write_file(doc_dir, 'cvc5.1', tpl_man_cvc.format(
         man_common='\n'.join(man_common),
         man_others='\n'.join(man_others)
     ))
@@ -1327,7 +1330,7 @@ def mkoptions_main():
     tpl_options_holder = read_tpl(src_dir, 'options_holder_template.h')
 
     # Read documentation template files from documentation directory.
-    tpl_man_cvc = read_tpl(doc_dir, 'cvc4.1_template')
+    tpl_man_cvc = read_tpl(doc_dir, 'cvc5.1_template')
     tpl_man_smt = read_tpl(doc_dir, 'SmtEngine.3cvc_template')
     tpl_man_int = read_tpl(doc_dir, 'options.3cvc_template')
 

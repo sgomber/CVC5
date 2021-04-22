@@ -1,27 +1,32 @@
-/*********************                                                        */
-/*! \file inst_strategy_e_matching.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of e matching instantiation strategies
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of e matching instantiation strategies.
+ */
 
 #include "theory/quantifiers/ematching/inst_strategy_e_matching.h"
 
+#include "theory/quantifiers/ematching/pattern_term_selector.h"
+#include "theory/quantifiers/ematching/trigger_database.h"
 #include "theory/quantifiers/quant_relevance.h"
-#include "theory/quantifiers_engine.h"
+#include "theory/quantifiers/quantifiers_inference_manager.h"
+#include "theory/quantifiers/quantifiers_registry.h"
+#include "theory/quantifiers/quantifiers_state.h"
 #include "util/random.h"
 
-using namespace CVC4::kind;
-using namespace CVC4::theory::inst;
+using namespace cvc5::kind;
+using namespace cvc5::theory::quantifiers::inst;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
@@ -48,8 +53,8 @@ struct sortQuantifiersForSymbol {
 
 struct sortTriggers {
   bool operator() (Node i, Node j) {
-    int wi = Trigger::getTriggerWeight( i );
-    int wj = Trigger::getTriggerWeight( j );
+    int32_t wi = TriggerTermInfo::getTriggerWeight(i);
+    int32_t wj = TriggerTermInfo::getTriggerWeight(j);
     if( wi==wj ){
       return i<j;
     }
@@ -57,9 +62,14 @@ struct sortTriggers {
   }
 };
 
-InstStrategyAutoGenTriggers::InstStrategyAutoGenTriggers(QuantifiersEngine* qe,
-                                                         QuantRelevance* qr)
-    : InstStrategy(qe), d_quant_rel(qr)
+InstStrategyAutoGenTriggers::InstStrategyAutoGenTriggers(
+    inst::TriggerDatabase& td,
+    QuantifiersState& qs,
+    QuantifiersInferenceManager& qim,
+    QuantifiersRegistry& qr,
+    TermRegistry& tr,
+    QuantRelevance* qrlv)
+    : InstStrategy(td, qs, qim, qr, tr), d_quant_rel(qrlv)
 {
   //how to select trigger terms
   d_tr_strategy = options::triggerSelMode();
@@ -98,7 +108,7 @@ InstStrategyStatus InstStrategyAutoGenTriggers::process(Node f,
                                                         Theory::Effort effort,
                                                         int e)
 {
-  options::UserPatMode upMode = d_quantEngine->getInstUserPatMode();
+  options::UserPatMode upMode = getInstUserPatMode();
   if (hasUserPatterns(f) && upMode == options::UserPatMode::TRUST)
   {
     return InstStrategyStatus::STATUS_UNKNOWN;
@@ -197,18 +207,12 @@ InstStrategyStatus InstStrategyAutoGenTriggers::process(Node f,
       hasInst = numInst > 0 || hasInst;
       Trace("process-trigger")
           << "  Done, numInst = " << numInst << "." << std::endl;
-      d_quantEngine->d_statistics.d_instantiations_auto_gen += numInst;
-      if (r == 1)
-      {
-        d_quantEngine->d_statistics.d_multi_trigger_instantiations += numInst;
-      }
-      if (d_quantEngine->inConflict())
+      if (d_qstate.isInConflict())
       {
         break;
       }
     }
-    if (d_quantEngine->inConflict()
-        || (hasInst && options::multiTriggerPriority()))
+    if (d_qstate.isInConflict() || (hasInst && options::multiTriggerPriority()))
     {
       break;
     }
@@ -278,12 +282,11 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
     Trigger* tr = NULL;
     if (d_is_single_trigger[patTerms[0]])
     {
-      tr = Trigger::mkTrigger(d_quantEngine,
-                              f,
-                              patTerms[0],
-                              false,
-                              Trigger::TR_RETURN_NULL,
-                              d_num_trigger_vars[f]);
+      tr = d_td.mkTrigger(f,
+                          patTerms[0],
+                          false,
+                          TriggerDatabase::TR_RETURN_NULL,
+                          d_num_trigger_vars[f]);
       d_single_trigger_gen[patTerms[0]] = true;
     }
     else
@@ -314,12 +317,11 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
         d_made_multi_trigger[f] = true;
       }
       // will possibly want to get an old trigger
-      tr = Trigger::mkTrigger(d_quantEngine,
-                              f,
-                              patTerms,
-                              false,
-                              Trigger::TR_GET_OLD,
-                              d_num_trigger_vars[f]);
+      tr = d_td.mkTrigger(f,
+                          patTerms,
+                          false,
+                          TriggerDatabase::TR_GET_OLD,
+                          d_num_trigger_vars[f]);
     }
     if (tr == nullptr)
     {
@@ -355,12 +357,11 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
                    <= nqfs_curr)
         {
           d_single_trigger_gen[patTerms[index]] = true;
-          Trigger* tr2 = Trigger::mkTrigger(d_quantEngine,
-                                            f,
-                                            patTerms[index],
-                                            false,
-                                            Trigger::TR_RETURN_NULL,
-                                            d_num_trigger_vars[f]);
+          Trigger* tr2 = d_td.mkTrigger(f,
+                                        patTerms[index],
+                                        false,
+                                        TriggerDatabase::TR_RETURN_NULL,
+                                        d_num_trigger_vars[f]);
           addTrigger(tr2, f);
           success = true;
         }
@@ -384,7 +385,6 @@ bool InstStrategyAutoGenTriggers::generatePatternTerms(Node f)
   bool ntrivTriggers = options::relationalTriggers();
   std::vector<Node> patTermsF;
   std::map<Node, inst::TriggerTermInfo> tinfo;
-  TermUtil* tu = d_quantEngine->getTermUtil();
   NodeManager* nm = NodeManager::currentNM();
   // well-defined function: can assume LHS is only pattern
   if (options::quantFunWellDefined())
@@ -392,7 +392,7 @@ bool InstStrategyAutoGenTriggers::generatePatternTerms(Node f)
     Node hd = QuantAttributes::getFunDefHead(f);
     if (!hd.isNull())
     {
-      hd = tu->substituteBoundVariablesToInstConstants(hd, f);
+      hd = d_qreg.substituteBoundVariablesToInstConstants(hd, f);
       patTermsF.push_back(hd);
       tinfo[hd].init(f, hd);
     }
@@ -400,9 +400,9 @@ bool InstStrategyAutoGenTriggers::generatePatternTerms(Node f)
   // otherwise, use algorithm for collecting pattern terms
   if (patTermsF.empty())
   {
-    Node bd = tu->getInstConstantBody(f);
-    Trigger::collectPatTerms(
-        f, bd, patTermsF, d_tr_strategy, d_user_no_gen[f], tinfo, true);
+    Node bd = d_qreg.getInstConstantBody(f);
+    PatternTermSelector pts(f, d_tr_strategy, d_user_no_gen[f], true);
+    pts.collect(bd, patTermsF, tinfo);
     if (ntrivTriggers)
     {
       sortTriggers st;
@@ -429,7 +429,7 @@ bool InstStrategyAutoGenTriggers::generatePatternTerms(Node f)
   // considered
   std::map<Node, bool> vcMap;
   std::map<Node, bool> rmPatTermsF;
-  int last_weight = -1;
+  int32_t last_weight = -1;
   for (const Node& p : patTermsF)
   {
     Assert(p.getKind() != NOT);
@@ -443,7 +443,7 @@ bool InstStrategyAutoGenTriggers::generatePatternTerms(Node f)
         newVar = true;
       }
     }
-    int curr_w = Trigger::getTriggerWeight(p);
+    int32_t curr_w = TriggerTermInfo::getTriggerWeight(p);
     // triggers whose value is maximum (2) are considered expendable.
     if (ntrivTriggers && !newVar && last_weight != -1 && curr_w > last_weight
         && curr_w >= 2)
@@ -480,7 +480,7 @@ bool InstStrategyAutoGenTriggers::generatePatternTerms(Node f)
       std::vector<Node> vcs[2];
       for (size_t i = 0, nchild = f[0].getNumChildren(); i < nchild; i++)
       {
-        Node ic = tu->getInstantiationConstant(f, i);
+        Node ic = d_qreg.getInstantiationConstant(f, i);
         vcs[vcMap.find(ic) == vcMap.end() ? 0 : 1].push_back(f[0][i]);
       }
       for (size_t i = 0; i < 2; i++)
@@ -514,13 +514,13 @@ bool InstStrategyAutoGenTriggers::generatePatternTerms(Node f)
     if (rpol != 0)
     {
       Assert(rpol == 1 || rpol == -1);
-      if (Trigger::isRelationalTrigger(pat))
+      if (TriggerTermInfo::isRelationalTrigger(pat))
       {
         pat = rpol == -1 ? pat.negate() : pat;
       }
       else
       {
-        Assert(Trigger::isAtomicTrigger(pat));
+        Assert(TriggerTermInfo::isAtomicTrigger(pat));
         if (pat.getType().isBoolean() && rpoleq.isNull())
         {
           if (options::literalMatchMode() == options::LiteralMatchMode::USE)
@@ -558,7 +558,7 @@ bool InstStrategyAutoGenTriggers::generatePatternTerms(Node f)
     }
     else
     {
-      if (Trigger::isRelationalTrigger(pat))
+      if (TriggerTermInfo::isRelationalTrigger(pat))
       {
         // consider both polarities
         addPatternToPool(f, pat.negate(), num_fv, mpat);
@@ -615,8 +615,7 @@ void InstStrategyAutoGenTriggers::addTrigger( inst::Trigger * tr, Node q ) {
     NodeManager* nm = NodeManager::currentNM();
     // partial trigger : generate implication to mark user pattern
     Node pat =
-        d_quantEngine->getTermUtil()->substituteInstConstantsToBoundVariables(
-            tr->getInstPattern(), q);
+        d_qreg.substituteInstConstantsToBoundVariables(tr->getInstPattern(), q);
     Node ipl = nm->mkNode(INST_PATTERN_LIST, pat);
     Node qq = nm->mkNode(FORALL,
                          d_vc_partition[1][q],
@@ -626,7 +625,7 @@ void InstStrategyAutoGenTriggers::addTrigger( inst::Trigger * tr, Node q ) {
         << "Make partially specified user pattern: " << std::endl;
     Trace("auto-gen-trigger-partial") << "  " << qq << std::endl;
     Node lem = nm->mkNode(OR, q.negate(), qq);
-    d_quantEngine->addLemma(lem);
+    d_qim.addPendingLemma(lem, InferenceId::QUANTIFIERS_PARTIAL_TRIGGER_REDUCE);
     return;
   }
   unsigned tindex;
@@ -688,6 +687,6 @@ void InstStrategyAutoGenTriggers::addUserNoPattern( Node q, Node pat ) {
   }
 }
 
-} /* CVC4::theory::quantifiers namespace */
-} /* CVC4::theory namespace */
-} /* CVC4 namespace */
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace cvc5

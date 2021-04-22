@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file theory_model.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Clark Barrett, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of model class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Clark Barrett, Morgan Deters
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of model class.
+ */
 #include "theory/theory_model.h"
 
 #include "expr/node_algorithm.h"
@@ -19,12 +20,13 @@
 #include "options/theory_options.h"
 #include "options/uf_options.h"
 #include "smt/smt_engine.h"
+#include "theory/rewriter.h"
 
 using namespace std;
-using namespace CVC4::kind;
-using namespace CVC4::context;
+using namespace cvc5::kind;
+using namespace cvc5::context;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 
 TheoryModel::TheoryModel(context::Context* c,
@@ -352,7 +354,7 @@ void TheoryModel::addSubstitution( TNode x, TNode t, bool invalidateCache ){
     Debug("model") << "Add substitution in model " << x << " -> " << t << std::endl;
     d_substitutions.addSubstitution( x, t, invalidateCache );
   } else {
-#ifdef CVC4_ASSERTIONS
+#ifdef CVC5_ASSERTIONS
     Node oldX = d_substitutions.getSubstitution(x);
     // check that either the old substitution is the same, or it now maps to the new substitution
     if(oldX != t && d_substitutions.apply(oldX) != d_substitutions.apply(t)) {
@@ -362,7 +364,7 @@ void TheoryModel::addSubstitution( TNode x, TNode t, bool invalidateCache ){
           << "old mapping: " << d_substitutions.apply(oldX) << "\n"
           << "new mapping: " << d_substitutions.apply(t);
     }
-#endif /* CVC4_ASSERTIONS */
+#endif /* CVC5_ASSERTIONS */
   }
 }
 
@@ -450,25 +452,30 @@ bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
     bool first = true;
     Node rep;
     for (; !eqc_i.isFinished(); ++eqc_i) {
-      if (termSet != NULL && termSet->find(*eqc_i) == termSet->end()) {
-        Trace("model-builder-debug") << "...skip node " << (*eqc_i) << " in eqc " << eqc << std::endl;
+      Node n = *eqc_i;
+      // notice that constants are always relevant
+      if (termSet != nullptr && termSet->find(n) == termSet->end()
+          && !n.isConst())
+      {
+        Trace("model-builder-debug")
+            << "...skip node " << n << " in eqc " << eqc << std::endl;
         continue;
       }
       if (predicate) {
         if (predTrue || predFalse)
         {
-          if (!assertPredicate(*eqc_i, predTrue))
+          if (!assertPredicate(n, predTrue))
           {
             return false;
           }
         }
         else {
           if (first) {
-            rep = (*eqc_i);
+            rep = n;
             first = false;
           }
           else {
-            Node eq = (*eqc_i).eqNode(rep);
+            Node eq = (n).eqNode(rep);
             Trace("model-builder-assertions")
                 << "(assert " << eq << ");" << std::endl;
             d_equalityEngine->assertEquality(eq, true, Node::null());
@@ -480,7 +487,7 @@ bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
         }
       } else {
         if (first) {
-          rep = (*eqc_i);
+          rep = n;
           //add the term (this is specifically for the case of singleton equivalence classes)
           if (rep.getType().isFirstClass())
           {
@@ -490,7 +497,7 @@ bool TheoryModel::assertEqualityEngine(const eq::EqualityEngine* ee,
           first = false;
         }
         else {
-          if (!assertEquality(*eqc_i, rep, true))
+          if (!assertEquality(n, rep, true))
           {
             return false;
           }
@@ -708,6 +715,8 @@ std::vector< Node > TheoryModel::getFunctionsToAssign() {
   for( std::map< Node, std::vector< Node > >::iterator it = d_uf_terms.begin(); it != d_uf_terms.end(); ++it ){
     Node n = it->first;
     Assert(!n.isNull());
+    // should not have been solved for in a substitution
+    Assert(d_substitutions.apply(n) == n);
     if( !hasAssignedFunctionDefinition( n ) ){
       Trace("model-builder-fun-debug") << "Look at function : " << n << std::endl;
       if( options::ufHo() ){
@@ -744,5 +753,19 @@ std::vector< Node > TheoryModel::getFunctionsToAssign() {
 
 const std::string& TheoryModel::getName() const { return d_name; }
 
-} /* namespace CVC4::theory */
-} /* namespace CVC4 */
+std::string TheoryModel::debugPrintModelEqc() const
+{
+  std::stringstream ss;
+  ss << "--- Equivalence classes:" << std::endl;
+  ss << d_equalityEngine->debugPrintEqc() << std::endl;
+  ss << "--- Representative map: " << std::endl;
+  for (const std::pair<const Node, Node>& r : d_reps)
+  {
+    ss << r.first << " -> " << r.second << std::endl;
+  }
+  ss << "---" << std::endl;
+  return ss.str();
+}
+
+}  // namespace theory
+}  // namespace cvc5

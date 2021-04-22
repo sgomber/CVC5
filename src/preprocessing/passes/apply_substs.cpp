@@ -1,27 +1,30 @@
-/*********************                                                        */
-/*! \file apply_substs.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Aina Niemetz, Andrew Reynolds, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Apply substitutions preprocessing pass.
- **
- ** Apply top level substitutions to assertions, rewrite, and store back into
- ** assertions.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Aina Niemetz, Andrew Reynolds, Andres Noetzli
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Apply substitutions preprocessing pass.
+ *
+ * Apply top level substitutions to assertions, rewrite, and store back into
+ * assertions.
+ */
 
 #include "preprocessing/passes/apply_substs.h"
 
 #include "context/cdo.h"
+#include "preprocessing/assertion_pipeline.h"
+#include "preprocessing/preprocessing_pass_context.h"
 #include "theory/rewriter.h"
 #include "theory/substitutions.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
@@ -50,7 +53,7 @@ PreprocessingPassResult ApplySubsts::applyInternal(
     }
     Trace("apply-substs") << "applying to " << (*assertionsToPreprocess)[i]
                           << std::endl;
-    d_preprocContext->spendResource(ResourceManager::Resource::PreprocessStep);
+    d_preprocContext->spendResource(Resource::PreprocessStep);
     assertionsToPreprocess->replaceTrusted(
         i, tlsm.apply((*assertionsToPreprocess)[i]));
     Trace("apply-substs") << "  got " << (*assertionsToPreprocess)[i]
@@ -61,4 +64,4 @@ PreprocessingPassResult ApplySubsts::applyInternal(
 
 }  // namespace passes
 }  // namespace preprocessing
-}  // namespace CVC4
+}  // namespace cvc5

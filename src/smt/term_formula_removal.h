@@ -1,40 +1,37 @@
-/*********************                                                        */
-/*! \file term_formula_removal.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Dejan Jovanovic
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Removal of term formulas
- **
- ** Removal of term formulas.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Dejan Jovanovic, Morgan Deters
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Removal of term formulas.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
 #pragma once
 
-#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "context/cdinsert_hashmap.h"
 #include "context/context.h"
-#include "expr/lazy_proof.h"
 #include "expr/node.h"
-#include "expr/term_context_stack.h"
-#include "expr/term_conversion_proof_generator.h"
-#include "theory/eager_proof_generator.h"
+#include "expr/term_context.h"
 #include "theory/trust_node.h"
-#include "util/bool.h"
 #include "util/hash.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
-typedef std::unordered_map<Node, unsigned, NodeHashFunction> IteSkolemMap;
+class LazyCDProof;
+class ProofNodeManager;
+class TConvProofGenerator;
 
 class RemoveTermFormulas {
  public:
@@ -126,24 +123,6 @@ class RemoveTermFormulas {
    */
   static Node getAxiomFor(Node n);
 
-  /**
-   * Get the set of skolems introduced by this class that occur in node n,
-   * add them to skolems.
-   *
-   * This method uses an optimization that returns false immediately if n
-   * was unchanged by term formula removal, based on the initial context.
-   *
-   * Return true if any nodes were added to skolems.
-   */
-  bool getSkolems(TNode n,
-                  std::unordered_set<Node, NodeHashFunction>& skolems) const;
-
-  /**
-   * Get the lemma for the skolem, or the null node if k is not a skolem this
-   * class introduced.
-   */
-  theory::TrustNode getLemmaForSkolem(TNode k) const;
-
  private:
   typedef context::CDInsertHashMap<
       std::pair<Node, uint32_t>,
@@ -177,11 +156,6 @@ class RemoveTermFormulas {
    *   d_tfCache[<ite( G, a, b ),0>] = d_tfCache[<ite( G, a, b ),1>] = k.
    */
   context::CDInsertHashMap<Node, Node, NodeHashFunction> d_skolem_cache;
-  /**
-   * Mapping from skolems to their corresponding lemma.
-   */
-  context::CDInsertHashMap<Node, theory::TrustNode, NodeHashFunction>
-      d_lemmaCache;
 
   /** gets the skolem for node
    *
@@ -234,4 +208,4 @@ class RemoveTermFormulas {
   bool isProofEnabled() const;
 };/* class RemoveTTE */
 
-}/* CVC4 namespace */
+}  // namespace cvc5

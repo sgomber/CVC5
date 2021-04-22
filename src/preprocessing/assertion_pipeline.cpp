@@ -1,27 +1,30 @@
-/*********************                                                        */
-/*! \file assertion_pipeline.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Haniel Barbosa
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief AssertionPipeline stores a list of assertions modified by
- ** preprocessing passes
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Haniel Barbosa
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * AssertionPipeline stores a list of assertions modified by
+ * preprocessing passes.
+ */
 
 #include "preprocessing/assertion_pipeline.h"
 
 #include "expr/node_manager.h"
 #include "options/smt_options.h"
+#include "expr/lazy_proof.h"
 #include "proof/proof_manager.h"
+#include "smt/preprocess_proof_generator.h"
 #include "theory/builtin/proof_checker.h"
 #include "theory/rewriter.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace preprocessing {
 
 AssertionPipeline::AssertionPipeline()
@@ -201,7 +204,7 @@ void AssertionPipeline::conjoin(size_t i, Node n, ProofGenerator* pg)
       d_pppg->notifyNewAssert(newConjr, lcp);
     }
   }
-  if (options::unsatCores() && !isProofEnabled())
+  if (options::unsatCores())
   {
     ProofManager::currentPM()->addDependence(newConjr, d_nodes[i]);
   }
@@ -210,4 +213,4 @@ void AssertionPipeline::conjoin(size_t i, Node n, ProofGenerator* pg)
 }
 
 }  // namespace preprocessing
-}  // namespace CVC4
+}  // namespace cvc5

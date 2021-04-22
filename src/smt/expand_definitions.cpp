@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file expand_definitions.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Andres Noetzli
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of expand definitions for an SMT engine.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of expand definitions for an SMT engine.
+ */
 
 #include "smt/expand_definitions.h"
 
@@ -18,15 +19,17 @@
 #include <utility>
 
 #include "expr/node_manager_attributes.h"
+#include "preprocessing/assertion_pipeline.h"
 #include "smt/defined_function.h"
 #include "smt/smt_engine.h"
+#include "smt/smt_engine_stats.h"
 #include "theory/theory_engine.h"
 
-using namespace CVC4::preprocessing;
-using namespace CVC4::theory;
-using namespace CVC4::kind;
+using namespace cvc5::preprocessing;
+using namespace cvc5::theory;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace smt {
 
 ExpandDefs::ExpandDefs(SmtEngine& smt,
@@ -64,7 +67,7 @@ TrustNode ExpandDefs::expandDefinitions(
 
   do
   {
-    d_resourceManager.spendResource(ResourceManager::Resource::PreprocessStep);
+    d_resourceManager.spendResource(Resource::PreprocessStep);
 
     // n is the input / original
     // node is the output / result
@@ -99,7 +102,7 @@ TrustNode ExpandDefs::expandDefinitions(
             // ------- ASSUME
             // n = f
             Node conc = n.eqNode(f);
-            tpg->addRewriteStep(n, f, PfRule::ASSUME, {}, {conc});
+            tpg->addRewriteStep(n, f, PfRule::ASSUME, {}, {conc}, true);
           }
           // must recursively expand its definition
           TrustNode tfe = expandDefinitions(f, cache, expandOnly, tpg);
@@ -141,7 +144,7 @@ TrustNode ExpandDefs::expandDefinitions(
         else
         {
           // We always check if this operator corresponds to a defined function.
-          doExpand = d_smt.isDefinedFunction(n.getOperator().toExpr());
+          doExpand = d_smt.isDefinedFunction(n.getOperator());
         }
       }
       // the premise of the proof of expansion (if we are expanding a definition
@@ -169,8 +172,8 @@ TrustNode ExpandDefs::expandDefinitions(
           SmtEngine::DefinedFunctionMap::const_iterator i = dfuns->find(func);
           if (i == dfuns->end())
           {
-            throw TypeCheckingException(
-                n.toExpr(),
+            throw TypeCheckingExceptionPrivate(
+                n,
                 std::string("Undefined function: `") + func.toString() + "'");
           }
           DefinedFunction def = (*i).second;
@@ -236,7 +239,8 @@ TrustNode ExpandDefs::expandDefinitions(
                                 instance,
                                 PfRule::MACRO_SR_PRED_INTRO,
                                 pfExpChildren,
-                                {conc});
+                                {conc},
+                                true);
           }
         }
         // now, call expand definitions again on the result
@@ -260,7 +264,7 @@ TrustNode ExpandDefs::expandDefinitions(
           if (tpg != nullptr)
           {
             tpg->addRewriteStep(
-                n, node, trn.getGenerator(), PfRule::THEORY_EXPAND_DEF);
+                n, node, trn.getGenerator(), true, PfRule::THEORY_EXPAND_DEF);
           }
         }
         else
@@ -291,7 +295,7 @@ TrustNode ExpandDefs::expandDefinitions(
       if (node.getNumChildren() > 0)
       {
         // cout << "cons : " << node << std::endl;
-        NodeBuilder<> nb(node.getKind());
+        NodeBuilder nb(node.getKind());
         if (node.getMetaKind() == metakind::PARAMETERIZED)
         {
           Debug("expand") << "op   : " << node.getOperator() << std::endl;
@@ -364,4 +368,4 @@ void ExpandDefs::setProofNodeManager(ProofNodeManager* pnm)
 }
 
 }  // namespace smt
-}  // namespace CVC4
+}  // namespace cvc5

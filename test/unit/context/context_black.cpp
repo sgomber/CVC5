@@ -1,18 +1,17 @@
-/*********************                                                        */
-/*! \file context_black.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Morgan Deters, Dejan Jovanovic, Andres Noetzli
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Black box testing of CVC4::context::Context.
- **
- ** Black box testing of CVC4::context::Context.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Aina Niemetz, Morgan Deters, Dejan Jovanovic
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Black box testing of cvc5::context::Context.
+ */
 
 #include <iostream>
 #include <vector>
@@ -22,7 +21,7 @@
 #include "context/cdo.h"
 #include "test_context.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 using namespace context;
 
@@ -30,8 +29,6 @@ namespace test {
 
 struct MyContextNotifyObj : public ContextNotifyObj
 {
-  int32_t d_ncalls;
-
   MyContextNotifyObj(Context* context, bool pre)
       : ContextNotifyObj(context, pre), d_ncalls(0)
   {
@@ -40,20 +37,20 @@ struct MyContextNotifyObj : public ContextNotifyObj
   ~MyContextNotifyObj() override {}
 
   void contextNotifyPop() override { ++d_ncalls; }
+
+  int32_t d_ncalls;
 };
 
 class MyContextObj : public ContextObj
 {
-  MyContextNotifyObj& notify;
-
  public:
   MyContextObj(Context* context, MyContextNotifyObj& n)
-      : ContextObj(context), notify(n), d_ncalls(0), d_nsaves(0)
+      : ContextObj(context), d_ncalls(0), d_nsaves(0), d_notify(n)
   {
   }
 
   MyContextObj(bool topScope, Context* context, MyContextNotifyObj& n)
-      : ContextObj(topScope, context), notify(n), d_ncalls(0), d_nsaves(0)
+      : ContextObj(topScope, context), d_ncalls(0), d_nsaves(0), d_notify(n)
   {
   }
 
@@ -65,18 +62,22 @@ class MyContextObj : public ContextObj
     return new (pcmm) MyContextObj(*this);
   }
 
-  void restore(ContextObj* contextObj) override { d_ncalls = notify.d_ncalls; }
+  void restore(ContextObj* contextObj) override
+  {
+    d_ncalls = d_notify.d_ncalls;
+  }
 
   void makeCurrent() { ContextObj::makeCurrent(); }
 
-  int d_ncalls;
-  int d_nsaves;
+  int32_t d_ncalls;
+  int32_t d_nsaves;
 
  private:
   MyContextObj(const MyContextObj& other)
-      : ContextObj(other), notify(other.notify), d_ncalls(0), d_nsaves(0)
+      : ContextObj(other), d_ncalls(0), d_nsaves(0), d_notify(other.d_notify)
   {
   }
+  MyContextNotifyObj& d_notify;
 };
 
 class TestContextBlack : public TestContext
@@ -89,10 +90,10 @@ TEST_F(TestContextBlack, push_pop)
   // the interface doesn't declare any exceptions
   d_context->push();
   d_context->pop();
-#ifdef CVC4_ASSERTIONS
+#ifdef CVC5_ASSERTIONS
   ASSERT_DEATH(d_context->pop(), "Cannot pop below level 0");
   ASSERT_DEATH(d_context->pop(), "Cannot pop below level 0");
-#endif /* CVC4_ASSERTIONS */
+#endif /* CVC5_ASSERTIONS */
 }
 
 TEST_F(TestContextBlack, dtor)
@@ -100,7 +101,7 @@ TEST_F(TestContextBlack, dtor)
   // Destruction of ContextObj was broken in revision 324 (bug #45) when
   // at a higher context level with an intervening modification.
   // (The following caused a "pure virtual method called" error.)
-  CDO<int> i(d_context.get());
+  CDO<int32_t> i(d_context.get());
   d_context->push();
   i = 5;
 }
@@ -197,6 +198,8 @@ TEST_F(TestContextBlack, pre_post_notify)
   d_context.reset(nullptr);
 }
 
+// TODO: reenable after #2607 is merged in (issue 6047)
+#if 0
 TEST_F(TestContextBlack, top_scope_context_obj)
 {
   // this test's implementation is based on the fact that a
@@ -234,6 +237,7 @@ TEST_F(TestContextBlack, top_scope_context_obj)
   ASSERT_EQ(x.d_nsaves, 1);
   ASSERT_EQ(y.d_nsaves, 2);
 }
+#endif
 
 }  // namespace test
-}  // namespace CVC4
+}  // namespace cvc5

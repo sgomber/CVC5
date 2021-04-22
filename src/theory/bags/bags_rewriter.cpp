@@ -1,24 +1,26 @@
-/*********************                                                        */
-/*! \file bags_rewriter.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Mudathir Mohamed
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Bags theory rewriter.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Mudathir Mohamed, Gereon Kremer, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Bags theory rewriter.
+ */
 
 #include "theory/bags/bags_rewriter.h"
 
 #include "theory/bags/normal_form.h"
+#include "util/statistics_registry.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace bags {
 
@@ -246,7 +248,7 @@ BagsRewriteResponse BagsRewriter::rewriteUnionDisjoint(const TNode& n) const
     //         (union_disjoint A B) // sum(a,b) = max(a,b) + min(a,b)
     // check if the operands of union_max and intersection_min are the same
     std::set<Node> left(n[0].begin(), n[0].end());
-    std::set<Node> right(n[0].begin(), n[0].end());
+    std::set<Node> right(n[1].begin(), n[1].end());
     if (left == right)
     {
       Node rewritten = d_nm->mkNode(UNION_DISJOINT, n[0][0], n[0][1]);
@@ -503,4 +505,4 @@ BagsRewriteResponse BagsRewriter::postRewriteEqual(const TNode& n) const
 
 }  // namespace bags
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

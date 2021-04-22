@@ -1,20 +1,24 @@
-/*********************                                                        */
-/*! \file sygus_solver.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Haniel Barbosa, Abdalrhman Mohamed
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The solver for sygus queries
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Haniel Barbosa, Abdalrhman Mohamed
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The solver for SyGuS queries.
+ */
 
 #include "smt/sygus_solver.h"
 
+#include <sstream>
+
 #include "expr/dtype.h"
+#include "expr/skolem_manager.h"
 #include "options/quantifiers_options.h"
 #include "options/smt_options.h"
 #include "printer/printer.h"
@@ -24,12 +28,13 @@
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
 #include "theory/quantifiers/sygus/sygus_utils.h"
+#include "theory/quantifiers_engine.h"
 #include "theory/smt_engine_subsolver.h"
 
-using namespace CVC4::theory;
-using namespace CVC4::kind;
+using namespace cvc5::theory;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace smt {
 
 SygusSolver::SygusSolver(SmtSolver& sms,
@@ -228,9 +233,8 @@ bool SygusSolver::getSynthSolutions(std::map<Node, Node>& sol_map)
   Trace("smt") << "SygusSolver::getSynthSolutions" << std::endl;
   std::map<Node, std::map<Node, Node>> sol_mapn;
   // fail if the theory engine does not have synthesis solutions
-  TheoryEngine* te = d_smtSolver.getTheoryEngine();
-  Assert(te != nullptr);
-  if (!te->getSynthSolutions(sol_mapn))
+  QuantifiersEngine* qe = d_smtSolver.getQuantifiersEngine();
+  if (qe == nullptr || !qe->getSynthSolutions(sol_mapn))
   {
     return false;
   }
@@ -244,15 +248,28 @@ bool SygusSolver::getSynthSolutions(std::map<Node, Node>& sol_map)
   return true;
 }
 
+void SygusSolver::printSynthSolution(std::ostream& out)
+{
+  QuantifiersEngine* qe = d_smtSolver.getQuantifiersEngine();
+  if (qe == nullptr)
+  {
+    InternalError()
+        << "SygusSolver::printSynthSolution(): Cannot print synth solution in "
+           "the current logic, which does not include quantifiers";
+  }
+  qe->printSynthSolution(out);
+}
+
 void SygusSolver::checkSynthSolution(Assertions& as)
 {
   NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
   Notice() << "SygusSolver::checkSynthSolution(): checking synthesis solution"
            << std::endl;
   std::map<Node, std::map<Node, Node>> sol_map;
   // Get solutions and build auxiliary vectors for substituting
-  TheoryEngine* te = d_smtSolver.getTheoryEngine();
-  if (!te->getSynthSolutions(sol_map))
+  QuantifiersEngine* qe = d_smtSolver.getQuantifiersEngine();
+  if (qe == nullptr || !qe->getSynthSolutions(sol_map))
   {
     InternalError()
         << "SygusSolver::checkSynthSolution(): No solution to check!";
@@ -349,7 +366,7 @@ void SygusSolver::checkSynthSolution(Assertions& as)
         vars.push_back(conj[1][0][j]);
         std::stringstream ss;
         ss << "sk_" << j;
-        skos.push_back(nm->mkSkolem(ss.str(), conj[1][0][j].getType()));
+        skos.push_back(sm->mkDummySkolem(ss.str(), conj[1][0][j].getType()));
         Trace("check-synth-sol") << "\tSkolemizing " << conj[1][0][j] << " to "
                                  << skos.back() << "\n";
       }
@@ -398,4 +415,4 @@ void SygusSolver::setSygusConjectureStale()
 }
 
 }  // namespace smt
-}  // namespace CVC4
+}  // namespace cvc5

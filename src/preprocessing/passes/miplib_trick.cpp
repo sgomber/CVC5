@@ -1,35 +1,43 @@
-/*********************                                                        */
-/*! \file miplib_trick.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Mathias Preiner, Andrew Reynolds, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The MIPLIB trick preprocessing pass
- **
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Mathias Preiner, Andrew Reynolds, Morgan Deters
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The MIPLIB trick preprocessing pass.
+ *
+ */
 
 #include "preprocessing/passes/miplib_trick.h"
 
+#include <sstream>
 #include <vector>
 
 #include "expr/node_self_iterator.h"
+#include "expr/skolem_manager.h"
 #include "options/arith_options.h"
+#include "options/smt_options.h"
+#include "preprocessing/assertion_pipeline.h"
+#include "preprocessing/preprocessing_pass_context.h"
 #include "smt/smt_statistics_registry.h"
 #include "smt_util/boolean_simplification.h"
 #include "theory/booleans/circuit_propagator.h"
+#include "theory/theory_engine.h"
 #include "theory/theory_model.h"
 #include "theory/trust_substitutions.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
-using namespace CVC4::theory;
+using namespace std;
+using namespace cvc5::theory;
 
 namespace {
 
@@ -51,7 +59,7 @@ size_t removeFromConjunction(Node& n,
         || (sub.getKind() == kind::AND
             && (subremovals = removeFromConjunction(sub, toRemove)) > 0))
     {
-      NodeBuilder<> b(kind::AND);
+      NodeBuilder b(kind::AND);
       b.append(n.begin(), j);
       if (subremovals > 0)
       {
@@ -195,6 +203,7 @@ PreprocessingPassResult MipLibTrick::applyInternal(
   SubstitutionMap& top_level_substs = tlsm.get();
 
   NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
   Node zero = nm->mkConst(Rational(0)), one = nm->mkConst(Rational(1));
   Node trueNode = nm->mkConst(true);
 
@@ -516,7 +525,7 @@ PreprocessingPassResult MipLibTrick::applyInternal(
             {
               stringstream ss;
               ss << "mipvar_" << *ii;
-              Node newVar = nm->mkSkolem(
+              Node newVar = sm->mkDummySkolem(
                   ss.str(),
                   nm->integerType(),
                   "a variable introduced due to scrubbing a miplib encoding",
@@ -529,8 +538,8 @@ PreprocessingPassResult MipLibTrick::applyInternal(
               Node n = Rewriter::rewrite(geq.andNode(leq));
               assertionsToPreprocess->push_back(n);
               TrustSubstitutionMap tnullMap(&fakeContext, nullptr);
-              CVC4_UNUSED SubstitutionMap& nullMap = tnullMap.get();
-              Theory::PPAssertStatus status CVC4_UNUSED;  // just for assertions
+              CVC5_UNUSED SubstitutionMap& nullMap = tnullMap.get();
+              Theory::PPAssertStatus status CVC5_UNUSED;  // just for assertions
               status = te->solve(tgeq, tnullMap);
               Assert(status == Theory::PP_ASSERT_STATUS_UNSOLVED)
                   << "unexpected solution from arith's ppAssert()";
@@ -541,7 +550,7 @@ PreprocessingPassResult MipLibTrick::applyInternal(
                   << "unexpected solution from arith's ppAssert()";
               Assert(nullMap.empty())
                   << "unexpected substitution from arith's ppAssert()";
-              te->getModel()->addSubstitution(*ii, newVar.eqNode(one));
+              d_preprocContext->addModelSubstitution(*ii, newVar.eqNode(one));
               newVars.push_back(newVar);
               varRef = newVar;
             }
@@ -549,12 +558,11 @@ PreprocessingPassResult MipLibTrick::applyInternal(
             {
               newVars.push_back(varRef);
             }
-            d_preprocContext->enableIntegers();
           }
           Node sum;
           if (pos.getKind() == kind::AND)
           {
-            NodeBuilder<> sumb(kind::PLUS);
+            NodeBuilder sumb(kind::PLUS);
             for (size_t jj = 0; jj < pos.getNumChildren(); ++jj)
             {
               sumb << nm->mkNode(
@@ -648,18 +656,12 @@ PreprocessingPassResult MipLibTrick::applyInternal(
 }
 
 MipLibTrick::Statistics::Statistics()
-    : d_numMiplibAssertionsRemoved(
-          "preprocessing::passes::MipLibTrick::numMiplibAssertionsRemoved", 0)
+    : d_numMiplibAssertionsRemoved(smtStatisticsRegistry().registerInt(
+        "preprocessing::passes::MipLibTrick::numMiplibAssertionsRemoved"))
 {
-  smtStatisticsRegistry()->registerStat(&d_numMiplibAssertionsRemoved);
-}
-
-MipLibTrick::Statistics::~Statistics()
-{
-  smtStatisticsRegistry()->unregisterStat(&d_numMiplibAssertionsRemoved);
 }
 
 
 }  // namespace passes
 }  // namespace preprocessing
-}  // namespace CVC4
+}  // namespace cvc5

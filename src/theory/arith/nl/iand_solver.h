@@ -1,35 +1,38 @@
-/*********************                                                        */
-/*! \file iand_solver.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Yoni Zohar, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Solver for integer and (IAND) constraints
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Makai Mann, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Solver for integer and (IAND) constraints.
+ */
 
-#ifndef CVC4__THEORY__ARITH__NL__IAND_SOLVER_H
-#define CVC4__THEORY__ARITH__NL__IAND_SOLVER_H
+#ifndef CVC5__THEORY__ARITH__NL__IAND_SOLVER_H
+#define CVC5__THEORY__ARITH__NL__IAND_SOLVER_H
 
 #include <map>
 #include <vector>
 
 #include "context/cdhashset.h"
 #include "expr/node.h"
-#include "theory/arith/arith_state.h"
-#include "theory/arith/inference_manager.h"
 #include "theory/arith/nl/iand_utils.h"
-#include "theory/arith/nl/nl_lemma_utils.h"
-#include "theory/arith/nl/nl_model.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arith {
+
+class ArithState;
+class InferenceManager;
+
 namespace nl {
+
+class NlModel;
 
 /** Integer and solver class
  *
@@ -130,6 +133,6 @@ class IAndSolver
 }  // namespace nl
 }  // namespace arith
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__ARITH__IAND_SOLVER_H */
+#endif /* CVC5__THEORY__ARITH__IAND_SOLVER_H */

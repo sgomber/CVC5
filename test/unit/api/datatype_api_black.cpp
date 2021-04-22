@@ -1,32 +1,31 @@
-/*********************                                                        */
-/*! \file datatype_api_black.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Aina Niemetz, Andres Noetzli
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Black box testing of the datatype classes of the C++ API.
- **
- ** Black box testing of the datatype classes of the C++ API.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Aina Niemetz, Andres Noetzli
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Black box testing of the datatype classes of the C++ API.
+ */
 
 #include "test_api.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 using namespace api;
 
 namespace test {
 
-class TestApiDatatypeBlack : public TestApi
+class TestApiBlackDatatype : public TestApi
 {
 };
 
-TEST_F(TestApiDatatypeBlack, mkDatatypeSort)
+TEST_F(TestApiBlackDatatype, mkDatatypeSort)
 {
   DatatypeDecl dtypeSpec = d_solver.mkDatatypeDecl("list");
   DatatypeConstructorDecl cons = d_solver.mkDatatypeConstructorDecl("cons");
@@ -38,12 +37,12 @@ TEST_F(TestApiDatatypeBlack, mkDatatypeSort)
   Datatype d = listSort.getDatatype();
   DatatypeConstructor consConstr = d[0];
   DatatypeConstructor nilConstr = d[1];
-  ASSERT_THROW(d[2], CVC4ApiException);
+  ASSERT_THROW(d[2], CVC5ApiException);
   ASSERT_NO_THROW(consConstr.getConstructorTerm());
   ASSERT_NO_THROW(nilConstr.getConstructorTerm());
 }
 
-TEST_F(TestApiDatatypeBlack, mkDatatypeSorts)
+TEST_F(TestApiBlackDatatype, mkDatatypeSorts)
 {
   /* Create two mutual datatypes corresponding to this definition
    * block:
@@ -105,10 +104,10 @@ TEST_F(TestApiDatatypeBlack, mkDatatypeSorts)
   std::vector<DatatypeDecl> dtdeclsBad;
   DatatypeDecl emptyD = d_solver.mkDatatypeDecl("emptyD");
   dtdeclsBad.push_back(emptyD);
-  ASSERT_THROW(d_solver.mkDatatypeSorts(dtdeclsBad), CVC4ApiException);
+  ASSERT_THROW(d_solver.mkDatatypeSorts(dtdeclsBad), CVC5ApiException);
 }
 
-TEST_F(TestApiDatatypeBlack, datatypeStructs)
+TEST_F(TestApiBlackDatatype, datatypeStructs)
 {
   Sort intSort = d_solver.getIntegerSort();
   Sort boolSort = d_solver.getBooleanSort();
@@ -119,7 +118,7 @@ TEST_F(TestApiDatatypeBlack, datatypeStructs)
   cons.addSelector("head", intSort);
   cons.addSelectorSelf("tail");
   Sort nullSort;
-  ASSERT_THROW(cons.addSelector("null", nullSort), CVC4ApiException);
+  ASSERT_THROW(cons.addSelector("null", nullSort), CVC5ApiException);
   dtypeSpec.addConstructor(cons);
   DatatypeConstructorDecl nil = d_solver.mkDatatypeConstructorDecl("nil");
   dtypeSpec.addConstructor(nil);
@@ -182,7 +181,7 @@ TEST_F(TestApiDatatypeBlack, datatypeStructs)
   ASSERT_TRUE(dtRecord.isWellFounded());
 }
 
-TEST_F(TestApiDatatypeBlack, datatypeNames)
+TEST_F(TestApiBlackDatatype, datatypeNames)
 {
   Sort intSort = d_solver.getIntegerSort();
 
@@ -201,14 +200,14 @@ TEST_F(TestApiDatatypeBlack, datatypeNames)
   ASSERT_EQ(dt.getName(), std::string("list"));
   ASSERT_NO_THROW(dt.getConstructor("nil"));
   ASSERT_NO_THROW(dt["cons"]);
-  ASSERT_THROW(dt.getConstructor("head"), CVC4ApiException);
-  ASSERT_THROW(dt.getConstructor(""), CVC4ApiException);
+  ASSERT_THROW(dt.getConstructor("head"), CVC5ApiException);
+  ASSERT_THROW(dt.getConstructor(""), CVC5ApiException);
 
   DatatypeConstructor dcons = dt[0];
   ASSERT_EQ(dcons.getName(), std::string("cons"));
   ASSERT_NO_THROW(dcons.getSelector("head"));
   ASSERT_NO_THROW(dcons["tail"]);
-  ASSERT_THROW(dcons.getSelector("cons"), CVC4ApiException);
+  ASSERT_THROW(dcons.getSelector("cons"), CVC5ApiException);
 
   // get selector
   DatatypeSelector dselTail = dcons[1];
@@ -216,10 +215,10 @@ TEST_F(TestApiDatatypeBlack, datatypeNames)
   ASSERT_EQ(dselTail.getRangeSort(), dtypeSort);
 
   // possible to construct null datatype declarations if not using solver
-  ASSERT_THROW(DatatypeDecl().getName(), CVC4ApiException);
+  ASSERT_THROW(DatatypeDecl().getName(), CVC5ApiException);
 }
 
-TEST_F(TestApiDatatypeBlack, parametricDatatype)
+TEST_F(TestApiBlackDatatype, parametricDatatype)
 {
   std::vector<Sort> v;
   Sort t1 = d_solver.mkParamSort("T1");
@@ -297,7 +296,7 @@ TEST_F(TestApiDatatypeBlack, parametricDatatype)
   ASSERT_TRUE(pairIntInt.isSubsortOf(pairIntInt));
 }
 
-TEST_F(TestApiDatatypeBlack, datatypeSimplyRec)
+TEST_F(TestApiBlackDatatype, datatypeSimplyRec)
 {
   /* Create mutual datatypes corresponding to this definition block:
    *
@@ -496,7 +495,7 @@ TEST_F(TestApiDatatypeBlack, datatypeSimplyRec)
   ASSERT_TRUE(dtsorts[0].getDatatype().hasNestedRecursion());
 }
 
-TEST_F(TestApiDatatypeBlack, datatypeSpecializedCons)
+TEST_F(TestApiBlackDatatype, datatypeSpecializedCons)
 {
   /* Create mutual datatypes corresponding to this definition block:
    *   DATATYPE
@@ -544,7 +543,7 @@ TEST_F(TestApiDatatypeBlack, datatypeSpecializedCons)
   ASSERT_NO_THROW(testConsTerm = nilc.getSpecializedConstructorTerm(listInt));
   ASSERT_NE(testConsTerm, nilc.getConstructorTerm());
   // error to get the specialized constructor term for Int
-  ASSERT_THROW(nilc.getSpecializedConstructorTerm(isort), CVC4ApiException);
+  ASSERT_THROW(nilc.getSpecializedConstructorTerm(isort), CVC5ApiException);
 }
 }  // namespace test
-}  // namespace CVC4
+}  // namespace cvc5

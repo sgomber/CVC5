@@ -1,50 +1,48 @@
-/*********************                                                        */
-/*! \file equality_engine.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Dejan Jovanovic, Andrew Reynolds, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief [[ Add one-line brief description here ]]
- **
- ** [[ Add lengthier description here ]]
- ** \todo document this file
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Dejan Jovanovic, Andrew Reynolds, Morgan Deters
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * [[ Add one-line brief description here ]]
+ *
+ * [[ Add lengthier description here ]]
+ * \todo document this file
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__UF__EQUALITY_ENGINE_H
-#define CVC4__THEORY__UF__EQUALITY_ENGINE_H
+#ifndef CVC5__THEORY__UF__EQUALITY_ENGINE_H
+#define CVC5__THEORY__UF__EQUALITY_ENGINE_H
 
 #include <deque>
 #include <queue>
-#include <memory>
 #include <unordered_map>
 #include <vector>
 
-#include "base/output.h"
 #include "context/cdhashmap.h"
 #include "context/cdo.h"
 #include "expr/kind_map.h"
 #include "expr/node.h"
-#include "theory/rewriter.h"
 #include "theory/theory_id.h"
-#include "theory/uf/eq_proof.h"
 #include "theory/uf/equality_engine_iterator.h"
 #include "theory/uf/equality_engine_notify.h"
 #include "theory/uf/equality_engine_types.h"
-#include "util/statistics_registry.h"
+#include "util/statistics_stats.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace eq {
 
 class EqClassesIterator;
 class EqClassIterator;
+class EqProof;
 
 /**
  * Class for keeping an incremental congruence closure over a set of terms. It provides
@@ -96,6 +94,9 @@ class EqualityEngine : public context::ContextNotifyObj {
    */
   void setMasterEqualityEngine(EqualityEngine* master);
 
+  /** Print the equivalence classes for debugging */
+  std::string debugPrintEqc() const;
+
   /** Statistics about the equality engine instance */
   struct Statistics
   {
@@ -108,9 +109,7 @@ class EqualityEngine : public context::ContextNotifyObj {
     /** Number of constant terms managed by the system */
     IntStat d_constantTermsCount;
 
-    Statistics(std::string name);
-
-    ~Statistics();
+    Statistics(const std::string& name);
   };/* struct EqualityEngine::statistics */
 
 private:
@@ -845,6 +844,6 @@ private:
 
 } // Namespace eq
 } // Namespace theory
-} // Namespace CVC4
+}  // namespace cvc5
 
 #endif

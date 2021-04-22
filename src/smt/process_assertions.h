@@ -1,40 +1,44 @@
-/*********************                                                        */
-/*! \file process_assertions.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Tim King, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The module for processing assertions for an SMT engine.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Morgan Deters
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The module for processing assertions for an SMT engine.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__SMT__PROCESS_ASSERTIONS_H
-#define CVC4__SMT__PROCESS_ASSERTIONS_H
+#ifndef CVC5__SMT__PROCESS_ASSERTIONS_H
+#define CVC5__SMT__PROCESS_ASSERTIONS_H
 
-#include <map>
+#include <unordered_map>
 
-#include "context/cdhashmap.h"
 #include "context/cdlist.h"
 #include "expr/node.h"
-#include "expr/type_node.h"
-#include "preprocessing/preprocessing_pass.h"
-#include "preprocessing/preprocessing_pass_context.h"
-#include "smt/assertions.h"
-#include "smt/expand_definitions.h"
-#include "smt/smt_engine_stats.h"
 #include "util/resource_manager.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 class SmtEngine;
 
+namespace preprocessing {
+class AssertionPipeline;
+class PreprocessingPass;
+class PreprocessingPassContext;
+}
+
 namespace smt {
+
+class Assertions;
+class ExpandDefs;
+struct SmtEngineStatistics;
 
 /**
  * Module in charge of processing assertions for an SMT engine.
@@ -54,7 +58,7 @@ class ProcessAssertions
 {
   /** The types for the recursive function definitions */
   typedef context::CDList<Node> NodeList;
-  typedef unordered_map<Node, bool, NodeHashFunction> NodeToBoolHashMap;
+  typedef std::unordered_map<Node, bool, NodeHashFunction> NodeToBoolHashMap;
 
  public:
   ProcessAssertions(SmtEngine& smt,
@@ -103,7 +107,7 @@ class ProcessAssertions
    */
   unsigned d_simplifyAssertionsDepth;
   /** Spend resource r by the resource manager of this class. */
-  void spendResource(ResourceManager::Resource r);
+  void spendResource(Resource r);
   /**
    * Perform non-clausal simplification of a Node.  This involves
    * Theory implementations, but does NOT involve the SAT solver in
@@ -121,6 +125,6 @@ class ProcessAssertions
 };
 
 }  // namespace smt
-}  // namespace CVC4
+}  // namespace cvc5
 
 #endif

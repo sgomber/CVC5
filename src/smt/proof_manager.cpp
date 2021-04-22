@@ -1,34 +1,61 @@
-/*********************                                                        */
-/*! \file proof_manager.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The proof manager of the SMT engine
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Haniel Barbosa, Diego Della Rocca de Camargos
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The proof manager of the SMT engine.
+ */
 
 #include "smt/proof_manager.h"
 
+#include "expr/proof_checker.h"
 #include "expr/proof_node_algorithm.h"
+#include "expr/proof_node_manager.h"
 #include "options/base_options.h"
+#include "options/proof_options.h"
 #include "options/smt_options.h"
+#include "proof/dot/dot_printer.h"
 #include "smt/assertions.h"
 #include "smt/defined_function.h"
+#include "smt/preprocess_proof_generator.h"
+#include "smt/proof_post_processor.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace smt {
 
 PfManager::PfManager(context::UserContext* u, SmtEngine* smte)
-    : d_pchecker(new ProofChecker(options::proofNewPedantic())),
+    : d_pchecker(new ProofChecker(options::proofPedantic())),
       d_pnm(new ProofNodeManager(d_pchecker.get())),
       d_pppg(new PreprocessProofGenerator(
           d_pnm.get(), u, "smt::PreprocessProofGenerator")),
-      d_pfpp(new ProofPostproccess(d_pnm.get(), smte, d_pppg.get())),
+      d_pfpp(new ProofPostproccess(
+          d_pnm.get(),
+          smte,
+          d_pppg.get(),
+          // by default the post-processor will update all assumptions, which
+          // can lead to SCOPE subproofs of the form
+          //   A
+          //  ...
+          //   B1    B2
+          //  ...   ...
+          // ------------
+          //      C
+          // ------------- SCOPE [B1, B2]
+          // B1 ^ B2 => C
+          //
+          // where A is an available assumption from outside the scope (note
+          // that B1 was an assumption of this SCOPE subproof but since it could
+          // be inferred from A, it was updated). This shape is problematic for
+          // the veriT reconstruction, so we disable the update of scoped
+          // assumptions (which would disable the update of B1 in this case).
+          options::proofFormatMode() != options::ProofFormatMode::VERIT)),
       d_finalProof(nullptr)
 {
   // add rules to eliminate here
@@ -38,6 +65,7 @@ PfManager::PfManager(context::UserContext* u, SmtEngine* smte)
     d_pfpp->setEliminateRule(PfRule::MACRO_SR_PRED_INTRO);
     d_pfpp->setEliminateRule(PfRule::MACRO_SR_PRED_ELIM);
     d_pfpp->setEliminateRule(PfRule::MACRO_SR_PRED_TRANSFORM);
+    d_pfpp->setEliminateRule(PfRule::MACRO_RESOLUTION_TRUST);
     d_pfpp->setEliminateRule(PfRule::MACRO_RESOLUTION);
     if (options::proofGranularityMode()
         != options::ProofGranularityMode::REWRITE)
@@ -103,9 +131,10 @@ void PfManager::setFinalProof(std::shared_ptr<ProofNode> pfn,
 
   Trace("smt-proof") << "SmtEngine::setFinalProof(): make scope...\n";
 
-  // Now make the final scope, which ensures that the only open leaves
-  // of the proof are the assertions.
-  d_finalProof = d_pnm->mkScope(pfn, assertions);
+  // Now make the final scope, which ensures that the only open leaves of the
+  // proof are the assertions, unless we are doing proofs to generate unsat
+  // cores, in which case we do not care.
+  d_finalProof = d_pnm->mkScope(pfn, assertions, !options::unsatCoresNew());
   Trace("smt-proof") << "SmtEngine::setFinalProof(): finished.\n";
 }
 
@@ -116,13 +145,27 @@ void PfManager::printProof(std::ostream& out,
 {
   Trace("smt-proof") << "PfManager::printProof: start" << std::endl;
   std::shared_ptr<ProofNode> fp = getFinalProof(pfn, as, df);
+  // if we are in incremental mode, we don't want to invalidate the proof
+  // nodes in fp, since these may be reused in further check-sat calls
+  if (options::incrementalSolving()
+      && options::proofFormatMode() != options::ProofFormatMode::NONE)
+  {
+    fp = d_pnm->clone(fp);
+  }
   // TODO (proj #37) according to the proof format, post process the proof node
   // TODO (proj #37) according to the proof format, print the proof node
-  out << "(proof\n";
-  out << *fp;
-  out << "\n)\n";
-}
 
+  if (options::proofFormatMode() == options::ProofFormatMode::DOT)
+  {
+    proof::DotPrinter::print(out, fp.get());
+  }
+  else
+  {
+    out << "(proof\n";
+    out << *fp;
+    out << "\n)\n";
+  }
+}
 void PfManager::checkProof(std::shared_ptr<ProofNode> pfn,
                            Assertions& as,
                            DefinedFunctionMap& df)
@@ -178,4 +221,4 @@ void PfManager::getAssertions(Assertions& as,
 }
 
 }  // namespace smt
-}  // namespace CVC4
+}  // namespace cvc5

@@ -1,18 +1,19 @@
-/*********************                                                        */
-/*! \file minisat.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Liana Hadarean, Dejan Jovanovic, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief SAT Solver.
- **
- ** Implementation of the minisat interface for cvc4.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Dejan Jovanovic, Liana Hadarean, Morgan Deters
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * SAT Solver.
+ *
+ * Implementation of the minisat interface for cvc5.
+ */
 
 #include "prop/minisat/minisat.h"
 
@@ -20,20 +21,18 @@
 #include "options/decision_options.h"
 #include "options/prop_options.h"
 #include "options/smt_options.h"
-#include "prop/minisat/simp/SimpSolver.h"
 #include "proof/clause_id.h"
 #include "proof/sat_proof.h"
-#include "util/statistics_registry.h"
+#include "prop/minisat/simp/SimpSolver.h"
+#include "util/statistics_stats.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace prop {
 
 //// DPllMinisatSatSolver
 
-MinisatSatSolver::MinisatSatSolver(StatisticsRegistry* registry) :
-  d_minisat(NULL),
-  d_context(NULL),
-  d_statistics(registry)
+MinisatSatSolver::MinisatSatSolver(StatisticsRegistry& registry)
+    : d_minisat(NULL), d_context(NULL), d_statistics(registry)
 {}
 
 MinisatSatSolver::~MinisatSatSolver()
@@ -130,7 +129,7 @@ void MinisatSatSolver::initialize(context::Context* context,
 // Like initialize() above, but called just before each search when in
 // incremental mode
 void MinisatSatSolver::setupOptions() {
-  // Copy options from CVC4 options structure into minisat, as appropriate
+  // Copy options from cvc5 options structure into minisat, as appropriate
 
   // Set up the verbosity
   d_minisat->verbosity = (options::verbosity() > 0) ? 1 : -1;
@@ -160,7 +159,7 @@ ClauseId MinisatSatSolver::addClause(SatClause& clause, bool removable) {
   }
   d_minisat->addClause(minisat_clause, removable, clause_id);
   // FIXME: to be deleted when we kill old proof code for unsat cores
-  Assert(!options::unsatCores() || options::proofNew()
+  Assert(!options::unsatCores() || options::produceProofs()
          || clause_id != ClauseIdError);
   return clause_id;
 }
@@ -253,67 +252,52 @@ void MinisatSatSolver::resetTrail() { d_minisat->resetTrail(); }
 
 /// Statistics for MinisatSatSolver
 
-MinisatSatSolver::Statistics::Statistics(StatisticsRegistry* registry) :
-    d_registry(registry),
-    d_statStarts("sat::starts"),
-    d_statDecisions("sat::decisions"),
-    d_statRndDecisions("sat::rnd_decisions"),
-    d_statPropagations("sat::propagations"),
-    d_statConflicts("sat::conflicts"),
-    d_statClausesLiterals("sat::clauses_literals"),
-    d_statLearntsLiterals("sat::learnts_literals"),
-    d_statMaxLiterals("sat::max_literals"),
-    d_statTotLiterals("sat::tot_literals")
+MinisatSatSolver::Statistics::Statistics(StatisticsRegistry& registry)
+    : d_statStarts(registry.registerReference<int64_t>("sat::starts")),
+      d_statDecisions(registry.registerReference<int64_t>("sat::decisions")),
+      d_statRndDecisions(
+          registry.registerReference<int64_t>("sat::rnd_decisions")),
+      d_statPropagations(
+          registry.registerReference<int64_t>("sat::propagations")),
+      d_statConflicts(registry.registerReference<int64_t>("sat::conflicts")),
+      d_statClausesLiterals(
+          registry.registerReference<int64_t>("sat::clauses_literals")),
+      d_statLearntsLiterals(
+          registry.registerReference<int64_t>("sat::learnts_literals")),
+      d_statMaxLiterals(
+          registry.registerReference<int64_t>("sat::max_literals")),
+      d_statTotLiterals(
+          registry.registerReference<int64_t>("sat::tot_literals"))
 {
-  d_registry->registerStat(&d_statStarts);
-  d_registry->registerStat(&d_statDecisions);
-  d_registry->registerStat(&d_statRndDecisions);
-  d_registry->registerStat(&d_statPropagations);
-  d_registry->registerStat(&d_statConflicts);
-  d_registry->registerStat(&d_statClausesLiterals);
-  d_registry->registerStat(&d_statLearntsLiterals);
-  d_registry->registerStat(&d_statMaxLiterals);
-  d_registry->registerStat(&d_statTotLiterals);
-}
-
-MinisatSatSolver::Statistics::~Statistics() {
-  d_registry->unregisterStat(&d_statStarts);
-  d_registry->unregisterStat(&d_statDecisions);
-  d_registry->unregisterStat(&d_statRndDecisions);
-  d_registry->unregisterStat(&d_statPropagations);
-  d_registry->unregisterStat(&d_statConflicts);
-  d_registry->unregisterStat(&d_statClausesLiterals);
-  d_registry->unregisterStat(&d_statLearntsLiterals);
-  d_registry->unregisterStat(&d_statMaxLiterals);
-  d_registry->unregisterStat(&d_statTotLiterals);
 }
 
 void MinisatSatSolver::Statistics::init(Minisat::SimpSolver* minisat){
-  d_statStarts.setData(minisat->starts);
-  d_statDecisions.setData(minisat->decisions);
-  d_statRndDecisions.setData(minisat->rnd_decisions);
-  d_statPropagations.setData(minisat->propagations);
-  d_statConflicts.setData(minisat->conflicts);
-  d_statClausesLiterals.setData(minisat->clauses_literals);
-  d_statLearntsLiterals.setData(minisat->learnts_literals);
-  d_statMaxLiterals.setData(minisat->max_literals);
-  d_statTotLiterals.setData(minisat->tot_literals);
+  d_statStarts.set(minisat->starts);
+  d_statDecisions.set(minisat->decisions);
+  d_statRndDecisions.set(minisat->rnd_decisions);
+  d_statPropagations.set(minisat->propagations);
+  d_statConflicts.set(minisat->conflicts);
+  d_statClausesLiterals.set(minisat->clauses_literals);
+  d_statLearntsLiterals.set(minisat->learnts_literals);
+  d_statMaxLiterals.set(minisat->max_literals);
+  d_statTotLiterals.set(minisat->tot_literals);
 }
 
-} /* namespace CVC4::prop */
-} /* namespace CVC4 */
+}  // namespace prop
+}  // namespace cvc5
 
-
-namespace CVC4 {
-template<>
-prop::SatLiteral toSatLiteral< CVC4::Minisat::Solver>(Minisat::Solver::TLit lit) {
+namespace cvc5 {
+template <>
+prop::SatLiteral toSatLiteral<cvc5::Minisat::Solver>(Minisat::Solver::TLit lit)
+{
   return prop::MinisatSatSolver::toSatLiteral(lit);
 }
 
-template<>
-void toSatClause< CVC4::Minisat::Solver> (const CVC4::Minisat::Solver::TClause& minisat_cl,
-                                      prop::SatClause& sat_cl) {
+template <>
+void toSatClause<cvc5::Minisat::Solver>(
+    const cvc5::Minisat::Solver::TClause& minisat_cl, prop::SatClause& sat_cl)
+{
   prop::MinisatSatSolver::toSatClause(minisat_cl, sat_cl);
 }
 
-} /* namespace CVC4 */
+}  // namespace cvc5

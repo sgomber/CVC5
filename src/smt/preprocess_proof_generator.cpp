@@ -1,25 +1,30 @@
-/*********************                                                        */
-/*! \file preprocess_proof_generator.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The implementation of the module for proofs for preprocessing in an
- ** SMT engine.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The implementation of the module for proofs for preprocessing in an
+ * SMT engine.
+ */
 
 #include "smt/preprocess_proof_generator.h"
 
+#include <sstream>
+
 #include "expr/proof.h"
-#include "options/smt_options.h"
+#include "expr/proof_checker.h"
+#include "expr/proof_node.h"
+#include "options/proof_options.h"
 #include "theory/rewriter.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace smt {
 
 PreprocessProofGenerator::PreprocessProofGenerator(ProofNodeManager* pnm,
@@ -235,7 +240,7 @@ std::string PreprocessProofGenerator::identify() const { return d_name; }
 
 void PreprocessProofGenerator::checkEagerPedantic(PfRule r)
 {
-  if (options::proofNewEagerChecking())
+  if (options::proofEagerChecking())
   {
     // catch a pedantic failure now, which otherwise would not be
     // triggered since we are doing lazy proof generation
@@ -250,4 +255,4 @@ void PreprocessProofGenerator::checkEagerPedantic(PfRule r)
 }
 
 }  // namespace smt
-}  // namespace CVC4
+}  // namespace cvc5

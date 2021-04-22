@@ -1,22 +1,22 @@
-/*********************                                                        */
-/*! \file theory_strings_preprocess.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Tianyi Liang
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Strings Preprocess
- **
- ** Strings Preprocess.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Tianyi Liang
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Strings Preprocess.
+ */
 
 #include "theory/strings/theory_strings_preprocess.h"
 
 #include "expr/kind.h"
+#include "expr/skolem_manager.h"
 #include "options/smt_options.h"
 #include "options/strings_options.h"
 #include "proof/proof_manager.h"
@@ -25,11 +25,12 @@
 #include "theory/strings/arith_entail.h"
 #include "theory/strings/sequences_rewriter.h"
 #include "theory/strings/word.h"
+#include "util/statistics_registry.h"
 
-using namespace CVC4;
-using namespace CVC4::kind;
+using namespace cvc5;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
@@ -58,6 +59,7 @@ Node StringsPreprocess::reduce(Node t,
       << "StringsPreprocess::reduce: " << t << std::endl;
   Node retNode = t;
   NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
   Node zero = nm->mkConst(Rational(0));
   Node one = nm->mkConst(Rational(1));
   Node negOne = nm->mkConst(Rational(-1));
@@ -69,7 +71,6 @@ Node StringsPreprocess::reduce(Node t,
     Node m = t[2];
     Node skt = sc->mkSkolemCached(t, SkolemCache::SK_PURIFY, "sst");
     Node t12 = nm->mkNode(PLUS, n, m);
-    t12 = Rewriter::rewrite(t12);
     Node lt0 = nm->mkNode(STRING_LENGTH, s);
     //start point is greater than or equal zero
     Node c1 = nm->mkNode(GEQ, n, zero);
@@ -101,7 +102,7 @@ Node StringsPreprocess::reduce(Node t,
     Node lemma = nm->mkNode(ITE, cond, b1, b2);
 
     // assert:
-    // IF    n >=0 AND n < len( s ) AND m > 0
+    // IF    n >=0 AND len( s ) > n AND m > 0
     // THEN: s = sk1 ++ skt ++ sk2 AND
     //       len( sk1 ) = n AND
     //       ( len( sk2 ) = len( s )-(n+m) OR len( sk2 ) = 0 ) AND
@@ -267,7 +268,8 @@ Node StringsPreprocess::reduce(Node t,
     std::vector<Node> conc;
     std::vector< TypeNode > argTypes;
     argTypes.push_back(nm->integerType());
-    Node u = nm->mkSkolem("U", nm->mkFunctionType(argTypes, nm->integerType()));
+    Node u =
+        sm->mkDummySkolem("U", nm->mkFunctionType(argTypes, nm->integerType()));
 
     Node lem = nm->mkNode(GEQ, leni, one);
     conc.push_back(lem);
@@ -346,7 +348,7 @@ Node StringsPreprocess::reduce(Node t,
 
     Node emp = Word::mkEmptyWord(s.getType());
     Node sEmpty = s.eqNode(emp);
-    Node k = nm->mkSkolem("k", nm->integerType());
+    Node k = sm->mkDummySkolem("k", nm->integerType());
     Node kc1 = nm->mkNode(GEQ, k, zero);
     Node kc2 = nm->mkNode(LT, k, lens);
     Node c0 = nm->mkNode(STRING_TO_CODE, nm->mkConst(String("0")));
@@ -362,7 +364,8 @@ Node StringsPreprocess::reduce(Node t,
     std::vector<Node> conc2;
     std::vector< TypeNode > argTypes;
     argTypes.push_back(nm->integerType());
-    Node u = nm->mkSkolem("U", nm->mkFunctionType(argTypes, nm->integerType()));
+    Node u =
+        sm->mkDummySkolem("U", nm->mkFunctionType(argTypes, nm->integerType()));
 
     lem = stoit.eqNode(nm->mkNode(APPLY_UF, u, lens));
     conc2.push_back(lem);
@@ -443,7 +446,7 @@ Node StringsPreprocess::reduce(Node t,
     Node b1 = nm->mkNode(AND, b11, b12, b13);
 
     // nodes for the case where `seq.nth` is undefined.
-    Node uf = sc->mkSkolemSeqNth(s.getType(), "Uf");
+    Node uf = SkolemCache::mkSkolemSeqNth(s.getType(), "Uf");
     Node b2 = nm->mkNode(EQUAL, skt, nm->mkNode(APPLY_UF, uf, s, n));
 
     // the full ite, split on definedness of `seq.nth`
@@ -532,7 +535,7 @@ Node StringsPreprocess::reduce(Node t,
     std::vector<TypeNode> argTypes;
     argTypes.push_back(nm->integerType());
     Node us =
-        nm->mkSkolem("Us", nm->mkFunctionType(argTypes, nm->stringType()));
+        sm->mkDummySkolem("Us", nm->mkFunctionType(argTypes, nm->stringType()));
     TypeNode ufType = nm->mkFunctionType(argTypes, nm->integerType());
     Node uf = sc->mkTypedSkolemCached(
         ufType, x, y, SkolemCache::SK_OCCUR_INDEX, "Uf");
@@ -671,7 +674,8 @@ Node StringsPreprocess::reduce(Node t,
         nm->integerType(), x, y, SkolemCache::SK_NUM_OCCUR, "numOcc");
     std::vector<TypeNode> argTypes;
     argTypes.push_back(nm->integerType());
-    Node us = nm->mkSkolem("Us", nm->mkFunctionType(argTypes, t.getType()));
+    Node us =
+        sm->mkDummySkolem("Us", nm->mkFunctionType(argTypes, t.getType()));
     TypeNode ufType = nm->mkFunctionType(argTypes, nm->integerType());
     Node uf = sc->mkTypedSkolemCached(
         ufType, x, y, SkolemCache::SK_OCCUR_INDEX, "Uf");
@@ -1014,7 +1018,8 @@ Node StringsPreprocess::mkForallInternal(Node bvl, Node body)
   }
   else
   {
-    qvar = nm->mkSkolem("qinternal", nm->booleanType());
+    SkolemManager* sm = nm->getSkolemManager();
+    qvar = sm->mkDummySkolem("qinternal", nm->booleanType());
     // this dummy variable marks that the quantified formula is internal
     qvar.setAttribute(InternalQuantAttribute(), true);
     // remember the dummy variable
@@ -1027,6 +1032,6 @@ Node StringsPreprocess::mkForallInternal(Node bvl, Node body)
   return nm->mkNode(FORALL, bvl, body, ipl);
 }
 
-}/* CVC4::theory::strings namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace strings
+}  // namespace theory
+}  // namespace cvc5

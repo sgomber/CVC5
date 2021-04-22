@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file solver_state.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Mudathir Mohamed, Morgan Deters, Dejan Jovanovic
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of bags state object
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Mudathir Mohamed, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of bags state object.
+ */
 
 #include "theory/bags/solver_state.h"
 
@@ -20,9 +21,9 @@
 #include "theory/uf/equality_engine.h"
 
 using namespace std;
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace bags {
 
@@ -55,31 +56,32 @@ const std::set<Node>& SolverState::getBags() { return d_bags; }
 const std::set<Node>& SolverState::getElements(Node B)
 {
   Node bag = getRepresentative(B);
-  return d_bagElements[B];
+  return d_bagElements[bag];
 }
+
+const std::set<Node>& SolverState::getDisequalBagTerms() { return d_deq; }
 
 void SolverState::reset()
 {
   d_bagElements.clear();
   d_bags.clear();
+  d_deq.clear();
 }
 
 void SolverState::initialize()
 {
   reset();
   collectBagsAndCountTerms();
+  collectDisequalBagTerms();
 }
 
 void SolverState::collectBagsAndCountTerms()
 {
-  Trace("SolverState::collectBagsAndCountTerms")
-      << "SolverState::collectBagsAndCountTerms start" << endl;
   eq::EqClassesIterator repIt = eq::EqClassesIterator(d_ee);
   while (!repIt.isFinished())
   {
     Node eqc = (*repIt);
-    Trace("SolverState::collectBagsAndCountTerms")
-        << "[" << eqc << "]: " << endl;
+    Trace("bags-eqc") << "Eqc [ " << eqc << " ] = { ";
 
     if (eqc.getType().isBag())
     {
@@ -90,6 +92,7 @@ void SolverState::collectBagsAndCountTerms()
     while (!it.isFinished())
     {
       Node n = (*it);
+      Trace("bags-eqc") << (*it) << " ";
       Kind k = n.getKind();
       if (k == MK_BAG)
       {
@@ -109,14 +112,29 @@ void SolverState::collectBagsAndCountTerms()
       }
       ++it;
     }
-
+    Trace("bags-eqc") << " } " << std::endl;
     ++repIt;
   }
 
-  Trace("SolverState::collectBagsAndCountTerms")
-      << "SolverState::collectBagsAndCountTerms end" << endl;
+  Trace("bags-eqc") << "bag representatives: " << d_bags << endl;
+  Trace("bags-eqc") << "bag elements: " << d_bagElements << endl;
+}
+
+void SolverState::collectDisequalBagTerms()
+{
+  eq::EqClassIterator it = eq::EqClassIterator(d_false, d_ee);
+  while (!it.isFinished())
+  {
+    Node n = (*it);
+    if (n.getKind() == EQUAL && n[0].getType().isBag())
+    {
+      Trace("bags-eqc") << "Disequal terms: " << n << std::endl;
+      d_deq.insert(n);
+    }
+    ++it;
+  }
 }
 
 }  // namespace bags
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

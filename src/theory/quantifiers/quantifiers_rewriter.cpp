@@ -1,22 +1,25 @@
-/*********************                                                        */
-/*! \file quantifiers_rewriter.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of QuantifiersRewriter class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Haniel Barbosa
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of QuantifiersRewriter class.
+ */
 
 #include "theory/quantifiers/quantifiers_rewriter.h"
 
 #include "expr/bound_var_manager.h"
 #include "expr/dtype.h"
+#include "expr/dtype_cons.h"
 #include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
 #include "options/quantifiers_options.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
@@ -27,13 +30,14 @@
 #include "theory/quantifiers/skolemize.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/rewriter.h"
 #include "theory/strings/theory_strings_utils.h"
 
 using namespace std;
-using namespace CVC4::kind;
-using namespace CVC4::context;
+using namespace cvc5::kind;
+using namespace cvc5::context;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
@@ -102,7 +106,8 @@ bool QuantifiersRewriter::isLiteral( Node n ){
   return true;
 }
 
-void QuantifiersRewriter::addNodeToOrBuilder( Node n, NodeBuilder<>& t ){
+void QuantifiersRewriter::addNodeToOrBuilder(Node n, NodeBuilder& t)
+{
   if( n.getKind()==OR ){
     for( int i=0; i<(int)n.getNumChildren(); i++ ){
       t << n[i];
@@ -1237,12 +1242,13 @@ Node QuantifiersRewriter::computeVarElimination( Node body, std::vector< Node >&
   return body;
 }
 
-Node QuantifiersRewriter::computePrenex(Node q,
-                                        Node body,
-                                        std::vector<Node>& args,
-                                        std::vector<Node>& nargs,
-                                        bool pol,
-                                        bool prenexAgg)
+Node QuantifiersRewriter::computePrenex(
+    Node q,
+    Node body,
+    std::unordered_set<Node, NodeHashFunction>& args,
+    std::unordered_set<Node, NodeHashFunction>& nargs,
+    bool pol,
+    bool prenexAgg)
 {
   NodeManager* nm = NodeManager::currentNM();
   Kind k = body.getKind();
@@ -1271,10 +1277,13 @@ Node QuantifiersRewriter::computePrenex(Node q,
         }
         subs.push_back(vv);
       }
-      if( pol ){
-        args.insert( args.end(), subs.begin(), subs.end() );
-      }else{
-        nargs.insert( nargs.end(), subs.begin(), subs.end() );
+      if (pol)
+      {
+        args.insert(subs.begin(), subs.end());
+      }
+      else
+      {
+        nargs.insert(subs.begin(), subs.end());
       }
       Node newBody = body[1];
       newBody = newBody.substitute( terms.begin(), terms.end(), subs.begin(), subs.end() );
@@ -1368,44 +1377,42 @@ Node QuantifiersRewriter::computePrenexAgg(Node n,
   }
   else
   {
-    std::vector<Node> args;
-    std::vector<Node> nargs;
+    std::unordered_set<Node, NodeHashFunction> argsSet;
+    std::unordered_set<Node, NodeHashFunction> nargsSet;
     Node q;
-    Node nn = computePrenex(q, n, args, nargs, true, true);
+    Node nn = computePrenex(q, n, argsSet, nargsSet, true, true);
+    Assert(n != nn || argsSet.empty());
+    Assert(n != nn || nargsSet.empty());
     if (n != nn)
     {
       Node nnn = computePrenexAgg(nn, visited);
       // merge prenex
       if (nnn.getKind() == FORALL)
       {
-        args.insert(args.end(), nnn[0].begin(), nnn[0].end());
+        argsSet.insert(nnn[0].begin(), nnn[0].end());
         nnn = nnn[1];
         // pos polarity variables are inner
-        if (!args.empty())
+        if (!argsSet.empty())
         {
-          nnn = mkForall(args, nnn, true);
+          nnn = mkForall({argsSet.begin(), argsSet.end()}, nnn, true);
         }
-        args.clear();
+        argsSet.clear();
       }
       else if (nnn.getKind() == NOT && nnn[0].getKind() == FORALL)
       {
-        nargs.insert(nargs.end(), nnn[0][0].begin(), nnn[0][0].end());
+        nargsSet.insert(nnn[0][0].begin(), nnn[0][0].end());
         nnn = nnn[0][1].negate();
       }
-      if (!nargs.empty())
+      if (!nargsSet.empty())
       {
-        nnn = mkForall(nargs, nnn.negate(), true).negate();
+        nnn = mkForall({nargsSet.begin(), nargsSet.end()}, nnn.negate(), true)
+                  .negate();
       }
-      if (!args.empty())
+      if (!argsSet.empty())
       {
-        nnn = mkForall(args, nnn, true);
+        nnn = mkForall({argsSet.begin(), argsSet.end()}, nnn, true);
       }
       ret = nnn;
-    }
-    else
-    {
-      Assert(args.empty());
-      Assert(nargs.empty());
     }
   }
   visited[n] = ret;
@@ -1516,43 +1523,59 @@ Node QuantifiersRewriter::computeSplit( std::vector< Node >& args, Node body, QA
   }
 }
 
-Node QuantifiersRewriter::mkForAll( std::vector< Node >& args, Node body, QAttributes& qa ){
-  if( args.empty() ){
+Node QuantifiersRewriter::mkForAll(const std::vector<Node>& args,
+                                   Node body,
+                                   QAttributes& qa)
+{
+  if (args.empty())
+  {
     return body;
-  }else{
-    std::vector< Node > children;
-    children.push_back( NodeManager::currentNM()->mkNode(kind::BOUND_VAR_LIST, args ) );
-    children.push_back( body );
-    if( !qa.d_ipl.isNull() ){
-      children.push_back( qa.d_ipl );
-    }
-    return NodeManager::currentNM()->mkNode( kind::FORALL, children );
   }
+  NodeManager* nm = NodeManager::currentNM();
+  std::vector<Node> children;
+  children.push_back(nm->mkNode(kind::BOUND_VAR_LIST, args));
+  children.push_back(body);
+  if (!qa.d_ipl.isNull())
+  {
+    children.push_back(qa.d_ipl);
+  }
+  return nm->mkNode(kind::FORALL, children);
 }
 
-Node QuantifiersRewriter::mkForall( std::vector< Node >& args, Node body, bool marked ) {
+Node QuantifiersRewriter::mkForall(const std::vector<Node>& args,
+                                   Node body,
+                                   bool marked)
+{
   std::vector< Node > iplc;
   return mkForall( args, body, iplc, marked );
 }
 
-Node QuantifiersRewriter::mkForall( std::vector< Node >& args, Node body, std::vector< Node >& iplc, bool marked ) {
-  if( args.empty() ){
+Node QuantifiersRewriter::mkForall(const std::vector<Node>& args,
+                                   Node body,
+                                   std::vector<Node>& iplc,
+                                   bool marked)
+{
+  if (args.empty())
+  {
     return body;
-  }else{
-    std::vector< Node > children;
-    children.push_back( NodeManager::currentNM()->mkNode(kind::BOUND_VAR_LIST, args ) );
-    children.push_back( body );
-    if( marked ){
-      Node avar = NodeManager::currentNM()->mkSkolem( "id", NodeManager::currentNM()->booleanType() );
-      QuantIdNumAttribute ida;
-      avar.setAttribute(ida,0);
-      iplc.push_back( NodeManager::currentNM()->mkNode( INST_ATTRIBUTE, avar ) );
-    }
-    if( !iplc.empty() ){
-      children.push_back( NodeManager::currentNM()->mkNode( INST_PATTERN_LIST, iplc ) );
-    }
-    return NodeManager::currentNM()->mkNode( FORALL, children );
   }
+  NodeManager* nm = NodeManager::currentNM();
+  std::vector<Node> children;
+  children.push_back(nm->mkNode(kind::BOUND_VAR_LIST, args));
+  children.push_back(body);
+  if (marked)
+  {
+    SkolemManager* sm = nm->getSkolemManager();
+    Node avar = sm->mkDummySkolem("id", nm->booleanType());
+    QuantIdNumAttribute ida;
+    avar.setAttribute(ida, 0);
+    iplc.push_back(nm->mkNode(kind::INST_ATTRIBUTE, avar));
+  }
+  if (!iplc.empty())
+  {
+    children.push_back(nm->mkNode(kind::INST_PATTERN_LIST, iplc));
+  }
+  return nm->mkNode(kind::FORALL, children);
 }
 
 //computes miniscoping, also eliminates variables that do not occur free in body
@@ -1577,7 +1600,7 @@ Node QuantifiersRewriter::computeMiniscoping(Node q, QAttributes& qa)
       BoundVarManager* bvm = nm->getBoundVarManager();
       // Break apart the quantifed formula
       // forall x. P1 ^ ... ^ Pn ---> forall x. P1 ^ ... ^ forall x. Pn
-      NodeBuilder<> t(kind::AND);
+      NodeBuilder t(kind::AND);
       std::vector<Node> argsc;
       for (size_t i = 0, nchild = body.getNumChildren(); i < nchild; i++)
       {
@@ -1626,8 +1649,8 @@ Node QuantifiersRewriter::computeMiniscoping(Node q, QAttributes& qa)
       // aggressive miniscoping implies that free variable miniscoping should
       // be applied first
       Node newBody = body;
-      NodeBuilder<> body_split(kind::OR);
-      NodeBuilder<> tb(kind::OR);
+      NodeBuilder body_split(kind::OR);
+      NodeBuilder tb(kind::OR);
       for (const Node& trm : body)
       {
         if (expr::hasSubterm(trm, args))
@@ -1865,9 +1888,10 @@ Node QuantifiersRewriter::computeOperation(Node f,
     }
     else
     {
-      std::vector< Node > nargs;
-      n = computePrenex(f, n, args, nargs, true, false);
-      Assert(nargs.empty());
+      std::unordered_set<Node, NodeHashFunction> argsSet, nargsSet;
+      n = computePrenex(f, n, argsSet, nargsSet, true, false);
+      Assert(nargsSet.empty());
+      args.insert(args.end(), argsSet.begin(), argsSet.end());
     }
   }
   else if (computeOption == COMPUTE_VAR_ELIMINATION)
@@ -2008,6 +2032,6 @@ TrustNode QuantifiersRewriter::preprocess(Node n, bool isInst)
   return TrustNode::null();
 }
 
-}/* CVC4::theory::quantifiers namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace cvc5

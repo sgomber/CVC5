@@ -1,49 +1,53 @@
-/*********************                                                        */
-/*! \file cdcac.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implements the CDCAC approach.
- **
- ** Implements the CDCAC approach as described in
- ** https://arxiv.org/pdf/2003.05633.pdf.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Gereon Kremer, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implements the CDCAC approach as described in
+ * https://arxiv.org/pdf/2003.05633.pdf.
+ */
 
 #include "theory/arith/nl/cad/cdcac.h"
 
-#ifdef CVC4_POLY_IMP
+#ifdef CVC5_POLY_IMP
 
 #include "options/arith_options.h"
 #include "theory/arith/nl/cad/projections.h"
 #include "theory/arith/nl/cad/variable_ordering.h"
+#include "theory/arith/nl/nl_model.h"
 
 namespace std {
 /** Generic streaming operator for std::vector. */
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
 {
-  CVC4::container_to_stream(os, v);
+  cvc5::container_to_stream(os, v);
   return os;
 }
 }  // namespace std
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arith {
 namespace nl {
 namespace cad {
 
-CDCAC::CDCAC() {}
-
-CDCAC::CDCAC(const std::vector<poly::Variable>& ordering)
+CDCAC::CDCAC(context::Context* ctx,
+             ProofNodeManager* pnm,
+             const std::vector<poly::Variable>& ordering)
     : d_variableOrdering(ordering)
 {
+  if (pnm != nullptr)
+  {
+    d_proof.reset(new CADProofGenerator(ctx, pnm));
+  }
 }
 
 void CDCAC::reset()
@@ -93,8 +97,7 @@ const std::vector<poly::Variable>& CDCAC::getVariableOrdering() const
   return d_variableOrdering;
 }
 
-std::vector<CACInterval> CDCAC::getUnsatIntervals(
-    std::size_t cur_variable) const
+std::vector<CACInterval> CDCAC::getUnsatIntervals(std::size_t cur_variable)
 {
   std::vector<CACInterval> res;
   for (const auto& c : d_constraints.getConstraints())
@@ -121,9 +124,20 @@ std::vector<CACInterval> CDCAC::getUnsatIntervals(
       if (!is_minus_infinity(get_lower(i))) l = m;
       if (!is_plus_infinity(get_upper(i))) u = m;
       res.emplace_back(CACInterval{i, l, u, m, d, {n}});
+      if (isProofEnabled())
+      {
+        d_proof->addDirect(
+            d_constraints.varMapper()(d_variableOrdering[cur_variable]),
+            d_constraints.varMapper(),
+            p,
+            d_assignment,
+            sc,
+            i,
+            n);
+      }
     }
   }
-  cleanIntervals(res);
+  pruneRedundantIntervals(res);
   return res;
 }
 
@@ -336,6 +350,10 @@ CACInterval CDCAC::intervalFromCharacterization(
 std::vector<CACInterval> CDCAC::getUnsatCover(std::size_t curVariable,
                                               bool returnFirstInterval)
 {
+  if (isProofEnabled())
+  {
+    d_proof->startRecursive();
+  }
   Trace("cdcac") << "Looking for unsat cover for "
                  << d_variableOrdering[curVariable] << std::endl;
   std::vector<CACInterval> intervals = getUnsatIntervals(curVariable);
@@ -363,7 +381,7 @@ std::vector<CACInterval> CDCAC::getUnsatCover(std::size_t curVariable,
       Trace("cdcac") << "Adding integrality interval " << newInterval.d_interval
                      << std::endl;
       intervals.emplace_back(newInterval);
-      cleanIntervals(intervals);
+      pruneRedundantIntervals(intervals);
       continue;
     }
     d_assignment.set(d_variableOrdering[curVariable], sample);
@@ -373,6 +391,10 @@ std::vector<CACInterval> CDCAC::getUnsatCover(std::size_t curVariable,
       // We have a full assignment. SAT!
       Trace("cdcac") << "Found full assignment: " << d_assignment << std::endl;
       return {};
+    }
+    if (isProofEnabled())
+    {
+      d_proof->startScope();
     }
     // Recurse to next variable
     auto cov = getUnsatCover(curVariable + 1);
@@ -392,6 +414,16 @@ std::vector<CACInterval> CDCAC::getUnsatCover(std::size_t curVariable,
         intervalFromCharacterization(characterization, curVariable, sample);
     newInterval.d_origins = collectConstraints(cov);
     intervals.emplace_back(newInterval);
+    if (isProofEnabled())
+    {
+      auto cell = d_proof->constructCell(
+          d_constraints.varMapper()(d_variableOrdering[curVariable]),
+          newInterval,
+          d_assignment,
+          sample,
+          d_constraints.varMapper());
+      d_proof->endScope(cell);
+    }
 
     if (returnFirstInterval)
     {
@@ -410,7 +442,7 @@ std::vector<CACInterval> CDCAC::getUnsatCover(std::size_t curVariable,
     Trace("cdcac") << "\torigins: " << intervals.back().d_origins << std::endl;
 
     // Remove redundant intervals
-    cleanIntervals(intervals);
+    pruneRedundantIntervals(intervals);
   }
 
   if (Trace.isOn("cdcac"))
@@ -422,7 +454,29 @@ std::vector<CACInterval> CDCAC::getUnsatCover(std::size_t curVariable,
       Trace("cdcac") << "-> " << i.d_interval << std::endl;
     }
   }
+  if (isProofEnabled())
+  {
+    d_proof->endRecursive();
+  }
   return intervals;
+}
+
+void CDCAC::startNewProof()
+{
+  if (isProofEnabled())
+  {
+    d_proof->startNewProof();
+  }
+}
+
+ProofGenerator* CDCAC::closeProof(const std::vector<Node>& assertions)
+{
+  if (isProofEnabled())
+  {
+    d_proof->endScope(assertions);
+    return d_proof->getProofGenerator();
+  }
+  return nullptr;
 }
 
 bool CDCAC::checkIntegrality(std::size_t cur_variable, const poly::Value& value)
@@ -469,10 +523,27 @@ bool CDCAC::hasRootBelow(const poly::Polynomial& p,
   });
 }
 
+void CDCAC::pruneRedundantIntervals(std::vector<CACInterval>& intervals)
+{
+  if (isProofEnabled())
+  {
+    std::vector<CACInterval> allIntervals = intervals;
+    cleanIntervals(intervals);
+    d_proof->pruneChildren([&allIntervals, &intervals](std::size_t i) {
+      return std::find(intervals.begin(), intervals.end(), allIntervals[i])
+             != intervals.end();
+    });
+  }
+  else
+  {
+    cleanIntervals(intervals);
+  }
+}
+
 }  // namespace cad
 }  // namespace nl
 }  // namespace arith
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
 #endif

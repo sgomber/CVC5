@@ -1,18 +1,17 @@
-/*********************                                                        */
-/*! \file bv_solver_simple.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Simple bit-blast solver
- **
- ** Simple bit-blast solver that sends bitblast lemmas directly to MiniSat.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Mathias Preiner, Gereon Kremer, Haniel Barbosa
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Simple bit-blast solver that sends bitblast lemmas directly to MiniSat.
+ */
 
 #include "theory/bv/bv_solver_simple.h"
 
@@ -20,7 +19,7 @@
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/theory_model.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace bv {
 
@@ -70,14 +69,10 @@ BVSolverSimple::BVSolverSimple(TheoryState* s,
                                TheoryInferenceManager& inferMgr,
                                ProofNodeManager* pnm)
     : BVSolver(*s, inferMgr),
-      d_bitblaster(new BBSimple(s)),
+      d_bitblaster(new BBProof(s)),
       d_epg(pnm ? new EagerProofGenerator(pnm, s->getUserContext(), "")
                 : nullptr)
 {
-  if (pnm != nullptr)
-  {
-    d_bvProofChecker.registerTo(pnm->getChecker());
-  }
 }
 
 void BVSolverSimple::addBBLemma(TNode fact)
@@ -93,12 +88,12 @@ void BVSolverSimple::addBBLemma(TNode fact)
 
   if (d_epg == nullptr)
   {
-    d_inferManager.lemma(lemma);
+    d_im.lemma(lemma, InferenceId::BV_SIMPLE_BITBLAST_LEMMA);
   }
   else
   {
     TrustNode tlem = d_epg->mkTrustNode(lemma, PfRule::BV_BITBLAST, {}, {fact});
-    d_inferManager.trustedLemma(tlem);
+    d_im.trustedLemma(tlem, InferenceId::BV_SIMPLE_BITBLAST_LEMMA);
   }
 }
 
@@ -123,13 +118,13 @@ bool BVSolverSimple::preNotifyFact(
 
     if (d_epg == nullptr)
     {
-      d_inferManager.lemma(lemma);
+      d_im.lemma(lemma, InferenceId::BV_SIMPLE_LEMMA);
     }
     else
     {
       TrustNode tlem =
           d_epg->mkTrustNode(lemma, PfRule::BV_EAGER_ATOM, {}, {fact});
-      d_inferManager.trustedLemma(tlem);
+      d_im.trustedLemma(tlem, InferenceId::BV_SIMPLE_LEMMA);
     }
 
     std::unordered_set<Node, NodeHashFunction> bv_atoms;
@@ -149,6 +144,8 @@ bool BVSolverSimple::collectModelValues(TheoryModel* m,
   return d_bitblaster->collectModelValues(m, termSet);
 }
 
+BVProofRuleChecker* BVSolverSimple::getProofChecker() { return &d_checker; }
+
 }  // namespace bv
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

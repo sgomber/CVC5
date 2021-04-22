@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file theory_strings.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Tianyi Liang, Andres Noetzli
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of the theory of strings.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Tianyi Liang, Andres Noetzli
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of the theory of strings.
+ */
 
 #include "theory/strings/theory_strings.h"
 
@@ -19,6 +20,7 @@
 #include "options/strings_options.h"
 #include "options/theory_options.h"
 #include "smt/logic_exception.h"
+#include "theory/decision_manager.h"
 #include "theory/ext_theory.h"
 #include "theory/rewriter.h"
 #include "theory/strings/theory_strings_utils.h"
@@ -28,10 +30,10 @@
 #include "theory/valuation.h"
 
 using namespace std;
-using namespace CVC4::context;
-using namespace CVC4::kind;
+using namespace cvc5::context;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
@@ -46,7 +48,7 @@ TheoryStrings::TheoryStrings(context::Context* c,
       d_statistics(),
       d_state(c, u, d_valuation),
       d_eagerSolver(d_state),
-      d_termReg(d_state, out, d_statistics, pnm),
+      d_termReg(d_state, d_statistics, pnm),
       d_extTheoryCb(),
       d_extTheory(d_extTheoryCb, c, u, out),
       d_im(*this, d_state, d_termReg, d_extTheory, d_statistics, pnm),
@@ -70,6 +72,7 @@ TheoryStrings::TheoryStrings(context::Context* c,
       d_regexp_elim(options::regExpElimAgg(), pnm, u),
       d_stringsFmf(c, u, valuation, d_termReg)
 {
+  d_termReg.finishInit(&d_im);
 
   d_zero = NodeManager::currentNM()->mkConst( Rational( 0 ) );
   d_one = NodeManager::currentNM()->mkConst( Rational( 1 ) );
@@ -82,12 +85,6 @@ TheoryStrings::TheoryStrings(context::Context* c,
   // set up the extended function callback
   d_extTheoryCb.d_esolver = &d_esolver;
 
-  ProofChecker* pc = pnm != nullptr ? pnm->getChecker() : nullptr;
-  if (pc != nullptr)
-  {
-    // add checkers
-    d_sProofChecker.registerTo(pc);
-  }
   // use the state object as the official theory state
   d_theoryState = &d_state;
   // use the inference manager as the official inference manager
@@ -99,6 +96,8 @@ TheoryStrings::~TheoryStrings() {
 }
 
 TheoryRewriter* TheoryStrings::getTheoryRewriter() { return &d_rewriter; }
+
+ProofRuleChecker* TheoryStrings::getProofChecker() { return &d_checker; }
 
 bool TheoryStrings::needsEqualityEngine(EeSetupInfo& esi)
 {
@@ -164,34 +163,9 @@ bool TheoryStrings::areCareDisequal( TNode x, TNode y ) {
   return false;
 }
 
-void TheoryStrings::notifySharedTerm(TNode t)
-{
-  Debug("strings") << "TheoryStrings::notifySharedTerm(): " << t << " "
-                   << t.getType().isBoolean() << endl;
-  if (options::stringExp())
-  {
-    d_esolver.addSharedTerm(t);
-  }
-  Debug("strings") << "TheoryStrings::notifySharedTerm() finished" << std::endl;
-}
-
 bool TheoryStrings::propagateLit(TNode literal)
 {
-  Debug("strings-propagate")
-      << "TheoryStrings::propagateLit(" << literal << ")" << std::endl;
-  // If already in conflict, no more propagation
-  if (d_state.isInConflict())
-  {
-    Debug("strings-propagate") << "TheoryStrings::propagateLit(" << literal
-                               << "): already in conflict" << std::endl;
-    return false;
-  }
-  // Propagate out
-  bool ok = d_out->propagate(literal);
-  if (!ok) {
-    d_state.notifyInConflict();
-  }
-  return ok;
+  return d_im.propagateLit(literal);
 }
 
 TrustNode TheoryStrings::explain(TNode literal)
@@ -210,7 +184,7 @@ void TheoryStrings::presolve() {
     d_stringsFmf.presolve();
     // This strategy is local to a check-sat call, since we refresh the strategy
     // on every call to presolve.
-    getDecisionManager()->registerStrategy(
+    d_im.getDecisionManager()->registerStrategy(
         DecisionManager::STRAT_STRINGS_SUM_LENGTHS,
         d_stringsFmf.getDecisionStrategy(),
         DecisionManager::STRAT_SCOPE_LOCAL_SOLVE);
@@ -226,8 +200,16 @@ void TheoryStrings::presolve() {
 bool TheoryStrings::collectModelValues(TheoryModel* m,
                                        const std::set<Node>& termSet)
 {
-  Trace("strings-model") << "TheoryStrings : Collect model values" << std::endl;
-
+  if (Trace.isOn("strings-debug-model"))
+  {
+    Trace("strings-debug-model")
+        << "TheoryStrings::collectModelValues" << std::endl;
+    Trace("strings-debug-model") << "Equivalence classes are:" << std::endl;
+    Trace("strings-debug-model") << debugPrintStringsEqc() << std::endl;
+    Trace("strings-debug-model") << "Extended functions are:" << std::endl;
+    Trace("strings-debug-model") << d_esolver.debugPrintModel() << std::endl;
+  }
+  Trace("strings-model") << "TheoryStrings::collectModelValues" << std::endl;
   std::map<TypeNode, std::unordered_set<Node, NodeHashFunction> > repSet;
   // Generate model
   // get the relevant string equivalence classes
@@ -465,8 +447,7 @@ bool TheoryStrings::collectModelInfoType(
               for (const Node& sl : len_splits)
               {
                 Node spl = nm->mkNode(OR, sl, sl.negate());
-                ++(d_statistics.d_lemmasCmiSplit);
-                d_out->lemma(spl);
+                d_im.lemma(spl, InferenceId::STRINGS_CMI_SPLIT);
                 Trace("strings-lemma")
                     << "Strings::CollectModelInfoSplit: " << spl << std::endl;
               }
@@ -566,6 +547,10 @@ void TheoryStrings::preRegisterTerm(TNode n)
   Trace("strings-preregister")
       << "TheoryStrings::preRegisterTerm: " << n << std::endl;
   d_termReg.preRegisterTerm(n);
+  // Register the term with the extended theory. Notice we do not recurse on
+  // this term here since preRegisterTerm is already called recursively on all
+  // subterms in preregistered literals.
+  d_extTheory.registerTerm(n);
 }
 
 TrustNode TheoryStrings::expandDefinition(Node node)
@@ -575,7 +560,6 @@ TrustNode TheoryStrings::expandDefinition(Node node)
   if (node.getKind() == kind::SEQ_NTH)
   {
     NodeManager* nm = NodeManager::currentNM();
-    SkolemCache* sc = d_termReg.getSkolemCache();
     Node s = node[0];
     Node n = node[1];
     // seq.nth(s, n) --> ite(0 <= n < len(s), seq.nth_total(s,n), Uf(s, n))
@@ -583,7 +567,7 @@ TrustNode TheoryStrings::expandDefinition(Node node)
                            nm->mkNode(LEQ, d_zero, n),
                            nm->mkNode(LT, n, nm->mkNode(STRING_LENGTH, s)));
     Node ss = nm->mkNode(SEQ_NTH_TOTAL, s, n);
-    Node uf = sc->mkSkolemSeqNth(s.getType(), "Uf");
+    Node uf = SkolemCache::mkSkolemSeqNth(s.getType(), "Uf");
     Node u = nm->mkNode(APPLY_UF, uf, s, n);
     Node ret = nm->mkNode(ITE, cond, ss, u);
     Trace("strings-exp-def") << "...return " << ret << std::endl;
@@ -598,16 +582,12 @@ bool TheoryStrings::preNotifyFact(
   // this is only required for internal facts, others are already registered
   if (isInternal && atom.getKind() == EQUAL)
   {
-    // we must ensure these terms are registered
+    // We must ensure these terms are registered. We register eagerly here for
+    // performance reasons. Alternatively, terms could be registered at full
+    // effort in e.g. BaseSolver::init.
     for (const Node& t : atom)
     {
-      // terms in the equality engine are already registered, hence skip
-      // currently done for only string-like terms, but this could potentially
-      // be avoided.
-      if (!d_equalityEngine->hasTerm(t) && t.getType().isStringLike())
-      {
-        d_termReg.registerTerm(t, 0);
-      }
+      d_termReg.registerTerm(t, 0);
     }
   }
   return false;
@@ -622,7 +602,7 @@ void TheoryStrings::notifyFact(TNode atom,
   // process pending conflicts due to reasoning about endpoints
   if (!d_state.isInConflict() && d_state.hasPendingConflict())
   {
-    InferInfo iiPendingConf;
+    InferInfo iiPendingConf(InferenceId::UNKNOWN);
     d_state.getPendingConflict(iiPendingConf);
     Trace("strings-pending")
         << "Process pending conflict " << iiPendingConf.d_premises << std::endl;
@@ -634,10 +614,6 @@ void TheoryStrings::notifyFact(TNode atom,
     return;
   }
   Trace("strings-pending-debug") << "  Now collect terms" << std::endl;
-  // Collect extended function terms in the atom. Notice that we must register
-  // all extended functions occurring in assertions and shared terms. We
-  // make a similar call to registerTermRec in TheoryStrings::addSharedTerm.
-  d_extTheory.registerTermRec(atom);
   Trace("strings-pending-debug") << "  Finished collect terms" << std::endl;
 }
 
@@ -653,42 +629,7 @@ void TheoryStrings::postCheck(Effort e)
         << "Theory of strings " << e << " effort check " << std::endl;
     if (Trace.isOn("strings-eqc"))
     {
-      for (unsigned t = 0; t < 2; t++)
-      {
-        eq::EqClassesIterator eqcs2_i = eq::EqClassesIterator(d_equalityEngine);
-        Trace("strings-eqc") << (t==0 ? "STRINGS:" : "OTHER:") << std::endl;
-        while( !eqcs2_i.isFinished() ){
-          Node eqc = (*eqcs2_i);
-          bool print = (t == 0 && eqc.getType().isStringLike())
-                       || (t == 1 && !eqc.getType().isStringLike());
-          if (print) {
-            eq::EqClassIterator eqc2_i =
-                eq::EqClassIterator(eqc, d_equalityEngine);
-            Trace("strings-eqc") << "Eqc( " << eqc << " ) : { ";
-            while( !eqc2_i.isFinished() ) {
-              if( (*eqc2_i)!=eqc && (*eqc2_i).getKind()!=kind::EQUAL ){
-                Trace("strings-eqc") << (*eqc2_i) << " ";
-              }
-              ++eqc2_i;
-            }
-            Trace("strings-eqc") << " } " << std::endl;
-            EqcInfo* ei = d_state.getOrMakeEqcInfo(eqc, false);
-            if( ei ){
-              Trace("strings-eqc-debug")
-                  << "* Length term : " << ei->d_lengthTerm.get() << std::endl;
-              Trace("strings-eqc-debug")
-                  << "* Cardinality lemma k : " << ei->d_cardinalityLemK.get()
-                  << std::endl;
-              Trace("strings-eqc-debug")
-                  << "* Normalization length lemma : "
-                  << ei->d_normalizedLength.get() << std::endl;
-            }
-          }
-          ++eqcs2_i;
-        }
-        Trace("strings-eqc") << std::endl;
-      }
-      Trace("strings-eqc") << std::endl;
+      Trace("strings-eqc") << debugPrintStringsEqc() << std::endl;
     }
     ++(d_statistics.d_checkRuns);
     bool sentLemma = false;
@@ -932,7 +873,7 @@ void TheoryStrings::checkCodes()
         if (!d_state.areEqual(cc, vc))
         {
           std::vector<Node> emptyVec;
-          d_im.sendInference(emptyVec, cc.eqNode(vc), Inference::CODE_PROXY);
+          d_im.sendInference(emptyVec, cc.eqNode(vc), InferenceId::STRINGS_CODE_PROXY);
         }
         const_codes.push_back(vc);
       }
@@ -972,7 +913,7 @@ void TheoryStrings::checkCodes()
           deq = Rewriter::rewrite(deq);
           d_im.addPendingPhaseRequirement(deq, false);
           std::vector<Node> emptyVec;
-          d_im.sendInference(emptyVec, inj_lem, Inference::CODE_INJ);
+          d_im.sendInference(emptyVec, inj_lem, InferenceId::STRINGS_CODE_INJ);
         }
       }
     }
@@ -996,7 +937,7 @@ void TheoryStrings::checkRegisterTermsNormalForms()
   }
 }
 
-TrustNode TheoryStrings::ppRewrite(TNode atom)
+TrustNode TheoryStrings::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
 {
   Trace("strings-ppr") << "TheoryStrings::ppRewrite " << atom << std::endl;
   if (atom.getKind() == STRING_FROM_CODE)
@@ -1008,14 +949,13 @@ TrustNode TheoryStrings::ppRewrite(TNode atom)
     Node card = nm->mkConst(Rational(utils::getAlphabetCardinality()));
     Node cond =
         nm->mkNode(AND, nm->mkNode(LEQ, d_zero, t), nm->mkNode(LT, t, card));
-    Node k = nm->mkBoundVar(nm->stringType());
-    Node bvl = nm->mkNode(BOUND_VAR_LIST, k);
+    Node v = nm->mkBoundVar(nm->stringType());
     Node emp = Word::mkEmptyWord(atom.getType());
-    Node ret = nm->mkNode(
-        WITNESS,
-        bvl,
-        nm->mkNode(
-            ITE, cond, t.eqNode(nm->mkNode(STRING_TO_CODE, k)), k.eqNode(emp)));
+    Node pred = nm->mkNode(
+        ITE, cond, t.eqNode(nm->mkNode(STRING_TO_CODE, v)), v.eqNode(emp));
+    SkolemManager* sm = nm->getSkolemManager();
+    Node ret = sm->mkSkolem(v, pred, "kFromCode");
+    lems.push_back(SkolemLemma(ret, nullptr));
     return TrustNode::mkTrustRewrite(atom, ret, nullptr);
   }
   TrustNode ret;
@@ -1099,6 +1039,52 @@ void TheoryStrings::runStrategy(Theory::Effort e)
   Trace("strings-process") << "----finished round---" << std::endl;
 }
 
-}/* CVC4::theory::strings namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+std::string TheoryStrings::debugPrintStringsEqc()
+{
+  std::stringstream ss;
+  for (unsigned t = 0; t < 2; t++)
+  {
+    eq::EqClassesIterator eqcs2_i = eq::EqClassesIterator(d_equalityEngine);
+    ss << (t == 0 ? "STRINGS:" : "OTHER:") << std::endl;
+    while (!eqcs2_i.isFinished())
+    {
+      Node eqc = (*eqcs2_i);
+      bool print = (t == 0 && eqc.getType().isStringLike())
+                   || (t == 1 && !eqc.getType().isStringLike());
+      if (print)
+      {
+        eq::EqClassIterator eqc2_i = eq::EqClassIterator(eqc, d_equalityEngine);
+        ss << "Eqc( " << eqc << " ) : { ";
+        while (!eqc2_i.isFinished())
+        {
+          if ((*eqc2_i) != eqc && (*eqc2_i).getKind() != kind::EQUAL)
+          {
+            ss << (*eqc2_i) << " ";
+          }
+          ++eqc2_i;
+        }
+        ss << " } " << std::endl;
+        EqcInfo* ei = d_state.getOrMakeEqcInfo(eqc, false);
+        if (ei)
+        {
+          Trace("strings-eqc-debug")
+              << "* Length term : " << ei->d_lengthTerm.get() << std::endl;
+          Trace("strings-eqc-debug")
+              << "* Cardinality lemma k : " << ei->d_cardinalityLemK.get()
+              << std::endl;
+          Trace("strings-eqc-debug")
+              << "* Normalization length lemma : "
+              << ei->d_normalizedLength.get() << std::endl;
+        }
+      }
+      ++eqcs2_i;
+    }
+    ss << std::endl;
+  }
+  ss << std::endl;
+  return ss.str();
+}
+
+}  // namespace strings
+}  // namespace theory
+}  // namespace cvc5
