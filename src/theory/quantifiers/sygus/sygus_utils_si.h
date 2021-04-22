@@ -12,17 +12,17 @@
  ** \brief sygus utilities for single invocation
  **/
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__QUANTIFIERS__SYGUS__SYGUS_UTILS_SI_H
-#define CVC4__THEORY__QUANTIFIERS__SYGUS__SYGUS_UTILS_SI_H
+#ifndef CVC5__THEORY__QUANTIFIERS__SYGUS__SYGUS_UTILS_SI_H
+#define CVC5__THEORY__QUANTIFIERS__SYGUS__SYGUS_UTILS_SI_H
 
 #include <map>
 #include <vector>
 
 #include "expr/node.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 

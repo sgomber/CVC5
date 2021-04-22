@@ -1,27 +1,31 @@
-/*********************                                                        */
-/*! \file si_infer.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief sygus utilities for single invocation
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Single invocation inference
+ */
 
 #include "theory/quantifiers/sygus/si_infer.h"
 
+#include <sstream>
+
 #include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
 #include "theory/quantifiers/sygus/sygus_utils.h"
 #include "theory/quantifiers/sygus/sygus_utils_si.h"
 #include "theory/smt_engine_subsolver.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
@@ -45,6 +49,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
   */
 
   NodeManager* nm = NodeManager::currentNM();
+  SkolemManager * sm = nm->getSkolemManager();
   TypeNode intTn = nm->integerType();
 
   // Construct an SMT problem corresponding to whether we can make the problem
@@ -55,7 +60,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
   std::map<Node, TypeNode> fvToOType;
   // Mapping conjunctions, arguments to a term that the function is invoked
   TypeNode htn = nm->mkFunctionType({intTn, intTn, intTn}, intTn);
-  Node h = nm->mkSkolem("h", htn);
+  Node h = sm->mkDummySkolem("h", htn);
   // all terms
   std::vector<Node> gs;
   std::map<Node, size_t> gsId;
@@ -87,7 +92,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
         Trace("sygus-si-infer")
             << "  - id of type " << fa << " is " << id << std::endl;
       }
-      Node ka = nm->mkSkolem("a", intTn);
+      Node ka = sm->mkDummySkolem("a", intTn);
       ftvs[fa].push_back(ka);
       fvs.push_back(ka);
       fvToOType[ka] = fa;

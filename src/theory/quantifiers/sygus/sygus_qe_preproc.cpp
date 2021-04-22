@@ -15,6 +15,8 @@
 
 #include "theory/quantifiers/sygus/sygus_qe_preproc.h"
 
+#include <sstream>
+
 #include "expr/node_algorithm.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "expr/skolem_manager.h"

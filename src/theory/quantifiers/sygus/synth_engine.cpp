@@ -26,19 +26,11 @@ namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-<<<<<<< HEAD
-SynthEngine::SynthEngine(QuantifiersEngine* qe, context::Context* c)
-    : QuantifiersModule(qe),
-      d_tds(qe->getTermDatabaseSygus()),
-      d_conj(nullptr),
-      d_sqp()
-=======
 SynthEngine::SynthEngine(QuantifiersState& qs,
                          QuantifiersInferenceManager& qim,
                          QuantifiersRegistry& qr,
                          TermRegistry& tr)
     : QuantifiersModule(qs, qim, qr, tr), d_conj(nullptr), d_sqp()
->>>>>>> 90cde45ee963b994054f96f97111684cce808d82
 {
   d_conjs.push_back(std::unique_ptr<SynthConjecture>(
       new SynthConjecture(qs, qim, qr, tr, d_statistics)));
