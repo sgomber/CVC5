@@ -24,13 +24,12 @@
 #include <vector>
 
 #include "context/cdhashmap_forward.h"
-#include "cvc4_export.h"
+#include "cvc5_export.h"
 #include "options/options.h"
 #include "smt/output_manager.h"
 #include "smt/smt_mode.h"
 #include "theory/logic_info.h"
 #include "util/result.h"
-#include "util/sexpr.h"
 
 namespace cvc5 {
 
@@ -120,7 +119,7 @@ namespace theory {
 
 /* -------------------------------------------------------------------------- */
 
-class CVC4_EXPORT SmtEngine
+class CVC5_EXPORT SmtEngine
 {
   friend class ::cvc5::api::Solver;
   friend class ::cvc5::smt::SmtEngineState;
@@ -217,7 +216,7 @@ class CVC4_EXPORT SmtEngine
   bool isValidGetInfoFlag(const std::string& key) const;
 
   /** Query information about the SMT environment.  */
-  cvc5::SExpr getInfo(const std::string& key) const;
+  std::string getInfo(const std::string& key) const;
 
   /**
    * Set an aspect of the current SMT execution environment.
@@ -244,18 +243,18 @@ class CVC4_EXPORT SmtEngine
    * to a state where its options were prior to parsing but after e.g.
    * reading command line options.
    */
-  void notifyStartParsing(const std::string& filename) CVC4_EXPORT;
+  void notifyStartParsing(const std::string& filename) CVC5_EXPORT;
   /** return the input name (if any) */
   const std::string& getFilename() const;
 
   /**
    * Helper method for the API to put the last check result into the statistics.
    */
-  void setResultStatistic(const std::string& result) CVC4_EXPORT;
+  void setResultStatistic(const std::string& result) CVC5_EXPORT;
   /**
    * Helper method for the API to put the total runtime into the statistics.
    */
-  void setTotalTimeStatistic(double seconds) CVC4_EXPORT;
+  void setTotalTimeStatistic(double seconds) CVC5_EXPORT;
 
   /**
    * Get the model (only if immediately preceded by a SAT or NOT_ENTAILED
@@ -826,9 +825,6 @@ class CVC4_EXPORT SmtEngine
   /** Permit access to the underlying NodeManager. */
   NodeManager* getNodeManager() const;
 
-  /** Get the value of one named statistic from this SmtEngine. */
-  SExpr getStatistic(std::string name) const;
-
   /**
    * Print statistics from the statistics registry in the env object owned by
    * this SmtEngine.
@@ -1144,7 +1140,7 @@ class CVC4_EXPORT SmtEngine
   /**
    * Verbosity of various commands.
    */
-  std::map<std::string, Integer> d_commandVerbosity;
+  std::map<std::string, int> d_commandVerbosity;
 
   /** The statistics class */
   std::unique_ptr<smt::SmtEngineStatistics> d_stats;
