@@ -1,18 +1,19 @@
-/*********************                                                        */
-/*! \file BitVectorsAndArrays.java
- ** \verbatim
- ** Top contributors (to current version):
- **   Morgan Deters, Liana Hadarean
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief A simple demonstration of the solving capabilities of the CVC4
- ** bit-vector and array solvers.
- **
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Morgan Deters, Liana Hadarean, Andres Noetzli
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * A simple demonstration of the solving capabilities of the cvc5 bit-vector
+ * and array solvers.
+ *
+ */
 
 import edu.stanford.CVC4.*;
 import java.util.*;
@@ -69,7 +70,7 @@ public class BitVectorsAndArrays {
     Expr old_current = em.mkExpr(Kind.SELECT, current_array, index);
     Expr two = em.mkConst(new BitVector(32, 2));
 
-    vectorExpr assertions = new vectorExpr();
+    vectorExpr assertions = new vectorExpr(em);
     for (int i = 1; i < k; ++i) {
       index = em.mkConst(new BitVector(index_size, new edu.stanford.CVC4.Integer(i)));
       Expr new_current = em.mkExpr(Kind.BITVECTOR_MULT, two, old_current);

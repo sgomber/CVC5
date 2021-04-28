@@ -1,38 +1,38 @@
-/*********************                                                        */
-/*! \file options_handler.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Tim King, Andrew Reynolds, Aina Niemetz
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Interface for custom handlers and predicates options.
- **
- ** Interface for custom handlers and predicates options.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Tim King, Mathias Preiner, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Interface for custom handlers and predicates options.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__OPTIONS__OPTIONS_HANDLER_H
-#define CVC4__OPTIONS__OPTIONS_HANDLER_H
+#ifndef CVC5__OPTIONS__OPTIONS_HANDLER_H
+#define CVC5__OPTIONS__OPTIONS_HANDLER_H
 
 #include <ostream>
 #include <string>
 
-#include "base/modal_exception.h"
 #include "options/base_handlers.h"
 #include "options/bv_options.h"
 #include "options/decision_options.h"
 #include "options/language.h"
 #include "options/option_exception.h"
-#include "options/options.h"
 #include "options/printer_modes.h"
 #include "options/quantifiers_options.h"
 
-namespace CVC4 {
+namespace cvc5 {
+
+class Options;
+
 namespace options {
 
 /**
@@ -84,31 +84,16 @@ public:
    * Throws a ModalException if this option is being set after final
    * initialization.
    */
-  void notifyBeforeSearch(const std::string& option);
-  void notifyDumpMode(std::string option);
   void setProduceAssertions(std::string option, bool value);
-  void proofEnabledBuild(std::string option, bool value);
-  void LFSCEnabledBuild(std::string option, bool value);
-  void notifyDumpToFile(std::string option);
-  void notifySetRegularOutputChannel(std::string option);
-  void notifySetDiagnosticOutputChannel(std::string option);
 
-  void statsEnabledBuild(std::string option, bool value);
+  void setStats(const std::string& option, bool value);
 
   unsigned long limitHandler(std::string option, std::string optarg);
-
-  void notifyTlimit(const std::string& option);
-  void notifyTlimitPer(const std::string& option);
-  void notifyRlimit(const std::string& option);
-  void notifyRlimitPer(const std::string& option);
-
+  void setResourceWeight(std::string option, std::string optarg);
 
   /* expr/options_handlers.h */
   void setDefaultExprDepthPredicate(std::string option, int depth);
   void setDefaultDagThreshPredicate(std::string option, int dag);
-  void notifySetDefaultExprDepth(std::string option);
-  void notifySetDefaultDagThresh(std::string option);
-  void notifySetPrintExprTypes(std::string option);
 
   /* main/options_handlers.h */
   void copyright(std::string option);
@@ -125,7 +110,6 @@ public:
   InputLanguage stringToInputLanguage(std::string option, std::string optarg);
   void enableTraceTag(std::string option, std::string optarg);
   void enableDebugTag(std::string option, std::string optarg);
-  void notifyPrintSuccess(std::string option);
 
  private:
 
@@ -140,16 +124,16 @@ public:
 template<class T>
 void OptionsHandler::checkSatSolverEnabled(std::string option, T m)
 {
-#if !defined(CVC4_USE_CRYPTOMINISAT) && !defined(CVC4_USE_CADICAL) \
-    && !defined(CVC4_USE_KISSAT)
+#if !defined(CVC5_USE_CRYPTOMINISAT) && !defined(CVC5_USE_CADICAL) \
+    && !defined(CVC5_USE_KISSAT)
   std::stringstream ss;
   ss << "option `" << option
-     << "' requires CVC4 to be built with CryptoMiniSat or CaDiCaL or Kissat";
+     << "' requires cvc5 to be built with CryptoMiniSat or CaDiCaL or Kissat";
   throw OptionException(ss.str());
 #endif
 }
 
-}/* CVC4::options namespace */
-}/* CVC4 namespace */
+}  // namespace options
+}  // namespace cvc5
 
-#endif /*  CVC4__OPTIONS__OPTIONS_HANDLER_H */
+#endif /*  CVC5__OPTIONS__OPTIONS_HANDLER_H */

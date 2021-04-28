@@ -1,34 +1,39 @@
-/*********************                                                        */
-/*! \file theory_strings.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Tianyi Liang, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Term registry for the theory of strings.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Tianyi Liang
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Term registry for the theory of strings.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__STRINGS__TERM_REGISTRY_H
-#define CVC4__THEORY__STRINGS__TERM_REGISTRY_H
+#ifndef CVC5__THEORY__STRINGS__TERM_REGISTRY_H
+#define CVC5__THEORY__STRINGS__TERM_REGISTRY_H
 
 #include "context/cdhashset.h"
 #include "context/cdlist.h"
+#include "expr/proof_node_manager.h"
+#include "theory/eager_proof_generator.h"
 #include "theory/output_channel.h"
 #include "theory/strings/infer_info.h"
 #include "theory/strings/sequences_stats.h"
 #include "theory/strings/skolem_cache.h"
+#include "theory/strings/solver_state.h"
 #include "theory/uf/equality_engine.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
+class InferenceManager;
 /**
  * This class manages all the (pre)registration tasks for terms. These tasks
  * include:
@@ -46,12 +51,34 @@ class TermRegistry
   typedef context::CDHashMap<Node, Node, NodeHashFunction> NodeNodeMap;
 
  public:
-  TermRegistry(context::Context* c,
-               context::UserContext* u,
-               eq::EqualityEngine& ee,
-               OutputChannel& out,
-               SequencesStatistics& statistics);
+  TermRegistry(SolverState& s,
+               SequencesStatistics& statistics,
+               ProofNodeManager* pnm);
   ~TermRegistry();
+  /** Finish initialize, which sets the inference manager */
+  void finishInit(InferenceManager* im);
+  /** The eager reduce routine
+   *
+   * Constructs a lemma for t that is incomplete, but communicates pertinent
+   * information about t. This is analogous to StringsPreprocess::reduce.
+   *
+   * In practice, we send this lemma eagerly, as soon as t is registered.
+   *
+   * @param t The node to reduce,
+   * @param sc The Skolem cache to use for new variables,
+   * @return The eager reduction for t.
+   */
+  static Node eagerReduce(Node t, SkolemCache* sc);
+  /**
+   * Returns a lemma indicating that the length of a term t whose type is
+   * string-like has positive length. The exact form of this lemma depends
+   * on what works best in practice, currently:
+   *   (or (and (= (str.len t) 0) (= t "")) (> (str.len t) 0))
+   *
+   * @param t The node to reduce,
+   * @return The positive length lemma for t.
+   */
+  static Node lengthPositive(Node t);
   /**
    * Preregister term, called when TheoryStrings::preRegisterTerm(n) is called.
    * This does the following:
@@ -143,39 +170,34 @@ class TermRegistry
    */
   Node getProxyVariableFor(Node n) const;
 
-  /** infer substitution proxy vars
+  /**
+   * Get the proxy variable for a term. If the proxy variable does not exist,
+   * this method registers the term and then returns its proxy variable.
    *
-   * This method attempts to (partially) convert the formula n into a
-   * substitution of the form:
-   *   v1 -> s1, ..., vn -> sn
-   * where s1 ... sn are proxy variables and v1 ... vn are either variables
-   * or constants.
+   * @param n The term
+   * @return Proxy variable for `n`
+   */
+  Node ensureProxyVariableFor(Node n);
+
+  /**
+   * This method attempts to (partially) remove trivial parts of an explanation
+   * n. It adds conjuncts of n that must be included in the explanation into
+   * unproc and drops the rest.
    *
-   * This method ensures that P ^ v1 = s1 ^ ... ^ vn = sn ^ unproc is equivalent
-   * to P ^ n, where P is the conjunction of equalities corresponding to the
-   * definition of all proxy variables introduced by the theory of strings.
+   * For example, say that v1 was introduced as a proxy variable for "ABC".
    *
-   * For example, say that v1 was introduced as a proxy variable for "ABC", and
-   * v2 was introduced as a proxy variable for "AA".
-   *
-   * Given the input n := v1 = "ABC" ^ v2 = x ^ x = "AA", this method sets:
-   * vars = { x },
-   * subs = { v2 },
-   * unproc = {}.
+   * Given the input n := v1 = "ABC" ^ x = "AA", this method sets:
+   * unproc = { x = "AA" }.
    * In particular, this says that the information content of n is essentially
-   * x = v2. The first and third conjunctions can be dropped from the
-   * explanation since these equalities simply correspond to definitions
-   * of proxy variables.
+   * x = "AA". The first conjunct can be dropped from the explanation since
+   * that equality simply corresponds to definition of a proxy variable.
    *
    * This method is used as a performance heuristic. It can infer when the
-   * explanation of a fact depends only trivially on equalities corresponding
-   * to definitions of proxy variables, which can be omitted since they are
+   * explanation of a fact depends only on equalities corresponding to
+   * definitions of proxy variables, which can be omitted since they are
    * assumed to hold globally.
    */
-  void inferSubstitutionProxyVars(Node n,
-                                  std::vector<Node>& vars,
-                                  std::vector<Node>& subs,
-                                  std::vector<Node>& unproc) const;
+  void removeProxyEqs(Node n, std::vector<Node>& unproc) const;
   //---------------------------- end proxy variables
  private:
   /** Common constants */
@@ -184,10 +206,10 @@ class TermRegistry
   Node d_negOne;
   /** the cardinality of the alphabet */
   uint32_t d_cardSize;
-  /** Reference to equality engine of the theory of strings. */
-  eq::EqualityEngine& d_ee;
-  /** Reference to the output channel of the theory of strings. */
-  OutputChannel& d_out;
+  /** Reference to the solver state of the theory of strings. */
+  SolverState& d_state;
+  /** Pointer to the inference manager of the theory of strings. */
+  InferenceManager* d_im;
   /** Reference to the statistics for the theory of strings/sequences. */
   SequencesStatistics& d_statistics;
   /** have we asserted any str.code terms? */
@@ -221,9 +243,11 @@ class TermRegistry
    * Map from proxy variables to their normalized length. In the above example,
    * we store "ABC" -> 3.
    */
-  NodeNodeMap d_proxyVarToLength;
+  std::map<Node, Node> d_proxyVarToLength;
   /** List of terms that we have register length for */
   NodeSet d_lengthLemmaTermsCache;
+  /** Proof generator, manages proofs for lemmas generated by this class */
+  std::unique_ptr<EagerProofGenerator> d_epg;
   /** Register type
    *
    * Ensures the theory solver is setup to handle string-like type tn. In
@@ -240,7 +264,7 @@ class TermRegistry
    * If n is an atomic term, the method registerTermAtomic is called for n
    * and s = LENGTH_SPLIT and no lemma is returned.
    */
-  Node getRegisterTermLemma(Node n);
+  TrustNode getRegisterTermLemma(Node n);
   /**
    * Get the lemma required for registering the length information for
    * atomic term n given length status s. For details, see registerTermAtomic.
@@ -249,13 +273,13 @@ class TermRegistry
    * argument reqPhase, which should be processed by a call to requiredPhase by
    * the caller of this method.
    */
-  Node getRegisterTermAtomicLemma(Node n,
-                                  LengthStatus s,
-                                  std::map<Node, bool>& reqPhase);
+  TrustNode getRegisterTermAtomicLemma(Node n,
+                                       LengthStatus s,
+                                       std::map<Node, bool>& reqPhase);
 };
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__STRINGS__TERM_REGISTRY_H */
+#endif /* CVC5__THEORY__STRINGS__TERM_REGISTRY_H */

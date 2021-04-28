@@ -1,18 +1,17 @@
-/*********************                                                        */
-/*! \file Relations.java
- ** \verbatim
- ** Top contributors (to current version):
- **   Mudathir Mahgoub
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Reasoning about relations with CVC4 via Java API.
- **
- ** A simple demonstration of reasoning about strings with CVC4 via Jave API.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Mudathir Mohamed, Andres Noetzli
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * A simple demonstration of reasoning about relations with CVC4 via Java API.
+ */
 
 import edu.stanford.CVC4.*;
 
@@ -82,7 +81,7 @@ public class Relations {
 
     // (declare-sort Person 0)
     Type personType = manager.mkSort("Person", 0);
-    vectorType vector1 = new vectorType();
+    vectorType vector1 = new vectorType(manager);
     vector1.add(personType);
 
     // (Tuple Person)
@@ -90,7 +89,7 @@ public class Relations {
     // (Set (Tuple Person))
     SetType relationArity1 = manager.mkSetType(tupleArity1);
 
-    vectorType vector2 = new vectorType();
+    vectorType vector2 = new vectorType(manager);
     vector2.add(personType);
     vector2.add(personType);
     // (Tuple Person Person)
@@ -99,11 +98,11 @@ public class Relations {
     SetType relationArity2 = manager.mkSetType(tupleArity2);
 
     // empty set
-    EmptySet emptySet = new EmptySet(relationArity1);
+    EmptySet emptySet = new EmptySet(manager, relationArity1);
     Expr emptySetExpr = manager.mkConst(emptySet);
 
     // empty relation
-    EmptySet emptyRelation = new EmptySet(relationArity2);
+    EmptySet emptyRelation = new EmptySet(manager, relationArity2);
     Expr emptyRelationExpr = manager.mkConst(emptyRelation);
 
     // universe set
@@ -174,7 +173,7 @@ public class Relations {
     Expr xxTuple = manager.mkExpr(Kind.APPLY_CONSTRUCTOR, constructor, x, x);
     Expr member = manager.mkExpr(Kind.MEMBER, xxTuple, ancestor);
     Expr notMember = manager.mkExpr(Kind.NOT, member);
-    vectorExpr vectorExpr = new vectorExpr();
+    vectorExpr vectorExpr = new vectorExpr(manager);
     vectorExpr.add(x);
     Expr quantifiedVariables = manager.mkExpr(Kind.BOUND_VAR_LIST, x);
     Expr noSelfAncestor =

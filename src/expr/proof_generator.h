@@ -1,27 +1,42 @@
-/*********************                                                        */
-/*! \file proof_generator.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The abstract proof generator class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The abstract proof generator class.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__EXPR__PROOF_GENERATOR_H
-#define CVC4__EXPR__PROOF_GENERATOR_H
+#ifndef CVC5__EXPR__PROOF_GENERATOR_H
+#define CVC5__EXPR__PROOF_GENERATOR_H
 
 #include "expr/node.h"
-#include "expr/proof.h"
-#include "expr/proof_node.h"
 
-namespace CVC4 {
+namespace cvc5 {
+
+class CDProof;
+class ProofNode;
+
+/** An overwrite policy for CDProof */
+enum class CDPOverwrite : uint32_t
+{
+  // always overwrite an existing step.
+  ALWAYS,
+  // overwrite ASSUME with non-ASSUME steps.
+  ASSUME_ONLY,
+  // never overwrite an existing step.
+  NEVER,
+};
+/** Writes a overwrite policy name to a stream. */
+std::ostream& operator<<(std::ostream& out, CDPOverwrite opol);
 
 /**
  * An abstract proof generator class.
@@ -68,11 +83,13 @@ class ProofGenerator
    * @param f The fact to get the proof for.
    * @param pf The CDProof object to add the proof to.
    * @param opolicy The overwrite policy for adding to pf.
+   * @param doCopy Whether to do a deep copy of the proof steps into pf.
    * @return True if this call was sucessful.
    */
   virtual bool addProofTo(Node f,
                           CDProof* pf,
-                          CDPOverwrite opolicy = CDPOverwrite::ASSUME_ONLY);
+                          CDPOverwrite opolicy = CDPOverwrite::ASSUME_ONLY,
+                          bool doCopy = false);
   /**
    * Can we give the proof for formula f? This is used for debugging. This
    * returns false if the generator cannot provide a proof of formula f.
@@ -91,27 +108,6 @@ class ProofGenerator
   virtual std::string identify() const = 0;
 };
 
-class CDProof;
+}  // namespace cvc5
 
-/**
- * A "copy on demand" proof generator which returns proof nodes based on a
- * reference to another CDProof.
- */
-class PRefProofGenerator : public ProofGenerator
-{
- public:
-  PRefProofGenerator(CDProof* cd);
-  ~PRefProofGenerator();
-  /** Get proof for */
-  std::shared_ptr<ProofNode> getProofFor(Node f) override;
-  /** Identify this generator (for debugging, etc..) */
-  std::string identify() const override;
-
- protected:
-  /** The reference proof */
-  CDProof* d_proof;
-};
-
-}  // namespace CVC4
-
-#endif /* CVC4__EXPR__PROOF_GENERATOR_H */
+#endif /* CVC5__EXPR__PROOF_GENERATOR_H */

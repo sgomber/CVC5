@@ -1,25 +1,26 @@
-/*********************                                                        */
-/*! \file rewrites.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Type for rewrites for strings.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Yoni Zohar
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Type for rewrites for strings.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__STRINGS__REWRITES_H
-#define CVC4__THEORY__STRINGS__REWRITES_H
+#ifndef CVC5__THEORY__STRINGS__REWRITES_H
+#define CVC5__THEORY__STRINGS__REWRITES_H
 
 #include <iosfwd>
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
@@ -142,6 +143,11 @@ enum class Rewrite : uint32_t
   SS_START_NEG,
   SS_STRIP_END_PT,
   SS_STRIP_START_PT,
+  UPD_EVAL,
+  UPD_EMPTYSTR,
+  UPD_CONST_INDEX_MAX_OOB,
+  UPD_CONST_INDEX_NEG,
+  UPD_CONST_INDEX_OOB,
   STOI_CONCAT_NONNUM,
   STOI_EVAL,
   STR_CONV_CONST,
@@ -205,8 +211,11 @@ enum class Rewrite : uint32_t
   LEN_CONCAT,
   LEN_REPL_INV,
   LEN_CONV_INV,
+  LEN_SEQ_UNIT,
   CHARAT_ELIM,
-  SEQ_UNIT_EVAL
+  SEQ_UNIT_EVAL,
+  SEQ_NTH_EVAL,
+  SEQ_NTH_TOTAL_OOB
 };
 
 /**
@@ -231,6 +240,6 @@ std::ostream& operator<<(std::ostream& out, Rewrite r);
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__STRINGS__REWRITES_H */
+#endif /* CVC5__THEORY__STRINGS__REWRITES_H */

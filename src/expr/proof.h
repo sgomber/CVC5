@@ -1,45 +1,34 @@
-/*********************                                                        */
-/*! \file proof.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Proof utility
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Proof utility.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__EXPR__PROOF_H
-#define CVC4__EXPR__PROOF_H
+#ifndef CVC5__EXPR__PROOF_H
+#define CVC5__EXPR__PROOF_H
 
-#include <map>
 #include <vector>
 
 #include "context/cdhashmap.h"
 #include "expr/node.h"
-#include "expr/proof_node.h"
-#include "expr/proof_node_manager.h"
+#include "expr/proof_generator.h"
 #include "expr/proof_step_buffer.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
-/** An overwrite policy for CDProof below */
-enum class CDPOverwrite : uint32_t
-{
-  // always overwrite an existing step.
-  ALWAYS,
-  // overwrite ASSUME with non-ASSUME steps.
-  ASSUME_ONLY,
-  // never overwrite an existing step.
-  NEVER,
-};
-/** Writes a overwrite policy name to a stream. */
-std::ostream& operator<<(std::ostream& out, CDPOverwrite opol);
+class ProofNode;
+class ProofNodeManager;
 
 /**
  * A (context-dependent) proof.
@@ -143,10 +132,20 @@ std::ostream& operator<<(std::ostream& out, CDPOverwrite opol);
  * of ID_2. More generally, CDProof::isSame(F,G) returns true if F and G are
  * essentially the same formula according to this class.
  */
-class CDProof
+class CDProof : public ProofGenerator
 {
  public:
-  CDProof(ProofNodeManager* pnm, context::Context* c = nullptr);
+  /**
+   * @param pnm The proof node manager responsible for constructor ProofNode
+   * @param c The context this proof depends on
+   * @param name The name of this proof (for debugging)
+   * @param autoSymm Whether this proof automatically adds symmetry steps based
+   * on policy documented above.
+   */
+  CDProof(ProofNodeManager* pnm,
+          context::Context* c = nullptr,
+          std::string name = "CDProof",
+          bool autoSymm = true);
   virtual ~CDProof();
   /**
    * Make proof for fact.
@@ -161,7 +160,7 @@ class CDProof
    * returned proof may be updated by further calls to this class. The caller
    * should call ProofNode::clone if they want to own it.
    */
-  virtual std::shared_ptr<ProofNode> mkProof(Node fact);
+  std::shared_ptr<ProofNode> getProofFor(Node fact) override;
   /** Add step
    *
    * @param expected The intended conclusion of this proof step. This must be
@@ -236,11 +235,15 @@ class CDProof
    * f suffices as a proof for g according to this class.
    */
   static bool isSame(TNode f, TNode g);
+  /** Get proof for fact, or nullptr if it does not exist. */
+  std::shared_ptr<ProofNode> getProof(Node fact) const;
   /**
    * Get symmetric fact (a g such that isSame returns true for isSame(f,g)), or
    * null if none exist.
    */
   static Node getSymmFact(TNode f);
+  /** identify */
+  std::string identify() const override;
 
  protected:
   typedef context::CDHashMap<Node, std::shared_ptr<ProofNode>, NodeHashFunction>
@@ -251,8 +254,10 @@ class CDProof
   context::Context d_context;
   /** The nodes of the proof */
   NodeProofNodeMap d_nodes;
-  /** Get proof for fact, or nullptr if it does not exist. */
-  std::shared_ptr<ProofNode> getProof(Node fact) const;
+  /** Name identifier */
+  std::string d_name;
+  /** Whether we automatically add symmetry steps */
+  bool d_autoSymm;
   /** Ensure fact sym */
   std::shared_ptr<ProofNode> getProofSymm(Node fact);
   /**
@@ -269,6 +274,6 @@ class CDProof
   void notifyNewProof(Node expected);
 };
 
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__EXPR__PROOF_MANAGER_H */
+#endif /* CVC5__EXPR__PROOF_MANAGER_H */

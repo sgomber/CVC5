@@ -1,22 +1,22 @@
-/*********************                                                        */
-/*! \file sequences_rewriter.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Tianyi Liang
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Rewriter for the theory of strings and sequences
- **
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Yoni Zohar
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Rewriter for the theory of strings and sequences.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__STRINGS__SEQUENCES_REWRITER_H
-#define CVC4__THEORY__STRINGS__SEQUENCES_REWRITER_H
+#ifndef CVC5__THEORY__STRINGS__SEQUENCES_REWRITER_H
+#define CVC5__THEORY__STRINGS__SEQUENCES_REWRITER_H
 
 #include <vector>
 
@@ -26,7 +26,7 @@
 #include "theory/strings/strings_entail.h"
 #include "theory/theory_rewriter.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
@@ -127,6 +127,8 @@ class SequencesRewriter : public TheoryRewriter
  public:
   RewriteResponse postRewrite(TNode node) override;
   RewriteResponse preRewrite(TNode node) override;
+  /** Expand definition */
+  TrustNode expandDefinition(Node n) override;
 
   /** rewrite equality
    *
@@ -145,7 +147,7 @@ class SequencesRewriter : public TheoryRewriter
    * Specifically, this function performs rewrites whose conclusion is not
    * necessarily one of { s = t, t = s, true, false }.
    */
-  Node rewriteEqualityExt(Node node);
+  Node rewriteEqualityExt(Node node) override;
   /** rewrite string length
    * This is the entry point for post-rewriting terms node of the form
    *   str.len( t )
@@ -170,6 +172,12 @@ class SequencesRewriter : public TheoryRewriter
    * Returns the rewritten form of node.
    */
   Node rewriteSubstr(Node node);
+  /** rewrite update
+   * This is the entry point for post-rewriting terms node of the form
+   *   str.update( s, i1, i2 )
+   * Returns the rewritten form of node.
+   */
+  Node rewriteUpdate(Node node);
   /** rewrite contains
    * This is the entry point for post-rewriting terms node of the form
    *   str.contains( t, s )
@@ -258,6 +266,13 @@ class SequencesRewriter : public TheoryRewriter
    */
   Node rewriteSeqUnit(Node node);
 
+  /** rewrite seq.nth
+   * This is the entry point for post-rewriting terms n of the form
+   *   seq.nth(s, i)
+   * Returns the rewritten form of node.
+   */
+  Node rewriteSeqNth(Node node);
+
   /** length preserving rewrite
    *
    * Given input n, this returns a string n' whose length is equivalent to n.
@@ -283,6 +298,6 @@ class SequencesRewriter : public TheoryRewriter
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__STRINGS__SEQUENCES_REWRITER_H */
+#endif /* CVC5__THEORY__STRINGS__SEQUENCES_REWRITER_H */

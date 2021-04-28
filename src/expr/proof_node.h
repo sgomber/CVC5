@@ -1,30 +1,40 @@
-/*********************                                                        */
-/*! \file proof_node.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Proof node utility
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Haniel Barbosa, Alex Ozdemir
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Proof node utility.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__EXPR__PROOF_NODE_H
-#define CVC4__EXPR__PROOF_NODE_H
+#ifndef CVC5__EXPR__PROOF_NODE_H
+#define CVC5__EXPR__PROOF_NODE_H
 
 #include <vector>
 
 #include "expr/node.h"
 #include "expr/proof_rule.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 class ProofNodeManager;
+class ProofNode;
+
+// Alias for shared pointer to a proof node
+using Pf = std::shared_ptr<ProofNode>;
+
+struct ProofNodeHashFunction
+{
+  inline size_t operator()(std::shared_ptr<ProofNode> pfn) const;
+}; /* struct ProofNodeHashFunction */
 
 /** A node in a proof
  *
@@ -45,6 +55,33 @@ class ProofNodeManager;
  * ProofNode objects in trusted ways that ensure that the node maintains
  * the invariant above. Furthermore, notice that this class is not responsible
  * for setting d_proven; this is done externally by a ProofNodeManager class.
+ *
+ * Notice that all fields of ProofNode are stored in ***Skolem form***. Their
+ * correctness is checked in ***witness form*** (for details on this
+ * terminology, see expr/skolem_manager.h). As a simple example, say a
+ * theory solver has a term t, and wants to introduce a unit lemma (= k t)
+ * where k is a fresh Skolem variable. It creates this variable via:
+ *   k = SkolemManager::mkPurifySkolem(t,"k");
+ * A checked ProofNode for the fact (= k t) then may have fields:
+ *   d_rule := MACRO_SR_PRED_INTRO,
+ *   d_children := {},
+ *   d_args := {(= k t)}
+ *   d_proven := (= k t).
+ * Its justification via the rule MACRO_SR_PRED_INTRO (see documentation
+ * in theory/builtin/proof_kinds) is in terms of the witness form of the
+ * argument:
+ *   (= (witness ((z T)) (= z t)) t)
+ * which, by that rule's side condition, is such that:
+ *   Rewriter::rewrite((= (witness ((z T)) (= z t)) t)) = true.
+ * Notice that the correctness of the rule is justified here by rewriting
+ * the witness form of (= k t). The conversion to/from witness form is
+ * managed by ProofRuleChecker::check.
+ *
+ * An external proof checker is expected to formalize the ProofNode only in
+ * terms of *witness* forms.
+ *
+ * However, the rest of cvc5 sees only the *Skolem* form of arguments and
+ * conclusions in ProofNode, since this is what is used throughout cvc5.
  */
 class ProofNode
 {
@@ -64,20 +101,9 @@ class ProofNode
   /** get what this node proves, or the null node if this is an invalid proof */
   Node getResult() const;
   /**
-   * This adds to the vector assump all formulas that are "free assumptions" of
-   * the proof whose root is this ProofNode. A free assumption is a formula F
-   * that is an argument (in d_args) of a ProofNode whose kind is ASSUME, and
-   * that proof node is not beneath an application of SCOPE containing F as an
-   * argument.
-   *
-   * This traverses the structure of the dag represented by this ProofNode.
-   * Its implementation is analogous to expr::getFreeVariables.
-   */
-  void getFreeAssumptions(std::vector<Node>& assump) const;
-  /**
    * Returns true if this is a closed proof (i.e. it has no free assumptions).
    */
-  bool isClosed() const;
+  bool isClosed();
   /** Print debug on output strem os */
   void printDebug(std::ostream& os) const;
 
@@ -99,6 +125,21 @@ class ProofNode
   Node d_proven;
 };
 
-}  // namespace CVC4
+inline size_t ProofNodeHashFunction::operator()(
+    std::shared_ptr<ProofNode> pfn) const
+{
+  return pfn->getResult().getId() + static_cast<unsigned>(pfn->getRule());
+}
 
-#endif /* CVC4__EXPR__PROOF_NODE_H */
+/**
+ * Serializes a given proof node to the given stream.
+ *
+ * @param out the output stream to use
+ * @param pn the proof node to output to the stream
+ * @return the stream
+ */
+std::ostream& operator<<(std::ostream& out, const ProofNode& pn);
+
+}  // namespace cvc5
+
+#endif /* CVC5__EXPR__PROOF_NODE_H */

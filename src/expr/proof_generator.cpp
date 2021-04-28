@@ -1,22 +1,40 @@
-/*********************                                                        */
-/*! \file proof_generator.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of proof generator utility
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of proof generator utility.
+ */
 
 #include "expr/proof_generator.h"
 
-#include "expr/proof.h"
+#include <sstream>
 
-namespace CVC4 {
+#include "expr/proof.h"
+#include "expr/proof_node.h"
+#include "expr/proof_node_algorithm.h"
+#include "options/smt_options.h"
+
+namespace cvc5 {
+
+std::ostream& operator<<(std::ostream& out, CDPOverwrite opol)
+{
+  switch (opol)
+  {
+    case CDPOverwrite::ALWAYS: out << "ALWAYS"; break;
+    case CDPOverwrite::ASSUME_ONLY: out << "ASSUME_ONLY"; break;
+    case CDPOverwrite::NEVER: out << "NEVER"; break;
+    default: out << "CDPOverwrite:unknown"; break;
+  }
+  return out;
+}
 
 ProofGenerator::ProofGenerator() {}
 
@@ -29,7 +47,10 @@ std::shared_ptr<ProofNode> ProofGenerator::getProofFor(Node f)
   return nullptr;
 }
 
-bool ProofGenerator::addProofTo(Node f, CDProof* pf, CDPOverwrite opolicy)
+bool ProofGenerator::addProofTo(Node f,
+                                CDProof* pf,
+                                CDPOverwrite opolicy,
+                                bool doCopy)
 {
   Trace("pfgen") << "ProofGenerator::addProofTo: " << f << "..." << std::endl;
   Assert(pf != nullptr);
@@ -37,14 +58,8 @@ bool ProofGenerator::addProofTo(Node f, CDProof* pf, CDPOverwrite opolicy)
   std::shared_ptr<ProofNode> apf = getProofFor(f);
   if (apf != nullptr)
   {
-    if (Trace.isOn("pfgen"))
-    {
-      std::stringstream ss;
-      apf->printDebug(ss);
-      Trace("pfgen") << "...got proof " << ss.str() << std::endl;
-    }
-    // Add the proof, without deep copying.
-    if (pf->addProof(apf, opolicy, false))
+    Trace("pfgen") << "...got proof " << *apf.get() << std::endl;
+    if (pf->addProof(apf, opolicy, doCopy))
     {
       Trace("pfgen") << "...success!" << std::endl;
       return true;
@@ -59,19 +74,4 @@ bool ProofGenerator::addProofTo(Node f, CDProof* pf, CDPOverwrite opolicy)
   return false;
 }
 
-PRefProofGenerator::PRefProofGenerator(CDProof* cd) : d_proof(cd) {}
-
-PRefProofGenerator::~PRefProofGenerator() {}
-
-std::shared_ptr<ProofNode> PRefProofGenerator::getProofFor(Node f)
-{
-  Trace("pfgen") << "PRefProofGenerator::getProofFor: " << f << std::endl;
-  return d_proof->mkProof(f);
-}
-
-std::string PRefProofGenerator::identify() const
-{
-  return "PRefProofGenerator";
-}
-
-}  // namespace CVC4
+}  // namespace cvc5

@@ -1,20 +1,20 @@
-/*********************                                                        */
-/*! \file options_public_functions.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Tim King, Paul Meng
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Definitions of public facing interface functions for Options.
- **
- ** Definitions of public facing interface functions for Options. These are
- ** all 1 line wrappers for Options::get<T>, Options::set<T>, and
- ** Options::wasSetByUser<T> for different option types T.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Tim King, Gereon Kremer, Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Definitions of public facing interface functions for Options.
+ *
+ * These are all 1 line wrappers for Options::get<T>, Options::set<T>, and
+ * Options::wasSetByUser<T> for different option types T.
+ */
 
 #include "options.h"
 
@@ -36,7 +36,7 @@
 #include "options/smt_options.h"
 #include "options/uf_options.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 // Get accessor functions.
 InputLanguage Options::getInputLanguage() const {
@@ -54,10 +54,6 @@ OutputLanguage Options::getOutputLanguage() const {
 
 bool Options::getUfHo() const { return (*this)[options::ufHo]; }
 
-bool Options::getCheckProofs() const{
-  return (*this)[options::checkProofs];
-}
-
 bool Options::getDumpInstantiations() const{
   return (*this)[options::dumpInstantiations];
 }
@@ -68,10 +64,6 @@ bool Options::getDumpModels() const{
 
 bool Options::getDumpProofs() const{
   return (*this)[options::dumpProofs];
-}
-
-bool Options::getDumpSynth() const{
-  return (*this)[options::dumpSynth];
 }
 
 bool Options::getDumpUnsatCores() const{
@@ -124,10 +116,6 @@ bool Options::getProduceModels() const{
   return (*this)[options::produceModels];
 }
 
-bool Options::getProof() const{
-  return (*this)[options::proof];
-}
-
 bool Options::getSegvSpin() const{
   return (*this)[options::segvSpin];
 }
@@ -138,15 +126,11 @@ bool Options::getSemanticChecks() const{
 
 bool Options::getStatistics() const{
   // statsEveryQuery enables stats
-  return (*this)[options::statistics] || (*this)[options::statsEveryQuery];
+  return (*this)[options::statistics] || (*this)[options::statisticsEveryQuery];
 }
 
 bool Options::getStatsEveryQuery() const{
-  return (*this)[options::statsEveryQuery];
-}
-
-bool Options::getStatsHideZeros() const{
-  return (*this)[options::statsHideZeros];
+  return (*this)[options::statisticsEveryQuery];
 }
 
 bool Options::getStrictParsing() const{
@@ -155,6 +139,10 @@ bool Options::getStrictParsing() const{
 
 int Options::getTearDownIncremental() const{
   return (*this)[options::tearDownIncremental];
+}
+
+unsigned long Options::getCumulativeTimeLimit() const {
+  return (*this)[options::cumulativeMillisecondLimit];
 }
 
 bool Options::getVersion() const{
@@ -190,12 +178,8 @@ std::string Options::getBinaryName() const{
   return (*this)[options::binary_name];
 }
 
-unsigned Options::getParseStep() const{
-  return (*this)[options::parseStep];
-}
-
 std::ostream* Options::currentGetOut() {
-  return current()->getOut();
+  return current().getOut();
 }
 
 
@@ -215,10 +199,6 @@ void Options::setOut(std::ostream* value) {
 
 void Options::setOutputLanguage(OutputLanguage value) {
   set(options::outputLanguage, value);
-}
-
-bool Options::wasSetByUserDumpSynth() const {
-  return wasSetByUser(options::dumpSynth);
 }
 
 bool Options::wasSetByUserEarlyExit() const {
@@ -250,4 +230,4 @@ void Options::flushOut() {
   }
 }
 
-}/* CVC4 namespace */
+}  // namespace cvc5

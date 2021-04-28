@@ -1,26 +1,27 @@
 #!/usr/bin/env python
-
-#####################
-#! \file strings.py
-## \verbatim
-## Top contributors (to current version):
-##   Makai Mann
-## This file is part of the CVC4 project.
-## Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
-## in the top-level source directory) and their institutional affiliations.
-## All rights reserved.  See the file COPYING in the top-level source
-## directory for licensing information.\endverbatim
+###############################################################################
+# Top contributors (to current version):
+#   Makai Mann, Mudathir Mohamed, Andres Noetzli
+#
+# This file is part of the cvc5 project.
+#
+# Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+# in the top-level source directory and their institutional affiliations.
+# All rights reserved.  See the file COPYING in the top-level source
+# directory for licensing information.
+# #############################################################################
+#
+# A simple demonstration of the solving capabilities of the cvc5 strings solver
+# through the Python API. This is a direct translation of strings-new.cpp.
 ##
-## \brief A simple demonstration of the solving capabilities of the CVC4
-## strings solver through the Python API. This is a direct translation
-## of strings-new.cpp.
-import pycvc4
-from pycvc4 import kinds
+
+import pycvc5
+from pycvc5 import kinds
 
 if __name__ == "__main__":
-    slv = pycvc4.Solver()
+    slv = pycvc5.Solver()
     # Set the logic
-    slv.setLogic("S")
+    slv.setLogic("QF_SLIA")
     # Produce models
     slv.setOption("produce-models", "true")
     # The option strings-exp is needed
@@ -51,7 +52,7 @@ if __name__ == "__main__":
     # Length of y: |y|
     leny = slv.mkTerm(kinds.StringLength, y)
     # |y| >= 0
-    formula2 = slv.mkTerm(kinds.Geq, leny, slv.mkReal(0))
+    formula2 = slv.mkTerm(kinds.Geq, leny, slv.mkInteger(0))
 
     # Regular expression: (ab[c-e]*f)|g|h
     r = slv.mkTerm(kinds.RegexpUnion,
@@ -80,7 +81,7 @@ if __name__ == "__main__":
 
     # check sat
     result = slv.checkSatAssuming(q)
-    print("CVC4 reports:", q, "is", result)
+    print("cvc5 reports:", q, "is", result)
 
     if result:
         print("x = ", slv.getValue(x))

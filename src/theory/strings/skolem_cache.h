@@ -1,21 +1,22 @@
-/*********************                                                        */
-/*! \file skolem_cache.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief A cache of skolems for theory of strings.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Yoni Zohar
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * A cache of skolems for theory of strings.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__STRINGS__SKOLEM_CACHE_H
-#define CVC4__THEORY__STRINGS__SKOLEM_CACHE_H
+#ifndef CVC5__THEORY__STRINGS__SKOLEM_CACHE_H
+#define CVC5__THEORY__STRINGS__SKOLEM_CACHE_H
 
 #include <map>
 #include <tuple>
@@ -24,7 +25,7 @@
 #include "expr/node.h"
 #include "expr/skolem_manager.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
@@ -138,6 +139,11 @@ class SkolemCache
     //   where b is a regular expression, n is the number of occurrences of b
     //   in a, and k(0)=0.
     SK_OCCUR_LEN,
+    // For function k: ((Seq U) x Int) -> U
+    // exists k.
+    // forall s, n.
+    //  k(s, n) is some undefined value of sort U
+    SK_NTH,
   };
   /**
    * Returns a skolem of type string that is cached for (a,b,id) and has
@@ -154,6 +160,11 @@ class SkolemCache
       TypeNode tn, Node a, Node b, SkolemId id, const char* c);
   /** Same as mkTypedSkolemCached above for (a,[null],id) */
   Node mkTypedSkolemCached(TypeNode tn, Node a, SkolemId id, const char* c);
+  /**
+   * Specific version for seq.nth, used for cases where the index is out of
+   * range for sequence type seqType.
+   */
+  static Node mkSkolemSeqNth(TypeNode seqType, const char* c);
   /** Returns a (uncached) skolem of type string with name c */
   Node mkSkolem(const char* c);
   /** Returns true if n is a skolem allocated by this class */
@@ -201,6 +212,6 @@ class SkolemCache
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__STRINGS__SKOLEM_CACHE_H */
+#endif /* CVC5__THEORY__STRINGS__SKOLEM_CACHE_H */

@@ -1,27 +1,28 @@
-/*********************                                                        */
-/*! \file strings_entail.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Entailment tests involving strings
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Entailment tests involving strings.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__STRINGS__STRING_ENTAIL_H
-#define CVC4__THEORY__STRINGS__STRING_ENTAIL_H
+#ifndef CVC5__THEORY__STRINGS__STRING_ENTAIL_H
+#define CVC5__THEORY__STRINGS__STRING_ENTAIL_H
 
 #include <vector>
 
 #include "expr/node.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
@@ -67,10 +68,11 @@ class StringsEntail
 
   /** strip symbolic length
    *
-   * This function strips off components of n1 whose length is less than
-   * or equal to argument curr, and stores them in nr. The direction
-   * dir determines whether the components are removed from the start
-   * or end of n1.
+   * This function strips off components of n1 whose length is less than or
+   * equal to argument curr, and stores them in nr. The direction dir
+   * determines whether the components are removed from the start or end of n1.
+   * If `strict` is set to true, then the function only returns true if full
+   * length `curr` can be stripped.
    *
    * In detail, this function updates n1 to n1' such that:
    *   If dir=1,
@@ -107,7 +109,8 @@ class StringsEntail
   static bool stripSymbolicLength(std::vector<Node>& n1,
                                   std::vector<Node>& nr,
                                   int dir,
-                                  Node& curr);
+                                  Node& curr,
+                                  bool strict = false);
   /** component contains
    * This function is used when rewriting str.contains( t1, t2 ), where
    * n1 is the vector form of t1
@@ -377,6 +380,6 @@ class StringsEntail
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__STRINGS__STRING_ENTAIL_H */
+#endif /* CVC5__THEORY__STRINGS__STRING_ENTAIL_H */

@@ -1,20 +1,21 @@
-/*********************                                                        */
-/*! \file int_to_bv.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andres Noetzli
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The IntToBV preprocessing pass
- **
- ** Converts integer operations into bitvector operations. The width of the
- ** bitvectors is controlled through the `--solve-int-as-bv` command line
- ** option.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andres Noetzli, Yoni Zohar, Alex Ozdemir
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The IntToBV preprocessing pass.
+ *
+ * Converts integer operations into bitvector operations. The width of the
+ * bitvectors is controlled through the `--solve-int-as-bv` command line
+ * option.
+ */
 
 #include "preprocessing/passes/int_to_bv.h"
 
@@ -23,120 +24,76 @@
 #include <vector>
 
 #include "expr/node.h"
+#include "expr/node_traversal.h"
+#include "expr/skolem_manager.h"
+#include "options/smt_options.h"
+#include "preprocessing/assertion_pipeline.h"
 #include "theory/rewriter.h"
 #include "theory/theory.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
-using namespace CVC4::theory;
+using namespace std;
+using namespace cvc5::theory;
 
 using NodeMap = std::unordered_map<Node, Node, NodeHashFunction>;
 
 namespace {
 
-// TODO: clean this up
-struct intToBV_stack_element
-{
-  TNode d_node;
-  bool d_children_added;
-  intToBV_stack_element(TNode node) : d_node(node), d_children_added(false) {}
-}; /* struct intToBV_stack_element */
-
 bool childrenTypesChanged(Node n, NodeMap& cache) {
-  bool result = false;
   for (Node child : n) {
     TypeNode originalType = child.getType();
     TypeNode newType = cache[child].getType();
     if (! newType.isSubtypeOf(originalType)) {
-      result = true;
-      break;
+      return true;
     }
   }
-  return result;
+  return false;
 }
 
 
 Node intToBVMakeBinary(TNode n, NodeMap& cache)
 {
-  // Do a topological sort of the subexpressions and substitute them
-  vector<intToBV_stack_element> toVisit;
-  toVisit.push_back(n);
-
-  while (!toVisit.empty())
+  for (TNode current : NodeDfsIterable(n, VisitOrder::POSTORDER,
+           [&cache](TNode nn) { return cache.count(nn) > 0; }))
   {
-    // The current node we are processing
-    intToBV_stack_element& stackHead = toVisit.back();
-    TNode current = stackHead.d_node;
-
-    NodeMap::iterator find = cache.find(current);
-    if (find != cache.end())
+    Node result;
+    NodeManager* nm = NodeManager::currentNM();
+    if (current.getNumChildren() == 0)
     {
-      toVisit.pop_back();
-      continue;
+      result = current;
     }
-    if (stackHead.d_children_added)
+    else if (current.getNumChildren() > 2
+             && (current.getKind() == kind::PLUS
+                 || current.getKind() == kind::MULT))
     {
-      // Children have been processed, so rebuild this node
-      Node result;
-      NodeManager* nm = NodeManager::currentNM();
-      if (current.getNumChildren() > 2
-          && (current.getKind() == kind::PLUS
-              || current.getKind() == kind::MULT))
+      Assert(cache.find(current[0]) != cache.end());
+      result = cache[current[0]];
+      for (unsigned i = 1; i < current.getNumChildren(); ++i)
       {
-        Assert(cache.find(current[0]) != cache.end());
-        result = cache[current[0]];
-        for (unsigned i = 1; i < current.getNumChildren(); ++i)
-        {
-          Assert(cache.find(current[i]) != cache.end());
-          Node child = current[i];
-          Node childRes = cache[current[i]];
-          result = nm->mkNode(current.getKind(), result, childRes);
-        }
+        Assert(cache.find(current[i]) != cache.end());
+        Node child = current[i];
+        Node childRes = cache[current[i]];
+        result = nm->mkNode(current.getKind(), result, childRes);
       }
-      else
-      {
-        NodeBuilder<> builder(current.getKind());
-        if (current.getMetaKind() == kind::metakind::PARAMETERIZED) {
-          builder << current.getOperator();
-        }
-
-        for (unsigned i = 0; i < current.getNumChildren(); ++i)
-        {
-          Assert(cache.find(current[i]) != cache.end());
-          builder << cache[current[i]];
-        }
-        result = builder;
-      }
-      cache[current] = result;
-      toVisit.pop_back();
     }
     else
     {
-      // Mark that we have added the children if any
-      if (current.getNumChildren() > 0)
-      {
-        stackHead.d_children_added = true;
-        // We need to add the children
-        for (TNode::iterator child_it = current.begin();
-             child_it != current.end();
-             ++child_it)
-        {
-          TNode childNode = *child_it;
-          NodeMap::iterator childFind = cache.find(childNode);
-          if (childFind == cache.end())
-          {
-            toVisit.push_back(childNode);
-          }
-        }
+      NodeBuilder builder(current.getKind());
+      if (current.getMetaKind() == kind::metakind::PARAMETERIZED) {
+        builder << current.getOperator();
       }
-      else
+
+      for (unsigned i = 0; i < current.getNumChildren(); ++i)
       {
-        cache[current] = current;
-        toVisit.pop_back();
+        Assert(cache.find(current[i]) != cache.end());
+        builder << cache[current[i]];
       }
+      result = builder;
     }
+    cache[current] = result;
   }
   return cache[n];
 }
@@ -147,30 +104,17 @@ Node intToBV(TNode n, NodeMap& cache)
   AlwaysAssert(size > 0);
   AlwaysAssert(!options::incrementalSolving());
 
-  vector<intToBV_stack_element> toVisit;
+  NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
   NodeMap binaryCache;
   Node n_binary = intToBVMakeBinary(n, binaryCache);
-  toVisit.push_back(TNode(n_binary));
 
-  while (!toVisit.empty())
+  for (TNode current : NodeDfsIterable(n_binary, VisitOrder::POSTORDER,
+           [&cache](TNode nn) { return cache.count(nn) > 0; }))
   {
-    // The current node we are processing
-    intToBV_stack_element& stackHead = toVisit.back();
-    TNode current = stackHead.d_node;
-
-    // If node is already in the cache we're done, pop from the stack
-    NodeMap::iterator find = cache.find(current);
-    if (find != cache.end())
+    if (current.getNumChildren() > 0)
     {
-      toVisit.pop_back();
-      continue;
-    }
-
-    // Not yet substituted, so process
-    NodeManager* nm = NodeManager::currentNM();
-    if (stackHead.d_children_added)
-    {
-      // Children have been processed, so rebuild this node
+      // Not a leaf
       vector<Node> children;
       unsigned max = 0;
       for (unsigned i = 0; i < current.getNumChildren(); ++i)
@@ -222,9 +166,9 @@ Node intToBV(TNode n, NodeMap& cache)
           case kind::ITE: break;
           default:
             if (childrenTypesChanged(current, cache)) {
-              throw TypeCheckingException(
-                current.toExpr(),
-                string("Cannot translate to BV: ") + current.toString());
+              throw TypeCheckingExceptionPrivate(
+                  current,
+                  string("Cannot translate to BV: ") + current.toString());
             }
             break;
         }
@@ -245,7 +189,7 @@ Node intToBV(TNode n, NodeMap& cache)
           }
         }
       }
-      NodeBuilder<> builder(newKind);
+      NodeBuilder builder(newKind);
       if (current.getMetaKind() == kind::metakind::PARAMETERIZED) {
         builder << current.getOperator();
       }
@@ -258,73 +202,50 @@ Node intToBV(TNode n, NodeMap& cache)
 
       result = Rewriter::rewrite(result);
       cache[current] = result;
-      toVisit.pop_back();
     }
     else
     {
-      // Mark that we have added the children if any
-      if (current.getNumChildren() > 0)
+      // It's a leaf: could be a variable or a numeral
+      Node result = current;
+      if (current.isVar())
       {
-        stackHead.d_children_added = true;
-        // We need to add the children
-        for (TNode::iterator child_it = current.begin();
-             child_it != current.end();
-             ++child_it)
+        if (current.getType() == nm->integerType())
         {
-          TNode childNode = *child_it;
-          NodeMap::iterator childFind = cache.find(childNode);
-          if (childFind == cache.end())
+          result = sm->mkDummySkolem("__intToBV_var",
+                                     nm->mkBitVectorType(size),
+                                     "Variable introduced in intToBV pass");
+        }
+      }
+      else if (current.isConst())
+      {
+        switch (current.getKind())
+        {
+          case kind::CONST_RATIONAL:
           {
-            toVisit.push_back(childNode);
+            Rational constant = current.getConst<Rational>();
+            if (constant.isIntegral()) {
+              AlwaysAssert(constant >= 0);
+              BitVector bv(size, constant.getNumerator());
+              if (bv.toSignedInteger() != constant.getNumerator())
+              {
+                throw TypeCheckingExceptionPrivate(
+                    current,
+                    string("Not enough bits for constant in intToBV: ")
+                        + current.toString());
+              }
+              result = nm->mkConst(bv);
+            }
+            break;
           }
+          default: break;
         }
       }
       else
       {
-        // It's a leaf: could be a variable or a numeral
-        Node result = current;
-        if (current.isVar())
-        {
-          if (current.getType() == nm->integerType())
-          {
-            result = nm->mkSkolem("__intToBV_var",
-                                  nm->mkBitVectorType(size),
-                                  "Variable introduced in intToBV pass");
-          }
-        }
-        else if (current.isConst())
-        {
-          switch (current.getKind())
-          {
-            case kind::CONST_RATIONAL:
-            {
-              Rational constant = current.getConst<Rational>();
-              if (constant.isIntegral()) {
-                AlwaysAssert(constant >= 0);
-                BitVector bv(size, constant.getNumerator());
-                if (bv.toSignedInteger() != constant.getNumerator())
-                {
-                  throw TypeCheckingException(
-                      current.toExpr(),
-                      string("Not enough bits for constant in intToBV: ")
-                          + current.toString());
-                }
-                result = nm->mkConst(bv);
-              }
-              break;
-            }
-            default: break;
-          }
-        }
-        else
-        {
-          throw TypeCheckingException(
-              current.toExpr(),
-              string("Cannot translate to BV: ") + current.toString());
-        }
-        cache[current] = result;
-        toVisit.pop_back();
+        throw TypeCheckingExceptionPrivate(
+            current, string("Cannot translate to BV: ") + current.toString());
       }
+      cache[current] = result;
     }
   }
   return cache[n_binary];
@@ -349,4 +270,4 @@ PreprocessingPassResult IntToBV::applyInternal(
 
 }  // namespace passes
 }  // namespace preprocessing
-}  // namespace CVC4
+}  // namespace cvc5

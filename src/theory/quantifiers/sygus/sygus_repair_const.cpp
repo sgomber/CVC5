@@ -1,19 +1,23 @@
-/*********************                                                        */
-/*! \file sygus_repair_const.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Haniel Barbosa, Andres Noetzli
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of sygus_repair_const
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Haniel Barbosa, Abdalrhman Mohamed
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of sygus_repair_const.
+ */
 
 #include "theory/quantifiers/sygus/sygus_repair_const.h"
 
+#include "expr/dtype_cons.h"
+#include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
 #include "options/base_options.h"
 #include "options/quantifiers_options.h"
 #include "printer/printer.h"
@@ -21,22 +25,21 @@
 #include "smt/smt_engine_scope.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
+#include "theory/logic_info.h"
 #include "theory/quantifiers/cegqi/ceg_instantiator.h"
 #include "theory/quantifiers/sygus/sygus_grammar_norm.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
-#include "theory/quantifiers_engine.h"
 #include "theory/smt_engine_subsolver.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-SygusRepairConst::SygusRepairConst(QuantifiersEngine* qe)
-    : d_qe(qe), d_allow_constant_grammar(false)
+SygusRepairConst::SygusRepairConst(TermDbSygus* tds)
+    : d_tds(tds), d_allow_constant_grammar(false)
 {
-  d_tds = d_qe->getTermDatabaseSygus();
 }
 
 void SygusRepairConst::initialize(Node base_inst,
@@ -100,36 +103,6 @@ bool SygusRepairConst::isActive() const
   return !d_base_inst.isNull() && d_allow_constant_grammar;
 }
 
-void SygusRepairConst::initializeChecker(std::unique_ptr<SmtEngine>& checker,
-                                         ExprManager& em,
-                                         ExprManagerMapCollection& varMap,
-                                         Node query,
-                                         bool& needExport)
-{
-  if (options::sygusRepairConstTimeout.wasSetByUser())
-  {
-    // To support a separate timeout for the subsolver, we need to create
-    // a separate ExprManager with its own options. This requires that
-    // the expressions sent to the subsolver can be exported from on
-    // ExprManager to another.
-    initializeSubsolverWithExport(checker,
-                                  em,
-                                  varMap,
-                                  query.toExpr(),
-                                  true,
-                                  options::sygusRepairConstTimeout());
-    // renable options disabled by sygus
-    checker->setOption("miniscope-quant", true);
-    checker->setOption("miniscope-quant-fv", true);
-    checker->setOption("quant-split", true);
-  }
-  else
-  {
-    needExport = false;
-    initializeSubsolver(checker, query.toExpr());
-  }
-}
-
 bool SygusRepairConst::repairSolution(const std::vector<Node>& candidates,
                                       const std::vector<Node>& candidate_values,
                                       std::vector<Node>& repair_cv,
@@ -158,11 +131,10 @@ bool SygusRepairConst::repairSolution(Node sygusBody,
   if (Trace.isOn("sygus-repair-const"))
   {
     Trace("sygus-repair-const") << "Repair candidate solutions..." << std::endl;
-    Printer* p = Printer::getPrinter(options::outputLanguage());
     for (unsigned i = 0, size = candidates.size(); i < size; i++)
     {
       std::stringstream ss;
-      p->toStreamSygus(ss, candidate_values[i]);
+      TermDbSygus::toStreamSygus(ss, candidate_values[i]);
       Trace("sygus-repair-const")
           << "  " << candidates[i] << " -> " << ss.str() << std::endl;
     }
@@ -180,9 +152,8 @@ bool SygusRepairConst::repairSolution(Node sygusBody,
         cv, free_var_count, sk_vars, sk_vars_to_subs, useConstantsAsHoles);
     if (Trace.isOn("sygus-repair-const"))
     {
-      Printer* p = Printer::getPrinter(options::outputLanguage());
       std::stringstream ss;
-      p->toStreamSygus(ss, cv);
+      TermDbSygus::toStreamSygus(ss, cv);
       Trace("sygus-repair-const")
           << "Solution #" << i << " : " << ss.str() << std::endl;
       if (skeleton == cv)
@@ -192,7 +163,7 @@ bool SygusRepairConst::repairSolution(Node sygusBody,
       else
       {
         std::stringstream sss;
-        p->toStreamSygus(sss, skeleton);
+        TermDbSygus::toStreamSygus(sss, skeleton);
         Trace("sygus-repair-const")
             << "...inferred skeleton : " << sss.str() << std::endl;
       }
@@ -206,7 +177,6 @@ bool SygusRepairConst::repairSolution(Node sygusBody,
     return false;
   }
 
-  NodeManager* nm = NodeManager::currentNM();
   Trace("sygus-repair-const") << "Get first-order query..." << std::endl;
   Node fo_body =
       getFoQuery(sygusBody, candidates, candidate_skeletons, sk_vars);
@@ -232,7 +202,10 @@ bool SygusRepairConst::repairSolution(Node sygusBody,
                          candidate_skeletons,
                          sk_vars,
                          sk_vars_to_subs);
+    Trace("sygus-repair-const-debug")
+        << "...after fit-to-logic : " << fo_body << std::endl;
   }
+  Assert(!expr::hasFreeVar(fo_body));
 
   if (fo_body.isNull() || sk_vars.empty())
   {
@@ -245,7 +218,7 @@ bool SygusRepairConst::repairSolution(Node sygusBody,
   if (fo_body.getKind() == FORALL)
   {
     // must be a CBQI quantifier
-    CegHandledStatus hstatus = CegInstantiator::isCbqiQuant(fo_body, d_qe);
+    CegHandledStatus hstatus = CegInstantiator::isCbqiQuant(fo_body);
     if (hstatus < CEG_HANDLED)
     {
       // abort if less than fully handled
@@ -258,11 +231,17 @@ bool SygusRepairConst::repairSolution(Node sygusBody,
 
   Trace("sygus-engine") << "Repairing previous solution..." << std::endl;
   // make the satisfiability query
-  bool needExport = true;
-  ExprManagerMapCollection varMap;
-  ExprManager em(nm->getOptions());
   std::unique_ptr<SmtEngine> repcChecker;
-  initializeChecker(repcChecker, em, varMap, fo_body, needExport);
+  // initialize the subsolver using the standard method
+  initializeSubsolver(repcChecker,
+                      Options::current().wasSetByUser(options::sygusRepairConstTimeout),
+                      options::sygusRepairConstTimeout());
+  // renable options disabled by sygus
+  repcChecker->setOption("miniscope-quant", "true");
+  repcChecker->setOption("miniscope-quant-fv", "true");
+  repcChecker->setOption("quant-split", "true");
+  repcChecker->assertFormula(fo_body);
+  // check satisfiability
   Result r = repcChecker->checkSat();
   Trace("sygus-repair-const") << "...got : " << r << std::endl;
   if (r.asSatisfiabilityResult().isSat() == Result::UNSAT
@@ -276,17 +255,7 @@ bool SygusRepairConst::repairSolution(Node sygusBody,
   {
     Assert(d_sk_to_fo.find(v) != d_sk_to_fo.end());
     Node fov = d_sk_to_fo[v];
-    Node fov_m;
-    if (needExport)
-    {
-      Expr e_fov = fov.toExpr().exportTo(&em, varMap);
-      fov_m = Node::fromExpr(
-          repcChecker->getValue(e_fov).exportTo(nm->toExprManager(), varMap));
-    }
-    else
-    {
-      fov_m = Node::fromExpr(repcChecker->getValue(fov.toExpr()));
-    }
+    Node fov_m = repcChecker->getValue(fov);
     Trace("sygus-repair-const") << "  " << fov << " = " << fov_m << std::endl;
     // convert to sygus
     Node fov_m_to_sygus = d_tds->getProxyVariable(v.getType(), fov_m);
@@ -303,8 +272,7 @@ bool SygusRepairConst::repairSolution(Node sygusBody,
     if (Trace.isOn("sygus-repair-const") || Trace.isOn("sygus-engine"))
     {
       std::stringstream sss;
-      Printer::getPrinter(options::outputLanguage())
-          ->toStreamSygus(sss, repair_cv[i]);
+      TermDbSygus::toStreamSygus(sss, repair_cv[i]);
       ss << "  * " << candidates[i] << " -> " << sss.str() << std::endl;
     }
   }
@@ -467,6 +435,7 @@ Node SygusRepairConst::getFoQuery(Node body,
                                   const std::vector<Node>& sk_vars)
 {
   NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
   Trace("sygus-repair-const") << "  Substitute skeletons..." << std::endl;
   body = body.substitute(candidates.begin(),
                          candidates.end(),
@@ -485,7 +454,7 @@ Node SygusRepairConst::getFoQuery(Node body,
     if (itf == d_sk_to_fo.end())
     {
       TypeNode builtinType = d_tds->sygusToBuiltinType(v.getType());
-      Node sk_fov = nm->mkSkolem("k", builtinType);
+      Node sk_fov = sm->mkDummySkolem("k", builtinType);
       d_sk_to_fo[v] = sk_fov;
       d_fo_to_sk[sk_fov] = v;
       Trace("sygus-repair-const-debug")
@@ -653,6 +622,6 @@ bool SygusRepairConst::getFitToLogicExcludeVar(LogicInfo& logic,
   return true;
 }
 
-} /* CVC4::theory::quantifiers namespace */
-} /* CVC4::theory namespace */
-} /* CVC4 namespace */
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace cvc5

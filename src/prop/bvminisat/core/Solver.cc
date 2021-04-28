@@ -22,23 +22,19 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <math.h>
 
-#include <vector>
 #include <iostream>
+#include <vector>
 
+#include "base/check.h"
 #include "base/exception.h"
 #include "base/output.h"
 #include "options/bv_options.h"
 #include "options/smt_options.h"
-#include "proof/clause_id.h"
-#include "proof/proof_manager.h"
-#include "proof/resolution_bitvector_proof.h"
-#include "proof/sat_proof.h"
-#include "proof/sat_proof_implementation.h"
 #include "prop/bvminisat/mtl/Sort.h"
 #include "theory/interrupted.h"
 #include "util/utility.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace BVMinisat {
 
 #define OUTPUT_TAG "bvminisat: [a=" << assumptions.size() << ",l=" << decisionLevel() << "] "
@@ -86,7 +82,7 @@ CRef Solver::TCRef_Lazy = CRef_Undef - 1; // no real lazy ref here
 //=================================================================================================
 // Constructor/Destructor:
 
-Solver::Solver(CVC4::context::Context* context)
+Solver::Solver(cvc5::context::Context* context)
     :
 
       // Parameters (user settable):
@@ -170,8 +166,7 @@ Solver::Solver(CVC4::context::Context* context)
       ,
       conflict_budget(-1),
       propagation_budget(-1),
-      asynch_interrupt(false),
-      d_bvp(NULL)
+      asynch_interrupt(false)
 {
   // Create the constant variables
   varTrue = newVar(true, false);
@@ -220,7 +215,7 @@ bool Solver::addClause_(vec<Lit>& ps, ClauseId& id)
     if (decisionLevel() > 0) {
       cancelUntil(0);
     }
-    
+
     if (!ok) {
       id = ClauseIdUndef;
       return false;
@@ -231,7 +226,7 @@ bool Solver::addClause_(vec<Lit>& ps, ClauseId& id)
     sort(ps);
     Lit p; int i, j;
     int falseLiteralsCount = 0;
-    
+
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++) {
       // tautologies are ignored
       if (value(ps[i]) == l_True || ps[i] == ~p) {
@@ -245,89 +240,37 @@ bool Solver::addClause_(vec<Lit>& ps, ClauseId& id)
       }
 
       if (value(ps[i]) == l_False) {
-        if (!THEORY_PROOF_ON())
-          continue;
-        ++falseLiteralsCount;
+        continue;
       }
       ps[j++] = p = ps[i];
     }
-    
+
     ps.shrink(i - j);
 
     clause_added = true;
 
-    Assert(falseLiteralsCount == 0 || THEORY_PROOF_ON());
-
     if(falseLiteralsCount == 0) {
       if (ps.size() == 0) {
-        Assert(!THEORY_PROOF_ON());
         return ok = false;
       }
       else if (ps.size() == 1){
-        if(d_bvp){ id = d_bvp->getSatProof()->registerUnitClause(ps[0], INPUT);}
         uncheckedEnqueue(ps[0]);
         CRef confl_ref = propagate();
         ok = (confl_ref == CRef_Undef);
-        if(d_bvp){ if (!ok) d_bvp->getSatProof()->finalizeProof(confl_ref); }
         return ok;
       } else {
         CRef cr = ca.alloc(ps, false);
         clauses.push(cr);
         attachClause(cr);
-        if(d_bvp){ id = d_bvp->getSatProof()->registerClause(cr, INPUT);}
       }
-      return ok; 
-    }
-    
-    if (falseLiteralsCount != 0 && THEORY_PROOF_ON()) {
-      // we are in a conflicting state
-      if (ps.size() == falseLiteralsCount && falseLiteralsCount == 1) {
-        if(d_bvp){ id = d_bvp->getSatProof()->storeUnitConflict(ps[0], INPUT); }
-        if(d_bvp){ d_bvp->getSatProof()->finalizeProof(CVC4::BVMinisat::CRef_Lazy); }
-        return ok = false;
-      }
-
-      assign_lt lt(*this);
-      sort(ps, lt);
-      
-      CRef cr = ca.alloc(ps, false);
-      clauses.push(cr);
-      attachClause(cr);
-      
-      if(d_bvp){id = d_bvp->getSatProof()->registerClause(cr, INPUT);}
-
-      if(ps.size() == falseLiteralsCount) {
-        if(d_bvp){ d_bvp->getSatProof()->finalizeProof(cr); }
-        return ok = false;
-      }
-      
-      // Check if it propagates
-      if (ps.size() == falseLiteralsCount + 1) {
-        Clause& cl = ca[cr];
-
-        Assert(value(cl[0]) == l_Undef);
-        uncheckedEnqueue(cl[0], cr);
-        Assert(cl.size() > 1);
-        CRef confl = propagate();
-        ok = (confl == CRef_Undef);
-        if(!ok) {
-          if(d_bvp){
-            if(ca[confl].size() == 1) {
-              id = d_bvp->getSatProof()->storeUnitConflict(ca[confl][0], LEARNT);
-              d_bvp->getSatProof()->finalizeProof(CVC4::BVMinisat::CRef_Lazy);
-            } else {
-              d_bvp->getSatProof()->finalizeProof(confl);
-            }
-          }
-        }
-      }
+      return ok;
     }
     return ok;
 }
 
 void Solver::attachClause(CRef cr) {
   const Clause& clause = ca[cr];
-  assert(clause.size() > 1);
+  Assert(clause.size() > 1);
   watches[~clause[0]].push(Watcher(cr, clause[1]));
   watches[~clause[1]].push(Watcher(cr, clause[0]));
   if (clause.learnt())
@@ -338,11 +281,8 @@ void Solver::attachClause(CRef cr) {
 
 void Solver::detachClause(CRef cr, bool strict) {
   const Clause& clause = ca[cr];
-  if (d_bvp)
-  {
-    d_bvp->getSatProof()->markDeleted(cr); }
 
-  assert(clause.size() > 1);
+  Assert(clause.size() > 1);
 
   if (strict)
   {
@@ -425,23 +365,24 @@ Lit Solver::pickBranchLit()
     return next == var_Undef ? lit_Undef : mkLit(next, rnd_pol ? drand(random_seed) < 0.5 : polarity[next]);
 }
 
-
 /*_________________________________________________________________________________________________
 |
-|  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
-|  
+|  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->
+[void]
+|
 |  Description:
 |    Analyze conflict and produce a reason clause.
-|  
+|
 |    Pre-conditions:
 |      * 'out_learnt' is assumed to be cleared.
 |      * Current decision level must be greater than root level.
-|  
+|
 |    Post-conditions:
 |      * 'out_learnt[0]' is the asserting literal at level 'out_btlevel'.
-|      * If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision level of the 
-|        rest of literals. There may be others from the same level though.
-|  
+|      * If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision
+level of the |        rest of literals. There may be others from the same level
+though.
+|
 |________________________________________________________________________________________________@*/
 void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel, UIP uip)
 {
@@ -454,37 +395,27 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel, UIP uip
     int index   = trail.size() - 1;
 
     bool done = false;
-    
-    if(d_bvp){ d_bvp->getSatProof()->startResChain(confl); }
 
     do{
-        assert(confl != CRef_Undef); // (otherwise should be UIP)
-        Clause& clause = ca[confl];
+      Assert(confl != CRef_Undef);  // (otherwise should be UIP)
+      Clause& clause = ca[confl];
 
-        if (clause.learnt()) claBumpActivity(clause);
+      if (clause.learnt()) claBumpActivity(clause);
 
-        for (int j = (p == lit_Undef) ? 0 : 1; j < clause.size(); j++)
+      for (int j = (p == lit_Undef) ? 0 : 1; j < clause.size(); j++)
+      {
+        Lit q = clause[j];
+
+        if (!seen[var(q)] && level(var(q)) > 0)
         {
-          Lit q = clause[j];
-
-          if (!seen[var(q)] && level(var(q)) > 0)
-          {
-            varBumpActivity(var(q));
-            seen[var(q)] = 1;
-            if (level(var(q)) >= decisionLevel())
-              pathC++;
-            else
-              out_learnt.push(q);
-          }
-
-          if (level(var(q)) == 0)
-          {
-            if (d_bvp)
-            {
-              d_bvp->getSatProof()->resolveOutUnit(q);
-            }
-          }
+          varBumpActivity(var(q));
+          seen[var(q)] = 1;
+          if (level(var(q)) >= decisionLevel())
+            pathC++;
+          else
+            out_learnt.push(q);
         }
+      }
 
         // Select next clause to look at:
         while (!seen[var(trail[index--])]);
@@ -492,10 +423,6 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel, UIP uip
         confl = reason(var(p));
         seen[var(p)] = 0;
         pathC--;
-
-        if ( pathC > 0 && confl != CRef_Undef ) {
-          if(d_bvp){ d_bvp->getSatProof()->addResolutionStep(p, confl, sign(p));}
-        }
 
         switch (uip) {
         case UIP_FIRST:
@@ -535,13 +462,6 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel, UIP uip
             {
               // Literal is not redundant
               out_learnt[j++] = out_learnt[i1];
-            }
-            else
-            {
-              if (d_bvp)
-              {
-                d_bvp->getSatProof()->storeLitRedundant(out_learnt[i1]);
-              }
             }
           }
         }
@@ -610,7 +530,7 @@ bool Solver::litRedundant(Lit p, uint32_t abstract_levels)
     int top = analyze_toclear.size();
     while (analyze_stack.size() > 0){
         CRef c_reason = reason(var(analyze_stack.last()));
-        assert(c_reason != CRef_Undef);
+        Assert(c_reason != CRef_Undef);
         Clause& clause = ca[c_reason];
         int c_size = clause.size();
         analyze_stack.pop();
@@ -640,27 +560,27 @@ bool Solver::litRedundant(Lit p, uint32_t abstract_levels)
     return true;
 }
 
-/** 
+/**
  * Specialized analyzeFinal procedure where we test the consistency
  * of the assumptions before backtracking bellow the assumption level.
- * 
+ *
  * @param p the original uip (may be unit)
  * @param confl_clause the conflict clause
  * @param out_conflict the conflict in terms of assumptions we are building
  */
 void Solver::analyzeFinal2(Lit p, CRef confl_clause, vec<Lit>& out_conflict) {
-  assert (confl_clause != CRef_Undef);
-  assert (decisionLevel() == assumptions.size());
-  assert (level(var(p)) == assumptions.size());
+  Assert(confl_clause != CRef_Undef);
+  Assert(decisionLevel() == assumptions.size());
+  Assert(level(var(p)) == assumptions.size());
 
-  out_conflict.clear(); 
-  
+  out_conflict.clear();
+
   Clause& cl = ca[confl_clause];
   for (int i = 0; i < cl.size(); ++i) {
     seen[var(cl[i])] = 1;
   }
 
-  int end = options::proof() ? 0 :  trail_lim[0];
+  int end = trail_lim[0];
   for (int i = trail.size() - 1; i >= end; i--) {
     Var x = var(trail[i]);
     if (seen[x]) {
@@ -668,46 +588,33 @@ void Solver::analyzeFinal2(Lit p, CRef confl_clause, vec<Lit>& out_conflict) {
         // we skip p if was a learnt unit
         if (x != var(p)) {
           if (marker[x] == 2) {
-            assert (level(x) > 0);
+            Assert(level(x) > 0);
             out_conflict.push(~trail[i]);
-          } else {
-            if(d_bvp){d_bvp->getSatProof()->resolveOutUnit(~(trail[i])); }
           }
-        } else {
-          if(d_bvp){d_bvp->getSatProof()->resolveOutUnit(~p);} 
         }
       } else {
         Clause& clause = ca[reason(x)];
-        if(d_bvp){d_bvp->getSatProof()->addResolutionStep(trail[i],reason(x), sign(trail[i]));}
 
         for (int j = 1; j < clause.size(); j++)
         {
           if (level(var(clause[j])) > 0) seen[var(clause[j])] = 1;
-          if(d_bvp){
-            if (level(var(clause[j])) == 0)
-            {
-              d_bvp->getSatProof()->resolveOutUnit(clause[j]);
-              seen[var(clause[j])] =
-                  0;  // we don't need to resolve it out again
-            }
-          }
         }
       }
       seen[x] = 0;
     }
-    assert (seen[x] == 0); 
+    Assert(seen[x] == 0);
   }
-  assert (out_conflict.size()); 
+  Assert(out_conflict.size());
 }
 
 /*_________________________________________________________________________________________________
 |
 |  analyzeFinal : (p : Lit)  ->  [void]
-|  
+|
 |  Description:
-|    Specialized analysis procedure to express the final conflict in terms of assumptions.
-|    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
-|    stores the result in 'out_conflict'.
+|    Specialized analysis procedure to express the final conflict in terms of
+assumptions. |    Calculates the (possibly empty) set of assumptions that led to
+the assignment of 'p', and |    stores the result in 'out_conflict'.
 |________________________________________________________________________________________________@*/
 void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 {
@@ -716,53 +623,31 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
       out_conflict.push(p);
     }
 
-    if(d_bvp){
-      if (level(var(p)) == 0 && d_bvp->isAssumptionConflict()) {
-        Assert(marker[var(p)] == 2);
-        if (reason(var(p)) == CRef_Undef) {
-          d_bvp->startBVConflict(p);
-        }
-      }
-    }
-    
-    if (decisionLevel() == 0 && !options::proof()) {
+    if (decisionLevel() == 0)
+    {
       return;
     }
 
     seen[var(p)] = 1;
-    int end = options::proof() ? 0 : trail_lim[0];
-    
+    int end = trail_lim[0];
+
     for (int i = trail.size()-1; i >= end; i--){
         Var x = var(trail[i]);
         if (seen[x]) {
             if (reason(x) == CRef_Undef) {
-              assert(marker[x] == 2);
-              assert(level(x) > 0);
+              Assert(marker[x] == 2);
+              Assert(level(x) > 0);
               if (~trail[i] != p)
               {
                 out_conflict.push(~trail[i]);
               }
             } else {
               Clause& clause = ca[reason(x)];
-              if(d_bvp){
-                    if (d_bvp->isAssumptionConflict() &&
-                        trail[i] == p) {
-                      d_bvp->startBVConflict(reason(x));
-                    } else {
-                      d_bvp->getSatProof()->addResolutionStep(trail[i], reason(x), sign(trail[i]));
-                    }
-              }
               for (int j = 1; j < clause.size(); j++)
               {
                 if (level(var(clause[j])) > 0)
                 {
                   seen[var(clause[j])] = 1;
-                }
-                if(d_bvp){
-                  if (level(var(clause[j])) == 0)
-                  {
-                    d_bvp->getSatProof()->resolveOutUnit(clause[j]);
-                  }
                 }
               }
             }
@@ -771,23 +656,25 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
     }
 
     seen[var(p)] = 0;
-    assert (out_conflict.size());
+    Assert(out_conflict.size());
 }
 
 
 void Solver::uncheckedEnqueue(Lit p, CRef from)
 {
-    assert(value(p) == l_Undef);
-    assigns[var(p)] = lbool(!sign(p));
-    vardata[var(p)] = mkVarData(from, decisionLevel());
-    trail.push_(p);
-    if (decisionLevel() <= assumptions.size() && marker[var(p)] == 1) {
-      if (d_notify) {
-        Debug("bvminisat::explain")
-            << OUTPUT_TAG << "propagating " << p << std::endl;
-        d_notify->notify(p);
-      }
+  Assert(value(p) == l_Undef);
+  assigns[var(p)] = lbool(!sign(p));
+  vardata[var(p)] = mkVarData(from, decisionLevel());
+  trail.push_(p);
+  if (decisionLevel() <= assumptions.size() && marker[var(p)] == 1)
+  {
+    if (d_notify)
+    {
+      Debug("bvminisat::explain")
+          << OUTPUT_TAG << "propagating " << p << std::endl;
+      d_notify->notify(p);
     }
+  }
 }
 
 void Solver::popAssumption() {
@@ -805,10 +692,9 @@ lbool Solver::propagateAssumptions() {
 lbool Solver::assertAssumption(Lit p, bool propagate) {
   // TODO need to somehow mark the assumption as unit in the current context?
   // it's not always unit though, but this would be useful for debugging
-  
-  // assert(marker[var(p)] == 1);
 
- 
+  // Assert(marker[var(p)] == 1);
+
   if (decisionLevel() > assumptions.size()) {
     cancelUntil(assumptions.size());
   }
@@ -829,9 +715,9 @@ lbool Solver::assertAssumption(Lit p, bool propagate) {
   // run the propagation
   if (propagate) {
     only_bcp = true;
-    ccmin_mode = 0; 
+    ccmin_mode = 0;
     lbool result = search(-1);
-    return result; 
+    return result;
   } else {
     return l_True;
   }
@@ -841,18 +727,16 @@ void Solver::addMarkerLiteral(Var var) {
   // make sure it wasn't already marked
   Assert(marker[var] == 0);
   marker[var] = 1;
-  if(d_bvp){d_bvp->getSatProof()->registerAssumption(var);}
 }
-
 
 /*_________________________________________________________________________________________________
 |
 |  propagate : [void]  ->  [Clause*]
-|  
+|
 |  Description:
-|    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
-|    otherwise CRef_Undef.
-|  
+|    Propagates all enqueued facts. If a conflict arises, the conflicting clause
+is returned, |    otherwise CRef_Undef.
+|
 |    Post-conditions:
 |      * the propagation queue is empty, even if there was a conflict.
 |________________________________________________________________________________________________@*/
@@ -880,7 +764,7 @@ CRef Solver::propagate()
             Lit      false_lit = ~p;
             if (clause[0] == false_lit)
               clause[0] = clause[1], clause[1] = false_lit;
-            assert(clause[1] == false_lit);
+            Assert(clause[1] == false_lit);
             i++;
 
             // If 0th watch is true, then clause is already satisfied.
@@ -920,20 +804,24 @@ CRef Solver::propagate()
     return confl;
 }
 
-
 /*_________________________________________________________________________________________________
 |
 |  reduceDB : ()  ->  [void]
-|  
+|
 |  Description:
-|    Remove half of the learnt clauses, minus the clauses locked by the current assignment. Locked
-|    clauses are clauses that are reason to some assignment. Binary clauses are never removed.
+|    Remove half of the learnt clauses, minus the clauses locked by the current
+assignment. Locked |    clauses are clauses that are reason to some assignment.
+Binary clauses are never removed.
 |________________________________________________________________________________________________@*/
-struct reduceDB_lt { 
-    ClauseAllocator& ca;
-    reduceDB_lt(ClauseAllocator& ca_) : ca(ca_) {}
-    bool operator () (CRef x, CRef y) { 
-        return ca[x].size() > 2 && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity()); } 
+struct reduceDB_lt
+{
+  ClauseAllocator& ca;
+  reduceDB_lt(ClauseAllocator& ca_) : ca(ca_) {}
+  bool operator()(CRef x, CRef y)
+  {
+    return ca[x].size() > 2
+           && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity());
+  }
 };
 void Solver::reduceDB()
 {
@@ -963,14 +851,6 @@ void Solver::removeSatisfied(vec<CRef>& cs)
       Clause& clause = ca[cs[i]];
       if (satisfied(clause))
       {
-        if (locked(clause))
-        {
-          // store a resolution of the literal clause propagated
-          if (d_bvp)
-          {
-            d_bvp->getSatProof()->storeUnitResolution(clause[0]);
-          }
-        }
         removeClause(cs[i]);
       }
         else
@@ -989,245 +869,257 @@ void Solver::rebuildOrderHeap()
     order_heap.build(vs);
 }
 
-
 /*_________________________________________________________________________________________________
 |
 |  simplify : [void]  ->  [bool]
-|  
+|
 |  Description:
-|    Simplify the clause database according to the current top-level assigment. Currently, the only
-|    thing done here is the removal of satisfied clauses, but more things can be put here.
+|    Simplify the clause database according to the current top-level assigment.
+Currently, the only |    thing done here is the removal of satisfied clauses,
+but more things can be put here.
 |________________________________________________________________________________________________@*/
 bool Solver::simplify()
 {
-    assert(decisionLevel() == 0);
+  Assert(decisionLevel() == 0);
 
-    if (!ok || propagate() != CRef_Undef)
-        return ok = false;
+  if (!ok || propagate() != CRef_Undef) return ok = false;
 
-    if (nAssigns() == simpDB_assigns || (simpDB_props > 0))
-        return true;
+  if (nAssigns() == simpDB_assigns || (simpDB_props > 0)) return true;
 
-    // Remove satisfied clauses:
-    removeSatisfied(learnts);
-    if (remove_satisfied)        // Can be turned off.
-        removeSatisfied(clauses);
-    checkGarbage();
-    rebuildOrderHeap();
+  d_notify->spendResource(Resource::BvSatSimplifyStep);
 
-    simpDB_assigns = nAssigns();
-    simpDB_props   = clauses_literals + learnts_literals;   // (shouldn't depend on stats really, but it will do for now)
+  // Remove satisfied clauses:
+  removeSatisfied(learnts);
+  if (remove_satisfied)  // Can be turned off.
+    removeSatisfied(clauses);
+  checkGarbage();
+  rebuildOrderHeap();
 
-    return true;
+  simpDB_assigns = nAssigns();
+  simpDB_props =
+      clauses_literals + learnts_literals;  // (shouldn't depend on stats
+                                            // really, but it will do for now)
+
+  return true;
 }
-
 
 /*_________________________________________________________________________________________________
 |
 |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
-|  
+|
 |  Description:
-|    Search for a model the specified number of conflicts. 
+|    Search for a model the specified number of conflicts.
 |    NOTE! Use negative value for 'nof_conflicts' indicate infinity.
-|  
+|
 |  Output:
-|    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
-|    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
-|    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
+|    'l_True' if a partial assigment that is consistent with respect to the
+clauseset is found. If |    all variables are decision variables, this means
+that the clause set is satisfiable. 'l_False' |    if the clause set is
+unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
 |________________________________________________________________________________________________@*/
 lbool Solver::search(int nof_conflicts, UIP uip)
 {
-    assert(ok);
-    int         backtrack_level;
-    int         conflictC = 0;
-    vec<Lit>    learnt_clause;
-    starts++;
+  Assert(ok);
+  int backtrack_level;
+  int conflictC = 0;
+  vec<Lit> learnt_clause;
+  starts++;
 
-    for (;;){
-        CRef confl = propagate();
-        if (confl != CRef_Undef){
-            // CONFLICT
-            conflicts++; conflictC++;
+  for (;;)
+  {
+    d_notify->safePoint(Resource::BvSatPropagateStep);
+    CRef confl = propagate();
+    if (confl != CRef_Undef)
+    {
+      // CONFLICT
+      conflicts++;
+      conflictC++;
 
-            if (decisionLevel() == 0) {
-              // can this happen for bv?
-              if(d_bvp){ d_bvp->getSatProof()->finalizeProof(confl);}
-              return l_False;
-            }
+      if (decisionLevel() == 0)
+      {
+        // can this happen for bv?
+        return l_False;
+      }
 
-            learnt_clause.clear();
-            analyze(confl, learnt_clause, backtrack_level, uip);
+      learnt_clause.clear();
+      analyze(confl, learnt_clause, backtrack_level, uip);
 
-            Lit p = learnt_clause[0];
-            //bool assumption = marker[var(p)] == 2;
+      Lit p = learnt_clause[0];
+      // bool assumption = marker[var(p)] == 2;
 
-            CRef cr = CRef_Undef;
-            if (learnt_clause.size() > 1) {
-              cr = ca.alloc(learnt_clause, true);
-              learnts.push(cr);
-              attachClause(cr);
-              claBumpActivity(ca[cr]);
-              if(d_bvp){
-                 ClauseId id = d_bvp->getSatProof()->registerClause(cr, LEARNT);
-                 PSTATS(
-                 std::unordered_set<int> cl_levels;
-                 for (int i = 0; i < learnt_clause.size(); ++i) {
-                   cl_levels.insert(level(var(learnt_clause[i])));
-                 }
-                 if( d_bvp ){ d_bvp->getSatProof()->storeClauseGlue(id, cl_levels.size()); }
-                       )
-                 d_bvp->getSatProof()->endResChain(id);
-              }
-            }
-            
-            if (learnt_clause.size() == 1) {
-              // learning a unit clause
-              if(d_bvp){ d_bvp->getSatProof()->endResChain(learnt_clause[0]);}
-            }
-            
-            //  if the uip was an assumption we are unsat
-            if (level(var(p)) <= assumptions.size()) {
-              for (int i = 0; i < learnt_clause.size(); ++i) {
-                assert (level(var(learnt_clause[i])) <= decisionLevel()); 
-                seen[var(learnt_clause[i])] = 1;
-              }
+      CRef cr = CRef_Undef;
+      if (learnt_clause.size() > 1)
+      {
+        cr = ca.alloc(learnt_clause, true);
+        learnts.push(cr);
+        attachClause(cr);
+        claBumpActivity(ca[cr]);
+      }
 
-              // Starting new resolution chain for bit-vector proof
-              if( d_bvp ){
-                if (cr == CRef_Undef) {
-                  d_bvp->startBVConflict(learnt_clause[0]);
-                }
-                else { 
-                  d_bvp->startBVConflict(cr);
-                }
-              }
-              analyzeFinal(p, conflict);
-              if(d_bvp){ d_bvp->endBVConflict(conflict); }
-              Debug("bvminisat::search") << OUTPUT_TAG << " conflict on assumptions " << std::endl;
-              return l_False;
-            }
+      if (learnt_clause.size() == 1)
+      {
+        // learning a unit clause
+      }
 
-            if (!CVC4::options::bvEagerExplanations()) {
-              // check if uip leads to a conflict 
-              if (backtrack_level < assumptions.size()) {
-                cancelUntil(assumptions.size());
-                uncheckedEnqueue(p, cr);
-              
-                CRef new_confl = propagate();
-                if (new_confl != CRef_Undef) {
-                  // we have a conflict we now need to explain it
-                  // TODO: proof for analyzeFinal2
-                  if(d_bvp){ d_bvp->startBVConflict(new_confl); }
-                  analyzeFinal2(p, new_confl, conflict);
-                  if(d_bvp){ d_bvp->endBVConflict(conflict); }
-                  return l_False;
-                }
-              }
-            }
-
-            cancelUntil(backtrack_level);
-            uncheckedEnqueue(p, cr);
-    
-         
-            varDecayActivity();
-            claDecayActivity();
-
-            if (--learntsize_adjust_cnt == 0){
-                learntsize_adjust_confl *= learntsize_adjust_inc;
-                learntsize_adjust_cnt    = (int)learntsize_adjust_confl;
-                max_learnts             *= learntsize_inc;
-
-                if (verbosity >= 1)
-                    printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n", 
-                           (int)conflicts, 
-                           (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals, 
-                           (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progressEstimate()*100);
-            }
-
-        }else{
-            // NO CONFLICT
-            bool isWithinBudget;
-            try {
-              isWithinBudget =
-                  withinBudget(ResourceManager::Resource::BvSatConflictsStep);
-            }
-            catch (const CVC4::theory::Interrupted& e) {
-              // do some clean-up and rethrow 
-              cancelUntil(assumptions.size()); 
-              throw e; 
-            }
-
-            if ((decisionLevel() > assumptions.size() && nof_conflicts >= 0
-                 && conflictC >= nof_conflicts)
-                || !isWithinBudget)
-            {
-              // Reached bound on number of conflicts:
-              Debug("bvminisat::search")
-                  << OUTPUT_TAG << " restarting " << std::endl;
-              progress_estimate = progressEstimate();
-              cancelUntil(assumptions.size());
-              return l_Undef;
-            }
-
-            // Simplify the set of problem clauses:
-            if (decisionLevel() == 0 && !simplify()) {
-                Debug("bvminisat::search") << OUTPUT_TAG << " base level conflict, we're unsat" << std::endl;
-                return l_False;
-            }
-
-            // We can't erase clauses if there is unprocessed assumptions, there might be some
-            // propagationg we need to redu
-            if (decisionLevel() >= assumptions.size() && learnts.size()-nAssigns() >= max_learnts) {
-                // Reduce the set of learnt clauses:
-                Debug("bvminisat::search") << OUTPUT_TAG << " cleaning up database" << std::endl;
-                reduceDB();
-            }
-
-            Lit next = lit_Undef;
-            while (decisionLevel() < assumptions.size()){
-                // Perform user provided assumption:
-                Lit p = assumptions[decisionLevel()];
-                if (value(p) == l_True){
-                    // Dummy decision level:
-                    newDecisionLevel();
-                }else if (value(p) == l_False){
-                    marker[var(p)] = 2;
-                    
-                    if(d_bvp){  d_bvp->markAssumptionConflict(); }
-                    analyzeFinal(~p, conflict);
-                    if(d_bvp){ d_bvp->endBVConflict(conflict); }
-                    Debug("bvminisat::search") << OUTPUT_TAG << " assumption false, we're unsat" << std::endl;
-                    return l_False;
-                }else{
-                    marker[var(p)] = 2;
-                    next = p;
-                    break;
-                }
-            }
-
-            if (next == lit_Undef){
-
-                if (only_bcp) {
-                  Debug("bvminisat::search") << OUTPUT_TAG << " only bcp, skipping rest of the problem" << std::endl;
-                  return l_True;
-                }
-
-                // New variable decision:
-                decisions++;
-                next = pickBranchLit();
-
-                if (next == lit_Undef) {
-                    Debug("bvminisat::search") << OUTPUT_TAG << " satisfiable" << std::endl;
-                    // Model found:
-                    return l_True;
-                }
-            }
-
-            // Increase decision level and enqueue 'next'
-            newDecisionLevel();
-            uncheckedEnqueue(next);
+      //  if the uip was an assumption we are unsat
+      if (level(var(p)) <= assumptions.size())
+      {
+        for (int i = 0; i < learnt_clause.size(); ++i)
+        {
+          Assert(level(var(learnt_clause[i])) <= decisionLevel());
+          seen[var(learnt_clause[i])] = 1;
         }
+
+        analyzeFinal(p, conflict);
+        Debug("bvminisat::search")
+            << OUTPUT_TAG << " conflict on assumptions " << std::endl;
+        return l_False;
+      }
+
+      if (!cvc5::options::bvEagerExplanations())
+      {
+        // check if uip leads to a conflict
+        if (backtrack_level < assumptions.size())
+        {
+          cancelUntil(assumptions.size());
+          uncheckedEnqueue(p, cr);
+
+          CRef new_confl = propagate();
+          if (new_confl != CRef_Undef)
+          {
+            // we have a conflict we now need to explain it
+            analyzeFinal2(p, new_confl, conflict);
+            return l_False;
+          }
+        }
+      }
+
+      cancelUntil(backtrack_level);
+      uncheckedEnqueue(p, cr);
+
+      varDecayActivity();
+      claDecayActivity();
+
+      if (--learntsize_adjust_cnt == 0)
+      {
+        learntsize_adjust_confl *= learntsize_adjust_inc;
+        learntsize_adjust_cnt = (int)learntsize_adjust_confl;
+        max_learnts *= learntsize_inc;
+
+        if (verbosity >= 1)
+          printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
+                 (int)conflicts,
+                 (int)dec_vars
+                     - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]),
+                 nClauses(),
+                 (int)clauses_literals,
+                 (int)max_learnts,
+                 nLearnts(),
+                 (double)learnts_literals / nLearnts(),
+                 progressEstimate() * 100);
+      }
     }
+    else
+    {
+      // NO CONFLICT
+      bool isWithinBudget;
+      try
+      {
+        isWithinBudget =
+            withinBudget(Resource::BvSatConflictsStep);
+      }
+      catch (const cvc5::theory::Interrupted& e)
+      {
+        // do some clean-up and rethrow
+        cancelUntil(assumptions.size());
+        throw e;
+      }
+
+      if ((decisionLevel() > assumptions.size() && nof_conflicts >= 0
+           && conflictC >= nof_conflicts)
+          || !isWithinBudget)
+      {
+        // Reached bound on number of conflicts:
+        Debug("bvminisat::search") << OUTPUT_TAG << " restarting " << std::endl;
+        progress_estimate = progressEstimate();
+        cancelUntil(assumptions.size());
+        return l_Undef;
+      }
+
+      // Simplify the set of problem clauses:
+      if (decisionLevel() == 0 && !simplify())
+      {
+        Debug("bvminisat::search")
+            << OUTPUT_TAG << " base level conflict, we're unsat" << std::endl;
+        return l_False;
+      }
+
+      // We can't erase clauses if there is unprocessed assumptions, there might
+      // be some propagationg we need to redu
+      if (decisionLevel() >= assumptions.size()
+          && learnts.size() - nAssigns() >= max_learnts)
+      {
+        // Reduce the set of learnt clauses:
+        Debug("bvminisat::search")
+            << OUTPUT_TAG << " cleaning up database" << std::endl;
+        reduceDB();
+      }
+
+      Lit next = lit_Undef;
+      while (decisionLevel() < assumptions.size())
+      {
+        // Perform user provided assumption:
+        Lit p = assumptions[decisionLevel()];
+        if (value(p) == l_True)
+        {
+          // Dummy decision level:
+          newDecisionLevel();
+        }
+        else if (value(p) == l_False)
+        {
+          marker[var(p)] = 2;
+
+          analyzeFinal(~p, conflict);
+          Debug("bvminisat::search")
+              << OUTPUT_TAG << " assumption false, we're unsat" << std::endl;
+          return l_False;
+        }
+        else
+        {
+          marker[var(p)] = 2;
+          next = p;
+          break;
+        }
+      }
+
+      if (next == lit_Undef)
+      {
+        if (only_bcp)
+        {
+          Debug("bvminisat::search")
+              << OUTPUT_TAG << " only bcp, skipping rest of the problem"
+              << std::endl;
+          return l_True;
+        }
+
+        // New variable decision:
+        decisions++;
+        next = pickBranchLit();
+
+        if (next == lit_Undef)
+        {
+          Debug("bvminisat::search")
+              << OUTPUT_TAG << " satisfiable" << std::endl;
+          // Model found:
+          return l_True;
+        }
+      }
+
+      // Increase decision level and enqueue 'next'
+      newDecisionLevel();
+      uncheckedEnqueue(next);
+    }
+  }
 }
 
 
@@ -1283,7 +1175,7 @@ lbool Solver::solve_()
     conflict.clear();
 
     ccmin_mode = 0;
-    
+
     if (!ok) return l_False;
 
     solves++;
@@ -1305,7 +1197,7 @@ lbool Solver::solve_()
     while (status == l_Undef){
         double rest_base = luby_restart ? luby(restart_inc, curr_restarts) : pow(restart_inc, curr_restarts);
         status = search(rest_base * restart_first);
-        if (!withinBudget(ResourceManager::Resource::BvSatConflictsStep)) break;
+        if (!withinBudget(Resource::BvSatConflictsStep)) break;
         curr_restarts++;
     }
 
@@ -1324,55 +1216,35 @@ lbool Solver::solve_()
 
 //=================================================================================================
 // Bitvector propagations
-// 
+//
 
 void Solver::explain(Lit p, std::vector<Lit>& explanation) {
   Debug("bvminisat::explain") << OUTPUT_TAG << "starting explain of " << p << std::endl;
 
   // top level fact, no explanation necessary
   if (level(var(p)) == 0) {
-    if(d_bvp){
-          // the only way a marker variable is 
-       if (reason(var(p)) == CRef_Undef) {
-          d_bvp->startBVConflict(p);
-          vec<Lit> confl;
-          confl.push(p);
-          d_bvp->endBVConflict(confl);
-          return;
-       }
-    }
-    if (!THEORY_PROOF_ON())
-      return;
+    return;
   }
-  
+
   seen[var(p)] = 1;
 
   // if we are called at decisionLevel = 0 trail_lim is empty
-  int bottom = options::proof() ? 0 : trail_lim[0];
+  int bottom = trail_lim[0];
   for (int i = trail.size()-1; i >= bottom; i--){
     Var x = var(trail[i]);
     if (seen[x]) {
       if (reason(x) == CRef_Undef) {
         if (marker[x] == 2) {
-          assert(level(x) > 0);
+          Assert(level(x) > 0);
           explanation.push_back(trail[i]);
         } else {
           Assert(level(x) == 0);
-          if(d_bvp){ d_bvp->getSatProof()->resolveOutUnit(~(trail[i])); }
          }
-        
       } else {
         Clause& clause = ca[reason(x)];
-        if(d_bvp){
-          if (p == trail[i]) {
-            d_bvp->startBVConflict(reason(var(p)));
-          } else {
-            d_bvp->getSatProof()->addResolutionStep(trail[i], reason(x), sign(trail[i]));
-          }
-        }
         for (int j = 1; j < clause.size(); j++)
         {
-          if (level(var(clause[j])) > 0 || options::proof())
+          if (level(var(clause[j])) > 0)
           {
             seen[var(clause[j])] = 1;
           }
@@ -1382,28 +1254,11 @@ void Solver::explain(Lit p, std::vector<Lit>& explanation) {
     }
   }
   seen[var(p)] = 0;
-
-  if(d_bvp){
-    vec<Lit> conflict_clause;
-    conflict_clause.push(p);
-    for(unsigned i = 0; i < explanation.size(); ++i) {
-      conflict_clause.push(~explanation[i]);
-    }
-    d_bvp->endBVConflict(conflict_clause);
-  }
-}
-
-void Solver::setProofLog(proof::ResolutionBitVectorProof* bvp)
-{
-  d_bvp = bvp;
-  d_bvp->initSatProof(this);
-  d_bvp->getSatProof()->registerTrueLit(mkLit(varTrue, false));
-  d_bvp->getSatProof()->registerFalseLit(mkLit(varFalse, true));
 }
 
 //=================================================================================================
 // Writing CNF to DIMACS:
-// 
+//
 // FIXME: this needs to be rewritten completely.
 
 static Var mapVar(Var x, vec<Var>& map, Var& max)
@@ -1454,7 +1309,7 @@ void Solver::toDimacs(FILE* f, const vec<Lit>& assumps)
     for (int i = 0; i < clauses.size(); i++)
         if (!satisfied(ca[clauses[i]]))
             cnt++;
-        
+
     for (int i = 0; i < clauses.size(); i++)
         if (!satisfied(ca[clauses[i]])){
           Clause& clause = ca[clauses[i]];
@@ -1468,8 +1323,11 @@ void Solver::toDimacs(FILE* f, const vec<Lit>& assumps)
     fprintf(f, "p cnf %d %d\n", max, cnt);
 
     for (int i = 0; i < assumps.size(); i++){
-        assert(value(assumps[i]) != l_False);
-        fprintf(f, "%s%d 0\n", sign(assumps[i]) ? "-" : "", mapVar(var(assumps[i]), map, max)+1);
+      Assert(value(assumps[i]) != l_False);
+      fprintf(f,
+              "%s%d 0\n",
+              sign(assumps[i]) ? "-" : "",
+              mapVar(var(assumps[i]), map, max) + 1);
     }
 
     for (int i = 0; i < clauses.size(); i++)
@@ -1494,8 +1352,7 @@ void Solver::relocAll(ClauseAllocator& to)
             Lit p = mkLit(v, s);
             // printf(" >>> RELOCING: %s%d\n", sign(p)?"-":"", var(p)+1);
             vec<Watcher>& ws = watches[p];
-            for (int j = 0; j < ws.size(); j++)
-              ca.reloc(ws[j].cref, to, d_bvp ? d_bvp->getSatProof() : NULL);
+            for (int j = 0; j < ws.size(); j++) ca.reloc(ws[j].cref, to);
         }
 
     // All reasons:
@@ -1504,20 +1361,16 @@ void Solver::relocAll(ClauseAllocator& to)
         Var v = var(trail[i]);
 
         if (reason(v) != CRef_Undef && (ca[reason(v)].reloced() || locked(ca[reason(v)])))
-          ca.reloc(vardata[v].reason, to, d_bvp ? d_bvp->getSatProof() : NULL);
+          ca.reloc(vardata[v].reason, to);
     }
 
     // All learnt:
     //
-    for (int i = 0; i < learnts.size(); i++)
-      ca.reloc(learnts[i], to, d_bvp ? d_bvp->getSatProof() : NULL);
+    for (int i = 0; i < learnts.size(); i++) ca.reloc(learnts[i], to);
 
     // All original:
     //
-    for (int i = 0; i < clauses.size(); i++)
-      ca.reloc(clauses[i], to, d_bvp ? d_bvp->getSatProof() : NULL);
-
-    if(d_bvp){ d_bvp->getSatProof()->finishUpdateCRef(); }
+    for (int i = 0; i < clauses.size(); i++) ca.reloc(clauses[i], to);
 }
 
 
@@ -1525,49 +1378,44 @@ void Solver::garbageCollect()
 {
     // Initialize the next region to a size corresponding to the estimated utilization degree. This
     // is not precise but should avoid some unnecessary reallocations for the new region:
-    ClauseAllocator to(ca.size() - ca.wasted()); 
-    Debug("bvminisat") << " BVMinisat::Garbage collection \n"; 
+    ClauseAllocator to(ca.size() - ca.wasted());
+    Debug("bvminisat") << " BVMinisat::Garbage collection \n";
     relocAll(to);
     if (verbosity >= 2)
-        printf("|  Garbage collection:   %12d bytes => %12d bytes             |\n", 
-               ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
+      printf(
+          "|  Garbage collection:   %12d bytes => %12d bytes             |\n",
+          ca.size() * ClauseAllocator::Unit_Size,
+          to.size() * ClauseAllocator::Unit_Size);
     to.moveTo(ca);
 }
 
-void ClauseAllocator::reloc(CRef& cr,
-                            ClauseAllocator& to,
-                            CVC4::TSatProof<Solver>* proof)
+void ClauseAllocator::reloc(CRef& cr, ClauseAllocator& to)
 {
-  CRef old = cr;  // save the old reference
-
   Clause& c = operator[](cr);
   if (c.reloced()) { cr = c.relocation(); return; }
-  
+
   cr = to.alloc(c, c.learnt());
   c.relocate(cr);
-  if (proof)
-  {
-    proof->updateCRef(old, cr);
-  }
-  
-  // Copy extra data-fields: 
-  // (This could be cleaned-up. Generalize Clause-constructor to be applicable here instead?)
+
+  // Copy extra data-fields:
+  // (This could be cleaned-up. Generalize Clause-constructor to be applicable
+  // here instead?)
   to[cr].mark(c.mark());
   if (to[cr].learnt())         to[cr].activity() = c.activity();
   else if (to[cr].has_extra()) to[cr].calcAbstraction();
 }
 
 void Solver::setNotify(Notify* toNotify) { d_notify = toNotify; }
-bool Solver::withinBudget(ResourceManager::Resource r) const
+bool Solver::withinBudget(Resource r) const
 {
   AlwaysAssert(d_notify);
   d_notify->safePoint(r);
 
   return !asynch_interrupt &&
-         (conflict_budget < 0 || conflicts < (uint64_t)conflict_budget) &&
+         (conflict_budget < 0 || conflicts < conflict_budget) &&
          (propagation_budget < 0 ||
-          propagations < (uint64_t)propagation_budget);
+          propagations < propagation_budget);
 }
 
-} /* CVC4::BVMinisat namespace */
-} /* CVC4 namespace */
+}  // namespace BVMinisat
+}  // namespace cvc5

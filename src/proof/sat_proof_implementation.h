@@ -1,35 +1,31 @@
-/*********************                                                        */
-/*! \file sat_proof_implementation.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Liana Hadarean, Tim King, Guy Katz
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Resolution proof
- **
- ** Resolution proof
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Liana Hadarean, Tim King, Guy Katz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Resolution proof.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__SAT__PROOF_IMPLEMENTATION_H
-#define CVC4__SAT__PROOF_IMPLEMENTATION_H
+#ifndef CVC5__SAT__PROOF_IMPLEMENTATION_H
+#define CVC5__SAT__PROOF_IMPLEMENTATION_H
 
 #include "proof/clause_id.h"
-#include "proof/cnf_proof.h"
 #include "proof/sat_proof.h"
-#include "prop/bvminisat/bvminisat.h"
-#include "prop/bvminisat/core/Solver.h"
 #include "prop/minisat/core/Solver.h"
 #include "prop/minisat/minisat.h"
 #include "prop/sat_solver_types.h"
 #include "smt/smt_statistics_registry.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 template <class Solver>
 void printLit(typename Solver::TLit l) {
@@ -186,10 +182,11 @@ void ResChain<Solver>::addRedundantLit(typename Solver::TLit lit) {
 
 /// SatProof
 template <class Solver>
-TSatProof<Solver>::TSatProof(Solver* solver, context::Context* context,
-                             const std::string& name, bool checkRes)
-    : d_name(name),
-      d_emptyClauseId(ClauseIdEmpty),
+TSatProof<Solver>::TSatProof(Solver* solver,
+                             context::Context* context,
+                             const std::string& name,
+                             bool checkRes)
+    : d_emptyClauseId(ClauseIdEmpty),
       d_seenLearnt(),
       d_assumptionConflictsDebug(),
       d_solver(solver),
@@ -215,7 +212,8 @@ TSatProof<Solver>::TSatProof(Solver* solver, context::Context* context,
       d_seenInputs(),
       d_seenLemmas(),
       d_satProofConstructed(false),
-      d_statistics(name) {
+      d_statistics(name)
+{
 }
 
 template <class Solver>
@@ -712,11 +710,6 @@ void TSatProof<Solver>::registerResolution(ClauseId id, ResChain<Solver>* res) {
     Assert(checkResolution(id));
   }
 
-  PSTATS(uint64_t resolutionSteps =
-             static_cast<uint64_t>(res.getSteps().size());
-         d_statistics.d_resChainLengths << resolutionSteps;
-         d_statistics.d_avgChainLength.addEntry(resolutionSteps);
-         ++(d_statistics.d_numLearnedClauses);)
 }
 
 /// recording resolutions
@@ -912,14 +905,6 @@ void TSatProof<Solver>::markDeleted(typename Solver::TCRef clause) {
   }
 }
 
-// template<>
-// void toSatClause< ::BVMinisat::Solver> (const BVMinisat::Solver::TClause&
-// minisat_cl,
-//                                         prop::SatClause& sat_cl) {
-
-//   prop::BVMinisatSatSolver::toSatClause(minisat_cl, sat_cl);
-// }
-
 template <class Solver>
 void TSatProof<Solver>::constructProof(ClauseId conflict) {
   d_satProofConstructed = true;
@@ -1002,9 +987,6 @@ void TSatProof<Solver>::collectClauses(ClauseId id) {
 
   const ResolutionChain& res = getResolutionChain(id);
   const typename ResolutionChain::ResSteps& steps = res.getSteps();
-  PSTATS(d_statistics.d_usedResChainLengths
-             << ((uint64_t)steps.size());
-         d_statistics.d_usedClauseGlue << ((uint64_t)d_glueMap[id]););
   ClauseId start = res.getStart();
   collectClauses(start);
 
@@ -1018,8 +1000,6 @@ void TSatProof<Solver>::collectClausesUsed(IdToSatClause& inputs,
                                            IdToSatClause& lemmas) {
   inputs = d_seenInputs;
   lemmas = d_seenLemmas;
-  PSTATS(d_statistics.d_numLearnedInProof.setData(d_seenLearnt.size());
-         d_statistics.d_numLemmasInProof.setData(d_seenLemmas.size()););
 }
 
 template <class Solver>
@@ -1030,48 +1010,31 @@ void TSatProof<Solver>::storeClauseGlue(ClauseId clause, int glue) {
 
 template <class Solver>
 TSatProof<Solver>::Statistics::Statistics(const std::string& prefix)
-    : d_numLearnedClauses("satproof::" + prefix + "::NumLearnedClauses", 0),
-      d_numLearnedInProof("satproof::" + prefix + "::NumLearnedInProof", 0),
-      d_numLemmasInProof("satproof::" + prefix + "::NumLemmasInProof", 0),
-      d_avgChainLength("satproof::" + prefix + "::AvgResChainLength"),
-      d_resChainLengths("satproof::" + prefix + "::ResChainLengthsHist"),
-      d_usedResChainLengths("satproof::" + prefix +
-                            "::UsedResChainLengthsHist"),
-      d_clauseGlue("satproof::" + prefix + "::ClauseGlueHist"),
-      d_usedClauseGlue("satproof::" + prefix + "::UsedClauseGlueHist") {
-  smtStatisticsRegistry()->registerStat(&d_numLearnedClauses);
-  smtStatisticsRegistry()->registerStat(&d_numLearnedInProof);
-  smtStatisticsRegistry()->registerStat(&d_numLemmasInProof);
-  smtStatisticsRegistry()->registerStat(&d_avgChainLength);
-  smtStatisticsRegistry()->registerStat(&d_resChainLengths);
-  smtStatisticsRegistry()->registerStat(&d_usedResChainLengths);
-  smtStatisticsRegistry()->registerStat(&d_clauseGlue);
-  smtStatisticsRegistry()->registerStat(&d_usedClauseGlue);
+    : d_numLearnedClauses(
+        smtStatisticsRegistry().registerInt(prefix + "NumLearnedClauses")),
+      d_numLearnedInProof(
+          smtStatisticsRegistry().registerInt(prefix + "NumLearnedInProof")),
+      d_numLemmasInProof(
+          smtStatisticsRegistry().registerInt(prefix + "NumLemmasInProof")),
+      d_avgChainLength(smtStatisticsRegistry().registerAverage(
+          prefix + "AvgResChainLength")),
+      d_resChainLengths(smtStatisticsRegistry().registerHistogram<uint64_t>(
+          prefix + "ResChainLengthsHist")),
+      d_usedResChainLengths(smtStatisticsRegistry().registerHistogram<uint64_t>(
+          prefix + "UsedResChainLengthsHist")),
+      d_clauseGlue(smtStatisticsRegistry().registerHistogram<uint64_t>(
+          prefix + "ClauseGlueHist")),
+      d_usedClauseGlue(smtStatisticsRegistry().registerHistogram<uint64_t>(
+          prefix + "UsedClauseGlueHist"))
+{
 }
 
-template <class Solver>
-TSatProof<Solver>::Statistics::~Statistics() {
-  smtStatisticsRegistry()->unregisterStat(&d_numLearnedClauses);
-  smtStatisticsRegistry()->unregisterStat(&d_numLearnedInProof);
-  smtStatisticsRegistry()->unregisterStat(&d_numLemmasInProof);
-  smtStatisticsRegistry()->unregisterStat(&d_avgChainLength);
-  smtStatisticsRegistry()->unregisterStat(&d_resChainLengths);
-  smtStatisticsRegistry()->unregisterStat(&d_usedResChainLengths);
-  smtStatisticsRegistry()->unregisterStat(&d_clauseGlue);
-  smtStatisticsRegistry()->unregisterStat(&d_usedClauseGlue);
-}
-
-inline std::ostream& operator<<(std::ostream& out, CVC4::ClauseKind k) {
+inline std::ostream& operator<<(std::ostream& out, cvc5::ClauseKind k)
+{
   switch (k) {
-    case CVC4::INPUT:
-      out << "INPUT";
-      break;
-    case CVC4::THEORY_LEMMA:
-      out << "THEORY_LEMMA";
-      break;
-    case CVC4::LEARNT:
-      out << "LEARNT";
-      break;
+    case cvc5::INPUT: out << "INPUT"; break;
+    case cvc5::THEORY_LEMMA: out << "THEORY_LEMMA"; break;
+    case cvc5::LEARNT: out << "LEARNT"; break;
     default:
       out << "ClauseKind Unknown! [" << unsigned(k) << "]";
   }
@@ -1079,6 +1042,6 @@ inline std::ostream& operator<<(std::ostream& out, CVC4::ClauseKind k) {
   return out;
 }
 
-} /* CVC4 namespace */
+}  // namespace cvc5
 
-#endif /* CVC4__SAT__PROOF_IMPLEMENTATION_H */
+#endif /* CVC5__SAT__PROOF_IMPLEMENTATION_H */

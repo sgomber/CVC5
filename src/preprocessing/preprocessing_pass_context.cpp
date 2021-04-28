@@ -1,50 +1,44 @@
-/*********************                                                        */
-/*! \file preprocessing_pass_context.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Aina Niemetz, Mathias Preiner, Andres Noetzli
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The preprocessing pass context for passes
- **
- ** The preprocessing pass context for passes.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Aina Niemetz, Andrew Reynolds, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The preprocessing pass context for passes.
+ */
 
-#include "preprocessing_pass_context.h"
+#include "preprocessing/preprocessing_pass_context.h"
 
 #include "expr/node_algorithm.h"
+#include "theory/theory_engine.h"
+#include "theory/theory_model.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace preprocessing {
 
 PreprocessingPassContext::PreprocessingPassContext(
     SmtEngine* smt,
-    ResourceManager* resourceManager,
-    RemoveTermFormulas* iteRemover,
-    theory::booleans::CircuitPropagator* circuitPropagator)
+    theory::booleans::CircuitPropagator* circuitPropagator,
+    ProofNodeManager* pnm)
     : d_smt(smt),
-      d_resourceManager(resourceManager),
-      d_iteRemover(iteRemover),
-      d_topLevelSubstitutions(smt->getUserContext()),
+      d_resourceManager(smt->getResourceManager()),
+      d_topLevelSubstitutions(smt->getUserContext(), pnm),
       d_circuitPropagator(circuitPropagator),
+      d_pnm(pnm),
       d_symsInAssertions(smt->getUserContext())
 {
 }
 
-void PreprocessingPassContext::widenLogic(theory::TheoryId id)
+theory::TrustSubstitutionMap&
+PreprocessingPassContext::getTopLevelSubstitutions()
 {
-  LogicRequest req(*d_smt);
-  req.widenLogic(id);
-}
-
-void PreprocessingPassContext::enableIntegers()
-{
-  LogicRequest req(*d_smt);
-  req.enableIntegers();
+  return d_topLevelSubstitutions;
 }
 
 void PreprocessingPassContext::recordSymbolsInAssertions(
@@ -62,5 +56,26 @@ void PreprocessingPassContext::recordSymbolsInAssertions(
   }
 }
 
+void PreprocessingPassContext::addModelSubstitution(const Node& lhs,
+                                                    const Node& rhs)
+{
+  getTheoryEngine()->getModel()->addSubstitution(
+      lhs, d_smt->expandDefinitions(rhs, false));
+}
+
+void PreprocessingPassContext::addSubstitution(const Node& lhs,
+                                               const Node& rhs,
+                                               ProofGenerator* pg)
+{
+  d_topLevelSubstitutions.addSubstitution(lhs, rhs, pg);
+  // also add as a model substitution
+  addModelSubstitution(lhs, rhs);
+}
+
+ProofNodeManager* PreprocessingPassContext::getProofNodeManager()
+{
+  return d_pnm;
+}
+
 }  // namespace preprocessing
-}  // namespace CVC4
+}  // namespace cvc5

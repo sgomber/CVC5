@@ -1,21 +1,22 @@
-/*********************                                                        */
-/*! \file ext_solver.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Solver for extended functions of theory of strings.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Solver for extended functions of theory of strings.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__STRINGS__EXTF_SOLVER_H
-#define CVC4__THEORY__STRINGS__EXTF_SOLVER_H
+#ifndef CVC5__THEORY__STRINGS__EXTF_SOLVER_H
+#define CVC5__THEORY__STRINGS__EXTF_SOLVER_H
 
 #include <map>
 #include <vector>
@@ -32,7 +33,7 @@
 #include "theory/strings/strings_rewriter.h"
 #include "theory/strings/theory_strings_preprocess.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
@@ -83,9 +84,7 @@ class ExtfSolver
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
 
  public:
-  ExtfSolver(context::Context* c,
-             context::UserContext* u,
-             SolverState& s,
+  ExtfSolver(SolverState& s,
              InferenceManager& im,
              TermRegistry& tr,
              StringsRewriter& rewriter,
@@ -94,7 +93,6 @@ class ExtfSolver
              ExtTheory& et,
              SequencesStatistics& statistics);
   ~ExtfSolver();
-
   /** check extended functions evaluation
    *
    * This applies "context-dependent simplification" for all active extended
@@ -156,6 +154,12 @@ class ExtfSolver
    */
   std::vector<Node> getActive(Kind k) const;
   //---------------------------------- end information about ExtTheory
+  /**
+   * Print the relevant information regarding why we have a model, return as a
+   * string.
+   */
+  std::string debugPrintModel();
+
  private:
   /** do reduction
    *
@@ -211,8 +215,25 @@ class ExtfSolver
   NodeSet d_reduced;
 };
 
+/** An extended theory callback */
+class StringsExtfCallback : public ExtTheoryCallback
+{
+ public:
+  StringsExtfCallback() : d_esolver(nullptr) {}
+  /**
+   * Get current substitution based on the underlying extended function
+   * solver.
+   */
+  bool getCurrentSubstitution(int effort,
+                              const std::vector<Node>& vars,
+                              std::vector<Node>& subs,
+                              std::map<Node, std::vector<Node> >& exp) override;
+  /** The extended function solver */
+  ExtfSolver* d_esolver;
+};
+
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__STRINGS__EXTF_SOLVER_H */
+#endif /* CVC5__THEORY__STRINGS__EXTF_SOLVER_H */

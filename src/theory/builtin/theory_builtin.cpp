@@ -1,29 +1,27 @@
-/*********************                                                        */
-/*! \file theory_builtin.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of the builtin theory.
- **
- ** Implementation of the builtin theory.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Mudathir Mohamed, Andrew Reynolds, Haniel Barbosa
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of the builtin theory.
+ */
 
 #include "theory/builtin/theory_builtin.h"
 
 #include "expr/kind.h"
+#include "expr/proof_node_manager.h"
 #include "theory/builtin/theory_builtin_rewriter.h"
 #include "theory/theory_model.h"
 #include "theory/valuation.h"
 
-using namespace std;
-
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace builtin {
 
@@ -31,10 +29,15 @@ TheoryBuiltin::TheoryBuiltin(context::Context* c,
                              context::UserContext* u,
                              OutputChannel& out,
                              Valuation valuation,
-                             const LogicInfo& logicInfo)
-    : Theory(THEORY_BUILTIN, c, u, out, valuation, logicInfo)
+                             const LogicInfo& logicInfo,
+                             ProofNodeManager* pnm)
+    : Theory(THEORY_BUILTIN, c, u, out, valuation, logicInfo, pnm)
 {
 }
+
+TheoryRewriter* TheoryBuiltin::getTheoryRewriter() { return &d_rewriter; }
+
+ProofRuleChecker* TheoryBuiltin::getProofChecker() { return &d_checker; }
 
 std::string TheoryBuiltin::identify() const
 {
@@ -54,4 +57,4 @@ void TheoryBuiltin::finishInit()
 
 }  // namespace builtin
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

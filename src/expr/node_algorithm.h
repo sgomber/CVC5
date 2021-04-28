@@ -1,25 +1,25 @@
-/*********************                                                        */
-/*! \file node_algorithm.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Haniel Barbosa
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Common algorithms on nodes
- **
- ** This file implements common algorithms applied to nodes, such as checking if
- ** a node contains a free or a bound variable. This file should generally only
- ** be included in source files.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Yoni Zohar
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ * Common algorithms on nodes.
+ *
+ * This file implements common algorithms applied to nodes, such as checking if
+ * a node contains a free or a bound variable. This file should generally only
+ * be included in source files.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__EXPR__NODE_ALGORITHM_H
-#define CVC4__EXPR__NODE_ALGORITHM_H
+#ifndef CVC5__EXPR__NODE_ALGORITHM_H
+#define CVC5__EXPR__NODE_ALGORITHM_H
 
 #include <unordered_map>
 #include <vector>
@@ -27,7 +27,7 @@
 #include "expr/node.h"
 #include "expr/type_node.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace expr {
 
 /**
@@ -105,6 +105,20 @@ bool hasClosure(Node n);
 bool getFreeVariables(TNode n,
                       std::unordered_set<Node, NodeHashFunction>& fvs,
                       bool computeFv = true);
+/**
+ * Get the free variables in n, that is, the subterms of n of kind
+ * BOUND_VARIABLE that are not bound in n or occur in scope, adds these to fvs.
+ * @param n The node under investigation
+ * @param fvs The set which free variables are added to
+ * @param scope The scope we are considering.
+ * @param computeFv If this flag is false, then we only return true/false and
+ * do not add to fvs.
+ * @return true iff this node contains a free variable.
+ */
+bool getFreeVariablesScope(TNode n,
+                           std::unordered_set<Node, NodeHashFunction>& fvs,
+                           std::unordered_set<TNode, TNodeHashFunction>& scope,
+                           bool computeFv = true);
 
 /**
  * Get all variables in n.
@@ -134,6 +148,18 @@ void getSymbols(TNode n,
                 std::unordered_set<TNode, TNodeHashFunction>& visited);
 
 /**
+ * For term n, this function collects the subterms of n whose kind is k.
+ * @param n The node under investigation
+ * @param k The kind we are considering
+ * @param topLevel If true, we collect only the top-level subterms with kind k.
+ * @param ts The set which the symbols of n are added to
+ */
+void getKindSubterms(TNode n,
+                     Kind k,
+                     bool topLevel,
+                     std::unordered_set<Node, NodeHashFunction>& ts);
+
+/**
  * For term n, this function collects the operators that occur in n.
  * @param n The node under investigation
  * @param ops The map (from each type to operators of that type) which the
@@ -157,7 +183,7 @@ void getOperatorsMap(
 
 /*
  * Substitution of Nodes in a capture avoiding way.
- * If x occurs free in n and it is substituted by a term t 
+ * If x occurs free in n and it is substituted by a term t
  * and t includes some variable y that is bound in n,
  * then using alpha conversion y is replaced with a fresh bound variable
  * before the substitution.
@@ -166,9 +192,9 @@ void getOperatorsMap(
 Node substituteCaptureAvoiding(TNode n, Node src, Node dest);
 
 /**
- * Same as substituteCaptureAvoiding above, but with a 
- * simultaneous substitution of a vector of variables.  
- * Elements in source will be replaced by their corresponding element in dest. 
+ * Same as substituteCaptureAvoiding above, but with a
+ * simultaneous substitution of a vector of variables.
+ * Elements in source will be replaced by their corresponding element in dest.
  * Both vectors should have the same size.
  */
 Node substituteCaptureAvoiding(TNode n,
@@ -185,7 +211,30 @@ Node substituteCaptureAvoiding(TNode n,
 void getComponentTypes(
     TypeNode t, std::unordered_set<TypeNode, TypeNodeHashFunction>& types);
 
+/** match
+ *
+ * Given two terms `n1` and `n2` containing free variables, match returns true
+ * if `n2` is an instance of `n1`. In which case, `subs` is a mapping from the
+ * free variables in `n1` to corresponding terms in `n2` such that:
+ *
+ * n1 * subs = n2 (where * denotes application of substitution).
+ *
+ * For example, given:
+ * n1 = (+ a (* x 2)) (x denotes a free variable)
+ * n2 = (+ a (* b 2))
+ * a call to match should return `true` with subs = {(x, b)}
+ *
+ * @param n1 the term (containing free vars) to compare an instance term
+ * against
+ * @param n2 the instance term in question
+ * @param subs the mapping from free vars in `n1` to terms in `n2`
+ * @return whether or not `n2` is an instance of `n1`
+ */
+bool match(Node n1,
+           Node n2,
+           std::unordered_map<Node, Node, NodeHashFunction>& subs);
+
 }  // namespace expr
-}  // namespace CVC4
+}  // namespace cvc5
 
 #endif

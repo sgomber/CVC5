@@ -1,20 +1,18 @@
-/*********************                                                        */
-/*! \file logic_info.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Morgan Deters, Tim King, Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief A class giving information about a logic (group a theory modules
- ** and configuration information)
- **
- ** A class giving information about a logic (group of theory modules and
- ** configuration information).
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Morgan Deters, Tim King, Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * A class giving information about a logic (group a theory modules
+ * and configuration information)
+ */
 #include "theory/logic_info.h"
 
 #include <cstring>
@@ -23,12 +21,13 @@
 #include <string>
 
 #include "base/check.h"
+#include "base/configuration.h"
 #include "expr/kind.h"
 
 using namespace std;
-using namespace CVC4::theory;
+using namespace cvc5::theory;
 
-namespace CVC4 {
+namespace cvc5 {
 
 LogicInfo::LogicInfo()
     : d_logicString(""),
@@ -43,7 +42,12 @@ LogicInfo::LogicInfo()
       d_higherOrder(true),
       d_locked(false)
 {
-  for(TheoryId id = THEORY_FIRST; id < THEORY_LAST; ++id) {
+  for (TheoryId id = THEORY_FIRST; id < THEORY_LAST; ++id)
+  {
+    if (id == THEORY_FP && !Configuration::isBuiltWithSymFPU())
+    {
+      continue;
+    }
     enableTheory(id);
   }
 }
@@ -330,6 +334,11 @@ std::string LogicInfo::getLogicString() const {
       }
       if(d_theories[THEORY_SETS]) {
         ss << "FS";
+        ++seen;
+      }
+      if (d_theories[THEORY_BAGS])
+      {
+        ss << "FB";
         ++seen;
       }
       if(seen != d_sharingTheories) {
@@ -714,4 +723,4 @@ std::ostream& operator<<(std::ostream& out, const LogicInfo& logic) {
   return out << logic.getLogicString();
 }
 
-}/* CVC4 namespace */
+}  // namespace cvc5

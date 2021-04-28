@@ -1,33 +1,41 @@
 #!/usr/bin/env python
+###############################################################################
+# Top contributors (to current version):
+#   Makai Mann, Andres Noetzli
+#
+# This file is part of the cvc5 project.
+#
+# Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+# in the top-level source directory and their institutional affiliations.
+# All rights reserved.  See the file COPYING in the top-level source
+# directory for licensing information.
+# #############################################################################
+#
+# A simple demonstration of the solving capabilities of the cvc5
+# floating point solver through the Python API contributed by Eva
+# Darulova. This requires building cvc5 with symfpu.
+##
 
-#####################
-#! \file floating_point.py
- ## \verbatim
- ## Top contributors (to current version):
- ##   Eva Darulova, Makai Mann
- ## This file is part of the CVC4 project.
- ## Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
- ## in the top-level source directory) and their institutional affiliations.
- ## All rights reserved.  See the file COPYING in the top-level source
- ## directory for licensing information.\endverbatim
- ##
- ## \brief A simple demonstration of the solving capabilities of the CVC4
- ## floating point solver through the Python API contributed by Eva
- ## Darulova. This requires building CVC4 with symfpu.
-
-import pycvc4
-from pycvc4 import kinds
+import pycvc5
+from pycvc5 import kinds
 
 if __name__ == "__main__":
-    slv = pycvc4.Solver()
+    slv = pycvc5.Solver()
+
+    if not slv.supportsFloatingPoint():
+        # cvc5 must be built with SymFPU to support the theory of
+        # floating-point numbers
+        print("cvc5 was not built with floating-point support.")
+        exit()
+
     slv.setOption("produce-models", "true")
-    slv.setLogic("FP")
+    slv.setLogic("QF_FP")
 
     # single 32-bit precision
     fp32 = slv.mkFloatingPointSort(8, 24)
 
     # the standard rounding mode
-    rm = slv.mkRoundingMode(pycvc4.RoundNearestTiesToEven)
+    rm = slv.mkRoundingMode(pycvc5.RoundNearestTiesToEven)
 
     # create a few single-precision variables
     x = slv.mkConst(fp32, 'x')
@@ -41,7 +49,7 @@ if __name__ == "__main__":
     slv.assertFormula(slv.mkTerm(kinds.Not, commutative))
     print("Checking floating-point commutativity")
     print("Expect SAT (property does not hold for NaN and Infinities).")
-    print("CVC4:", slv.checkSat())
+    print("cvc5:", slv.checkSat())
     print("Model for x:", slv.getValue(x))
     print("Model for y:", slv.getValue(y))
 
@@ -53,7 +61,7 @@ if __name__ == "__main__":
 
     print("Checking floating-point commutativity assuming x and y are not NaN or Infinity")
     print("Expect UNSAT.")
-    print("CVC4:", slv.checkSat())
+    print("cvc5:", slv.checkSat())
 
     # check floating-point arithmetic is not associative
     slv.pop()
@@ -76,7 +84,7 @@ if __name__ == "__main__":
 
     print("Checking floating-point associativity")
     print("Expect SAT.")
-    print("CVC4:", slv.checkSat())
+    print("cvc5:", slv.checkSat())
     print("Model for x:", slv.getValue(x))
     print("Model for y:", slv.getValue(y))
     print("Model for z:", slv.getValue(z))

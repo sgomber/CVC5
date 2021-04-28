@@ -1,41 +1,43 @@
-/*********************                                                        */
-/*! \file ite_utilities.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Tim King, Aina Niemetz, Clark Barrett
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Simplifications for ITE expressions
- **
- ** This module implements preprocessing phases designed to simplify ITE
- ** expressions.  Based on:
- ** Kim, Somenzi, Jin.  Efficient Term-ITE Conversion for SMT.  FMCAD 2009.
- ** Burch, Jerry.  Techniques for Verifying Superscalar Microprocessors.  DAC
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Tim King, Aina Niemetz, Clark Barrett
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Simplifications for ITE expressions.
+ *
+ * This module implements preprocessing phases designed to simplify ITE
+ * expressions.  Based on:
+ * Kim, Somenzi, Jin.  Efficient Term-ITE Conversion for SMT.  FMCAD 2009.
+ * Burch, Jerry.  Techniques for Verifying Superscalar Microprocessors.  DAC
  *'96
- **/
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__ITE_UTILITIES_H
-#define CVC4__ITE_UTILITIES_H
+#ifndef CVC5__ITE_UTILITIES_H
+#define CVC5__ITE_UTILITIES_H
 
 #include <unordered_map>
 #include <vector>
 
 #include "expr/node.h"
 #include "util/hash.h"
-#include "util/statistics_registry.h"
+#include "util/statistics_stats.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace preprocessing {
+
+class AssertionPipeline;
+
 namespace util {
 
-class IncomingArcCounter;
-class TermITEHeightCounter;
 class ITECompressor;
 class ITESimplifier;
 class ITECareSimplifier;
@@ -74,7 +76,7 @@ class ITEUtilities
   bool simpIteDidALotOfWorkHeuristic() const;
 
   /* returns false if an assertion is discovered to be equal to false. */
-  bool compress(std::vector<Node>& assertions);
+  bool compress(AssertionPipeline* assertionsToPreprocess);
 
   Node simplifyWithCare(TNode e);
 
@@ -167,7 +169,7 @@ class ITECompressor
   ~ITECompressor();
 
   /* returns false if an assertion is discovered to be equal to false. */
-  bool compress(std::vector<Node>& assertions);
+  bool compress(AssertionPipeline* assertionsToPreprocess);
 
   /* garbage Collects the compressor. */
   void garbageCollect();
@@ -176,7 +178,7 @@ class ITECompressor
   Node d_true;  /* Copy of true. */
   Node d_false; /* Copy of false. */
   ContainsTermITEVisitor* d_contains;
-  std::vector<Node>* d_assertions;
+  AssertionPipeline* d_assertions;
   IncomingArcCounter d_incoming;
 
   typedef std::unordered_map<Node, Node, NodeHashFunction> NodeMap;
@@ -196,7 +198,6 @@ class ITECompressor
     IntStat d_compressCalls;
     IntStat d_skolemsAdded;
     Statistics();
-    ~Statistics();
   };
   Statistics d_statistics;
 }; /* class ITECompressor */
@@ -307,7 +308,6 @@ class ITESimplifier
     HistogramStat<uint32_t> d_inSmaller;
 
     Statistics();
-    ~Statistics();
   };
 
   Statistics d_statistics;
@@ -415,6 +415,6 @@ class ITECareSimplifier
 
 }  // namespace util
 }  // namespace preprocessing
-}  // namespace CVC4
+}  // namespace cvc5
 
 #endif

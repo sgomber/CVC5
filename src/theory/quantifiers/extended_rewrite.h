@@ -1,27 +1,28 @@
-/*********************                                                        */
-/*! \file extended_rewrite.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief extended rewriting class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * extended rewriting class
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__QUANTIFIERS__EXTENDED_REWRITE_H
-#define CVC4__THEORY__QUANTIFIERS__EXTENDED_REWRITE_H
+#ifndef CVC5__THEORY__QUANTIFIERS__EXTENDED_REWRITE_H
+#define CVC5__THEORY__QUANTIFIERS__EXTENDED_REWRITE_H
 
 #include <unordered_map>
 
 #include "expr/node.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
@@ -200,11 +201,17 @@ class ExtendedRewriter
   /** Partial substitute
    *
    * Applies the substitution specified by assign to n, recursing only beneath
-   * terms whose Kind appears in rec_kinds.
+   * terms whose Kind appears in rkinds (when rkinds is empty), and additionally
+   * never recursing beneath WITNESS.
    */
   Node partialSubstitute(Node n,
-                         std::map<Node, Node>& assign,
-                         std::map<Kind, bool>& rkinds);
+                         const std::map<Node, Node>& assign,
+                         const std::map<Kind, bool>& rkinds);
+  /** same as above, with vectors */
+  Node partialSubstitute(Node n,
+                         const std::vector<Node>& vars,
+                         const std::vector<Node>& subs,
+                         const std::map<Kind, bool>& rkinds);
   /** solve equality
    *
    * If this function returns a non-null node n', then n' is equivalent to n
@@ -233,12 +240,6 @@ class ExtendedRewriter
   //--------------------------------------end generic utilities
 
   //--------------------------------------theory-specific top-level calls
-  /** extended rewrite arith
-   *
-   * If this method returns a non-null node ret', then ret is equivalent to
-   * ret'.
-   */
-  Node extendedRewriteArith(Node ret);
   /** extended rewrite strings
    *
    * If this method returns a non-null node ret', then ret is equivalent to
@@ -248,8 +249,8 @@ class ExtendedRewriter
   //--------------------------------------end theory-specific top-level calls
 };
 
-} /* CVC4::theory::quantifiers namespace */
-} /* CVC4::theory namespace */
-} /* CVC4 namespace */
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__QUANTIFIERS__EXTENDED_REWRITE_H */
+#endif /* CVC5__THEORY__QUANTIFIERS__EXTENDED_REWRITE_H */

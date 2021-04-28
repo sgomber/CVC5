@@ -1,34 +1,33 @@
-/*********************                                                        */
-/*! \file sygus_repair_const.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Haniel Barbosa
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief sygus_repair_const
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mathias Preiner, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * sygus_repair_const
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__QUANTIFIERS__SYGUS_REPAIR_CONST_H
-#define CVC4__THEORY__QUANTIFIERS__SYGUS_REPAIR_CONST_H
+#ifndef CVC5__THEORY__QUANTIFIERS__SYGUS_REPAIR_CONST_H
+#define CVC5__THEORY__QUANTIFIERS__SYGUS_REPAIR_CONST_H
 
 #include <unordered_set>
 #include "expr/node.h"
-#include "theory/logic_info.h"
 
-namespace CVC4 {
+namespace cvc5 {
+
+class LogicInfo;
+
 namespace theory {
-
-class QuantifiersEngine;
-
 namespace quantifiers {
 
-class CegConjecture;
 class TermDbSygus;
 
 /** SygusRepairConst
@@ -49,7 +48,7 @@ class TermDbSygus;
 class SygusRepairConst
 {
  public:
-  SygusRepairConst(QuantifiersEngine* qe);
+  SygusRepairConst(TermDbSygus* tds);
   ~SygusRepairConst() {}
   /** initialize
    *
@@ -106,8 +105,6 @@ class SygusRepairConst
   static bool mustRepair(Node n);
 
  private:
-  /** reference to quantifier engine */
-  QuantifiersEngine* d_qe;
   /** pointer to the sygus term database of d_qe */
   TermDbSygus* d_tds;
   /**
@@ -209,30 +206,10 @@ class SygusRepairConst
    * If n is in the given logic, this method returns true.
    */
   bool getFitToLogicExcludeVar(LogicInfo& logic, Node n, Node& exvar);
-  /** initialize checker
-   *
-   * This function initializes the smt engine checker to check the
-   * satisfiability of the argument "query"
-   *
-   * The arguments em and varMap are used for supporting cases where we
-   * want checker to use a different expression manager instead of the current
-   * expression manager. The motivation for this so that different options can
-   * be set for the subcall.
-   *
-   * We update the flag needExport to true if checker is using the expression
-   * manager em. In this case, subsequent expressions extracted from smte
-   * (for instance, model values) must be exported to the current expression
-   * manager.
-   */
-  void initializeChecker(std::unique_ptr<SmtEngine>& checker,
-                         ExprManager& em,
-                         ExprManagerMapCollection& varMap,
-                         Node query,
-                         bool& needExport);
 };
 
-} /* CVC4::theory::quantifiers namespace */
-} /* CVC4::theory namespace */
-} /* CVC4 namespace */
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__QUANTIFIERS__SYGUS_REPAIR_CONST_H */
+#endif /* CVC5__THEORY__QUANTIFIERS__SYGUS_REPAIR_CONST_H */

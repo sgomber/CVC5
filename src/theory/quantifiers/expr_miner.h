@@ -1,33 +1,32 @@
-/*********************                                                        */
-/*! \file expr_miner.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief expr_miner
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * expr_miner
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__QUANTIFIERS__EXPRESSION_MINER_H
-#define CVC4__THEORY__QUANTIFIERS__EXPRESSION_MINER_H
+#ifndef CVC5__THEORY__QUANTIFIERS__EXPRESSION_MINER_H
+#define CVC5__THEORY__QUANTIFIERS__EXPRESSION_MINER_H
 
 #include <map>
 #include <memory>
 #include <vector>
 
-#include "expr/expr.h"
-#include "expr/expr_manager.h"
-#include "expr/variable_type_map.h"
+#include "expr/node.h"
 #include "smt/smt_engine.h"
 #include "theory/quantifiers/sygus_sampler.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
@@ -78,22 +77,8 @@ class ExprMiner
    * This function initializes the smt engine smte to check the satisfiability
    * of the argument "query", which is a formula whose free variables (of
    * kind BOUND_VARIABLE) are a subset of d_vars.
-   *
-   * The arguments em and varMap are used for supporting cases where we
-   * want smte to use a different expression manager instead of the current
-   * expression manager. The motivation for this so that different options can
-   * be set for the subcall.
-   *
-   * We update the flag needExport to true if smte is using the expression
-   * manager em. In this case, subsequent expressions extracted from smte
-   * (for instance, model values) must be exported to the current expression
-   * manager.
    */
-  void initializeChecker(std::unique_ptr<SmtEngine>& smte,
-                         ExprManager& em,
-                         ExprManagerMapCollection& varMap,
-                         Node query,
-                         bool& needExport);
+  void initializeChecker(std::unique_ptr<SmtEngine>& smte, Node query);
   /**
    * Run the satisfiability check on query and return the result
    * (sat/unsat/unknown).
@@ -106,6 +91,6 @@ class ExprMiner
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__QUANTIFIERS__EXPRESSION_MINER_H */
+#endif /* CVC5__THEORY__QUANTIFIERS__EXPRESSION_MINER_H */

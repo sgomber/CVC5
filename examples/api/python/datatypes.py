@@ -1,22 +1,23 @@
 #!/usr/bin/env python
+###############################################################################
+# Top contributors (to current version):
+#   Makai Mann, Andrew Reynolds, Aina Niemetz
+#
+# This file is part of the cvc5 project.
+#
+# Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+# in the top-level source directory and their institutional affiliations.
+# All rights reserved.  See the file COPYING in the top-level source
+# directory for licensing information.
+# #############################################################################
+#
+# A simple demonstration of the solving capabilities of the cvc5 datatypes
+# solver through the Python API. This is a direct translation of
+# datatypes-new.cpp.
+##
 
-#####################
-#! \file datatypes.py
- ## \verbatim
- ## Top contributors (to current version):
- ##   Makai Mann
- ## This file is part of the CVC4 project.
- ## Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
- ## in the top-level source directory) and their institutional affiliations.
- ## All rights reserved.  See the file COPYING in the top-level source
- ## directory for licensing information.\endverbatim
- ##
- ## \brief A simple demonstration of the solving capabilities of the CVC4
- ## datatypes solver through the Python API. This is a direct translation
- ## of datatypes-new.cpp.
-
-import pycvc4
-from pycvc4 import kinds
+import pycvc5
+from pycvc5 import kinds
 
 def test(slv, consListSort):
     # Now our old "consListSpec" is useless--the relevant information
@@ -34,7 +35,7 @@ def test(slv, consListSort):
     # "nil" is a constructor too
 
     t = slv.mkTerm(kinds.ApplyConstructor, consList.getConstructorTerm("cons"),
-                   slv.mkReal(0),
+                   slv.mkInteger(0),
                    slv.mkTerm(kinds.ApplyConstructor, consList.getConstructorTerm("nil")))
 
     print("t is {}\nsort of cons is {}\n sort of nil is {}".format(
@@ -83,15 +84,15 @@ def test(slv, consListSort):
     print("head_a is {} of sort {}".format(head_a, head_a.getSort()))
     print("sort of cons is", paramConsList.getConstructorTerm("cons").getSort())
 
-    assertion = slv.mkTerm(kinds.Gt, head_a, slv.mkReal(50))
+    assertion = slv.mkTerm(kinds.Gt, head_a, slv.mkInteger(50))
     print("Assert", assertion)
     slv.assertFormula(assertion)
     print("Expect sat.")
-    print("CVC4:", slv.checkSat())
+    print("cvc5:", slv.checkSat())
 
 
 if __name__ == "__main__":
-    slv = pycvc4.Solver()
+    slv = pycvc5.Solver()
 
     # This example builds a simple "cons list" of integers, with
     # two constructors, "cons" and "nil."
@@ -112,7 +113,7 @@ if __name__ == "__main__":
     print("spec is {}".format(consListSpec))
 
     # Keep in mind that "DatatypeDecl" is the specification class for
-    # datatypes---"DatatypeDecl" is not itself a CVC4 Sort.
+    # datatypes---"DatatypeDecl" is not itself a cvc5 Sort.
     # Now that our Datatype is fully specified, we can get a Sort for it.
     # This step resolves the "SelfSort" reference and creates
     # symbols for all the constructors, etc.
