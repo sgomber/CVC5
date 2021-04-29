@@ -17,7 +17,9 @@
 #ifndef CVC5__PREPROCESSING__PASSES__ELIM_TYPES_H
 #define CVC5__PREPROCESSING__PASSES__ELIM_TYPES_H
 
-#include "context/cdhashmap.h"
+#include <unordered_set>
+#include <map>
+
 #include "expr/node.h"
 #include "preprocessing/preprocessing_pass.h"
 
@@ -27,8 +29,6 @@ namespace passes {
 
 class ElimTypes : public PreprocessingPass
 {
-  using NodeMap = context::CDHashMap<Node, Node, NodeHashFunction>;
-
  public:
   ElimTypes(PreprocessingPassContext* preprocContext);
 

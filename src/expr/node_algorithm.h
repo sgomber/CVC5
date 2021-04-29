@@ -207,9 +207,14 @@ Node substituteCaptureAvoiding(TNode n,
  * (Array T1 T2), T1 and T2 are component types of t.
  * @param t The type node under investigation
  * @param types The set which component types are added to.
+ * @param traverseDtSubfields Whether we want to traverse the subfield types of
+ * datatypes. For example, if this is true, then a datatype corresponding to
+ * a list of integers will include Int in types.
  */
 void getComponentTypes(
-    TypeNode t, std::unordered_set<TypeNode, TypeNodeHashFunction>& types);
+    TypeNode t, std::unordered_set<TypeNode, TypeNodeHashFunction>& types,
+    bool traverseDtSubfields = false
+                      );
 
 /** match
  *

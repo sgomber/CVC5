@@ -1,6 +1,6 @@
 /******************************************************************************
  * Top contributors (to cur version):
- *   Yoni Zohar, Andres Noetzli, Aina Niemetz
+ *   Andrew Reynolds
  *
  * This file is part of the cvc5 project.
  *
@@ -10,27 +10,27 @@
  * directory for licensing information.
  * ****************************************************************************
  *
- * The foreign_theory_rewrite preprocessing pass.
- *
- * Simplifies nodes of one theory using rewrites from another.
+ * The eliminate types preprocessing pass.
  */
 
-#include "preprocessing/passes/foreign_theory_rewrite.h"
+#include "preprocessing/passes/elim_types.h"
 
 #include "expr/node_traversal.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/preprocessing_pass_context.h"
 #include "theory/rewriter.h"
-#include "theory/strings/arith_entail.h"
+#include "expr/node_algorithm.h"
+#include "expr/dtype.h"
+
+using namespace cvc5::theory;
+using namespace cvc5::kind;
 
 namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
-using namespace cvc5::theory;
 ElimTypes::ElimTypes(PreprocessingPassContext* preprocContext)
-    : PreprocessingPass(preprocContext, "foreign-theory-rewrite"),
-      d_cache(preprocContext->getUserContext()){};
+    : PreprocessingPass(preprocContext, "elim-types"){}
 
 void ElimTypes::collectTypes(
     const Node& n,
@@ -51,16 +51,9 @@ void ElimTypes::collectTypes(
     {
       visited.insert(cur);
       TypeNode tn = cur.getType();
-      // remember type of all subterms
-      types.insert(tn);
-      if (cur.isVar())
-      {
-        syms[tn].push_back(cur);
-      }
-      else if (cur.getKind() == APPLY_UF)
-      {
-        visit.push_back(cur.getOperator());
-      }
+      // remember type of all subterms, and get all their component types,
+      // where we additional traverse datatype subfield types
+      expr::getComponentTypes(tn, types, true);
       visit.insert(visit.end(), cur.begin(), cur.end());
     }
   } while (!visit.empty());
@@ -75,9 +68,48 @@ PreprocessingPassResult ElimTypes::applyInternal(
   size_t nasserts = assertionsToPreprocess->size();
   for (size_t i = 0; i < nasserts; ++i)
   {
-    collectTypes((*assertionsToPreprocess)[i], visited, syms);
+    collectTypes((*assertionsToPreprocess)[i], visited, types, syms);
   }
-
+  
+  std::map<TypeNode, bool> shouldElimType;
+  for (const TypeNode& tn : types)
+  {
+    if (tn.isDatatype())
+    {
+      const DType& dt = tn.getDType();
+      if (dt.getNumConstructors()==1)
+      {
+        if (shouldElimType.find(tn)==shouldElimType.end())
+        {
+          shouldElimType[tn] = true;
+        }
+      }
+    }
+    else if (tn.isSet() || tn.isBag() || tn.isArray())
+    {
+      // child types of these cannot be eliminated currently
+      for (const TypeNode& tnc : tn)
+      {
+        shouldElimType[tnc] = false;
+      }
+    }
+  }
+  std::vector<TypeNode> elimTypes;
+  for (const std::pair<const TypeNode, bool>& p : shouldElimType)
+  {
+    if (p.second)
+    {
+      elimTypes.push_back(p.first);
+    }
+  }
+  
+  if (elimTypes.empty())
+  {
+    return PreprocessingPassResult::NO_CONFLICT;
+  }
+  
+  // TODO
+  
   return PreprocessingPassResult::NO_CONFLICT;
 }
 

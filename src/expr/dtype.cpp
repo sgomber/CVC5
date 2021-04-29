@@ -893,6 +893,19 @@ const std::vector<std::shared_ptr<DTypeConstructor> >& DType::getConstructors()
   return d_constructors;
 }
 
+std::unordered_set<TypeNode, TypeNodeHashFunction> DType::getSubfieldTypes() const
+{
+  std::unordered_set<TypeNode, TypeNodeHashFunction> stypes;
+  for (std::shared_ptr<DTypeConstructor> ctor : d_constructors)
+  {
+    for (unsigned j = 0, nargs = ctor->getNumArgs(); j < nargs; ++j)
+    {
+      stypes.insert(ctor->getArgType(j));
+    }
+  }
+  return stypes;
+}
+
 std::ostream& operator<<(std::ostream& os, const DType& dt)
 {
   // can only output datatypes in the cvc5 native language

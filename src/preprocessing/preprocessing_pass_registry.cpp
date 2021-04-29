@@ -55,6 +55,7 @@
 #include "preprocessing/passes/sygus_inference.h"
 #include "preprocessing/passes/synth_rew_rules.h"
 #include "preprocessing/passes/theory_preprocess.h"
+#include "preprocessing/passes/elim_types.h"
 #include "preprocessing/passes/theory_rewrite_eq.h"
 #include "preprocessing/passes/unconstrained_simplifier.h"
 #include "preprocessing/preprocessing_pass.h"
@@ -154,6 +155,7 @@ PreprocessingPassRegistry::PreprocessingPassRegistry()
   registerPassInfo("fun-def-fmf", callCtor<FunDefFmf>);
   registerPassInfo("theory-rewrite-eq", callCtor<TheoryRewriteEq>);
   registerPassInfo("strings-eager-pp", callCtor<StringsEagerPp>);
+  registerPassInfo("elim-types", callCtor<ElimTypes>);
 }
 
 }  // namespace preprocessing

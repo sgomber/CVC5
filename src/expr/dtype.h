@@ -423,8 +423,12 @@ class DType
   const std::vector<std::shared_ptr<DTypeConstructor> >& getConstructors()
       const;
 
+  /** Get the subfield types */
+  std::unordered_set<TypeNode, TypeNodeHashFunction> getSubfieldTypes() const;
+  
   /** prints this datatype to stream */
   void toStream(std::ostream& out) const;
+  
 
  private:
   /**
