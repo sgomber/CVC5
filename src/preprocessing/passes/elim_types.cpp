@@ -29,12 +29,15 @@ namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
-  Node ElimTypesNodeConverter::preConvert(Node n) { return Node::null(); }
-  Node ElimTypesNodeConverter::postConvert(Node n) { return Node::null(); }
-  TypeNode ElimTypesNodeConverter::postConvertType(TypeNode n) { return TypeNode::null(); }
+Node ElimTypesNodeConverter::preConvert(Node n) { return Node::null(); }
+Node ElimTypesNodeConverter::postConvert(Node n) { return Node::null(); }
+TypeNode ElimTypesNodeConverter::postConvertType(TypeNode n)
+{
+  return TypeNode::null();
+}
 
-  void ElimTypesNodeConverter::addElimDatatype(TypeNode dtn){}
-  
+void ElimTypesNodeConverter::addElimDatatype(TypeNode dtn) {}
+
 ElimTypes::ElimTypes(PreprocessingPassContext* preprocContext)
     : PreprocessingPass(preprocContext, "elim-types")
 {

@@ -23,8 +23,8 @@
 #include "context/cdhashmap.h"
 #include "context/cdhashset.h"
 #include "expr/node.h"
-#include "preprocessing/preprocessing_pass.h"
 #include "expr/node_converter.h"
+#include "preprocessing/preprocessing_pass.h"
 
 namespace cvc5 {
 namespace preprocessing {
@@ -33,13 +33,14 @@ namespace passes {
 class ElimTypesNodeConverter : public NodeConverter
 {
  public:
-   ElimTypesNodeConverter() {}
+  ElimTypesNodeConverter() {}
   Node preConvert(Node n) override;
   Node postConvert(Node n) override;
   TypeNode postConvertType(TypeNode n) override;
   /** Split */
   void addElimDatatype(TypeNode dtn);
-private:
+
+ private:
   /** Split 1-cons */
   std::unordered_set<TypeNode, TypeNodeHashFunction> d_splitDt;
 };
