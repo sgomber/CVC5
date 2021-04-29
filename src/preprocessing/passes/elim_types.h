@@ -41,6 +41,7 @@ class ElimTypesNodeConverter : public NodeConverter
   void addElimDatatype(TypeNode dtn);
   /** Empty */
   bool empty() const;
+
  private:
   /** Split 1-cons */
   std::map<TypeNode, std::vector<TypeNode>> d_splitDt;

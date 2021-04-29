@@ -34,12 +34,12 @@ Node ElimTypesNodeConverter::preConvert(Node n) { return Node::null(); }
 Node ElimTypesNodeConverter::postConvert(Node n) { return Node::null(); }
 TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
 {
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   std::map<TypeNode, std::vector<TypeNode>>::iterator it;
   if (tn.isDatatype())
   {
-      it = d_splitDt.find(tna);
-    if (it!=d_splitDt.end())
+    it = d_splitDt.find(tna);
+    if (it != d_splitDt.end())
     {
       // do not modify datatypes we are splitting
       return TypeNode::null();
@@ -49,24 +49,24 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
     // TODO: reconstruct
     DType newDt;
     bool fieldChanged = false;
-    for (size_t i=0, ncons = dt.getNumConstructors(); i<ncons; i++)
+    for (size_t i = 0, ncons = dt.getNumConstructors(); i < ncons; i++)
     {
       const DTypeConstructor& dtc = dt[i];
       std::shared_ptr<DTypeConstructor> newC =
           std::make_shared<DTypeConstructor>(dtc.getName());
-      const std::vector<std::shared_ptr<DTypeSelector> >& args = dtc.getArgs()
-      for (const std::shared_ptr<DTypeSelector>& a : args)
+      const std::vector<std::shared_ptr<DTypeSelector>>& args =
+          dtc.getArgs() for (const std::shared_ptr<DTypeSelector>& a : args)
       {
         TypeNode tna = a->getRangeType();
-        if (t==tn)
+        if (t == tn)
         {
           // recursive, add self?
           continue;
         }
         it = d_splitDt.find(tna);
-        if (it!=d_splitDt.end())
+        if (it != d_splitDt.end())
         {
-          for (size_t i=0, ntypes = it->second.size(); i<ntypes; i++)
+          for (size_t i = 0, ntypes = it->second.size(); i < ntypes; i++)
           {
             std::stringstream ss;
             ss << a->getName() << "_" << i;
@@ -85,7 +85,6 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
     }
     if (fieldChanged)
     {
-      
     }
   }
   else if (tn.isFunction())
@@ -97,9 +96,9 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
     for (const TypeNode& tna : argTypes)
     {
       it = d_splitDt.find(tna);
-      if (it!=d_splitDt.end())
+      if (it != d_splitDt.end())
       {
-        for (size_t i=0, ntypes = it->second.size(); i<ntypes; i++)
+        for (size_t i = 0, ntypes = it->second.size(); i < ntypes; i++)
         {
           newArgTypes.push_back(convertType(it->second[i]));
         }
@@ -118,15 +117,16 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
   return TypeNode::null();
 }
 
-void ElimTypesNodeConverter::addElimDatatype(TypeNode dtn) {
-  if (d_splitDt.find(dtn)!=d_splitDt.end())
+void ElimTypesNodeConverter::addElimDatatype(TypeNode dtn)
+{
+  if (d_splitDt.find(dtn) != d_splitDt.end())
   {
     // already registered
     return;
   }
-  Assert (dtn.isDatatype());
+  Assert(dtn.isDatatype());
   const DType& dt = dtn.getDType();
-  Assert (dt.getNumConstructors()==1);
+  Assert(dt.getNumConstructors() == 1);
   const DTypeConstructor& dtc = dt[0];
   std::vector<TypeNode>& ts = d_splitDt[dtn];
   for (unsigned j = 0, nargs = dtc.getNumArgs(); j < nargs; ++j)
@@ -134,10 +134,7 @@ void ElimTypesNodeConverter::addElimDatatype(TypeNode dtn) {
     ts.push_back(dtc.getArgType(j));
   }
 }
-  bool ElimTypesNodeConverter::empty() const
-  {
-    return d_splitDt.empty();
-  }
+bool ElimTypesNodeConverter::empty() const { return d_splitDt.empty(); }
 
 ElimTypes::ElimTypes(PreprocessingPassContext* preprocContext)
     : PreprocessingPass(preprocContext, "elim-types")
