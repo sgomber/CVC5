@@ -32,17 +32,23 @@ ElimTypes::ElimTypes(PreprocessingPassContext* preprocContext)
     : PreprocessingPass(preprocContext, "foreign-theory-rewrite"),
       d_cache(preprocContext->getUserContext()){};
 
-void ElimTypes::collectTypes(const Node& n, std::unordered_set<TNode, TNodeHashFunction>& visited, std::unordered_set<TypeNode, TypeNodeHashFunction>& types, std::map<TypeNode, std::vector<Node>>& syms)
+void ElimTypes::collectTypes(
+    const Node& n,
+    std::unordered_set<TNode, TNodeHashFunction>& visited,
+    std::unordered_set<TypeNode, TypeNodeHashFunction>& types,
+    std::map<TypeNode, std::vector<Node>>& syms)
 {
   std::unordered_set<TNode, TNodeHashFunction>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
     it = visited.find(cur);
-    if (it == visited.end()) {
+    if (it == visited.end())
+    {
       visited.insert(cur);
       TypeNode tn = cur.getType();
       // remember type of all subterms
@@ -51,11 +57,11 @@ void ElimTypes::collectTypes(const Node& n, std::unordered_set<TNode, TNodeHashF
       {
         syms[tn].push_back(cur);
       }
-      else if (cur.getKind()==APPLY_UF)
+      else if (cur.getKind() == APPLY_UF)
       {
         visit.push_back(cur.getOperator());
       }
-      visit.insert(visit.end(),cur.begin(),cur.end());
+      visit.insert(visit.end(), cur.begin(), cur.end());
     }
   } while (!visit.empty());
 }

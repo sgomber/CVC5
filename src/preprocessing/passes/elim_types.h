@@ -28,6 +28,7 @@ namespace passes {
 class ElimTypes : public PreprocessingPass
 {
   using NodeMap = context::CDHashMap<Node, Node, NodeHashFunction>;
+
  public:
   ElimTypes(PreprocessingPassContext* preprocContext);
 
@@ -35,7 +36,10 @@ class ElimTypes : public PreprocessingPass
   PreprocessingPassResult applyInternal(
       AssertionPipeline* assertionsToPreprocess) override;
   /** Collect types in node n */
-  void collectTypes(const Node& n, std::unordered_set<TNode, TNodeHashFunction>& visited, std::unordered_set<TypeNode, TypeNodeHashFunction>& types, std::map<TypeNode, std::vector<Node>>& sym);
+  void collectTypes(const Node& n,
+                    std::unordered_set<TNode, TNodeHashFunction>& visited,
+                    std::unordered_set<TypeNode, TypeNodeHashFunction>& types,
+                    std::map<TypeNode, std::vector<Node>>& sym);
 };
 
 }  // namespace passes
