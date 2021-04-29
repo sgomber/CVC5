@@ -212,9 +212,9 @@ Node substituteCaptureAvoiding(TNode n,
  * a list of integers will include Int in types.
  */
 void getComponentTypes(
-    TypeNode t, std::unordered_set<TypeNode, TypeNodeHashFunction>& types,
-    bool traverseDtSubfields = false
-                      );
+    TypeNode t,
+    std::unordered_set<TypeNode, TypeNodeHashFunction>& types,
+    bool traverseDtSubfields = false);
 
 /** match
  *

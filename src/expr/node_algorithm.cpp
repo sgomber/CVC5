@@ -655,7 +655,8 @@ Node substituteCaptureAvoiding(TNode n,
 }
 
 void getComponentTypes(
-    TypeNode t, std::unordered_set<TypeNode, TypeNodeHashFunction>& types,
+    TypeNode t,
+    std::unordered_set<TypeNode, TypeNodeHashFunction>& types,
     bool traverseDtSubfields)
 {
   std::vector<TypeNode> toProcess;
@@ -677,7 +678,8 @@ void getComponentTypes(
       if (traverseDtSubfields && curr.isDatatype())
       {
         const DType& dt = curr.getDType();
-        std::unordered_set<TypeNode, TypeNodeHashFunction> stypes = dt.getSubfieldTypes();
+        std::unordered_set<TypeNode, TypeNodeHashFunction> stypes =
+            dt.getSubfieldTypes();
         toProcess.insert(toProcess.end(), stypes.begin(), stypes.end());
       }
     }

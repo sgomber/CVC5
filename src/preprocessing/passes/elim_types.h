@@ -17,8 +17,8 @@
 #ifndef CVC5__PREPROCESSING__PASSES__ELIM_TYPES_H
 #define CVC5__PREPROCESSING__PASSES__ELIM_TYPES_H
 
-#include <unordered_set>
 #include <map>
+#include <unordered_set>
 
 #include "expr/node.h"
 #include "preprocessing/preprocessing_pass.h"

@@ -15,12 +15,12 @@
 
 #include "preprocessing/passes/elim_types.h"
 
+#include "expr/dtype.h"
+#include "expr/node_algorithm.h"
 #include "expr/node_traversal.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/preprocessing_pass_context.h"
 #include "theory/rewriter.h"
-#include "expr/node_algorithm.h"
-#include "expr/dtype.h"
 
 using namespace cvc5::theory;
 using namespace cvc5::kind;
@@ -30,7 +30,9 @@ namespace preprocessing {
 namespace passes {
 
 ElimTypes::ElimTypes(PreprocessingPassContext* preprocContext)
-    : PreprocessingPass(preprocContext, "elim-types"){}
+    : PreprocessingPass(preprocContext, "elim-types")
+{
+}
 
 void ElimTypes::collectTypes(
     const Node& n,
@@ -70,16 +72,16 @@ PreprocessingPassResult ElimTypes::applyInternal(
   {
     collectTypes((*assertionsToPreprocess)[i], visited, types, syms);
   }
-  
+
   std::map<TypeNode, bool> shouldElimType;
   for (const TypeNode& tn : types)
   {
     if (tn.isDatatype())
     {
       const DType& dt = tn.getDType();
-      if (dt.getNumConstructors()==1)
+      if (dt.getNumConstructors() == 1)
       {
-        if (shouldElimType.find(tn)==shouldElimType.end())
+        if (shouldElimType.find(tn) == shouldElimType.end())
         {
           shouldElimType[tn] = true;
         }
@@ -102,14 +104,14 @@ PreprocessingPassResult ElimTypes::applyInternal(
       elimTypes.push_back(p.first);
     }
   }
-  
+
   if (elimTypes.empty())
   {
     return PreprocessingPassResult::NO_CONFLICT;
   }
-  
+
   // TODO
-  
+
   return PreprocessingPassResult::NO_CONFLICT;
 }
 

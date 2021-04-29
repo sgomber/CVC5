@@ -893,7 +893,8 @@ const std::vector<std::shared_ptr<DTypeConstructor> >& DType::getConstructors()
   return d_constructors;
 }
 
-std::unordered_set<TypeNode, TypeNodeHashFunction> DType::getSubfieldTypes() const
+std::unordered_set<TypeNode, TypeNodeHashFunction> DType::getSubfieldTypes()
+    const
 {
   std::unordered_set<TypeNode, TypeNodeHashFunction> stypes;
   for (std::shared_ptr<DTypeConstructor> ctor : d_constructors)
