@@ -34,8 +34,8 @@ class ElimTypes : public PreprocessingPass
  protected:
   PreprocessingPassResult applyInternal(
       AssertionPipeline* assertionsToPreprocess) override;
-  /** Collect types */
-  void collectTypes(const Node& n, std::unordered_set<TNode, TNodeHashFunction>& visited);
+  /** Collect types in node n */
+  void collectTypes(const Node& n, std::unordered_set<TNode, TNodeHashFunction>& visited, std::unordered_set<TypeNode, TypeNodeHashFunction>& types, std::map<TypeNode, std::vector<Node>>& sym);
 };
 
 }  // namespace passes

@@ -32,7 +32,7 @@ ElimTypes::ElimTypes(PreprocessingPassContext* preprocContext)
     : PreprocessingPass(preprocContext, "foreign-theory-rewrite"),
       d_cache(preprocContext->getUserContext()){};
 
-void ElimTypes::collectTypes(const Node& n, std::unordered_set<TNode, TNodeHashFunction>& visited, std::map<TypeNode, std::vector<Node>>& syms)
+void ElimTypes::collectTypes(const Node& n, std::unordered_set<TNode, TNodeHashFunction>& visited, std::unordered_set<TypeNode, TypeNodeHashFunction>& types, std::map<TypeNode, std::vector<Node>>& syms)
 {
   std::unordered_set<TNode, TNodeHashFunction>::iterator it;
   std::vector<TNode> visit;
@@ -42,12 +42,14 @@ void ElimTypes::collectTypes(const Node& n, std::unordered_set<TNode, TNodeHashF
     cur = visit.back();
     visit.pop_back();
     it = visited.find(cur);
-
     if (it == visited.end()) {
       visited.insert(cur);
+      TypeNode tn = cur.getType();
+      // remember type of all subterms
+      types.insert(tn);
       if (cur.isVar())
       {
-        syms[cur.getType()].push_back(cur);
+        syms[tn].push_back(cur);
       }
       else if (cur.getKind()==APPLY_UF)
       {
@@ -62,6 +64,7 @@ PreprocessingPassResult ElimTypes::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
   std::unordered_set<TNode, TNodeHashFunction> visited;
+  std::unordered_set<TypeNode, TypeNodeHashFunction> types;
   std::map<TypeNode, std::vector<Node>> syms;
   size_t nasserts = assertionsToPreprocess->size();
   for (size_t i = 0; i < nasserts; ++i)
