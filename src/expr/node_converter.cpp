@@ -111,8 +111,6 @@ Node NodeConverter::convert(Node n)
         Node cret = postConvert(ret);
         if (!cret.isNull() && ret != cret)
         {
-          AlwaysAssert(cret.getType().isComparableTo(ret.getType()))
-              << "Converting " << ret << " to " << cret << " changes type";
           ret = cret;
         }
         addToCache(cur, ret);

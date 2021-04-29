@@ -36,13 +36,14 @@ class ElimTypesNodeConverter : public NodeConverter
   ElimTypesNodeConverter() {}
   Node preConvert(Node n) override;
   Node postConvert(Node n) override;
-  TypeNode postConvertType(TypeNode n) override;
+  TypeNode postConvertType(TypeNode tn) override;
   /** Split */
   void addElimDatatype(TypeNode dtn);
-
+  /** Empty */
+  bool empty() const;
  private:
   /** Split 1-cons */
-  std::unordered_set<TypeNode, TypeNodeHashFunction> d_splitDt;
+  std::map<TypeNode, std::vector<TypeNode>> d_splitDt;
 };
 
 class ElimTypes : public PreprocessingPass
