@@ -55,8 +55,7 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
       const DTypeConstructor& dtc = dt[i];
       std::shared_ptr<DTypeConstructor> newC =
           std::make_shared<DTypeConstructor>(dtc.getName());
-      const std::vector<std::shared_ptr<DTypeSelector>>& args =
-          dtc.getArgs();
+      const std::vector<std::shared_ptr<DTypeSelector>>& args = dtc.getArgs();
       for (const std::shared_ptr<DTypeSelector>& a : args)
       {
         TypeNode tna = a->getRangeType();
