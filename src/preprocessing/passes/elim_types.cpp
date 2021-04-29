@@ -30,7 +30,9 @@ namespace preprocessing {
 namespace passes {
 
 ElimTypes::ElimTypes(PreprocessingPassContext* preprocContext)
-    : PreprocessingPass(preprocContext, "elim-types"), d_typeCache(preprocContext->getUserContext()), d_cache(preprocContext->getUserContext())
+    : PreprocessingPass(preprocContext, "elim-types"),
+      d_typeCache(preprocContext->getUserContext()),
+      d_cache(preprocContext->getUserContext())
 {
 }
 
@@ -115,7 +117,7 @@ PreprocessingPassResult ElimTypes::applyInternal(
   // Step 2: TODO: determine type conversions
   for (const TypeNode& tn : types)
   {
-    if (d_splitDt.find(tn)!=d_splitDt.end())
+    if (d_splitDt.find(tn) != d_splitDt.end())
     {
       continue;
     }
@@ -134,18 +136,18 @@ PreprocessingPassResult ElimTypes::applyInternal(
 
 Node ElimTypes::simplify(const Node& n)
 {
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   NodeMap::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
-  do 
+  do
   {
     cur = visit.back();
     visit.pop_back();
     it = d_cache.find(cur);
 
-    if (it == d_cache.end()) 
+    if (it == d_cache.end())
     {
       if (cur.isClosure())
       {
@@ -156,18 +158,19 @@ Node ElimTypes::simplify(const Node& n)
       {
         d_cache[cur] = Node::null();
         visit.push_back(cur);
-        visit.insert(visit.end(),cur.begin(),cur.end());
+        visit.insert(visit.end(), cur.begin(), cur.end());
       }
-    } 
-    else if (it->second.isNull()) 
+    }
+    else if (it->second.isNull())
     {
       Node ret = cur;
       bool childChanged = false;
       std::vector<Node> children;
-      if (cur.getMetaKind() == metakind::PARAMETERIZED) {
+      if (cur.getMetaKind() == metakind::PARAMETERIZED)
+      {
         children.push_back(cur.getOperator());
       }
-      for (const Node& cn : cur )
+      for (const Node& cn : cur)
       {
         it = d_cache.find(cn);
         Assert(it != d_cache.end());
@@ -175,7 +178,7 @@ Node ElimTypes::simplify(const Node& n)
         childChanged = childChanged || cn != it->second;
         children.push_back(it->second);
       }
-      if (childChanged) 
+      if (childChanged)
       {
         ret = nm->mkNode(cur.getKind(), children);
       }
@@ -191,16 +194,15 @@ Node ElimTypes::simplify(const Node& n)
 TypeNode ElimTypes::simplifyType(TypeNode tn)
 {
   TypeNodeMap::iterator it = d_typeCache.find(tn);
-  if (it!=d_typeCache.end())
+  if (it != d_typeCache.end())
   {
     return (*it).second;
   }
   if (tn.isDatatype())
   {
   }
-  else if (tn.getNumChildren()>0)
+  else if (tn.getNumChildren() > 0)
   {
-    
   }
   return tn;
 }

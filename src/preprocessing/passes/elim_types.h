@@ -20,10 +20,10 @@
 #include <map>
 #include <unordered_set>
 
-#include "expr/node.h"
-#include "preprocessing/preprocessing_pass.h"
 #include "context/cdhashmap.h"
 #include "context/cdhashset.h"
+#include "expr/node.h"
+#include "preprocessing/preprocessing_pass.h"
 
 namespace cvc5 {
 namespace preprocessing {
@@ -31,8 +31,10 @@ namespace passes {
 
 class ElimTypes : public PreprocessingPass
 {
-  using TypeNodeMap = context::CDHashMap<TypeNode, TypeNode, TypeNodeHashFunction>;
+  using TypeNodeMap =
+      context::CDHashMap<TypeNode, TypeNode, TypeNodeHashFunction>;
   using NodeMap = context::CDHashMap<Node, Node, NodeHashFunction>;
+
  public:
   ElimTypes(PreprocessingPassContext* preprocContext);
 
