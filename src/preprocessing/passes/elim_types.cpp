@@ -30,7 +30,7 @@ namespace preprocessing {
 namespace passes {
 
 ElimTypes::ElimTypes(PreprocessingPassContext* preprocContext)
-    : PreprocessingPass(preprocContext, "elim-types")
+    : PreprocessingPass(preprocContext, "elim-types"), d_typeCache(preprocContext->getUserContext()), d_cache(preprocContext->getUserContext())
 {
 }
 
@@ -64,6 +64,7 @@ void ElimTypes::collectTypes(
 PreprocessingPassResult ElimTypes::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
+  // Step 1: infer types to eliminate
   std::unordered_set<TNode, TNodeHashFunction> visited;
   std::unordered_set<TypeNode, TypeNodeHashFunction> types;
   std::map<TypeNode, std::vector<Node>> syms;
@@ -96,23 +97,112 @@ PreprocessingPassResult ElimTypes::applyInternal(
       }
     }
   }
-  std::vector<TypeNode> elimTypes;
   for (const std::pair<const TypeNode, bool>& p : shouldElimType)
   {
     if (p.second)
     {
-      elimTypes.push_back(p.first);
+      // mark as eliminated
+      d_splitDt.insert(p.first);
+      d_typeCache[p.first] = TypeNode::null();
     }
   }
 
-  if (elimTypes.empty())
+  if (d_typeCache.empty())
   {
     return PreprocessingPassResult::NO_CONFLICT;
   }
 
-  // TODO
+  // Step 2: TODO: determine type conversions
+  for (const TypeNode& tn : types)
+  {
+    if (d_splitDt.find(tn)!=d_splitDt.end())
+    {
+      continue;
+    }
+    d_typeCache[tn] = simplifyType(tn);
+  }
+
+  // Step 3: simplify
+  for (size_t i = 0; i < nasserts; ++i)
+  {
+    assertionsToPreprocess->replace(
+        i, Rewriter::rewrite(simplify((*assertionsToPreprocess)[i])));
+  }
 
   return PreprocessingPassResult::NO_CONFLICT;
+}
+
+Node ElimTypes::simplify(const Node& n)
+{
+  NodeManager * nm = NodeManager::currentNM();
+  NodeMap::iterator it;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do 
+  {
+    cur = visit.back();
+    visit.pop_back();
+    it = d_cache.find(cur);
+
+    if (it == d_cache.end()) 
+    {
+      if (cur.isClosure())
+      {
+        // process the bound variable list
+        Node bvl = cur[0];
+      }
+      else
+      {
+        d_cache[cur] = Node::null();
+        visit.push_back(cur);
+        visit.insert(visit.end(),cur.begin(),cur.end());
+      }
+    } 
+    else if (it->second.isNull()) 
+    {
+      Node ret = cur;
+      bool childChanged = false;
+      std::vector<Node> children;
+      if (cur.getMetaKind() == metakind::PARAMETERIZED) {
+        children.push_back(cur.getOperator());
+      }
+      for (const Node& cn : cur )
+      {
+        it = d_cache.find(cn);
+        Assert(it != d_cache.end());
+        Assert(!it->second.isNull());
+        childChanged = childChanged || cn != it->second;
+        children.push_back(it->second);
+      }
+      if (childChanged) 
+      {
+        ret = nm->mkNode(cur.getKind(), children);
+      }
+      /** TODO post-rewrite */
+      d_cache[cur] = ret;
+    }
+  } while (!visit.empty());
+  Assert(d_cache.find(n) != d_cache.end());
+  Assert(!d_cache.find(n)->second.isNull());
+  return d_cache[n];
+}
+
+TypeNode ElimTypes::simplifyType(TypeNode tn)
+{
+  TypeNodeMap::iterator it = d_typeCache.find(tn);
+  if (it!=d_typeCache.end())
+  {
+    return (*it).second;
+  }
+  if (tn.isDatatype())
+  {
+  }
+  else if (tn.getNumChildren()>0)
+  {
+    
+  }
+  return tn;
 }
 
 }  // namespace passes

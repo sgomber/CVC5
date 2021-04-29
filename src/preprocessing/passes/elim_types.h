@@ -22,6 +22,8 @@
 
 #include "expr/node.h"
 #include "preprocessing/preprocessing_pass.h"
+#include "context/cdhashmap.h"
+#include "context/cdhashset.h"
 
 namespace cvc5 {
 namespace preprocessing {
@@ -29,6 +31,8 @@ namespace passes {
 
 class ElimTypes : public PreprocessingPass
 {
+  using TypeNodeMap = context::CDHashMap<TypeNode, TypeNode, TypeNodeHashFunction>;
+  using NodeMap = context::CDHashMap<Node, Node, NodeHashFunction>;
  public:
   ElimTypes(PreprocessingPassContext* preprocContext);
 
@@ -40,6 +44,16 @@ class ElimTypes : public PreprocessingPass
                     std::unordered_set<TNode, TNodeHashFunction>& visited,
                     std::unordered_set<TypeNode, TypeNodeHashFunction>& types,
                     std::map<TypeNode, std::vector<Node>>& sym);
+  /** Simplify type */
+  TypeNode simplifyType(TypeNode tn);
+  /** Simplify */
+  Node simplify(const Node& n);
+  /** Mapping of types */
+  TypeNodeMap d_typeCache;
+  /** */
+  NodeMap d_cache;
+  /** Split 1-cons */
+  std::unordered_set<TypeNode, TypeNodeHashFunction> d_splitDt;
 };
 
 }  // namespace passes
