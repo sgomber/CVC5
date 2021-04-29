@@ -15,6 +15,8 @@
 
 #include "preprocessing/passes/elim_types.h"
 
+#include <sstream>
+
 #include "expr/dtype.h"
 #include "expr/dtype_cons.h"
 #include "expr/node_algorithm.h"
@@ -38,16 +40,15 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
   std::map<TypeNode, std::vector<TypeNode>>::iterator it;
   if (tn.isDatatype())
   {
-    it = d_splitDt.find(tna);
+    it = d_splitDt.find(tn);
     if (it != d_splitDt.end())
     {
       // do not modify datatypes we are splitting
       return TypeNode::null();
     }
-    // otherwise, inline the types
+    // otherwise, convert and inline the subfield types
     const DType& dt = tn.getDType();
-    // TODO: reconstruct
-    DType newDt;
+    DType newDt(dt.getName());
     bool fieldChanged = false;
     for (size_t i = 0, ncons = dt.getNumConstructors(); i < ncons; i++)
     {
@@ -55,10 +56,11 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
       std::shared_ptr<DTypeConstructor> newC =
           std::make_shared<DTypeConstructor>(dtc.getName());
       const std::vector<std::shared_ptr<DTypeSelector>>& args =
-          dtc.getArgs() for (const std::shared_ptr<DTypeSelector>& a : args)
+          dtc.getArgs();
+      for (const std::shared_ptr<DTypeSelector>& a : args)
       {
         TypeNode tna = a->getRangeType();
-        if (t == tn)
+        if (tn == tna)
         {
           // recursive, add self?
           continue;
@@ -66,11 +68,11 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
         it = d_splitDt.find(tna);
         if (it != d_splitDt.end())
         {
-          for (size_t i = 0, ntypes = it->second.size(); i < ntypes; i++)
+          for (size_t j = 0, ntypes = it->second.size(); j < ntypes; j++)
           {
             std::stringstream ss;
-            ss << a->getName() << "_" << i;
-            newC->addArg(ss.str(), convertType(it->second[i]));
+            ss << a->getName() << "_" << j;
+            newC->addArg(ss.str(), convertType(it->second[j]));
           }
           fieldChanged = true;
         }
@@ -111,6 +113,7 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
     }
     if (argTypeChanged)
     {
+      // do not modify the range type
       return nm->mkFunctionType(newArgTypes, tn.getRangeType());
     }
   }
