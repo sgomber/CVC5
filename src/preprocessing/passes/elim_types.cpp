@@ -29,18 +29,14 @@ namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
-class ElimTypesNodeConverter : public NodeConverter
-{
- public:
-  Node preConvert(Node n) override { return Node::null(); }
-  Node postConvert(Node n) override { return Node::null(); }
-  TypeNode postConvertType(TypeNode n) override { return TypeNode::null(); }
-};
+  Node ElimTypesNodeConverter::preConvert(Node n) { return Node::null(); }
+  Node ElimTypesNodeConverter::postConvert(Node n) { return Node::null(); }
+  TypeNode ElimTypesNodeConverter::postConvertType(TypeNode n) { return TypeNode::null(); }
 
+  void ElimTypesNodeConverter::addElimDatatype(TypeNode dtn){}
+  
 ElimTypes::ElimTypes(PreprocessingPassContext* preprocContext)
-    : PreprocessingPass(preprocContext, "elim-types"),
-      d_typeCache(preprocContext->getUserContext()),
-      d_cache(preprocContext->getUserContext())
+    : PreprocessingPass(preprocContext, "elim-types")
 {
 }
 
@@ -112,8 +108,7 @@ PreprocessingPassResult ElimTypes::applyInternal(
     if (p.second)
     {
       // mark as eliminated
-      d_splitDt.insert(p.first);
-      d_typeCache[p.first] = TypeNode::null();
+      d_etnc.addElimDatatype(p.first);
     }
   }
 
@@ -122,22 +117,11 @@ PreprocessingPassResult ElimTypes::applyInternal(
     return PreprocessingPassResult::NO_CONFLICT;
   }
 
-  // Step 2: TODO: determine type conversions
-  ElimTypesNodeConverter etnc;
-  for (const TypeNode& tn : types)
-  {
-    if (d_splitDt.find(tn) != d_splitDt.end())
-    {
-      continue;
-    }
-    d_typeCache[tn] = etnc.convertType(tn);
-  }
-
-  // Step 3: simplify
+  // Step 2: simplify
   for (size_t i = 0; i < nasserts; ++i)
   {
     assertionsToPreprocess->replace(
-        i, Rewriter::rewrite(etnc.convert((*assertionsToPreprocess)[i])));
+        i, Rewriter::rewrite(d_etnc.convert((*assertionsToPreprocess)[i])));
   }
 
   return PreprocessingPassResult::NO_CONFLICT;
