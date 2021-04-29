@@ -28,23 +28,13 @@ using namespace cvc5::kind;
 namespace cvc5 {
 namespace preprocessing {
 namespace passes {
-  
-  
+
 class ElimTypesNodeConverter : public NodeConverter
 {
-public:
-  Node preConvert(Node n) override
-  {
-    return Node::null();
-  }
-  Node postConvert(Node n) override
-  {
-    return Node::null();
-  }
-  TypeNode postConvertType(TypeNode n) override
-  {
-    return TypeNode::null();
-  }
+ public:
+  Node preConvert(Node n) override { return Node::null(); }
+  Node postConvert(Node n) override { return Node::null(); }
+  TypeNode postConvertType(TypeNode n) override { return TypeNode::null(); }
 };
 
 ElimTypes::ElimTypes(PreprocessingPassContext* preprocContext)
