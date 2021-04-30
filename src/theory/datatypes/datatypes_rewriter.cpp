@@ -356,8 +356,9 @@ RewriteResponse DatatypesRewriter::rewriteConstructor(TNode in)
 
 RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
 {
-  Assert (in.getKind()==kind::APPLY_SELECTOR || in.getKind()==kind::APPLY_SELECTOR_TOTAL);
-  NodeManager * nm = NodeManager::currentNM();
+  Assert(in.getKind() == kind::APPLY_SELECTOR
+         || in.getKind() == kind::APPLY_SELECTOR_TOTAL);
+  NodeManager* nm = NodeManager::currentNM();
   Kind k = in.getKind();
   if (in[0].getKind() == kind::APPLY_CONSTRUCTOR)
   {
@@ -434,9 +435,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       if (tn.isDatatype() && !tn.isInstantiatedDatatype())
       {
         gt = nm->mkNode(
-            kind::APPLY_TYPE_ASCRIPTION,
-            nm->mkConst(AscriptionType(tn)),
-            gt);
+            kind::APPLY_TYPE_ASCRIPTION, nm->mkConst(AscriptionType(tn)), gt);
       }
       Trace("datatypes-rewrite")
           << "DatatypesRewriter::postRewrite: "
@@ -445,12 +444,12 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       return RewriteResponse(REWRITE_DONE, gt);
     }
   }
-  else if (in.getKind()==kind::APPLY_SELECTOR)
+  else if (in.getKind() == kind::APPLY_SELECTOR)
   {
     Node selector = in.getOperator();
     const DType& dt = utils::datatypeOf(selector);
     // selectors for single constructor datatypes are always correctly applied
-    if (dt.getNumConstructors()==1)
+    if (dt.getNumConstructors() == 1)
     {
       const DTypeConstructor& c = dt[0];
       size_t selectorIndex = utils::indexOf(selector);
@@ -829,7 +828,7 @@ TrustNode DatatypesRewriter::expandDefinition(Node n)
       TypeNode ndt = n[0].getType();
       size_t selectorIndex = utils::indexOf(selector);
       Trace("dt-expand") << "...selector index = " << selectorIndex
-                          << std::endl;
+                         << std::endl;
       Assert(selectorIndex < c.getNumArgs());
       Node selector_use = c.getSelectorInternal(ndt, selectorIndex);
       Node sel = nm->mkNode(kind::APPLY_SELECTOR_TOTAL, selector_use, n[0]);

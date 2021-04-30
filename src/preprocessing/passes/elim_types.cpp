@@ -32,7 +32,7 @@ namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
-Node ElimTypesNodeConverter::preConvert(Node n) 
+Node ElimTypesNodeConverter::preConvert(Node n)
 {
   if (n.isClosure())
   {
@@ -40,7 +40,7 @@ Node ElimTypesNodeConverter::preConvert(Node n)
     {
     }
   }
-  //Kind k = n.getKind();
+  // Kind k = n.getKind();
   return Node::null();
 }
 Node ElimTypesNodeConverter::postConvert(Node n)
@@ -52,16 +52,16 @@ Node ElimTypesNodeConverter::postConvert(Node n)
   {
     TypeNode tn = n.getType();
     TypeNode ctn = convertType(tn);
-    if (tn!=ctn)
+    if (tn != ctn)
     {
       // convert to pre-type
       std::stringstream ss;
       ss << n << "_pre";
-      //return nm->mkSkolem(ss.str(), ctn);
+      // return nm->mkSkolem(ss.str(), ctn);
     }
     return Node::null();
   }
-  if (k==EQUAL)
+  if (k == EQUAL)
   {
     TypeNode tn = n[0].getType();
     it = d_splitDt.find(tn);
@@ -70,18 +70,17 @@ Node ElimTypesNodeConverter::postConvert(Node n)
       // split into a conjunction TODO
     }
   }
-  else if (k==APPLY_UF)
+  else if (k == APPLY_UF)
   {
     // inline argument
   }
-  else if (k==APPLY_CONSTRUCTOR)
-  {
-    
-  }
-  else if (k==APPLY_SELECTOR_TOTAL)
+  else if (k == APPLY_CONSTRUCTOR)
   {
   }
-  else if (k==APPLY_TESTER)
+  else if (k == APPLY_SELECTOR_TOTAL)
+  {
+  }
+  else if (k == APPLY_TESTER)
   {
   }
   return Node::null();
@@ -102,9 +101,8 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
     const DType& dt = tn.getDType();
     // TODO: mutually recursive datatypes???
     // compute mutual block???
-    //std::vector<TypeNode>& stypes = dt.getSubfieldTypes();
-    
-    
+    // std::vector<TypeNode>& stypes = dt.getSubfieldTypes();
+
     DType newDt(dt.getName());
     bool fieldChanged = false;
     for (size_t i = 0, ncons = dt.getNumConstructors(); i < ncons; i++)
