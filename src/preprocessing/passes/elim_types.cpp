@@ -32,8 +32,60 @@ namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
-Node ElimTypesNodeConverter::preConvert(Node n) { return Node::null(); }
-Node ElimTypesNodeConverter::postConvert(Node n) { return Node::null(); }
+Node ElimTypesNodeConverter::preConvert(Node n) 
+{
+  if (n.isClosure())
+  {
+    for (const Node& v : n[0])
+    {
+    }
+  }
+  //Kind k = n.getKind();
+  return Node::null();
+}
+Node ElimTypesNodeConverter::postConvert(Node n)
+{
+  NodeManager* nm = NodeManager::currentNM();
+  std::map<TypeNode, std::vector<TypeNode>>::iterator it;
+  Kind k = n.getKind();
+  if (n.isVar())
+  {
+    TypeNode tn = n.getType();
+    TypeNode ctn = convertType(tn);
+    if (tn!=ctn)
+    {
+      // convert to pre-type
+      std::stringstream ss;
+      ss << n << "_pre";
+      //return nm->mkSkolem(ss.str(), ctn);
+    }
+    return Node::null();
+  }
+  if (k==EQUAL)
+  {
+    TypeNode tn = n[0].getType();
+    it = d_splitDt.find(tn);
+    if (it != d_splitDt.end())
+    {
+      // split into a conjunction TODO
+    }
+  }
+  else if (k==APPLY_UF)
+  {
+    // inline argument
+  }
+  else if (k==APPLY_CONSTRUCTOR)
+  {
+    
+  }
+  else if (k==APPLY_SELECTOR_TOTAL)
+  {
+  }
+  else if (k==APPLY_TESTER)
+  {
+  }
+  return Node::null();
+}
 TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
 {
   NodeManager* nm = NodeManager::currentNM();
@@ -48,6 +100,11 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
     }
     // otherwise, convert and inline the subfield types
     const DType& dt = tn.getDType();
+    // TODO: mutually recursive datatypes???
+    // compute mutual block???
+    //std::vector<TypeNode>& stypes = dt.getSubfieldTypes();
+    
+    
     DType newDt(dt.getName());
     bool fieldChanged = false;
     for (size_t i = 0, ncons = dt.getNumConstructors(); i < ncons; i++)
@@ -86,8 +143,10 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
     }
     if (fieldChanged)
     {
+      // TODO
     }
   }
+  /*
   else if (tn.isFunction())
   {
     // inline argument functions
@@ -116,6 +175,7 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
       return nm->mkFunctionType(newArgTypes, tn.getRangeType());
     }
   }
+  */
   return TypeNode::null();
 }
 

@@ -356,6 +356,8 @@ RewriteResponse DatatypesRewriter::rewriteConstructor(TNode in)
 
 RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
 {
+  Assert (in.getKind()==kind::APPLY_SELECTOR || in.getKind()==kind::APPLY_SELECTOR_TOTAL);
+  NodeManager * nm = NodeManager::currentNM();
   Kind k = in.getKind();
   if (in[0].getKind() == kind::APPLY_CONSTRUCTOR)
   {
@@ -431,9 +433,9 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       Assert(!gt.isNull());
       if (tn.isDatatype() && !tn.isInstantiatedDatatype())
       {
-        gt = NodeManager::currentNM()->mkNode(
+        gt = nm->mkNode(
             kind::APPLY_TYPE_ASCRIPTION,
-            NodeManager::currentNM()->mkConst(AscriptionType(tn)),
+            nm->mkConst(AscriptionType(tn)),
             gt);
       }
       Trace("datatypes-rewrite")
@@ -441,6 +443,21 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
           << "Rewrite trivial selector " << in
           << " to distinguished ground term " << gt << std::endl;
       return RewriteResponse(REWRITE_DONE, gt);
+    }
+  }
+  else if (in.getKind()==kind::APPLY_SELECTOR)
+  {
+    Node selector = in.getOperator();
+    const DType& dt = utils::datatypeOf(selector);
+    // selectors for single constructor datatypes are always correctly applied
+    if (dt.getNumConstructors()==1)
+    {
+      const DTypeConstructor& c = dt[0];
+      size_t selectorIndex = utils::indexOf(selector);
+      Assert(selectorIndex < c.getNumArgs());
+      Node sel = c.getSelectorInternal(in[0].getType(), selectorIndex);
+      Node inr = nm->mkNode(kind::APPLY_SELECTOR_TOTAL, sel, in[0]);
+      return RewriteResponse(REWRITE_AGAIN_FULL, inr);
     }
   }
   return RewriteResponse(REWRITE_DONE, in);
@@ -809,20 +826,12 @@ TrustNode DatatypesRewriter::expandDefinition(Node n)
       size_t cindex = utils::cindexOf(selector);
       const DType& dt = utils::datatypeOf(selector);
       const DTypeConstructor& c = dt[cindex];
-      Node selector_use;
       TypeNode ndt = n[0].getType();
-      if (options::dtSharedSelectors())
-      {
-        size_t selectorIndex = utils::indexOf(selector);
-        Trace("dt-expand") << "...selector index = " << selectorIndex
-                           << std::endl;
-        Assert(selectorIndex < c.getNumArgs());
-        selector_use = c.getSelectorInternal(ndt, selectorIndex);
-      }
-      else
-      {
-        selector_use = selector;
-      }
+      size_t selectorIndex = utils::indexOf(selector);
+      Trace("dt-expand") << "...selector index = " << selectorIndex
+                          << std::endl;
+      Assert(selectorIndex < c.getNumArgs());
+      Node selector_use = c.getSelectorInternal(ndt, selectorIndex);
       Node sel = nm->mkNode(kind::APPLY_SELECTOR_TOTAL, selector_use, n[0]);
       if (options::dtRewriteErrorSel())
       {
