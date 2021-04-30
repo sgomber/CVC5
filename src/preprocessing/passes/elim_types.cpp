@@ -1,5 +1,5 @@
 /******************************************************************************
- * Top contributors (to cur version):
+ * Top contributors (to current version):
  *   Andrew Reynolds
  *
  * This file is part of the cvc5 project.
@@ -61,6 +61,10 @@ Node ElimTypesNodeConverter::postConvert(Node n)
     }
     return Node::null();
   }
+  else if (n.isClosure())
+  {
+    // inline 
+  }
   if (k == EQUAL)
   {
     TypeNode tn = n[0].getType();
@@ -72,16 +76,18 @@ Node ElimTypesNodeConverter::postConvert(Node n)
   }
   else if (k == APPLY_UF)
   {
-    // inline argument
+    // inline arguments
   }
   else if (k == APPLY_CONSTRUCTOR)
   {
+    // if the type changed
   }
-  else if (k == APPLY_SELECTOR_TOTAL)
+  else if (k == APPLY_SELECTOR_TOTAL || k==APPLY_SELECTOR)
   {
   }
   else if (k == APPLY_TESTER)
   {
+    // if the type changed
   }
   return Node::null();
 }

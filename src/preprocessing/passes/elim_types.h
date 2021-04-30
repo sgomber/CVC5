@@ -10,6 +10,7 @@
  * directory for licensing information.
  * ****************************************************************************
  *
+ * The eliminate types preprocessing pass.
  */
 
 #include "cvc5_private.h"

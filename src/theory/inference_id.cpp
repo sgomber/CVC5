@@ -15,6 +15,7 @@
 
 #include "theory/inference_id.h"
 
+#include <sstream>
 #include <iostream>
 
 namespace cvc5 {
@@ -364,8 +365,14 @@ const char* toString(InferenceId i)
     case InferenceId::UF_HO_MODEL_APP_ENCODE: return "UF_HO_MODEL_APP_ENCODE";
     case InferenceId::UF_HO_MODEL_EXTENSIONALITY:
       return "UF_HO_MODEL_EXTENSIONALITY";
-
-    default: return "?";
+    
+    case InferenceId::UNKNOWN: return "?";
+    default:
+    {
+      std::stringstream ss;
+      ss << "?" << i;
+      return ss.str().c_str();
+    }
   }
 }
 
