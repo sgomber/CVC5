@@ -241,7 +241,10 @@ void NodeConverter::addToTypeCache(TypeNode cur, TypeNode ret)
 }
 
 Node NodeConverter::preConvert(Node n) { return Node::null(); }
-Node NodeConverter::postConvert(Node n, const std::vector<Node>& ncs) { return Node::null(); }
+Node NodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
+{
+  return Node::null();
+}
 
 TypeNode NodeConverter::preConvertType(TypeNode tn) { return TypeNode::null(); }
 TypeNode NodeConverter::postConvertType(TypeNode tn)
