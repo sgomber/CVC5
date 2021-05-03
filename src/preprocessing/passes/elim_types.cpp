@@ -21,11 +21,11 @@
 #include "expr/dtype_cons.h"
 #include "expr/node_algorithm.h"
 #include "expr/node_traversal.h"
+#include "expr/skolem_manager.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/preprocessing_pass_context.h"
-#include "theory/rewriter.h"
-#include "expr/skolem_manager.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
+#include "theory/rewriter.h"
 
 using namespace cvc5::theory;
 using namespace cvc5::kind;
@@ -48,7 +48,7 @@ Node ElimTypesNodeConverter::preConvert(Node n)
 Node ElimTypesNodeConverter::postConvert(Node n)
 {
   NodeManager* nm = NodeManager::currentNM();
-  SkolemManager * sm = nm->getSkolemManager();
+  SkolemManager* sm = nm->getSkolemManager();
   std::map<TypeNode, std::vector<TypeNode>>::iterator it;
   Kind k = n.getKind();
   if (n.isVar())
@@ -57,13 +57,12 @@ Node ElimTypesNodeConverter::postConvert(Node n)
     if (tn.isConstructor() || tn.isSelector() || tn.isTester())
     {
       // if the datatype changed, lookup the new selector
-      
     }
     TypeNode ctn = convertType(tn);
     if (tn != ctn)
     {
       // convert to pre-type
-      if (k==BOUND_VARIABLE)
+      if (k == BOUND_VARIABLE)
       {
         return nm->mkBoundVar(ctn);
       }
@@ -89,9 +88,9 @@ Node ElimTypesNodeConverter::postConvert(Node n)
     // split into a conjunction
     const std::vector<Node>& ns0 = getOrMkSplitTerms(n[0]);
     const std::vector<Node>& ns1 = getOrMkSplitTerms(n[1]);
-    Assert (ns0.size()==ns1.size());
+    Assert(ns0.size() == ns1.size());
     std::vector<Node> conj;
-    for (size_t i=0, nsize=ns0.size(); i<nsize; i++)
+    for (size_t i = 0, nsize = ns0.size(); i < nsize; i++)
     {
       conj.push_back(ns0[i].eqNode(ns1[i]));
     }
@@ -119,11 +118,12 @@ Node ElimTypesNodeConverter::postConvert(Node n)
     }
     const std::vector<Node>& args = getOrMkSplitTerms(n[0]);
     size_t selectorIndex = theory::datatypes::utils::indexOf(n.getOperator());
-    Assert (0<=selectorIndex && selectorIndex<args.size());
+    Assert(0 <= selectorIndex && selectorIndex < args.size());
     return args[selectorIndex];
   }
   // testers and selectors of split datatypes should already be eliminated
-  Assert ((k!=APPLY_SELECTOR && k!=APPLY_SELECTOR) || d_splitDt.find(n.getType())==d_splitDt.end());
+  Assert((k != APPLY_SELECTOR && k != APPLY_SELECTOR)
+         || d_splitDt.find(n.getType()) == d_splitDt.end());
   return Node::null();
 }
 TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
@@ -245,36 +245,37 @@ bool ElimTypesNodeConverter::empty() const { return d_splitDt.empty(); }
 const std::vector<Node>& ElimTypesNodeConverter::getOrMkSplitTerms(Node n)
 {
   std::map<Node, std::vector<Node>>::iterator it = d_splitDtTerms.find(n);
-  if (it!=d_splitDtTerms.end())
+  if (it != d_splitDtTerms.end())
   {
     return it->second;
   }
   NodeManager* nm = NodeManager::currentNM();
   TypeNode tn = n.getType();
-  Assert (tn.isDatatype());
-  Assert (d_splitDt.find(tn)!=d_splitDt.end());
+  Assert(tn.isDatatype());
+  Assert(d_splitDt.find(tn) != d_splitDt.end());
   std::vector<TypeNode>& ts = d_splitDt[tn];
   const DType& dt = tn.getDType();
   const DTypeConstructor& dtc = dt[0];
-  SkolemManager * sm = NodeManager::currentNM()->getSkolemManager();
+  SkolemManager* sm = NodeManager::currentNM()->getSkolemManager();
   std::vector<Node>& splitn = d_splitDtTerms[n];
-  for (size_t i=0, nargs = dtc.getNumArgs(); i<nargs; i++)
+  for (size_t i = 0, nargs = dtc.getNumArgs(); i < nargs; i++)
   {
-    Node nc = nm->mkNode(
-        APPLY_SELECTOR_TOTAL, dt[0].getSelectorInternal(tn, i), n);
+    Node nc =
+        nm->mkNode(APPLY_SELECTOR_TOTAL, dt[0].getSelectorInternal(tn, i), n);
     Node k = sm->mkPurifySkolem(nc, "ke");
     splitn.push_back(k);
   }
   return splitn;
 }
 
-std::vector<Node> ElimTypesNodeConverter::inlineArguments(const std::vector<Node>& args)
+std::vector<Node> ElimTypesNodeConverter::inlineArguments(
+    const std::vector<Node>& args)
 {
   std::vector<Node> newArgs;
   for (const Node& n : args)
   {
     TypeNode tn = n.getType();
-    if (d_splitDt.find(tn)==d_splitDt.end())
+    if (d_splitDt.find(tn) == d_splitDt.end())
     {
       // not inlined
       newArgs.push_back(n);
@@ -373,8 +374,7 @@ PreprocessingPassResult ElimTypes::applyInternal(
   {
     Node ac = d_etnc.convert((*assertionsToPreprocess)[i]);
     ac = Rewriter::rewrite(ac);
-    assertionsToPreprocess->replace(
-        i, ac);
+    assertionsToPreprocess->replace(i, ac);
   }
 
   return PreprocessingPassResult::NO_CONFLICT;
