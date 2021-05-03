@@ -45,7 +45,7 @@ Node ElimTypesNodeConverter::preConvert(Node n)
   // Kind k = n.getKind();
   return Node::null();
 }
-Node ElimTypesNodeConverter::postConvert(Node n)
+Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
@@ -56,12 +56,12 @@ Node ElimTypesNodeConverter::postConvert(Node n)
     TypeNode tn = n.getType();
     if (tn.isConstructor() || tn.isSelector() || tn.isTester())
     {
-      // if the datatype changed, lookup the new selector
+      // don't bother converting these
+      return Node::null();
     }
     TypeNode ctn = convertType(tn);
     if (tn != ctn)
     {
-      // convert to pre-type
       if (k == BOUND_VARIABLE)
       {
         return nm->mkBoundVar(ctn);
@@ -74,11 +74,18 @@ Node ElimTypesNodeConverter::postConvert(Node n)
   }
   else if (n.isClosure())
   {
-    // inline arguments
+    // inline arguments of the quantifier
+    std::vector<Node> args(ncs[0].begin(), ncs[0].end());
+    std::vector<Node> newArgs = inlineArguments(args);
+    Node newBvl = nm->mkNode(BOUND_VAR_LIST, newArgs);
+    std::vector<Node> ccs;
+    ccs.push_back(newBvl);
+    ccs.insert(ccs.end(), ncs.begin()+1, ncs.end());
+    return nm->mkNode(k, ccs);
   }
   if (k == EQUAL)
   {
-    TypeNode tn = n[0].getType();
+    TypeNode tn = ncs[0].getType();
     it = d_splitDt.find(tn);
     if (it == d_splitDt.end())
     {
@@ -86,44 +93,81 @@ Node ElimTypesNodeConverter::postConvert(Node n)
       return Node::null();
     }
     // split into a conjunction
-    const std::vector<Node>& ns0 = getOrMkSplitTerms(n[0]);
-    const std::vector<Node>& ns1 = getOrMkSplitTerms(n[1]);
+    const std::vector<Node>& ns0 = getOrMkSplitTerms(ncs[0]);
+    const std::vector<Node>& ns1 = getOrMkSplitTerms(ncs[1]);
     Assert(ns0.size() == ns1.size());
     std::vector<Node> conj;
     for (size_t i = 0, nsize = ns0.size(); i < nsize; i++)
     {
       conj.push_back(ns0[i].eqNode(ns1[i]));
     }
-    Node ret = nm->mkAnd(conj);
-    return ret;
+    return nm->mkAnd(conj);
   }
-  else if (k == APPLY_UF)
+  else if (k == APPLY_UF || k==APPLY_CONSTRUCTOR)
   {
     // inline arguments
-    std::vector<TypeNode> newArgTypes;
-    std::vector<Node> newArgs;
-    for (const Node& nc : n)
+    std::vector<Node> args(ncs.begin() + 1, ncs.end());
+    std::vector<Node> newArgs = inlineArguments(args);
+    if (args.size()==newArgs.size())
     {
-      TypeNode tnc = nc.getType();
+      // arguments were not inlined
+      return Node::null();
     }
+    Node op = ncs[0];
+    // replace constructor, if the return type changed
+    if (k==APPLY_CONSTRUCTOR)
+    {
+      Assert (op==n.getOperator());
+      TypeNode tn = n.getType();
+      TypeNode ntn = convertType(tn);
+      if (tn!=ntn)
+      {
+        Assert (ntn.isDatatype());
+        const DType& dt = ntn.getDType();
+        size_t index = theory::datatypes::utils::indexOf(n.getOperator());
+        op = dt[index].getConstructor();
+      }
+    }
+    newArgs.insert(newArgs.begin(), op);
+    return nm->mkNode(k, newArgs);
   }
-  else if (k == APPLY_SELECTOR_TOTAL)
+  else if (k == APPLY_SELECTOR_TOTAL || k == APPLY_SELECTOR)
   {
     TypeNode tn = n[0].getType();
     it = d_splitDt.find(tn);
-    if (it == d_splitDt.end())
+    if (it != d_splitDt.end())
     {
-      // no change
-      return Node::null();
+      // selector should already have been rewritten
+      Assert (k != APPLY_SELECTOR);
+      const std::vector<Node>& args = getOrMkSplitTerms(ncs[0]);
+      size_t index = theory::datatypes::utils::indexOf(n.getOperator());
+      Assert(0 <= index && index < args.size());
+      return args[index];
     }
-    const std::vector<Node>& args = getOrMkSplitTerms(n[0]);
-    size_t selectorIndex = theory::datatypes::utils::indexOf(n.getOperator());
-    Assert(0 <= selectorIndex && selectorIndex < args.size());
-    return args[selectorIndex];
+    // change the selector, if the argument has changed types
+    TypeNode ntn = ncs[0].getType();
+    if (tn!=ntn)
+    {
+      Assert (ntn.isDatatype());
+      const DType& dt = ntn.getDType();
+      size_t cindex = theory::datatypes::utils::cindexOf(n.getOperator());
+      size_t index = theory::datatypes::utils::indexOf(n.getOperator());
+      return nm->mkNode(k, dt[cindex].getSelectorInternal(ntn, index), ncs[0]);
+    }
   }
-  // testers and selectors of split datatypes should already be eliminated
-  Assert((k != APPLY_SELECTOR && k != APPLY_SELECTOR)
-         || d_splitDt.find(n.getType()) == d_splitDt.end());
+  else if (k==APPLY_TESTER)
+  {
+    Assert (d_splitDt.find(n.getType()) == d_splitDt.end());
+    TypeNode ntn = ncs[0].getType();
+    // change the tester, if the argument has changed types
+    if (n[0].getType()!=ntn)
+    {
+      Assert (ntn.isDatatype());
+      const DType& dt = ntn.getDType();
+      size_t index = theory::datatypes::utils::indexOf(n.getOperator());
+      return nm->mkNode(APPLY_TESTER, dt[index].getTester(), ncs[0]);
+    }
+  }
   return Node::null();
 }
 TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
@@ -190,7 +234,6 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
       return newTypes[0];
     }
   }
-  /*
   else if (tn.isFunction())
   {
     // inline argument functions
@@ -202,6 +245,7 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
       it = d_splitDt.find(tna);
       if (it != d_splitDt.end())
       {
+        // must look up the conversion of the types
         for (size_t i = 0, ntypes = it->second.size(); i < ntypes; i++)
         {
           newArgTypes.push_back(convertType(it->second[i]));
@@ -215,11 +259,10 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
     }
     if (argTypeChanged)
     {
-      // do not modify the range type
+      // do not modify the range type here
       return nm->mkFunctionType(newArgTypes, tn.getRangeType());
     }
   }
-  */
   return TypeNode::null();
 }
 
@@ -250,20 +293,29 @@ const std::vector<Node>& ElimTypesNodeConverter::getOrMkSplitTerms(Node n)
     return it->second;
   }
   NodeManager* nm = NodeManager::currentNM();
+  Kind k = n.getKind();
   TypeNode tn = n.getType();
   Assert(tn.isDatatype());
   Assert(d_splitDt.find(tn) != d_splitDt.end());
-  std::vector<TypeNode>& ts = d_splitDt[tn];
   const DType& dt = tn.getDType();
   const DTypeConstructor& dtc = dt[0];
   SkolemManager* sm = NodeManager::currentNM()->getSkolemManager();
   std::vector<Node>& splitn = d_splitDtTerms[n];
   for (size_t i = 0, nargs = dtc.getNumArgs(); i < nargs; i++)
   {
-    Node nc =
-        nm->mkNode(APPLY_SELECTOR_TOTAL, dt[0].getSelectorInternal(tn, i), n);
-    Node k = sm->mkPurifySkolem(nc, "ke");
-    splitn.push_back(k);
+    Node sk;
+    if (k==BOUND_VARIABLE)
+    {
+      // can't use mkPurifySkolem
+      sk = nm->mkBoundVar(dt[0].getArgType(i));
+    }
+    else
+    {
+      Node nc =
+          nm->mkNode(APPLY_SELECTOR_TOTAL, dt[0].getSelectorInternal(tn, i), n);
+      sk = sm->mkPurifySkolem(nc, "ke");
+    }
+    splitn.push_back(sk);
   }
   return splitn;
 }

@@ -36,7 +36,7 @@ class ElimTypesNodeConverter : public NodeConverter
  public:
   ElimTypesNodeConverter() {}
   Node preConvert(Node n) override;
-  Node postConvert(Node n) override;
+  Node postConvert(Node n, const std::vector<Node>& ncs) override;
   TypeNode postConvertType(TypeNode tn) override;
   /** Split */
   void addElimDatatype(TypeNode dtn);

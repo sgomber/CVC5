@@ -63,7 +63,7 @@ class NodeConverter
    * where i_1, ..., i_m are terms that have been returned by previous calls
    * to postConvert.
    */
-  virtual Node postConvert(Node n);
+  virtual Node postConvert(Node n, const std::vector<Node>& ncs);
   /**
    * Run the conversion, same as above, but for type nodes, which notice can
    * be built from children similar to Node.

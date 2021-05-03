@@ -463,6 +463,15 @@ header = "options/smt_options.h"
   help       = "Cross-theory rewrites"
 
 [[option]]
+  name       = "elimTypes"
+  category   = "regular"
+  long       = "elim-types"
+  type       = "bool"
+  default    = "false"
+  read_only  = true
+  help       = "Type elimination preprocessing pass"
+
+[[option]]
   name       = "solveBVAsInt"
   category   = "undocumented"
   long       = "solve-bv-as-int=MODE"

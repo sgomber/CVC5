@@ -103,15 +103,16 @@ Node NodeConverter::convert(Node n)
           childChanged = childChanged || cn != it->second;
           children.push_back(it->second);
         }
-        if (childChanged)
-        {
-          ret = nm->mkNode(ret.getKind(), children);
-        }
         // run the callback for the current application
-        Node cret = postConvert(ret);
+        Node cret = postConvert(cur, children);
         if (!cret.isNull() && ret != cret)
         {
           ret = cret;
+        }
+        else if (childChanged)
+        {
+          // did not rewrite, but a child rewrote, reconstruct
+          ret = nm->mkNode(ret.getKind(), children);
         }
         addToCache(cur, ret);
       }
@@ -240,7 +241,7 @@ void NodeConverter::addToTypeCache(TypeNode cur, TypeNode ret)
 }
 
 Node NodeConverter::preConvert(Node n) { return Node::null(); }
-Node NodeConverter::postConvert(Node n) { return Node::null(); }
+Node NodeConverter::postConvert(Node n, const std::vector<Node>& ncs) { return Node::null(); }
 
 TypeNode NodeConverter::preConvertType(TypeNode tn) { return TypeNode::null(); }
 TypeNode NodeConverter::postConvertType(TypeNode tn)

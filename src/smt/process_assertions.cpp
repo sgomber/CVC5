@@ -151,6 +151,11 @@ bool ProcessAssertions::apply(Assertions& as)
     d_passes["global-negate"]->apply(&assertions);
     as.flipGlobalNegated();
   }
+  
+  if (options::elimTypes())
+  {
+    d_passes["elim-types"]->apply(&assertions);
+  }
 
   if (options::nlExtPurify())
   {
