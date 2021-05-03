@@ -276,6 +276,7 @@ std::vector<Node> ElimTypesNodeConverter::inlineArguments(const std::vector<Node
     TypeNode tn = n.getType();
     if (d_splitDt.find(tn)==d_splitDt.end())
     {
+      // not inlined
       newArgs.push_back(n);
       continue;
     }
