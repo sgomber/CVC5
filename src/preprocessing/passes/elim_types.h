@@ -44,8 +44,14 @@ class ElimTypesNodeConverter : public NodeConverter
   bool empty() const;
 
  private:
+  /** get or mk split terms */
+  const std::vector<Node>& getOrMkSplitTerms(Node n);
+  /** inline arguments */
+  std::vector<Node> inlineArguments(const std::vector<Node>& args);
   /** Split 1-cons */
   std::map<TypeNode, std::vector<TypeNode>> d_splitDt;
+  /** Splits */
+  std::map<Node, std::vector<Node>> d_splitDtTerms;
 };
 
 class ElimTypes : public PreprocessingPass
