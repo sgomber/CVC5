@@ -51,6 +51,7 @@ Node NodeConverter::convert(Node n)
       d_preCache[cur] = curp;
       if (!curp.isNull())
       {
+        Trace("nconv-debug2") << "preConvert: " << cur << " <- " << curp << std::endl;
         visit.push_back(cur);
         visit.push_back(curp);
       }
@@ -107,6 +108,7 @@ Node NodeConverter::convert(Node n)
         Node cret = postConvert(cur, children);
         if (!cret.isNull() && ret != cret)
         {
+          Trace("nconv-debug2") << "postConvert: " << cur << " <- " << cret << std::endl;
           ret = cret;
         }
         else if (childChanged)
@@ -159,7 +161,7 @@ TypeNode NodeConverter::convertType(TypeNode tn)
         if (cur.getNumChildren() == 0)
         {
           TypeNode ret = postConvertType(cur);
-          addToTypeCache(cur, ret);
+          addToTypeCache(cur, ret.isNull() ? cur : ret);
         }
         else
         {
@@ -175,7 +177,7 @@ TypeNode NodeConverter::convertType(TypeNode tn)
       if (!it->second.isNull())
       {
         // it converts to what its prewrite converts to
-        Assert(d_tcache.find(it->second) != d_cache.end());
+        Assert(d_tcache.find(it->second) != d_tcache.end());
         TypeNode ret = d_tcache[it->second];
         addToTypeCache(cur, ret);
       }

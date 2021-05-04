@@ -444,6 +444,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       return RewriteResponse(REWRITE_DONE, gt);
     }
   }
+  /*
   else if (in.getKind() == kind::APPLY_SELECTOR)
   {
     Node selector = in.getOperator();
@@ -459,6 +460,7 @@ RewriteResponse DatatypesRewriter::rewriteSelector(TNode in)
       return RewriteResponse(REWRITE_AGAIN_FULL, inr);
     }
   }
+  */
   return RewriteResponse(REWRITE_DONE, in);
 }
 

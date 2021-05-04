@@ -48,10 +48,14 @@ class ElimTypesNodeConverter : public NodeConverter
   const std::vector<Node>& getOrMkSplitTerms(Node n);
   /** inline arguments */
   std::vector<Node> inlineArguments(const std::vector<Node>& args);
+  /** mapped index */
+  size_t getMappedDatatypeIndex(Node n) const;
   /** Split 1-cons */
   std::map<TypeNode, std::vector<TypeNode>> d_splitDt;
   /** Splits */
   std::map<Node, std::vector<Node>> d_splitDtTerms;
+  /** dt index */
+  std::map<Node, size_t> d_dtIndex;
 };
 
 class ElimTypes : public PreprocessingPass
