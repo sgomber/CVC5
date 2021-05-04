@@ -50,6 +50,8 @@ class ElimTypesNodeConverter : public NodeConverter
   std::vector<Node> inlineArguments(const std::vector<Node>& args);
   /** mapped index */
   size_t getMappedDatatypeIndex(Node n) const;
+  /** return convert */
+  Node returnConvert(Node n, Node ret);
   /** Split 1-cons */
   std::map<TypeNode, std::vector<TypeNode>> d_splitDt;
   /** the selector chain for each type */

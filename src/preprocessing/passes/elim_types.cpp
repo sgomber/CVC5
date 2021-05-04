@@ -41,7 +41,7 @@ Node ElimTypesNodeConverter::preConvert(Node n)
 }
 Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
 {
-  Trace("elim-types-debug") << "postConvert " << n << std::endl;
+  Trace("elim-types-debug2") << "postConvert " << n << " / " << ncs << std::endl;
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
   std::map<TypeNode, std::vector<TypeNode>>::iterator it;
@@ -49,27 +49,39 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
   if (n.isVar())
   {
     TypeNode tn = n.getType();
-    if (tn.isConstructor() || tn.isSelector() || tn.isTester())
+    if (tn.isConstructor() || tn.isTester())
     {
       // don't bother converting these, they will be converted when we
-      // deal with APPLY_CONSTRUCTOR / APPLY_SELECTOR / APPLY_TESTER
+      // deal with APPLY_CONSTRUCTOR / APPLY_TESTER
       return Node::null();
+    }
+    else if (tn.isSelector())
+    {
+      TypeNode ctn = convertType(tn[0]);
+      TypeNode ctn1 = convertType(tn[1]);
+      std::stringstream ss;
+      ss << n << "_sel_elim";
+      Node ret = sm->mkDummySkolem(ss.str(), nm->mkFunctionType(ctn, ctn1));
+      return returnConvert(n, ret);
     }
     TypeNode ctn = convertType(tn);
     if (tn != ctn)
     {
+      Trace("elim-types-debug") << "postConvert variable" << std::endl;
       if (k == BOUND_VARIABLE)
       {
         return nm->mkBoundVar(ctn);
       }
       std::stringstream ss;
       ss << n << "_elim";
-      return sm->mkDummySkolem(ss.str(), ctn);
+      Node ret = sm->mkDummySkolem(ss.str(), ctn);
+      return returnConvert(n, ret);
     }
     return Node::null();
   }
   else if (n.isClosure())
   {
+    Trace("elim-types-debug") << "postConvert closure" << std::endl;
     // inline arguments of the quantifier
     std::vector<Node> args(ncs[0].begin(), ncs[0].end());
     std::vector<Node> newArgs = inlineArguments(args);
@@ -77,10 +89,13 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
     std::vector<Node> ccs;
     ccs.push_back(newBvl);
     ccs.insert(ccs.end(), ncs.begin() + 1, ncs.end());
-    return nm->mkNode(k, ccs);
+    Trace("elim-types-debug") << "...return" << std::endl;
+    Node ret = nm->mkNode(k, ccs);
+    return returnConvert(n, ret);
   }
   if (k == EQUAL)
   {
+    AlwaysAssert (ncs[0].getType()==ncs[1].getType()) << "Bad type equality " << ncs << " " << ncs[0].getType() << " / " << ncs[1].getType();
     TypeNode tn = ncs[0].getType();
     it = d_splitDt.find(tn);
     if (it == d_splitDt.end())
@@ -88,6 +103,7 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
       // no change
       return Node::null();
     }
+    Trace("elim-types-debug") << "postConvert equal " << n << std::endl;
     // split into a conjunction
     const std::vector<Node>& ns0 = getOrMkSplitTerms(ncs[0]);
     const std::vector<Node>& ns1 = getOrMkSplitTerms(ncs[1]);
@@ -97,10 +113,12 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
     {
       conj.push_back(ns0[i].eqNode(ns1[i]));
     }
-    return nm->mkAnd(conj);
+    Node ret = nm->mkAnd(conj);
+    return returnConvert(n, ret);
   }
   else if (k == APPLY_UF || k == APPLY_CONSTRUCTOR)
   {
+    Trace("elim-types-debug") << "postConvert " << k << std::endl;
     // inline arguments
     std::vector<Node> args(ncs.begin() + 1, ncs.end());
     std::vector<Node> newArgs = inlineArguments(args);
@@ -117,19 +135,22 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
         const DType& dt = ntn.getDType();
         size_t index = theory::datatypes::utils::indexOf(n.getOperator());
         op = dt[index].getConstructor();
+        AlwaysAssert(dt[index].getNumArgs()==newArgs.size());
       }
     }
     newArgs.insert(newArgs.begin(), op);
-    return nm->mkNode(k, newArgs);
+    Node ret = nm->mkNode(k, newArgs);
+    return returnConvert(n, ret);
   }
   else if (k == APPLY_SELECTOR_TOTAL || k == APPLY_SELECTOR)
   {
+    Trace("elim-types-debug") << "postConvert " << k << std::endl;
     Assert (ncs.size()==2);
     TypeNode tn = n.getType();
-    if (d_splitDt.find(tn)!=d_splitDt.end())
+    if (it != d_splitDt.end())
     {
-      // if this term itself is being split, don't change yet
-      return Node::null();
+      Node ret = nm->mkNode(APPLY_UF, ncs);
+      return returnConvert(n, ret);
     }
     tn = n[0].getType();
     it = d_splitDt.find(tn);
@@ -137,9 +158,10 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
     {
       Trace("elim-types-debug") << "...split " << ncs[1] << std::endl;
       const std::vector<Node>& args = getOrMkSplitTerms(ncs[1]);
-      size_t index = theory::datatypes::utils::indexOf(n.getOperator());
+      size_t index = getMappedDatatypeIndex(n.getOperator());
       Assert(0 <= index && index < args.size());
-      return args[index];
+      Node ret = args[index];
+      return returnConvert(n, ret);
     }
     Trace("elim-types-debug") << "...no split for " << tn << std::endl;
     // change the selector, if the argument has changed types
@@ -153,11 +175,13 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
       // must use mapped index, since argument index may be different in the new datatype
       size_t index = getMappedDatatypeIndex(n.getOperator());
       Assert (0<=index && index<dt[cindex].getNumArgs());
-      return nm->mkNode(k, dt[cindex][index].getSelector(), ncs[1]);
+      Node ret = nm->mkNode(k, dt[cindex][index].getSelector(), ncs[1]);
+      return returnConvert(n, ret);
     }
   }
   else if (k == APPLY_TESTER)
   {
+    Trace("elim-types-debug") << "postConvert " << k << std::endl;
     Assert(d_splitDt.find(n.getType()) == d_splitDt.end());
     Assert (ncs.size()==2);
     TypeNode ntn = ncs[1].getType();
@@ -167,7 +191,8 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
       Assert(ntn.isDatatype());
       const DType& dt = ntn.getDType();
       size_t index = theory::datatypes::utils::indexOf(n.getOperator());
-      return nm->mkNode(APPLY_TESTER, dt[index].getTester(), ncs[1]);
+      Node ret = nm->mkNode(APPLY_TESTER, dt[index].getTester(), ncs[1]);
+      return returnConvert(n, ret);
     }
   }
   return Node::null();
@@ -178,12 +203,6 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
   std::map<TypeNode, std::vector<TypeNode>>::iterator it;
   if (tn.isDatatype())
   {
-    it = d_splitDt.find(tn);
-    if (it != d_splitDt.end())
-    {
-      // do not modify datatypes we are splitting
-      return TypeNode::null();
-    }
     // otherwise, convert and inline the subfield types
     const DType& dt = tn.getDType();
     // TODO: mutually recursive datatypes???
@@ -250,6 +269,10 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
     if (fieldChanged)
     {
       std::vector<TypeNode> newTypes = nm->mkMutualDatatypeTypes(newDts);
+      if (d_splitDt.find(tn)!=d_splitDt.end())
+      {
+        addElimDatatype(newTypes[0]);
+      }
       // TODO: cache all oldTypes -> newTypes
       return newTypes[0];
     }
@@ -305,7 +328,8 @@ void ElimTypesNodeConverter::addElimDatatype(TypeNode dtn)
   for (unsigned j = 0, nargs = dtc.getNumArgs(); j < nargs; ++j)
   {
     TypeNode tn = dtc.getArgType(j);
-    Node sel = nm->mkNode(APPLY_SELECTOR, dtc[j].getSelector(), x);
+    Node selOp = dtc[j].getSelector();
+    Node sel = nm->mkNode(APPLY_SELECTOR, selOp, x);
     // recursively inline
     if (tn.isDatatype())
     {
@@ -345,20 +369,27 @@ const std::vector<Node>& ElimTypesNodeConverter::getOrMkSplitTerms(Node n)
   NodeManager* nm = NodeManager::currentNM();
   Kind k = n.getKind();
   TypeNode tn = n.getType();
+  Trace("elim-types-debug") << "getOrMkSplitTerms " << n << " : " << tn << std::endl;
   Assert(tn.isDatatype());
   Assert(d_splitDt.find(tn) != d_splitDt.end());
   std::vector<TypeNode>& stypes = d_splitDt[tn];
   SkolemManager* sm = NodeManager::currentNM()->getSkolemManager();
-  if (k==APPLY_UF)
+  std::vector<Node>& splitn = d_splitDtTerms[n];
+  Node op;
+  if (k==APPLY_UF || k==APPLY_SELECTOR)
   {
     // if f(t), split to f1(t) ... fn(t)
-    Node op = n.getOperator();
+    op = n.getOperator();
     it = d_splitDtTerms.find(op);
     if (it==d_splitDtTerms.end())
     {
       d_splitDtTerms[op].clear();
       it = d_splitDtTerms.find(op);
-      std::vector<TypeNode> fargs = op.getType().getArgTypes();
+      std::vector<TypeNode> fargs;
+      for (const Node& nc : n)
+      {
+        fargs.push_back(convertType(nc.getType()));
+      }
       for (size_t i = 0, nargs = stypes.size(); i < nargs; i++)
       {
         TypeNode ftn = nm->mkFunctionType(fargs, stypes[i]);
@@ -368,33 +399,59 @@ const std::vector<Node>& ElimTypesNodeConverter::getOrMkSplitTerms(Node n)
         it->second.push_back(sko);
       }
     }
-  }
-  else if (k==APPLY_SELECTOR)
-  {
-    AlwaysAssert(false) << "cannot split selector term " << n;
-  }
-  std::vector<Node>& splitn = d_splitDtTerms[n];
-  for (size_t i = 0, nargs = stypes.size(); i < nargs; i++)
-  {
-    Node sk;
-    if (k == BOUND_VARIABLE)
-    {
-      // can't use mkPurifySkolem
-      sk = nm->mkBoundVar(stypes[i]);
-    }
-    else if (k==APPLY_UF)
+    for (size_t i = 0, nargs = stypes.size(); i < nargs; i++)
     {
       std::vector<Node> elimChildren{it->second[i]};
       elimChildren.insert(elimChildren.end(), n.begin(), n.end());
-      sk = nm->mkNode(APPLY_UF, elimChildren);
+      Node sk = nm->mkNode(APPLY_UF, elimChildren);
+      splitn.push_back(sk);
     }
-    else
+  }
+  else if (k==APPLY_CONSTRUCTOR)
+  {
+    for (const Node& nc : n)
     {
-      std::stringstream ss;
-      ss << "ke_" << n << "_" << i;
-      sk = sm->mkDummySkolem(ss.str(), stypes[i]);
+      TypeNode tnc = nc.getType();
+      if (d_splitDt.find(tnc)==d_splitDt.end())
+      {
+        splitn.push_back(nc);
+        continue;
+      }
+      const std::vector<Node>& splitc = getOrMkSplitTerms(nc);
+      splitn.insert(splitn.end(), splitc.begin(), splitc.end());
     }
-    splitn.push_back(sk);
+    Assert (splitn.size()==stypes.size());
+  }
+  else if (k==ITE)
+  {
+    const std::vector<Node>& ns1 = getOrMkSplitTerms(n[1]);
+    const std::vector<Node>& ns2 = getOrMkSplitTerms(n[2]);
+    Assert (ns1.size()==ns2.size());
+    for (size_t i=0, nsize = ns1.size(); i<nsize; i++)
+    {
+      splitn.push_back(nm->mkNode(ITE, n[0], ns1[i], ns2[i]));
+    }
+  }
+  else
+  {
+    AlwaysAssert(n.isVar()) << "Cannot split " << n;
+    for (size_t i = 0, nargs = stypes.size(); i < nargs; i++)
+    {
+      TypeNode stc = convertType(stypes[i]);
+      Node sk;
+      if (k == BOUND_VARIABLE)
+      {
+        // can't use mkPurifySkolem
+        sk = nm->mkBoundVar(stc);
+      }
+      else
+      {
+        std::stringstream ss;
+        ss << "ke_" << n << "_" << i;
+        sk = sm->mkDummySkolem(ss.str(), stc);
+      }
+      splitn.push_back(sk);
+    }
   }
   return splitn;
 }
@@ -422,6 +479,15 @@ size_t ElimTypesNodeConverter::getMappedDatatypeIndex(Node op) const
   std::map<Node, size_t>::const_iterator it = d_dtIndex.find(op);
   Assert (it!=d_dtIndex.end());
   return it->second;
+}
+
+Node ElimTypesNodeConverter::returnConvert(Node n, Node ret)
+{
+  TypeNode tn = n.getType();
+  TypeNode tnr = ret.getType();
+  Trace("elim-types-debug") << "...return " << ret << std::endl;
+  AlwaysAssert(tn.isSelector() || convertType(tn)==tnr) << "...bad conversion " << n << " -> " << ret << ", types " << tn << " -> " << tnr << ", expected " << convertType(tn);
+  return ret;
 }
 
 ElimTypes::ElimTypes(PreprocessingPassContext* preprocContext)
