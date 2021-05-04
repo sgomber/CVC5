@@ -297,7 +297,20 @@ void ElimTypesNodeConverter::addElimDatatype(TypeNode dtn)
   std::vector<TypeNode>& ts = d_splitDt[dtn];
   for (unsigned j = 0, nargs = dtc.getNumArgs(); j < nargs; ++j)
   {
-    ts.push_back(dtc.getArgType(j));
+    TypeNode tn = dtc.getArgType(j);
+    // recursively inline
+    if (tn.isDatatype())
+    {
+      const DType& dta = tn.getDType();
+      if (dta.getNumConstructors()==1)
+      {
+        addElimDatatype(tn);
+        std::vector<TypeNode>& tsa = d_splitDt[dtn];
+        ts.insert(ts.end(), tsa.begin(), tsa.end());
+        continue;
+      }
+    }
+    ts.push_back(tn);
   }
 }
 bool ElimTypesNodeConverter::empty() const { return d_splitDt.empty(); }
@@ -314,8 +327,7 @@ const std::vector<Node>& ElimTypesNodeConverter::getOrMkSplitTerms(Node n)
   TypeNode tn = n.getType();
   Assert(tn.isDatatype());
   Assert(d_splitDt.find(tn) != d_splitDt.end());
-  const DType& dt = tn.getDType();
-  const DTypeConstructor& dtc = dt[0];
+  std::vector<TypeNode>& stypes = d_splitDt[tn];
   SkolemManager* sm = NodeManager::currentNM()->getSkolemManager();
   if (k==APPLY_UF)
   {
@@ -327,9 +339,9 @@ const std::vector<Node>& ElimTypesNodeConverter::getOrMkSplitTerms(Node n)
       d_splitDtTerms[op].clear();
       it = d_splitDtTerms.find(op);
       std::vector<TypeNode> fargs = op.getType().getArgTypes();
-      for (size_t i = 0, nargs = dtc.getNumArgs(); i < nargs; i++)
+      for (size_t i = 0, nargs = stypes.size(); i < nargs; i++)
       {
-        TypeNode ftn = nm->mkFunctionType(fargs, dtc.getArgType(i));
+        TypeNode ftn = nm->mkFunctionType(fargs, stypes[i]);
         std::stringstream ss;
         ss << "keo_" << op << "_" << i;
         Node sko = sm->mkDummySkolem(ss.str(), ftn);
@@ -338,13 +350,13 @@ const std::vector<Node>& ElimTypesNodeConverter::getOrMkSplitTerms(Node n)
     }
   }
   std::vector<Node>& splitn = d_splitDtTerms[n];
-  for (size_t i = 0, nargs = dtc.getNumArgs(); i < nargs; i++)
+  for (size_t i = 0, nargs = stypes.size(); i < nargs; i++)
   {
     Node sk;
     if (k == BOUND_VARIABLE)
     {
       // can't use mkPurifySkolem
-      sk = nm->mkBoundVar(dtc.getArgType(i));
+      sk = nm->mkBoundVar(stypes[i]);
     }
     else if (k==APPLY_UF)
     {
@@ -354,11 +366,9 @@ const std::vector<Node>& ElimTypesNodeConverter::getOrMkSplitTerms(Node n)
     }
     else
     {
-      Node nc =
-          nm->mkNode(APPLY_SELECTOR_TOTAL, dtc.getSelectorInternal(tn, i), n);
       std::stringstream ss;
       ss << "ke_" << n << "_" << i;
-      sk = sm->mkPurifySkolem(nc, ss.str());
+      sk = sm->mkDummySkolem(ss.str(), stypes[i]);
     }
     splitn.push_back(sk);
   }
