@@ -124,7 +124,13 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
   else if (k == APPLY_SELECTOR_TOTAL || k == APPLY_SELECTOR)
   {
     Assert (ncs.size()==2);
-    TypeNode tn = n[0].getType();
+    TypeNode tn = n.getType();
+    if (d_splitDt.find(tn)!=d_splitDt.end())
+    {
+      // if this term itself is being split, don't change yet
+      return Node::null();
+    }
+    tn = n[0].getType();
     it = d_splitDt.find(tn);
     if (it != d_splitDt.end())
     {
@@ -134,7 +140,7 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
       Assert(0 <= index && index < args.size());
       return args[index];
     }
-    Trace("elim-types-debug") << "...no split" << std::endl;
+    Trace("elim-types-debug") << "...no split for " << tn << std::endl;
     // change the selector, if the argument has changed types
     TypeNode ntn = ncs[1].getType();
     if (tn != ntn)
@@ -142,8 +148,10 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
       Assert(ntn.isDatatype());
       const DType& dt = ntn.getDType();
       size_t cindex = theory::datatypes::utils::cindexOf(n.getOperator());
+      Assert (0<=cindex && cindex<dt.getNumConstructors());
       // must use mapped index, since argument index may be different in the new datatype
       size_t index = getMappedDatatypeIndex(n.getOperator());
+      Assert (0<=index && index<dt[cindex].getNumArgs());
       return nm->mkNode(k, dt[cindex][index].getSelector(), ncs[1]);
     }
   }
