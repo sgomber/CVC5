@@ -52,6 +52,8 @@ class ElimTypesNodeConverter : public NodeConverter
   size_t getMappedDatatypeIndex(Node n) const;
   /** Split 1-cons */
   std::map<TypeNode, std::vector<TypeNode>> d_splitDt;
+  /** the selector chain for each type */
+  std::map<TypeNode, std::vector<Node>> d_splitDtSelc;
   /** Splits */
   std::map<Node, std::vector<Node>> d_splitDtTerms;
   /** dt index */

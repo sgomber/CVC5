@@ -51,7 +51,8 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
     TypeNode tn = n.getType();
     if (tn.isConstructor() || tn.isSelector() || tn.isTester())
     {
-      // don't bother converting these
+      // don't bother converting these, they will be converted when we
+      // deal with APPLY_CONSTRUCTOR / APPLY_SELECTOR / APPLY_TESTER
       return Node::null();
     }
     TypeNode ctn = convertType(tn);
@@ -209,9 +210,15 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
       for (const std::shared_ptr<DTypeSelector>& a : args)
       {
         Trace("elim-types") << "...process " << a->getName() << std::endl;
+        std::stringstream ss;
+        ss << a->getName() << "_elim";
         TypeNode tna = a->getRangeType();
+        // maintain mapping to corresponding index in new constructor
+        d_dtIndex[a->getSelector()] = nargs;
         if (tn == tna)
         {
+          //AlwaysAssert(false) << "recursive datatypes not handled";
+          newC->addArgSelf(ss.str());
           // recursive, add self?
           continue;
         }
@@ -221,20 +228,16 @@ TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
           Trace("elim-types") << "...inline" << std::endl;
           for (size_t j = 0, ntypes = it->second.size(); j < ntypes; j++)
           {
-            std::stringstream ss;
-            ss << a->getName() << "_elim_" << j;
-            newC->addArg(ss.str(), convertType(it->second[j]));
+            std::stringstream sse;
+            sse << ss.str() << "_" << j;
+            newC->addArg(sse.str(), convertType(it->second[j]));
             nargs++;
           }
           fieldChanged = true;
         }
         else
         {
-          // maintain mapping to corresponding index in new constructor
-          d_dtIndex[a->getSelector()] = nargs;
           Trace("elim-types") << "...map: selector " << a->getSelector() << " -> " << nargs << std::endl;
-          std::stringstream ss;
-          ss << a->getName() << "_elim";
           TypeNode tnaNew = convertType(tna);
           newC->addArg(ss.str(), tnaNew);
           fieldChanged = fieldChanged || tnaNew != tna;
@@ -290,14 +293,19 @@ void ElimTypesNodeConverter::addElimDatatype(TypeNode dtn)
     // already registered
     return;
   }
+  NodeManager * nm = NodeManager::currentNM();
   Assert(dtn.isDatatype());
   const DType& dt = dtn.getDType();
   Assert(dt.getNumConstructors() == 1);
   const DTypeConstructor& dtc = dt[0];
   std::vector<TypeNode>& ts = d_splitDt[dtn];
+  //std::vector<Node>& sels = d_splitDtSelc[dtn];
+  Node x = nm->mkBoundVar(dtn);
+  Node bvlx = nm->mkNode(BOUND_VAR_LIST, x);
   for (unsigned j = 0, nargs = dtc.getNumArgs(); j < nargs; ++j)
   {
     TypeNode tn = dtc.getArgType(j);
+    Node sel = nm->mkNode(APPLY_SELECTOR, dtc[j].getSelector(), x);
     // recursively inline
     if (tn.isDatatype())
     {
@@ -307,10 +315,22 @@ void ElimTypesNodeConverter::addElimDatatype(TypeNode dtn)
         addElimDatatype(tn);
         std::vector<TypeNode>& tsa = d_splitDt[dtn];
         ts.insert(ts.end(), tsa.begin(), tsa.end());
+        /*
+        std::vector<Node>& sela = d_splitDtSelc[dtn];
+        for (const Node& sa : sela)
+        {
+          Node chain = nm->mkNode(APPLY_UF, sa, sel);
+          chain = Rewriter::rewrite(chain);
+          chain = nm->mkNode(LAMBDA, bvlx, chain);
+          sels.push_back(chain);
+        }
+        */
         continue;
       }
     }
     ts.push_back(tn);
+    sel = nm->mkNode(LAMBDA, bvlx, sel);
+    //sels.push_back(sel);
   }
 }
 bool ElimTypesNodeConverter::empty() const { return d_splitDt.empty(); }
@@ -348,6 +368,10 @@ const std::vector<Node>& ElimTypesNodeConverter::getOrMkSplitTerms(Node n)
         it->second.push_back(sko);
       }
     }
+  }
+  else if (k==APPLY_SELECTOR)
+  {
+    AlwaysAssert(false) << "cannot split selector term " << n;
   }
   std::vector<Node>& splitn = d_splitDtTerms[n];
   for (size_t i = 0, nargs = stypes.size(); i < nargs; i++)
