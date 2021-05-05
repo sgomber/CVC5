@@ -411,6 +411,7 @@ const std::vector<Node>& ElimTypesNodeConverter::getOrMkSplitTerms(Node n)
   }
   else if (k==APPLY_CONSTRUCTOR)
   {
+    // C(t1...tn) becomes s1 ... sm, for recursively inlined t1 ... tn
     for (const Node& nc : n)
     {
       TypeNode tnc = nc.getType();
@@ -426,6 +427,7 @@ const std::vector<Node>& ElimTypesNodeConverter::getOrMkSplitTerms(Node n)
   }
   else if (k==ITE)
   {
+    // (ite A t1 t2) becomes (ite A k11 k21) .... (ite A k1n k2n)
     const std::vector<Node>& ns1 = getOrMkSplitTerms(n[1]);
     const std::vector<Node>& ns2 = getOrMkSplitTerms(n[2]);
     Assert (ns1.size()==ns2.size());
