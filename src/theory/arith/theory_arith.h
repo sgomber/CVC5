@@ -147,8 +147,6 @@ class TheoryArith : public Theory {
   ArithState d_astate;
   /** The arith::InferenceManager. */
   InferenceManager d_im;
-  /** The preprocess utility */
-  ArithPreprocess d_arithPreproc;
   /**
    * The non-linear extension, responsible for all approaches for non-linear
    * arithmetic.

@@ -30,6 +30,7 @@ PreprocessingPassContext::PreprocessingPassContext(
     : d_smt(smt),
       d_env(env),
       d_circuitPropagator(circuitPropagator),
+      d_llm(this, env.getUserContext(), env.getProofNodeManager()),
       d_symsInAssertions(env.getUserContext())
 {
 }
