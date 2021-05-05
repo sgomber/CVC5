@@ -24,13 +24,12 @@
 #include <vector>
 
 #include "context/cdhashmap_forward.h"
-#include "cvc4_export.h"
+#include "cvc5_export.h"
 #include "options/options.h"
 #include "smt/output_manager.h"
 #include "smt/smt_mode.h"
 #include "theory/logic_info.h"
 #include "util/result.h"
-#include "util/sexpr.h"
 
 namespace cvc5 {
 
@@ -95,13 +94,6 @@ class SygusSolver;
 class AbductionSolver;
 class InterpolationSolver;
 class QuantElimSolver;
-/**
- * Representation of a defined function.  We keep these around in
- * SmtEngine to permit expanding definitions late (and lazily), to
- * support getValue() over defined functions, to support user output
- * in terms of defined functions, etc.
- */
-class DefinedFunction;
 
 struct SmtEngineStatistics;
 class SmtScope;
@@ -120,7 +112,7 @@ namespace theory {
 
 /* -------------------------------------------------------------------------- */
 
-class CVC4_EXPORT SmtEngine
+class CVC5_EXPORT SmtEngine
 {
   friend class ::cvc5::api::Solver;
   friend class ::cvc5::smt::SmtEngineState;
@@ -217,7 +209,7 @@ class CVC4_EXPORT SmtEngine
   bool isValidGetInfoFlag(const std::string& key) const;
 
   /** Query information about the SMT environment.  */
-  cvc5::SExpr getInfo(const std::string& key) const;
+  std::string getInfo(const std::string& key) const;
 
   /**
    * Set an aspect of the current SMT execution environment.
@@ -244,18 +236,18 @@ class CVC4_EXPORT SmtEngine
    * to a state where its options were prior to parsing but after e.g.
    * reading command line options.
    */
-  void notifyStartParsing(const std::string& filename) CVC4_EXPORT;
+  void notifyStartParsing(const std::string& filename) CVC5_EXPORT;
   /** return the input name (if any) */
   const std::string& getFilename() const;
 
   /**
    * Helper method for the API to put the last check result into the statistics.
    */
-  void setResultStatistic(const std::string& result) CVC4_EXPORT;
+  void setResultStatistic(const std::string& result) CVC5_EXPORT;
   /**
    * Helper method for the API to put the total runtime into the statistics.
    */
-  void setTotalTimeStatistic(double seconds) CVC4_EXPORT;
+  void setTotalTimeStatistic(double seconds) CVC5_EXPORT;
 
   /**
    * Get the model (only if immediately preceded by a SAT or NOT_ENTAILED
@@ -269,7 +261,7 @@ class CVC4_EXPORT SmtEngine
    * block-models option is set to a mode other than "none".
    *
    * This adds an assertion to the assertion stack that blocks the current
-   * model based on the current options configured by CVC4.
+   * model based on the current options configured by cvc5.
    *
    * The return value has the same meaning as that of assertFormula.
    */
@@ -335,9 +327,6 @@ class CVC4_EXPORT SmtEngine
                       const std::vector<Node>& formals,
                       Node formula,
                       bool global = false);
-
-  /** Return true if given expression is a defined function. */
-  bool isDefinedFunction(Node func);
 
   /**
    * Define functions recursive
@@ -704,14 +693,14 @@ class CVC4_EXPORT SmtEngine
 
   /**
    * Get an unsatisfiable core (only if immediately preceded by an UNSAT or
-   * ENTAILED query).  Only permitted if CVC4 was built with unsat-core support
+   * ENTAILED query).  Only permitted if cvc5 was built with unsat-core support
    * and produce-unsat-cores is on.
    */
   UnsatCore getUnsatCore();
 
   /**
    * Get a refutation proof (only if immediately preceded by an UNSAT or
-   * ENTAILED query). Only permitted if CVC4 was built with proof support and
+   * ENTAILED query). Only permitted if cvc5 was built with proof support and
    * the proof option is on. */
   std::string getProof();
 
@@ -750,9 +739,9 @@ class CVC4_EXPORT SmtEngine
    * limit, but it's deterministic so that reproducible results can be
    * obtained.  Currently, it's based on the number of conflicts.
    * However, please note that the definition may change between different
-   * versions of CVC4 (as may the number of conflicts required, anyway),
+   * versions of cvc5 (as may the number of conflicts required, anyway),
    * and it might even be different between instances of the same version
-   * of CVC4 on different platforms.
+   * of cvc5 on different platforms.
    *
    * A cumulative and non-cumulative (per-call) resource limit can be
    * set at the same time.  A call to setResourceLimit() with
@@ -776,7 +765,7 @@ class CVC4_EXPORT SmtEngine
    * resource limit for all remaining calls into the SmtEngine (true), or
    * whether it's a per-call resource limit (false); the default is false
    */
-  void setResourceLimit(unsigned long units, bool cumulative = false);
+  void setResourceLimit(uint64_t units, bool cumulative = false);
 
   /**
    * Set a per-call time limit for SmtEngine operations.
@@ -801,7 +790,7 @@ class CVC4_EXPORT SmtEngine
    *
    * @param millis the time limit in milliseconds, or 0 for no limit
    */
-  void setTimeLimit(unsigned long millis);
+  void setTimeLimit(uint64_t millis);
 
   /**
    * Get the current resource usage count for this SmtEngine.  This
@@ -825,9 +814,6 @@ class CVC4_EXPORT SmtEngine
 
   /** Permit access to the underlying NodeManager. */
   NodeManager* getNodeManager() const;
-
-  /** Get the value of one named statistic from this SmtEngine. */
-  SExpr getStatistic(std::string name) const;
 
   /**
    * Print statistics from the statistics registry in the env object owned by
@@ -895,13 +881,6 @@ class CVC4_EXPORT SmtEngine
 
   /** Get a pointer to the Rewriter owned by this SmtEngine. */
   theory::Rewriter* getRewriter();
-
-  /** The type of our internal map of defined functions */
-  using DefinedFunctionMap =
-      context::CDHashMap<Node, smt::DefinedFunction, NodeHashFunction>;
-
-  /** Get the defined function map */
-  DefinedFunctionMap* getDefinedFunctionMap() { return d_definedFunctions; }
   /**
    * Get expanded assertions.
    *
@@ -927,7 +906,7 @@ class CVC4_EXPORT SmtEngine
 
   /**
    * Internal method to get an unsatisfiable core (only if immediately preceded
-   * by an UNSAT or ENTAILED query). Only permitted if CVC4 was built with
+   * by an UNSAT or ENTAILED query). Only permitted if cvc5 was built with
    * unsat-core support and produce-unsat-cores is on. Does not dump the
    * command.
    */
@@ -983,7 +962,7 @@ class CVC4_EXPORT SmtEngine
    * return nullptr.
    *
    * This ensures that the underlying theory model of the SmtSolver maintained
-   * by this class is currently available, which means that CVC4 is producing
+   * by this class is currently available, which means that cvc5 is producing
    * models, and is in "SAT mode", otherwise a recoverable exception is thrown.
    *
    * @param c used for giving an error message to indicate the context
@@ -1119,9 +1098,6 @@ class CVC4_EXPORT SmtEngine
    * from refutations. */
   std::unique_ptr<smt::UnsatCoreManager> d_ucManager;
 
-  /** An index of our defined functions */
-  DefinedFunctionMap* d_definedFunctions;
-
   /** The solver for sygus queries */
   std::unique_ptr<smt::SygusSolver> d_sygusSolver;
 
@@ -1144,7 +1120,7 @@ class CVC4_EXPORT SmtEngine
   /**
    * Verbosity of various commands.
    */
-  std::map<std::string, Integer> d_commandVerbosity;
+  std::map<std::string, int> d_commandVerbosity;
 
   /** The statistics class */
   std::unique_ptr<smt::SmtEngineStatistics> d_stats;
