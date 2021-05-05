@@ -57,6 +57,7 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
     }
     else if (tn.isSelector())
     {
+      // TODO: is this right???
       TypeNode ctn = convertType(tn[0]);
       TypeNode ctn1 = convertType(tn[1]);
       std::stringstream ss;
@@ -378,6 +379,7 @@ const std::vector<Node>& ElimTypesNodeConverter::getOrMkSplitTerms(Node n)
   Node op;
   if (k==APPLY_UF || k==APPLY_SELECTOR)
   {
+    // FIXME: probably not right for apply selector
     // if f(t), split to f1(t) ... fn(t)
     op = n.getOperator();
     it = d_splitDtTerms.find(op);
