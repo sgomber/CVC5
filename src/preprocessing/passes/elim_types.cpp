@@ -90,7 +90,6 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
     std::vector<Node> ccs;
     ccs.push_back(newBvl);
     ccs.insert(ccs.end(), ncs.begin() + 1, ncs.end());
-    Trace("elim-types-debug") << "...return" << std::endl;
     Node ret = nm->mkNode(k, ccs);
     return returnConvert(n, ret);
   }
@@ -148,8 +147,10 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
     Trace("elim-types-debug") << "postConvert " << k << std::endl;
     Assert (ncs.size()==2);
     TypeNode tn = n.getType();
+    it = d_splitDt.find(tn);
     if (it != d_splitDt.end())
     {
+      Trace("elim-types-debug") << "...delay split type " << tn << std::endl;
       Node ret = nm->mkNode(APPLY_UF, ncs);
       return returnConvert(n, ret);
     }
@@ -157,7 +158,7 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
     it = d_splitDt.find(tn);
     if (it != d_splitDt.end())
     {
-      Trace("elim-types-debug") << "...split " << ncs[1] << std::endl;
+      Trace("elim-types-debug") << "...split " << tn << std::endl;
       const std::vector<Node>& args = getOrMkSplitTerms(ncs[1]);
       size_t index = getMappedDatatypeIndex(n.getOperator());
       Assert(0 <= index && index < args.size());
@@ -583,8 +584,22 @@ PreprocessingPassResult ElimTypes::applyInternal(
   // Step 2: simplify
   for (size_t i = 0; i < nasserts; ++i)
   {
-    Node ac = d_etnc.convert((*assertionsToPreprocess)[i]);
+    Node prev = (*assertionsToPreprocess)[i];
+    Node ac = d_etnc.convert(prev);
     ac = Rewriter::rewrite(ac);
+    /*
+    if (expr::hasFreeVar(ac))
+    {
+      std::unordered_set<Node, NodeHashFunction> fvs;
+      expr::getFreeVariables(ac, fvs);
+      std::stringstream ss;
+      for (const Node& v : fvs)
+      {
+        ss << v << " ";
+      }
+      AlwaysAssert(false) << "Converted " << ac << " from " << prev << " has free variables " << ss.str();
+    }
+    */
     assertionsToPreprocess->replace(i, ac);
   }
 
