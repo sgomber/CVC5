@@ -443,9 +443,10 @@ void TheoryDatatypes::preRegisterTerm(TNode n)
   if (tn.isDatatype())
   {
     const DType& dt = tn.getDType();
-    if (dt.getNumConstructors()==1)
+    if (dt.getNumConstructors() == 1)
     {
-      Trace("ajr-temp") << "datatype 1 cons " << dt.getName() << " from " << n << std::endl;
+      Trace("ajr-temp") << "datatype 1 cons " << dt.getName() << " from " << n
+                        << std::endl;
     }
     Trace("dt-expand") << "Check properties of " << dt.getName() << std::endl;
     if (!dt.isWellFounded())

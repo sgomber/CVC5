@@ -51,7 +51,8 @@ Node NodeConverter::convert(Node n)
       d_preCache[cur] = curp;
       if (!curp.isNull())
       {
-        Trace("nconv-debug2") << "preConvert: " << cur << " <- " << curp << std::endl;
+        Trace("nconv-debug2")
+            << "preConvert: " << cur << " <- " << curp << std::endl;
         visit.push_back(cur);
         visit.push_back(curp);
       }
@@ -108,7 +109,8 @@ Node NodeConverter::convert(Node n)
         Node cret = postConvert(cur, children);
         if (!cret.isNull() && ret != cret)
         {
-          Trace("nconv-debug2") << "postConvert: " << cur << " <- " << cret << std::endl;
+          Trace("nconv-debug2")
+              << "postConvert: " << cur << " <- " << cret << std::endl;
           ret = cret;
         }
         else if (childChanged)
