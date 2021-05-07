@@ -49,21 +49,11 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
   if (n.isVar())
   {
     TypeNode tn = n.getType();
-    if (tn.isConstructor() || tn.isTester())
+    if (tn.isConstructor() || tn.isTester() || tn.isSelector())
     {
       // don't bother converting these, they will be converted when we
       // deal with APPLY_CONSTRUCTOR / APPLY_TESTER
       return Node::null();
-    }
-    else if (tn.isSelector())
-    {
-      // TODO: is this right???
-      TypeNode ctn = convertType(tn[0]);
-      TypeNode ctn1 = convertType(tn[1]);
-      std::stringstream ss;
-      ss << n << "_sel_elim";
-      Node ret = sm->mkDummySkolem(ss.str(), nm->mkFunctionType(ctn, ctn1));
-      return returnConvert(n, ret);
     }
     TypeNode ctn = convertType(tn);
     if (tn != ctn)
@@ -142,30 +132,11 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
     Node ret = nm->mkNode(k, newArgs);
     return returnConvert(n, ret);
   }
-  else if (k == APPLY_SELECTOR_TOTAL || k == APPLY_SELECTOR)
+  else if (k == APPLY_SELECTOR)
   {
     Trace("elim-types-debug") << "postConvert " << k << std::endl;
     Assert (ncs.size()==2);
-    TypeNode tn = n.getType();
-    it = d_splitDt.find(tn);
-    if (it != d_splitDt.end())
-    {
-      Trace("elim-types-debug") << "...delay split type " << tn << std::endl;
-      Node ret = nm->mkNode(APPLY_UF, ncs);
-      return returnConvert(n, ret);
-    }
-    tn = n[0].getType();
-    it = d_splitDt.find(tn);
-    if (it != d_splitDt.end())
-    {
-      Trace("elim-types-debug") << "...split " << tn << std::endl;
-      const std::vector<Node>& args = getOrMkSplitTerms(ncs[1]);
-      size_t index = getMappedDatatypeIndex(n.getOperator());
-      Assert(0 <= index && index < args.size());
-      Node ret = args[index];
-      return returnConvert(n, ret);
-    }
-    Trace("elim-types-debug") << "...no split for " << tn << std::endl;
+    TypeNode tn = n[0].getType();
     // change the selector, if the argument has changed types
     TypeNode ntn = ncs[1].getType();
     if (tn != ntn)
@@ -177,9 +148,48 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
       // must use mapped index, since argument index may be different in the new datatype
       size_t index = getMappedDatatypeIndex(n.getOperator());
       Assert (0<=index && index<dt[cindex].getNumArgs());
+      // if we are splitting the return type, we must convert to a list of
+      // selectors, packaged together with a constructor
+      TypeNode rtn = n.getType();
+      it = d_splitDt.find(rtn);
+      if (it != d_splitDt.end())
+      {
+        rtn = convertType(rtn);
+        Assert (rtn.isDatatype());
+        const DType& rdt = rtn.getDType();
+        Trace("elim-types-debug") << "...split return type " << rtn << std::endl;
+        std::vector<Node> args;
+        args.push_back(rdt[0].getConstructor());
+        for (size_t i=0, nargs=it->second.size(); i<nargs; i++)
+        {
+          Assert (index<dt[cindex].getNumArgs());
+          Node sel = nm->mkNode(k, dt[cindex][index].getSelector(), ncs[1]);
+          args.push_back(sel);
+          index++;
+        }
+        Node ret = nm->mkNode(APPLY_CONSTRUCTOR, args);
+        return returnConvert(n, ret);
+      }
+      Trace("elim-types-debug") << "...change selector " << rtn << std::endl;
       Node ret = nm->mkNode(k, dt[cindex][index].getSelector(), ncs[1]);
       return returnConvert(n, ret);
     }
+    if (n[0].isVar())
+    {
+      it = d_splitDt.find(tn);
+      // if we are splitting the argument type, (S_i x) ---> x_i
+      // where x is a variable of a datatype we are splitting
+      if (it != d_splitDt.end())
+      {
+        Trace("elim-types-debug") << "...split arg type " << tn << std::endl;
+        const std::vector<Node>& args = getOrMkSplitTerms(ncs[1]);
+        size_t index = getMappedDatatypeIndex(n.getOperator());
+        Assert(0 <= index && index < args.size());
+        Node ret = args[index];
+        return returnConvert(n, ret);
+      }
+    }
+    Trace("elim-types-debug") << "...no change " << tn << std::endl;
   }
   else if (k == APPLY_TESTER)
   {
@@ -197,6 +207,8 @@ Node ElimTypesNodeConverter::postConvert(Node n, const std::vector<Node>& ncs)
       return returnConvert(n, ret);
     }
   }
+  // should not have expanded apply selector total yet
+  Assert (k != APPLY_SELECTOR_TOTAL);
   return Node::null();
 }
 TypeNode ElimTypesNodeConverter::postConvertType(TypeNode tn)
@@ -378,7 +390,7 @@ const std::vector<Node>& ElimTypesNodeConverter::getOrMkSplitTerms(Node n)
   SkolemManager* sm = NodeManager::currentNM()->getSkolemManager();
   std::vector<Node>& splitn = d_splitDtTerms[n];
   Node op;
-  if (k==APPLY_UF || k==APPLY_SELECTOR)
+  if (k==APPLY_UF)
   {
     // FIXME: probably not right for apply selector
     // if f(t), split to f1(t) ... fn(t)
