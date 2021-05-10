@@ -31,9 +31,11 @@ namespace cvc5 {
 namespace theory {
 
 CombinationEngine::CombinationEngine(TheoryEngine& te,
+                                     Env& env,
                                      const std::vector<Theory*>& paraTheories,
                                      ProofNodeManager* pnm)
     : d_te(te),
+      d_env(env),
       d_valuation(&te),
       d_pnm(pnm),
       d_logicInfo(te.getLogicInfo()),
@@ -44,12 +46,6 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
       d_cmbsPg(pnm ? new EagerProofGenerator(pnm, te.getUserContext())
                    : nullptr)
 {
-}
-
-CombinationEngine::~CombinationEngine() {}
-
-void CombinationEngine::finishInit()
-{
   // create the equality engine, model manager, and shared solver
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
@@ -59,7 +55,8 @@ void CombinationEngine::finishInit()
     d_eemanager.reset(
         new EqEngineManagerDistributed(d_te, *d_sharedSolver.get()));
     // make the distributed model manager
-    d_mmanager.reset(new ModelManagerDistributed(d_te, *d_eemanager.get()));
+    d_mmanager.reset(
+        new ModelManagerDistributed(d_te, d_env, *d_eemanager.get()));
   }
   else if (options::eeMode() == options::EqEngineMode::TEST)
   {
@@ -75,7 +72,12 @@ void CombinationEngine::finishInit()
     Unhandled() << "CombinationEngine::finishInit: equality engine mode "
                 << options::eeMode() << " not supported";
   }
+}
 
+CombinationEngine::~CombinationEngine() {}
+
+void CombinationEngine::finishInit()
+{
   Assert(d_eemanager != nullptr);
 
   // initialize equality engines in all theories, including quantifiers engine

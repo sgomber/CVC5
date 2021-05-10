@@ -27,9 +27,10 @@ namespace theory {
 
 CombinationCareGraph::CombinationCareGraph(
     TheoryEngine& te,
+    Env& env,
     const std::vector<Theory*>& paraTheories,
     ProofNodeManager* pnm)
-    : CombinationEngine(te, paraTheories, pnm)
+    : CombinationEngine(te, env, paraTheories, pnm)
 {
 }
 

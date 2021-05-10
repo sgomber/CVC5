@@ -25,14 +25,9 @@
 
 namespace cvc5 {
 
+class Env;
 class ProofNodeManager;
-class ResourceManager;
-class SmtEngine;
 class TConvProofGenerator;
-
-namespace preprocessing {
-class AssertionPipeline;
-}
 
 namespace smt {
 
@@ -47,27 +42,17 @@ struct SmtEngineStatistics;
 class ExpandDefs
 {
  public:
-  ExpandDefs(SmtEngine& smt, ResourceManager& rm, SmtEngineStatistics& stats);
+  ExpandDefs(Env& env, SmtEngineStatistics& stats);
   ~ExpandDefs();
   /**
    * Expand definitions in term n. Return the expanded form of n.
    *
    * @param n The node to expand
    * @param cache Cache of previous results
-   * @param expandOnly if true, then the expandDefinitions function of
-   * TheoryEngine is not called on subterms of n.
    * @return The expanded term.
    */
   Node expandDefinitions(
-      TNode n,
-      std::unordered_map<Node, Node, NodeHashFunction>& cache,
-      bool expandOnly = false);
-  /**
-   * Expand defintitions in assertions. This applies this above method to each
-   * assertion in the given pipeline.
-   */
-  void expandAssertions(preprocessing::AssertionPipeline& assertions,
-                        bool expandOnly = false);
+      TNode n, std::unordered_map<Node, Node, NodeHashFunction>& cache);
 
   /**
    * Set proof node manager, which signals this class to enable proofs using the
@@ -83,12 +68,9 @@ class ExpandDefs
   theory::TrustNode expandDefinitions(
       TNode n,
       std::unordered_map<Node, Node, NodeHashFunction>& cache,
-      bool expandOnly,
       TConvProofGenerator* tpg);
-  /** Reference to the SMT engine */
-  SmtEngine& d_smt;
-  /** Reference to resource manager */
-  ResourceManager& d_resourceManager;
+  /** Reference to the environment. */
+  Env& d_env;
   /** Reference to the SMT stats */
   SmtEngineStatistics& d_smtStats;
   /** A proof generator for the term conversion. */

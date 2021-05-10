@@ -27,6 +27,7 @@
 namespace cvc5 {
 
 class TheoryEngine;
+class Env;
 
 namespace theory {
 
@@ -45,6 +46,7 @@ class CombinationEngine
 {
  public:
   CombinationEngine(TheoryEngine& te,
+                    Env& env,
                     const std::vector<Theory*>& paraTheories,
                     ProofNodeManager* pnm);
   virtual ~CombinationEngine();
@@ -105,6 +107,8 @@ class CombinationEngine
   virtual eq::EqualityEngineNotify* getModelEqualityEngineNotify();
   /** Reference to the theory engine */
   TheoryEngine& d_te;
+  /** Reference to the environment */
+  Env& d_env;
   /** Valuation for the engine */
   Valuation d_valuation;
   /** The proof node manager */
