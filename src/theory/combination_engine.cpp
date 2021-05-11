@@ -65,7 +65,7 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
     // make the distributed equality engine manager
     d_eemanager.reset(new EqEngineManagerTest(d_te, *d_sharedSolver.get()));
     // make the distributed model manager
-    d_mmanager.reset(new ModelManagerDistributed(d_te, *d_eemanager.get()));
+    d_mmanager.reset(new ModelManagerDistributed(d_te, d_env, *d_eemanager.get()));
   }
   else
   {
