@@ -93,15 +93,8 @@ class PreprocessingPassContext
    */
   std::vector<Node>& getLearnedLiterals();
   /**
-   * Add substitution to theory model. This method should only be called if
-   * we have already added the substitution to the top-level substitutions
-   * class. Otherwise, addSubstitution should be called instead.
-   * @param lhs The node replaced by node 'rhs'
-   * @param rhs The node to substitute node 'lhs'
-   */
-  void addModelSubstitution(const Node& lhs, const Node& rhs);
-  /**
-   * Add substitution to the top-level substitutions and to the theory model.
+   * Add substitution to the top-level substitutions, which also as a
+   * consequence is used by the theory model.
    * @param lhs The node replaced by node 'rhs'
    * @param rhs The node to substitute node 'lhs'
    * @param pg The proof generator that can provide a proof of lhs == rhs.
