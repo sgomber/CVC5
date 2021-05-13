@@ -524,11 +524,11 @@ ElimTypes::ElimTypes(PreprocessingPassContext* preprocContext)
 
 void ElimTypes::collectTypes(
     const Node& n,
-    std::unordered_set<TNode, TNodeHashFunction>& visited,
-    std::unordered_set<TypeNode, TypeNodeHashFunction>& types,
+    std::unordered_set<TNode>& visited,
+    std::unordered_set<TypeNode>& types,
     std::map<TypeNode, std::vector<Node>>& syms)
 {
-  std::unordered_set<TNode, TNodeHashFunction>::iterator it;
+  std::unordered_set<TNode>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
@@ -554,8 +554,8 @@ PreprocessingPassResult ElimTypes::applyInternal(
 {
   Trace("elim-types") << "ElimTypes: collect types..." << std::endl;
   // Step 1: infer types to eliminate
-  std::unordered_set<TNode, TNodeHashFunction> visited;
-  std::unordered_set<TypeNode, TypeNodeHashFunction> types;
+  std::unordered_set<TNode> visited;
+  std::unordered_set<TypeNode> types;
   std::map<TypeNode, std::vector<Node>> syms;
   size_t nasserts = assertionsToPreprocess->size();
   for (size_t i = 0; i < nasserts; ++i)

@@ -424,7 +424,7 @@ class DType
       const;
 
   /** Get the subfield types */
-  std::unordered_set<TypeNode, TypeNodeHashFunction> getSubfieldTypes() const;
+  std::unordered_set<TypeNode> getSubfieldTypes() const;
 
   /** prints this datatype to stream */
   void toStream(std::ostream& out) const;
@@ -545,10 +545,9 @@ class DType
    * @param isAlienPos Whether we are in an alien subfield type position. This
    * flag is true if we have traversed beneath a non-datatype type constructor.
    */
-  void getAlienSubfieldTypes(
-      std::unordered_set<TypeNode, TypeNodeHashFunction>& types,
-      std::map<TypeNode, bool>& processed,
-      bool isAlienPos) const;
+  void getAlienSubfieldTypes(std::unordered_set<TypeNode>& types,
+                             std::map<TypeNode, bool>& processed,
+                             bool isAlienPos) const;
   /** name of this datatype */
   std::string d_name;
   /** the type parameters of this datatype (if this is a parametric datatype)
