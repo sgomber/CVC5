@@ -60,10 +60,7 @@ class PreprocessingPassContext
   /** Get the learned literal manager */
   LearnedLiteralManager* getLearnedLiteralManager();
 
-  context::CDHashSet<Node, NodeHashFunction>& getSymsInAssertions()
-  {
-    return d_symsInAssertions;
-  }
+  context::CDHashSet<Node>& getSymsInAssertions() { return d_symsInAssertions; }
 
   void spendResource(Resource r);
 
@@ -127,7 +124,7 @@ class PreprocessingPassContext
    * The (user-context-dependent) set of symbols that occur in at least one
    * assertion in the current user context.
    */
-  context::CDHashSet<Node, NodeHashFunction> d_symsInAssertions;
+  context::CDHashSet<Node> d_symsInAssertions;
 
 };  // class PreprocessingPassContext
 
