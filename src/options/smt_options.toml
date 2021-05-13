@@ -449,7 +449,6 @@ name   = "SMT layer"
   long       = "elim-types"
   type       = "bool"
   default    = "false"
-  read_only  = true
   help       = "Type elimination preprocessing pass"
 
 [[option]]
