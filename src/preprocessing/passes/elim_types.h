@@ -65,8 +65,8 @@ class ElimTypesNodeConverter : public NodeConverter
 class ElimTypes : public PreprocessingPass
 {
   using TypeNodeMap =
-      context::CDHashMap<TypeNode, TypeNode, TypeNodeHashFunction>;
-  using NodeMap = context::CDHashMap<Node, Node, NodeHashFunction>;
+      context::CDHashMap<TypeNode, TypeNode>;
+  using NodeMap = context::CDHashMap<Node, Node>;
 
  public:
   ElimTypes(PreprocessingPassContext* preprocContext);
@@ -76,8 +76,8 @@ class ElimTypes : public PreprocessingPass
       AssertionPipeline* assertionsToPreprocess) override;
   /** Collect types in node n */
   void collectTypes(const Node& n,
-                    std::unordered_set<TNode, TNodeHashFunction>& visited,
-                    std::unordered_set<TypeNode, TypeNodeHashFunction>& types,
+                    std::unordered_set<TNode>& visited,
+                    std::unordered_set<TypeNode>& types,
                     std::map<TypeNode, std::vector<Node>>& sym);
   /** Simplify type */
   TypeNode simplifyType(TypeNode tn);

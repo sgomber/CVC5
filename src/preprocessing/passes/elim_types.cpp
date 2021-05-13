@@ -612,7 +612,7 @@ PreprocessingPassResult ElimTypes::applyInternal(
     /*
     if (expr::hasFreeVar(ac))
     {
-      std::unordered_set<Node, NodeHashFunction> fvs;
+      std::unordered_set<Node> fvs;
       expr::getFreeVariables(ac, fvs);
       std::stringstream ss;
       for (const Node& v : fvs)
