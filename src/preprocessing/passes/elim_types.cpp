@@ -525,8 +525,7 @@ ElimTypes::ElimTypes(PreprocessingPassContext* preprocContext)
 void ElimTypes::collectTypes(
     const Node& n,
     std::unordered_set<TNode>& visited,
-    std::unordered_set<TypeNode>& types,
-    std::map<TypeNode, std::vector<Node>>& syms)
+    std::unordered_set<TypeNode>& types)
 {
   std::unordered_set<TNode>::iterator it;
   std::vector<TNode> visit;
@@ -556,11 +555,10 @@ PreprocessingPassResult ElimTypes::applyInternal(
   // Step 1: infer types to eliminate
   std::unordered_set<TNode> visited;
   std::unordered_set<TypeNode> types;
-  std::map<TypeNode, std::vector<Node>> syms;
   size_t nasserts = assertionsToPreprocess->size();
   for (size_t i = 0; i < nasserts; ++i)
   {
-    collectTypes((*assertionsToPreprocess)[i], visited, types, syms);
+    collectTypes((*assertionsToPreprocess)[i], visited, types);
   }
 
   Trace("elim-types") << "ElimTypes: compute types..." << std::endl;

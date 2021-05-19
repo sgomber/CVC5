@@ -77,8 +77,7 @@ class ElimTypes : public PreprocessingPass
   /** Collect types in node n */
   void collectTypes(const Node& n,
                     std::unordered_set<TNode>& visited,
-                    std::unordered_set<TypeNode>& types,
-                    std::map<TypeNode, std::vector<Node>>& sym);
+                    std::unordered_set<TypeNode>& types);
   /** Simplify type */
   TypeNode simplifyType(TypeNode tn);
   /** Simplify */
