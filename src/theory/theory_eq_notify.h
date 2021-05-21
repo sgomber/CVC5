@@ -49,11 +49,12 @@ class TheoryEqNotifyClass : public eq::EqualityEngineNotify
                                    TNode t2,
                                    bool value) override
   {
+    Node eq = t1<t2 ? t1.eqNode(t2) : t2.eqNode(t1);
     if (value)
     {
-      return d_im.propagateLit(t1.eqNode(t2));
+      return d_im.propagateLit(eq);
     }
-    return d_im.propagateLit(t1.eqNode(t2).notNode());
+    return d_im.propagateLit(eq.notNode());
   }
   void eqNotifyConstantTermMerge(TNode t1, TNode t2) override
   {
