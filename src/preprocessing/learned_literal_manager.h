@@ -47,7 +47,7 @@ class LearnedLiteralManager
 
  private:
   /** Learned literal map */
-  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+  typedef context::CDHashSet<Node> NodeSet;
   /** Pointer to the preprocessing context */
   PreprocessingPassContext* d_pcontext;
   /* The top level substitutions */

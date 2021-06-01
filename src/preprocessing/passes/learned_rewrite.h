@@ -20,7 +20,6 @@
 #include "preprocessing/preprocessing_pass.h"
 #include "preprocessing/preprocessing_pass_context.h"
 #include "theory/arith/bound_inference.h"
-#include "theory/trust_node.h"
 
 namespace cvc5 {
 namespace preprocessing {
@@ -41,11 +40,11 @@ class LearnedRewrite : public PreprocessingPass
   /**
    * Apply rewrite with learned literals.
    */
-  Node rewriteLearnedRec(Node n, theory::arith::BoundInference& binfer);
+  Node rewriteLearnedRec(Node n, theory::arith::BoundInference& binfer, std::vector<Node>& lems);
   /**
    * Learned rewrite
    */
-  Node rewriteLearned(Node n, theory::arith::BoundInference& binfer);
+  Node rewriteLearned(Node n, theory::arith::BoundInference& binfer, std::vector<Node>& lems);
   /** Return learned rewrite */
   Node returnRewriteLearned(Node n, Node nr, const char* c);
   /** static upper/lower bounds */

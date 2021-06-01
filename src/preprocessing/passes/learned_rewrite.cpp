@@ -19,6 +19,7 @@
 #include "preprocessing/assertion_pipeline.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/rewriter.h"
+#include "util/rational.h"
 
 using namespace cvc5::theory;
 using namespace cvc5::kind;
@@ -47,7 +48,7 @@ PreprocessingPassResult LearnedRewrite::applyInternal(
     Trace("learned-rewrite-ll") << "Learned literals:" << std::endl;
     for (const Node& l : learnedLits)
     {
-      Node e = rewriteLearnedRec(l, binfer);
+      Node e = rewriteLearnedRec(l, binfer, llrw);
       // maybe for bound inference?
       Kind k = e.getKind();
       if (k == EQUAL || k == GEQ)
@@ -65,7 +66,7 @@ PreprocessingPassResult LearnedRewrite::applyInternal(
     Node prev = (*assertionsToPreprocess)[i];
     Trace("learned-rewrite-assert")
         << "LearnedRewrite: assert: " << prev << std::endl;
-    Node e = rewriteLearnedRec(prev, binfer);
+    Node e = rewriteLearnedRec(prev, binfer, llrw);
     if (e != prev)
     {
       Trace("learned-rewrite-assert")
@@ -85,11 +86,11 @@ PreprocessingPassResult LearnedRewrite::applyInternal(
   return PreprocessingPassResult::NO_CONFLICT;
 }
 
-Node LearnedRewrite::rewriteLearnedRec(Node n, arith::BoundInference& binfer)
+Node LearnedRewrite::rewriteLearnedRec(Node n, arith::BoundInference& binfer, std::vector<Node>& lems)
 {
   NodeManager* nm = NodeManager::currentNM();
-  std::unordered_map<TNode, Node, TNodeHashFunction> visited;
-  std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
+  std::unordered_map<TNode, Node> visited;
+  std::unordered_map<TNode, Node>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
@@ -127,7 +128,7 @@ Node LearnedRewrite::rewriteLearnedRec(Node n, arith::BoundInference& binfer)
         ret = nm->mkNode(cur.getKind(), children);
       }
       // rewrite here
-      ret = rewriteLearned(ret, binfer);
+      ret = rewriteLearned(ret, binfer, lems);
       visited[cur] = ret;
     }
   } while (!visit.empty());
@@ -136,7 +137,7 @@ Node LearnedRewrite::rewriteLearnedRec(Node n, arith::BoundInference& binfer)
   return visited[n];
 }
 
-Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
+Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer, std::vector<Node>& lems)
 {
   NodeManager* nm = NodeManager::currentNM();
   Trace("learned-rewrite-rr-debug") << "Rewrite " << n << std::endl;
@@ -226,6 +227,14 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
       bool lbSuccess = true;
       bool ubSuccess = true;
       Rational one(1);
+      if (Trace.isOn("learned-rewrite-arith-lit"))
+      {
+        Trace("learned-rewrite-arith-lit") << "Arithmetic lit: " << nr << std::endl;
+        for (const std::pair<const Node, Node>& m : msum)
+        {
+          Trace("learned-rewrite-arith-lit") << "  " << m.first << ", " << m.second << std::endl;
+        }
+      }
       for (const std::pair<const Node, Node>& m : msum)
       {
         bool isOneCoeff = m.second.isNull();
@@ -273,12 +282,14 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
           // if positive lower bound, then GEQ is true, EQUAL is false
           Node ret = nm->mkConst(k == GEQ);
           nr = returnRewriteLearned(nr, ret, "pred_pos_lb");
+          return nr;
         }
         else if (lb.sgn() == 0 && k == GEQ)
         {
           // zero lower bound, GEQ is true
           Node ret = nm->mkConst(true);
           nr = returnRewriteLearned(nr, ret, "pred_zero_lb");
+          return nr;
         }
       }
       else if (ubSuccess)
@@ -288,7 +299,59 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer)
           // if negative upper bound, then GEQ and EQUAL are false
           Node ret = nm->mkConst(false);
           nr = returnRewriteLearned(nr, ret, "pred_neg_ub");
+          return nr;
         }
+      }
+      // inferences based on combining div terms
+      Node currDen;
+      Node currNum;
+      std::vector<Node> sum;
+      size_t divCount = 0;
+      bool divTotal = true;
+      for (const std::pair<const Node, Node>& m : msum)
+      {
+        if (m.first.isNull())
+        {
+          sum.push_back(m.second);
+          continue;
+        }
+        Node factor = ArithMSum::mkCoeffTerm(m.second, m.first[0]);
+        Kind mk = m.first.getKind();
+        if (mk==INTS_DIVISION || mk==INTS_DIVISION_TOTAL)
+        {
+          divTotal = divTotal && mk==INTS_DIVISION_TOTAL;
+          divCount++;
+          if (currDen.isNull())
+          {
+            currNum = factor;
+            currDen = m.first[1];
+          }
+          else
+          {
+            factor = nm->mkNode(MULT, factor, currDen);
+            currNum = nm->mkNode(MULT, currNum, m.first[1]);
+            currNum = nm->mkNode(PLUS, currNum, factor);
+            currDen = nm->mkNode(MULT, currDen, m.first[1]);
+          }
+        }
+        else
+        {
+          sum.push_back(factor);
+        }
+      }
+      if (divCount>=2)
+      {
+        SkolemManager * sm = nm->getSkolemManager();
+        Node r = sm->mkDummySkolem("r",nm->integerType());
+        Node d = nm->mkNode(divTotal ? INTS_DIVISION_TOTAL : INTS_DIVISION, currNum, currDen);
+        sum.push_back(d);
+        sum.push_back(r);
+        Node bound = nm->mkNode(AND, nm->mkNode(LEQ, nm->mkConst(-Rational(divCount-1)), r), nm->mkNode(LEQ, r, nm->mkConst(Rational(divCount-1))));
+        Node sumn = nm->mkNode(PLUS, sum);
+        Node lit = nm->mkNode(k, sumn, nm->mkConst(Rational(0)));
+        Node lemma = nm->mkNode(IMPLIES, nr, nm->mkNode(AND, lit, bound));
+        Trace("learned-rewrite-div") << "Div collect lemma: " << lemma << std::endl;
+        lems.push_back(lemma);
       }
     }
   }
