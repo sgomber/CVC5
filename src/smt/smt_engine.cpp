@@ -33,7 +33,6 @@
 #include "options/smt_options.h"
 #include "options/theory_options.h"
 #include "printer/printer.h"
-#include "proof/proof_manager.h"
 #include "proof/unsat_core.h"
 #include "prop/prop_engine.h"
 #include "smt/abduction_solver.h"
@@ -66,6 +65,7 @@
 #include "theory/smt_engine_subsolver.h"
 #include "theory/theory_engine.h"
 #include "util/random.h"
+#include "util/rational.h"
 #include "util/resource_manager.h"
 #include "util/sexpr.h"
 #include "util/statistics_registry.h"
@@ -91,7 +91,6 @@ SmtEngine::SmtEngine(NodeManager* nm, Options* optr)
       d_routListener(new ResourceOutListener(*this)),
       d_snmListener(new SmtNodeManagerListener(*getDumpManager(), d_outMgr)),
       d_smtSolver(nullptr),
-      d_proofManager(nullptr),
       d_model(nullptr),
       d_checkModels(nullptr),
       d_pfManager(nullptr),
@@ -140,15 +139,6 @@ SmtEngine::SmtEngine(NodeManager* nm, Options* optr)
   // make the quantifier elimination solver
   d_quantElimSolver.reset(new QuantElimSolver(*d_smtSolver));
 
-  // The ProofManager is constructed before any other proof objects such as
-  // SatProof and TheoryProofs. The TheoryProofEngine and the SatProof are
-  // initialized in TheoryEngine and PropEngine respectively.
-  Assert(d_proofManager == nullptr);
-
-  // d_proofManager must be created before Options has been finished
-  // being parsed from the input file. Because of this, we cannot trust
-  // that d_env->getOption(options::unsatCores) is set correctly yet.
-  d_proofManager.reset(new ProofManager(getUserContext()));
 }
 
 bool SmtEngine::isFullyInited() const { return d_state->isFullyInited(); }
@@ -317,15 +307,6 @@ SmtEngine::~SmtEngine()
     //destroy all passes before destroying things that they refer to
     d_pp->cleanup();
 
-    // d_proofManager is always created when proofs are enabled at configure
-    // time.  Because of this, this code should not be wrapped in PROOF() which
-    // additionally checks flags such as
-    // d_env->getOption(options::produceProofs).
-    //
-    // Note: the proof manager must be destroyed before the theory engine.
-    // Because the destruction of the proofs depends on contexts owned be the
-    // theory solvers.
-    d_proofManager.reset(nullptr);
     d_pfManager.reset(nullptr);
     d_ucManager.reset(nullptr);
 
@@ -473,14 +454,14 @@ void SmtEngine::setInfo(const std::string& key, const std::string& value)
                 << " unsupported, defaulting to language (and semantics of) "
                    "SMT-LIB 2.6\n";
     }
-    Options::current().set(options::inputLanguage, ilang);
+    getOptions().base.inputLanguage = ilang;
     // also update the output language
     if (!Options::current().wasSetByUser(options::outputLanguage))
     {
       language::output::Language olang = language::toOutputLanguage(ilang);
       if (d_env->getOption(options::outputLanguage) != olang)
       {
-        Options::current().set(options::outputLanguage, olang);
+        getOptions().base.outputLanguage = olang;
         *d_env->getOption(options::out) << language::SetLanguage(olang);
       }
     }
@@ -1394,20 +1375,14 @@ UnsatCore SmtEngine::getUnsatCoreInternal()
   if (!d_env->getOption(options::unsatCores))
   {
     throw ModalException(
-        "Cannot get an unsat core when produce-unsat-cores[-new] or "
-        "produce-proofs option is off.");
+        "Cannot get an unsat core when produce-unsat-cores or produce-proofs "
+        "option is off.");
   }
   if (d_state->getMode() != SmtMode::UNSAT)
   {
     throw RecoverableModalException(
         "Cannot get an unsat core unless immediately preceded by "
         "UNSAT/ENTAILED response.");
-  }
-  // use old proof infrastructure
-  if (!d_pfManager)
-  {
-    d_proofManager->traceUnsatCore();  // just to trigger core creation
-    return UnsatCore(d_proofManager->extractUnsatCore());
   }
   // generate with new proofs
   PropEngine* pe = getPropEngine();
@@ -1439,11 +1414,11 @@ void SmtEngine::checkUnsatCore() {
   // initialize the core checker
   std::unique_ptr<SmtEngine> coreChecker;
   initializeSubsolver(coreChecker);
-  coreChecker->getOptions().set(options::checkUnsatCores, false);
+  coreChecker->getOptions().smt.checkUnsatCores = false;
   // disable all proof options
-  coreChecker->getOptions().set(options::produceProofs, false);
-  coreChecker->getOptions().set(options::checkProofs, false);
-  coreChecker->getOptions().set(options::proofEagerChecking, false);
+  coreChecker->getOptions().smt.produceProofs = false;
+  coreChecker->getOptions().smt.checkProofs = false;
+  coreChecker->getOptions().proof.proofEagerChecking = false;
 
   // set up separation logic heap if necessary
   TypeNode sepLocType, sepDataType;
@@ -1655,12 +1630,6 @@ void SmtEngine::getInstantiationTermVectors(
   }
 }
 
-void SmtEngine::printSynthSolution( std::ostream& out ) {
-  SmtScope smts(this);
-  finishInit();
-  d_sygusSolver->printSynthSolution(out);
-}
-
 bool SmtEngine::getSynthSolutions(std::map<Node, Node>& solMap)
 {
   SmtScope smts(this);
@@ -1842,16 +1811,16 @@ void SmtEngine::setResourceLimit(uint64_t units, bool cumulative)
 {
   if (cumulative)
   {
-    d_env->d_options.set(options::cumulativeResourceLimit__option_t(), units);
+    d_env->d_options.resman.cumulativeResourceLimit = units;
   }
   else
   {
-    d_env->d_options.set(options::perCallResourceLimit__option_t(), units);
+    d_env->d_options.resman.perCallResourceLimit = units;
   }
 }
 void SmtEngine::setTimeLimit(uint64_t millis)
 {
-  d_env->d_options.set(options::perCallMillisecondLimit__option_t(), millis);
+  d_env->d_options.resman.perCallMillisecondLimit = millis;
 }
 
 unsigned long SmtEngine::getResourceUsage() const

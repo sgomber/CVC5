@@ -1,6 +1,7 @@
 # import dereference and increment operators
 from cython.operator cimport dereference as deref, preincrement as inc
 from libc.stdint cimport int32_t, int64_t, uint32_t, uint64_t
+from libc.stddef cimport wchar_t
 from libcpp.set cimport set
 from libcpp.string cimport string
 from libcpp.vector cimport vector
@@ -19,6 +20,21 @@ cdef extern from "<functional>" namespace "std" nogil:
         hash()
         size_t operator()(T t)
 
+cdef extern from "<string>" namespace "std":
+    cdef cppclass wstring:
+        wstring() except +
+        wstring(const wchar_t*, size_t) except +
+        const wchar_t* data() except +
+        size_t size() except +
+
+cdef extern from "<tuple>" namespace "std" nogil:
+    cdef cppclass tuple[T, U, S]:
+        pass
+
+cdef extern from "<tuple>" namespace "std":
+    uint32_t get0 "std::get<0>"(tuple[uint32_t,uint32_t,Term]) except +
+    uint32_t get1 "std::get<1>"(tuple[uint32_t,uint32_t,Term]) except +
+    Term get2 "std::get<2>"(tuple[uint32_t,uint32_t,Term]) except +
 
 cdef extern from "api/cpp/cvc5.h" namespace "cvc5":
     cdef cppclass Options:
@@ -176,7 +192,6 @@ cdef extern from "api/cpp/cvc5.h" namespace "cvc5::api":
         vector[Term] getSynthSolutions(const vector[Term]& terms) except +
         Term synthInv(const string& symbol, const vector[Term]& bound_vars) except +
         Term synthInv(const string& symbol, const vector[Term]& bound_vars, Grammar grammar) except +
-        void printSynthSolution(ostream& out) except +
         # End of sygus related functions
 
         Term mkTrue() except +
@@ -191,7 +206,7 @@ cdef extern from "api/cpp/cvc5.h" namespace "cvc5::api":
         Term mkEmptySet(Sort s) except +
         Term mkSepNil(Sort sort) except +
         Term mkString(const string& s) except +
-        Term mkString(const vector[unsigned]& s) except +
+        Term mkString(const wstring& s) except +
         Term mkEmptySequence(Sort sort) except +
         Term mkUniverseSet(Sort sort) except +
         Term mkBitVector(uint32_t size) except +
@@ -355,7 +370,6 @@ cdef extern from "api/cpp/cvc5.h" namespace "cvc5::api":
         Op getOp() except +
         bint isNull() except +
         Term getConstArrayBase() except +
-        vector[Term] getConstSequenceElements() except +
         Term notTerm() except +
         Term andTerm(const Term& t) except +
         Term orTerm(const Term& t) except +
@@ -372,7 +386,25 @@ cdef extern from "api/cpp/cvc5.h" namespace "cvc5::api":
             Term operator*() except +
         const_iterator begin() except +
         const_iterator end() except +
-        bint isInteger() except +
+        bint isBooleanValue() except +
+        bint getBooleanValue() except +
+        bint isStringValue() except +
+        wstring getStringValue() except +
+        bint isIntegerValue() except +
+        string getIntegerValue() except +
+        bint isRealValue() except +
+        string getRealValue() except +
+        bint isBitVectorValue() except +
+        string getBitVectorValue(uint32_t base) except +
+        bint isFloatingPointPosZero() except +
+        bint isFloatingPointNegZero() except +
+        bint isFloatingPointPosInf() except +
+        bint isFloatingPointNegInf() except +
+        bint isFloatingPointNaN() except +
+        bint isFloatingPointValue() except +
+
+        tuple[uint32_t, uint32_t, Term] getFloatingPointValue() except +
+        vector[Term] getSequenceValue() except +
 
     cdef cppclass TermHashFunction:
         TermHashFunction() except +
