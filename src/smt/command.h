@@ -451,6 +451,62 @@ class CVC5_EXPORT DeclarePoolCommand : public DeclarationDefinitionCommand
       OutputLanguage language = language::output::LANG_AUTO) const override;
 }; /* class DeclarePoolCommand */
 
+class CVC5_EXPORT DeclareOracleFunCommand
+{
+ public:
+  DeclareOracleFunCommand(api::Term func);
+  DeclareOracleFunCommand(api::Term func, const std::string& binName);
+  api::Term getFunction() const;
+  const std::string& getBinaryName() const;
+
+  void invoke(api::Solver* solver, SymbolManager* sm) override;
+  Command* clone() const override;
+  std::string getCommandName() const override;
+  void toStream(
+      std::ostream& out,
+      int toDepth = -1,
+      size_t dag = 1,
+      OutputLanguage language = language::output::LANG_AUTO) const override;
+ protected:
+   /** The oracle function */
+  api::Term d_func;
+  /** The binary name, or "" if none is provided */
+  std::string d_binName;
+}; /* class DeclareOracleFunCommand */
+
+class CVC5_EXPORT DefineOracleInterfaceCommand
+{
+ public:
+  DefineOracleInterfaceCommand(const std::vector<Term>& inputs,
+                             const std::vector<Term>& outputs,
+    Term assume,
+    Term constraint,
+    const std::string& binName);
+  const std::vector<api::Term>& getInputs() const;
+  const std::vector<api::Term>& getOutputs() const;
+  api::Term getAssume() const;
+  api::Term getConstraint() const;
+  const std::string& getBinaryName() const;
+
+  void invoke(api::Solver* solver, SymbolManager* sm) override;
+  Command* clone() const override;
+  std::string getCommandName() const override;
+  void toStream(
+      std::ostream& out,
+      int toDepth = -1,
+      size_t dag = 1,
+      OutputLanguage language = language::output::LANG_AUTO) const override;
+protected:
+  /** The input arguments for the interface we are defining */
+  std::vector<api::Term> d_inputs;
+  /** The output arguments for the interface we are defining */
+  std::vector<api::Term> d_outputs;
+  /** The formula corresponding to the assumption generator */
+  api::Term d_assume;
+  /** The formula corresponding to the constraint generator */
+  api::Term d_constraint;
+}; /* class DefineOracleInterfaceCommand */
+
 class CVC5_EXPORT DeclareSortCommand : public DeclarationDefinitionCommand
 {
  protected:

@@ -1201,7 +1201,7 @@ void DeclareFunctionCommand::toStream(std::ostream& out,
 }
 
 /* -------------------------------------------------------------------------- */
-/* class DeclareFunctionCommand                                               */
+/* class DeclarePoolCommand                                               */
 /* -------------------------------------------------------------------------- */
 
 DeclarePoolCommand::DeclarePoolCommand(const std::string& id,
@@ -1253,6 +1253,113 @@ void DeclarePoolCommand::toStream(std::ostream& out,
       sortToTypeNode(d_sort),
       termVectorToNodes(d_initValue));
 }
+
+/* -------------------------------------------------------------------------- */
+/* class DeclareOracleFunCommand                                               */
+/* -------------------------------------------------------------------------- */
+
+DeclareOracleFunCommand(api::Term func) : d_func(func), d_binName("") {}
+DeclareOracleFunCommand(api::Term func, const std::string& binName)  : d_func(func), d_binName(binName) {}
+
+api::Term DeclareOracleFunCommand::getFunction() const { return d_func; }
+const std::string& DeclareOracleFunCommand::getBinaryName() const { return d_binName; }
+
+void DeclareOracleFunCommand::invoke(api::Solver* solver, SymbolManager* sm)
+{
+  // Notice that the pool is already declared by the parser so that it the
+  // symbol is bound eagerly. This is analogous to DeclareSygusVarCommand.
+  // Hence, we do nothing here.
+  d_commandStatus = CommandSuccess::instance();
+}
+
+Command* DeclareOracleFunCommand::clone() const
+{
+  DeclareOracleFunCommand* dfc =
+      new DeclareOracleFunCommand(d_func, d_binName);
+  return dfc;
+}
+
+std::string DeclareOracleFunCommand::getCommandName() const
+{
+  return "declare-oracle-fun";
+}
+
+void DeclareOracleFunCommand::toStream(std::ostream& out,
+                                  int toDepth,
+                                  size_t dag,
+                                  OutputLanguage language) const
+{
+  Printer::getPrinter(language)->toStreamCmdDeclareOracleFun(
+      out,
+      termToNode(d_func),
+      d_binName);
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* class DefineOracleInterfaceCommand                                                */
+/* -------------------------------------------------------------------------- */
+
+DefineOracleInterfaceCommand::DefineOracleInterfaceCommand(
+    const std::vector<api::Term>& inputs,
+    const std::vector<api::Term>& outputs,
+    api::Term assume,
+    api::Term constraint,
+    const std::string& binName)
+    :  d_inputs(inputs),
+      d_outputs(outputs),
+      d_assume(assume),
+      d_constraint(constraint),
+      d_binName(binName)
+{
+}
+
+const std::vector<api::Term>& DefineOracleInterfaceCommand::getInputs() const
+{
+  return d_inputs;
+}
+const std::vector<api::Term>& DefineOracleInterfaceCommand::getOutputs() const
+{
+  return d_outputs;
+}
+
+api::Term DefineOracleInterfaceCommand::getAssume() const { return d_assume; }
+api::Term DefineOracleInterfaceCommand::getConstraint() const { return d_constraint; }
+const std::string& DefineOracleInterfaceCommand::getBinaryName() const { return d_binName; }
+void DefineOracleInterfaceCommand::invoke(api::Solver* solver, SymbolManager* sm)
+{
+  try
+  {
+    solver->defineOracleInterface(d_inputs, d_outputs, d_assume, d_constraint, d_binName);
+    d_commandStatus = CommandSuccess::instance();
+  }
+  catch (exception& e)
+  {
+    d_commandStatus = new CommandFailure(e.what());
+  }
+}
+
+Command* DefineOracleInterfaceCommand::clone() const
+{
+  return new DefineOracleInterfaceCommand(
+      d_inputs, d_outputs, d_assume, d_constraint, d_binName);
+}
+
+std::string DefineOracleInterfaceCommand::getCommandName() const
+{
+  return "define-oracle-interface";
+}
+
+void DefineOracleInterfaceCommand::toStream(std::ostream& out,
+                                     int toDepth,
+                                     size_t dag,
+                                     OutputLanguage language) const
+{
+  Printer::getPrinter(language)->toStreamCmdDefineOracleInterface(
+      out,
+      termVectorToNodes(d_inputs), termVectorToNodes(d_outputs), termToNode(d_assume), termToNode(d_constraint), d_binName);
+}
+
 
 /* -------------------------------------------------------------------------- */
 /* class DeclareSortCommand                                                   */
