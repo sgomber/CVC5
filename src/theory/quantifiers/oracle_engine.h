@@ -48,10 +48,19 @@ class OracleEngine : public QuantifiersModule
    * quantified formulas via calls to process(...)
    */
   void check(Theory::Effort e, QEffort quant_e) override;
+  /** check ownership */
+  void checkOwnership(Node q) override;
   /** Identify. */
   std::string identify() const override;
   /** Declare oracle fun */
   void declareOracleFun(Node f);
+  
+  /** Make an oracle interface quantifier */
+  static Node mkOracleInterface(const std::vector<Node>& inputs,
+                             const std::vector<Node>& outputs,
+                             Node assume,
+                             Node constraint,
+                             const std::string& binName);
 };
 
 }  // namespace quantifiers

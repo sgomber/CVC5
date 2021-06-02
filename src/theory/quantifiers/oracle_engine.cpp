@@ -18,6 +18,7 @@
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/quantifiers_inference_manager.h"
 #include "theory/quantifiers/term_registry.h"
+#include "expr/skolem_manager.h"
 
 using namespace cvc5::kind;
 using namespace cvc5::context;
@@ -26,6 +27,13 @@ namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
+/** Attribute true for input variables */
+struct OracleInputVarAttributeId {};
+typedef expr::Attribute< OracleInputVarAttributeId, bool > OracleInputVarAttribute;
+/** Attribute true for output variables */
+struct OracleOutputVarAttributeId {};
+typedef expr::Attribute< OracleOutputVarAttributeId, bool > OracleOutputVarAttribute;
+  
 OracleEngine::OracleEngine(QuantifiersState& qs,
                            QuantifiersInferenceManager& qim,
                            QuantifiersRegistry& qr,
@@ -47,12 +55,54 @@ void OracleEngine::registerQuantifier(Node q) {}
 
 void OracleEngine::check(Theory::Effort e, QEffort quant_e) {}
 
+void SynthEngine::checkOwnership(Node q)
+{
+  // take ownership of quantified formulas that are oracle interfaces
+  QuantAttributes& qa = d_qreg.getQuantAttributes();
+  if (qa.isOracleInterface(q))
+  {
+    d_qreg.setOwner(q, this, 2);
+  }
+}
+
 std::string OracleEngine::identify() const
 {
   return std::string("OracleEngine");
 }
 
 void OracleEngine::declareOracleFun(Node f) {}
+
+Node mkOracleInterface(const std::vector<Node>& inputs,
+                             const std::vector<Node>& outputs,
+                             Node assume,
+                             Node constraint,
+                             const std::string& binName)
+{
+  Assert (!assume.isNull());
+  Assert (!constraint.isNull());
+  NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
+  OracleInterfaceAttribute oia;
+  Node oiVar = sm->mkDummySkolem("oracle-interface", nm->booleanType());
+  oiVar.setAttribute(oia, binName);
+  Node ipl = nm->mkNode(INST_PATTERN_LIST, nm->mkNode(INST_ATTRIBUTE, oiVar));
+  std::vector<Node> vars;
+  OracleInputVarAttribute oiva;
+  for (const Node& v : inputs)
+  {
+    v.setAttribute(oiva, true);
+    vars.push_back(v);
+  }
+  OracleInputVarAttribute oova;
+  for (const Node& v : outputs)
+  {
+    v.setAttribute(oova, true);
+    vars.push_back(v);
+  }
+  Node bvl = nm->mkNode(BOUND_VAR_LIST, vars);
+  Node body = nm->mkNode(ORACLE_INTERFACE, assume, constraint);
+  return nm->mkNode(FORALL, bvl, body, ipl);
+}
 
 }  // namespace quantifiers
 }  // namespace theory
