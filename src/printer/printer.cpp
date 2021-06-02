@@ -204,18 +204,19 @@ void Printer::toStreamCmdDeclarePool(std::ostream& out,
   printUnknownCommand(out, "declare-pool");
 }
 
-
 void Printer::toStreamCmdDeclareOracleFun(std::ostream& out,
-                                    Node fun,
-                                    const std::string& binName) const{
+                                          Node fun,
+                                          const std::string& binName) const
+{
   printUnknownCommand(out, "declare-oracle-fun");
 }
 void Printer::toStreamCmdDefineOracleInterface(std::ostream& out,
-                                    const std::vector<Node>& inputs,
-                            const std::vector<Node>& outputs,
-  Node assume,
-  Node constraint,
-  const std::string& binName) const{
+                                               const std::vector<Node>& inputs,
+                                               const std::vector<Node>& outputs,
+                                               Node assume,
+                                               Node constraint,
+                                               const std::string& binName) const
+{
   printUnknownCommand(out, "declare-oracle-interface");
 }
 

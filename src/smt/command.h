@@ -467,8 +467,9 @@ class CVC5_EXPORT DeclareOracleFunCommand
       int toDepth = -1,
       size_t dag = 1,
       OutputLanguage language = language::output::LANG_AUTO) const override;
+
  protected:
-   /** The oracle function */
+  /** The oracle function */
   api::Term d_func;
   /** The binary name, or "" if none is provided */
   std::string d_binName;
@@ -478,10 +479,10 @@ class CVC5_EXPORT DefineOracleInterfaceCommand
 {
  public:
   DefineOracleInterfaceCommand(const std::vector<Term>& inputs,
-                             const std::vector<Term>& outputs,
-    Term assume,
-    Term constraint,
-    const std::string& binName);
+                               const std::vector<Term>& outputs,
+                               Term assume,
+                               Term constraint,
+                               const std::string& binName);
   const std::vector<api::Term>& getInputs() const;
   const std::vector<api::Term>& getOutputs() const;
   api::Term getAssume() const;
@@ -496,7 +497,8 @@ class CVC5_EXPORT DefineOracleInterfaceCommand
       int toDepth = -1,
       size_t dag = 1,
       OutputLanguage language = language::output::LANG_AUTO) const override;
-protected:
+
+ protected:
   /** The input arguments for the interface we are defining */
   std::vector<api::Term> d_inputs;
   /** The output arguments for the interface we are defining */
