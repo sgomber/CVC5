@@ -54,13 +54,13 @@ class OracleEngine : public QuantifiersModule
   std::string identify() const override;
   /** Declare oracle fun */
   void declareOracleFun(Node f);
-  
+
   /** Make an oracle interface quantifier */
   static Node mkOracleInterface(const std::vector<Node>& inputs,
-                             const std::vector<Node>& outputs,
-                             Node assume,
-                             Node constraint,
-                             const std::string& binName);
+                                const std::vector<Node>& outputs,
+                                Node assume,
+                                Node constraint,
+                                const std::string& binName);
 };
 
 }  // namespace quantifiers

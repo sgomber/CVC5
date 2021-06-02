@@ -139,15 +139,13 @@ TypeNode QuantifierOracleInterfaceTypeRule::computeType(
   {
     if (!n[0].getType().isBoolean())
     {
-        throw TypeCheckingExceptionPrivate(
-            n,
-            "expected Boolean for oracle interface assumption");
+      throw TypeCheckingExceptionPrivate(
+          n, "expected Boolean for oracle interface assumption");
     }
     if (!n[1].getType().isBoolean())
     {
-        throw TypeCheckingExceptionPrivate(
-            n,
-            "expected Boolean for oracle interface constraint");
+      throw TypeCheckingExceptionPrivate(
+          n, "expected Boolean for oracle interface constraint");
     }
   }
   return nodeManager->booleanType();

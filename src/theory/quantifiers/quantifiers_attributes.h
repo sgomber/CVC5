@@ -40,9 +40,13 @@ typedef expr::Attribute< QuantElimPartialAttributeId, bool > QuantElimPartialAtt
 struct SygusAttributeId {};
 typedef expr::Attribute< SygusAttributeId, bool > SygusAttribute;
 
-/** Attribute set to the name of the binary for quantifiers that are oracle interfaces */
-struct OracleInterfaceAttributeId {};
-typedef expr::Attribute< OracleInterfaceAttributeId, std::string > OracleInterfaceAttribute;
+/** Attribute set to the name of the binary for quantifiers that are oracle
+ * interfaces */
+struct OracleInterfaceAttributeId
+{
+};
+typedef expr::Attribute<OracleInterfaceAttributeId, std::string>
+    OracleInterfaceAttribute;
 
 /**Attribute to give names to quantified formulas */
 struct QuantNameAttributeId
@@ -225,7 +229,7 @@ class QuantAttributes
   /** is sygus conjecture */
   bool isSygus( Node q );
   /** is oracle interface */
-  bool isOracleInterface( Node q );
+  bool isOracleInterface(Node q);
   /** get instantiation level */
   int64_t getQuantInstLevel(Node q);
   /** is quant elim */

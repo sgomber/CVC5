@@ -30,8 +30,8 @@ namespace quantifiers {
 
 bool QAttributes::isStandard() const
 {
-  return !d_sygus && !d_quant_elim && !isFunDef() && !isOracleInterface() && d_name.isNull()
-         && !d_isInternal;
+  return !d_sygus && !d_quant_elim && !isFunDef() && !isOracleInterface()
+         && d_name.isNull() && !d_isInternal;
 }
 
 QuantAttributes::QuantAttributes() {}
@@ -215,11 +215,11 @@ void QuantAttributes::computeQuantAttributes( Node q, QAttributes& qa ){
         }
         if (avar.hasAttribute(OracleInterfaceAttribute())
         {
-          qa.d_oracleInterfaceBin = 
+          qa.d_oracleInterfaceBin =
               avar.getAttribute(OracleInterfaceAttribute());
           Trace("quant-attr")
-              << "Attribute : oracle interface : "
-              << qa.d_oracleInterfaceBin << " : " << q << std::endl;
+              << "Attribute : oracle interface : " << qa.d_oracleInterfaceBin
+              << " : " << q << std::endl;
         }
         if (avar.hasAttribute(SygusSideConditionAttribute()))
         {
@@ -280,10 +280,11 @@ bool QuantAttributes::isSygus( Node q ) {
   return it->second.d_sygus;
 }
 
-bool QuantAttributes::isOracleInterface( Node q )
+bool QuantAttributes::isOracleInterface(Node q)
 {
-  std::map< Node, QAttributes >::iterator it = d_qattr.find( q );
-  if( it==d_qattr.end() ){
+  std::map<Node, QAttributes>::iterator it = d_qattr.find(q);
+  if (it == d_qattr.end())
+  {
     return false;
   }
   return it->second.isOracleInterface();
