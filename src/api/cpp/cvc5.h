@@ -3857,18 +3857,18 @@ class CVC5_EXPORT Solver
    * ( oracle-assume ( <sorted_var>* ) ( <sorted_var>* ) )
    * ( oracle-constraint <symbol> ( <sorted_var>* ) ( <sorted_var>* ) )
    * \endverbatim
-   * @param symbol The name of the pool
-   * @param sorts The sorts of the parameters to this function
-   * @param sort The sort of the return value of this function
-   * @param binName The name of the binary executable that implements the
-   * oracle function.
-   * @return The oracle function
+   * @param inputs The inputs to the oracle interface
+   * @param outputs The inputs to the oracle interface
+   * @param assume The assumption of the oracle interface
+   * @param constraint The constraint of the oracle interface
+   * @param binName The name of the binary executable associated with the
+   * oracle interface.
    */
-  Term declareOracleInterface(const std::vector<Term>& inputs,
+  void defineOracleInterface(const std::vector<Term>& inputs,
                              const std::vector<Term>& outputs,
-    Term body,
-    const std::string& binName,
-    bool isAssume) const;
+    Term assume,
+    Term constraint,
+    const std::string& binName) const;
   /**
    * Pop (a) level(s) from the assertion stack.
    * SMT-LIB:

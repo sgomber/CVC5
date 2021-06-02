@@ -92,6 +92,17 @@ class Printer
                                       const std::string& id,
                                       TypeNode type,
                                       const std::vector<Node>& initValue) const;
+  /** Print declare-oracle-fun command */
+  virtual void toStreamCmdDeclareOracleFun(std::ostream& out,
+                                      Node fun,
+                                      const std::string& binName) const;
+  /** Print declare-oracle-fun command */
+  virtual void toStreamCmdDefineOracleInterface(std::ostream& out,
+                                      const std::vector<Node>& inputs,
+                             const std::vector<Node>& outputs,
+    Node assume,
+    Node constraint,
+    const std::string& binName) const;
 
   /** Print declare-sort command */
   virtual void toStreamCmdDeclareType(std::ostream& out,

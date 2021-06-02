@@ -355,18 +355,7 @@ class CVC5_EXPORT SmtEngine
                          const std::vector<Node>& formals,
                          Node formula,
                          bool global = false);
-  
-  /** */
-  void declareOracleFun(Node var);
-  /** */
-  void declareOracleFun(Node var,
-    const std::string& binName);
-  /** */
-  void defineOracleInterface(const std::vector<Node>& inputs,
-                             const std::vector<Node>& outputs,
-    Node body,
-    const std::string& binName,
-    bool isAssume);
+
   /**
    * Add a formula to the current context: preprocess, do per-theory
    * setup, use processAssertionList(), asserting to T-solver for
@@ -504,6 +493,21 @@ class CVC5_EXPORT SmtEngine
    * of type T.
    */
   void declarePool(const Node& p, const std::vector<Node>& initValue);
+  
+  /** Add an oracle function to the state */
+  void declareOracleFun(Node var);
+  /** 
+   * Add an oracle function to the state, also adds an oracle interface
+   * defining it.
+   */
+  void declareOracleFun(Node var,
+    const std::string& binName);
+  /** */
+  void defineOracleInterface(const std::vector<Node>& inputs,
+                             const std::vector<Node>& outputs,
+    Node assume,
+    Node constraint,
+    const std::string& binName);
   /**
    * Simplify a formula without doing "much" work.  Does not involve
    * the SAT Engine in the simplification, but uses the current
