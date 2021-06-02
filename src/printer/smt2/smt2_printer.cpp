@@ -1642,28 +1642,30 @@ void Smt2Printer::toStreamCmdDeclareFunction(std::ostream& out,
   out << ") " << type << ')' << std::endl;
 }
 
-  void Smt2Printer::toStreamCmdDeclarePool(std::ostream& out,
-                                      const std::string& id,
-                                      TypeNode type,
-                                      const std::vector<Node>& initValue) const
-                                      {
-                                        // TODO
-                                      }
-  void Smt2Printer::toStreamCmdDeclareOracleFun(std::ostream& out,
-                                      Node fun,
-                                      const std::string& binName) const
-                                      {
-                                        // TODO
-                                      }
-  void Smt2Printer::toStreamCmdDefineOracleInterface(std::ostream& out,
-                                      const std::vector<Node>& inputs,
-                             const std::vector<Node>& outputs,
+void Smt2Printer::toStreamCmdDeclarePool(
+    std::ostream& out,
+    const std::string& id,
+    TypeNode type,
+    const std::vector<Node>& initValue) const
+{
+  // TODO
+}
+void Smt2Printer::toStreamCmdDeclareOracleFun(std::ostream& out,
+                                              Node fun,
+                                              const std::string& binName) const
+{
+  // TODO
+}
+void Smt2Printer::toStreamCmdDefineOracleInterface(
+    std::ostream& out,
+    const std::vector<Node>& inputs,
+    const std::vector<Node>& outputs,
     Node assume,
     Node constraint,
     const std::string& binName) const
-                                      {
-                                        // TODO
-                                      }
+{
+  // TODO
+}
 
 void Smt2Printer::toStreamCmdDefineFunction(std::ostream& out,
                                             const std::string& id,

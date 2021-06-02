@@ -1107,8 +1107,7 @@ void SmtEngine::declareOracleFun(Node var)
   // TODO
 }
 
-void SmtEngine::declareOracleFun(Node var,
-  const std::string& binName)
+void SmtEngine::declareOracleFun(Node var, const std::string& binName)
 {
   declareOracleFun(var);
   NodeManager* nm = d_env->getNodeManager();
@@ -1140,10 +1139,10 @@ void SmtEngine::declareOracleFun(Node var,
 }
 
 void SmtEngine::defineOracleInterface(const std::vector<Node>& inputs,
-                            const std::vector<Node>& outputs,
-    Node assume,
-    Node constraint,
-  const std::string& binName)
+                                      const std::vector<Node>& outputs,
+                                      Node assume,
+                                      Node constraint,
+                                      const std::string& binName)
 {
   finishInit();
   d_state->doPendingPops();

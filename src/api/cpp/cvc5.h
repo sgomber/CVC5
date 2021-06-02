@@ -3832,8 +3832,8 @@ class CVC5_EXPORT Solver
    * @return The oracle function
    */
   Term declareOracleFun(const std::string& symbol,
-                  const std::vector<Sort>& sorts,
-                  const Sort& sort) const;
+                        const std::vector<Sort>& sorts,
+                        const Sort& sort) const;
   /**
    * Declare an oracle function with reference to a binary name.
    * \verbatim
@@ -3847,10 +3847,9 @@ class CVC5_EXPORT Solver
    * @return The oracle function
    */
   Term declareOracleFun(const std::string& symbol,
-                  const std::vector<Sort>& sorts,
-                  const Sort& sort,
-                  const std::string& binName
-                       ) const;
+                        const std::vector<Sort>& sorts,
+                        const Sort& sort,
+                        const std::string& binName) const;
   /**
    * Declare an oracle function with reference to a binary name.
    * \verbatim
@@ -3866,9 +3865,9 @@ class CVC5_EXPORT Solver
    */
   void defineOracleInterface(const std::vector<Term>& inputs,
                              const std::vector<Term>& outputs,
-    Term assume,
-    Term constraint,
-    const std::string& binName) const;
+                             Term assume,
+                             Term constraint,
+                             const std::string& binName) const;
   /**
    * Pop (a) level(s) from the assertion stack.
    * SMT-LIB:
