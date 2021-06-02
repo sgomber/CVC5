@@ -1100,42 +1100,40 @@ void SmtEngine::declarePool(const Node& p, const std::vector<Node>& initValue)
   qe->declarePool(p, initValue);
 }
 
-void SmtEngine::declareOracleFun(Node var)
+void SmtEngine::declareOracleFun(Node var, const std::string& binName)
 {
   finishInit();
   d_state->doPendingPops();
-  // TODO
-}
-
-void SmtEngine::declareOracleFun(Node var, const std::string& binName)
-{
-  declareOracleFun(var);
-  NodeManager* nm = d_env->getNodeManager();
-  std::vector<Node> inputs;
-  std::vector<Node> outputs;
-  TypeNode tn = var.getType();
-  Node app;
-  if (tn.isFunction())
+  // TODO: declare oracle fun
+  if (binName!="")
   {
-    std::vector<TypeNode>& argTypes = tn.getArgTypes();
-    for (const TypeNode& t : argTypes)
+    NodeManager* nm = d_env->getNodeManager();
+    std::vector<Node> inputs;
+    std::vector<Node> outputs;
+    TypeNode tn = var.getType();
+    Node app;
+    if (tn.isFunction())
     {
-      inputs.push_back(nm->mkBoundVar(t));
+      const std::vector<TypeNode>& argTypes = tn.getArgTypes();
+      for (const TypeNode& t : argTypes)
+      {
+        inputs.push_back(nm->mkBoundVar(t));
+      }
+      outputs.push_back(nm->mkBoundVar(tn.getRangeType()));
+      std::vector<Node> appc;
+      appc.push_back(var);
+      appc.insert(appc.end(), inputs.begin(), inputs.end());
+      app = nm->mkNode(kind::APPLY_UF, appc);
     }
-    outputs.push_back(nm->mkBoundVar(tn.getRangeType()));
-    std::vector<Node> appc;
-    appc.push_back(var);
-    appc.insert(appc.end(), inputs.begin(), inputs.end());
-    app = nm->mkNode(kind::APPLY_UF, appc);
+    else
+    {
+      outputs.push_back(nm->mkBoundVar(tn.getRangeType()));
+      app = var;
+    }
+    // makes equality assumption
+    Node body = nm->mkNode(kind::EQUAL, app, outputs[0]);
+    defineOracleInterface(inputs, outputs, body, Node::null(), binName);
   }
-  else
-  {
-    outputs.push_back(nm->mkBoundVar(tn.getRangeType()));
-    app = var;
-  }
-  // makes equality assumption
-  Node body = nm->mkNode(kind::EQUAL, app, outputs[0]);
-  defineOracleInterface(inputs, outputs, body, Node::null(), binName);
 }
 
 void SmtEngine::defineOracleInterface(const std::vector<Node>& inputs,

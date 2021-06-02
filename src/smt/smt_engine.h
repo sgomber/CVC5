@@ -494,11 +494,9 @@ class CVC5_EXPORT SmtEngine
    */
   void declarePool(const Node& p, const std::vector<Node>& initValue);
 
-  /** Add an oracle function to the state */
-  void declareOracleFun(Node var);
   /**
    * Add an oracle function to the state, also adds an oracle interface
-   * defining it.
+   * defining it, when binName is not "".
    */
   void declareOracleFun(Node var, const std::string& binName);
   /** */

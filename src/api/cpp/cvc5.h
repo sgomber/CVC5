@@ -4212,6 +4212,11 @@ class CVC5_EXPORT Solver
   Term mkCharFromStrHelper(const std::string& s) const;
   /** Get value helper, which accounts for subtyping */
   Term getValueHelper(const Term& term) const;
+  /** declareOracleFun helper */
+  Term declareOracleFunHelper(const std::string& symbol,
+                        const std::vector<Sort>& sorts,
+                        const Sort& sort,
+                        const std::string& binName) const;
 
   /**
    * Helper function that ensures that a given term is of sort real (as opposed

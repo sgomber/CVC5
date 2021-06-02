@@ -1256,8 +1256,8 @@ void DeclarePoolCommand::toStream(std::ostream& out,
 /* class DeclareOracleFunCommand */
 /* -------------------------------------------------------------------------- */
 
-DeclareOracleFunCommand(api::Term func) : d_func(func), d_binName("") {}
-DeclareOracleFunCommand(api::Term func, const std::string& binName)
+DeclareOracleFunCommand::DeclareOracleFunCommand(api::Term func) : d_func(func), d_binName("") {}
+DeclareOracleFunCommand::DeclareOracleFunCommand(api::Term func, const std::string& binName)
     : d_func(func), d_binName(binName)
 {
 }
@@ -1270,9 +1270,8 @@ const std::string& DeclareOracleFunCommand::getBinaryName() const
 
 void DeclareOracleFunCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
-  // Notice that the pool is already declared by the parser so that it the
-  // symbol is bound eagerly. This is analogous to DeclareSygusVarCommand.
-  // Hence, we do nothing here.
+  // Notice that the oracle function is already declared by the parser so that
+  // the symbol is bound eagerly.
   d_commandStatus = CommandSuccess::instance();
 }
 
