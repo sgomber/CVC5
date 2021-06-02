@@ -3822,6 +3822,54 @@ class CVC5_EXPORT Solver
                    const Sort& sort,
                    const std::vector<Term>& initValue) const;
   /**
+   * Declare an oracle function.
+   * \verbatim
+   * ( declare-oracle-fun <symbol> ( <sort>* ) <sort> )
+   * \endverbatim
+   * @param symbol The name of the pool
+   * @param sorts the sorts of the parameters to this function
+   * @param sort the sort of the return value of this function
+   * @return The oracle function
+   */
+  Term declareOracleFun(const std::string& symbol,
+                  const std::vector<Sort>& sorts,
+                  const Sort& sort) const;
+  /**
+   * Declare an oracle function with reference to a binary name.
+   * \verbatim
+   * ( declare-oracle-fun <symbol> ( <sort>* ) <sort> )
+   * \endverbatim
+   * @param symbol The name of the pool
+   * @param sorts The sorts of the parameters to this function
+   * @param sort The sort of the return value of this function
+   * @param binName The name of the binary executable that implements the
+   * oracle function.
+   * @return The oracle function
+   */
+  Term declareOracleFun(const std::string& symbol,
+                  const std::vector<Sort>& sorts,
+                  const Sort& sort,
+                  const std::string& binName
+                       ) const;
+  /**
+   * Declare an oracle function with reference to a binary name.
+   * \verbatim
+   * ( oracle-assume ( <sorted_var>* ) ( <sorted_var>* ) )
+   * ( oracle-constraint <symbol> ( <sorted_var>* ) ( <sorted_var>* ) )
+   * \endverbatim
+   * @param symbol The name of the pool
+   * @param sorts The sorts of the parameters to this function
+   * @param sort The sort of the return value of this function
+   * @param binName The name of the binary executable that implements the
+   * oracle function.
+   * @return The oracle function
+   */
+  Term declareOracleInterface(const std::vector<Term>& inputs,
+                             const std::vector<Term>& outputs,
+    Term body,
+    const std::string& binName,
+    bool isAssume) const;
+  /**
    * Pop (a) level(s) from the assertion stack.
    * SMT-LIB:
    * \verbatim
