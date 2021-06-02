@@ -19,6 +19,7 @@
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/quantifiers_inference_manager.h"
 #include "theory/quantifiers/term_registry.h"
+#include "theory/quantifiers/quantifiers_attributes.h"
 
 using namespace cvc5::kind;
 using namespace cvc5::context;
@@ -61,7 +62,7 @@ void OracleEngine::registerQuantifier(Node q) {}
 
 void OracleEngine::check(Theory::Effort e, QEffort quant_e) {}
 
-void SynthEngine::checkOwnership(Node q)
+void OracleEngine::checkOwnership(Node q)
 {
   // take ownership of quantified formulas that are oracle interfaces
   QuantAttributes& qa = d_qreg.getQuantAttributes();
@@ -76,7 +77,7 @@ std::string OracleEngine::identify() const
   return std::string("OracleEngine");
 }
 
-void OracleEngine::declareOracleFun(Node f) {}
+void OracleEngine::declareOracleFun(Node f) { d_oracleFuns.push_back(f); }
 
 Node mkOracleInterface(const std::vector<Node>& inputs,
                        const std::vector<Node>& outputs,
@@ -94,13 +95,13 @@ Node mkOracleInterface(const std::vector<Node>& inputs,
   Node ipl = nm->mkNode(INST_PATTERN_LIST, nm->mkNode(INST_ATTRIBUTE, oiVar));
   std::vector<Node> vars;
   OracleInputVarAttribute oiva;
-  for (const Node& v : inputs)
+  for (Node v : inputs)
   {
     v.setAttribute(oiva, true);
     vars.push_back(v);
   }
   OracleInputVarAttribute oova;
-  for (const Node& v : outputs)
+  for (Node v : outputs)
   {
     v.setAttribute(oova, true);
     vars.push_back(v);
