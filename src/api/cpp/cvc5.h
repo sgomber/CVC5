@@ -3851,7 +3851,7 @@ class CVC5_EXPORT Solver
                         const Sort& sort,
                         const std::string& binName) const;
   /**
-   * Declare an oracle function with reference to a binary name.
+   * Define an oracle interface.
    * \verbatim
    * ( oracle-assume ( <sorted_var>* ) ( <sorted_var>* ) )
    * ( oracle-constraint <symbol> ( <sorted_var>* ) ( <sorted_var>* ) )
