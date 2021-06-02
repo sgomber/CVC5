@@ -498,7 +498,7 @@ class CVC5_EXPORT SmtEngine
    * Add an oracle function to the state, also adds an oracle interface
    * defining it, when binName is not "".
    */
-  void declareOracleFun(Node var, const std::string& binName);
+  void declareOracleFun(Node var, const std::string& binName = "");
   /** */
   void defineOracleInterface(const std::vector<Node>& inputs,
                              const std::vector<Node>& outputs,

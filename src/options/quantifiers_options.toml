@@ -569,6 +569,14 @@ name   = "Quantifiers"
   default    = "true"
   help       = "pool-based instantiation: instantiate with ground terms occurring in user-specified pools"
 
+[[option]]
+  name       = "oracles"
+  category   = "regular"
+  long       = "oracles"
+  type       = "bool"
+  default    = "false"
+  help       = "Enable interface to external oracles"
+
 ### Finite model finding options
 
 [[option]]

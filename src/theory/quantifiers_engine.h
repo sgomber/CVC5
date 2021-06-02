@@ -132,7 +132,7 @@ public:
   */
  bool getNameForQuant(Node q, Node& name, bool req = true) const;
 
-public:
+ public:
  //----------user interface for instantiations (see quantifiers/instantiate.h)
  /** get list of quantified formulas that were instantiated */
  void getInstantiatedQuantifiedFormulas(std::vector<Node>& qs);
@@ -152,6 +152,7 @@ public:
   * negation of that quantified formula.
   */
  void getSkolemTermVectors(std::map<Node, std::vector<Node> >& sks) const;
+ //----------end user interface for instantiations
 
  /** get synth solutions
   *
@@ -170,6 +171,8 @@ public:
  bool getSynthSolutions(std::map<Node, std::map<Node, Node> >& sol_map);
  /** Declare pool */
  void declarePool(Node p, const std::vector<Node>& initValue);
+ /** Declare oracle fun */
+  void declareOracleFun(Node f);
  //----------end user interface for instantiations
 
  private:

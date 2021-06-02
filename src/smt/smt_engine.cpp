@@ -1104,7 +1104,8 @@ void SmtEngine::declareOracleFun(Node var, const std::string& binName)
 {
   finishInit();
   d_state->doPendingPops();
-  // TODO: declare oracle fun
+  QuantifiersEngine* qe = getAvailableQuantifiersEngine("declareOracleFun");
+  qe->declareOracleFun(var);
   if (binName != "")
   {
     NodeManager* nm = d_env->getNodeManager();
@@ -1131,8 +1132,9 @@ void SmtEngine::declareOracleFun(Node var, const std::string& binName)
       app = var;
     }
     // makes equality assumption
-    Node body = nm->mkNode(kind::EQUAL, app, outputs[0]);
-    defineOracleInterface(inputs, outputs, body, Node::null(), binName);
+    Node assume = nm->mkNode(kind::EQUAL, app, outputs[0]);
+    Node constraint = nm->mkConst(true);
+    defineOracleInterface(inputs, outputs, assume, constraint, binName);
   }
 }
 
@@ -1144,7 +1146,8 @@ void SmtEngine::defineOracleInterface(const std::vector<Node>& inputs,
 {
   finishInit();
   d_state->doPendingPops();
-  // TODO
+  // make the quantified formula corresponding to the oracle interface
+  
 }
 
 Node SmtEngine::simplify(const Node& ex)

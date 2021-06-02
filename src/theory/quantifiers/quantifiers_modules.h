@@ -31,6 +31,7 @@
 #include "theory/quantifiers/quant_split.h"
 #include "theory/quantifiers/sygus/synth_engine.h"
 #include "theory/quantifiers/sygus_inst.h"
+#include "theory/quantifiers/oracle_engine.h"
 
 namespace cvc5 {
 namespace theory {
@@ -93,6 +94,8 @@ class QuantifiersModules
   std::unique_ptr<QuantDSplit> d_qsplit;
   /** SyGuS instantiation engine */
   std::unique_ptr<SygusInst> d_sygus_inst;
+  /** Oracle engine */
+  std::unique_ptr<OracleEngine> d_oracleEngine;
 };
 
 }  // namespace quantifiers
