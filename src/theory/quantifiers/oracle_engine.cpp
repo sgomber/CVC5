@@ -15,10 +15,10 @@
 
 #include "theory/quantifiers/oracle_engine.h"
 
+#include "expr/skolem_manager.h"
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/quantifiers_inference_manager.h"
 #include "theory/quantifiers/term_registry.h"
-#include "expr/skolem_manager.h"
 
 using namespace cvc5::kind;
 using namespace cvc5::context;
@@ -28,12 +28,18 @@ namespace theory {
 namespace quantifiers {
 
 /** Attribute true for input variables */
-struct OracleInputVarAttributeId {};
-typedef expr::Attribute< OracleInputVarAttributeId, bool > OracleInputVarAttribute;
+struct OracleInputVarAttributeId
+{
+};
+typedef expr::Attribute<OracleInputVarAttributeId, bool>
+    OracleInputVarAttribute;
 /** Attribute true for output variables */
-struct OracleOutputVarAttributeId {};
-typedef expr::Attribute< OracleOutputVarAttributeId, bool > OracleOutputVarAttribute;
-  
+struct OracleOutputVarAttributeId
+{
+};
+typedef expr::Attribute<OracleOutputVarAttributeId, bool>
+    OracleOutputVarAttribute;
+
 OracleEngine::OracleEngine(QuantifiersState& qs,
                            QuantifiersInferenceManager& qim,
                            QuantifiersRegistry& qr,
@@ -73,13 +79,13 @@ std::string OracleEngine::identify() const
 void OracleEngine::declareOracleFun(Node f) {}
 
 Node mkOracleInterface(const std::vector<Node>& inputs,
-                             const std::vector<Node>& outputs,
-                             Node assume,
-                             Node constraint,
-                             const std::string& binName)
+                       const std::vector<Node>& outputs,
+                       Node assume,
+                       Node constraint,
+                       const std::string& binName)
 {
-  Assert (!assume.isNull());
-  Assert (!constraint.isNull());
+  Assert(!assume.isNull());
+  Assert(!constraint.isNull());
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
   OracleInterfaceAttribute oia;
