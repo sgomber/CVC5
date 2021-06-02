@@ -213,7 +213,7 @@ void QuantAttributes::computeQuantAttributes( Node q, QAttributes& qa ){
           Trace("quant-attr") << "Attribute : sygus : " << q << std::endl;
           qa.d_sygus = true;
         }
-        if (avar.hasAttribute(OracleInterfaceAttribute())
+        if (avar.hasAttribute(OracleInterfaceAttribute()))
         {
           qa.d_oracleInterfaceBin =
               avar.getAttribute(OracleInterfaceAttribute());

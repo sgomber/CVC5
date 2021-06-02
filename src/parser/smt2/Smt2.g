@@ -1117,7 +1117,7 @@ extendedCommand[std::unique_ptr<cvc5::Command>* cmd]
                                                   terms2,
                                                   assume,
                                                   constraint,
-                                                  binName);
+                                                  binName));
     }
   | BLOCK_MODEL_TOK { PARSER_STATE->checkThatLogicIsSet(); }
     { cmd->reset(new BlockModelCommand()); }

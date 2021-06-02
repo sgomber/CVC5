@@ -61,6 +61,9 @@ class OracleEngine : public QuantifiersModule
                                 Node assume,
                                 Node constraint,
                                 const std::string& binName);
+private:
+  /** The oracle functions (context-indepedent for now) */
+  std::vector<Node> d_oracleFuns;
 };
 
 }  // namespace quantifiers
