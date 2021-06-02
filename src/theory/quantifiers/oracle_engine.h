@@ -31,9 +31,9 @@ class OracleEngine : public QuantifiersModule
 {
  public:
   OracleEngine(QuantifiersState& qs,
-                   QuantifiersInferenceManager& qim,
-                   QuantifiersRegistry& qr,
-                   TermRegistry& tr);
+               QuantifiersInferenceManager& qim,
+               QuantifiersRegistry& qr,
+               TermRegistry& tr);
   ~OracleEngine() {}
   /** Presolve */
   void presolve() override;
@@ -50,9 +50,8 @@ class OracleEngine : public QuantifiersModule
   void check(Theory::Effort e, QEffort quant_e) override;
   /** Identify. */
   std::string identify() const override;
- /** Declare oracle fun */
+  /** Declare oracle fun */
   void declareOracleFun(Node f);
-
 };
 
 }  // namespace quantifiers

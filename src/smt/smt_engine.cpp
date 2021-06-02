@@ -1146,7 +1146,6 @@ void SmtEngine::defineOracleInterface(const std::vector<Node>& inputs,
   finishInit();
   d_state->doPendingPops();
   // make the quantified formula corresponding to the oracle interface
-  
 }
 
 Node SmtEngine::simplify(const Node& ex)

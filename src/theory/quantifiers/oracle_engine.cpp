@@ -27,9 +27,9 @@ namespace theory {
 namespace quantifiers {
 
 OracleEngine::OracleEngine(QuantifiersState& qs,
-                                   QuantifiersInferenceManager& qim,
-                                   QuantifiersRegistry& qr,
-                                   TermRegistry& tr)
+                           QuantifiersInferenceManager& qim,
+                           QuantifiersRegistry& qr,
+                           TermRegistry& tr)
     : QuantifiersModule(qs, qim, qr, tr)
 {
 }
@@ -43,23 +43,16 @@ bool OracleEngine::needsCheck(Theory::Effort e)
 
 void OracleEngine::reset_round(Theory::Effort e) {}
 
-void OracleEngine::registerQuantifier(Node q)
-{
-}
+void OracleEngine::registerQuantifier(Node q) {}
 
-void OracleEngine::check(Theory::Effort e, QEffort quant_e)
-{
-}
+void OracleEngine::check(Theory::Effort e, QEffort quant_e) {}
 
 std::string OracleEngine::identify() const
 {
   return std::string("OracleEngine");
 }
 
-void OracleEngine::declareOracleFun(Node f)
-{
-  
-}
+void OracleEngine::declareOracleFun(Node f) {}
 
 }  // namespace quantifiers
 }  // namespace theory

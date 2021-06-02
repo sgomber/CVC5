@@ -27,11 +27,11 @@
 #include "theory/quantifiers/fmf/model_engine.h"
 #include "theory/quantifiers/inst_strategy_enumerative.h"
 #include "theory/quantifiers/inst_strategy_pool.h"
+#include "theory/quantifiers/oracle_engine.h"
 #include "theory/quantifiers/quant_conflict_find.h"
 #include "theory/quantifiers/quant_split.h"
 #include "theory/quantifiers/sygus/synth_engine.h"
 #include "theory/quantifiers/sygus_inst.h"
-#include "theory/quantifiers/oracle_engine.h"
 
 namespace cvc5 {
 namespace theory {
