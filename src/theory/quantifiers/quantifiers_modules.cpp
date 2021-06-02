@@ -114,6 +114,11 @@ void QuantifiersModules::initialize(QuantifiersState& qs,
     d_sygus_inst.reset(new SygusInst(qs, qim, qr, tr));
     modules.push_back(d_sygus_inst.get());
   }
+  if (options::oracles())
+  {
+    d_oracleEngine.reset(new OracleEngine(qs, qim, qr, tr));
+    modules.push_back(d_oracleEngine.get());
+  }
 }
 
 }  // namespace quantifiers

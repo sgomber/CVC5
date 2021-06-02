@@ -1111,8 +1111,8 @@ extendedCommand[std::unique_ptr<cvc5::Command>* cmd]
       {
         PARSER_STATE->popScope();
       }
-      api::Term assume = isAssume ? e : solver->mkTrue();
-      api::Term constraint = isAssume ? solver->mkTrue() : e;
+      api::Term assume = isAssume ? e : SOLVER->mkTrue();
+      api::Term constraint = isAssume ? SOLVER->mkTrue() : e;
       cmd->reset(new DefineOracleInterfaceCommand(terms,
                                                   terms2,
                                                   assume,
