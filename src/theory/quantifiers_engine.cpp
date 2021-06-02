@@ -692,7 +692,10 @@ void QuantifiersEngine::declarePool(Node p, const std::vector<Node>& initValue)
   d_treg.declarePool(p, initValue);
 }
 
-void QuantifiersEngine::declareOracleFun(Node f) { d_qmodules->d_oracleEngine->declareOracleFun(f); }
+void QuantifiersEngine::declareOracleFun(Node f)
+{
+  d_qmodules->d_oracleEngine->declareOracleFun(f);
+}
 
 }  // namespace theory
 }  // namespace cvc5

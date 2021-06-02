@@ -17,9 +17,9 @@
 
 #include "expr/skolem_manager.h"
 #include "options/quantifiers_options.h"
+#include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/quantifiers_inference_manager.h"
 #include "theory/quantifiers/term_registry.h"
-#include "theory/quantifiers/quantifiers_attributes.h"
 
 using namespace cvc5::kind;
 using namespace cvc5::context;
