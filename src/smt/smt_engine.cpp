@@ -1104,7 +1104,7 @@ void SmtEngine::declareOracleFun(Node var, const std::string& binName)
   finishInit();
   d_state->doPendingPops();
   // TODO: declare oracle fun
-  if (binName!="")
+  if (binName != "")
   {
     NodeManager* nm = d_env->getNodeManager();
     std::vector<Node> inputs;

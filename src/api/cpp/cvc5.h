@@ -4208,9 +4208,9 @@ class CVC5_EXPORT Solver
   Term getValueHelper(const Term& term) const;
   /** declareOracleFun helper */
   Term declareOracleFunHelper(const std::string& symbol,
-                        const std::vector<Sort>& sorts,
-                        const Sort& sort,
-                        const std::string& binName) const;
+                              const std::vector<Sort>& sorts,
+                              const Sort& sort,
+                              const std::string& binName) const;
 
   /**
    * Helper function that ensures that a given term is of sort real (as opposed

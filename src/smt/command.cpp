@@ -1258,8 +1258,12 @@ void DeclarePoolCommand::toStream(std::ostream& out,
 /* class DeclareOracleFunCommand */
 /* -------------------------------------------------------------------------- */
 
-DeclareOracleFunCommand::DeclareOracleFunCommand(api::Term func) : d_func(func), d_binName("") {}
-DeclareOracleFunCommand::DeclareOracleFunCommand(api::Term func, const std::string& binName)
+DeclareOracleFunCommand::DeclareOracleFunCommand(api::Term func)
+    : d_func(func), d_binName("")
+{
+}
+DeclareOracleFunCommand::DeclareOracleFunCommand(api::Term func,
+                                                 const std::string& binName)
     : d_func(func), d_binName(binName)
 {
 }
