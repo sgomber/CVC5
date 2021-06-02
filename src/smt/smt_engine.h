@@ -355,6 +355,18 @@ class CVC5_EXPORT SmtEngine
                          const std::vector<Node>& formals,
                          Node formula,
                          bool global = false);
+  
+  /** */
+  void declareOracleFun(Node var);
+  /** */
+  void declareOracleFun(Node var,
+    const std::string& binName);
+  /** */
+  void defineOracleInterface(const std::vector<Node>& inputs,
+                             const std::vector<Node>& outputs,
+    Node body,
+    const std::string& binName,
+    bool isAssume);
   /**
    * Add a formula to the current context: preprocess, do per-theory
    * setup, use processAssertionList(), asserting to T-solver for
