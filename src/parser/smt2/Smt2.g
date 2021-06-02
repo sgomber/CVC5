@@ -891,12 +891,16 @@ extendedCommand[std::unique_ptr<cvc5::Command>* cmd]
   cvc5::api::Term e, e2;
   cvc5::api::Sort t, s;
   std::string name;
+  std::string binName;
   std::vector<std::string> names;
   std::vector<cvc5::api::Term> terms;
+  std::vector<cvc5::api::Term> terms2;
   std::vector<api::Sort> sorts;
   std::vector<std::pair<std::string, cvc5::api::Sort> > sortedVarNames;
+  std::vector<std::pair<std::string, cvc5::api::Sort> > sortedVarNames2;
   std::unique_ptr<cvc5::CommandSequence> seq;
   api::Grammar* g = nullptr;
+  bool isAssume = false;
 }
     /* Extended SMT-LIB set of commands syntax, not permitted in
      * --smtlib2 compliance mode. */
@@ -1071,6 +1075,49 @@ extendedCommand[std::unique_ptr<cvc5::Command>* cmd]
       api::Term pool = SOLVER->declarePool(name, t, terms);
       PARSER_STATE->defineVar(name, pool);
       cmd->reset(new DeclarePoolCommand(name, pool, t, terms));
+    }
+  | DECLARE_ORACLE_FUN { PARSER_STATE->checkThatLogicIsSet(); }
+    symbol[name,CHECK_NONE,SYM_VARIABLE]
+    { PARSER_STATE->checkUserSymbol(name); }
+    LPAREN_TOK sortList[sorts] RPAREN_TOK
+    sortSymbol[t,CHECK_DECLARED]
+    ( symbol[binName,CHECK_NONE,SYM_VARIABLE]? )
+    {
+      if (!sorts.empty())
+      {
+        PARSER_STATE->checkLogicAllowsFunctions();
+        t = PARSER_STATE->mkFlatFunctionType(sorts, t);
+      }
+      api::Term func = PARSER_STATE->bindVar(name, t, false, true);
+      cmd->reset(new DeclareOracleFunCommand(func, binName));
+    }
+  | ( ORACLE_ASSUME { isAssume = true; } | 
+      ORACLE_CONSTRAINT { isAssume = false; } 
+    )
+    LPAREN_TOK sortedVarList[sortedVarNames] RPAREN_TOK
+    LPAREN_TOK sortedVarList[sortedVarNames2] RPAREN_TOK
+    {
+      if (sortedVarNames.size() + sortedVarNames2.size() > 0)
+      {
+        PARSER_STATE->pushScope();
+      }
+      terms = PARSER_STATE->bindBoundVars(sortedVarNames);
+      terms2 = PARSER_STATE->bindBoundVars(sortedVarNames2);
+    }
+    term[e, e2]
+    symbol[binName,CHECK_NONE,SYM_VARIABLE]
+    {
+      if (sortedVarNames.size() + sortedVarNames2.size() > 0)
+      {
+        PARSER_STATE->popScope();
+      }
+      api::Term assume = isAssume ? e : solver->mkTrue();
+      api::Term constraint = isAssume ? solver->mkTrue() : e;
+      cmd->reset(new DefineOracleInterfaceCommand(terms,
+                                                  terms2,
+                                                  assume,
+                                                  constraint,
+                                                  binName);
     }
   | BLOCK_MODEL_TOK { PARSER_STATE->checkThatLogicIsSet(); }
     { cmd->reset(new BlockModelCommand()); }
@@ -2262,6 +2309,9 @@ GET_ABDUCT_TOK : 'get-abduct';
 GET_INTERPOL_TOK : 'get-interpol';
 DECLARE_HEAP : 'declare-heap';
 DECLARE_POOL : 'declare-pool';
+DECLARE_ORACLE_FUN : 'declare-oracle-fun';
+ORACLE_ASSUME : 'oracle-assume';
+ORACLE_CONSTRAINT : 'oracle-constraint';
 
 // SyGuS commands
 SYNTH_FUN_TOK : { PARSER_STATE->sygus() }?'synth-fun';

@@ -7019,6 +7019,75 @@ Term Solver::declarePool(const std::string& symbol,
   CVC5_API_TRY_CATCH_END;
 }
 
+
+Term Solver::declareOracleFun(const std::string& symbol,
+                      const std::vector<Sort>& sorts,
+                      const Sort& sort) const
+{
+  NodeManagerScope scope(getNodeManager());
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_SOLVER_CHECK_DOMAIN_SORTS(sorts);
+  CVC5_API_SOLVER_CHECK_CODOMAIN_SORT(sort);
+  //////// all checks before this line
+  return declareOracleFunHelper(symbol, sorts, sort, "");
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+Term Solver::declareOracleFun(const std::string& symbol,
+                      const std::vector<Sort>& sorts,
+                      const Sort& sort,
+                      const std::string& binName) const
+{
+
+  NodeManagerScope scope(getNodeManager());
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_SOLVER_CHECK_DOMAIN_SORTS(sorts);
+  CVC5_API_SOLVER_CHECK_CODOMAIN_SORT(sort);
+  CVC5_API_ARG_CHECK_EXPECTED(binName != "", binName);
+  //////// all checks before this line
+  return declareOracleFunHelper(symbol, sorts, sort, binName);
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+Term Solver::declareOracleFunHelper(const std::string& symbol,
+                      const std::vector<Sort>& sorts,
+                      const Sort& sort,
+                      const std::string& binName) const
+{
+  TypeNode type = *sort.d_type;
+  if (!sorts.empty())
+  {
+    std::vector<TypeNode> types = Sort::sortVectorToTypeNodes(sorts);
+    type = getNodeManager()->mkFunctionType(types, type);
+  }
+  Node fun = d_nodeMgr->mkVar(symbol, type);
+  d_smtEngine->declareOracleFun(fun, binName);
+  return Term(this, fun);
+}
+
+void Solver::defineOracleInterface(const std::vector<Term>& inputs,
+                            const std::vector<Term>& outputs,
+                            Term assume,
+                            Term constraint,
+                            const std::string& binName) const
+{
+  NodeManagerScope scope(getNodeManager());
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_SOLVER_CHECK_TERMS(inputs);
+  CVC5_API_SOLVER_CHECK_TERMS(outputs);
+  CVC5_API_SOLVER_CHECK_TERM(assume);
+  CVC5_API_SOLVER_CHECK_TERM(constraint);
+  CVC5_API_ARG_CHECK_EXPECTED(binName != "", binName);
+  //////// all checks before this line
+  std::vector<Node> inputn = Term::termVectorToNodes(inputs);
+  std::vector<Node> outputn = Term::termVectorToNodes(outputs);
+  d_smtEngine->defineOracleInterface(inputn, outputn, *assume.d_node, *constraint.d_node, binName);
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
 void Solver::pop(uint32_t nscopes) const
 {
   NodeManagerScope scope(getNodeManager());

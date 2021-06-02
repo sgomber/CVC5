@@ -451,7 +451,7 @@ class CVC5_EXPORT DeclarePoolCommand : public DeclarationDefinitionCommand
       OutputLanguage language = language::output::LANG_AUTO) const override;
 }; /* class DeclarePoolCommand */
 
-class CVC5_EXPORT DeclareOracleFunCommand
+class CVC5_EXPORT DeclareOracleFunCommand : public Command
 {
  public:
   DeclareOracleFunCommand(api::Term func);
@@ -475,13 +475,13 @@ class CVC5_EXPORT DeclareOracleFunCommand
   std::string d_binName;
 }; /* class DeclareOracleFunCommand */
 
-class CVC5_EXPORT DefineOracleInterfaceCommand
+class CVC5_EXPORT DefineOracleInterfaceCommand : public Command
 {
  public:
-  DefineOracleInterfaceCommand(const std::vector<Term>& inputs,
-                               const std::vector<Term>& outputs,
-                               Term assume,
-                               Term constraint,
+  DefineOracleInterfaceCommand(const std::vector<api::Term>& inputs,
+                               const std::vector<api::Term>& outputs,
+                               api::Term assume,
+                               api::Term constraint,
                                const std::string& binName);
   const std::vector<api::Term>& getInputs() const;
   const std::vector<api::Term>& getOutputs() const;
@@ -507,6 +507,8 @@ class CVC5_EXPORT DefineOracleInterfaceCommand
   api::Term d_assume;
   /** The formula corresponding to the constraint generator */
   api::Term d_constraint;
+  /** The name of the binary */
+  std::string d_binName;
 }; /* class DefineOracleInterfaceCommand */
 
 class CVC5_EXPORT DeclareSortCommand : public DeclarationDefinitionCommand
