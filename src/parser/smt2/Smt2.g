@@ -1083,17 +1083,22 @@ extendedCommand[std::unique_ptr<cvc5::Command>* cmd]
     sortSymbol[t,CHECK_DECLARED]
     ( symbol[binName,CHECK_NONE,SYM_VARIABLE]? )
     {
-      if (!sorts.empty())
+      api::Term func;
+      if (binName!="")
       {
-        PARSER_STATE->checkLogicAllowsFunctions();
-        t = PARSER_STATE->mkFlatFunctionType(sorts, t);
+        func = SOLVER->declareOracleFun(name, sorts, t, binName);
       }
-      api::Term func = PARSER_STATE->bindVar(name, t, false, true);
+      else
+      {
+        func = SOLVER->declareOracleFun(name, sorts, t);
+      }
+      // eagerly bind the symbol
+      PARSER_STATE->defineVar(name, func);
       cmd->reset(new DeclareOracleFunCommand(func, binName));
     }
   | ( ORACLE_ASSUME { isAssume = true; } | 
       ORACLE_CONSTRAINT { isAssume = false; } 
-    )
+    ) { PARSER_STATE->checkThatLogicIsSet(); }
     LPAREN_TOK sortedVarList[sortedVarNames] RPAREN_TOK
     LPAREN_TOK sortedVarList[sortedVarNames2] RPAREN_TOK
     {
