@@ -81,12 +81,23 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
       continue;
     }
     currInterfaces.push_back(q);
-    Trace("oracle-engine-interface") << "Interface: " << q << std::endl;
+    Trace("oracle-engine-state") << "Interface: " << q << std::endl;
+  }
+  if (Trace.isOn("oracle-engine-state"))
+  {
+    for (const Node& f : d_oracleFuns)
+    {
+      Trace("oracle-engine-state") << "Oracle fun: " << f << std::endl;
+    }
   }
   
-  // check consistency of oracle functions via TermDatabase
-  TheoryModel * tm = fm->getTheoryModel();
+  // check consistency of oracle functions via TermDatabase, see if they
+  // match model values, if so, we are done, otherwise, we add lemmas for
+  // each
+  //TheoryModel * tm = fm->getTheoryModel();
 
+  // also, call constraint generators?
+  
   if (Trace.isOn("oracle-engine"))
   {
     double clSet2 = double(clock()) / double(CLOCKS_PER_SEC);

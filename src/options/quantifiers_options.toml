@@ -574,7 +574,7 @@ name   = "Quantifiers"
   category   = "regular"
   long       = "oracles"
   type       = "bool"
-  default    = "false"
+  default    = "true"
   help       = "Enable interface to external oracles"
 
 ### Finite model finding options
