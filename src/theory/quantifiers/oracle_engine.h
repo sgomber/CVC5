@@ -48,6 +48,11 @@ class OracleEngine : public QuantifiersModule
    * quantified formulas via calls to process(...)
    */
   void check(Theory::Effort e, QEffort quant_e) override;
+  /** 
+   * Check was complete for quantified formula q, return true if we can say
+   * "sat" provided that q is currently asserted.
+   */
+  bool checkCompleteFor(Node q) override;
   /** check ownership */
   void checkOwnership(Node q) override;
   /** Identify. */
@@ -61,10 +66,15 @@ class OracleEngine : public QuantifiersModule
                                 Node assume,
                                 Node constraint,
                                 const std::string& binName);
-
+  /** get oracle interface, returns true if q is an oracle interface quantifier (constructed by the above method). Obtains the arguments for which q is constructed. */
+  bool getOracleInterface(Node q, std::vector<Node>& inputs,
+                                std::vector<Node>& outputs,
+                                Node& assume,
+                                Node& constraint,
+                                std::string& binName);
  private:
-  /** The oracle functions (context-indepedent for now) */
-  std::vector<Node> d_oracleFuns;
+  /** The oracle functions (user-context dependent) */
+  context::CDList<Node> d_oracleFuns;
 };
 
 }  // namespace quantifiers

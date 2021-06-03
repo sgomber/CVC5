@@ -59,6 +59,7 @@
 #include "smt/unsat_core_manager.h"
 #include "theory/quantifiers/instantiation_list.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
+#include "theory/quantifiers/oracle_engine.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
@@ -1146,7 +1147,8 @@ void SmtEngine::defineOracleInterface(const std::vector<Node>& inputs,
   finishInit();
   d_state->doPendingPops();
   // make the quantified formula corresponding to the oracle interface
-  std::vector<Node> varList;
+  Node q = quantifiers::OracleEngine::mkOracleInterface(inputs, outputs, assume, constraint, binName);
+  assertFormula(q);
 }
 
 Node SmtEngine::simplify(const Node& ex)

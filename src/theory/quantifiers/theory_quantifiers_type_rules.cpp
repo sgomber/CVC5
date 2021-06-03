@@ -131,10 +131,10 @@ TypeNode QuantifierInstPatternListTypeRule::computeType(
   }
   return nodeManager->instPatternListType();
 }
-TypeNode QuantifierOracleInterfaceTypeRule::computeType(
+TypeNode QuantifierOracleFormulaGenTypeRule::computeType(
     NodeManager* nodeManager, TNode n, bool check)
 {
-  Assert(n.getKind() == kind::ORACLE_INTERFACE);
+  Assert(n.getKind() == kind::ORACLE_FORMULA_GEN);
   if (check)
   {
     if (!n[0].getType().isBoolean())
