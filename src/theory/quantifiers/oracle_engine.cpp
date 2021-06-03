@@ -150,7 +150,7 @@ Node OracleEngine::mkOracleInterface(const std::vector<Node>& inputs,
     v.setAttribute(oiva, true);
     vars.push_back(v);
   }
-  OracleInputVarAttribute oova;
+  OracleOutputVarAttribute oova;
   for (Node v : outputs)
   {
     v.setAttribute(oova, true);
