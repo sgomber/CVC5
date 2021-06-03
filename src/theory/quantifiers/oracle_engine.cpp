@@ -19,6 +19,8 @@
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/quantifiers_inference_manager.h"
+#include "theory/quantifiers/quantifiers_registry.h"
+#include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/term_registry.h"
 
 using namespace cvc5::kind;
@@ -45,7 +47,7 @@ OracleEngine::OracleEngine(QuantifiersState& qs,
                            QuantifiersInferenceManager& qim,
                            QuantifiersRegistry& qr,
                            TermRegistry& tr)
-    : QuantifiersModule(qs, qim, qr, tr)
+    : QuantifiersModule(qs, qim, qr, tr), d_oracleFuns(qs.getUserContext())
 {
 }
 
@@ -60,7 +62,44 @@ void OracleEngine::reset_round(Theory::Effort e) {}
 
 void OracleEngine::registerQuantifier(Node q) {}
 
-void OracleEngine::check(Theory::Effort e, QEffort quant_e) {}
+void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
+  double clSet = 0;
+  if (Trace.isOn("oracle-engine"))
+  {
+    clSet = double(clock()) / double(CLOCKS_PER_SEC);
+    Trace("oracle-engine") << "---Oracle Engine Round, effort = " << e
+                         << "---" << std::endl;
+  }
+  FirstOrderModel* fm = d_treg.getModel();
+  unsigned nquant = fm->getNumAssertedQuantifiers();
+  std::vector<Node> currInterfaces;
+  for (unsigned i = 0; i < nquant; i++)
+  {
+    Node q = fm->getAssertedQuantifier(i);
+    if (!d_qreg.hasOwnership(q, this))
+    {
+      continue;
+    }
+    currInterfaces.push_back(q);
+    Trace("oracle-engine-interface") << "Interface: " << q << std::endl;
+  }
+  
+  // check consistency of oracle functions via TermDatabase
+  TheoryModel * tm = fm->getTheoryModel();
+
+  if (Trace.isOn("oracle-engine"))
+  {
+    double clSet2 = double(clock()) / double(CLOCKS_PER_SEC);
+    Trace("oracle-engine") << "Finished oracle engine, time = "
+                         << (clSet2 - clSet) << std::endl;
+  }
+}
+
+bool OracleEngine::checkCompleteFor(Node q)
+{
+  // TODO: true if oracle consistency check works
+  return false;
+}
 
 void OracleEngine::checkOwnership(Node q)
 {
@@ -79,7 +118,7 @@ std::string OracleEngine::identify() const
 
 void OracleEngine::declareOracleFun(Node f) { d_oracleFuns.push_back(f); }
 
-Node mkOracleInterface(const std::vector<Node>& inputs,
+Node OracleEngine::mkOracleInterface(const std::vector<Node>& inputs,
                        const std::vector<Node>& outputs,
                        Node assume,
                        Node constraint,
@@ -107,8 +146,22 @@ Node mkOracleInterface(const std::vector<Node>& inputs,
     vars.push_back(v);
   }
   Node bvl = nm->mkNode(BOUND_VAR_LIST, vars);
-  Node body = nm->mkNode(ORACLE_INTERFACE, assume, constraint);
+  Node body = nm->mkNode(ORACLE_FORMULA_GEN, assume, constraint);
   return nm->mkNode(FORALL, bvl, body, ipl);
+}
+bool OracleEngine::getOracleInterface(Node q, std::vector<Node>& inputs,
+                              std::vector<Node>& outputs,
+                              Node& assume,
+                              Node& constraint,
+                              std::string& binName)
+{
+  QuantAttributes& qa = d_qreg.getQuantAttributes();
+  if (qa.isOracleInterface(q))
+  {
+    // TODO: fill in data
+    return true;
+  }
+  return false;
 }
 
 }  // namespace quantifiers

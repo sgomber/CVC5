@@ -50,7 +50,7 @@ struct QuantifierInstPatternListTypeRule
   static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
 };
 
-struct QuantifierOracleInterfaceTypeRule
+struct QuantifierOracleFormulaGenTypeRule
 {
   static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
 };
