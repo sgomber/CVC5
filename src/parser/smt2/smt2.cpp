@@ -690,9 +690,15 @@ Command* Smt2::setLogic(std::string name, bool fromCommand)
     addSepOperators();
   }
 
+  std::string logic = sygus() ? d_logic.getLogicString() : name;
+  if (!fromCommand)
+  {
+    // if not from a command, just set the logic directly
+    d_solver->setLogic(logic);
+    return nullptr;
+  }
   Command* cmd =
-      new SetBenchmarkLogicCommand(sygus() ? d_logic.getLogicString() : name);
-  cmd->setMuted(!fromCommand);
+      new SetBenchmarkLogicCommand(logic);
   return cmd;
 } /* Smt2::setLogic() */
 
@@ -725,10 +731,9 @@ void Smt2::checkThatLogicIsSet()
     }
     else
     {
-      Command* cmd = nullptr;
       if (logicIsForced())
       {
-        cmd = setLogic(getForcedLogic(), false);
+        setLogic(getForcedLogic(), false);
       }
       else
       {
@@ -739,9 +744,8 @@ void Smt2::checkThatLogicIsSet()
             "performance.");
         warning("To suppress this warning in the future use (set-logic ALL).");
 
-        cmd = setLogic("ALL", false);
+        setLogic("ALL", false);
       }
-      preemptCommand(cmd);
     }
   }
 }
