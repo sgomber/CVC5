@@ -190,7 +190,7 @@ bool TheoryUF::preNotifyFact(
       }
     }
     // don't need to assert cardinality constraints if not producing models
-    //return !options::produceModels();
+    // return !options::produceModels();
   }
   return false;
 }

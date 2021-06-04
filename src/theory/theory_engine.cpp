@@ -836,7 +836,8 @@ void TheoryEngine::notifyPreprocessedAssertions(
 }
 
 bool TheoryEngine::markPropagation(TNode assertion, TNode originalAssertion, theory::TheoryId toTheoryId, theory::TheoryId fromTheoryId) {
-  if (toTheoryId != THEORY_SAT_SOLVER && Theory::usesCentralEqualityEngine(toTheoryId))
+  if (toTheoryId != THEORY_SAT_SOLVER
+      && Theory::usesCentralEqualityEngine(toTheoryId))
   {
     toTheoryId = THEORY_BUILTIN;
   }
@@ -864,9 +865,11 @@ bool TheoryEngine::markPropagation(TNode assertion, TNode originalAssertion, the
 
 
 void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theory::TheoryId toTheoryId, theory::TheoryId fromTheoryId) {
-  // if we're asserting to a theory that uses the central equality engine, always send to THEORY_BUILTIN
+  // if we're asserting to a theory that uses the central equality engine,
+  // always send to THEORY_BUILTIN
   /*
-  if (toTheoryId != THEORY_SAT_SOLVER && Theory::usesCentralEqualityEngine(toTheoryId))
+  if (toTheoryId != THEORY_SAT_SOLVER &&
+  Theory::usesCentralEqualityEngine(toTheoryId))
   {
     toTheoryId = THEORY_BUILTIN;
   }
@@ -1039,7 +1042,8 @@ void TheoryEngine::assertFact(TNode literal)
         const AtomRequests::Request& request = it.get();
         Node toAssert =
             polarity ? (Node)request.d_atom : request.d_atom.notNode();
-        Trace("theory::atoms") << "TheoryEngine::assertFact(" << literal << "): sending requested " << toAssert << endl;
+        Trace("theory::atoms") << "TheoryEngine::assertFact(" << literal
+                               << "): sending requested " << toAssert << endl;
         assertToTheory(
             toAssert, literal, request.d_toTheory, THEORY_SAT_SOLVER);
         it.next();
@@ -1056,7 +1060,8 @@ void TheoryEngine::assertFact(TNode literal)
 }
 
 bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
-  Trace("theory::propagate") << "TheoryEngine::propagate(" << literal << ", " << theory << ")" << endl;
+  Trace("theory::propagate")
+      << "TheoryEngine::propagate(" << literal << ", " << theory << ")" << endl;
 
   Trace("dtview::prop") << std::string(d_env.getContext()->getLevel(), ' ')
                         << ":THEORY-PROP: " << literal << endl;
@@ -1073,7 +1078,8 @@ bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
       assertToTheory(literal, literal, /* to */ THEORY_SAT_SOLVER, /* from */ theory);
     }
     if (theory != THEORY_BUILTIN) {
-    //if (theory==THEORY_SAT_SOLVER || !Theory::usesCentralEqualityEngine(theory)) {
+      // if (theory==THEORY_SAT_SOLVER ||
+      // !Theory::usesCentralEqualityEngine(theory)) {
       // Assert to the shared terms database
       assertToTheory(literal, literal, /* to */ THEORY_BUILTIN, /* from */ theory);
     }
@@ -1260,7 +1266,8 @@ void TheoryEngine::ensureLemmaAtoms(const std::vector<TNode>& atoms, theory::The
     // Rewrite the equality
     Node eqNormalized = Rewriter::rewrite(atoms[i]);
 
-    Trace("theory::atoms") << "TheoryEngine::ensureLemmaAtoms(): " << eq << " with nf " << eqNormalized << endl;
+    Trace("theory::atoms") << "TheoryEngine::ensureLemmaAtoms(): " << eq
+                           << " with nf " << eqNormalized << endl;
 
     // If the equality is a boolean constant, we send immediately
     if (eqNormalized.isConst()) {
@@ -1343,7 +1350,8 @@ void TheoryEngine::lemma(TrustNode tlemma,
 
   // Do we need to check atoms
   if (atomsTo != theory::THEORY_LAST) {
-    Trace("theory::atoms") << "TheoryEngine::lemma(" << node << ", " << atomsTo << ")" << endl;
+    Trace("theory::atoms") << "TheoryEngine::lemma(" << node << ", " << atomsTo
+                           << ")" << endl;
     AtomsCollect collectAtoms;
     NodeVisitor<AtomsCollect>::run(collectAtoms, node);
     ensureLemmaAtoms(collectAtoms.getAtoms(), atomsTo);
@@ -1474,7 +1482,9 @@ void TheoryEngine::conflict(TrustNode tconflict, TheoryId theoryId)
     // pass the processed trust node
     TrustNode tconf =
         TrustNode::mkTrustConflict(fullConflict, d_lazyProof.get());
-    Trace("theory::conflict") << "TheoryEngine::conflict(" << conflict << ", " << theoryId << "): full = " << fullConflict << endl;
+    Trace("theory::conflict")
+        << "TheoryEngine::conflict(" << conflict << ", " << theoryId
+        << "): full = " << fullConflict << endl;
     Assert(properConflict(fullConflict));
     Trace("te-proof-debug")
         << "Check closed conflict with sharing" << std::endl;
@@ -1562,7 +1572,8 @@ TrustNode TheoryEngine::getExplanation(
     // If from the SAT solver, keep it
     if (toExplain.d_theory == THEORY_SAT_SOLVER)
     {
-      Trace("theory::explain") << "\tLiteral came from THEORY_SAT_SOLVER. Kepping it." << endl;
+      Trace("theory::explain")
+          << "\tLiteral came from THEORY_SAT_SOLVER. Kepping it." << endl;
       exp.insert(explanationVector[i++].d_node);
       // it will be a free assumption in the proof
       Trace("te-proof-exp") << "- keep " << toExplain.d_node << std::endl;
@@ -1658,7 +1669,7 @@ TrustNode TheoryEngine::getExplanation(
     Trace("theory::explain")
         << "TheoryEngine::explain(): got explanation " << explanation
         << " got from " << toExplain.d_theory << endl;
-    if (explanation==toExplain.d_node)
+    if (explanation == toExplain.d_node)
     {
       Trace("theory::explain") << "...identical, keep" << std::endl;
       exp.insert(explanationVector[i++].d_node);

@@ -251,7 +251,7 @@ bool EqEngineManagerTest::eqNotifyTriggerTermEquality(TheoryId tag,
     notifyInConflict();
     return false;
   }
-  if (tag==THEORY_UF)
+  if (tag == THEORY_UF)
   {
     return true;
   }
