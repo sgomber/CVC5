@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, Set
 from fractions import Fraction
 import sys
 
@@ -6,7 +6,7 @@ from libc.stdint cimport int32_t, int64_t, uint32_t, uint64_t
 from libc.stddef cimport wchar_t
 
 from libcpp.pair cimport pair
-from libcpp.set cimport set
+from libcpp.set cimport set as c_set
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
@@ -123,6 +123,9 @@ cdef class Datatype:
         ds.cds = self.cd.getSelector(name.encode())
         return ds
 
+    def getName(self):
+        return self.cd.getName().decode()
+
     def getNumConstructors(self):
         """:return: number of constructors."""
         return self.cd.getNumConstructors()
@@ -193,6 +196,11 @@ cdef class DatatypeConstructor:
         term.cterm = self.cdc.getConstructorTerm()
         return term
 
+    def getSpecializedConstructorTerm(self, Sort retSort):
+        cdef Term term = Term(self.solver)
+        term.cterm = self.cdc.getSpecializedConstructorTerm(retSort.csort)
+        return term
+
     def getTesterTerm(self):
         cdef Term term = Term(self.solver)
         term.cterm = self.cdc.getTesterTerm()
@@ -258,6 +266,9 @@ cdef class DatatypeDecl:
 
     def isParametric(self):
         return self.cdd.isParametric()
+
+    def getName(self):
+        return self.cdd.getName().decode()
 
     def __str__(self):
         return self.cdd.toString().decode()
@@ -502,19 +513,24 @@ cdef class Solver:
         sort.csort = self.csolver.mkDatatypeSort(dtypedecl.cdd)
         return sort
 
-    def mkDatatypeSorts(self, list dtypedecls, unresolvedSorts):
-        sorts = []
+    def mkDatatypeSorts(self, list dtypedecls, unresolvedSorts = None):
+        """:return: A list of datatype sorts that correspond to dtypedecls and unresolvedSorts"""
+        if unresolvedSorts == None:
+            unresolvedSorts = set([])
+        else:
+            assert isinstance(unresolvedSorts, Set)
 
+        sorts = []
         cdef vector[c_DatatypeDecl] decls
         for decl in dtypedecls:
             decls.push_back((<DatatypeDecl?> decl).cdd)
 
-        cdef set[c_Sort] usorts
+        cdef c_set[c_Sort] usorts
         for usort in unresolvedSorts:
             usorts.insert((<Sort?> usort).csort)
 
         csorts = self.csolver.mkDatatypeSorts(
-            <const vector[c_DatatypeDecl]&> decls, <const set[c_Sort]&> usorts)
+            <const vector[c_DatatypeDecl]&> decls, <const c_set[c_Sort]&> usorts)
         for csort in csorts:
           sort = Sort(self)
           sort.csort = csort
@@ -646,6 +662,19 @@ cdef class Solver:
                 v.push_back((<Term?> a).cterm)
             term.cterm = self.csolver.mkTerm((<Op?> op).cop, v)
         return term
+
+    def mkTuple(self, sorts, terms):
+        cdef vector[c_Sort] csorts
+        cdef vector[c_Term] cterms
+
+        for s in sorts:
+            csorts.push_back((<Sort?> s).csort)
+        for s in terms:
+            cterms.push_back((<Term?> s).cterm)
+        cdef Term result = Term(self)
+        result.cterm = self.csolver.mkTuple(csorts, cterms)
+        return result
+
 
     def mkOp(self, kind k, arg0=None, arg1 = None):
         '''
@@ -1598,19 +1627,6 @@ cdef class Term:
     def isNull(self):
         return self.cterm.isNull()
 
-    def getConstArrayBase(self):
-        cdef Term term = Term(self.solver)
-        term.cterm = self.cterm.getConstArrayBase()
-        return term
-
-    def getSequenceValue(self):
-        elems = []
-        for e in self.cterm.getSequenceValue():
-            term = Term(self.solver)
-            term.cterm = e
-            elems.append(term)
-        return elems
-
     def notTerm(self):
         cdef Term term = Term(self.solver)
         term.cterm = self.cterm.notTerm()
@@ -1646,6 +1662,14 @@ cdef class Term:
         term.cterm = self.cterm.iteTerm(then_t.cterm, else_t.cterm)
         return term
 
+    def isConstArray(self):
+        return self.cterm.isConstArray()
+
+    def getConstArrayBase(self):
+        cdef Term term = Term(self.solver)
+        term.cterm = self.cterm.getConstArrayBase()
+        return term
+
     def isBooleanValue(self):
         return self.cterm.isBooleanValue()
 
@@ -1662,7 +1686,12 @@ cdef class Term:
 
     def isIntegerValue(self):
         return self.cterm.isIntegerValue()
-    
+    def isAbstractValue(self):
+        return self.cterm.isAbstractValue()
+
+    def getAbstractValue(self):
+        return self.cterm.getAbstractValue().decode()
+
     def isFloatingPointPosZero(self):
         return self.cterm.isFloatingPointPosZero()
     
@@ -1686,6 +1715,49 @@ cdef class Term:
         cdef Term term = Term(self.solver)
         term.cterm = get2(t)
         return (get0(t), get1(t), term)
+
+    def isSetValue(self):
+        return self.cterm.isSetValue()
+
+    def getSetValue(self):
+        elems = set()
+        for e in self.cterm.getSetValue():
+            term = Term(self.solver)
+            term.cterm = e
+            elems.add(term)
+        return elems
+
+    def isSequenceValue(self):
+        return self.cterm.isSequenceValue()
+
+    def getSequenceValue(self):
+        elems = []
+        for e in self.cterm.getSequenceValue():
+            term = Term(self.solver)
+            term.cterm = e
+            elems.append(term)
+        return elems
+
+    def isUninterpretedValue(self):
+        return self.cterm.isUninterpretedValue()
+ 
+    def getUninterpretedValue(self):
+        cdef pair[c_Sort, int32_t] p = self.cterm.getUninterpretedValue()
+        cdef Sort sort = Sort(self.solver)
+        sort.csort = p.first
+        i = p.second
+        return (sort, i)
+
+    def isTupleValue(self):
+        return self.cterm.isTupleValue()
+
+    def getTupleValue(self):
+        elems = []
+        for e in self.cterm.getTupleValue():
+            term = Term(self.solver)
+            term.cterm = e
+            elems.append(term)
+        return elems
 
     def getIntegerValue(self):
         return int(self.cterm.getIntegerValue().decode())
