@@ -192,7 +192,7 @@ void TheoryUF::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
         {
           std::stringstream ss;
           ss << "Cardinality constraint " << atom
-            << " was asserted, but the logic does not allow it." << std::endl;
+             << " was asserted, but the logic does not allow it." << std::endl;
           ss << "Try using a logic containing \"UFC\"." << std::endl;
           throw Exception(ss.str());
         }
@@ -204,7 +204,7 @@ void TheoryUF::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
       }
     }
     break;
-    default:break;
+    default: break;
   }
 }
 //--------------------------------- end standard check
