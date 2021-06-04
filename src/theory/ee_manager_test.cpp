@@ -82,16 +82,19 @@ void EqEngineManagerTest::initializeTheories()
       // theory not active, skip
       continue;
     }
+    Trace("ee-test") << "Setup equality engine for " << theoryId << std::endl;
     // always allocate an object in d_einfo here
     EeTheoryInfo& eet = d_einfo[theoryId];
     EeSetupInfo esi;
     if (!t->needsEqualityEngine(esi))
     {
+      Trace("ee-test") << "...does not need ee" << std::endl;
       // theory said it doesn't need an equality engine, skip
       continue;
     }
     if (esi.d_useMaster)
     {
+      Trace("ee-test") << "...uses master" << std::endl;
       // the theory said it wants to use the master equality engine
       eet.d_usedEe = d_masterEqualityEngine.get();
       continue;
@@ -100,8 +103,9 @@ void EqEngineManagerTest::initializeTheories()
     eq::EqualityEngineNotify* notify = esi.d_notify;
     d_theoryNotify[theoryId] = notify;
     // split on whether integrated, or whether asked for master
-    if (false && t->usesCentralEqualityEngine())
+    if (t->usesCentralEqualityEngine())
     {
+      Trace("ee-test") << "...uses central" << std::endl;
       // the theory uses the central equality engine
       eet.d_usedEe = &d_centralEqualityEngine;
       // add to vectors for the kinds of notifications
@@ -124,6 +128,7 @@ void EqEngineManagerTest::initializeTheories()
       }
       continue;
     }
+    Trace("ee-test") << "...uses new" << std::endl;
     eet.d_allocEe.reset(allocateEqualityEngine(esi, c));
     // the theory uses the equality engine
     eet.d_usedEe = eet.d_allocEe.get();
@@ -245,6 +250,10 @@ bool EqEngineManagerTest::eqNotifyTriggerTermEquality(TheoryId tag,
   {
     notifyInConflict();
     return false;
+  }
+  if (tag==THEORY_UF)
+  {
+    return true;
   }
   // propagate shared equality
   return d_sharedSolver.propagateSharedEquality(tag, a, b, value);
