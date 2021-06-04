@@ -693,12 +693,14 @@ Command* Smt2::setLogic(std::string name, bool fromCommand)
   std::string logic = sygus() ? d_logic.getLogicString() : name;
   if (!fromCommand)
   {
-    // if not from a command, just set the logic directly
+    // If not from a command, just set the logic directly. Notice this is
+    // important since we do not want to enqueue a set-logic command and
+    // fully initialize the underlying SmtEngine in the meantime before the
+    // command has a chance to execute, which would lead to an error.
     d_solver->setLogic(logic);
     return nullptr;
   }
-  Command* cmd =
-      new SetBenchmarkLogicCommand(logic);
+  Command* cmd = new SetBenchmarkLogicCommand(logic);
   return cmd;
 } /* Smt2::setLogic() */
 
@@ -731,6 +733,7 @@ void Smt2::checkThatLogicIsSet()
     }
     else
     {
+      // the calls to setLogic below set the logic on the solver directly
       if (logicIsForced())
       {
         setLogic(getForcedLogic(), false);
