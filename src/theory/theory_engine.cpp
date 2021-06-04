@@ -836,7 +836,10 @@ void TheoryEngine::notifyPreprocessedAssertions(
 }
 
 bool TheoryEngine::markPropagation(TNode assertion, TNode originalAssertion, theory::TheoryId toTheoryId, theory::TheoryId fromTheoryId) {
-
+  if (toTheoryId != THEORY_SAT_SOLVER && Theory::usesCentralEqualityEngine(toTheoryId))
+  {
+    toTheoryId = THEORY_BUILTIN;
+  }
   // What and where we are asserting
   NodeTheoryPair toAssert(assertion, toTheoryId, d_propagationMapTimestamp);
   // What and where it came from
@@ -861,8 +864,9 @@ bool TheoryEngine::markPropagation(TNode assertion, TNode originalAssertion, the
 
 
 void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theory::TheoryId toTheoryId, theory::TheoryId fromTheoryId) {
+  // if we're asserting to a theory that uses the central equality engine, always send to THEORY_BUILTIN
   /*
-  if (d_theoryTable[toTheoryId]->usesCentralEqualityEngine())
+  if (toTheoryId != THEORY_SAT_SOLVER && Theory::usesCentralEqualityEngine(toTheoryId))
   {
     toTheoryId = THEORY_BUILTIN;
   }
@@ -1069,6 +1073,7 @@ bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
       assertToTheory(literal, literal, /* to */ THEORY_SAT_SOLVER, /* from */ theory);
     }
     if (theory != THEORY_BUILTIN) {
+    //if (theory==THEORY_SAT_SOLVER || !Theory::usesCentralEqualityEngine(theory)) {
       // Assert to the shared terms database
       assertToTheory(literal, literal, /* to */ THEORY_BUILTIN, /* from */ theory);
     }

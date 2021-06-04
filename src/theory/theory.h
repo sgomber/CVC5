@@ -553,8 +553,6 @@ class Theory {
                        "Theory::explain() interface!";
     return TrustNode::null();
   }
-  /** Explain conflict */
-  virtual TrustNode explainConflict(TNode a, TNode b);
 
   //--------------------------------- check
   /**

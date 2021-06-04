@@ -66,6 +66,7 @@ EqualityStatus SharedSolverTest::getEqualityStatus(TNode a, TNode b)
 TrustNode SharedSolverTest::explain(TNode literal, TheoryId id)
 {
   TrustNode texp;
+  Trace("shared-solver") << "SharedSolverTest::explain: " << literal << " " << id << std::endl;
   if (id == THEORY_BUILTIN)
   {
     // explanation based on the central equality engine, recursively?

@@ -558,13 +558,6 @@ void Theory::notifyFact(TNode atom, bool polarity, TNode fact, bool isInternal)
 {
 }
 
-TrustNode Theory::explainConflict(TNode a, TNode b)
-{
-  Unimplemented() << "Theory " << identify()
-                  << " sent a conflict but doesn't implement the "
-                     "Theory::explainConflict() interface!";
-}
-
 void Theory::preRegisterTerm(TNode node) {}
 
 void Theory::addSharedTerm(TNode n)
@@ -597,6 +590,10 @@ bool Theory::usesCentralEqualityEngine() const
 
 bool Theory::usesCentralEqualityEngine(TheoryId id)
 {
+  if (id == THEORY_BUILTIN)
+  {
+    return true;
+  }
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
   {
     return false;
