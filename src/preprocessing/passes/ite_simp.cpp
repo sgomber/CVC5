@@ -115,7 +115,6 @@ ITESimp::Statistics::Statistics()
 
 bool ITESimp::doneSimpITE(AssertionPipeline* assertionsToPreprocess)
 {
-  Assert(options::unsatCoresMode() != options::UnsatCoresMode::OLD_PROOF);
   bool result = true;
   bool simpDidALotOfWork = d_iteUtilities.simpIteDidALotOfWorkHeuristic();
   if (simpDidALotOfWork)
@@ -155,7 +154,7 @@ bool ITESimp::doneSimpITE(AssertionPipeline* assertionsToPreprocess)
           *(d_iteUtilities.getContainsVisitor());
       arith::ArithIteUtils aiteu(contains,
                                  d_preprocContext->getUserContext(),
-                                 theory_engine->getModel());
+                                 d_preprocContext->getTopLevelSubstitutions().get());
       bool anyItes = false;
       for (size_t i = 0, size = assertionsToPreprocess->size(); i < size; ++i)
       {

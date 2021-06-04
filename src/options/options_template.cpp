@@ -225,6 +225,7 @@ Options::Options(OptionsListener* ol)
     : d_handler(new options::OptionsHandler(this)),
 // clang-format off
 ${holder_mem_inits}$
+${holder_ref_inits}$
 // clang-format on
       d_olisten(ol)
 {}
@@ -239,16 +240,6 @@ void Options::copyValues(const Options& options){
 ${holder_mem_copy}$
 // clang-format on
   }
-}
-
-${holder_getter_impl}$
-
-std::string Options::formatThreadOptionException(const std::string& option) {
-  std::stringstream ss;
-  ss << "can't understand option `" << option
-     << "': expected something like --threadN=\"--option1 --option2\","
-     << " where N is a nonnegative integer";
-  return ss.str();
 }
 
 void Options::setListener(OptionsListener* ol) { d_olisten = ol; }
@@ -395,7 +386,7 @@ std::vector<std::string> Options::parseOptions(Options* options,
   if(x != NULL) {
     progName = x + 1;
   }
-  options->base().binary_name = std::string(progName);
+  options->base.binary_name = std::string(progName);
 
   std::vector<std::string> nonoptions;
   options->parseOptionsRecursive(argc, argv, &nonoptions);
@@ -425,7 +416,7 @@ void Options::parseOptionsRecursive(int argc,
                                     char* argv[],
                                     std::vector<std::string>* nonoptions)
 {
-
+  Options& opts = *this;
   if(Debug.isOn("options")) {
     Debug("options") << "starting a new parseOptionsRecursive with "
                      << argc << " arguments" << std::endl;
@@ -562,6 +553,7 @@ void Options::setOptionInternal(const std::string& key,
                                 const std::string& optionarg)
 {
   options::OptionsHandler* handler = d_handler;
+  Options& opts = *this;
   ${setoption_handlers}$
   throw UnrecognizedOptionException(key);
 }
@@ -571,6 +563,7 @@ void Options::setOptionInternal(const std::string& key,
 std::string Options::getOption(const std::string& key) const
 {
   Trace("options") << "Options::getOption(" << key << ")" << std::endl;
+  const Options& options = *this;
   ${getoption_handlers}$
 
   throw UnrecognizedOptionException(key);

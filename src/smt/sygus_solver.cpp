@@ -251,18 +251,6 @@ bool SygusSolver::getSynthSolutions(std::map<Node, Node>& sol_map)
   return true;
 }
 
-void SygusSolver::printSynthSolution(std::ostream& out)
-{
-  QuantifiersEngine* qe = d_smtSolver.getQuantifiersEngine();
-  if (qe == nullptr)
-  {
-    InternalError()
-        << "SygusSolver::printSynthSolution(): Cannot print synth solution in "
-           "the current logic, which does not include quantifiers";
-  }
-  qe->printSynthSolution(out);
-}
-
 void SygusSolver::checkSynthSolution(Assertions& as)
 {
   NodeManager* nm = NodeManager::currentNM();
@@ -344,8 +332,8 @@ void SygusSolver::checkSynthSolution(Assertions& as)
     // Start new SMT engine to check solutions
     std::unique_ptr<SmtEngine> solChecker;
     initializeSubsolver(solChecker);
-    solChecker->getOptions().set(options::checkSynthSol, false);
-    solChecker->getOptions().set(options::sygusRecFun, false);
+    solChecker->getOptions().smt.checkSynthSol = false;
+    solChecker->getOptions().quantifiers.sygusRecFun = false;
     // get the solution for this conjecture
     std::vector<Node>& fvars = fvarMap[conj];
     std::vector<Node>& fsols = fsolMap[conj];

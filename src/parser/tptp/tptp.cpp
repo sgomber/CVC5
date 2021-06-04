@@ -22,6 +22,7 @@
 #include "api/cpp/cvc5.h"
 #include "base/check.h"
 #include "options/options.h"
+#include "options/options_public.h"
 #include "parser/parser.h"
 #include "smt/command.h"
 
@@ -34,12 +35,9 @@ namespace parser {
 
 Tptp::Tptp(api::Solver* solver,
            SymbolManager* sm,
-           Input* input,
            bool strictMode,
            bool parseOnly)
-    : Parser(solver, sm, input, strictMode, parseOnly),
-      d_cnf(false),
-      d_fof(false)
+    : Parser(solver, sm, strictMode, parseOnly), d_cnf(false), d_fof(false)
 {
   addTheory(Tptp::THEORY_CORE);
 
@@ -318,7 +316,8 @@ api::Term Tptp::applyParseOp(ParseOp& p, std::vector<api::Term>& args)
   // Second phase: apply parse op to the arguments
   if (isBuiltinKind)
   {
-    if (!opts.getUfHo() && (kind == api::EQUAL || kind == api::DISTINCT))
+    if (!options::getUfHo(opts)
+        && (kind == api::EQUAL || kind == api::DISTINCT))
     {
       // need --uf-ho if these operators are applied over function args
       for (std::vector<api::Term>::iterator i = args.begin(); i != args.end();
@@ -365,7 +364,7 @@ api::Term Tptp::applyParseOp(ParseOp& p, std::vector<api::Term>& args)
       unsigned arity = argt.getFunctionArity();
       if (args.size() - 1 < arity)
       {
-        if (!opts.getUfHo())
+        if (!options::getUfHo(opts))
         {
           parseError("Cannot partially apply functions unless --uf-ho is set.");
         }

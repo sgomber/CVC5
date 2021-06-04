@@ -18,9 +18,9 @@
 
 #include "context/context.h"
 #include "expr/node.h"
-#include "expr/term_conversion_proof_generator.h"
 #include "options/base_options.h"
 #include "printer/printer.h"
+#include "proof/conv_proof_generator.h"
 #include "smt/dump_manager.h"
 #include "smt/smt_engine_stats.h"
 #include "theory/rewriter.h"
@@ -104,9 +104,9 @@ ResourceManager* Env::getResourceManager() const
 
 const Printer& Env::getPrinter()
 {
-  return *Printer::getPrinter(d_options[options::outputLanguage]);
+  return *Printer::getPrinter(d_options.base.outputLanguage);
 }
 
-std::ostream& Env::getDumpOut() { return *d_options.getOut(); }
+std::ostream& Env::getDumpOut() { return *d_options.base.out; }
 
 }  // namespace cvc5
