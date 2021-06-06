@@ -70,10 +70,11 @@ void EqEngineManagerTest::initializeTheories()
     d_masterEENotify.reset(new MasterNotifyClass(qe));
     if (!masterEqToCentral)
     {
-      d_masterEqualityEngineAlloc.reset(new eq::EqualityEngine(*d_masterEENotify.get(),
-                                                          d_te.getSatContext(),
-                                                          "theory::master",
-                                                          false));
+      d_masterEqualityEngineAlloc.reset(
+          new eq::EqualityEngine(*d_masterEENotify.get(),
+                                 d_te.getSatContext(),
+                                 "theory::master",
+                                 false));
       d_masterEqualityEngine = d_masterEqualityEngineAlloc.get();
     }
     else
@@ -153,7 +154,8 @@ void EqEngineManagerTest::initializeTheories()
 
   // ----- test
   // set the master equality engine of the theory's equality engine
-  if (d_masterEqualityEngine!=nullptr && d_masterEqualityEngine!=&d_centralEqualityEngine)
+  if (d_masterEqualityEngine != nullptr
+      && d_masterEqualityEngine != &d_centralEqualityEngine)
   {
     d_centralEqualityEngine.setMasterEqualityEngine(d_masterEqualityEngine);
   }
