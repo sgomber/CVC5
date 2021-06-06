@@ -836,8 +836,7 @@ void TheoryEngine::notifyPreprocessedAssertions(
 }
 
 bool TheoryEngine::markPropagation(TNode assertion, TNode originalAssertion, theory::TheoryId toTheoryId, theory::TheoryId fromTheoryId) {
-  if (toTheoryId != THEORY_SAT_SOLVER
-      && Theory::usesCentralEqualityEngine(toTheoryId))
+  if (Theory::usesCentralEqualityEngine(toTheoryId))
   {
     toTheoryId = THEORY_BUILTIN;
   }
@@ -868,8 +867,7 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
   // if we're asserting to a theory that uses the central equality engine,
   // always send to THEORY_BUILTIN
   /*
-  if (toTheoryId != THEORY_SAT_SOLVER &&
-  Theory::usesCentralEqualityEngine(toTheoryId))
+  if (Theory::usesCentralEqualityEngine(toTheoryId))
   {
     toTheoryId = THEORY_BUILTIN;
   }
@@ -1078,8 +1076,7 @@ bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
       assertToTheory(literal, literal, /* to */ THEORY_SAT_SOLVER, /* from */ theory);
     }
     if (theory != THEORY_BUILTIN) {
-      // if (theory==THEORY_SAT_SOLVER ||
-      // !Theory::usesCentralEqualityEngine(theory)) {
+      // if (!Theory::usesCentralEqualityEngine(theory)) {
       // Assert to the shared terms database
       assertToTheory(literal, literal, /* to */ THEORY_BUILTIN, /* from */ theory);
     }
@@ -1532,6 +1529,10 @@ TrustNode TheoryEngine::getExplanation(
   while (i < explanationVector.size()) {
     // Get the current literal to explain
     NodeTheoryPair toExplain = explanationVector[i];
+    if (Theory::usesCentralEqualityEngine(toExplain.d_theory))
+    {
+      toExplain.d_theory = THEORY_BUILTIN;
+    }
 
     Trace("theory::explain")
         << "[i=" << i << "] TheoryEngine::explain(): processing ["

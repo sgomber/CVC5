@@ -68,6 +68,7 @@ TrustNode SharedSolverTest::explain(TNode literal, TheoryId id)
   TrustNode texp;
   Trace("shared-solver") << "SharedSolverTest::explain: " << literal << " "
                          << id << std::endl;
+  Assert (id == THEORY_BUILTIN || !Theory::usesCentralEqualityEngine(id));
   if (id == THEORY_BUILTIN)
   {
     // explanation based on the central equality engine, recursively?

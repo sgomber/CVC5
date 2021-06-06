@@ -599,7 +599,7 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
     return false;
   }
   // test
-  return id == THEORY_UF;  // || id==THEORY_DATATYPES;
+  return id == THEORY_UF || id==THEORY_DATATYPES;
 }
 
 }  // namespace theory
