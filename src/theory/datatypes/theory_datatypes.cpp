@@ -65,7 +65,9 @@ TheoryDatatypes::TheoryDatatypes(Context* c,
       d_sygusExtension(nullptr),
       d_state(c, u, valuation),
       d_im(*this, d_state, pnm),
-      d_notify(d_im, *this)
+      d_notify(d_im, *this),
+      d_pendingMerge(c),
+      d_pendingMergeProc(c, 0)
 {
 
   d_true = NodeManager::currentNM()->mkConst( true );
@@ -94,6 +96,7 @@ bool TheoryDatatypes::needsEqualityEngine(EeSetupInfo& esi)
 {
   esi.d_notify = &d_notify;
   esi.d_name = "theory::datatypes::ee";
+
   return true;
 }
 
@@ -174,7 +177,7 @@ void TheoryDatatypes::postCheck(Effort level)
 {
   // Apply any last pending inferences, which may occur if the last processed
   // fact was an internal one and triggered further internal inferences.
-  d_im.process();
+  processPending();
   if (level == EFFORT_LAST_CALL)
   {
     Assert(d_sygusExtension != nullptr);
@@ -191,7 +194,7 @@ void TheoryDatatypes::postCheck(Effort level)
       Trace("datatypes-proc") << "Check cycles..." << std::endl;
       checkCycles();
       Trace("datatypes-proc") << "...finish check cycles" << std::endl;
-      d_im.process();
+      processPending();
       if (d_state.isInConflict() || d_im.hasSentLemma())
       {
         return;
@@ -362,7 +365,7 @@ void TheoryDatatypes::postCheck(Effort level)
         // we did not add a lemma, process internal inferences. This loop
         // will repeat.
         Trace("datatypes-debug") << "Flush pending facts..." << std::endl;
-        d_im.process();
+        processPending();
       }
     } while (!d_state.isInConflict() && !d_im.hasSentLemma()
              && d_im.hasSentFact());
@@ -427,7 +430,7 @@ void TheoryDatatypes::notifyFact(TNode atom,
   // now, flush pending facts if this wasn't an internal call
   if (!isInternal)
   {
-    d_im.process();
+    processPending();
   }
 }
 
@@ -479,7 +482,7 @@ void TheoryDatatypes::preRegisterTerm(TNode n)
     }
     break;
   }
-  d_im.process();
+  processPending();
 }
 
 TrustNode TheoryDatatypes::ppRewrite(TNode in, std::vector<SkolemLemma>& lems)
@@ -528,11 +531,32 @@ void TheoryDatatypes::eqNotifyNewClass(TNode t){
 /** called when two equivalance classes have merged */
 void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
 {
+  // bool prevPending = d_im.hasPending();
   if( t1.getType().isDatatype() ){
     Trace("datatypes-debug")
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
-    merge(t1,t2);
+    Node eq = t1.eqNode(t2);
+    d_pendingMerge.push_back(eq);
   }
+  // Assert(prevPending || !d_im.hasPending());
+}
+void TheoryDatatypes::processPending()
+{
+  do
+  {
+    size_t psize = d_pendingMerge.size();
+    for (size_t i=d_pendingMergeProc.get(); i<psize; i++)
+    {
+      Node eq = d_pendingMerge[i];
+      merge(eq[0], eq[1]);
+      if (d_state.isInConflict())
+      {
+        return;
+      }
+    }
+    d_pendingMergeProc = d_pendingMerge.size();
+    d_im.process();
+  }while (d_pendingMergeProc.get()<d_pendingMerge.size() && !d_state.isInConflict());
 }
 
 void TheoryDatatypes::merge( Node t1, Node t2 ){
