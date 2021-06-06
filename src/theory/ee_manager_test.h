@@ -91,7 +91,8 @@ class EqEngineManagerTest : public EqEngineManager
   /** The master equality engine notify class */
   std::unique_ptr<MasterNotifyClass> d_masterEENotify;
   /** The master equality engine. */
-  std::unique_ptr<eq::EqualityEngine> d_masterEqualityEngine;
+  eq::EqualityEngine* d_masterEqualityEngine;
+  std::unique_ptr<eq::EqualityEngine> d_masterEqualityEngineAlloc;
 
   // ============================ central
 

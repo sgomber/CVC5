@@ -1292,6 +1292,15 @@ void EqualityEngine::explainLit(TNode lit, std::vector<TNode>& assumptions)
   // ensure that duplicates are removed
   for (TNode a : tassumptions)
   {
+    /*
+    if (a.isNull())
+    {
+      // ????
+      // when using master equality engine, explanations are not transferred?
+      assumptions.push_back(lit);
+      continue;
+    }
+    */
     if (std::find(assumptions.begin(), assumptions.end(), a)
         == assumptions.end())
     {

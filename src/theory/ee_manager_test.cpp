@@ -26,6 +26,7 @@ namespace theory {
 EqEngineManagerTest::EqEngineManagerTest(TheoryEngine& te, SharedSolver& shs)
     : EqEngineManager(te, shs),
       d_masterEENotify(nullptr),
+      d_masterEqualityEngine(nullptr),
       d_centralEENotify(*this),
       d_centralEqualityEngine(
           d_centralEENotify, te.getSatContext(), "centralEE", true),
@@ -55,6 +56,8 @@ void EqEngineManagerTest::initializeTheories()
   {
     AlwaysAssert(false) << "Expected shared solver to use equality engine";
   }
+  // whether to use master equality engine as central
+  bool masterEqToCentral = false;
 
   // TEMPORARY, until we use central equality engine
   const LogicInfo& logicInfo = d_te.getLogicInfo();
@@ -65,10 +68,19 @@ void EqEngineManagerTest::initializeTheories()
     QuantifiersEngine* qe = d_te.getQuantifiersEngine();
     Assert(qe != nullptr);
     d_masterEENotify.reset(new MasterNotifyClass(qe));
-    d_masterEqualityEngine.reset(new eq::EqualityEngine(*d_masterEENotify.get(),
-                                                        d_te.getSatContext(),
-                                                        "theory::master",
-                                                        false));
+    if (!masterEqToCentral)
+    {
+      d_masterEqualityEngineAlloc.reset(new eq::EqualityEngine(*d_masterEENotify.get(),
+                                                          d_te.getSatContext(),
+                                                          "theory::master",
+                                                          false));
+      d_masterEqualityEngine = d_masterEqualityEngineAlloc.get();
+    }
+    else
+    {
+      d_masterEqualityEngine = &d_centralEqualityEngine;
+      d_centralEENotify.d_newClassNotify.push_back(d_masterEENotify.get());
+    }
   }
 
   // allocate equality engines per theory
@@ -96,7 +108,7 @@ void EqEngineManagerTest::initializeTheories()
     {
       Trace("ee-test") << "...uses master" << std::endl;
       // the theory said it wants to use the master equality engine
-      eet.d_usedEe = d_masterEqualityEngine.get();
+      eet.d_usedEe = d_masterEqualityEngine;
       continue;
     }
     // set the notify
@@ -135,13 +147,16 @@ void EqEngineManagerTest::initializeTheories()
     if (d_masterEqualityEngine != nullptr)
     {
       // set the master equality engine of the theory's equality engine
-      eet.d_allocEe->setMasterEqualityEngine(d_masterEqualityEngine.get());
+      eet.d_allocEe->setMasterEqualityEngine(d_masterEqualityEngine);
     }
   }
 
   // ----- test
   // set the master equality engine of the theory's equality engine
-  d_centralEqualityEngine.setMasterEqualityEngine(d_masterEqualityEngine.get());
+  if (d_masterEqualityEngine!=nullptr && d_masterEqualityEngine!=&d_centralEqualityEngine)
+  {
+    d_centralEqualityEngine.setMasterEqualityEngine(d_masterEqualityEngine);
+  }
   // ----- end test
 }
 
