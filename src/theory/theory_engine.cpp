@@ -1576,7 +1576,7 @@ TrustNode TheoryEngine::getExplanation(
     if (toExplain.d_theory == THEORY_SAT_SOLVER)
     {
       Trace("theory::explain")
-          << "\tLiteral came from THEORY_SAT_SOLVER. Kepping it." << endl;
+          << "\tLiteral came from THEORY_SAT_SOLVER. Keeping it." << endl;
       exp.insert(explanationVector[i++].d_node);
       // it will be a free assumption in the proof
       Trace("te-proof-exp") << "- keep " << toExplain.d_node << std::endl;
@@ -1672,12 +1672,17 @@ TrustNode TheoryEngine::getExplanation(
     Trace("theory::explain")
         << "TheoryEngine::explain(): got explanation " << explanation
         << " got from " << toExplain.d_theory << endl;
+    AlwaysAssert(explanation != toExplain.d_node)
+        << "wasn't sent to you, so why are you explaining it trivially";
+        /*
     if (explanation == toExplain.d_node)
     {
       Trace("theory::explain") << "...identical, keep" << std::endl;
+      AlwaysAssert(false);
       exp.insert(explanationVector[i++].d_node);
       continue;
     }
+    */
     // Mark the explanation
     NodeTheoryPair newExplain(
         explanation, toExplain.d_theory, toExplain.d_timestamp);
