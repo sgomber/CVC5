@@ -71,8 +71,8 @@ TrustNode SharedSolverTest::explain(TNode literal, TheoryId id)
   Assert (id == THEORY_BUILTIN || !Theory::usesCentralEqualityEngine(id));
   if (id == THEORY_BUILTIN)
   {
-    // explanation based on the central equality engine, recursively?
     /*
+    // explanation based on the central equality engine, recursively?
     std::vector<Node> assumptions;
     std::vector<Node> toProcess;
     toProcess.push_back(literal);
@@ -81,8 +81,10 @@ TrustNode SharedSolverTest::explain(TNode literal, TheoryId id)
     {
       Node lit = toProcess[index];
       index++;
+      Trace("shared-solver") << "- exp " << lit << std::endl;
       std::vector<TNode> currAssumptions;
       d_centralEe->explainLit(lit, currAssumptions);
+      Trace("shared-solver") << "...got " << currAssumptions.size() << std::endl;
       if (currAssumptions.size()==1 && currAssumptions[0]==lit)
       {
         assumptions.push_back(lit);

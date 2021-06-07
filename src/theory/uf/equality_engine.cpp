@@ -612,6 +612,7 @@ bool EqualityEngine::merge(EqualityNode& class1, EqualityNode& class2, std::vect
   {
     doNotify = true;
   }
+  Debug("equality") << "NOTIFY is " << doNotify << std::endl;
 
   // Check for constant merges
   bool class1isConstant = d_isConstant[class1Id];
