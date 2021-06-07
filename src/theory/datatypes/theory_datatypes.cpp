@@ -174,6 +174,7 @@ TNode TheoryDatatypes::getEqcConstructor( TNode r ) {
 
 bool TheoryDatatypes::preCheck(Effort level)
 {
+  Trace("datatypes-check") << "TheoryDatatypes::preCheck: " << level << std::endl;
   d_im.reset();
   d_im.clearPending();
   return false;
@@ -181,6 +182,7 @@ bool TheoryDatatypes::preCheck(Effort level)
 
 void TheoryDatatypes::postCheck(Effort level)
 {
+  Trace("datatypes-check") << "TheoryDatatypes::postCheck: " << level << std::endl;
   // Apply any last pending inferences, which may occur if the last processed
   // fact was an internal one and triggered further internal inferences.
   processPending();
@@ -188,7 +190,6 @@ void TheoryDatatypes::postCheck(Effort level)
   {
     Assert(d_sygusExtension != nullptr);
     d_sygusExtension->check();
-    return;
   }
   else if (level == EFFORT_FULL && !d_state.isInConflict()
            && !d_im.hasSentLemma() && !d_valuation.needCheck())
@@ -488,7 +489,7 @@ void TheoryDatatypes::preRegisterTerm(TNode n)
     }
     break;
   }
-  // processPending();
+  processPending();
 }
 
 TrustNode TheoryDatatypes::ppRewrite(TNode in, std::vector<SkolemLemma>& lems)
@@ -541,9 +542,9 @@ void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
   if( t1.getType().isDatatype() ){
     Trace("datatypes-debug")
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
-    Node eq = t1.eqNode(t2);
-    d_pendingMerge.push_back(eq);
-    // merge(t1, t2);
+    //Node eq = t1.eqNode(t2);
+    //d_pendingMerge.push_back(eq);
+    merge(t1, t2);
   }
   // Assert(prevPending || !d_im.hasPending());
 }

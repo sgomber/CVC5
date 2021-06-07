@@ -126,6 +126,7 @@ std::string getTheoryString(theory::TheoryId id)
 
 void TheoryEngine::finishInit()
 {
+  Trace("theory") << "Begin TheoryEngine::finishInit" << std::endl;
   // NOTE: This seems to be required since
   // theory::TheoryTraits<THEORY>::isParametric cannot be accessed without
   // using the CVC5_FOR_EACH_THEORY_STATEMENT macro. -AJR
@@ -202,6 +203,7 @@ void TheoryEngine::finishInit()
     // finish initializing the theory
     t->finishInit();
   }
+  Trace("theory") << "End TheoryEngine::finishInit" << std::endl;
 }
 
 ProofNodeManager* TheoryEngine::getProofNodeManager() const { return d_pnm; }
@@ -414,10 +416,6 @@ void TheoryEngine::check(Theory::Effort effort) {
 
   // Reset the interrupt flag
   d_interrupted = false;
-
-  // HACK temporary, required to clear stale data, maybe refactor order of
-  // preCheck in theories
-  theoryOf(THEORY_DATATYPES)->preCheck(effort);
 
 #ifdef CVC5_FOR_EACH_THEORY_STATEMENT
 #undef CVC5_FOR_EACH_THEORY_STATEMENT
