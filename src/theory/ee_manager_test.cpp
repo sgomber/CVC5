@@ -49,7 +49,7 @@ void EqEngineManagerTest::initializeTheories()
   EeSetupInfo esis;
   if (d_sharedSolver.needsEqualityEngine(esis))
   {
-    // use central equality engine
+    // the shared solver uses central equality engine
     d_sharedSolver.setEqualityEngine(&d_centralEqualityEngine);
   }
   else
@@ -57,10 +57,25 @@ void EqEngineManagerTest::initializeTheories()
     AlwaysAssert(false) << "Expected shared solver to use equality engine";
   }
   // whether to use master equality engine as central
-  bool masterEqToCentral = false;
-
-  // TEMPORARY, until we use central equality engine
+  bool masterEqToCentral = true;
+  
   const LogicInfo& logicInfo = d_te.getLogicInfo();
+  for (TheoryId theoryId = theory::THEORY_FIRST;
+       theoryId != theory::THEORY_LAST;
+       ++theoryId)
+  {
+    // if the logic has a theory that does not use central equality engine,
+    // we can't use the central equality engine for the master equality
+    // engine
+    if (logicInfo.isTheoryEnabled(theoryId) && !Theory::usesCentralEqualityEngine(theoryId))
+    {
+      masterEqToCentral = false;
+      break;
+    }
+  }
+
+  // initialize the master equality engine, which may be the central equality
+  // engine
   if (logicInfo.isQuantified())
   {
     // construct the master equality engine
