@@ -174,7 +174,8 @@ TNode TheoryDatatypes::getEqcConstructor( TNode r ) {
 
 bool TheoryDatatypes::preCheck(Effort level)
 {
-  Trace("datatypes-check") << "TheoryDatatypes::preCheck: " << level << std::endl;
+  Trace("datatypes-check") << "TheoryDatatypes::preCheck: " << level
+                           << std::endl;
   d_im.reset();
   d_im.clearPending();
   return false;
@@ -182,7 +183,8 @@ bool TheoryDatatypes::preCheck(Effort level)
 
 void TheoryDatatypes::postCheck(Effort level)
 {
-  Trace("datatypes-check") << "TheoryDatatypes::postCheck: " << level << std::endl;
+  Trace("datatypes-check") << "TheoryDatatypes::postCheck: " << level
+                           << std::endl;
   // Apply any last pending inferences, which may occur if the last processed
   // fact was an internal one and triggered further internal inferences.
   processPending();
@@ -544,7 +546,7 @@ void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
     Node eq = t1.eqNode(t2);
     d_pendingMerge.push_back(eq);
-    //merge(t1, t2);
+    // merge(t1, t2);
   }
   // Assert(prevPending || !d_im.hasPending());
 }

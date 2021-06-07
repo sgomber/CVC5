@@ -58,7 +58,7 @@ void EqEngineManagerTest::initializeTheories()
   }
   // whether to use master equality engine as central
   bool masterEqToCentral = true;
-  
+
   const LogicInfo& logicInfo = d_te.getLogicInfo();
   for (TheoryId theoryId = theory::THEORY_FIRST;
        theoryId != theory::THEORY_LAST;
@@ -67,7 +67,8 @@ void EqEngineManagerTest::initializeTheories()
     // if the logic has a theory that does not use central equality engine,
     // we can't use the central equality engine for the master equality
     // engine
-    if (logicInfo.isTheoryEnabled(theoryId) && !Theory::usesCentralEqualityEngine(theoryId))
+    if (logicInfo.isTheoryEnabled(theoryId)
+        && !Theory::usesCentralEqualityEngine(theoryId))
     {
       masterEqToCentral = false;
       break;

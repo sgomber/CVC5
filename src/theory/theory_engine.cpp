@@ -1674,15 +1674,15 @@ TrustNode TheoryEngine::getExplanation(
         << " got from " << toExplain.d_theory << endl;
     AlwaysAssert(explanation != toExplain.d_node)
         << "wasn't sent to you, so why are you explaining it trivially";
-        /*
-    if (explanation == toExplain.d_node)
-    {
-      Trace("theory::explain") << "...identical, keep" << std::endl;
-      AlwaysAssert(false);
-      exp.insert(explanationVector[i++].d_node);
-      continue;
-    }
-    */
+    /*
+if (explanation == toExplain.d_node)
+{
+  Trace("theory::explain") << "...identical, keep" << std::endl;
+  AlwaysAssert(false);
+  exp.insert(explanationVector[i++].d_node);
+  continue;
+}
+*/
     // Mark the explanation
     NodeTheoryPair newExplain(
         explanation, toExplain.d_theory, toExplain.d_timestamp);
