@@ -599,9 +599,8 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
     return false;
   }
   // test
-  return id == THEORY_UF || id==THEORY_DATATYPES;
-  
-  
+  return id == THEORY_UF || id == THEORY_DATATYPES;
+
   // working:
   // || id == THEORY_BAGS || id == THEORY_FP || id == THEORY_SEP;
 }

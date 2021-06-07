@@ -415,9 +415,10 @@ void TheoryEngine::check(Theory::Effort effort) {
   // Reset the interrupt flag
   d_interrupted = false;
 
-  // HACK temporary, required to clear stale data, maybe refactor order of preCheck in theories
+  // HACK temporary, required to clear stale data, maybe refactor order of
+  // preCheck in theories
   theoryOf(THEORY_DATATYPES)->preCheck(effort);
-  
+
 #ifdef CVC5_FOR_EACH_THEORY_STATEMENT
 #undef CVC5_FOR_EACH_THEORY_STATEMENT
 #endif

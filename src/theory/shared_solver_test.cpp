@@ -68,7 +68,7 @@ TrustNode SharedSolverTest::explain(TNode literal, TheoryId id)
   TrustNode texp;
   Trace("shared-solver") << "SharedSolverTest::explain: " << literal << " "
                          << id << std::endl;
-  Assert (id == THEORY_BUILTIN || !Theory::usesCentralEqualityEngine(id));
+  Assert(id == THEORY_BUILTIN || !Theory::usesCentralEqualityEngine(id));
   if (id == THEORY_BUILTIN)
   {
     /*
@@ -84,8 +84,8 @@ TrustNode SharedSolverTest::explain(TNode literal, TheoryId id)
       Trace("shared-solver") << "- exp " << lit << std::endl;
       std::vector<TNode> currAssumptions;
       d_centralEe->explainLit(lit, currAssumptions);
-      Trace("shared-solver") << "...got " << currAssumptions.size() << std::endl;
-      if (currAssumptions.size()==1 && currAssumptions[0]==lit)
+      Trace("shared-solver") << "...got " << currAssumptions.size() <<
+    std::endl; if (currAssumptions.size()==1 && currAssumptions[0]==lit)
       {
         assumptions.push_back(lit);
       }

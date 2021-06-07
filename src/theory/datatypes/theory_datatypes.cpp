@@ -488,7 +488,7 @@ void TheoryDatatypes::preRegisterTerm(TNode n)
     }
     break;
   }
-  //processPending();
+  // processPending();
 }
 
 TrustNode TheoryDatatypes::ppRewrite(TNode in, std::vector<SkolemLemma>& lems)
@@ -543,7 +543,7 @@ void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
     Node eq = t1.eqNode(t2);
     d_pendingMerge.push_back(eq);
-    //merge(t1, t2);
+    // merge(t1, t2);
   }
   // Assert(prevPending || !d_im.hasPending());
 }
@@ -552,7 +552,7 @@ void TheoryDatatypes::processPending()
   do
   {
     size_t psize = d_pendingMerge.size();
-    for (size_t i=d_pendingMergeProc.get(); i<psize; i++)
+    for (size_t i = d_pendingMergeProc.get(); i < psize; i++)
     {
       Node eq = d_pendingMerge[i];
       merge(eq[0], eq[1]);
@@ -563,14 +563,15 @@ void TheoryDatatypes::processPending()
     }
     d_pendingMergeProc = d_pendingMerge.size();
     d_im.process();
-  }while (d_pendingMergeProc.get()<d_pendingMerge.size() && !d_state.isInConflict());
+  } while (d_pendingMergeProc.get() < d_pendingMerge.size()
+           && !d_state.isInConflict());
 }
 
 void TheoryDatatypes::merge( Node t1, Node t2 ){
   if (!d_state.isInConflict())
   {
     Trace("datatypes-debug") << "Merge " << t1 << " " << t2 << std::endl;
-    AlwaysAssert( areEqual(t1, t2));
+    AlwaysAssert(areEqual(t1, t2));
     TNode trep1 = t1;
     TNode trep2 = t2;
     EqcInfo* eqc2 = getOrMakeEqcInfo( t2 );
