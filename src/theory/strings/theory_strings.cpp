@@ -103,6 +103,13 @@ bool TheoryStrings::needsEqualityEngine(EeSetupInfo& esi)
 {
   esi.d_notify = &d_notify;
   esi.d_name = "theory::strings::ee";
+  esi.d_notifyNewEqClassKinds.push_back(STRING_CONCAT);
+  esi.d_notifyNewEqClassKinds.push_back(CONST_STRING);
+  esi.d_notifyNewEqClassKinds.push_back(CONST_SEQUENCE);
+  esi.d_notifyNewEqClassKinds.push_back(STRING_LENGTH);
+  esi.d_notifyNewEqClassKinds.push_back(STRING_TO_CODE);
+  esi.d_notifyMergeTypeKinds.push_back(TYPE_CONSTANT);
+  esi.d_notifyDisequalTypeKinds.push_back(TYPE_CONSTANT);
   return true;
 }
 
