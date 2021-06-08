@@ -25,8 +25,6 @@
 namespace cvc5 {
 namespace preprocessing {
 
-class PreprocessingPassContext;
-
 /**
  * This class maintains the list of learned literals that have been inferred
  * during preprocessing but we have not fully processed e.g. via substitutions.
