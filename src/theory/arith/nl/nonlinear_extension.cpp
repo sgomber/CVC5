@@ -140,8 +140,8 @@ void NonlinearExtension::getAssertions(std::vector<Node>& assertions)
     Trace("nl-ext-assert-debug")
         << "Loaded " << assertion.d_assertion << " from theory" << std::endl;
     Node lit = assertion.d_assertion;
-    //bool pol = lit.getKind() != NOT;
-    //Node atom_orig = lit.getKind() == NOT ? lit[0] : lit;
+    // bool pol = lit.getKind() != NOT;
+    // Node atom_orig = lit.getKind() == NOT ? lit[0] : lit;
     /*
     if (d_preproc.isReduced(atom_orig))
     {

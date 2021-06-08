@@ -40,11 +40,15 @@ class LearnedRewrite : public PreprocessingPass
   /**
    * Apply rewrite with learned literals.
    */
-  Node rewriteLearnedRec(Node n, theory::arith::BoundInference& binfer, std::vector<Node>& lems);
+  Node rewriteLearnedRec(Node n,
+                         theory::arith::BoundInference& binfer,
+                         std::vector<Node>& lems);
   /**
    * Learned rewrite
    */
-  Node rewriteLearned(Node n, theory::arith::BoundInference& binfer, std::vector<Node>& lems);
+  Node rewriteLearned(Node n,
+                      theory::arith::BoundInference& binfer,
+                      std::vector<Node>& lems);
   /** Return learned rewrite */
   Node returnRewriteLearned(Node n, Node nr, const char* c);
   /** static upper/lower bounds */

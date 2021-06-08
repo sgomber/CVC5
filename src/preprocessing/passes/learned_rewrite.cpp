@@ -79,14 +79,17 @@ PreprocessingPassResult LearnedRewrite::applyInternal(
   {
     NodeManager* nm = NodeManager::currentNM();
     Node llc = nm->mkAnd(llrw);
-    Trace("learned-rewrite-assert") << "Re-add rewritten learned conjunction: " << llc << std::endl;
+    Trace("learned-rewrite-assert")
+        << "Re-add rewritten learned conjunction: " << llc << std::endl;
     assertionsToPreprocess->push_back(llc);
   }
 
   return PreprocessingPassResult::NO_CONFLICT;
 }
 
-Node LearnedRewrite::rewriteLearnedRec(Node n, arith::BoundInference& binfer, std::vector<Node>& lems)
+Node LearnedRewrite::rewriteLearnedRec(Node n,
+                                       arith::BoundInference& binfer,
+                                       std::vector<Node>& lems)
 {
   NodeManager* nm = NodeManager::currentNM();
   std::unordered_map<TNode, Node> visited;
@@ -137,7 +140,9 @@ Node LearnedRewrite::rewriteLearnedRec(Node n, arith::BoundInference& binfer, st
   return visited[n];
 }
 
-Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer, std::vector<Node>& lems)
+Node LearnedRewrite::rewriteLearned(Node n,
+                                    arith::BoundInference& binfer,
+                                    std::vector<Node>& lems)
 {
   NodeManager* nm = NodeManager::currentNM();
   Trace("learned-rewrite-rr-debug") << "Rewrite " << n << std::endl;
@@ -229,10 +234,12 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer, std::
       Rational one(1);
       if (Trace.isOn("learned-rewrite-arith-lit"))
       {
-        Trace("learned-rewrite-arith-lit") << "Arithmetic lit: " << nr << std::endl;
+        Trace("learned-rewrite-arith-lit")
+            << "Arithmetic lit: " << nr << std::endl;
         for (const std::pair<const Node, Node>& m : msum)
         {
-          Trace("learned-rewrite-arith-lit") << "  " << m.first << ", " << m.second << std::endl;
+          Trace("learned-rewrite-arith-lit")
+              << "  " << m.first << ", " << m.second << std::endl;
         }
       }
       for (const std::pair<const Node, Node>& m : msum)
@@ -254,7 +261,9 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer, std::
           if (lbSuccess && !l.isNull())
           {
             Rational lc = l.getConst<Rational>();
-            lb = lb + (isOneCoeff ? lc : Rational(lc * m.second.getConst<Rational>()));
+            lb = lb
+                 + (isOneCoeff ? lc
+                               : Rational(lc * m.second.getConst<Rational>()));
           }
           else
           {
@@ -263,7 +272,9 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer, std::
           if (ubSuccess && !u.isNull())
           {
             Rational uc = u.getConst<Rational>();
-            ub = ub + (isOneCoeff ? uc : Rational(uc * m.second.getConst<Rational>()));
+            ub = ub
+                 + (isOneCoeff ? uc
+                               : Rational(uc * m.second.getConst<Rational>()));
           }
           else
           {
@@ -317,9 +328,9 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer, std::
         }
         Node factor = ArithMSum::mkCoeffTerm(m.second, m.first[0]);
         Kind mk = m.first.getKind();
-        if (mk==INTS_DIVISION || mk==INTS_DIVISION_TOTAL)
+        if (mk == INTS_DIVISION || mk == INTS_DIVISION_TOTAL)
         {
-          divTotal = divTotal && mk==INTS_DIVISION_TOTAL;
+          divTotal = divTotal && mk == INTS_DIVISION_TOTAL;
           divCount++;
           if (currDen.isNull())
           {
@@ -339,18 +350,23 @@ Node LearnedRewrite::rewriteLearned(Node n, arith::BoundInference& binfer, std::
           sum.push_back(factor);
         }
       }
-      if (divCount>=2)
+      if (divCount >= 2)
       {
-        SkolemManager * sm = nm->getSkolemManager();
-        Node r = sm->mkDummySkolem("r",nm->integerType());
-        Node d = nm->mkNode(divTotal ? INTS_DIVISION_TOTAL : INTS_DIVISION, currNum, currDen);
+        SkolemManager* sm = nm->getSkolemManager();
+        Node r = sm->mkDummySkolem("r", nm->integerType());
+        Node d = nm->mkNode(
+            divTotal ? INTS_DIVISION_TOTAL : INTS_DIVISION, currNum, currDen);
         sum.push_back(d);
         sum.push_back(r);
-        Node bound = nm->mkNode(AND, nm->mkNode(LEQ, nm->mkConst(-Rational(divCount-1)), r), nm->mkNode(LEQ, r, nm->mkConst(Rational(divCount-1))));
+        Node bound =
+            nm->mkNode(AND,
+                       nm->mkNode(LEQ, nm->mkConst(-Rational(divCount - 1)), r),
+                       nm->mkNode(LEQ, r, nm->mkConst(Rational(divCount - 1))));
         Node sumn = nm->mkNode(PLUS, sum);
         Node lit = nm->mkNode(k, sumn, nm->mkConst(Rational(0)));
         Node lemma = nm->mkNode(IMPLIES, nr, nm->mkNode(AND, lit, bound));
-        Trace("learned-rewrite-div") << "Div collect lemma: " << lemma << std::endl;
+        Trace("learned-rewrite-div")
+            << "Div collect lemma: " << lemma << std::endl;
         lems.push_back(lemma);
       }
     }

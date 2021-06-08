@@ -30,7 +30,7 @@ class PreprocessingPassContext;
 /**
  * This class maintains the list of learned literals that have been inferred
  * during preprocessing but we have not fully processed e.g. via substitutions.
- * 
+ *
  * In particular, notice that if an equality (= x t) is learned at top level,
  * we may add x -> t to top level substitutions if t does not contain x; we can
  * henceforth forget that (= x t) is a learned literal. On the other hand, if
@@ -51,7 +51,7 @@ class LearnedLiteralManager
    * been applied to it.
    */
   void notifyLearnedLiteral(Node lit);
-  /** 
+  /**
    * Get learned literals, which returns the current set of learned literals
    * provided to this class. These literals are refreshed so that the current
    * top-level substitutions are applied to them, and then are rewritten.
