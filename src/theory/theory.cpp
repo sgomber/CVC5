@@ -602,11 +602,9 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
   }
   // || id ==THEORY_BV
   // || id ==THEORY_ARITH
-  // || id ==THEORY_SEP
   // || id ==THEORY_ARRAYS
-  // test
   return id == THEORY_UF || id == THEORY_DATATYPES || id == THEORY_BAGS
-         || id == THEORY_FP || id == THEORY_SETS || id == THEORY_STRINGS;
+         || id == THEORY_FP || id == THEORY_SETS || id == THEORY_STRINGS || id ==THEORY_SEP;
 }
 
 }  // namespace theory

@@ -95,6 +95,8 @@ bool TheorySep::needsEqualityEngine(EeSetupInfo& esi)
 {
   esi.d_notify = &d_notify;
   esi.d_name = "theory::sep::ee";
+  // dummy
+  esi.d_notifyMergeTypeKinds.push_back(TYPE_CONSTANT);
   return true;
 }
 
