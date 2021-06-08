@@ -29,7 +29,7 @@ class PreprocessingPassContext;
 class LearnedLiteralManager
 {
  public:
-  LearnedLiteralManager(PreprocessingPassContext* pcontext,
+  LearnedLiteralManager(theory::TrustSubstitutionMap& tls,
                         context::UserContext* u,
                         ProofNodeManager* pnm);
   /**
@@ -41,21 +41,15 @@ class LearnedLiteralManager
    */
   void notifyLearnedLiteral(Node lit);
   /** Get learned literals */
-  std::vector<Node>& getLearnedLiterals();
-  /** Gets a reference to the top-level substitution map */
-  theory::TrustSubstitutionMap& getTopLevelSubstitutions();
+  std::vector<Node> getLearnedLiterals();
 
  private:
   /** Learned literal map */
   typedef context::CDHashSet<Node> NodeSet;
-  /** Pointer to the preprocessing context */
-  PreprocessingPassContext* d_pcontext;
   /* The top level substitutions */
-  theory::TrustSubstitutionMap d_topLevelSubstitutions;
+  theory::TrustSubstitutionMap& d_topLevelSubs;
   /** Learned literals */
   NodeSet d_learnedLits;
-  /** Current */
-  std::vector<Node> d_currLearnedLits;
 };
 
 }  // namespace preprocessing

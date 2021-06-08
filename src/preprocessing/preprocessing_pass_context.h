@@ -88,7 +88,7 @@ class PreprocessingPassContext
   /**
    * Get the learned literals
    */
-  std::vector<Node>& getLearnedLiterals();
+  std::vector<Node> getLearnedLiterals();
   /**
    * Add substitution to the top-level substitutions, which also as a
    * consequence is used by the theory model.

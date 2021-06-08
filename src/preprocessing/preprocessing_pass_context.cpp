@@ -30,7 +30,7 @@ PreprocessingPassContext::PreprocessingPassContext(
     : d_smt(smt),
       d_env(env),
       d_circuitPropagator(circuitPropagator),
-      d_llm(this, env.getUserContext(), env.getProofNodeManager()),
+      d_llm(env.getTopLevelSubstitutions(), env.getUserContext(), env.getProofNodeManager()),
       d_symsInAssertions(env.getUserContext())
 {
 }
@@ -73,7 +73,7 @@ void PreprocessingPassContext::notifyLearnedLiteral(Node lit)
   d_llm.notifyLearnedLiteral(lit);
 }
 
-std::vector<Node>& PreprocessingPassContext::getLearnedLiterals()
+std::vector<Node> PreprocessingPassContext::getLearnedLiterals()
 {
   return d_llm.getLearnedLiterals();
 }

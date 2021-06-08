@@ -37,7 +37,7 @@ PreprocessingPassResult LearnedRewrite::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
   arith::BoundInference binfer;
-  std::vector<Node>& learnedLits = d_preprocContext->getLearnedLiterals();
+  std::vector<Node> learnedLits = d_preprocContext->getLearnedLiterals();
   std::vector<Node> llrw;
   if (learnedLits.empty())
   {

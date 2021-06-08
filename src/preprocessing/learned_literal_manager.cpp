@@ -14,17 +14,15 @@
 
 #include "preprocessing/learned_literal_manager.h"
 
-#include "preprocessing/assertion_pipeline.h"
 #include "theory/rewriter.h"
-#include "theory/theory_engine.h"
 
 namespace cvc5 {
 namespace preprocessing {
 
-LearnedLiteralManager::LearnedLiteralManager(PreprocessingPassContext* pcontext,
-                                             context::UserContext* u,
+LearnedLiteralManager::LearnedLiteralManager(theory::TrustSubstitutionMap& tls,
+                        context::UserContext* u,
                                              ProofNodeManager* pnm)
-    : d_pcontext(pcontext), d_topLevelSubstitutions(u, pnm), d_learnedLits(u)
+    : d_topLevelSubs(tls), d_learnedLits(u)
 {
 }
 
@@ -34,27 +32,21 @@ void LearnedLiteralManager::notifyLearnedLiteral(Node lit)
   Trace("pp-llm") << "LLM:notifyLearnedLiteral: " << lit << std::endl;
 }
 
-std::vector<Node>& LearnedLiteralManager::getLearnedLiterals()
+std::vector<Node> LearnedLiteralManager::getLearnedLiterals()
 {
-  // refresh the set of learned literals
-  d_currLearnedLits.clear();
+  std::vector<Node> currLearnedLits;
   for (NodeSet::const_iterator it = d_learnedLits.begin(),
                                itEnd = d_learnedLits.end();
        it != itEnd;
        ++it)
   {
     // update based on substitutions
-    Node tlsNode = d_topLevelSubstitutions.get().apply(*it);
+    Node tlsNode = d_topLevelSubs.get().apply(*it);
     tlsNode = theory::Rewriter::rewrite(tlsNode);
-    d_currLearnedLits.push_back(tlsNode);
+    currLearnedLits.push_back(tlsNode);
     Trace("pp-llm") << "Learned literal : " << tlsNode << " from " << (*it) << std::endl;
   }
-  return d_currLearnedLits;
-}
-
-theory::TrustSubstitutionMap& LearnedLiteralManager::getTopLevelSubstitutions()
-{
-  return d_topLevelSubstitutions;
+  return currLearnedLits;
 }
 
 }  // namespace preprocessing
