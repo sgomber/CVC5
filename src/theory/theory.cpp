@@ -598,6 +598,11 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
   {
     return false;
   }
+  // || THEORY_SETS
+  // || THEORY_BV
+  // || THEORY_ARITH
+  // || THEORY_SEP
+  // || THEORY_ARRAYS
   // test
   return id == THEORY_UF || id == THEORY_DATATYPES || id == THEORY_BAGS
          || id == THEORY_FP;
