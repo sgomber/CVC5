@@ -1,3 +1,5 @@
+; COMMAND-LINE: --full-saturate-quant
+; EXPECT: unsat
 (set-logic ALL)
 (set-info :status unsat)
 (declare-datatypes ((T@$TypeValue 0) (T@A 0)) (((A)) ((T))))

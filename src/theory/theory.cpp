@@ -358,11 +358,13 @@ bool Theory::collectModelInfo(TheoryModel* m, const std::set<Node>& termSet)
   // if we are using an equality engine, assert it to the model
   if (d_equalityEngine != nullptr)
   {
+    Trace("model-builder") << "Assert Equality engine for " << d_id << std::endl;
     if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
     {
       return false;
     }
   }
+  Trace("model-builder") << "Collect Model values for " << d_id << std::endl;
   // now, collect theory-specific value assigments
   return collectModelValues(m, termSet);
 }
@@ -598,14 +600,13 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
   {
     return false;
   }
-  // || THEORY_SETS
-  // || THEORY_BV
-  // || THEORY_ARITH
-  // || THEORY_SEP
-  // || THEORY_ARRAYS
+  // || id ==THEORY_BV
+  // || id ==THEORY_ARITH
+  // || id ==THEORY_SEP
+  // || id ==THEORY_ARRAYS
   // test
   return id == THEORY_UF || id == THEORY_DATATYPES || id == THEORY_BAGS
-         || id == THEORY_FP;
+         || id == THEORY_FP || id == THEORY_SETS;
 }
 
 }  // namespace theory
