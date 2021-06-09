@@ -648,10 +648,10 @@ libcvc5_add_sources(
   theory/decision_strategy.h
   theory/ee_manager.cpp
   theory/ee_manager.h
+  theory/ee_manager_central.cpp
+  theory/ee_manager_central.h
   theory/ee_manager_distributed.cpp
   theory/ee_manager_distributed.h
-  theory/ee_manager_test.cpp
-  theory/ee_manager_test.h
   theory/ee_setup_info.h
   theory/engine_output_channel.cpp
   theory/engine_output_channel.h
@@ -976,10 +976,10 @@ libcvc5_add_sources(
   theory/sets/theory_sets_type_rules.h
   theory/shared_solver.cpp
   theory/shared_solver.h
+  theory/shared_solver_central.cpp
+  theory/shared_solver_central.h
   theory/shared_solver_distributed.cpp
   theory/shared_solver_distributed.h
-  theory/shared_solver_test.cpp
-  theory/shared_solver_test.h
   theory/shared_terms_database.cpp
   theory/shared_terms_database.h
   theory/skolem_lemma.cpp
