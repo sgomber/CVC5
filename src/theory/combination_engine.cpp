@@ -19,12 +19,12 @@
 #include "proof/eager_proof_generator.h"
 #include "theory/care_graph.h"
 #include "theory/ee_manager_distributed.h"
-#include "theory/ee_manager_test.h"
+#include "theory/ee_manager_central.h"
 #include "theory/model_manager.h"
 #include "theory/model_manager_distributed.h"
 #include "theory/shared_solver.h"
 #include "theory/shared_solver_distributed.h"
-#include "theory/shared_solver_test.h"
+#include "theory/shared_solver_central.h"
 #include "theory/theory_engine.h"
 
 namespace cvc5 {
@@ -58,12 +58,12 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
     d_mmanager.reset(
         new ModelManagerDistributed(d_te, d_env, *d_eemanager.get()));
   }
-  else if (options::eeMode() == options::EqEngineMode::TEST)
+  else if (options::eeMode() == options::EqEngineMode::CENTRAL)
   {
     // use the distributed shared solver
-    d_sharedSolver.reset(new SharedSolverTest(d_te, d_pnm));
+    d_sharedSolver.reset(new SharedSolverCentral(d_te, d_pnm));
     // make the distributed equality engine manager
-    d_eemanager.reset(new EqEngineManagerTest(d_te, *d_sharedSolver.get()));
+    d_eemanager.reset(new EqEngineManagerCentral(d_te, *d_sharedSolver.get()));
     // make the distributed model manager
     d_mmanager.reset(
         new ModelManagerDistributed(d_te, d_env, *d_eemanager.get()));

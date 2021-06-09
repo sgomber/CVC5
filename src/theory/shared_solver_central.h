@@ -1,21 +1,22 @@
-/*********************                                                        */
-/*! \file shared_solver_test.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC5 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Shared solver in the test architecture.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Shared solver for central equality engine architecture
+ */
 
 #include "cvc5_private.h"
 
-#ifndef CVC5__THEORY__SHARED_SOLVER_TEST__H
-#define CVC5__THEORY__SHARED_SOLVER_TEST__H
+#ifndef CVC5__THEORY__SHARED_SOLVER_CENTRAL__H
+#define CVC5__THEORY__SHARED_SOLVER_CENTRAL__H
 
 #include "expr/node.h"
 #include "theory/shared_solver.h"
@@ -26,11 +27,11 @@ namespace theory {
 /**
  * The shared solver in the test architecture.
  */
-class SharedSolverTest : public SharedSolver
+class SharedSolverCentral : public SharedSolver
 {
  public:
-  SharedSolverTest(TheoryEngine& te, ProofNodeManager* pnm);
-  virtual ~SharedSolverTest() {}
+  SharedSolverCentral(TheoryEngine& te, ProofNodeManager* pnm);
+  virtual ~SharedSolverCentral() {}
   //------------------------------------- initialization
   /**
    * Returns true if we need an equality engine, this has the same contract
@@ -62,4 +63,4 @@ class SharedSolverTest : public SharedSolver
 }  // namespace theory
 }  // namespace cvc5
 
-#endif /* CVC5__THEORY__SHARED_SOLVER_TEST__H */
+#endif /* CVC5__THEORY__SHARED_SOLVER_CENTRAL__H */

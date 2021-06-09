@@ -10,13 +10,13 @@
  * directory for licensing information.
  * ****************************************************************************
  *
- * Equality engine manager test
+ * Equality engine manager for central equality engine architecture
  */
 
 #include "cvc5_private.h"
 
-#ifndef CVC5__THEORY__EE_MANAGER_TEST__H
-#define CVC5__THEORY__EE_MANAGER_TEST__H
+#ifndef CVC5__THEORY__EE_MANAGER_CENTRAL__H
+#define CVC5__THEORY__EE_MANAGER_CENTRAL__H
 
 #include <map>
 #include <memory>
@@ -42,11 +42,11 @@ namespace theory {
  * which is used as a special communication channel to quantifiers engine (e.g.
  * for ensuring quantifiers E-matching is aware of terms from all theories).
  */
-class EqEngineManagerTest : public EqEngineManager
+class EqEngineManagerCentral : public EqEngineManager
 {
  public:
-  EqEngineManagerTest(TheoryEngine& te, SharedSolver& shs);
-  ~EqEngineManagerTest();
+  EqEngineManagerCentral(TheoryEngine& te, SharedSolver& shs);
+  ~EqEngineManagerCentral();
   /**
    * Initialize theories. This method allocates unique equality engines
    * per theories and connects them to a master equality engine.
@@ -104,7 +104,7 @@ class EqEngineManagerTest : public EqEngineManager
   class CentralNotifyClass : public theory::eq::EqualityEngineNotify
   {
    public:
-    CentralNotifyClass(EqEngineManagerTest& eemc);
+    CentralNotifyClass(EqEngineManagerCentral& eemc);
     bool eqNotifyTriggerPredicate(TNode predicate, bool value) override;
     bool eqNotifyTriggerTermEquality(TheoryId tag,
                                      TNode t1,
@@ -115,7 +115,7 @@ class EqEngineManagerTest : public EqEngineManager
     void eqNotifyMerge(TNode t1, TNode t2) override;
     void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override;
     /** Parent */
-    EqEngineManagerTest& d_eemc;
+    EqEngineManagerCentral& d_eemc;
     /** List of notify classes that need new class notification */
     std::vector<eq::EqualityEngineNotify*> d_newClassNotify;
     /** List of notify classes that need merge notification */
@@ -157,4 +157,4 @@ class EqEngineManagerTest : public EqEngineManager
 }  // namespace theory
 }  // namespace cvc5
 
-#endif /* CVC5__THEORY__EE_MANAGER_TEST__H */
+#endif /* CVC5__THEORY__EE_MANAGER_CENTRAL__H */

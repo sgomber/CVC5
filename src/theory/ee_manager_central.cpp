@@ -10,10 +10,10 @@
  * directory for licensing information.
  * ****************************************************************************
  *
- * Equality engine manager test
+ * Equality engine manager for central equality engine architecture
  */
 
-#include "theory/ee_manager_test.h"
+#include "theory/ee_manager_central.h"
 
 #include "theory/quantifiers_engine.h"
 #include "theory/shared_solver.h"
@@ -23,7 +23,7 @@
 namespace cvc5 {
 namespace theory {
 
-EqEngineManagerTest::EqEngineManagerTest(TheoryEngine& te, SharedSolver& shs)
+EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te, SharedSolver& shs)
     : EqEngineManager(te, shs),
       d_masterEENotify(nullptr),
       d_masterEqualityEngine(nullptr),
@@ -40,9 +40,9 @@ EqEngineManagerTest::EqEngineManagerTest(TheoryEngine& te, SharedSolver& shs)
   }
 }
 
-EqEngineManagerTest::~EqEngineManagerTest() {}
+EqEngineManagerCentral::~EqEngineManagerCentral() {}
 
-void EqEngineManagerTest::initializeTheories()
+void EqEngineManagerCentral::initializeTheories()
 {
   context::Context* c = d_te.getSatContext();
   // initialize the shared solver
@@ -178,7 +178,7 @@ void EqEngineManagerTest::initializeTheories()
   // ----- end test
 }
 
-void EqEngineManagerTest::MasterNotifyClass::eqNotifyNewClass(TNode t)
+void EqEngineManagerCentral::MasterNotifyClass::eqNotifyNewClass(TNode t)
 {
   // adds t to the quantifiers term database
   d_quantEngine->eqNotifyNewClass(t);
@@ -186,22 +186,22 @@ void EqEngineManagerTest::MasterNotifyClass::eqNotifyNewClass(TNode t)
 
 //================================================ central
 
-void EqEngineManagerTest::notifyBuildingModel() {}
+void EqEngineManagerCentral::notifyBuildingModel() {}
 
-EqEngineManagerTest::CentralNotifyClass::CentralNotifyClass(
-    EqEngineManagerTest& eemc)
+EqEngineManagerCentral::CentralNotifyClass::CentralNotifyClass(
+    EqEngineManagerCentral& eemc)
     : d_eemc(eemc), d_mNotify(nullptr), d_quantEngine(nullptr)
 {
 }
 
-bool EqEngineManagerTest::CentralNotifyClass::eqNotifyTriggerPredicate(
+bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
     TNode predicate, bool value)
 {
   Trace("eem-test") << "eqNotifyTriggerPredicate: " << predicate << std::endl;
   return d_eemc.eqNotifyTriggerPredicate(predicate, value);
 }
 
-bool EqEngineManagerTest::CentralNotifyClass::eqNotifyTriggerTermEquality(
+bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerTermEquality(
     TheoryId tag, TNode t1, TNode t2, bool value)
 {
   Trace("eem-test") << "eqNotifyTriggerTermEquality: " << t1 << " " << t2
@@ -209,7 +209,7 @@ bool EqEngineManagerTest::CentralNotifyClass::eqNotifyTriggerTermEquality(
   return d_eemc.eqNotifyTriggerTermEquality(tag, t1, t2, value);
 }
 
-void EqEngineManagerTest::CentralNotifyClass::eqNotifyConstantTermMerge(
+void EqEngineManagerCentral::CentralNotifyClass::eqNotifyConstantTermMerge(
     TNode t1, TNode t2)
 {
   Trace("eem-test") << "eqNotifyConstantTermMerge: " << t1 << " " << t2
@@ -217,7 +217,7 @@ void EqEngineManagerTest::CentralNotifyClass::eqNotifyConstantTermMerge(
   d_eemc.eqNotifyConstantTermMerge(t1, t2);
 }
 
-void EqEngineManagerTest::CentralNotifyClass::eqNotifyNewClass(TNode t)
+void EqEngineManagerCentral::CentralNotifyClass::eqNotifyNewClass(TNode t)
 {
   Trace("eem-test") << "...eqNotifyNewClass " << t << std::endl;
   // notify all theories that have new equivalence class notifications
@@ -232,7 +232,7 @@ void EqEngineManagerTest::CentralNotifyClass::eqNotifyNewClass(TNode t)
   }
 }
 
-void EqEngineManagerTest::CentralNotifyClass::eqNotifyMerge(TNode t1, TNode t2)
+void EqEngineManagerCentral::CentralNotifyClass::eqNotifyMerge(TNode t1, TNode t2)
 {
   Trace("eem-test") << "...eqNotifyMerge " << t1 << ", " << t2 << std::endl;
   // notify all theories that have merge notifications
@@ -242,7 +242,7 @@ void EqEngineManagerTest::CentralNotifyClass::eqNotifyMerge(TNode t1, TNode t2)
   }
 }
 
-void EqEngineManagerTest::CentralNotifyClass::eqNotifyDisequal(TNode t1,
+void EqEngineManagerCentral::CentralNotifyClass::eqNotifyDisequal(TNode t1,
                                                                TNode t2,
                                                                TNode reason)
 {
@@ -254,7 +254,7 @@ void EqEngineManagerTest::CentralNotifyClass::eqNotifyDisequal(TNode t1,
   }
 }
 
-bool EqEngineManagerTest::eqNotifyTriggerPredicate(TNode predicate, bool value)
+bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate, bool value)
 {
   // if we're building model, ignore this propagation
   if (d_buildingModel.get())
@@ -272,7 +272,7 @@ bool EqEngineManagerTest::eqNotifyTriggerPredicate(TNode predicate, bool value)
   return ok;
 }
 
-bool EqEngineManagerTest::eqNotifyTriggerTermEquality(TheoryId tag,
+bool EqEngineManagerCentral::eqNotifyTriggerTermEquality(TheoryId tag,
                                                       TNode a,
                                                       TNode b,
                                                       bool value)
@@ -292,7 +292,7 @@ bool EqEngineManagerTest::eqNotifyTriggerTermEquality(TheoryId tag,
   return d_sharedSolver.propagateSharedEquality(tag, a, b, value);
 }
 
-void EqEngineManagerTest::eqNotifyConstantTermMerge(TNode t1, TNode t2)
+void EqEngineManagerCentral::eqNotifyConstantTermMerge(TNode t1, TNode t2)
 {
   Node lit = t1.eqNode(t2);
   Node conflict = d_centralEqualityEngine.mkExplainLit(lit);
@@ -303,7 +303,7 @@ void EqEngineManagerTest::eqNotifyConstantTermMerge(TNode t1, TNode t2)
   return;
 }
 
-void EqEngineManagerTest::notifyInConflict()
+void EqEngineManagerCentral::notifyInConflict()
 {
   // notify the states we are in conflict
   for (TheoryState* cs : d_centralStates)
