@@ -19,6 +19,7 @@
 #include "smt/smt_engine.h"
 #include "smt/smt_engine_scope.h"
 #include "theory/rewriter.h"
+#include "smt/env.h"
 
 namespace cvc5 {
 namespace theory {
@@ -46,11 +47,11 @@ void initializeSubsolver(std::unique_ptr<SmtEngine>& smte,
                          unsigned long timeout)
 {
   NodeManager* nm = NodeManager::currentNM();
-  SmtEngine* smtCurr = smt::currentSmtEngine();
-  // must copy the options
-  smte.reset(new SmtEngine(nm, &smtCurr->getOptions()));
+  Env& env = smt::currentSmtEngine()->getEnv();
+  // must copy the original options here
+  smte.reset(new SmtEngine(nm, &env.getOriginalOptions()));
   smte->setIsInternalSubsolver();
-  smte->setLogic(smtCurr->getLogicInfo());
+  smte->setLogic(env.getLogicInfo());
   // set the options
   if (needsTimeout)
   {

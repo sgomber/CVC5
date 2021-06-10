@@ -83,7 +83,7 @@ using namespace cvc5::theory;
 
 namespace cvc5 {
 
-SmtEngine::SmtEngine(NodeManager* nm, Options* optr)
+SmtEngine::SmtEngine(NodeManager* nm, const Options* optr)
     : d_env(new Env(nm, optr)),
       d_state(new SmtEngineState(getContext(), getUserContext(), *this)),
       d_absValues(new AbstractValues(getNodeManager())),
