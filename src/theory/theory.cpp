@@ -278,7 +278,7 @@ void Theory::notifySharedTerm(TNode n)
 
 void Theory::notifyInConflict()
 {
-  if (d_theoryState!=nullptr)
+  if (d_theoryState != nullptr)
   {
     d_theoryState->notifyInConflict();
   }
@@ -366,7 +366,8 @@ bool Theory::collectModelInfo(TheoryModel* m, const std::set<Node>& termSet)
   // if we are using an equality engine, assert it to the model
   if (d_equalityEngine != nullptr)
   {
-    Trace("model-builder") << "Assert Equality engine for " << d_id << std::endl;
+    Trace("model-builder") << "Assert Equality engine for " << d_id
+                           << std::endl;
     if (!m->assertEqualityEngine(d_equalityEngine, &termSet))
     {
       return false;
@@ -612,7 +613,8 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
   // || id ==THEORY_ARITH
   // || id ==THEORY_ARRAYS
   return id == THEORY_UF || id == THEORY_DATATYPES || id == THEORY_BAGS
-         || id == THEORY_FP || id == THEORY_SETS || id == THEORY_STRINGS || id ==THEORY_SEP;
+         || id == THEORY_FP || id == THEORY_SETS || id == THEORY_STRINGS
+         || id == THEORY_SEP;
 }
 
 }  // namespace theory

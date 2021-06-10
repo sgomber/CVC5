@@ -23,7 +23,8 @@
 namespace cvc5 {
 namespace theory {
 
-EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te, SharedSolver& shs)
+EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te,
+                                               SharedSolver& shs)
     : EqEngineManager(te, shs),
       d_masterEENotify(nullptr),
       d_masterEqualityEngine(nullptr),
@@ -111,7 +112,8 @@ void EqEngineManagerCentral::initializeTheories()
       // theory not active, skip
       continue;
     }
-    Trace("ee-central") << "Setup equality engine for " << theoryId << std::endl;
+    Trace("ee-central") << "Setup equality engine for " << theoryId
+                        << std::endl;
     // always allocate an object in d_einfo here
     EeTheoryInfo& eet = d_einfo[theoryId];
     EeSetupInfo esi;
@@ -192,7 +194,8 @@ EqEngineManagerCentral::CentralNotifyClass::CentralNotifyClass(
 bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerPredicate(
     TNode predicate, bool value)
 {
-  Trace("eem-central") << "eqNotifyTriggerPredicate: " << predicate << std::endl;
+  Trace("eem-central") << "eqNotifyTriggerPredicate: " << predicate
+                       << std::endl;
   return d_eemc.eqNotifyTriggerPredicate(predicate, value);
 }
 
@@ -200,7 +203,7 @@ bool EqEngineManagerCentral::CentralNotifyClass::eqNotifyTriggerTermEquality(
     TheoryId tag, TNode t1, TNode t2, bool value)
 {
   Trace("eem-central") << "eqNotifyTriggerTermEquality: " << t1 << " " << t2
-                    << value << ", tag = " << tag << std::endl;
+                       << value << ", tag = " << tag << std::endl;
   return d_eemc.eqNotifyTriggerTermEquality(tag, t1, t2, value);
 }
 
@@ -208,7 +211,7 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyConstantTermMerge(
     TNode t1, TNode t2)
 {
   Trace("eem-central") << "eqNotifyConstantTermMerge: " << t1 << " " << t2
-                    << std::endl;
+                       << std::endl;
   d_eemc.eqNotifyConstantTermMerge(t1, t2);
 }
 
@@ -227,7 +230,8 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyNewClass(TNode t)
   }
 }
 
-void EqEngineManagerCentral::CentralNotifyClass::eqNotifyMerge(TNode t1, TNode t2)
+void EqEngineManagerCentral::CentralNotifyClass::eqNotifyMerge(TNode t1,
+                                                               TNode t2)
 {
   Trace("eem-central") << "...eqNotifyMerge " << t1 << ", " << t2 << std::endl;
   // notify all theories that have merge notifications
@@ -238,10 +242,11 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyMerge(TNode t1, TNode t
 }
 
 void EqEngineManagerCentral::CentralNotifyClass::eqNotifyDisequal(TNode t1,
-                                                               TNode t2,
-                                                               TNode reason)
+                                                                  TNode t2,
+                                                                  TNode reason)
 {
-  Trace("eem-central") << "...eqNotifyDisequal " << t1 << ", " << t2 << std::endl;
+  Trace("eem-central") << "...eqNotifyDisequal " << t1 << ", " << t2
+                       << std::endl;
   // notify all theories that have disequal notifications
   for (eq::EqualityEngineNotify* notify : d_disequalNotify)
   {
@@ -249,7 +254,8 @@ void EqEngineManagerCentral::CentralNotifyClass::eqNotifyDisequal(TNode t1,
   }
 }
 
-bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate, bool value)
+bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate,
+                                                      bool value)
 {
   // if we're building model, ignore this propagation
   if (d_buildingModel.get())
@@ -258,7 +264,7 @@ bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate, bool valu
   }
   // always propagate with the shared solver
   Trace("eem-central") << "...propagate " << predicate << ", " << value
-                    << " with shared solver" << std::endl;
+                       << " with shared solver" << std::endl;
   bool ok = d_sharedSolver.propagateLit(predicate, value);
   if (!ok)
   {
@@ -268,9 +274,9 @@ bool EqEngineManagerCentral::eqNotifyTriggerPredicate(TNode predicate, bool valu
 }
 
 bool EqEngineManagerCentral::eqNotifyTriggerTermEquality(TheoryId tag,
-                                                      TNode a,
-                                                      TNode b,
-                                                      bool value)
+                                                         TNode a,
+                                                         TNode b,
+                                                         bool value)
 {
   // propagate to theory engine
   bool ok = d_sharedSolver.propagateLit(a.eqNode(b), value);
@@ -291,8 +297,8 @@ void EqEngineManagerCentral::eqNotifyConstantTermMerge(TNode t1, TNode t2)
 {
   Node lit = t1.eqNode(t2);
   Node conflict = d_centralEqualityEngine.mkExplainLit(lit);
-  Trace("eem-central") << "...explained conflict of " << lit << " ... " << conflict
-                    << std::endl;
+  Trace("eem-central") << "...explained conflict of " << lit << " ... "
+                       << conflict << std::endl;
   notifyInConflict();
   d_sharedSolver.sendConflict(TrustNode::mkTrustConflict(conflict));
   return;

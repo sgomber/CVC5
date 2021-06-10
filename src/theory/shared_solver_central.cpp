@@ -20,7 +20,8 @@
 namespace cvc5 {
 namespace theory {
 
-SharedSolverCentral::SharedSolverCentral(TheoryEngine& te, ProofNodeManager* pnm)
+SharedSolverCentral::SharedSolverCentral(TheoryEngine& te,
+                                         ProofNodeManager* pnm)
     : SharedSolver(te, pnm), d_centralEe(nullptr)
 {
 }
@@ -122,8 +123,8 @@ TrustNode SharedSolverCentral::explain(TNode literal, TheoryId id)
 }
 
 void SharedSolverCentral::assertSharedEquality(TNode equality,
-                                            bool polarity,
-                                            TNode reason)
+                                               bool polarity,
+                                               TNode reason)
 {
   d_sharedTerms.assertEquality(equality, polarity, reason);
 }

@@ -129,7 +129,7 @@ void TheoryDatatypes::finishInit()
 }
 
 void TheoryDatatypes::notifyInConflict()
-{  
+{
   d_state.notifyInConflict();
   d_im.reset();
   d_im.clearPending();
@@ -551,8 +551,8 @@ void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
   if( t1.getType().isDatatype() ){
     Trace("datatypes-merge")
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
-    //Node eq = t1.eqNode(t2);
-    //d_pendingMerge.push_back(eq);
+    // Node eq = t1.eqNode(t2);
+    // d_pendingMerge.push_back(eq);
     merge(t1, t2);
   }
   // Assert(prevPending || !d_im.hasPending());

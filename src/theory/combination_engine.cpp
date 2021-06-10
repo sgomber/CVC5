@@ -18,13 +18,13 @@
 #include "expr/node_visitor.h"
 #include "proof/eager_proof_generator.h"
 #include "theory/care_graph.h"
-#include "theory/ee_manager_distributed.h"
 #include "theory/ee_manager_central.h"
+#include "theory/ee_manager_distributed.h"
 #include "theory/model_manager.h"
 #include "theory/model_manager_distributed.h"
 #include "theory/shared_solver.h"
-#include "theory/shared_solver_distributed.h"
 #include "theory/shared_solver_central.h"
+#include "theory/shared_solver_distributed.h"
 #include "theory/theory_engine.h"
 
 namespace cvc5 {
