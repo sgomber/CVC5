@@ -1,3 +1,5 @@
+; COMMAND-LINE: --no-check-unsat-cores
+; EXPECT: unsat
 (set-logic ALL)
 (set-info :status unsat)
 (declare-datatypes ((dA 0)) (((A))))

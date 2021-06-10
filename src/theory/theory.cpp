@@ -380,7 +380,7 @@ bool Theory::collectModelInfo(TheoryModel* m, const std::set<Node>& termSet)
 
 void Theory::computeRelevantTerms(std::set<Node>& termSet)
 {
-  // default, nothing
+  // by default, there are no additional relevant terms
 }
 
 bool Theory::collectModelValues(TheoryModel* m, const std::set<Node>& termSet)
@@ -501,6 +501,7 @@ void Theory::check(Effort level)
   {
     return;
   }
+  Assert(d_theoryState!=nullptr);
   // standard calls for resource, stats
   d_out->spendResource(Resource::TheoryCheckStep);
   TimerStat::CodeTimer checkTimer(d_checkTime);

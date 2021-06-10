@@ -94,13 +94,7 @@ void InferenceManager::sendDtConflict(const std::vector<Node>& conf, InferenceId
     Node exp = NodeManager::currentNM()->mkAnd(conf);
     prepareDtInference(d_false, exp, id, d_ipc.get());
   }
-  // assertInternalFact(d_false, true, id, conf, d_ipc.get());
   conflictExp(id, conf, d_ipc.get());
-
-  // this ensures proper explanations to avoid CNF issues, although fails 6
-  // regressions when dt has CEE, also wrong "sat" answers on Facebook v1 also
-  // leads to proof checking failures
-  // lemmaExp(d_false, id, conf, {}, d_ipc.get());
 }
 
 bool InferenceManager::isProofEnabled() const { return d_ipc != nullptr; }
