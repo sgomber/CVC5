@@ -128,6 +128,13 @@ void TheoryDatatypes::finishInit()
   d_valuation.setIrrelevantKind(APPLY_TESTER);
 }
 
+void TheoryDatatypes::notifyInConflict()
+{  
+  d_state.notifyInConflict();
+  d_im.reset();
+  d_im.clearPending();
+}
+
 TheoryDatatypes::EqcInfo* TheoryDatatypes::getOrMakeEqcInfo( TNode n, bool doMake ){
   if( !hasEqcInfo( n ) ){
     if( doMake ){
@@ -542,16 +549,22 @@ void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
 {
   // bool prevPending = d_im.hasPending();
   if( t1.getType().isDatatype() ){
-    Trace("datatypes-debug")
+    Trace("datatypes-merge")
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
-    Node eq = t1.eqNode(t2);
-    d_pendingMerge.push_back(eq);
-    // merge(t1, t2);
+    //Node eq = t1.eqNode(t2);
+    //d_pendingMerge.push_back(eq);
+    merge(t1, t2);
   }
   // Assert(prevPending || !d_im.hasPending());
 }
 void TheoryDatatypes::processPending()
 {
+  if (d_state.isInConflict())
+  {
+    d_im.reset();
+    d_im.clearPending();
+    return;
+  }
   do
   {
     size_t psize = d_pendingMerge.size();
@@ -573,8 +586,8 @@ void TheoryDatatypes::processPending()
 void TheoryDatatypes::merge( Node t1, Node t2 ){
   if (!d_state.isInConflict())
   {
-    Trace("datatypes-debug") << "Merge " << t1 << " " << t2 << std::endl;
-    AlwaysAssert(areEqual(t1, t2));
+    Trace("datatypes-merge") << "Merge " << t1 << " " << t2 << std::endl;
+    Assert(areEqual(t1, t2));
     TNode trep1 = t1;
     TNode trep2 = t2;
     EqcInfo* eqc2 = getOrMakeEqcInfo( t2 );
@@ -608,6 +621,7 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
           }
           else
           {
+            Assert(areEqual(cons1, cons2));
             //do unification
             for( int i=0; i<(int)cons1.getNumChildren(); i++ ) {
               if( !areEqual( cons1[i], cons2[i] ) ){

@@ -276,6 +276,14 @@ void Theory::notifySharedTerm(TNode n)
   // do nothing
 }
 
+void Theory::notifyInConflict()
+{
+  if (d_theoryState!=nullptr)
+  {
+    d_theoryState->notifyInConflict();
+  }
+}
+
 void Theory::computeCareGraph() {
   Debug("sharing") << "Theory::computeCareGraph<" << getId() << ">()" << endl;
   for (unsigned i = 0; i < d_sharedTerms.size(); ++ i) {

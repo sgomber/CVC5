@@ -1672,6 +1672,10 @@ TrustNode TheoryEngine::getExplanation(
     Trace("theory::explain")
         << "TheoryEngine::explain(): got explanation " << explanation
         << " got from " << toExplain.d_theory << endl;
+        if (explanation==toExplain.d_node)
+        {
+      Trace("ajr-temp") << "Bad explanation: " << explanation << std::endl;
+        }
     AlwaysAssert(explanation != toExplain.d_node)
         << "wasn't sent to you, so why are you explaining it trivially";
     /*

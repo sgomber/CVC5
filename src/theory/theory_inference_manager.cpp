@@ -387,7 +387,15 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
   }
   Assert(d_ee != nullptr);
   Trace("infer-manager") << "TheoryInferenceManager::assertInternalFact: "
-                         << expn << std::endl;
+                         << (pol ? Node(atom) : atom.notNode()) << " from " << expn << std::endl;
+#ifdef CVC5_ASSERTIONS
+  if (!expn.isNull() && expn.getKind()==EQUAL)
+  {
+    Assert (d_ee->hasTerm(expn[0]));
+    Assert (d_ee->hasTerm(expn[1]));
+    Assert (d_ee->areEqual(expn[0], expn[1]));
+  }
+#endif
   d_numCurrentFacts++;
   // Now, assert the fact. How to do so depends on whether proofs are enabled.
   // If no proof production, or no proof rule was given

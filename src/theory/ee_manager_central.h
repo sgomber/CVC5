@@ -147,7 +147,7 @@ class EqEngineManagerCentral : public EqEngineManager
    * The state objects of each of the theories that use the central
    * equality engine.
    */
-  std::vector<TheoryState*> d_centralStates;
+  std::vector<Theory*> d_centralThs;
   /** Whether we are building the model */
   context::CDO<bool> d_buildingModel;
   /** set in conflict */
