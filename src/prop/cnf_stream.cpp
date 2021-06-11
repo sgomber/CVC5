@@ -283,7 +283,7 @@ SatLiteral CnfStream::convertAtom(TNode node)
 SatLiteral CnfStream::getLiteral(TNode node) {
   Assert(!node.isNull()) << "CnfStream: can't getLiteral() of null node";
 
-  AlwaysAssert(d_nodeToLiteralMap.contains(node))
+  Assert(d_nodeToLiteralMap.contains(node))
       << "Literal not in the CNF Cache: " << node << "\n";
 
   SatLiteral literal = d_nodeToLiteralMap[node];

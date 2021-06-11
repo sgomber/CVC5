@@ -19,9 +19,6 @@
 #define CVC5__THEORY__EE_SETUP_INFO__H
 
 #include <string>
-#include <vector>
-
-#include "expr/type_node.h"
 
 namespace cvc5 {
 namespace theory {
@@ -29,23 +26,6 @@ namespace theory {
 namespace eq {
 class EqualityEngineNotify;
 }
-
-/**
- * Setup for a function kind. Sets up a call to EqualityEngine::addFunctionKind.
- */
-struct EeSetupFunctionKind
-{
-  EeSetupFunctionKind(Kind k, bool isInt = false, bool isExtOp = false)
-      : d_kind(k), d_isInterpreted(isInt), d_isExtOperator(isExtOp)
-  {
-  }
-  /** The function kind */
-  Kind d_kind;
-  /** Whether its interpreted */
-  bool d_isInterpreted;
-  /** Whether its an external operator */
-  bool d_isExtOperator;
-};
 
 /**
  * This is a helper class that encapsulates instructions for how a Theory
@@ -73,8 +53,6 @@ struct EeSetupInfo
   std::string d_name;
   /** Constants are triggers */
   bool d_constantsAreTriggers;
-  /** The set of kinds to do congruence over */
-  std::vector<EeSetupFunctionKind> d_functionKinds;
   //-------------------------- fine grained notifications
   /** Whether we need to be notified of new equivalence classes */
   bool d_notifyNewClass;
