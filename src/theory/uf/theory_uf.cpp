@@ -78,7 +78,7 @@ bool TheoryUF::needsEqualityEngine(EeSetupInfo& esi)
       && options::ufssMode() != options::UfssMode::NONE)
   {
     // need notifications about sorts
-    esi.d_notifyNewClass  = true;
+    esi.d_notifyNewClass = true;
     esi.d_notifyMerge = true;
     esi.d_notifyDisequal = true;
   }

@@ -59,7 +59,12 @@ struct EeSetupFunctionKind
 struct EeSetupInfo
 {
   EeSetupInfo()
-      : d_notify(nullptr), d_constantsAreTriggers(true),d_notifyNewClass(false), d_notifyMerge(false), d_notifyDisequal(false),  d_useMaster(false)
+      : d_notify(nullptr),
+        d_constantsAreTriggers(true),
+        d_notifyNewClass(false),
+        d_notifyMerge(false),
+        d_notifyDisequal(false),
+        d_useMaster(false)
   {
   }
   /** The notification class of the theory */
@@ -84,20 +89,11 @@ struct EeSetupInfo
    */
   bool d_useMaster;
   /** Does it need notifications when equivalence classes are created? */
-  bool needsNotifyNewClass() const
-  {
-    return d_notifyNewClass;
-  }
+  bool needsNotifyNewClass() const { return d_notifyNewClass; }
   /** Does it need notifications when equivalence classes are merged? */
-  bool needsNotifyMerge() const
-  {
-    return d_notifyMerge;
-  }
+  bool needsNotifyMerge() const { return d_notifyMerge; }
   /** Does it need notifications when disequalities are generated? */
-  bool needsNotifyDisequal() const
-  {
-    return d_notifyDisequal;
-  }
+  bool needsNotifyDisequal() const { return d_notifyDisequal; }
 };
 
 }  // namespace theory

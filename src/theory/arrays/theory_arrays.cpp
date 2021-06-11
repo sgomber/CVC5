@@ -151,8 +151,8 @@ bool TheoryArrays::needsEqualityEngine(EeSetupInfo& esi)
 {
   esi.d_notify = &d_notify;
   esi.d_name = d_instanceName + "ee";
-  esi.d_notifyNewClass  = true;
-  esi.d_notifyMerge  = true;
+  esi.d_notifyNewClass = true;
+  esi.d_notifyMerge = true;
   return true;
 }
 
@@ -645,7 +645,9 @@ void TheoryArrays::preRegisterTermInternal(TNode node)
   {
     return;
   }
-  Trace("arrays") << spaces(getSatContext()->getLevel()) << "TheoryArrays::preRegisterTerm(" << node << ")" << std::endl;
+  Trace("arrays") << spaces(getSatContext()->getLevel())
+                  << "TheoryArrays::preRegisterTerm(" << node << ")"
+                  << std::endl;
   Kind nk = node.getKind();
   if (nk == kind::EQUAL)
   {
@@ -670,8 +672,9 @@ void TheoryArrays::preRegisterTermInternal(TNode node)
   }
   if (d_equalityEngine->hasTerm(node))
   {
-    // Invariant: array terms should be preregistered before being added to the equality engine
-    //Assert(nk != kind::SELECT
+    // Invariant: array terms should be preregistered before being added to the
+    // equality engine
+    // Assert(nk != kind::SELECT
     //       || d_isPreRegistered.find(node) != d_isPreRegistered.end());
     return;
   }
@@ -1571,7 +1574,7 @@ void TheoryArrays::mergeArrays(TNode a, TNode b)
 
     TNode mayRepA = d_mayEqualEqualityEngine.getRepresentative(a);
     TNode mayRepB = d_mayEqualEqualityEngine.getRepresentative(b);
-    
+
     Trace("arrays-merge") << "...finshed may rep" << std::endl;
 
     // If a and b have different default values associated with their mayequal equivalence classes,
