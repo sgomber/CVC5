@@ -140,7 +140,7 @@ void EqEngineManagerCentral::initializeTheories()
       // the theory uses the central equality engine
       eet.d_usedEe = &d_centralEqualityEngine;
       // add to vectors for the kinds of notifications
-      if (esi.needsNotifyNewEqClass())
+      if (esi.needsNotifyNewClass())
       {
         d_centralEENotify.d_newClassNotify.push_back(notify);
       }

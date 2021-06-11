@@ -78,9 +78,9 @@ bool TheoryUF::needsEqualityEngine(EeSetupInfo& esi)
       && options::ufssMode() != options::UfssMode::NONE)
   {
     // need notifications about sorts
-    esi.d_notifyNewEqClassTypeKinds.push_back(kind::SORT_TYPE);
-    esi.d_notifyMergeTypeKinds.push_back(kind::SORT_TYPE);
-    esi.d_notifyDisequalTypeKinds.push_back(kind::SORT_TYPE);
+    esi.d_notifyNewClass  = true;
+    esi.d_notifyMerge = true;
+    esi.d_notifyDisequal = true;
   }
   return true;
 }

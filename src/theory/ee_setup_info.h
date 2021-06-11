@@ -59,7 +59,7 @@ struct EeSetupFunctionKind
 struct EeSetupInfo
 {
   EeSetupInfo()
-      : d_notify(nullptr), d_constantsAreTriggers(true), d_useMaster(false)
+      : d_notify(nullptr), d_constantsAreTriggers(true),d_notifyNewClass(false), d_notifyMerge(false), d_notifyDisequal(false),  d_useMaster(false)
   {
   }
   /** The notification class of the theory */
@@ -71,43 +71,33 @@ struct EeSetupInfo
   /** The set of kinds to do congruence over */
   std::vector<EeSetupFunctionKind> d_functionKinds;
   //-------------------------- fine grained notifications
-  /** The TypeNode kinds to notify on eqNotifyNewClass */
-  std::vector<Kind> d_notifyNewEqClassTypeKinds;
-  /** The Node kinds to notify on eqNotifyNewClass */
-  std::vector<Kind> d_notifyNewEqClassKinds;
-  /** Specific types to notify on eqNotifyNewClass. */
-  std::vector<TypeNode> d_notifyNewEqClassTypes;
-  /** The TypeNode kinds to notify on eqNotifyMerge */
-  std::vector<Kind> d_notifyMergeTypeKinds;
-  /** Specific types to notify on eqNotifyMerge. */
-  std::vector<TypeNode> d_notifyMergeTypes;
-  /** The TypeNode kinds to notify on eqNotifyDisequal */
-  std::vector<Kind> d_notifyDisequalTypeKinds;
-  /** Specific types to notify on eqNotifyDisequal. */
-  std::vector<TypeNode> d_notifyDisequalTypes;
+  /** Whether we need to be notified of new equivalence classes */
+  bool d_notifyNewClass;
+  /** Whether we need to be notified of new equivalence classes */
+  bool d_notifyMerge;
+  /** Whether we need to be notified of new equivalence classes */
+  bool d_notifyDisequal;
   //-------------------------- end fine grained notifications
-  /** Does it need notifications when equivalence classes are created? */
-  bool needsNotifyNewEqClass() const
-  {
-    return !d_notifyNewEqClassTypeKinds.empty()
-           || !d_notifyNewEqClassKinds.empty()
-           || !d_notifyNewEqClassTypes.empty();
-  }
-  /** Does it need notifications when equivalence classes are merged? */
-  bool needsNotifyMerge() const
-  {
-    return !d_notifyMergeTypeKinds.empty() || !d_notifyMergeTypes.empty();
-  }
-  /** Does it need notifications when disequalities are generated? */
-  bool needsNotifyDisequal() const
-  {
-    return !d_notifyDisequalTypeKinds.empty() || !d_notifyDisequalTypes.empty();
-  }
   /**
    * Whether we want our state to use the master equality engine. This should
    * be true exclusively for the theory of quantifiers.
    */
   bool d_useMaster;
+  /** Does it need notifications when equivalence classes are created? */
+  bool needsNotifyNewClass() const
+  {
+    return d_notifyNewClass;
+  }
+  /** Does it need notifications when equivalence classes are merged? */
+  bool needsNotifyMerge() const
+  {
+    return d_notifyMerge;
+  }
+  /** Does it need notifications when disequalities are generated? */
+  bool needsNotifyDisequal() const
+  {
+    return d_notifyDisequal;
+  }
 };
 
 }  // namespace theory
