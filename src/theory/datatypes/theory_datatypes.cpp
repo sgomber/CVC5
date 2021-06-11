@@ -180,8 +180,8 @@ bool TheoryDatatypes::preCheck(Effort level)
 {
   Trace("datatypes-check") << "TheoryDatatypes::preCheck: " << level
                            << std::endl;
+  processPending();
   d_im.reset();
-  d_im.clearPending();
   return false;
 }
 

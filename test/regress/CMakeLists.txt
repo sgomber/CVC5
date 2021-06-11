@@ -1525,6 +1525,7 @@ set(regress_1_tests
   regress1/constarr3.smt2
   regress1/cores/issue5604.smt2
   regress1/datatypes/acyclicity-sr-ground096.smt2
+  regress1/datatypes/cee-prs-small-dd2.smt2
   regress1/datatypes/dt-color-2.6.smt2
   regress1/datatypes/dt-param-card4-unsat.smt2
   regress1/datatypes/error.cvc
