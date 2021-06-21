@@ -9,7 +9,7 @@ bench="$1"
 file=${bench##*/}
 filename=${file%.*}
 
-echo "------- cvc5-thf casc j10 : $bench at $2..."
+echo "------- cvc5-thf casc 28 : $bench at $2..."
 
 # use: trywith [params..]
 # to attempt a run.  If an SZS ontology result is printed, then
@@ -18,7 +18,7 @@ echo "------- cvc5-thf casc j10 : $bench at $2..."
 function trywith {
   limit=$1; shift;
   echo "--- Run $@ at $limit...";
-  (ulimit -S -t "$limit";$cvc5 --lang=tptp --no-type-checking --no-interactive --dump-proofs --inst-format=szs --force-no-limit-cpu-while-dump "$@" $bench) 2>/dev/null |
+  (ulimit -S -t "$limit";$cvc5 --lang=tptp --uf-ho --no-type-checking --no-interactive --dump-proofs --inst-format=szs --force-no-limit-cpu-while-dump "$@" $bench) 2>/dev/null |
   (read w1 w2 w3 result w4 w5;
   case "$result" in
   Unsatisfiable) echo "$w1 $w2 $w3 $result $w4 $w5";cat;exit 0;;
@@ -28,17 +28,18 @@ function trywith {
 }
 function finishwith {
   echo "--- Run $@...";
-  $cvc5 --lang=tptp --no-type-checking --no-interactive --dump-proofs --inst-format=szs --force-no-limit-cpu-while-dump "$@" $bench
+  $cvc5 --lang=tptp --uf-ho --no-type-checking --no-interactive --dump-proofs --inst-format=szs --force-no-limit-cpu-while-dump "$@" $bench
 }
 
-# designed for 300 seconds
-trywith 20 --uf-ho --ho-elim --no-ho-elim-store-ax --full-saturate-quant
-trywith 20 --uf-ho --ho-elim --full-saturate-quant
-trywith 5  --uf-ho --ho-elim --finite-model-find --uf-ss=no-minimal
-trywith 5  --uf-ho --no-ho-matching --finite-model-find --uf-ss=no-minimal
-trywith 30 --uf-ho --no-ho-matching --full-saturate-quant --fs-interleave --ho-elim-store-ax
-trywith 20 --uf-ho --no-ho-matching --full-saturate-quant --macros-quant-mode=all
-trywith 30 --uf-ho --ho-elim --full-saturate-quant --fs-interleave
-trywith 30 --uf-ho --no-ho-matching --full-saturate-quant --ho-elim-store-ax
-finishwith  --uf-ho --ho-elim --no-ho-elim-store-ax --full-saturate-quant
+# designed for 120 seconds
+trywith 10 --ho-elim --full-saturate-quant
+trywith 10 --ho-elim --no-e-matching --full-saturate-quant
+trywith 10 --ho-elim --no-e-matching --fs-sum --full-saturate-quant
+trywith 5  --ho-elim --finite-model-find --uf-ss=no-minimal
+trywith 5  --no-ho-matching --finite-model-find --uf-ss=no-minimal
+trywith 10 --no-ho-matching --full-saturate-quant --fs-interleave --ho-elim-store-ax
+trywith 10 --no-ho-matching --full-saturate-quant --macros-quant-mode=all
+trywith 10 --ho-elim --full-saturate-quant --fs-interleave
+trywith 10 --no-ho-matching --full-saturate-quant --ho-elim-store-ax
+finishwith  --ho-elim --no-ho-elim-store-ax --full-saturate-quant
 # echo "% SZS status" "GaveUp for $filename"

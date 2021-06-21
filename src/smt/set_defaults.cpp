@@ -1414,7 +1414,7 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
   }
   else if (options::sortInference())
   {
-    disableModels = true;
+    //disableModels = true;
     sOptNoModel = "sort-inference";
   }
   else if (options::minisatUseElim())
