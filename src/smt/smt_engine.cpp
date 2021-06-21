@@ -1529,7 +1529,16 @@ std::string SmtEngine::getProof()
   Assert(pe->getProof() != nullptr);
   Assert(d_pfManager);
   std::ostringstream ss;
+  if (d_env->getOptions().printer.instFormatMode == options::InstFormatMode::SZS)
+  {
+    ss << "% SZS output start Proof for " << d_state->getFilename()
+        << std::endl;
+  }
   d_pfManager->printProof(ss, pe->getProof(), *d_asserts);
+  if (d_env->getOptions().printer.instFormatMode == options::InstFormatMode::SZS)
+  {
+    ss << "% SZS output end Proof for " << d_state->getFilename() << std::endl;
+  }
   return ss.str();
 }
 
