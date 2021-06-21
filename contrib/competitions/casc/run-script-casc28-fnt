@@ -32,6 +32,6 @@ function finishwith {
 }
 
 # designed for 120 seconds
-trywith 30 --finite-model-find --uf-ss=no-minimal --sort-inference
+trywith 30 --finite-model-find
 finishwith --finite-model-find --macros-quant --macros-quant-mode=all --sort-inference
 # echo "% SZS status" "GaveUp for $filename"
