@@ -162,7 +162,7 @@ bool CommandExecutor::doCommandSingleton(Command* cmd)
   if (status) {
     std::vector<std::unique_ptr<Command> > getterCommands;
     if (d_options.driver.dumpModels
-        && (res.isSat()
+        && (res.isSat() || res.isNotEntailed()
             || (res.isSatUnknown()
                 && res.getUnknownExplanation() == api::Result::INCOMPLETE)))
     {
