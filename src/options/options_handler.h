@@ -84,11 +84,6 @@ public:
                        const std::string& flag,
                        const std::string& value);
 
-  template <class T>
-  void checkSatSolverEnabled(const std::string& option,
-                             const std::string& flag,
-                             T m);
-
   void checkBvSatSolver(const std::string& option,
                         const std::string& flag,
                         SatSolverMode m);
@@ -171,6 +166,7 @@ public:
 
 }; /* class OptionHandler */
 
+<<<<<<< HEAD
 template <class T>
 void OptionsHandler::checkSatSolverEnabled(const std::string& option,
                                            const std::string& flag,
@@ -185,6 +181,8 @@ void OptionsHandler::checkSatSolverEnabled(const std::string& option,
 #endif
 }
 
+=======
+>>>>>>> c7116b06892b5ff21fb04a3996880bfe48e44053
 }  // namespace options
 }  // namespace cvc5
 
