@@ -1794,6 +1794,7 @@ set(regress_1_tests
   regress1/quantifiers/burns13.smt2
   regress1/quantifiers/burns4.smt2
   regress1/quantifiers/cbqi-sdlx-fixpoint-3-dd.smt2
+  regress1/quantifiers/cee-npnt-dd.smt2
   regress1/quantifiers/cdt-0208-to.smt2
   regress1/quantifiers/const.cvc
   regress1/quantifiers/constfunc.cvc

@@ -374,10 +374,10 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
 {
   d_factIdStats << iid;
   smt::currentResourceManager()->spendResource(iid);
-  Trace("im") << "(fact " << iid << " " << (pol ? Node(atom) : atom.notNode())
-              << ")" << std::endl;
   // make the node corresponding to the explanation
   Node expn = NodeManager::currentNM()->mkAnd(exp);
+  Trace("im") << "(fact " << iid << " " << (pol ? Node(atom) : atom.notNode())
+              << " " << expn << ")" << std::endl;
   // call the pre-notify fact method with preReg = false, isInternal = true
   if (d_theory.preNotifyFact(atom, pol, expn, false, true))
   {
@@ -390,11 +390,23 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
                          << (pol ? Node(atom) : atom.notNode()) << " from "
                          << expn << std::endl;
 #ifdef CVC5_ASSERTIONS
-  if (!expn.isNull() && expn.getKind() == EQUAL)
+  for (const Node& e : exp)
   {
-    Assert(d_ee->hasTerm(expn[0]));
-    Assert(d_ee->hasTerm(expn[1]));
-    Assert(d_ee->areEqual(expn[0], expn[1]));
+    bool epol = e.getKind() != NOT;
+    Node eatom = epol ? e : e[0];
+    Trace("infer-manager") << "...check " << eatom << " " << epol << std::endl;
+    if (eatom.getKind() == EQUAL)
+    {
+      Assert(d_ee->hasTerm(eatom[0]));
+      Assert(d_ee->hasTerm(eatom[1]));
+      Assert(!epol || d_ee->areEqual(eatom[0], eatom[1]));
+      Assert(epol || d_ee->areDisequal(eatom[0], eatom[1], false));
+    }
+    else
+    {
+      Assert(d_ee->hasTerm(eatom));
+      Assert (d_ee->areEqual(eatom, NodeManager::currentNM()->mkConst(epol)));
+    }
   }
 #endif
   d_numCurrentFacts++;
