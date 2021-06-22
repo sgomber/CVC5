@@ -166,23 +166,6 @@ public:
 
 }; /* class OptionHandler */
 
-<<<<<<< HEAD
-template <class T>
-void OptionsHandler::checkSatSolverEnabled(const std::string& option,
-                                           const std::string& flag,
-                                           T m)
-{
-#if !defined(CVC5_USE_CRYPTOMINISAT) && !defined(CVC5_USE_CADICAL) \
-    && !defined(CVC5_USE_KISSAT)
-  std::stringstream ss;
-  ss << "option `" << option
-     << "' requires cvc5 to be built with CryptoMiniSat or CaDiCaL or Kissat";
-  throw OptionException(ss.str());
-#endif
-}
-
-=======
->>>>>>> c7116b06892b5ff21fb04a3996880bfe48e44053
 }  // namespace options
 }  // namespace cvc5
 
