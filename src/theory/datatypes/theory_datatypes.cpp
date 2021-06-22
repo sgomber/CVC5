@@ -389,11 +389,8 @@ bool TheoryDatatypes::needsCheckLastEffort() {
   return d_sygusExtension != nullptr;
 }
 
-bool TheoryDatatypes::preNotifyFact(TNode atom,
-                     bool polarity,
-                     TNode fact,
-                     bool isPrereg,
-                     bool isInternal)
+bool TheoryDatatypes::preNotifyFact(
+    TNode atom, bool polarity, TNode fact, bool isPrereg, bool isInternal)
 {
   Trace("datatypes-debug") << "TheoryDatatypes::assertFact : " << fact
                            << ", isInternal = " << isInternal << std::endl;
