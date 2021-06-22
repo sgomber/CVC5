@@ -389,10 +389,11 @@ bool TheoryDatatypes::needsCheckLastEffort() {
   return d_sygusExtension != nullptr;
 }
 
-void TheoryDatatypes::notifyFact(TNode atom,
-                                 bool polarity,
-                                 TNode fact,
-                                 bool isInternal)
+bool TheoryDatatypes::preNotifyFact(TNode atom,
+                     bool polarity,
+                     TNode fact,
+                     bool isPrereg,
+                     bool isInternal)
 {
   Trace("datatypes-debug") << "TheoryDatatypes::assertFact : " << fact
                            << ", isInternal = " << isInternal << std::endl;
@@ -423,10 +424,19 @@ void TheoryDatatypes::notifyFact(TNode atom,
         Trace("dt-tester") << "Done assert tester to sygus." << std::endl;
       }
     }
+    return true;
   }else{
     Trace("dt-tester-debug") << "Assert (non-tester) : " << atom << std::endl;
   }
   Trace("datatypes-debug") << "TheoryDatatypes::assertFact : finished " << fact << std::endl;
+  return false;
+}
+
+void TheoryDatatypes::notifyFact(TNode atom,
+                                 bool polarity,
+                                 TNode fact,
+                                 bool isInternal)
+{
   // now, flush pending facts if this wasn't an internal call
   if (!isInternal)
   {

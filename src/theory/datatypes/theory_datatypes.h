@@ -223,6 +223,12 @@ private:
   bool preCheck(Effort level) override;
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Effort level) override;
+  /** Prenotify fact */
+  bool preNotifyFact(TNode atom,
+                     bool pol,
+                     TNode fact,
+                     bool isPrereg,
+                     bool isInternal) override;
   /** Notify fact */
   void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal) override;
   //--------------------------------- end standard check
