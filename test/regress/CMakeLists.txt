@@ -120,6 +120,7 @@ set(regress_0_tests
   regress0/aufbv/bug493.smtv1.smt2
   regress0/aufbv/bug509.smtv1.smt2
   regress0/aufbv/bug580.delta.smt2
+  regress0/aufbv/cee-small-shared-eq.smt2
   regress0/aufbv/diseqprop.01.smtv1.smt2
   regress0/aufbv/dubreva005ue.delta01.smtv1.smt2
   regress0/aufbv/fifo32bc06k08.delta01.smtv1.smt2
@@ -1523,6 +1524,7 @@ set(regress_1_tests
   regress1/bv/test-bv-abstraction.smt2
   regress1/bv/unsound1.smt2
   regress1/bvdiv2.smt2
+  regress1/cee-bug0909-dd-scope.smt2
   regress1/constarr3.cvc
   regress1/constarr3.smt2
   regress1/cores/issue5604.smt2
