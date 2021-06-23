@@ -299,7 +299,7 @@ void EqEngineManagerCentral::eqNotifyConstantTermMerge(TNode t1, TNode t2)
   Node conflict = d_centralEqualityEngine.mkExplainLit(lit);
   Trace("eem-central") << "...explained conflict of " << lit << " ... "
                        << conflict << std::endl;
-  //notifyInConflict();
+  // notifyInConflict();
   d_sharedSolver.sendConflict(TrustNode::mkTrustConflict(conflict));
   return;
 }

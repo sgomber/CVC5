@@ -1387,21 +1387,19 @@ void TheoryEngine::lemma(TrustNode tlemma,
 
 void TheoryEngine::markInConflict()
 {
-  #ifdef CVC5_FOR_EACH_THEORY_STATEMENT
-  #undef CVC5_FOR_EACH_THEORY_STATEMENT
-  #endif
-  #define CVC5_FOR_EACH_THEORY_STATEMENT(THEORY)   \
+#ifdef CVC5_FOR_EACH_THEORY_STATEMENT
+#undef CVC5_FOR_EACH_THEORY_STATEMENT
+#endif
+#define CVC5_FOR_EACH_THEORY_STATEMENT(THEORY) \
   theoryOf(THEORY)->notifyInConflict();
   CVC5_FOR_EACH_THEORY;
   d_inConflict = true;
-  
 }
 
 void TheoryEngine::conflict(TrustNode tconflict, TheoryId theoryId)
 {
   Assert(tconflict.getKind() == TrustNodeKind::CONFLICT);
-  
-  
+
   TNode conflict = tconflict.getNode();
   Trace("theory::conflict") << "TheoryEngine::conflict(" << conflict << ", "
                             << theoryId << ")" << endl;

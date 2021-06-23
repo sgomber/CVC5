@@ -192,7 +192,7 @@ class TheoryEngine {
    * @param theoryId The theory that sent the conflict
    */
   void conflict(TrustNode conflict, theory::TheoryId theoryId);
-  
+
   /** set in conflict */
   void markInConflict();
 

@@ -392,16 +392,16 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
 #ifdef CVC5_ASSERTIONS
   // check that all facts hold in the equality engine, to ensure that we
   // aren't processing a stale fact
-                         std::vector<Node> expc = exp;
-  for (size_t i=0; i<expc.size(); i++)
+  std::vector<Node> expc = exp;
+  for (size_t i = 0; i < expc.size(); i++)
   {
     Node e = expc[i];
     bool epol = e.getKind() != NOT;
     Node eatom = epol ? e : e[0];
     Trace("infer-manager") << "...check " << eatom << " " << epol << std::endl;
-    if (eatom.getKind()==AND)
+    if (eatom.getKind() == AND)
     {
-      Assert (epol);
+      Assert(epol);
       for (const Node& ea : eatom)
       {
         expc.push_back(ea);
@@ -418,7 +418,7 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
     else
     {
       Assert(d_ee->hasTerm(eatom));
-      Assert (d_ee->areEqual(eatom, NodeManager::currentNM()->mkConst(epol)));
+      Assert(d_ee->areEqual(eatom, NodeManager::currentNM()->mkConst(epol)));
     }
   }
 #endif
