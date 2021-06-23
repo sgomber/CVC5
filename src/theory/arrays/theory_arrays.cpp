@@ -656,6 +656,12 @@ void TheoryArrays::preRegisterTermInternal(TNode node)
     d_equalityEngine->addTriggerPredicate(node);
     return;
   }
+  else if (nk == kind::CONST_BOOLEAN)
+  {
+    // currently necessary to avoid initialization issues where true is notified
+    // before d_equalityEngine is initialized.
+    return;
+  }
   // add to equality engine and the may equality engine
   TypeNode nodeType = node.getType();
   if (nodeType.isArray())
