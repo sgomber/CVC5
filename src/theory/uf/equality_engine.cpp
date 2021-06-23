@@ -133,7 +133,8 @@ EqualityEngine::EqualityEngine(EqualityEngineNotify& notify,
                                bool constantsAreTriggers,
                                bool anyTermTriggers)
     : ContextNotifyObj(context),
-      d_masterEqualityEngine(0),
+      d_masterEqualityEngine(nullptr),
+      d_proofEqualityEngine(nullptr),
       d_context(context),
       d_done(context, false),
       d_notify(notify),
@@ -157,9 +158,19 @@ EqualityEngine::EqualityEngine(EqualityEngineNotify& notify,
 }
 
 void EqualityEngine::setMasterEqualityEngine(EqualityEngine* master) {
-  Assert(d_masterEqualityEngine == 0);
+  Assert(d_masterEqualityEngine == nullptr);
   d_masterEqualityEngine = master;
 }
+
+void EqualityEngine::setProofEqualityEngine(ProofEqEngine* pfee)
+{
+  Assert (d_proofEqualityEngine==nullptr);
+  d_proofEqualityEngine = pfee;
+}
+ProofEqEngine* EqualityEngine::getProofEqualityEngine()
+{
+  return d_proofEqualityEngine;
+}  
 
 void EqualityEngine::enqueue(const MergeCandidate& candidate, bool back) {
   Debug("equality") << d_name << "::eq::enqueue({" << candidate.d_t1Id << "} "

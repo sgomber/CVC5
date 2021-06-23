@@ -24,7 +24,7 @@ namespace cvc5 {
 namespace theory {
 
 EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te,
-                                               SharedSolver& shs)
+                                               SharedSolver& shs, ProofNodeManager * pnm)
     : EqEngineManager(te, shs),
       d_masterEENotify(nullptr),
       d_masterEqualityEngine(nullptr),
@@ -38,6 +38,14 @@ EqEngineManagerCentral::EqEngineManagerCentral(TheoryEngine& te,
        ++theoryId)
   {
     d_theoryNotify[theoryId] = nullptr;
+  }
+  if (pnm!=nullptr)
+  {
+    d_centralPfee.reset(new eq::ProofEqEngine(d_te.getSatContext(),
+                                       d_te.getUserContext(),
+                                       d_centralEqualityEngine,
+                                       pnm));
+    d_centralEqualityEngine.setProofEqualityEngine(d_centralPfee.get());
   }
 }
 

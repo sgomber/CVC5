@@ -39,6 +39,7 @@ TheoryInferenceManager::TheoryInferenceManager(Theory& t,
       d_out(t.getOutputChannel()),
       d_ee(nullptr),
       d_decManager(nullptr),
+      d_pfee(nullptr),
       d_pnm(pnm),
       d_cacheLemmas(cacheLemmas),
       d_keep(t.getSatContext()),
@@ -69,10 +70,16 @@ void TheoryInferenceManager::setEqualityEngine(eq::EqualityEngine* ee)
   // if it is non-null
   if (d_pnm != nullptr && d_ee != nullptr)
   {
-    d_pfee.reset(new eq::ProofEqEngine(d_theoryState.getSatContext(),
-                                       d_theoryState.getUserContext(),
-                                       *d_ee,
-                                       d_pnm));
+    d_pfee = d_ee->getProofEqualityEngine();
+    if (d_pfee==nullptr)
+    {
+      d_pfeeAlloc.reset(new eq::ProofEqEngine(d_theoryState.getSatContext(),
+                                        d_theoryState.getUserContext(),
+                                        *d_ee,
+                                        d_pnm));
+      d_pfee = d_pfeeAlloc.get();
+      d_ee->setProofEqualityEngine(d_pfee);
+    }
   }
 }
 
@@ -98,7 +105,7 @@ bool TheoryInferenceManager::hasSent() const
 
 eq::ProofEqEngine* TheoryInferenceManager::getProofEqEngine()
 {
-  return d_pfee.get();
+  return d_pfee;
 }
 
 void TheoryInferenceManager::conflictEqConstantMerge(TNode a, TNode b)
