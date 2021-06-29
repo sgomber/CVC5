@@ -60,12 +60,16 @@ libcvc5_add_sources(
   regexp.h
   roundingmode.cpp
   roundingmode.h
+  run.cpp
+  run.h
   safe_print.cpp
   safe_print.h
   sampler.cpp
   sampler.h
   sexpr.cpp
   sexpr.h
+  signal_catcher.cpp
+  signal_catcher.h
   smt2_quote_string.cpp
   smt2_quote_string.h
   statistics_public.cpp
@@ -78,6 +82,9 @@ libcvc5_add_sources(
   statistics_value.h
   string.cpp
   string.h
+  system_exception.h
+  tmpfile.cpp
+  tmpfile.h
   unsafe_interrupt_exception.h
   utility.cpp
   utility.h
