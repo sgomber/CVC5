@@ -40,9 +40,11 @@
 #include "base/check.h"
 #include "base/output.h"
 #include "expr/symbol_manager.h"
+#include "options/base_options.h"
 #include "options/language.h"
+#include "options/main_options.h"
 #include "options/options.h"
-#include "options/options_public.h"
+#include "options/parser_options.h"
 #include "parser/input.h"
 #include "parser/parser.h"
 #include "parser/parser_builder.h"
@@ -88,16 +90,16 @@ static set<string> s_declarations;
 
 InteractiveShell::InteractiveShell(api::Solver* solver, SymbolManager* sm)
     : d_options(solver->getOptions()),
-      d_in(*options::getIn(d_options)),
-      d_out(*options::getOut(d_options)),
+      d_in(*d_options.base.in),
+      d_out(*d_options.base.out),
       d_quit(false)
 {
   ParserBuilder parserBuilder(solver, sm, d_options);
   /* Create parser with bogus input. */
   d_parser = parserBuilder.build();
-  if (options::wasSetByUserForceLogicString(d_options))
+  if (d_options.parser.forceLogicStringWasSetByUser)
   {
-    LogicInfo tmp(options::getForceLogicString(d_options));
+    LogicInfo tmp(d_options.parser.forceLogicString);
     d_parser->forceLogic(tmp.getLogicString());
   }
 
@@ -112,7 +114,7 @@ InteractiveShell::InteractiveShell(api::Solver* solver, SymbolManager* sm)
     ::using_history();
 
     OutputLanguage lang =
-        toOutputLanguage(options::getInputLanguage(d_options));
+        toOutputLanguage(d_options.base.inputLanguage);
     switch(lang) {
       case output::LANG_CVC:
         d_historyFilename = string(getenv("HOME")) + "/.cvc5_history";
@@ -198,7 +200,7 @@ restart:
   if (d_usingEditline)
   {
 #if HAVE_LIBEDITLINE
-    lineBuf = ::readline(options::getInteractivePrompt(d_options)
+    lineBuf = ::readline(d_options.driver.interactivePrompt
                              ? (line == "" ? "cvc5> " : "... > ")
                              : "");
     if(lineBuf != NULL && lineBuf[0] != '\0') {
@@ -210,7 +212,7 @@ restart:
   }
   else
   {
-    if (options::getInteractivePrompt(d_options))
+    if (d_options.driver.interactivePrompt)
     {
       if(line == "") {
         d_out << "cvc5> " << flush;
@@ -284,7 +286,7 @@ restart:
       if (d_usingEditline)
       {
 #if HAVE_LIBEDITLINE
-        lineBuf = ::readline(options::getInteractivePrompt(d_options) ? "... > "
+        lineBuf = ::readline(d_options.driver.interactivePrompt ? "... > "
                                                                       : "");
         if(lineBuf != NULL && lineBuf[0] != '\0') {
           ::add_history(lineBuf);
@@ -295,7 +297,7 @@ restart:
       }
       else
       {
-        if (options::getInteractivePrompt(d_options))
+        if (d_options.driver.interactivePrompt)
         {
           d_out << "... > " << flush;
         }
@@ -313,7 +315,7 @@ restart:
   }
 
   d_parser->setInput(Input::newStringInput(
-      options::getInputLanguage(d_options), input, INPUT_FILENAME));
+      d_options.base.inputLanguage, input, INPUT_FILENAME));
 
   /* There may be more than one command in the input. Build up a
      sequence. */
@@ -364,7 +366,7 @@ restart:
   }
   catch (ParserException& pe)
   {
-    if (language::isOutputLang_smt2(options::getOutputLanguage(d_options)))
+    if (language::isOutputLang_smt2(d_options.base.outputLanguage))
     {
       d_out << "(error \"" << pe << "\")" << endl;
     }

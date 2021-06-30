@@ -29,7 +29,6 @@
 #include "options/option_exception.h"
 #include "options/printer_options.h"
 #include "options/proof_options.h"
-#include "options/resource_manager_options.h"
 #include "options/smt_options.h"
 #include "options/theory_options.h"
 #include "printer/printer.h"
@@ -445,7 +444,7 @@ void SmtEngine::setInfo(const std::string& key, const std::string& value)
   {
     d_state->setFilename(value);
   }
-  else if (key == "smt-lib-version" && !Options::current().wasSetByUser(options::inputLanguage))
+  else if (key == "smt-lib-version" && !getOptions().base.inputLanguageWasSetByUser)
   {
     language::input::Language ilang = language::input::LANG_SMTLIB_V2_6;
 
@@ -457,7 +456,7 @@ void SmtEngine::setInfo(const std::string& key, const std::string& value)
     }
     getOptions().base.inputLanguage = ilang;
     // also update the output language
-    if (!Options::current().wasSetByUser(options::outputLanguage))
+    if (!getOptions().base.outputLanguageWasSetByUser)
     {
       language::output::Language olang = language::toOutputLanguage(ilang);
       if (d_env->getOptions().base.outputLanguage != olang)
@@ -1863,16 +1862,16 @@ void SmtEngine::setResourceLimit(uint64_t units, bool cumulative)
 {
   if (cumulative)
   {
-    d_env->d_options.resman.cumulativeResourceLimit = units;
+    d_env->d_options.base.cumulativeResourceLimit = units;
   }
   else
   {
-    d_env->d_options.resman.perCallResourceLimit = units;
+    d_env->d_options.base.perCallResourceLimit = units;
   }
 }
 void SmtEngine::setTimeLimit(uint64_t millis)
 {
-  d_env->d_options.resman.perCallMillisecondLimit = millis;
+  d_env->d_options.base.perCallMillisecondLimit = millis;
 }
 
 unsigned long SmtEngine::getResourceUsage() const

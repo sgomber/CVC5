@@ -96,17 +96,19 @@ BVSolverBitblast::BVSolverBitblast(TheoryState* s,
   {
     case options::SatSolverMode::CRYPTOMINISAT:
       d_satSolver.reset(prop::SatSolverFactory::createCryptoMinisat(
-          smtStatisticsRegistry(), "theory::bv::BVSolverBitblast"));
+          smtStatisticsRegistry(), "theory::bv::BVSolverBitblast::"));
       break;
     default:
       d_satSolver.reset(prop::SatSolverFactory::createCadical(
-          smtStatisticsRegistry(), "theory::bv::BVSolverBitblast"));
+          smtStatisticsRegistry(), "theory::bv::BVSolverBitblast::"));
   }
   d_cnfStream.reset(new prop::CnfStream(d_satSolver.get(),
                                         d_bbRegistrar.get(),
                                         d_nullContext.get(),
                                         nullptr,
-                                        smt::currentResourceManager()));
+                                        smt::currentResourceManager(),
+                                        prop::FormulaLitPolicy::INTERNAL,
+                                        "theory::bv::BVSolverBitblast"));
 }
 
 void BVSolverBitblast::postCheck(Theory::Effort level)
@@ -217,9 +219,9 @@ bool BVSolverBitblast::preNotifyFact(
    * using assumptions.
    */
   if (options::bvAssertInput() && val.isSatLiteral(fact)
-      && !val.isDecision(fact) && val.getDecisionLevel(fact) == 0
-      && val.getIntroLevel(fact) == 0)
+      && val.getDecisionLevel(fact) == 0 && val.getIntroLevel(fact) == 0)
   {
+    Assert(!val.isDecision(fact));
     d_bbInputFacts.push_back(fact);
   }
   else
@@ -234,6 +236,21 @@ TrustNode BVSolverBitblast::explain(TNode n)
 {
   Debug("bv-bitblast") << "explain called on " << n << std::endl;
   return d_im.explainLit(n);
+}
+
+void BVSolverBitblast::computeRelevantTerms(std::set<Node>& termSet)
+{
+  /* BITVECTOR_EAGER_ATOM wraps input assertions that may also contain
+   * equalities. As a result, these equalities are not handled by the equality
+   * engine and terms below these equalities do not appear in `termSet`.
+   * We need to make sure that we compute model values for all relevant terms
+   * in BitblastMode::EAGER and therefore add all variables from the
+   * bit-blaster to `termSet`.
+   */
+  if (options::bitblastMode() == options::BitblastMode::EAGER)
+  {
+    d_bitblaster->computeRelevantTerms(termSet);
+  }
 }
 
 bool BVSolverBitblast::collectModelValues(TheoryModel* m,
@@ -253,6 +270,28 @@ bool BVSolverBitblast::collectModelValues(TheoryModel* m,
       return false;
     }
   }
+
+  // In eager bitblast mode we also have to collect the model values for
+  // Boolean variables in the CNF stream.
+  if (options::bitblastMode() == options::BitblastMode::EAGER)
+  {
+    NodeManager* nm = NodeManager::currentNM();
+    std::vector<TNode> vars;
+    d_cnfStream->getBooleanVariables(vars);
+    for (TNode var : vars)
+    {
+      Assert(d_cnfStream->hasLiteral(var));
+      prop::SatLiteral bit = d_cnfStream->getLiteral(var);
+      prop::SatValue value = d_satSolver->value(bit);
+      Assert(value != prop::SAT_VALUE_UNKNOWN);
+      if (!m->assertEquality(
+              var, nm->mkConst(value == prop::SAT_VALUE_TRUE), true))
+      {
+        return false;
+      }
+    }
+  }
+
   return true;
 }
 

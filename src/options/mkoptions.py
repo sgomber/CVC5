@@ -49,7 +49,7 @@ import toml
 ### Allowed attributes for module/option
 
 MODULE_ATTR_REQ = ['id', 'name']
-MODULE_ATTR_ALL = MODULE_ATTR_REQ + ['option']
+MODULE_ATTR_ALL = MODULE_ATTR_REQ + ['option', 'public']
 
 OPTION_ATTR_REQ = ['category', 'type']
 OPTION_ATTR_ALL = OPTION_ATTR_REQ + [
@@ -75,7 +75,7 @@ void assign_{module}_{name}(Options& opts, const std::string& option, const std:
   auto value = {handler};
   {predicates}
   opts.{module}.{name} = value;
-  opts.{module}.{name}__setByUser = true;
+  opts.{module}.{name}WasSetByUser = true;
   Trace("options") << "user assigned option {name} = " << value << std::endl;
 }}'''
 
@@ -83,7 +83,7 @@ TPL_ASSIGN_BOOL = '''
 void assign_{module}_{name}(Options& opts, const std::string& option, bool value) {{
   {predicates}
   opts.{module}.{name} = value;
-  opts.{module}.{name}__setByUser = true;
+  opts.{module}.{name}WasSetByUser = true;
   Trace("options") << "user assigned option {name} = " << value << std::endl;
 }}'''
 
@@ -95,15 +95,15 @@ TPL_CALL_SET_OPTION = 'setOption(std::string("{smtname}"), ("{value}"));'
 TPL_GETOPT_LONG = '{{ "{}", {}_argument, nullptr, {} }},'
 
 TPL_HOLDER_MACRO_ATTR = '''  {type} {name};
-  bool {name}__setByUser = false;'''
+  bool {name}WasSetByUser = false;'''
 
 TPL_HOLDER_MACRO_ATTR_DEF = '''  {type} {name} = {default};
-  bool {name}__setByUser = false;'''
+  bool {name}WasSetByUser = false;'''
 
 TPL_DECL_SET_DEFAULT = 'void setDefault{funcname}(Options& opts, {type} value);'
 TPL_IMPL_SET_DEFAULT = TPL_DECL_SET_DEFAULT[:-1] + '''
 {{
-    if (!opts.{module}.{name}__setByUser) {{
+    if (!opts.{module}.{name}WasSetByUser) {{
         opts.{module}.{name} = value;
     }}
 }}'''
@@ -116,15 +116,6 @@ TPL_OPTION_STRUCT_RW = \
   typedef {type} type;
   type operator()() const;
 }} thread_local {name};"""
-
-TPL_DECL_WAS_SET_BY_USER = \
-"""template <> bool Options::wasSetByUser(options::{name}__option_t) const;"""
-
-TPL_IMPL_WAS_SET_BY_USER = TPL_DECL_WAS_SET_BY_USER[:-1] + \
-"""
-{{
-  return {module}.{name}__setByUser;
-}}"""
 
 # Option specific methods
 
@@ -218,6 +209,30 @@ def get_holder_ref_decls(modules):
     """Render reference declarations for holder members of the Option class"""
     return concat_format('  options::Holder{id_cap}& {id};', modules)
 
+
+def get_handler(option):
+    """Render handler call for assignment functions"""
+    optname = option.long_name if option.long else ""
+    if option.handler:
+        if option.type == 'void':
+            return 'opts.handler().{}("{}", option)'.format(option.handler, optname)
+        else:
+            return 'opts.handler().{}("{}", option, optionarg)'.format(option.handler, optname)
+    elif option.mode:
+        return 'stringTo{}(optionarg)'.format(option.type)
+    elif option.type != 'bool':
+        return 'handleOption<{}>("{}", option, optionarg)'.format(option.type, optname)
+    return None
+
+
+def get_predicates(option):
+    """Render predicate calls for assignment functions"""
+    if not option.predicates:
+        return []
+    optname = option.long_name if option.long else ""
+    assert option.type != 'void'
+    return ['opts.handler().{}("{}", option, value);'.format(x, optname)
+            for x in option.predicates]
 
 class Module(object):
     """Options module.
@@ -556,7 +571,6 @@ def codegen_module(module, dst_dir, tpl_module_h, tpl_module_cpp):
 
         # Generate module specialization
         default_decl.append(TPL_DECL_SET_DEFAULT.format(module=module.id, name=option.name, funcname=capoptionname, type=option.type))
-        specs.append(TPL_DECL_WAS_SET_BY_USER.format(name=option.name))
 
         if option.long and option.type not in ['bool', 'void'] and \
            '=' not in option.long:
@@ -577,7 +591,6 @@ def codegen_module(module, dst_dir, tpl_module_h, tpl_module_cpp):
 
         # Accessors
         default_impl.append(TPL_IMPL_SET_DEFAULT.format(module=module.id, name=option.name, funcname=capoptionname, type=option.type))
-        accs.append(TPL_IMPL_WAS_SET_BY_USER.format(module=module.id, name=option.name))
 
         # Global definitions
         defs.append('thread_local struct {name}__option_t {name};'.format(name=option.name))
@@ -615,10 +628,14 @@ def codegen_module(module, dst_dir, tpl_module_h, tpl_module_cpp):
                     help=help_mode_format(option),
                     long=option.long.split('=')[0]))
 
+    if module.public:
+        visibility_include = '#include "cvc5_public.h"'
+    else:
+        visibility_include = '#include "cvc5_private.h"'
+
     filename = os.path.splitext(os.path.split(module.header)[1])[0]
     write_file(dst_dir, '{}.h'.format(filename), tpl_module_h.format(
-        filename=filename,
-        header=module.header,
+        visibility_include=visibility_include,
         id_cap=module.id_cap,
         id=module.id,
         includes='\n'.join(sorted(list(includes))),
@@ -720,31 +737,10 @@ def codegen_all_modules(modules, build_dir, dst_dir, tpl_options_h, tpl_options_
             sphinxgen.add(module, option)
 
             # Generate handler call
-            handler = None
-            if option.handler:
-                if option.type == 'void':
-                    handler = 'opts.handler().{}(option)'.format(option.handler)
-                else:
-                    handler = \
-                        'opts.handler().{}(option, optionarg)'.format(option.handler)
-            elif option.mode:
-                handler = 'stringTo{}(optionarg)'.format(option.type)
-            elif option.type != 'bool':
-                handler = \
-                    'handleOption<{}>(option, optionarg)'.format(option.type)
+            handler = get_handler(option)
 
             # Generate predicate calls
-            predicates = []
-            if option.predicates:
-                if option.type == 'bool':
-                    predicates = \
-                        ['opts.handler().{}(option, value);'.format(x) \
-                            for x in option.predicates]
-                else:
-                    assert option.type != 'void'
-                    predicates = \
-                        ['opts.handler().{}(option, value);'.format(x) \
-                            for x in option.predicates]
+            predicates = get_predicates(option)
 
             # Generate options_handler and getopt_long
             cases = []
@@ -820,7 +816,7 @@ def codegen_all_modules(modules, build_dir, dst_dir, tpl_options_h, tpl_options_
                             name=option.name,
                             option='key'))
                 elif option.handler:
-                    h = 'handler->{handler}("{smtname}"'
+                    h = 'handler->{handler}("{smtname}", key'
                     if argument_req:
                         h += ', optionarg'
                     h += ');'
@@ -921,7 +917,7 @@ def codegen_all_modules(modules, build_dir, dst_dir, tpl_options_h, tpl_options_
                 if option.mode and option.type not in default:
                     default = '{}::{}'.format(option.type, default)
                 defaults.append('{}({})'.format(option.name, default))
-                defaults.append('{}__setByUser(false)'.format(option.name))
+                defaults.append('{}WasSetByUser(false)'.format(option.name))
 
     write_file(dst_dir, 'options.h', tpl_options_h.format(
         holder_fwd_decls=get_holder_fwd_decls(modules),
