@@ -57,13 +57,15 @@ class OracleEngine : public QuantifiersModule
   void checkOwnership(Node q) override;
   /** Identify. */
   std::string identify() const override;
-  /** Declare oracle fun */
+
+  /** get binary from oracle interface */
+  std::string getBinaryName(const Node n);
 
   /** Call an oracle with a set of arguments **/
-  std::string callOracle(const std::string &binary_name, 
-                         const std::vector<std::string> &argv);
-
-  void declareOracleFun(Node f);
+  Node callOracle(const std::string &binName, 
+                         const std::vector<Node> &argv);
+  /** Declare oracle fun */
+  void declareOracleFun(Node f, const std::string &binName);
 
   /** Make an oracle interface quantifier */
   static Node mkOracleInterface(const std::vector<Node>& inputs,
@@ -77,6 +79,13 @@ class OracleEngine : public QuantifiersModule
                                 Node& assume,
                                 Node& constraint,
                                 std::string& binName);
+
+
+ /** functions for minimal parsing. These will be removed */
+  Node get_hex_numeral(std::string in);
+  Node get_dec_numeral(std::string in);
+  Node get_bin_numeral(std::string in);
+  Node responseParser(std::string &in);
  private:
   /** The oracle functions (user-context dependent) */
   context::CDList<Node> d_oracleFuns;

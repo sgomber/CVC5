@@ -30,9 +30,74 @@
 using namespace cvc5::kind;
 using namespace cvc5::context;
 
+bool is_digits(const std::string &str)
+{
+    return str.find_first_not_of("0123456789") == std::string::npos;
+}
+
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
+
+Node OracleEngine::get_hex_numeral(std::string in)
+{
+  // we accept any sequence of '0'-'9', 'a'-'f', 'A'-'F'
+  std::size_t width = in.size()*16;
+  NodeManager* nm = NodeManager::currentNM();
+  unsigned int val = std::stoi(in, nullptr, 16);
+  Node result =  nm->mkConst(BitVector(width,val));
+  return result;
+}
+
+Node OracleEngine::get_bin_numeral(std::string in)
+{
+  // we accept any sequence of '0'-'1'
+  std::size_t width = in.size();
+  NodeManager* nm = NodeManager::currentNM();
+  unsigned int val = std::stoi(in, nullptr, 2);
+  Node result = nm->mkConst(BitVector(width,val));
+  return result;
+}
+
+Node OracleEngine::get_dec_numeral(std::string in)
+{
+  // we accept any sequence of '0'-'9'
+  NodeManager* nm = NodeManager::currentNM();
+  unsigned int val = std::stoi(in, nullptr, 10);
+  Node result  = nm->mkConst(Rational(val));
+  return result;
+}
+
+Node OracleEngine::responseParser(std::string &in)
+{
+  // Assumes the response is a singular integer or bitvector literal
+  // Temporary: will eventually be replaced with some subcomponent of full parser
+  NodeManager* nm = NodeManager::currentNM();
+  if(in.at(0)=='#')
+  {
+    if(in.at(1)=='b')
+      return get_bin_numeral(in);
+    else if(in.at(1)=='x')
+      return get_hex_numeral(in);
+    else
+      Assert(0); // throw error here
+  }
+  else if(is_digits(in))
+    return get_dec_numeral(in);
+  else if(in.find("true")!=std::string::npos)
+  {
+    Node result = nm->mkConst(true);
+    return result;
+  }
+  else if(in.find("false")!=std::string::npos)
+  {
+    Node result = nm->mkConst(false);
+    return result;
+  }
+  else
+    Assert(0); // throw error here
+}
+
 
 /** Attribute true for input variables */
 struct OracleInputVarAttributeId
@@ -66,12 +131,35 @@ void OracleEngine::reset_round(Theory::Effort e) {}
 
 void OracleEngine::registerQuantifier(Node q) {}
 
-std::string OracleEngine::callOracle(const std::string &binary_name, 
-                                     const std::vector<std::string> &argv)
+std::string OracleEngine::getBinaryName(const Node n)
+{
+  // oracle functions have no children
+  if(n.getNumChildren()<3)
+    return n.getAttribute(OracleInterfaceAttribute());
+
+  // oracle interfaces have children, and the attribute is stored in 2nd child 
+  for (const Node& v : n[2][0]) 
+  { 
+    if(v.getAttribute(OracleInterfaceAttribute())!="")
+      return v.getAttribute(OracleInterfaceAttribute());
+  }
+  return "";
+} 
+
+
+
+Node OracleEngine::callOracle(const std::string &binary_name, 
+                                     const std::vector<Node> &argv)
 {
   Trace("oracle-engine") << "Running oracle: " << binary_name;
+  std::vector<std::string> string_args;
   for (auto &arg : argv)
+  {
+    std::ostringstream oss;
+    oss << arg;
+    string_args.push_back(oss.str());
     Trace("oracle-engine") << ' ' << arg;
+  }
   Trace("oracle-engine") << std::endl;
 
   // run the oracle binary
@@ -79,7 +167,7 @@ std::string OracleEngine::callOracle(const std::string &binary_name,
 
   auto run_result = run(
       binary_name,
-      argv,
+      string_args,
       "",
       stdout_stream,
       "");
@@ -91,9 +179,9 @@ std::string OracleEngine::callOracle(const std::string &binary_name,
     Assert(run_result==0 || run_result==10);
   }
   // we assume that the oracle returns the result in SMT-LIB format
-  std::istringstream oracle_response_istream(stdout_stream.str());
-  Trace("oracle-engine") << "Oracle response is "<< stdout_stream.str() << std::endl;
-  return stdout_stream.str();
+  std::string stringResponse = stdout_stream.str();
+  // parse response into a Node
+  return responseParser(stringResponse);
 }
 
 void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
@@ -105,7 +193,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
                          << "---" << std::endl;
   }
   FirstOrderModel* fm = d_treg.getModel();
-  // TermDb* termDatabase = d_treg.getTermDatabase();
+  TermDb* termDatabase = d_treg.getTermDatabase();
   unsigned nquant = fm->getNumAssertedQuantifiers();
   std::vector<Node> currInterfaces;
   for (unsigned i = 0; i < nquant; i++)
@@ -116,22 +204,51 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
       continue;
     }
     currInterfaces.push_back(q);
-    Trace("oracle-engine-state") << "Interface: " << q << std::endl;
+    Trace("oracle-engine-state") << "Interface: " << q << " with binary name " << getBinaryName(q) << std::endl;
   }
-
+  bool all_fapps_consistent=true;
   // iterate over oracle functions
   for (const Node& f : d_oracleFuns)
   {
     Trace("oracle-engine-state") << "Oracle fun: " << f << std::endl;
-    // get applications of oracle function
-    // iterate over applications
-    // evaluate arguments
-    // call oracle
-    // get response
-    // check consistency with model
-    // add lemma
+    TNodeTrie* tat = termDatabase->getTermArgTrie(f);
+    if(tat)
+    {
+      std::vector<Node> apps = tat->getLeaves(1);
+      std::string binaryName = getBinaryName(f);
+      Trace("oracle-engine-state") << "Oracle fun with binary name "<< binaryName << std::endl;
+
+
+      // get applications of oracle function
+      // iterate over applications
+      for (const auto &fapp: apps)
+      {
+        Trace("oracle-engine-state") << "Oracle app: " << fapp << std::endl;
+        std::vector<Node> arguments;
+        // evaluate arguments
+        for(const auto &arg: fapp)
+          arguments.push_back(fm->getValue(arg));
+
+        // call oracle
+        Node response = callOracle(binaryName, arguments);  
+        Trace("oracle-engine-state") << "Node Response " << response << std::endl;
+        NodeManager* nm = NodeManager::currentNM();
+        // check consistency with model
+        Node predictedResult = fm->getValue(fapp);
+        if(predictedResult!=response)
+        {
+          Trace("oracle-engine-state") << "Inconsistent response! Model expected " << predictedResult << std::endl;
+          all_fapps_consistent=false;
+        }
+        // add lemma
+        Node lemma = nm->mkNode(EQUAL,response,fapp);
+        Trace("oracle-engine-state") << "Adding lemma " << lemma << std::endl;
+      }
+    }
   }
   // if all were consistent, we can terminate
+  if(all_fapps_consistent)
+    Trace("oracle-engine-state") << "All responses consistent, we can stop now" << std::endl;
 
   // general SMTO: call constraint generators and assumption generators here
   
@@ -164,7 +281,13 @@ std::string OracleEngine::identify() const
   return std::string("OracleEngine");
 }
 
-void OracleEngine::declareOracleFun(Node f) { d_oracleFuns.push_back(f); }
+void OracleEngine::declareOracleFun(Node f, const std::string& binName) 
+{
+  // TODO: set attribute propper;y
+  OracleInterfaceAttribute oia;
+  f.setAttribute(oia, binName);
+  d_oracleFuns.push_back(f); 
+}
 
 Node OracleEngine::mkOracleInterface(const std::vector<Node>& inputs,
                        const std::vector<Node>& outputs,
