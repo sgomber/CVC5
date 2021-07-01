@@ -84,7 +84,7 @@ class PreprocessingPassContext
    * It should be rewritten, and such that top level substitutions have
    * been applied to it.
    */
-  void notifyLearnedLiteral(Node lit);
+  void notifyLearnedLiteral(TNode lit);
   /**
    * Get the learned literals
    */
