@@ -154,10 +154,15 @@ void TheoryEngine::finishInit()
                     << options::tcMode() << " not supported";
   }
   // create the relevance filter if any option requires it
-  if (options::relevanceFilter())
+  if (options::relevanceFilter() || options::analyzeModelFailures())
   {
+    Valuation val = theory::Valuation(this);
     d_relManager.reset(
-        new RelevanceManager(d_env.getUserContext(), theory::Valuation(this)));
+        new RelevanceManager(d_env.getUserContext(), val));
+    if (options::analyzeModelFailures())
+    {
+      d_analyzeModel.reset(new AnalyzeModel(val, d_relManager.get(), d_tc->getModel()));
+    }
   }
 
   // initialize the quantifiers engine
@@ -538,6 +543,10 @@ void TheoryEngine::check(Theory::Effort effort) {
         {
           d_tc->buildModel();
         }
+      }
+      else if (d_analyzeModel!=nullptr) 
+      {
+        d_analyzeModel->analyzeModelFailure();
       }
     }
 
