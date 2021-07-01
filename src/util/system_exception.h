@@ -24,7 +24,7 @@
 
 namespace cvc5 {
 
-class CVC5_EXPORT SystemException : public cvc5::Exception
+class SystemException : public cvc5::Exception
 {
  public:
   SystemException() :
