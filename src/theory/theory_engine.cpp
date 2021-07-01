@@ -47,6 +47,7 @@
 #include "theory/theory_model.h"
 #include "theory/theory_traits.h"
 #include "theory/uf/equality_engine.h"
+#include "theory/analyze_model.h"
 #include "util/resource_manager.h"
 
 using namespace std;

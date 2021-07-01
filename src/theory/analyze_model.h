@@ -39,12 +39,16 @@ class AnalyzeModel
   /** Debug model failure */
   void analyzeModelFailure();
  private:
+   /** Get or assign id for literal */
+   size_t getOrAssignIdFor(Node lit);
   /** The valuation object, used to query current value of theory literals */
   Valuation d_val;
   /** The relevance manager */
   RelevanceManager * d_rm;
   /** The theory model */
-  TheoryModel * d_model
+  TheoryModel * d_model;
+  /** Assigning literals to identifiers */
+  std::map< Node, size_t > d_litId;
 };
 
 }  // namespace theory

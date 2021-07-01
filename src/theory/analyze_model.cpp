@@ -25,10 +25,40 @@ class TheoryModel;
 class RelevanceManager;
 
 
-AnalyzeModel::AnalyzeModel(Valuation val, RelevanceManager * rm, TheoryModel * tm) : d_val(val), d_rm(rm), d_model(tm){}
+AnalyzeModel::AnalyzeModel(Valuation val, RelevanceManager * rm, TheoryModel * tm) : d_val(val), d_rm(rm), d_model(tm){
+  Assert (d_rm!=nullptr);
+  
+}
 
 void AnalyzeModel::analyzeModelFailure()
 {
+  bool rsuccess = false;
+  const std::unordered_set<TNode>& lits = d_rm->getRelevantAssertions(rsuccess);
+  if (!rsuccess)
+  {
+    Trace("analyze-model") << "AnalyzeModel::analyzeModelFailure: failed to get relevant assertions" << std::endl;
+  }
+  // assign identifiers to literals for printing
+  std::vector<size_t> ids;
+  for (const Node& l : lits)
+  {
+    size_t id = getOrAssignIdFor(l);
+    ids.push_back(id);
+  }
+  
+}
+
+size_t AnalyzeModel::getOrAssignIdFor(Node lit)
+{
+  std::map< Node, size_t >::iterator it = d_litId.find(lit);
+  if (it!=d_litId.end())
+  {
+    return it->second;
+  }
+  size_t id = d_litId.size();
+  Trace("analyze-model") << "(literal " << id << " " << lit << ")" << std::endl;
+  d_litId[lit] = id;
+  return id;
 }
 
 }  // namespace theory
