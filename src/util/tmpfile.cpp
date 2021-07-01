@@ -1,13 +1,16 @@
 /******************************************************************************
- * (C) 2001-2016, Daniel Kroening, Edmund Clarke,
- * Computer Science Department, University of Oxford
- * Computer Science Department, Carnegie Mellon University
- * 
- *  This file is adapted from CBMC utils https://github.com/diffblue/cbmc/util
+ * Top contributors (to current version):
+ *   Daniel Kroening, Elizabeth Polgreen
  *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
  * ****************************************************************************
  *
- *  Creates tmp files. Won't work for windows
+ * Creates and deletes tmp files. Won't work for windows
  */
 
 #include "tmpfile.h"
@@ -21,7 +24,6 @@
 #include <unistd.h>
 
 
-using namespace std;
 namespace cvc5 {
 
 /// Substitute for mkstemps (OpenBSD standard) for Windows, where it is
@@ -58,7 +60,7 @@ std::string get_temporary_file(
 temporary_filet::~temporary_filet()
 {
   if(!name.empty())
-    filesystem::remove(name);
+    std::filesystem::remove(name);
 }
 
 }

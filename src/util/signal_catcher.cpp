@@ -1,14 +1,18 @@
 /******************************************************************************
- * (C) 2001-2016, Daniel Kroening, Edmund Clarke,
- * Computer Science Department, University of Oxford
- * Computer Science Department, Carnegie Mellon University
- * 
- *  This file is adapted from CBMC utils https://github.com/diffblue/cbmc/util
+ * Top contributors (to current version):
+ *   Daniel Kroening, Elizabeth Polgreen
  *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
  * ****************************************************************************
  *
- *  
+ * Won't work for windows
  */
+
 
 #include "signal_catcher.h"
 #include <assert.h>
