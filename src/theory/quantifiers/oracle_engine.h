@@ -58,6 +58,11 @@ class OracleEngine : public QuantifiersModule
   /** Identify. */
   std::string identify() const override;
   /** Declare oracle fun */
+
+  /** Call an oracle with a set of arguments **/
+  std::string callOracle(const std::string &binary_name, 
+                         const std::vector<std::string> &argv);
+
   void declareOracleFun(Node f);
 
   /** Make an oracle interface quantifier */

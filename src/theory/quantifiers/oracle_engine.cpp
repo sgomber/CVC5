@@ -22,6 +22,10 @@
 #include "theory/quantifiers/quantifiers_registry.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/term_registry.h"
+#include "theory/quantifiers/term_tuple_enumerator.h"
+#include "util/run.h"
+
+#include <stdlib.h>
 
 using namespace cvc5::kind;
 using namespace cvc5::context;
@@ -62,6 +66,36 @@ void OracleEngine::reset_round(Theory::Effort e) {}
 
 void OracleEngine::registerQuantifier(Node q) {}
 
+std::string OracleEngine::callOracle(const std::string &binary_name, 
+                                     const std::vector<std::string> &argv)
+{
+  Trace("oracle-engine") << "Running oracle: " << binary_name;
+  for (auto &arg : argv)
+    Trace("oracle-engine") << ' ' << arg;
+  Trace("oracle-engine") << std::endl;
+
+  // run the oracle binary
+  std::ostringstream stdout_stream;
+
+  auto run_result = run(
+      binary_name,
+      argv,
+      "",
+      stdout_stream,
+      "");
+
+  // we assume that an oracle has a return code of 0 or 10. 
+  if (run_result != 0 && run_result !=10)
+  {
+    Trace("oracle-engine") << "oracle " << binary_name << " has failed with exit code " << run_result << std::endl;
+    Assert(run_result==0 || run_result==10);
+  }
+  // we assume that the oracle returns the result in SMT-LIB format
+  std::istringstream oracle_response_istream(stdout_stream.str());
+  Trace("oracle-engine") << "Oracle response is "<< stdout_stream.str() << std::endl;
+  return stdout_stream.str();
+}
+
 void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
   double clSet = 0;
   if (Trace.isOn("oracle-engine"))
@@ -71,6 +105,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
                          << "---" << std::endl;
   }
   FirstOrderModel* fm = d_treg.getModel();
+  // TermDb* termDatabase = d_treg.getTermDatabase();
   unsigned nquant = fm->getNumAssertedQuantifiers();
   std::vector<Node> currInterfaces;
   for (unsigned i = 0; i < nquant; i++)
@@ -83,20 +118,22 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
     currInterfaces.push_back(q);
     Trace("oracle-engine-state") << "Interface: " << q << std::endl;
   }
-  if (Trace.isOn("oracle-engine-state"))
-  {
-    for (const Node& f : d_oracleFuns)
-    {
-      Trace("oracle-engine-state") << "Oracle fun: " << f << std::endl;
-    }
-  }
-  
-  // check consistency of oracle functions via TermDatabase, see if they
-  // match model values, if so, we are done, otherwise, we add lemmas for
-  // each
-  //TheoryModel * tm = fm->getTheoryModel();
 
-  // also, call constraint generators?
+  // iterate over oracle functions
+  for (const Node& f : d_oracleFuns)
+  {
+    Trace("oracle-engine-state") << "Oracle fun: " << f << std::endl;
+    // get applications of oracle function
+    // iterate over applications
+    // evaluate arguments
+    // call oracle
+    // get response
+    // check consistency with model
+    // add lemma
+  }
+  // if all were consistent, we can terminate
+
+  // general SMTO: call constraint generators and assumption generators here
   
   if (Trace.isOn("oracle-engine"))
   {
