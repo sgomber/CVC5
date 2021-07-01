@@ -105,6 +105,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
                          << "---" << std::endl;
   }
   FirstOrderModel* fm = d_treg.getModel();
+  TermDb* termDatabase = d_treg.getTermDatabase();
   unsigned nquant = fm->getNumAssertedQuantifiers();
   std::vector<Node> currInterfaces;
   for (unsigned i = 0; i < nquant; i++)
@@ -117,20 +118,22 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
     currInterfaces.push_back(q);
     Trace("oracle-engine-state") << "Interface: " << q << std::endl;
   }
-  if (Trace.isOn("oracle-engine-state"))
-  {
-    for (const Node& f : d_oracleFuns)
-    {
-      Trace("oracle-engine-state") << "Oracle fun: " << f << std::endl;
-    }
-  }
-  
-  // check consistency of oracle functions via TermDatabase, see if they
-  // match model values, if so, we are done, otherwise, we add lemmas for
-  // each
-  //TheoryModel * tm = fm->getTheoryModel();
 
-  // also, call constraint generators?
+  // iterate over oracle functions
+  for (const Node& f : d_oracleFuns)
+  {
+    Trace("oracle-engine-state") << "Oracle fun: " << f << std::endl;
+    // get applications of oracle function
+    // iterate over applications
+    // evaluate arguments
+    // call oracle
+    // get response
+    // check consistency with model
+    // add lemma
+  }
+  // if all were consistent, we can terminate
+
+  // general SMTO: call constraint generators and assumption generators here
   
   if (Trace.isOn("oracle-engine"))
   {
