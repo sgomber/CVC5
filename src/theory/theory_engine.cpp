@@ -155,12 +155,13 @@ void TheoryEngine::finishInit()
                     << options::tcMode() << " not supported";
   }
   // create the relevance filter if any option requires it
-  if (options::relevanceFilter() || options::analyzeModelFailures())
+  bool analyzeModel = Trace.isOn("analyze-model");
+  if (options::relevanceFilter() || analyzeModel)
   {
     Valuation val = theory::Valuation(this);
     d_relManager.reset(
         new RelevanceManager(d_env.getUserContext(), val));
-    if (options::analyzeModelFailures())
+    if (analyzeModel)
     {
       d_analyzeModel.reset(new AnalyzeModel(val, d_relManager.get(), d_tc->getModel()));
     }

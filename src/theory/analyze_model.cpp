@@ -39,13 +39,37 @@ void AnalyzeModel::analyzeModelFailure()
     Trace("analyze-model") << "AnalyzeModel::analyzeModelFailure: failed to get relevant assertions" << std::endl;
   }
   // assign identifiers to literals for printing
+  std::vector<Node> lvec;
   std::vector<size_t> ids;
+  std::vector<bool> expectedVals;
+  std::vector<bool> expectedValKnown;
+  Trace("analyze-model") << "(assign";
   for (const Node& l : lits)
   {
     size_t id = getOrAssignIdFor(l);
+    lvec.push_back(l);
     ids.push_back(id);
+    Trace("analyze-model") << " " << id;
+    bool value = false;
+    bool valueKnown = d_val.hasSatValue(l, value);
+    expectedVals.push_back(value);
+    expectedValKnown.push_back(valueKnown);
   }
-  
+  Trace("analyze-model") << ")" << std::endl;
+  // compute subset that is false in model
+  std::vector<size_t> falseIds;
+  Trace("analyze-model") << "(assign-false";
+  for (size_t i=0, nlits = lvec.size(); i<nlits; i++)
+  {
+    Node litv = d_model->getValue(lvec[i]);
+    if (litv.isConst() && litv.getConst<bool>()==expectedVals[i])
+    {
+      continue;
+    }
+    falseIds.push_back(ids[i]);
+    Trace("analyze-model") << " " << ids[i];
+  }
+  Trace("analyze-model") << ")" << std::endl;
 }
 
 size_t AnalyzeModel::getOrAssignIdFor(Node lit)
