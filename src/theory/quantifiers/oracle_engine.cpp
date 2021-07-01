@@ -105,7 +105,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
                          << "---" << std::endl;
   }
   FirstOrderModel* fm = d_treg.getModel();
-  TermDb* termDatabase = d_treg.getTermDatabase();
+  // TermDb* termDatabase = d_treg.getTermDatabase();
   unsigned nquant = fm->getNumAssertedQuantifiers();
   std::vector<Node> currInterfaces;
   for (unsigned i = 0; i < nquant; i++)
