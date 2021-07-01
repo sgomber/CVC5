@@ -18,40 +18,40 @@
 #include <string>
 #include <vector>
 
-using namespace std;
+
 
 namespace cvc5 {
 /// This performs shell quoting if necessary on input \p src.
-string shell_quote(const string &src);
+std::string shell_quote(const std::string &src);
 
-int run(const string &what, const vector<string> &argv);
+int run(const std::string &what, const std::vector<std::string> &argv);
 
 /// This runs the executable given by the file name \p what.
 /// Control returns when execution has finished.
 /// Stdin, stdout and stderr may be redirected from/to a given file.
-/// Give the empty string to retain the default handle.
+/// Give the empty std::string to retain the default handle.
 /// Any shell-meta characters in the executable, \p argv and the I/O
 /// redirect files are escaped as needed.
 int run(
-  const string &what,
-  const vector<string> &argv,
-  const string &std_input,
-  const string &std_output,
-  const string &std_error);
+  const std::string &what,
+  const std::vector<std::string> &argv,
+  const std::string &std_input,
+  const std::string &std_output,
+  const std::string &std_error);
 
 /// This runs the executable given by the file name \p what.
 /// Control returns when execution has finished.
 /// Stdin and stderr may be redirected from/to a given file.
-/// Give the empty string to retain the default handle.
+/// Give the empty std::string to retain the default handle.
 /// Any output to stdout is stored in the \p std_output stream buffer.
 /// Any shell-meta characters in the executable, \p argv and the I/O
 /// redirect files are escaped as needed.
 int run(
-  const string &what,
-  const vector<string> &argv,
-  const string &std_input,
-  ostream &std_output,
-  const string &std_error);
+  const std::string &what,
+  const std::vector<std::string> &argv,
+  const std::string &std_input,
+  std::ostream &std_output,
+  const std::string &std_error);
 
 }
 #endif // CVC5__RUN_H
