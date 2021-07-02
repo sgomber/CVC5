@@ -125,13 +125,6 @@ void TheoryDatatypes::finishInit()
   d_valuation.setIrrelevantKind(APPLY_TESTER);
 }
 
-void TheoryDatatypes::notifyInConflict()
-{
-  d_state.notifyInConflict();
-  d_im.reset();
-  d_im.clearPending();
-}
-
 TheoryDatatypes::EqcInfo* TheoryDatatypes::getOrMakeEqcInfo( TNode n, bool doMake ){
   if( !hasEqcInfo( n ) ){
     if( doMake ){

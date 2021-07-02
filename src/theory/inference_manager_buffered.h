@@ -159,6 +159,11 @@ class InferenceManagerBuffered : public TheoryInferenceManager
    */
   void assertInternalFactTheoryInference(TheoryInference* fact);
 
+  /**
+   * Notify this inference manager that a conflict was sent in this SAT context.
+   * This method is called via TheoryEngine when a conflict is sent.
+   */
+  void notifyInConflict() override;
  protected:
   /** A set of pending inferences to be processed as lemmas */
   std::vector<std::unique_ptr<TheoryInference>> d_pendingLem;

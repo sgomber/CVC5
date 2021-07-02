@@ -562,5 +562,10 @@ void TheoryInferenceManager::setIncomplete(IncompleteId id)
   d_out.setIncomplete(id);
 }
 
+void TheoryInferenceManager::notifyInConflict()
+{
+  d_theoryState.notifyInConflict();
+}
+
 }  // namespace theory
 }  // namespace cvc5

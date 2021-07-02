@@ -278,9 +278,9 @@ void Theory::notifySharedTerm(TNode n)
 
 void Theory::notifyInConflict()
 {
-  if (d_theoryState != nullptr)
+  if (d_inferManager != nullptr)
   {
-    d_theoryState->notifyInConflict();
+    d_inferManager->notifyInConflict();
   }
 }
 

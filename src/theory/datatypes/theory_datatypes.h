@@ -205,8 +205,6 @@ private:
   /** finish initialization */
   void finishInit() override;
   //--------------------------------- end initialization
-  /** Notify in conflict */
-  void notifyInConflict() override;
   /** propagate */
   bool propagateLit(TNode literal);
   /** Conflict when merging two constants */
