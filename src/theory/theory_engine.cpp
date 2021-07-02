@@ -156,6 +156,7 @@ void TheoryEngine::finishInit()
   }
   // create the relevance filter if any option requires it
   bool analyzeModel = Trace.isOn("analyze-model");
+  analyzeModel = analyzeModel || Trace.isOn("analyze-model-debug");
   if (options::relevanceFilter() || analyzeModel)
   {
     Valuation val = theory::Valuation(this);

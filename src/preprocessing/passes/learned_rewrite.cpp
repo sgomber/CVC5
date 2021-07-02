@@ -326,10 +326,10 @@ Node LearnedRewrite::rewriteLearned(Node n,
           sum.push_back(m.second);
           continue;
         }
-        Node factor = ArithMSum::mkCoeffTerm(m.second, m.first[0]);
         Kind mk = m.first.getKind();
         if (mk == INTS_DIVISION || mk == INTS_DIVISION_TOTAL)
         {
+          Node factor = ArithMSum::mkCoeffTerm(m.second, m.first[0]);
           divTotal = divTotal && mk == INTS_DIVISION_TOTAL;
           divCount++;
           if (currDen.isNull())
@@ -347,6 +347,7 @@ Node LearnedRewrite::rewriteLearned(Node n,
         }
         else
         {
+          Node factor = ArithMSum::mkCoeffTerm(m.second, m.first);
           sum.push_back(factor);
         }
       }

@@ -49,6 +49,8 @@ class AnalyzeModel
   TheoryModel * d_model;
   /** Assigning literals to identifiers */
   std::map< Node, size_t > d_litId;
+  /** Entailed top-level */
+  std::unordered_set<size_t> d_entailed;
 };
 
 }  // namespace theory
