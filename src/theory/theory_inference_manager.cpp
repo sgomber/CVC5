@@ -126,7 +126,6 @@ void TheoryInferenceManager::trustedConflict(TrustNode tconf, InferenceId id)
   smt::currentResourceManager()->spendResource(id);
   Trace("im") << "(conflict " << id << " " << tconf.getProven() << ")"
               << std::endl;
-  d_theoryState.notifyInConflict();
   d_out.trustedConflict(tconf);
   ++d_numConflicts;
 }
