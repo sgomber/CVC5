@@ -25,7 +25,7 @@ namespace cvc5 {
 namespace theory {
 
 /**
- * The shared solver in the test architecture.
+ * The shared solver in the central equality engine architecture.
  */
 class SharedSolverCentral : public SharedSolver
 {
