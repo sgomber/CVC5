@@ -107,7 +107,7 @@ EqualityEngine::EqualityEngine(context::Context* context,
       d_masterEqualityEngine(0),
       d_context(context),
       d_done(context, false),
-      d_notify(&s_notifyNone),
+      d_notify(s_notifyNone),
       d_applicationLookupsCount(context, 0),
       d_nodesCount(context, 0),
       d_assertedEqualitiesCount(context, 0),
@@ -137,7 +137,7 @@ EqualityEngine::EqualityEngine(EqualityEngineNotify& notify,
       d_proofEqualityEngine(nullptr),
       d_context(context),
       d_done(context, false),
-      d_notify(&s_notifyNone),
+      d_notify(notify),
       d_applicationLookupsCount(context, 0),
       d_nodesCount(context, 0),
       d_assertedEqualitiesCount(context, 0),
@@ -155,10 +155,6 @@ EqualityEngine::EqualityEngine(EqualityEngineNotify& notify,
       d_name(name)
 {
   init();
-  // since init makes notifications (e.g. new eq class for true/false), and
-  // since the notify class may not be fully constructed yet, we
-  // don't set up the provided notification class until after initialization.
-  d_notify = &notify;
 }
 
 void EqualityEngine::setMasterEqualityEngine(EqualityEngine* master) {
@@ -390,7 +386,7 @@ void EqualityEngine::addTermInternal(TNode t, bool isOperator) {
   {
     // Notify e.g. the theory that owns this equality engine that there is a
     // new equivalence class.
-    d_notify->eqNotifyNewClass(t);
+    d_notify.eqNotifyNewClass(t);
     if (d_constantsAreTriggers && d_isConstant[result])
     {
       // Non-Boolean constants are trigger terms for all tags
@@ -512,7 +508,7 @@ bool EqualityEngine::assertEquality(TNode eq,
     }
 
     // notify the theory
-    d_notify->eqNotifyDisequal(eq[0], eq[1], reason);
+    d_notify.eqNotifyDisequal(eq[0], eq[1], reason);
 
     Debug("equality::trigger") << d_name << "::eq::addEquality(" << eq << "," << (polarity ? "true" : "false") << ")" << std::endl;
 
@@ -570,7 +566,7 @@ bool EqualityEngine::assertEquality(TNode eq,
             storePropagatedDisequality(aTag, aSharedId, bSharedId);
             // Notify
             Debug("equality::trigger") << d_name << "::eq::addEquality(" << eq << "," << (polarity ? "true" : "false") << ": notifying " << aTag << " for " << d_nodes[aSharedId] << " != " << d_nodes[bSharedId] << std::endl;
-            if (!d_notify->eqNotifyTriggerTermEquality(aTag, d_nodes[aSharedId], d_nodes[bSharedId], false)) {
+            if (!d_notify.eqNotifyTriggerTermEquality(aTag, d_nodes[aSharedId], d_nodes[bSharedId], false)) {
               break;
             }
           }
@@ -616,7 +612,6 @@ bool EqualityEngine::merge(EqualityNode& class1, EqualityNode& class2, std::vect
   {
     doNotify = true;
   }
-  Debug("equality") << "NOTIFY is " << doNotify << std::endl;
 
   // Check for constant merges
   bool class1isConstant = d_isConstant[class1Id];
@@ -746,7 +741,7 @@ bool EqualityEngine::merge(EqualityNode& class1, EqualityNode& class2, std::vect
 
   // notify the theory
   if (doNotify) {
-    d_notify->eqNotifyMerge(n1, n2);
+    d_notify.eqNotifyMerge(n1, n2);
   }
 
   // Go through the trigger term disequalities and propagate
@@ -803,7 +798,7 @@ bool EqualityEngine::merge(EqualityNode& class1, EqualityNode& class2, std::vect
               class1triggers.d_triggers[i1++];
           // since they are both tagged notify of merge
           EqualityNodeId tag2id = class2triggers.d_triggers[i2++];
-          if (!d_notify->eqNotifyTriggerTermEquality(
+          if (!d_notify.eqNotifyTriggerTermEquality(
                   tag1, d_nodes[tag1id], d_nodes[tag2id], true))
           {
             return false;
@@ -1725,11 +1720,11 @@ void EqualityEngine::addTriggerEquality(TNode eq) {
 
   // If they are equal or disequal already, no need for the trigger
   if (areEqual(eq[0], eq[1])) {
-    d_notify->eqNotifyTriggerPredicate(eq, true);
+    d_notify.eqNotifyTriggerPredicate(eq, true);
     skipTrigger = true;
   }
   if (areDisequal(eq[0], eq[1], true)) {
-    d_notify->eqNotifyTriggerPredicate(eq, false);
+    d_notify.eqNotifyTriggerPredicate(eq, false);
     skipTrigger = true;
   }
 
@@ -1768,11 +1763,11 @@ void EqualityEngine::addTriggerPredicate(TNode predicate) {
 
   // If it's know already, no need for the trigger
   if (areEqual(predicate, d_true)) {
-    d_notify->eqNotifyTriggerPredicate(predicate, true);
+    d_notify.eqNotifyTriggerPredicate(predicate, true);
     skipTrigger = true;
   }
   if (areEqual(predicate, d_false)) {
-    d_notify->eqNotifyTriggerPredicate(predicate, false);
+    d_notify.eqNotifyTriggerPredicate(predicate, false);
     skipTrigger = true;
   }
 
@@ -1939,7 +1934,7 @@ void EqualityEngine::propagate() {
       d_assertedEqualities.push_back(Equality(null_id, null_id));
       d_assertedEqualitiesCount = d_assertedEqualitiesCount + 1;
       // Notify
-      d_notify->eqNotifyConstantTermMerge(d_nodes[t1classId],
+      d_notify.eqNotifyConstantTermMerge(d_nodes[t1classId],
                                          d_nodes[t2classId]);
       // Empty the queue and exit
       continue;
@@ -2023,7 +2018,7 @@ void EqualityEngine::propagate() {
                 d_deducedDisequalityReasons.push_back(EqualityPair(original, d_falseId));
               }
               storePropagatedDisequality(THEORY_LAST, lhsId, rhsId);
-              if (!d_notify->eqNotifyTriggerPredicate(triggerInfo.d_trigger,
+              if (!d_notify.eqNotifyTriggerPredicate(triggerInfo.d_trigger,
                                                      triggerInfo.d_polarity))
               {
                 d_done = true;
@@ -2033,7 +2028,7 @@ void EqualityEngine::propagate() {
           else
           {
             // Equalities are simple
-            if (!d_notify->eqNotifyTriggerPredicate(triggerInfo.d_trigger,
+            if (!d_notify.eqNotifyTriggerPredicate(triggerInfo.d_trigger,
                                                    triggerInfo.d_polarity))
             {
               d_done = true;
@@ -2042,7 +2037,7 @@ void EqualityEngine::propagate() {
         }
         else
         {
-          if (!d_notify->eqNotifyTriggerPredicate(triggerInfo.d_trigger,
+          if (!d_notify.eqNotifyTriggerPredicate(triggerInfo.d_trigger,
                                                  triggerInfo.d_polarity))
           {
             d_done = true;
@@ -2228,7 +2223,7 @@ void EqualityEngine::addTriggerTerm(TNode t, TheoryId tag)
         << "): already have this trigger in class with " << d_nodes[triggerId]
         << std::endl;
     if (eqNodeId != triggerId
-        && !d_notify->eqNotifyTriggerTermEquality(
+        && !d_notify.eqNotifyTriggerTermEquality(
                tag, t, d_nodes[triggerId], true))
     {
       d_done = true;
@@ -2611,7 +2606,7 @@ bool EqualityEngine::propagateTriggerTermDisequalities(
         // Store the propagation
         storePropagatedDisequality(currentTag, myRep, tagRep);
         // Notify
-        if (!d_notify->eqNotifyTriggerTermEquality(
+        if (!d_notify.eqNotifyTriggerTermEquality(
                 currentTag, d_nodes[myRep], d_nodes[tagRep], false))
         {
           d_done = true;
