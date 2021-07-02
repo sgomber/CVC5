@@ -65,6 +65,7 @@ class EqualityEngine : public context::ContextNotifyObj {
 
   /** Proof equality engine */
   ProofEqEngine* d_proofEqualityEngine;
+
  public:
   /**
    * Initialize the equality engine, given the notification class.

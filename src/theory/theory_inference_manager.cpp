@@ -71,12 +71,12 @@ void TheoryInferenceManager::setEqualityEngine(eq::EqualityEngine* ee)
   if (d_pnm != nullptr && d_ee != nullptr)
   {
     d_pfee = d_ee->getProofEqualityEngine();
-    if (d_pfee==nullptr)
+    if (d_pfee == nullptr)
     {
       d_pfeeAlloc.reset(new eq::ProofEqEngine(d_theoryState.getSatContext(),
-                                        d_theoryState.getUserContext(),
-                                        *d_ee,
-                                        d_pnm));
+                                              d_theoryState.getUserContext(),
+                                              *d_ee,
+                                              d_pnm));
       d_pfee = d_pfeeAlloc.get();
       d_ee->setProofEqualityEngine(d_pfee);
     }
@@ -103,10 +103,7 @@ bool TheoryInferenceManager::hasSent() const
          || d_numCurrentFacts > 0;
 }
 
-eq::ProofEqEngine* TheoryInferenceManager::getProofEqEngine()
-{
-  return d_pfee;
-}
+eq::ProofEqEngine* TheoryInferenceManager::getProofEqEngine() { return d_pfee; }
 
 void TheoryInferenceManager::conflictEqConstantMerge(TNode a, TNode b)
 {

@@ -168,13 +168,13 @@ void EqualityEngine::setMasterEqualityEngine(EqualityEngine* master) {
 
 void EqualityEngine::setProofEqualityEngine(ProofEqEngine* pfee)
 {
-  Assert (d_proofEqualityEngine==nullptr);
+  Assert(d_proofEqualityEngine == nullptr);
   d_proofEqualityEngine = pfee;
 }
 ProofEqEngine* EqualityEngine::getProofEqualityEngine()
 {
   return d_proofEqualityEngine;
-}  
+}
 
 void EqualityEngine::enqueue(const MergeCandidate& candidate, bool back) {
   Debug("equality") << d_name << "::eq::enqueue({" << candidate.d_t1Id << "} "

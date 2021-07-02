@@ -45,7 +45,9 @@ namespace theory {
 class EqEngineManagerCentral : public EqEngineManager
 {
  public:
-  EqEngineManagerCentral(TheoryEngine& te, SharedSolver& shs, ProofNodeManager * pnm);
+  EqEngineManagerCentral(TheoryEngine& te,
+                         SharedSolver& shs,
+                         ProofNodeManager* pnm);
   ~EqEngineManagerCentral();
   /**
    * Initialize theories. This method allocates unique equality engines

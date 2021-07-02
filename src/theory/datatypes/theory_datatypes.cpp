@@ -896,7 +896,7 @@ void TheoryDatatypes::addTester(
               eq_terms.push_back( t_arg2 );
               if( t_arg2!=t_arg ){
                 nb << t_arg2.eqNode( t_arg );
-                //AlwaysAssert(areEqual(t_arg2, t_arg));
+                // AlwaysAssert(areEqual(t_arg2, t_arg));
               }
             }
           }

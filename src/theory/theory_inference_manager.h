@@ -429,7 +429,7 @@ class TheoryInferenceManager
   /** Pointer to the decision manager */
   DecisionManager* d_decManager;
   /** A proof equality engine */
-  eq::ProofEqEngine * d_pfee;
+  eq::ProofEqEngine* d_pfee;
   /** The proof equality engine we allocated */
   std::unique_ptr<eq::ProofEqEngine> d_pfeeAlloc;
   /** The proof node manager of the theory */
