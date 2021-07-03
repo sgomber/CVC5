@@ -1158,7 +1158,7 @@ Node TheoryEngine::getModelValue(TNode var) {
 
 TrustNode TheoryEngine::getExplanation(TNode node)
 {
-  Trace("theory::explain") << "TheoryEngine::getExplanation(" << node
+  Debug("theory::explain") << "TheoryEngine::getExplanation(" << node
                            << "): current propagation index = "
                            << d_propagationMapTimestamp << endl;
   bool polarity = node.getKind() != kind::NOT;
@@ -1167,13 +1167,13 @@ TrustNode TheoryEngine::getExplanation(TNode node)
   // If we're not in shared mode, explanations are simple
   if (!d_logicInfo.isSharingEnabled())
   {
-    Trace("theory::explain")
+    Debug("theory::explain")
         << "TheoryEngine::getExplanation: sharing is NOT enabled. "
         << " Responsible theory is: " << theoryOf(atom)->getId() << std::endl;
 
     TrustNode texplanation = theoryOf(atom)->explain(node);
     Node explanation = texplanation.getNode();
-    Trace("theory::explain") << "TheoryEngine::getExplanation(" << node
+    Debug("theory::explain") << "TheoryEngine::getExplanation(" << node
                              << ") => " << explanation << endl;
     if (isProofEnabled())
     {
@@ -1193,7 +1193,7 @@ TrustNode TheoryEngine::getExplanation(TNode node)
     return texplanation;
   }
 
-  Trace("theory::explain") << "TheoryEngine::getExplanation: sharing IS enabled"
+  Debug("theory::explain") << "TheoryEngine::getExplanation: sharing IS enabled"
                            << std::endl;
 
   // Initial thing to explain
@@ -1201,7 +1201,7 @@ TrustNode TheoryEngine::getExplanation(TNode node)
   Assert(d_propagationMap.find(toExplain) != d_propagationMap.end());
 
   NodeTheoryPair nodeExplainerPair = d_propagationMap[toExplain];
-  Trace("theory::explain")
+  Debug("theory::explain")
       << "TheoryEngine::getExplanation: explainer for node "
       << nodeExplainerPair.d_node
       << " is theory: " << nodeExplainerPair.d_theory << std::endl;
@@ -1210,7 +1210,7 @@ TrustNode TheoryEngine::getExplanation(TNode node)
   std::vector<NodeTheoryPair> vec{d_propagationMap[toExplain]};
   // Process the explanation
   TrustNode texplanation = getExplanation(vec);
-  Trace("theory::explain") << "TheoryEngine::getExplanation(" << node << ") => "
+  Debug("theory::explain") << "TheoryEngine::getExplanation(" << node << ") => "
                            << texplanation.getNode() << endl;
   return texplanation;
 }
@@ -1401,7 +1401,7 @@ void TheoryEngine::conflict(TrustNode tconflict, TheoryId theoryId)
   Assert(tconflict.getKind() == TrustNodeKind::CONFLICT);
 
   TNode conflict = tconflict.getNode();
-  Trace("theory::conflict") << "TheoryEngine::conflict(" << conflict << ", "
+  Debug("theory::conflict") << "TheoryEngine::conflict(" << conflict << ", "
                             << theoryId << ")" << endl;
   Trace("te-proof-debug") << "Check closed conflict" << std::endl;
   // doesn't require proof generator, yet, since THEORY_LEMMA is added below
@@ -1493,7 +1493,7 @@ void TheoryEngine::conflict(TrustNode tconflict, TheoryId theoryId)
     // pass the processed trust node
     TrustNode tconf =
         TrustNode::mkTrustConflict(fullConflict, d_lazyProof.get());
-    Trace("theory::conflict")
+    Debug("theory::conflict")
         << "TheoryEngine::conflict(" << conflict << ", " << theoryId
         << "): full = " << fullConflict << endl;
     Assert(properConflict(fullConflict));
@@ -1548,7 +1548,7 @@ TrustNode TheoryEngine::getExplanation(
       toExplain.d_theory = THEORY_BUILTIN;
     }
 
-    Trace("theory::explain")
+    Debug("theory::explain")
         << "[i=" << i << "] TheoryEngine::explain(): processing ["
         << toExplain.d_timestamp << "] " << toExplain.d_node << " sent from "
         << toExplain.d_theory << endl;
@@ -1587,7 +1587,7 @@ TrustNode TheoryEngine::getExplanation(
     // If from the SAT solver, keep it
     if (toExplain.d_theory == THEORY_SAT_SOLVER)
     {
-      Trace("theory::explain")
+      Debug("theory::explain")
           << "\tLiteral came from THEORY_SAT_SOLVER. Keeping it." << endl;
       exp.insert(explanationVector[i++].d_node);
       // it will be a free assumption in the proof
@@ -1598,7 +1598,7 @@ TrustNode TheoryEngine::getExplanation(
     // If an and, expand it
     if (toExplain.d_node.getKind() == kind::AND)
     {
-      Trace("theory::explain")
+      Debug("theory::explain")
           << "TheoryEngine::explain(): expanding " << toExplain.d_node
           << " got from " << toExplain.d_theory << endl;
       size_t nchild = toExplain.d_node.getNumChildren();
@@ -1625,13 +1625,13 @@ TrustNode TheoryEngine::getExplanation(
     // See if it was sent to the theory by another theory
     PropagationMap::const_iterator find = d_propagationMap.find(toExplain);
     if (find != d_propagationMap.end()) {
-      Trace("theory::explain")
+      Debug("theory::explain")
           << "\tTerm was propagated by another theory (theory = "
           << getTheoryString((*find).second.d_theory) << ")" << std::endl;
       // There is some propagation, check if its a timely one
       if ((*find).second.d_timestamp < toExplain.d_timestamp)
       {
-        Trace("theory::explain")
+        Debug("theory::explain")
             << "\tRelevant timetsamp, pushing " << (*find).second.d_node
             << "to index = " << explanationVector.size() << std::endl;
         explanationVector.push_back((*find).second);
@@ -1681,7 +1681,7 @@ TrustNode TheoryEngine::getExplanation(
     }
     Node explanation = texplanation.getNode();
 
-    Trace("theory::explain")
+    Debug("theory::explain")
         << "TheoryEngine::explain(): got explanation " << explanation
         << " got from " << toExplain.d_theory << endl;
     if (explanation == toExplain.d_node)
@@ -1693,7 +1693,7 @@ TrustNode TheoryEngine::getExplanation(
     /*
 if (explanation == toExplain.d_node)
 {
-  Trace("theory::explain") << "...identical, keep" << std::endl;
+  Debug("theory::explain") << "...identical, keep" << std::endl;
   AlwaysAssert(false);
   exp.insert(explanationVector[i++].d_node);
   continue;
