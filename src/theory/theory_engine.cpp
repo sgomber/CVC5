@@ -1042,7 +1042,7 @@ void TheoryEngine::assertFact(TNode literal)
         const AtomRequests::Request& request = it.get();
         Node toAssert =
             polarity ? (Node)request.d_atom : request.d_atom.notNode();
-        Trace("theory::atoms") << "TheoryEngine::assertFact(" << literal
+        Debug("theory::atoms") << "TheoryEngine::assertFact(" << literal
                                << "): sending requested " << toAssert << endl;
         assertToTheory(
             toAssert, literal, request.d_toTheory, THEORY_SAT_SOLVER);
@@ -1060,7 +1060,7 @@ void TheoryEngine::assertFact(TNode literal)
 }
 
 bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
-  Trace("theory::propagate")
+  Debug("theory::propagate")
       << "TheoryEngine::propagate(" << literal << ", " << theory << ")" << endl;
 
   Trace("dtview::prop") << std::string(d_env.getContext()->getLevel(), ' ')
@@ -1265,7 +1265,7 @@ void TheoryEngine::ensureLemmaAtoms(const std::vector<TNode>& atoms, theory::The
     // Rewrite the equality
     Node eqNormalized = Rewriter::rewrite(atoms[i]);
 
-    Trace("theory::atoms") << "TheoryEngine::ensureLemmaAtoms(): " << eq
+    Debug("theory::atoms") << "TheoryEngine::ensureLemmaAtoms(): " << eq
                            << " with nf " << eqNormalized << endl;
 
     // If the equality is a boolean constant, we send immediately
@@ -1349,7 +1349,7 @@ void TheoryEngine::lemma(TrustNode tlemma,
 
   // Do we need to check atoms
   if (atomsTo != theory::THEORY_LAST) {
-    Trace("theory::atoms") << "TheoryEngine::lemma(" << node << ", " << atomsTo
+    Debug("theory::atoms") << "TheoryEngine::lemma(" << node << ", " << atomsTo
                            << ")" << endl;
     AtomsCollect collectAtoms;
     NodeVisitor<AtomsCollect>::run(collectAtoms, node);

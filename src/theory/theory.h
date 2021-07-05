@@ -227,7 +227,6 @@ class Theory {
 
   /** Pointer to proof node manager */
   ProofNodeManager* d_pnm;
-
   /**
    * Needs shared term trigger equalities as facts.
    */
@@ -313,6 +312,12 @@ class Theory {
    */
   virtual void notifySharedTerm(TNode n);
 
+  /**
+   * Notify in conflict, called when a conflict clause is added to TheoryEngine
+   * by any theory (not necessarily this one). This signals that the theory
+   * should suspend what it is currently doing and wait for backtracking.
+   */
+  virtual void notifyInConflict();
  public:
   /** Notify in conflict */
   virtual void notifyInConflict();
