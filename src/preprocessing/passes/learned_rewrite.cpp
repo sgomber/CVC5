@@ -152,10 +152,10 @@ PreprocessingPassResult LearnedRewrite::applyInternal(
 
 Node LearnedRewrite::rewriteLearnedRec(Node n,
                                        arith::BoundInference& binfer,
-                                       std::vector<Node>& lems)
+                                       std::unordered_set<Node>& lems,
+                         std::unordered_map<TNode, Node>& visited)
 {
   NodeManager* nm = NodeManager::currentNM();
-  std::unordered_map<TNode, Node> visited;
   std::unordered_map<TNode, Node>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
@@ -205,9 +205,15 @@ Node LearnedRewrite::rewriteLearnedRec(Node n,
 
 Node LearnedRewrite::rewriteLearned(Node n,
                                     arith::BoundInference& binfer,
-                                    std::vector<Node>& lems)
+                                    std::unordered_set<Node>& lems)
 {
   NodeManager* nm = NodeManager::currentNM();
+  if (lems.find(n) != lems.end())
+  {
+    // n is a learned literal: replace by true, not considered a rewrite
+    // for statistics
+    return nm->mkConst(true);
+  }
   Trace("learned-rewrite-rr-debug") << "Rewrite " << n << std::endl;
   Node nr = Rewriter::rewrite(n);
   Kind k = nr.getKind();
@@ -431,7 +437,7 @@ Node LearnedRewrite::rewriteLearned(Node n,
         Node lemma = nm->mkNode(IMPLIES, nr, nm->mkNode(AND, lit, bound));
         Trace("learned-rewrite-div")
             << "Div collect lemma: " << lemma << std::endl;
-        lems.push_back(lemma);
+        lems.insert(lemma);
       }
     }
   }
