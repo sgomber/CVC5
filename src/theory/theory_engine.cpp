@@ -127,6 +127,7 @@ std::string getTheoryString(theory::TheoryId id)
 
 void TheoryEngine::finishInit()
 {
+  Trace("theory") << "Begin TheoryEngine::finishInit" << std::endl;
   // NOTE: This seems to be required since
   // theory::TheoryTraits<THEORY>::isParametric cannot be accessed without
   // using the CVC5_FOR_EACH_THEORY_STATEMENT macro. -AJR
@@ -210,6 +211,7 @@ void TheoryEngine::finishInit()
     // finish initializing the theory
     t->finishInit();
   }
+  Trace("theory") << "End TheoryEngine::finishInit" << std::endl;
 }
 
 ProofNodeManager* TheoryEngine::getProofNodeManager() const { return d_pnm; }
@@ -848,7 +850,6 @@ void TheoryEngine::notifyPreprocessedAssertions(
 }
 
 bool TheoryEngine::markPropagation(TNode assertion, TNode originalAssertion, theory::TheoryId toTheoryId, theory::TheoryId fromTheoryId) {
-
   // What and where we are asserting
   NodeTheoryPair toAssert(assertion, toTheoryId, d_propagationMapTimestamp);
   // What and where it came from
@@ -873,7 +874,6 @@ bool TheoryEngine::markPropagation(TNode assertion, TNode originalAssertion, the
 
 
 void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theory::TheoryId toTheoryId, theory::TheoryId fromTheoryId) {
-
   Trace("theory::assertToTheory") << "TheoryEngine::assertToTheory(" << assertion << ", " << originalAssertion << "," << toTheoryId << ", " << fromTheoryId << ")" << endl;
 
   Assert(toTheoryId != fromTheoryId);
@@ -1042,7 +1042,8 @@ void TheoryEngine::assertFact(TNode literal)
         const AtomRequests::Request& request = it.get();
         Node toAssert =
             polarity ? (Node)request.d_atom : request.d_atom.notNode();
-        Debug("theory::atoms") << "TheoryEngine::assertFact(" << literal << "): sending requested " << toAssert << endl;
+        Debug("theory::atoms") << "TheoryEngine::assertFact(" << literal
+                               << "): sending requested " << toAssert << endl;
         assertToTheory(
             toAssert, literal, request.d_toTheory, THEORY_SAT_SOLVER);
         it.next();
@@ -1059,7 +1060,8 @@ void TheoryEngine::assertFact(TNode literal)
 }
 
 bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
-  Debug("theory::propagate") << "TheoryEngine::propagate(" << literal << ", " << theory << ")" << endl;
+  Debug("theory::propagate")
+      << "TheoryEngine::propagate(" << literal << ", " << theory << ")" << endl;
 
   Trace("dtview::prop") << std::string(d_env.getContext()->getLevel(), ' ')
                         << ":THEORY-PROP: " << literal << endl;
@@ -1262,7 +1264,8 @@ void TheoryEngine::ensureLemmaAtoms(const std::vector<TNode>& atoms, theory::The
     // Rewrite the equality
     Node eqNormalized = Rewriter::rewrite(atoms[i]);
 
-    Debug("theory::atoms") << "TheoryEngine::ensureLemmaAtoms(): " << eq << " with nf " << eqNormalized << endl;
+    Debug("theory::atoms") << "TheoryEngine::ensureLemmaAtoms(): " << eq
+                           << " with nf " << eqNormalized << endl;
 
     // If the equality is a boolean constant, we send immediately
     if (eqNormalized.isConst()) {
@@ -1345,7 +1348,8 @@ void TheoryEngine::lemma(TrustNode tlemma,
 
   // Do we need to check atoms
   if (atomsTo != theory::THEORY_LAST) {
-    Debug("theory::atoms") << "TheoryEngine::lemma(" << node << ", " << atomsTo << ")" << endl;
+    Debug("theory::atoms") << "TheoryEngine::lemma(" << node << ", " << atomsTo
+                           << ")" << endl;
     AtomsCollect collectAtoms;
     NodeVisitor<AtomsCollect>::run(collectAtoms, node);
     ensureLemmaAtoms(collectAtoms.getAtoms(), atomsTo);
@@ -1380,11 +1384,23 @@ void TheoryEngine::lemma(TrustNode tlemma,
   d_lemmasAdded = true;
 }
 
+void TheoryEngine::markInConflict()
+{
+#ifdef CVC5_FOR_EACH_THEORY_STATEMENT
+#undef CVC5_FOR_EACH_THEORY_STATEMENT
+#endif
+#define CVC5_FOR_EACH_THEORY_STATEMENT(THEORY) \
+  theoryOf(THEORY)->notifyInConflict();
+  CVC5_FOR_EACH_THEORY;
+  d_inConflict = true;
+}
+
 void TheoryEngine::conflict(TrustNode tconflict, TheoryId theoryId)
 {
   Assert(tconflict.getKind() == TrustNodeKind::CONFLICT);
+
   TNode conflict = tconflict.getNode();
-  Trace("theory::conflict") << "TheoryEngine::conflict(" << conflict << ", "
+  Debug("theory::conflict") << "TheoryEngine::conflict(" << conflict << ", "
                             << theoryId << ")" << endl;
   Trace("te-proof-debug") << "Check closed conflict" << std::endl;
   // doesn't require proof generator, yet, since THEORY_LEMMA is added below
@@ -1394,7 +1410,7 @@ void TheoryEngine::conflict(TrustNode tconflict, TheoryId theoryId)
   Trace("dtview::conflict") << ":THEORY-CONFLICT: " << conflict << std::endl;
 
   // Mark that we are in conflict
-  d_inConflict = true;
+  markInConflict();
 
   if(Dump.isOn("t-conflicts")) {
     const Printer& printer = d_outMgr.getPrinter();
@@ -1476,7 +1492,9 @@ void TheoryEngine::conflict(TrustNode tconflict, TheoryId theoryId)
     // pass the processed trust node
     TrustNode tconf =
         TrustNode::mkTrustConflict(fullConflict, d_lazyProof.get());
-    Debug("theory::conflict") << "TheoryEngine::conflict(" << conflict << ", " << theoryId << "): full = " << fullConflict << endl;
+    Debug("theory::conflict")
+        << "TheoryEngine::conflict(" << conflict << ", " << theoryId
+        << "): full = " << fullConflict << endl;
     Assert(properConflict(fullConflict));
     Trace("te-proof-debug")
         << "Check closed conflict with sharing" << std::endl;
@@ -1564,7 +1582,8 @@ TrustNode TheoryEngine::getExplanation(
     // If from the SAT solver, keep it
     if (toExplain.d_theory == THEORY_SAT_SOLVER)
     {
-      Debug("theory::explain") << "\tLiteral came from THEORY_SAT_SOLVER. Kepping it." << endl;
+      Debug("theory::explain")
+          << "\tLiteral came from THEORY_SAT_SOLVER. Keeping it." << endl;
       exp.insert(explanationVector[i++].d_node);
       // it will be a free assumption in the proof
       Trace("te-proof-exp") << "- keep " << toExplain.d_node << std::endl;

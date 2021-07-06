@@ -196,6 +196,9 @@ class TheoryEngine {
    */
   void conflict(TrustNode conflict, theory::TheoryId theoryId);
 
+  /** set in conflict */
+  void markInConflict();
+
   /**
    * Debugging flag to ensure that shutdown() is called before the
    * destructor.
