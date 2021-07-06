@@ -35,20 +35,21 @@ class RelevanceManager;
 class AnalyzeModel
 {
  public:
-  AnalyzeModel(Valuation val, RelevanceManager * rm, TheoryModel * tm);
+  AnalyzeModel(Valuation val, RelevanceManager* rm, TheoryModel* tm);
   /** Debug model failure */
   void analyzeModelFailure();
+
  private:
-   /** Get or assign id for literal */
-   size_t getOrAssignIdFor(Node lit);
+  /** Get or assign id for literal */
+  size_t getOrAssignIdFor(Node lit);
   /** The valuation object, used to query current value of theory literals */
   Valuation d_val;
   /** The relevance manager */
-  RelevanceManager * d_rm;
+  RelevanceManager* d_rm;
   /** The theory model */
-  TheoryModel * d_model;
+  TheoryModel* d_model;
   /** Assigning literals to identifiers */
-  std::map< Node, size_t > d_litId;
+  std::map<Node, size_t> d_litId;
   /** Entailed top-level */
   std::unordered_set<size_t> d_entailed;
 };

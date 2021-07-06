@@ -34,6 +34,7 @@
 #include "smt/env.h"
 #include "smt/logic_exception.h"
 #include "smt/output_manager.h"
+#include "theory/analyze_model.h"
 #include "theory/combination_care_graph.h"
 #include "theory/decision_manager.h"
 #include "theory/quantifiers/first_order_model.h"
@@ -47,7 +48,6 @@
 #include "theory/theory_model.h"
 #include "theory/theory_traits.h"
 #include "theory/uf/equality_engine.h"
-#include "theory/analyze_model.h"
 #include "util/resource_manager.h"
 
 using namespace std;
@@ -161,11 +161,11 @@ void TheoryEngine::finishInit()
   if (options::relevanceFilter() || analyzeModel)
   {
     Valuation val = theory::Valuation(this);
-    d_relManager.reset(
-        new RelevanceManager(d_env.getUserContext(), val));
+    d_relManager.reset(new RelevanceManager(d_env.getUserContext(), val));
     if (analyzeModel)
     {
-      d_analyzeModel.reset(new AnalyzeModel(val, d_relManager.get(), d_tc->getModel()));
+      d_analyzeModel.reset(
+          new AnalyzeModel(val, d_relManager.get(), d_tc->getModel()));
     }
   }
 
@@ -549,7 +549,7 @@ void TheoryEngine::check(Theory::Effort effort) {
           d_tc->buildModel();
         }
       }
-      else if (d_analyzeModel!=nullptr) 
+      else if (d_analyzeModel != nullptr)
       {
         d_analyzeModel->analyzeModelFailure();
       }

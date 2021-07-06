@@ -17,10 +17,10 @@
 #include "expr/skolem_manager.h"
 #include "expr/term_context_stack.h"
 #include "preprocessing/assertion_pipeline.h"
+#include "smt/smt_statistics_registry.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/rewriter.h"
 #include "util/rational.h"
-#include "smt/smt_statistics_registry.h"
 
 using namespace cvc5::theory;
 using namespace cvc5::kind;
@@ -36,8 +36,7 @@ const char* toString(LearnedRewriteId i)
     case LearnedRewriteId::NON_ZERO_DEN: return "NON_ZERO_DEN";
     case LearnedRewriteId::INT_MOD_RANGE: return "INT_MOD_RANGE";
     case LearnedRewriteId::PRED_POS_LB: return "PRED_POS_LB";
-    case LearnedRewriteId::PRED_ZERO_LB:
-      return "PRED_ZERO_LB";
+    case LearnedRewriteId::PRED_ZERO_LB: return "PRED_ZERO_LB";
     case LearnedRewriteId::PRED_NEG_UB: return "PRED_NEG_UB";
     case LearnedRewriteId::NONE: return "NONE";
     default: return "?LearnedRewriteId?";
@@ -49,9 +48,10 @@ std::ostream& operator<<(std::ostream& out, LearnedRewriteId i)
   out << toString(i);
   return out;
 }
-  
+
 LearnedRewrite::LearnedRewrite(PreprocessingPassContext* preprocContext)
-    : PreprocessingPass(preprocContext, "learned-rewrite"), d_lrewCount(smtStatisticsRegistry().registerHistogram<LearnedRewriteId>(
+    : PreprocessingPass(preprocContext, "learned-rewrite"),
+      d_lrewCount(smtStatisticsRegistry().registerHistogram<LearnedRewriteId>(
           "LearnedRewrite::lrewCount"))
 {
 }
