@@ -20,10 +20,52 @@
 #include "preprocessing/preprocessing_pass.h"
 #include "preprocessing/preprocessing_pass_context.h"
 #include "theory/arith/bound_inference.h"
+#include "util/statistics_stats.h"
+
+#include <iosfwd>
 
 namespace cvc5 {
 namespace preprocessing {
 namespace passes {
+
+/**
+ * Learned rewrites in the pass below.
+ */
+enum class LearnedRewriteId
+{
+  // Elimination of division, int division, int modulus due to non-zero
+  // denominator. e.g. (not (= y 0)) => (div x y) ---> (div_total x y)
+  NON_ZERO_DEN,
+  // Elimination of int modulus due to range.
+  // e.g. (and (<= 0 x) (< x n)) => (mod x n) ---> x
+  INT_MOD_RANGE,
+  // e.g. (>= c 0) => (>= p 0) ---> true where c is inferred const lower bound
+  PRED_POS_LB,
+  // e.g. (= c 0) => (>= p 0) ---> true where c is inferred const lower bound
+  PRED_ZERO_LB,
+  // e.g. (> c 0) => (>= p 0) ---> false where c is inferred const upper bound
+  PRED_NEG_UB,
+
+  //-------------------------------------- NONE
+  NONE
+};
+
+/**
+ * Converts an learned rewrite id to a string.
+ *
+ * @param i The learned rewrite identifier
+ * @return The name of the learned rewrite identifier
+ */
+const char* toString(LearnedRewriteId i);
+
+/**
+ * Writes an learned rewrite identifier to a stream.
+ *
+ * @param out The stream to write to
+ * @param i The learned rewrite identifier to write to the stream
+ * @return The stream
+ */
+std::ostream& operator<<(std::ostream& out, LearnedRewriteId i);
 
 /**
  * Applies "delayed expand definitions", which eliminates purification UF
@@ -50,9 +92,11 @@ class LearnedRewrite : public PreprocessingPass
                       theory::arith::BoundInference& binfer,
                       std::vector<Node>& lems);
   /** Return learned rewrite */
-  Node returnRewriteLearned(Node n, Node nr, const char* c);
+  Node returnRewriteLearned(Node n, Node nr, LearnedRewriteId id);
   /** static upper/lower bounds */
   std::map<Node, std::pair<Node, Node> > d_bounds;
+  /** Counts number of applications of learned rewrites */
+  HistogramStat<LearnedRewriteId> d_lrewCount;
 };
 
 }  // namespace passes

@@ -20,6 +20,7 @@
 #include "theory/arith/arith_msum.h"
 #include "theory/rewriter.h"
 #include "util/rational.h"
+#include "smt/smt_statistics_registry.h"
 
 using namespace cvc5::theory;
 using namespace cvc5::kind;
@@ -28,8 +29,30 @@ namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
+const char* toString(LearnedRewriteId i)
+{
+  switch (i)
+  {
+    case LearnedRewriteId::NON_ZERO_DEN: return "NON_ZERO_DEN";
+    case LearnedRewriteId::INT_MOD_RANGE: return "INT_MOD_RANGE";
+    case LearnedRewriteId::PRED_POS_LB: return "PRED_POS_LB";
+    case LearnedRewriteId::PRED_ZERO_LB:
+      return "PRED_ZERO_LB";
+    case LearnedRewriteId::PRED_NEG_UB: return "PRED_NEG_UB";
+    case LearnedRewriteId::NONE: return "NONE";
+    default: return "?LearnedRewriteId?";
+  }
+}
+
+std::ostream& operator<<(std::ostream& out, LearnedRewriteId i)
+{
+  out << toString(i);
+  return out;
+}
+  
 LearnedRewrite::LearnedRewrite(PreprocessingPassContext* preprocContext)
-    : PreprocessingPass(preprocContext, "learned-rewrite")
+    : PreprocessingPass(preprocContext, "learned-rewrite"), d_lrewCount(smtStatisticsRegistry().registerHistogram<LearnedRewriteId>(
+          "LearnedRewrite::lrewCount"))
 {
 }
 
@@ -190,7 +213,7 @@ Node LearnedRewrite::rewriteLearned(Node n,
       std::vector<Node> children;
       children.insert(children.end(), n.begin(), n.end());
       Node ret = nm->mkNode(nk, children);
-      nr = returnRewriteLearned(nr, ret, "non_zero_den");
+      nr = returnRewriteLearned(nr, ret, LearnedRewriteId::NON_ZERO_DEN);
       nr = Rewriter::rewrite(nr);
       k = nr.getKind();
     }
@@ -216,7 +239,7 @@ Node LearnedRewrite::rewriteLearned(Node n,
         Rational bnum = nb.upper_value.getConst<Rational>();
         if (bnum.sgn() != -1 && bnum < bden)
         {
-          nr = returnRewriteLearned(nr, nr[0], "int_mod_range");
+          nr = returnRewriteLearned(nr, nr[0], LearnedRewriteId::INT_MOD_RANGE);
         }
       }
       // could also do num + k*den checks
@@ -292,14 +315,14 @@ Node LearnedRewrite::rewriteLearned(Node n,
         {
           // if positive lower bound, then GEQ is true, EQUAL is false
           Node ret = nm->mkConst(k == GEQ);
-          nr = returnRewriteLearned(nr, ret, "pred_pos_lb");
+          nr = returnRewriteLearned(nr, ret, LearnedRewriteId::PRED_POS_LB);
           return nr;
         }
         else if (lb.sgn() == 0 && k == GEQ)
         {
           // zero lower bound, GEQ is true
           Node ret = nm->mkConst(true);
-          nr = returnRewriteLearned(nr, ret, "pred_zero_lb");
+          nr = returnRewriteLearned(nr, ret, LearnedRewriteId::PRED_ZERO_LB);
           return nr;
         }
       }
@@ -309,7 +332,7 @@ Node LearnedRewrite::rewriteLearned(Node n,
         {
           // if negative upper bound, then GEQ and EQUAL are false
           Node ret = nm->mkConst(false);
-          nr = returnRewriteLearned(nr, ret, "pred_neg_ub");
+          nr = returnRewriteLearned(nr, ret, LearnedRewriteId::PRED_NEG_UB);
           return nr;
         }
       }
@@ -375,11 +398,11 @@ Node LearnedRewrite::rewriteLearned(Node n,
   return nr;
 }
 
-Node LearnedRewrite::returnRewriteLearned(Node n, Node nr, const char* c)
+Node LearnedRewrite::returnRewriteLearned(Node n, Node nr, LearnedRewriteId id)
 {
   if (Trace.isOn("learned-rewrite-rr"))
   {
-    Trace("learned-rewrite-rr") << "LearnedRewrite::Rewrite: (" << c << ") "
+    Trace("learned-rewrite-rr") << "LearnedRewrite::Rewrite: (" << id << ") "
                                 << n << " == " << nr << std::endl;
   }
   return nr;
