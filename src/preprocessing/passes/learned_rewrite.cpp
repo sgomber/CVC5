@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file learned_rewrite.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Caleb Donovick
- ** This file is part of the CVC5 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Rewriting based on learned literals
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Rewriting based on learned literals
+ */
 
 #include "preprocessing/passes/learned_rewrite.h"
 
@@ -61,25 +62,61 @@ PreprocessingPassResult LearnedRewrite::applyInternal(
 {
   arith::BoundInference binfer;
   std::vector<Node> learnedLits = d_preprocContext->getLearnedLiterals();
-  std::vector<Node> llrw;
+  std::unordered_set<Node> llrw;
+  std::unordered_map<TNode, Node> visited;
   if (learnedLits.empty())
   {
     Trace("learned-rewrite-ll") << "No learned literals" << std::endl;
+    return PreprocessingPassResult::NO_CONFLICT;
   }
   else
   {
     Trace("learned-rewrite-ll") << "Learned literals:" << std::endl;
     for (const Node& l : learnedLits)
     {
-      Node e = rewriteLearnedRec(l, binfer, llrw);
-      // maybe for bound inference?
-      Kind k = e.getKind();
+      // maybe use the literal for bound inference?
+      Kind k = l.getKind();
+      Assert (k != LT && k != GT && k != LEQ);
       if (k == EQUAL || k == GEQ)
       {
-        binfer.add(e);
-        llrw.push_back(e);
+        binfer.add(l);
       }
-      Trace("learned-rewrite-ll") << "- " << e << std::endl;
+      Trace("learned-rewrite-ll") << "- " << l << std::endl;
+    }
+    const std::map<Node, arith::Bounds>& bs = binfer.get();
+    // get the literals that were critical, i.e. used in the derivation of a
+    // bound
+    for (const std::pair<const Node, arith::Bounds>& b : bs)
+    {
+      for (size_t i = 0; i < 2; i++)
+      {
+        Node origin = i == 0 ? b.second.lower_origin : b.second.upper_origin;
+        if (!origin.isNull())
+        {
+          llrw.insert(origin);
+        }
+      }
+    }
+    // rewrite the non-critical learned literals, some may be redundant
+    for (const Node& l : learnedLits)
+    {
+      if (llrw.find(l) != llrw.end())
+      {
+        continue;
+      }
+      Node e = rewriteLearnedRec(l, binfer, llrw, visited);
+      if (e.isConst())
+      {
+        // ignore true
+        if (e.getConst<bool>())
+        {
+          continue;
+        }
+        // conflict, we are done
+        assertionsToPreprocess->push_back(e);
+        return PreprocessingPassResult::CONFLICT;
+      }
+      llrw.insert(e);
     }
     Trace("learned-rewrite-ll") << "end" << std::endl;
   }
@@ -89,7 +126,7 @@ PreprocessingPassResult LearnedRewrite::applyInternal(
     Node prev = (*assertionsToPreprocess)[i];
     Trace("learned-rewrite-assert")
         << "LearnedRewrite: assert: " << prev << std::endl;
-    Node e = rewriteLearnedRec(prev, binfer, llrw);
+    Node e = rewriteLearnedRec(prev, binfer, llrw, visited);
     if (e != prev)
     {
       Trace("learned-rewrite-assert")
@@ -97,11 +134,14 @@ PreprocessingPassResult LearnedRewrite::applyInternal(
       assertionsToPreprocess->replace(i, e);
     }
   }
-  // add the conjunction of learned literals back to assertions
+  // Add the conjunction of learned literals back to assertions. Notice that
+  // in some cases we may add top-level assertions back to the assertion list
+  // unchanged.
   if (!llrw.empty())
   {
     NodeManager* nm = NodeManager::currentNM();
-    Node llc = nm->mkAnd(llrw);
+    std::vector<Node> llrvec(llrw.begin(), llrw.end());
+    Node llc = nm->mkAnd(llrvec);
     Trace("learned-rewrite-assert")
         << "Re-add rewritten learned conjunction: " << llc << std::endl;
     assertionsToPreprocess->push_back(llc);
@@ -400,11 +440,12 @@ Node LearnedRewrite::rewriteLearned(Node n,
 
 Node LearnedRewrite::returnRewriteLearned(Node n, Node nr, LearnedRewriteId id)
 {
-  if (Trace.isOn("learned-rewrite-rr"))
+  if (Trace.isOn("learned-rewrite"))
   {
-    Trace("learned-rewrite-rr") << "LearnedRewrite::Rewrite: (" << id << ") "
-                                << n << " == " << nr << std::endl;
+    Trace("learned-rewrite") << "LearnedRewrite::Rewrite: (" << id << ") " << n
+                             << " == " << nr << std::endl;
   }
+  d_lrewCount << id;
   return nr;
 }
 

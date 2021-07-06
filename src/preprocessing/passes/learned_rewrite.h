@@ -1,17 +1,17 @@
-/*********************                                                        */
-/*! \file delay_expand_def.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC5 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Rewriting based on learned literals
- **/
-
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Rewriting based on learned literals
+ */
 #include "cvc5_private.h"
 
 #ifndef CVC5__PREPROCESSING__PASSES__LEARNED_REWRITE_H
@@ -68,8 +68,11 @@ const char* toString(LearnedRewriteId i);
 std::ostream& operator<<(std::ostream& out, LearnedRewriteId i);
 
 /**
- * Applies "delayed expand definitions", which eliminates purification UF
- * for kinds.
+ * Applies learned rewriting. This rewrites the input based on learned literals.
+ * This in particular does rewriting that goes beyond what is done in
+ * non-clausal simplification, where equality substitutions + constant
+ * propagations are performed. In particular, this pass applies rewriting
+ * based on e.g. bound inference for arithmetic.
  */
 class LearnedRewrite : public PreprocessingPass
 {
@@ -80,21 +83,20 @@ class LearnedRewrite : public PreprocessingPass
   PreprocessingPassResult applyInternal(
       AssertionPipeline* assertionsToPreprocess) override;
   /**
-   * Apply rewrite with learned literals.
+   * Apply rewrite with learned literals, traverses n.
    */
   Node rewriteLearnedRec(Node n,
                          theory::arith::BoundInference& binfer,
-                         std::vector<Node>& lems);
+                         std::unordered_set<Node>& lems,
+                         std::unordered_map<TNode, Node>& visited);
   /**
-   * Learned rewrite
+   * Learned rewrite to n, single step.
    */
   Node rewriteLearned(Node n,
                       theory::arith::BoundInference& binfer,
-                      std::vector<Node>& lems);
+                      std::unordered_set<Node>& lems);
   /** Return learned rewrite */
   Node returnRewriteLearned(Node n, Node nr, LearnedRewriteId id);
-  /** static upper/lower bounds */
-  std::map<Node, std::pair<Node, Node> > d_bounds;
   /** Counts number of applications of learned rewrites */
   HistogramStat<LearnedRewriteId> d_lrewCount;
 };
