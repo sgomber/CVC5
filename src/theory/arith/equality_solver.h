@@ -13,7 +13,7 @@
  * Arithmetic equality solver
  */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
 #ifndef CVC5__THEORY__ARITH__EQUALITY_SOLVER_H
 #define CVC5__THEORY__ARITH__EQUALITY_SOLVER_H
@@ -23,7 +23,7 @@
 #include "theory/arith/arith_state.h"
 #include "theory/ee_setup_info.h"
 #include "theory/uf/equality_engine.h"
-#include "theory/trust_node.h"
+#include "proof/trust_node.h"
 
 namespace cvc5 {
 namespace theory {

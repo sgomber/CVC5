@@ -51,8 +51,8 @@ bool EqualitySolver::preNotifyFact(TNode atom, bool pol, TNode fact)
   {
     Trace("arith-eq-solver")
         << "EqualitySolver::preNotifyFact: " << fact << std::endl;
-    Trace("arith-eq-solver")
-        << "(in state " << d_astate.toString() << ")" << std::endl;
+    //Trace("arith-eq-solver")
+    //    << "(in state " << d_astate.toString() << ")" << std::endl;
     // we will process
     // NOTE: currently do not process (since not beneficial to add arbitrary
     // equalities)
@@ -70,8 +70,8 @@ void EqualitySolver::notifyFact(TNode atom,
   // do nothing for now, but we could be more aggressive
   Trace("arith-eq-solver") << "EqualitySolver::notifyFact: " << fact
                            << std::endl;
-  Trace("arith-eq-solver") << "(in state " << d_astate.toString() << ")"
-                           << std::endl;
+  //Trace("arith-eq-solver") << "(in state " << d_astate.toString() << ")"
+  //                         << std::endl;
 }
 
 TrustNode EqualitySolver::explainLit(TNode lit)
@@ -88,9 +88,9 @@ bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerPredicate(
                            << value << std::endl;
   if (value)
   {
-    return d_aim.propagateManagedLit(predicate, false);
+    return d_aim.propagateLit(predicate);
   }
-  return d_aim.propagateManagedLit(predicate.notNode(), false);
+  return d_aim.propagateLit(predicate.notNode());
 }
 
 bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerTermEquality(
@@ -100,9 +100,9 @@ bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerTermEquality(
                            << " -> " << value << std::endl;
   if (value)
   {
-    return d_aim.propagateManagedLit(t1.eqNode(t2), false);
+    return d_aim.propagateLit(t1.eqNode(t2));
   }
-  return d_aim.propagateManagedLit(t1.eqNode(t2).notNode(), false);
+  return d_aim.propagateLit(t1.eqNode(t2).notNode());
 }
 
 void EqualitySolver::EqualitySolverNotify::eqNotifyConstantTermMerge(TNode t1,
