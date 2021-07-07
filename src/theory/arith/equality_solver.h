@@ -20,10 +20,10 @@
 
 #include "context/cdhashmap.h"
 #include "expr/node.h"
+#include "proof/trust_node.h"
 #include "theory/arith/arith_state.h"
 #include "theory/ee_setup_info.h"
 #include "theory/uf/equality_engine.h"
-#include "proof/trust_node.h"
 
 namespace cvc5 {
 namespace theory {
