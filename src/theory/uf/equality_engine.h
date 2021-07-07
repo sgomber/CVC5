@@ -108,6 +108,8 @@ class EqualityEngine : public context::ContextNotifyObj {
   /** Statistics about the equality engine instance */
   struct Statistics
   {
+    /** Total number of assertions */
+    IntStat d_assertCount;
     /** Total number of merges */
     IntStat d_mergesCount;
     /** Number of terms managed by the system */

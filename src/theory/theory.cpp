@@ -590,7 +590,7 @@ void Theory::addSharedTerm(TNode n)
   // if we have an equality engine, add the trigger term
   if (d_equalityEngine != nullptr)
   {
-    if (d_needsSharedTermEqFacts || !usesCentralEqualityEngine())
+    if (d_needsSharedTermEqFacts || !options::centralEEOpt() || !usesCentralEqualityEngine())
     {
       d_equalityEngine->addTriggerTerm(n, d_id);
     }

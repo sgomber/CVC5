@@ -29,7 +29,8 @@ namespace theory {
 namespace eq {
 
 EqualityEngine::Statistics::Statistics(const std::string& name)
-    : d_mergesCount(smtStatisticsRegistry().registerInt(name + "mergesCount")),
+    : d_assertCount(smtStatisticsRegistry().registerInt(name + "assertCount")),
+      d_mergesCount(smtStatisticsRegistry().registerInt(name + "mergesCount")),
       d_termsCount(smtStatisticsRegistry().registerInt(name + "termsCount")),
       d_functionTermsCount(
           smtStatisticsRegistry().registerInt(name + "functionTermsCount")),
@@ -479,6 +480,7 @@ bool EqualityEngine::assertPredicate(TNode t,
                                      TNode reason,
                                      unsigned pid)
 {
+  ++d_stats.d_assertCount;
   Debug("equality") << d_name << "::eq::addPredicate(" << t << "," << (polarity ? "true" : "false") << ")" << std::endl;
   Assert(t.getKind() != kind::EQUAL) << "Use assertEquality instead";
   TNode b = polarity ? d_true : d_false;
@@ -496,6 +498,7 @@ bool EqualityEngine::assertEquality(TNode eq,
                                     TNode reason,
                                     unsigned pid)
 {
+  ++d_stats.d_assertCount;
   Debug("equality") << d_name << "::eq::addEquality(" << eq << "," << (polarity ? "true" : "false") << ")" << std::endl;
   if (polarity) {
     // If two terms are already equal, don't assert anything
