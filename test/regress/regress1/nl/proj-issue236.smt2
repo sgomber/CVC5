@@ -1,0 +1,7 @@
+(set-logic QF_NIRA)
+(set-info :status sat)
+(declare-fun a () Int)
+(declare-fun b () Int)
+(assert (> a b 0))
+(assert (= (/ 3 (/ a b)) a))
+(check-sat)
