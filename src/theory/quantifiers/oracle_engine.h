@@ -89,6 +89,7 @@ class OracleEngine : public QuantifiersModule
  private:
   /** The oracle functions (user-context dependent) */
   context::CDList<Node> d_oracleFuns;
+  bool consistencyCheckPassed=false;
 };
 
 }  // namespace quantifiers

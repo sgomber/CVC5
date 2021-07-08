@@ -194,6 +194,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
   }
   FirstOrderModel* fm = d_treg.getModel();
   TermDb* termDatabase = d_treg.getTermDatabase();
+  eq::EqualityEngine* eq = getEqualityEngine();
   unsigned nquant = fm->getNumAssertedQuantifiers();
   std::vector<Node> currInterfaces;
   for (unsigned i = 0; i < nquant; i++)
@@ -207,6 +208,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
     Trace("oracle-engine-state") << "Interface: " << q << " with binary name " << getBinaryName(q) << std::endl;
   }
   bool all_fapps_consistent=true;
+  std::vector<Node> learned_lemmas;
   // iterate over oracle functions
   for (const Node& f : d_oracleFuns)
   {
@@ -234,7 +236,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
         Trace("oracle-engine-state") << "Node Response " << response;
         NodeManager* nm = NodeManager::currentNM();
         // check consistency with model
-        Node predictedResult = fm->getValue(fapp);
+        Node predictedResult = eq->getRepresentative(fapp);
         Trace("oracle-engine-state") << ", expected " << predictedResult << std::endl;
 
         if(predictedResult!=response)
@@ -244,15 +246,24 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
         }
         // add lemma
         Node lemma = nm->mkNode(EQUAL,response,fapp);
-        // Node lemma_implied_by = nm->mk
-        Trace("oracle-engine-state") << "Adding lemma " << lemma << std::endl;
-        d_qim.lemma(lemma, InferenceId::QUANTIFIERS_ORACLE_INTERFACE);
+        learned_lemmas.push_back(lemma);
       }
     }
   }
   // if all were consistent, we can terminate
   if(all_fapps_consistent)
-    Trace("oracle-engine-state") << "All responses consistent, we can stop now" << std::endl;
+  {
+    Trace("oracle-engine-state") << "All responses consistent, no lemmas added" << std::endl;
+    consistencyCheckPassed=true;
+  }
+  else
+  {
+    for(const auto &l: learned_lemmas)
+    {
+      Trace("oracle-engine-state") << "Adding lemma " << l << std::endl;
+      d_qim.lemma(l, InferenceId::QUANTIFIERS_ORACLE_INTERFACE);
+    }
+  }  
 
   // general SMTO: call constraint generators and assumption generators here
   
@@ -267,7 +278,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
 bool OracleEngine::checkCompleteFor(Node q)
 {
   // TODO: true if oracle consistency check works
-  return false;
+  return consistencyCheckPassed;
 }
 
 void OracleEngine::checkOwnership(Node q)
