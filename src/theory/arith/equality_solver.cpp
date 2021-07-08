@@ -24,7 +24,7 @@ namespace theory {
 namespace arith {
 
 EqualitySolver::EqualitySolver(ArithState& astate, InferenceManager& aim)
-    : d_astate(astate), d_aim(aim), d_notify(aim), d_ee(nullptr)
+    : d_astate(astate), d_aim(aim), d_notify(*this), d_ee(nullptr)
 {
 }
 
@@ -35,9 +35,9 @@ bool EqualitySolver::needsEqualityEngine(EeSetupInfo& esi)
   return true;
 }
 
-void EqualitySolver::setEqualityEngine(eq::EqualityEngine* ee)
+void EqualitySolver::finishInit()
 {
-  d_ee = ee;
+  d_ee = d_astate.getEqualityEngine();
   // add the function kinds
   d_ee->addFunctionKind(kind::NONLINEAR_MULT);
   d_ee->addFunctionKind(kind::EXPONENTIAL);
@@ -45,40 +45,35 @@ void EqualitySolver::setEqualityEngine(eq::EqualityEngine* ee)
   d_ee->addFunctionKind(kind::IAND);
 }
 
-bool EqualitySolver::preNotifyFact(TNode atom, bool pol, TNode fact)
+bool EqualitySolver::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal)
 {
-  if (atom.getKind() == EQUAL)
+  if (atom.getKind() != EQUAL)
   {
-    Trace("arith-eq-solver")
-        << "EqualitySolver::preNotifyFact: " << fact << std::endl;
-    // Trace("arith-eq-solver")
-    //    << "(in state " << d_astate.toString() << ")" << std::endl;
-    // we will process
-    // NOTE: currently do not process (since not beneficial to add arbitrary
-    // equalities)
+    // finished processing, since not beneficial to add non-equality facts
     return true;
   }
-  // don't process
-  return true;
+  Trace("arith-eq-solver")
+      << "EqualitySolver::preNotifyFact: " << fact << std::endl;
+  // Trace("arith-eq-solver")
+  //    << "(in state " << d_astate.toString() << ")" << std::endl;
+  // we will process
+  return false;
 }
 
-void EqualitySolver::notifyFact(TNode atom,
-                                bool pol,
-                                TNode fact,
-                                bool isInternal)
-{
-  // do nothing for now, but we could be more aggressive
-  Trace("arith-eq-solver") << "EqualitySolver::notifyFact: " << fact
-                           << std::endl;
-  // Trace("arith-eq-solver") << "(in state " << d_astate.toString() << ")"
-  //                         << std::endl;
-}
 
-TrustNode EqualitySolver::explainLit(TNode lit)
+TrustNode EqualitySolver::explain(TNode lit)
 {
-  // just explain with equality engine for now
-  Node exp = d_ee->mkExplainLit(lit);
-  return TrustNode::mkTrustPropExp(lit, exp, nullptr);
+  // TODO: check if we propagated it?
+  // explain with the arithmetic inference manager
+  return d_aim.explainLit(lit);
+}
+bool EqualitySolver::propagateLit(Node lit)
+{
+  return d_aim.propagateLit(lit);
+}
+void EqualitySolver::conflictEqConstantMerge(TNode a, TNode b)
+{
+  d_aim.conflictEqConstantMerge(a,b);
 }
 
 bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerPredicate(
@@ -88,9 +83,9 @@ bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerPredicate(
                            << value << std::endl;
   if (value)
   {
-    return d_aim.propagateLit(predicate);
+    return d_es.propagateLit(predicate);
   }
-  return d_aim.propagateLit(predicate.notNode());
+  return d_es.propagateLit(predicate.notNode());
 }
 
 bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerTermEquality(
@@ -100,9 +95,9 @@ bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerTermEquality(
                            << " -> " << value << std::endl;
   if (value)
   {
-    return d_aim.propagateLit(t1.eqNode(t2));
+    return d_es.propagateLit(t1.eqNode(t2));
   }
-  return d_aim.propagateLit(t1.eqNode(t2).notNode());
+  return d_es.propagateLit(t1.eqNode(t2).notNode());
 }
 
 void EqualitySolver::EqualitySolverNotify::eqNotifyConstantTermMerge(TNode t1,
@@ -110,7 +105,7 @@ void EqualitySolver::EqualitySolverNotify::eqNotifyConstantTermMerge(TNode t1,
 {
   Trace("arith-eq-solver") << "...conflict merge " << t1 << " " << t2
                            << std::endl;
-  return d_aim.conflictEqConstantMerge(t1, t2);
+  d_es.conflictEqConstantMerge(t1, t2);
 }
 
 }  // namespace arith

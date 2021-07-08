@@ -46,26 +46,23 @@ class EqualitySolver
    */
   bool needsEqualityEngine(EeSetupInfo& esi);
   /**
-   * Set equality engine, where ee is a pointer to the official equality engine
-   * of theory.
+   * Finish initialize
    */
-  void setEqualityEngine(eq::EqualityEngine* ee);
+  void finishInit();
   //--------------------------------- end initialization
   /** Pre-notify fact, return true if processed. */
-  bool preNotifyFact(TNode atom, bool pol, TNode fact);
-  /** Notify fact, return true if processed. */
-  void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal);
+  bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal);
   /**
    * Return an explanation for the literal lit (which was previously propagated
    * by this solver).
    */
-  TrustNode explainLit(TNode lit);
+  TrustNode explain(TNode lit);
 
  private:
   class EqualitySolverNotify : public eq::EqualityEngineNotify
   {
    public:
-    EqualitySolverNotify(InferenceManager& aim) : d_aim(aim) {}
+    EqualitySolverNotify(EqualitySolver& es) : d_es(es) {}
 
     bool eqNotifyTriggerPredicate(TNode predicate, bool value) override;
 
@@ -81,8 +78,12 @@ class EqualitySolver
 
    private:
     /** reference to parent */
-    InferenceManager& d_aim;
+    EqualitySolver& d_es;
   };
+  /** Propagate literal */
+  bool propagateLit(Node lit);
+  /** Conflict when two constants merge */
+  void conflictEqConstantMerge(TNode a, TNode b);
   /** reference to the state */
   ArithState& d_astate;
   /** reference to parent */

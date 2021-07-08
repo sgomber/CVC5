@@ -228,10 +228,6 @@ class Theory {
   /** Pointer to proof node manager */
   ProofNodeManager* d_pnm;
   /**
-   * Needs shared term trigger equalities as facts.
-   */
-  bool d_needsSharedTermEqFacts;
-  /**
    * Are proofs enabled?
    *
    * They are considered enabled if the ProofNodeManager is non-null.
@@ -885,7 +881,7 @@ class Theory {
    * equalities between shared terms as explicit facts on the fact queue
    * or whether having them asserted in its equality engine suffices.
    */
-  bool needsSharedTermEqFacts() const { return d_needsSharedTermEqFacts; }
+  static bool needsSharedTermEqFacts(TheoryId id) const;
 
   /** uses central equality engine */
   bool usesCentralEqualityEngine() const;

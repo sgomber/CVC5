@@ -60,7 +60,6 @@ TheoryUF::TheoryUF(context::Context* c,
   // indicate we are using the default theory state and inference managers
   d_theoryState = &d_state;
   d_inferManager = &d_im;
-  d_needsSharedTermEqFacts = false;
 }
 
 TheoryUF::~TheoryUF() {

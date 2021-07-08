@@ -35,6 +35,7 @@
 #include "theory/theory_rewriter.h"
 #include "theory/theory_state.h"
 #include "theory/trust_substitutions.h"
+#include "options/arith_options.h"
 
 using namespace std;
 
@@ -87,8 +88,7 @@ Theory::Theory(TheoryId id,
       d_theoryState(nullptr),
       d_inferManager(nullptr),
       d_quantEngine(nullptr),
-      d_pnm(pnm),
-      d_needsSharedTermEqFacts(true)
+      d_pnm(pnm)
 {
 }
 
@@ -590,7 +590,7 @@ void Theory::addSharedTerm(TNode n)
   // if we have an equality engine, add the trigger term
   if (d_equalityEngine != nullptr)
   {
-    if (d_needsSharedTermEqFacts || !options::centralEEOpt()
+    if (needsSharedTermEqFacts(d_id) || !options::centralEEOpt()
         || !usesCentralEqualityEngine())
     {
       d_equalityEngine->addTriggerTerm(n, d_id);
@@ -623,11 +623,23 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
   {
     return false;
   }
-  // || id ==THEORY_BV
-  // || id ==THEORY_ARITH
+  if (id==THEORY_ARITH)
+  {
+    // conditional on whether we are using the equality solver
+    return options::arithEqSolver();
+  }
   return id == THEORY_UF || id == THEORY_DATATYPES || id == THEORY_BAGS
          || id == THEORY_FP || id == THEORY_SETS || id == THEORY_STRINGS
          || id == THEORY_SEP || id == THEORY_ARRAYS || id == THEORY_BV;
+}
+
+bool Theory::needsSharedTermEqFacts(TheoryId id) const
+{
+  if (id==THEORY_UF || id==THEORY_DATATYPES)
+  {
+    return false;
+  }
+  return true;
 }
 
 }  // namespace theory

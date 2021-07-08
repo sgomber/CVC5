@@ -31,6 +31,7 @@ namespace nl {
 class NonlinearExtension;
 }
 
+class EqualitySolver;
 class TheoryArithPrivate;
 
 /**
@@ -147,6 +148,8 @@ class TheoryArith : public Theory {
   ArithState d_astate;
   /** The arith::InferenceManager. */
   InferenceManager d_im;
+  /** The equality solver */
+  std::unique_ptr<EqualitySolver> d_eqSolver;
 
   /**
    * The non-linear extension, responsible for all approaches for non-linear
