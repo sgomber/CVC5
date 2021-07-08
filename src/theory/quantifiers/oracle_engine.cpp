@@ -231,10 +231,12 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
 
         // call oracle
         Node response = callOracle(binaryName, arguments);  
-        Trace("oracle-engine-state") << "Node Response " << response << std::endl;
+        Trace("oracle-engine-state") << "Node Response " << response;
         NodeManager* nm = NodeManager::currentNM();
         // check consistency with model
         Node predictedResult = fm->getValue(fapp);
+        Trace("oracle-engine-state") << ", expected " << predictedResult << std::endl;
+
         if(predictedResult!=response)
         {
           Trace("oracle-engine-state") << "Inconsistent response! Model expected " << predictedResult << std::endl;
@@ -242,7 +244,9 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
         }
         // add lemma
         Node lemma = nm->mkNode(EQUAL,response,fapp);
+        // Node lemma_implied_by = nm->mk
         Trace("oracle-engine-state") << "Adding lemma " << lemma << std::endl;
+        d_qim.lemma(lemma, InferenceId::QUANTIFIERS_ORACLE_INTERFACE);
       }
     }
   }
