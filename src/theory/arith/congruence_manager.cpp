@@ -78,13 +78,10 @@ ArithCongruenceManager::ArithCongruenceManager(
     d_ee->addFunctionKind(kind::SINE);
     d_ee->addFunctionKind(kind::IAND);
     d_ee->addFunctionKind(kind::POW2);
-    if (d_pnm!=nullptr)
+    if (d_pnm != nullptr)
     {
       // allocate an internal proof equality engine
-      d_allocPfee.reset(new eq::ProofEqEngine(c,
-                                              u,
-                                              *d_ee,
-                                              d_pnm));
+      d_allocPfee.reset(new eq::ProofEqEngine(c, u, *d_ee, d_pnm));
       d_ee->setProofEqualityEngine(d_allocPfee.get());
     }
   }
@@ -94,7 +91,7 @@ ArithCongruenceManager::~ArithCongruenceManager() {}
 
 bool ArithCongruenceManager::needsEqualityEngine(EeSetupInfo& esi)
 {
-  Assert (!options::arithEqSolver());
+  Assert(!options::arithEqSolver());
   esi.d_notify = &d_notify;
   esi.d_name = "theory::arith::ArithCongruenceManager";
   return true;
