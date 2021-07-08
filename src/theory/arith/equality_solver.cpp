@@ -45,21 +45,21 @@ void EqualitySolver::finishInit()
   d_ee->addFunctionKind(kind::IAND);
 }
 
-bool EqualitySolver::preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal)
+bool EqualitySolver::preNotifyFact(
+    TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal)
 {
   if (atom.getKind() != EQUAL)
   {
     // finished processing, since not beneficial to add non-equality facts
     return true;
   }
-  Trace("arith-eq-solver")
-      << "EqualitySolver::preNotifyFact: " << fact << std::endl;
+  Trace("arith-eq-solver") << "EqualitySolver::preNotifyFact: " << fact
+                           << std::endl;
   // Trace("arith-eq-solver")
   //    << "(in state " << d_astate.toString() << ")" << std::endl;
   // we will process
   return false;
 }
-
 
 TrustNode EqualitySolver::explain(TNode lit)
 {
@@ -67,13 +67,10 @@ TrustNode EqualitySolver::explain(TNode lit)
   // explain with the arithmetic inference manager
   return d_aim.explainLit(lit);
 }
-bool EqualitySolver::propagateLit(Node lit)
-{
-  return d_aim.propagateLit(lit);
-}
+bool EqualitySolver::propagateLit(Node lit) { return d_aim.propagateLit(lit); }
 void EqualitySolver::conflictEqConstantMerge(TNode a, TNode b)
 {
-  d_aim.conflictEqConstantMerge(a,b);
+  d_aim.conflictEqConstantMerge(a, b);
 }
 
 bool EqualitySolver::EqualitySolverNotify::eqNotifyTriggerPredicate(

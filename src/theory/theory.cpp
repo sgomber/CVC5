@@ -22,6 +22,7 @@
 
 #include "base/check.h"
 #include "expr/node_algorithm.h"
+#include "options/arith_options.h"
 #include "options/smt_options.h"
 #include "options/theory_options.h"
 #include "smt/smt_statistics_registry.h"
@@ -35,7 +36,6 @@
 #include "theory/theory_rewriter.h"
 #include "theory/theory_state.h"
 #include "theory/trust_substitutions.h"
-#include "options/arith_options.h"
 
 using namespace std;
 
@@ -623,7 +623,7 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
   {
     return false;
   }
-  if (id==THEORY_ARITH)
+  if (id == THEORY_ARITH)
   {
     // conditional on whether we are using the equality solver
     return options::arithEqSolver();
@@ -635,7 +635,7 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
 
 bool Theory::needsSharedTermEqFacts(TheoryId id) const
 {
-  if (id==THEORY_UF || id==THEORY_DATATYPES)
+  if (id == THEORY_UF || id == THEORY_DATATYPES)
   {
     return false;
   }

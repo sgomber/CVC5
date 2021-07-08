@@ -51,7 +51,8 @@ class EqualitySolver
   void finishInit();
   //--------------------------------- end initialization
   /** Pre-notify fact, return true if processed. */
-  bool preNotifyFact(TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal);
+  bool preNotifyFact(
+      TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal);
   /**
    * Return an explanation for the literal lit (which was previously propagated
    * by this solver).
