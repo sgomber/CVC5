@@ -37,6 +37,7 @@ class InferenceManager;
 class EqualitySolver
 {
   using NodeSet = context::CDHashSet<Node>;
+
  public:
   EqualitySolver(ArithState& astate, InferenceManager& aim);
   ~EqualitySolver() {}

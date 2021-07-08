@@ -24,7 +24,11 @@ namespace theory {
 namespace arith {
 
 EqualitySolver::EqualitySolver(ArithState& astate, InferenceManager& aim)
-    : d_astate(astate), d_aim(aim), d_notify(*this), d_ee(nullptr), d_propLits(astate.getSatContext())
+    : d_astate(astate),
+      d_aim(aim),
+      d_notify(*this),
+      d_ee(nullptr),
+      d_propLits(astate.getSatContext())
 {
 }
 
@@ -65,17 +69,18 @@ bool EqualitySolver::preNotifyFact(
 TrustNode EqualitySolver::explain(TNode lit)
 {
   // check if we propagated it?
-  if (d_propLits.find(lit)==d_propLits.end())
+  if (d_propLits.find(lit) == d_propLits.end())
   {
     return TrustNode::null();
   }
   // if we did, explain with the arithmetic inference manager
   return d_aim.explainLit(lit);
 }
-bool EqualitySolver::propagateLit(Node lit) {
+bool EqualitySolver::propagateLit(Node lit)
+{
   // remember that this was a literal we propagated
   d_propLits.insert(lit);
-  return d_aim.propagateLit(lit); 
+  return d_aim.propagateLit(lit);
 }
 void EqualitySolver::conflictEqConstantMerge(TNode a, TNode b)
 {
