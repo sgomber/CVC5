@@ -18,7 +18,7 @@
 #ifndef CVC5__THEORY__ARITH__EQUALITY_SOLVER_H
 #define CVC5__THEORY__ARITH__EQUALITY_SOLVER_H
 
-#include "context/cdhashmap.h"
+#include "context/cdhashset.h"
 #include "expr/node.h"
 #include "proof/trust_node.h"
 #include "theory/arith/arith_state.h"
@@ -36,6 +36,7 @@ class InferenceManager;
  */
 class EqualitySolver
 {
+  using NodeSet = context::CDHashSet<Node>;
  public:
   EqualitySolver(ArithState& astate, InferenceManager& aim);
   ~EqualitySolver() {}
@@ -93,6 +94,8 @@ class EqualitySolver
   EqualitySolverNotify d_notify;
   /** Pointer to the equality engine */
   eq::EqualityEngine* d_ee;
+  /** The literals we have propagated */
+  NodeSet d_propLits;
 };
 
 }  // namespace arith

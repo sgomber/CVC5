@@ -24,7 +24,7 @@ namespace theory {
 namespace arith {
 
 EqualitySolver::EqualitySolver(ArithState& astate, InferenceManager& aim)
-    : d_astate(astate), d_aim(aim), d_notify(*this), d_ee(nullptr)
+    : d_astate(astate), d_aim(aim), d_notify(*this), d_ee(nullptr), d_propLits(astate.getSatContext())
 {
 }
 
@@ -43,6 +43,7 @@ void EqualitySolver::finishInit()
   d_ee->addFunctionKind(kind::EXPONENTIAL);
   d_ee->addFunctionKind(kind::SINE);
   d_ee->addFunctionKind(kind::IAND);
+  d_ee->addFunctionKind(kind::POW2);
 }
 
 bool EqualitySolver::preNotifyFact(
@@ -63,11 +64,19 @@ bool EqualitySolver::preNotifyFact(
 
 TrustNode EqualitySolver::explain(TNode lit)
 {
-  // TODO: check if we propagated it?
-  // explain with the arithmetic inference manager
+  // check if we propagated it?
+  if (d_propLits.find(lit)==d_propLits.end())
+  {
+    return TrustNode::null();
+  }
+  // if we did, explain with the arithmetic inference manager
   return d_aim.explainLit(lit);
 }
-bool EqualitySolver::propagateLit(Node lit) { return d_aim.propagateLit(lit); }
+bool EqualitySolver::propagateLit(Node lit) {
+  // remember that this was a literal we propagated
+  d_propLits.insert(lit);
+  return d_aim.propagateLit(lit); 
+}
 void EqualitySolver::conflictEqConstantMerge(TNode a, TNode b)
 {
   d_aim.conflictEqConstantMerge(a, b);

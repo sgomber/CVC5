@@ -881,7 +881,7 @@ class Theory {
    * equalities between shared terms as explicit facts on the fact queue
    * or whether having them asserted in its equality engine suffices.
    */
-  static bool needsSharedTermEqFacts(TheoryId id) const;
+  static bool needsSharedTermEqFacts(TheoryId id);
 
   /** uses central equality engine */
   bool usesCentralEqualityEngine() const;

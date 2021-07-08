@@ -633,7 +633,7 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
          || id == THEORY_SEP || id == THEORY_ARRAYS || id == THEORY_BV;
 }
 
-bool Theory::needsSharedTermEqFacts(TheoryId id) const
+bool Theory::needsSharedTermEqFacts(TheoryId id)
 {
   if (id == THEORY_UF || id == THEORY_DATATYPES)
   {
