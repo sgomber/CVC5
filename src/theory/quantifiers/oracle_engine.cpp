@@ -62,12 +62,19 @@ bool OracleEngine::needsCheck(Theory::Effort e)
   return d_qstate.getInstWhenNeedsCheck(e);
 }
 
+OracleEngine::QEffort OracleEngine::needsModel(Theory::Effort e)
+{
+  return  QEFFORT_MODEL;
+}
+
 void OracleEngine::reset_round(Theory::Effort e) {}
 
 void OracleEngine::registerQuantifier(Node q) {}
 
-
 void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
+  if(quant_e != QEFFORT_MODEL) 
+    { return; }
+
   double clSet = 0;
   d_checkedAllOracles=false;
   if (Trace.isOn("oracle-engine"))
