@@ -1278,6 +1278,8 @@ void DeclareOracleFunCommand::invoke(api::Solver* solver, SymbolManager* sm)
 {
   // Notice that the oracle function is already declared by the parser so that
   // the symbol is bound eagerly.
+  // mark that it will be printed in the model
+  sm->addModelDeclarationTerm(d_func);
   d_commandStatus = CommandSuccess::instance();
 }
 

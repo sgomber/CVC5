@@ -23,7 +23,7 @@
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/term_registry.h"
 #include "theory/quantifiers/term_tuple_enumerator.h"
-#include "util/run.h"
+
 
 #include <stdlib.h>
 
@@ -66,38 +66,10 @@ void OracleEngine::reset_round(Theory::Effort e) {}
 
 void OracleEngine::registerQuantifier(Node q) {}
 
-std::string OracleEngine::callOracle(const std::string &binary_name, 
-                                     const std::vector<std::string> &argv)
-{
-  Trace("oracle-engine") << "Running oracle: " << binary_name;
-  for (auto &arg : argv)
-    Trace("oracle-engine") << ' ' << arg;
-  Trace("oracle-engine") << std::endl;
-
-  // run the oracle binary
-  std::ostringstream stdout_stream;
-
-  auto run_result = run(
-      binary_name,
-      argv,
-      "",
-      stdout_stream,
-      "");
-
-  // we assume that an oracle has a return code of 0 or 10. 
-  if (run_result != 0 && run_result !=10)
-  {
-    Trace("oracle-engine") << "oracle " << binary_name << " has failed with exit code " << run_result << std::endl;
-    Assert(run_result==0 || run_result==10);
-  }
-  // we assume that the oracle returns the result in SMT-LIB format
-  std::istringstream oracle_response_istream(stdout_stream.str());
-  Trace("oracle-engine") << "Oracle response is "<< stdout_stream.str() << std::endl;
-  return stdout_stream.str();
-}
 
 void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
   double clSet = 0;
+  d_checkedAllOracles=false;
   if (Trace.isOn("oracle-engine"))
   {
     clSet = double(clock()) / double(CLOCKS_PER_SEC);
@@ -105,7 +77,8 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
                          << "---" << std::endl;
   }
   FirstOrderModel* fm = d_treg.getModel();
-  // TermDb* termDatabase = d_treg.getTermDatabase();
+  TermDb* termDatabase = d_treg.getTermDatabase();
+  eq::EqualityEngine* eq = getEqualityEngine();
   unsigned nquant = fm->getNumAssertedQuantifiers();
   std::vector<Node> currInterfaces;
   for (unsigned i = 0; i < nquant; i++)
@@ -116,23 +89,72 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
       continue;
     }
     currInterfaces.push_back(q);
-    Trace("oracle-engine-state") << "Interface: " << q << std::endl;
+    Trace("oracle-engine-state") << "Interface: " << q << " with binary name " << oracleCaller.getBinaryName(q) << std::endl;
   }
-
+  bool allFappsConsistent=true;
+  std::vector<Node> learned_lemmas;
   // iterate over oracle functions
   for (const Node& f : d_oracleFuns)
   {
-    Trace("oracle-engine-state") << "Oracle fun: " << f << std::endl;
-    // get applications of oracle function
-    // iterate over applications
-    // evaluate arguments
-    // call oracle
-    // get response
-    // check consistency with model
-    // add lemma
+    TNodeTrie* tat = termDatabase->getTermArgTrie(f);
+    if(tat)
+    {
+      std::vector<Node> apps = tat->getLeaves(1);
+      std::string binaryName = oracleCaller.getBinaryName(f);
+      Trace("oracle-calls") << "Oracle fun "<< f <<" with binary name "<< binaryName 
+        <<" and " << apps.size()<< " applications."<< std::endl;
+  
+      // get applications of oracle function
+      // iterate over applications
+      for (const auto &fapp: apps)
+      {
+        Trace("oracle-calls") << "Oracle app: " << fapp << ", ";
+        std::vector<Node> arguments;
+        arguments.push_back(f);
+        // evaluate arguments
+        for(const auto &arg: fapp)
+        {
+          arguments.push_back(fm->getValue(arg));
+          // arguments.push_back(eq->getRepresentative(arg));
+          Trace("oracle-calls") << "Arg: " << arg << ", value " << fm->getValue(arg) <<
+          ", representation "<< eq->getRepresentative(arg)<< std::endl;
+        }
+
+        // call oracle
+        Node response = oracleCaller.callOracle(binaryName, arguments);  
+        Trace("oracle-calls") << "Node Response " << response;
+        NodeManager* nm = NodeManager::currentNM();
+        // check consistency with model
+        Node predictedResult = eq->getRepresentative(fapp);
+        Trace("oracle-calls") << ", expected " << predictedResult << std::endl;
+
+        if(predictedResult!=response)
+        {
+          Trace("oracle-calls") << "Inconsistent response! Model expected " << predictedResult << std::endl;
+          allFappsConsistent=false;
+        }
+        // add lemma
+        Node fapp_with_values = nm->mkNode(APPLY_UF, arguments);
+        Node lemma = nm->mkNode(EQUAL,response,fapp_with_values);
+        learned_lemmas.push_back(lemma);
+      }
+    }
   }
   // if all were consistent, we can terminate
-
+  if(allFappsConsistent)
+  {
+    Trace("oracle-engine-state") << "All responses consistent, no lemmas added" << std::endl;
+    d_consistencyCheckPassed=true;
+  }
+  else
+  {
+    for(const auto &l: learned_lemmas)
+    {
+      // Trace("oracle-engine-state") << "Adding lemma " << l << std::endl;
+      d_qim.lemma(l, InferenceId::QUANTIFIERS_ORACLE_INTERFACE);
+    }
+  }  
+  d_checkedAllOracles=true;
   // general SMTO: call constraint generators and assumption generators here
   
   if (Trace.isOn("oracle-engine"))
@@ -146,7 +168,11 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
 bool OracleEngine::checkCompleteFor(Node q)
 {
   // TODO: true if oracle consistency check works
-  return false;
+  if(d_consistencyCheckPassed)
+    Trace("oracle-engine-state") << q << " is complete"<< std::endl;
+  else
+    Trace("oracle-engine-state") << q << " is incomplete"<< std::endl;
+  return d_consistencyCheckPassed;
 }
 
 void OracleEngine::checkOwnership(Node q)
@@ -164,7 +190,13 @@ std::string OracleEngine::identify() const
   return std::string("OracleEngine");
 }
 
-void OracleEngine::declareOracleFun(Node f) { d_oracleFuns.push_back(f); }
+void OracleEngine::declareOracleFun(Node f, const std::string& binName) 
+{
+  // TODO: set attribute propper;y
+  OracleInterfaceAttribute oia;
+  f.setAttribute(oia, binName);
+  d_oracleFuns.push_back(f); 
+}
 
 Node OracleEngine::mkOracleInterface(const std::vector<Node>& inputs,
                        const std::vector<Node>& outputs,

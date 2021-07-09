@@ -1,6 +1,6 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds
+ *   Andrew Reynolds, Elizabeth Polgreen
  *
  * This file is part of the cvc5 project.
  *
@@ -19,6 +19,7 @@
 #define CVC5__THEORY__QUANTIFIERS__ORACLE_ENGINE_H
 
 #include "theory/quantifiers/quant_module.h"
+#include "util/oracle_caller.h"
 
 namespace cvc5 {
 namespace theory {
@@ -57,13 +58,9 @@ class OracleEngine : public QuantifiersModule
   void checkOwnership(Node q) override;
   /** Identify. */
   std::string identify() const override;
+
   /** Declare oracle fun */
-
-  /** Call an oracle with a set of arguments **/
-  std::string callOracle(const std::string &binary_name, 
-                         const std::vector<std::string> &argv);
-
-  void declareOracleFun(Node f);
+  void declareOracleFun(Node f, const std::string &binName);
 
   /** Make an oracle interface quantifier */
   static Node mkOracleInterface(const std::vector<Node>& inputs,
@@ -77,9 +74,15 @@ class OracleEngine : public QuantifiersModule
                                 Node& assume,
                                 Node& constraint,
                                 std::string& binName);
+
+
+
  private:
   /** The oracle functions (user-context dependent) */
   context::CDList<Node> d_oracleFuns;
+  bool d_consistencyCheckPassed=false;
+  bool d_checkedAllOracles=false;
+  OracleCaller oracleCaller;
 };
 
 }  // namespace quantifiers

@@ -313,6 +313,8 @@ enum class InferenceId
   QUANTIFIERS_CEGQI_VTS_UB_DELTA,
   // infinity > c
   QUANTIFIERS_CEGQI_VTS_LB_INF,
+  //-------------------- oracles
+  QUANTIFIERS_ORACLE_INTERFACE,
   //-------------------- syntax-guided instantiation
   // a counterexample lemma
   QUANTIFIERS_SYQI_CEX,

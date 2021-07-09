@@ -234,6 +234,7 @@ TrustNode TheoryInferenceManager::explainConflictEqConstantMerge(TNode a,
 
 bool TheoryInferenceManager::lemma(TNode lem, InferenceId id, LemmaProperty p)
 {
+  Trace("im") << "adding (lemma " << lem << std::endl;
   TrustNode tlem = TrustNode::mkTrustLemma(lem, nullptr);
   return trustedLemma(tlem, id, p);
 }
@@ -248,6 +249,7 @@ bool TheoryInferenceManager::trustedLemma(const TrustNode& tlem,
   {
     if (!cacheLemma(tlem.getNode(), p))
     {
+      Trace("im") << "duplicate lemma" << std::endl;
       return false;
     }
   }

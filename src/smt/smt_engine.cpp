@@ -1105,7 +1105,7 @@ void SmtEngine::declareOracleFun(Node var, const std::string& binName)
   finishInit();
   d_state->doPendingPops();
   QuantifiersEngine* qe = getAvailableQuantifiersEngine("declareOracleFun");
-  qe->declareOracleFun(var);
+  qe->declareOracleFun(var, binName);
   if (binName != "")
   {
     NodeManager* nm = d_env->getNodeManager();

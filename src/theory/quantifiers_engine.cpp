@@ -692,9 +692,9 @@ void QuantifiersEngine::declarePool(Node p, const std::vector<Node>& initValue)
   d_treg.declarePool(p, initValue);
 }
 
-void QuantifiersEngine::declareOracleFun(Node f)
+void QuantifiersEngine::declareOracleFun(Node f, const std::string &binName)
 {
-  d_qmodules->d_oracleEngine->declareOracleFun(f);
+  d_qmodules->d_oracleEngine->declareOracleFun(f, binName);
 }
 
 }  // namespace theory
