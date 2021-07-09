@@ -40,6 +40,8 @@ class OracleEngine : public QuantifiersModule
   void presolve() override;
   /** Needs check. */
   bool needsCheck(Theory::Effort e) override;
+  /** Needs model. */
+  QEffort needsModel(Theory::Effort e) override;
   /** Reset round. */
   void reset_round(Theory::Effort e) override;
   /** Register quantified formula q */
