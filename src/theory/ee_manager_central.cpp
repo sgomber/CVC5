@@ -67,7 +67,7 @@ void EqEngineManagerCentral::initializeTheories()
     AlwaysAssert(false) << "Expected shared solver to use equality engine";
   }
   // whether to use master equality engine as central
-  bool masterEqToCentral = true;
+  bool masterEqToCentral = false; // FIXME: failure on ho tptp benchmark
   // setup info for each theory
   std::map< TheoryId, EeSetupInfo > esiMap;
   // set of theories that need equality engines
@@ -93,7 +93,7 @@ void EqEngineManagerCentral::initializeTheories()
     // if the logic has a theory that does not use central equality engine,
     // we can't use the central equality engine for the master equality
     // engine
-    if (theoryId!=THEORY_QUANTIFIERS && !Theory::usesCentralEqualityEngine(theoryId))
+    if (theoryId!=THEORY_QUANTIFIERS && logicInfo.isTheoryEnabled(theoryId) && !Theory::usesCentralEqualityEngine(theoryId))
     {
       Trace("ee-central") << "Must use separate master equality engine due to " << theoryId << std::endl;
       masterEqToCentral = false;
@@ -120,6 +120,7 @@ void EqEngineManagerCentral::initializeTheories()
     }
     else
     {
+      Trace("ee-central") << "Master equality engine is the central equality engine" << std::endl;
       d_masterEqualityEngine = &d_centralEqualityEngine;
       d_centralEENotify.d_newClassNotify.push_back(d_masterEENotify.get());
     }
@@ -180,7 +181,7 @@ void EqEngineManagerCentral::initializeTheories()
     eet.d_allocEe.reset(allocateEqualityEngine(esi, c));
     // the theory uses the equality engine
     eet.d_usedEe = eet.d_allocEe.get();
-    if (d_masterEqualityEngine != nullptr)
+    if (!masterEqToCentral)
     {
       // set the master equality engine of the theory's equality engine
       eet.d_allocEe->setMasterEqualityEngine(d_masterEqualityEngine);
@@ -188,8 +189,7 @@ void EqEngineManagerCentral::initializeTheories()
   }
 
   // set the master equality engine of the theory's equality engine
-  if (d_masterEqualityEngine != nullptr
-      && d_masterEqualityEngine != &d_centralEqualityEngine)
+  if (!masterEqToCentral)
   {
     d_centralEqualityEngine.setMasterEqualityEngine(d_masterEqualityEngine);
   }
