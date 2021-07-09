@@ -62,7 +62,7 @@ void SharedTermsDatabase::setEqualityEngine(eq::EqualityEngine* ee)
 bool SharedTermsDatabase::needsEqualityEngine(EeSetupInfo& esi)
 {
   esi.d_notify = &d_EENotify;
-  esi.d_name = "SharedTermsDatabase";
+  esi.d_name = "shared::ee";
   return true;
 }
 

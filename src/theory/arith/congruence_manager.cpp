@@ -70,7 +70,7 @@ ArithCongruenceManager::ArithCongruenceManager(
   {
     // use our own copy
     d_allocEe.reset(new eq::EqualityEngine(
-        d_notify, c, "theory::arith::ArithCongruenceManager", true));
+        d_notify, c, "arithCong::ee", true));
     d_ee = d_allocEe.get();
     // set the congruence kinds on the separate equality engine
     d_ee->addFunctionKind(kind::NONLINEAR_MULT);
@@ -94,7 +94,7 @@ bool ArithCongruenceManager::needsEqualityEngine(EeSetupInfo& esi)
 {
   Assert(!options::arithEqSolver());
   esi.d_notify = &d_notify;
-  esi.d_name = "theory::arith::ArithCongruenceManager";
+  esi.d_name = "arithCong::ee";
   return true;
 }
 

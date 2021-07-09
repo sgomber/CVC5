@@ -59,7 +59,7 @@ void EqEngineManagerDistributed::initializeTheories()
     d_masterEENotify.reset(new MasterNotifyClass(qe));
     d_masterEqualityEngine.reset(new eq::EqualityEngine(*d_masterEENotify.get(),
                                                         d_te.getSatContext(),
-                                                        "theory::master",
+                                                        "master::ee",
                                                         false));
   }
   // allocate equality engines per theory

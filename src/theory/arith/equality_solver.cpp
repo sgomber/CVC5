@@ -35,7 +35,7 @@ EqualitySolver::EqualitySolver(ArithState& astate, InferenceManager& aim)
 bool EqualitySolver::needsEqualityEngine(EeSetupInfo& esi)
 {
   esi.d_notify = &d_notify;
-  esi.d_name = "theory::arith::EqualitySolver";
+  esi.d_name = "arith::ee";
   return true;
 }
 
