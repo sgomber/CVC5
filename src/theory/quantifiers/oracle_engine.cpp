@@ -231,6 +231,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
         arguments.push_back(f);
         // evaluate arguments
         for(const auto &arg: fapp)
+        {
           arguments.push_back(fm->getValue(arg));
           // arguments.push_back(eq->getRepresentative(arg));
           Trace("oracle-calls") << "Arg: " << arg << ", value " << fm->getValue(arg) <<
@@ -251,7 +252,8 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
           all_fapps_consistent=false;
         }
         // add lemma
-        Node lemma = nm->mkNode(EQUAL,response,fapp);
+        Node fapp_with_values = nm->mkNode(APPLY_UF, arguments);
+        Node lemma = nm->mkNode(EQUAL,response,fapp_with_values);
         learned_lemmas.push_back(lemma);
       }
     }
