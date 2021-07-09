@@ -17,6 +17,7 @@
 
 #include "base/modal_exception.h"
 #include "options/smt_options.h"
+#include "options/proof_options.h"
 #include "smt/env.h"
 #include "smt/model.h"
 #include "smt/node_command.h"
@@ -25,6 +26,8 @@
 #include "theory/rewriter.h"
 #include "theory/substitutions.h"
 #include "theory/theory_engine.h"
+#include "theory/smt_engine_subsolver.h"
+#include "expr/node_algorithm.h"
 
 using namespace cvc5::theory;
 
@@ -38,6 +41,66 @@ void CheckModels::checkModel(Model* m,
                              context::CDList<Node>* al,
                              bool hardFailure)
 {
+  // initialize the core checker
+  std::unique_ptr<SmtEngine> modelChecker;
+  initializeSubsolver(modelChecker);
+  modelChecker->getOptions().smt.checkModels = false;
+  modelChecker->getOptions().smt.checkUnsatCores = false;
+  // disable all proof options
+  modelChecker->getOptions().smt.produceProofs = false;
+  modelChecker->getOptions().smt.checkProofs = false;
+  modelChecker->getOptions().proof.proofEagerChecking = false;
+  // set up separation logic heap if necessary
+  /*
+  TypeNode sepLocType, sepDataType;
+  if (getSepHeapTypes(sepLocType, sepDataType))
+  {
+    modelChecker->declareSepHeap(sepLocType, sepDataType);
+  }
+  */
+  Trace("check-models") << "SmtEngine::checkModels(): pushing core assertions"
+           << std::endl;
+  theory::SubstitutionMap& sm = d_env.getTopLevelSubstitutions().get();
+  std::unordered_set<Node> syms;
+  for (const Node& assertion : *al) {
+    expr::getSymbols(assertion, syms);
+    Trace("check-models") << "SmtEngine::checkModels(): pushing assertion " << assertion << "\n";
+    modelChecker->assertFormula(assertion);
+  }
+  for (const Node& s : syms)
+  {
+    Trace("check-models") << "SmtEngine::checkModels(): define symbol " << s << "\n";
+    Node sv = m->getValue(s);
+    Trace("check-models") << "Define as " << sv << std::endl;
+    Node val = sv;
+    std::vector<Node> formals;
+    if (sv.getKind()==kind::LAMBDA)
+    {
+      formals.insert(formals.end(), sv[0].begin(), sv[0].end());
+      val = sv[1];
+    }
+    modelChecker->defineFunction(s, formals, val, false);
+  }
+  Result r;
+  try {
+    r = modelChecker->checkSat();
+  } catch(...) {
+    throw;
+  }
+  Trace("check-models") << "SmtEngine::checkModels(): result is " << r << std::endl;
+  if(r.asSatisfiabilityResult().isUnknown()) {
+    Warning()
+        << "SmtEngine::checkModels(): could not check core result unknown."
+        << std::endl;
+  }
+  else if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
+  {
+    InternalError()
+        << "SmtEngine::checkModels(): produced model assertions were unsatisfiable.";
+  }
+  return;
+  
+  
   // Throughout, we use Notice() to give diagnostic output.
   //
   // If this function is running, the user gave --check-model (or equivalent),
@@ -51,7 +114,6 @@ void CheckModels::checkModel(Model* m,
         "Cannot run check-model on a model with approximate values.");
   }
 
-  theory::SubstitutionMap& sm = d_env.getTopLevelSubstitutions().get();
   Trace("check-model") << "checkModel: Check assertions..." << std::endl;
   std::unordered_map<Node, Node> cache;
   // the list of assertions that did not rewrite to true
