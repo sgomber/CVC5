@@ -1,0 +1,127 @@
+
+#include "bitvector.h"
+#include "oracle_caller.h"
+#include "rational_gmp_imp.h"
+#include "run.h"
+#include "theory/quantifiers/quantifiers_attributes.h"
+
+#include <sstream>
+
+namespace cvc5 {
+
+bool is_digits(const std::string &str)
+{
+    return str.find_first_not_of("0123456789") == std::string::npos;
+}
+
+Node OracleCaller::get_hex_numeral(std::string in)
+{
+  // we accept any sequence of '0'-'9', 'a'-'f', 'A'-'F'
+  std::size_t width = in.size()*16;
+  NodeManager* nm = NodeManager::currentNM();
+  unsigned int val = std::stoi(in, nullptr, 16);
+  Node result =  nm->mkConst(BitVector(width,val));
+  return result;
+}
+
+Node OracleCaller::get_bin_numeral(std::string in)
+{
+  // we accept any sequence of '0'-'1'
+  std::size_t width = in.size();
+  NodeManager* nm = NodeManager::currentNM();
+  unsigned int val = std::stoi(in, nullptr, 2);
+  Node result = nm->mkConst(BitVector(width,val));
+  return result;
+}
+
+Node OracleCaller::get_dec_numeral(std::string in)
+{
+  // we accept any sequence of '0'-'9'
+  NodeManager* nm = NodeManager::currentNM();
+  unsigned int val = std::stoi(in, nullptr, 10);
+  Node result  = nm->mkConst(Rational(val));
+  return result;
+}
+
+Node OracleCaller::responseParser(std::string &in)
+{
+  // Assumes the response is a singular integer or bitvector literal
+  // Temporary: will eventually be replaced with some subcomponent of full parser
+  NodeManager* nm = NodeManager::currentNM();
+  if(in.at(0)=='#')
+  {
+    if(in.at(1)=='b')
+      return get_bin_numeral(in);
+    else if(in.at(1)=='x')
+      return get_hex_numeral(in);
+    else
+      Assert(0); // throw error here
+  }
+  else if(is_digits(in))
+    return get_dec_numeral(in);
+  else if(in.find("true")!=std::string::npos)
+  {
+    Node result = nm->mkConst(true);
+    return result;
+  }
+  else if(in.find("false")!=std::string::npos)
+  {
+    Node result = nm->mkConst(false);
+    return result;
+  }
+  else
+    Assert(0); // throw error here
+}
+
+Node OracleCaller::callOracle(const std::string &binary_name, 
+                                     const std::vector<Node> &argv)
+{
+  Trace("oracle-calls") << "Running oracle: " << binary_name ;
+  std::vector<std::string> string_args;
+  for (auto &arg : argv)
+  {
+    std::ostringstream oss;
+    oss << arg;
+    string_args.push_back(oss.str());
+    Trace("oracle-calls") << ' ' << arg;
+  }
+  Trace("oracle-calls") << std::endl;
+
+  // run the oracle binary
+  std::ostringstream stdout_stream;
+
+  auto run_result = run(
+      binary_name,
+      string_args,
+      "",
+      stdout_stream,
+      "");
+
+  // we assume that an oracle has a return code of 0 or 10. 
+  if (run_result != 0 && run_result !=10)
+  {
+    Trace("oracle-calls") << "oracle " << binary_name << " has failed with exit code " << run_result << std::endl;
+    Assert(run_result==0 || run_result==10);
+  }
+  // we assume that the oracle returns the result in SMT-LIB format
+  std::string stringResponse = stdout_stream.str();
+  // parse response into a Node
+  return responseParser(stringResponse);
+}
+
+std::string OracleCaller::getBinaryName(const Node n)
+{
+  // oracle functions have no children
+  if(n.getNumChildren()<3)
+    return n.getAttribute(theory::OracleInterfaceAttribute());
+
+  // oracle interfaces have children, and the attribute is stored in 2nd child 
+  for (const Node& v : n[2][0]) 
+  { 
+    if(v.getAttribute(theory::OracleInterfaceAttribute())!="")
+      return v.getAttribute(theory::OracleInterfaceAttribute());
+  }
+  return "";
+} 
+
+}
