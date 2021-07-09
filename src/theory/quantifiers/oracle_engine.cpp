@@ -228,6 +228,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
       {
         Trace("oracle-calls") << "Oracle app: " << fapp << ", ";
         std::vector<Node> arguments;
+        arguments.push_back(f);
         // evaluate arguments
         for(const auto &arg: fapp)
           arguments.push_back(fm->getValue(arg));
@@ -283,6 +284,10 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
 bool OracleEngine::checkCompleteFor(Node q)
 {
   // TODO: true if oracle consistency check works
+  if(consistencyCheckPassed)
+    Trace("oracle-engine-state") << q << " is complete"<< std::endl;
+  else
+    Trace("oracle-engine-state") << q << " is incomplete"<< std::endl;
   return consistencyCheckPassed;
 }
 
