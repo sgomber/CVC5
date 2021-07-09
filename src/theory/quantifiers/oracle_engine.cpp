@@ -59,12 +59,12 @@ void OracleEngine::presolve() {}
 
 bool OracleEngine::needsCheck(Theory::Effort e)
 {
-  return d_qstate.getInstWhenNeedsCheck(e);
+  return e==Theory::Effort::EFFORT_LAST_CALL;
 }
 
 OracleEngine::QEffort OracleEngine::needsModel(Theory::Effort e)
 {
-  return  QEFFORT_MODEL;
+  return QEFFORT_MODEL;
 }
 
 void OracleEngine::reset_round(Theory::Effort e) {}
