@@ -124,7 +124,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
           arguments.push_back(fm->getValue(arg));
           // arguments.push_back(eq->getRepresentative(arg));
           Trace("oracle-calls") << "Arg: " << arg << ", value " << fm->getValue(arg) <<
-          ", representation "<< eq->getRepresentative(arg)<< std::endl;
+          ", representative "<< eq->getRepresentative(arg)<< std::endl;
         }
 
         // call oracle
