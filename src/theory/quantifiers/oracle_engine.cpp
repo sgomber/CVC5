@@ -26,6 +26,7 @@
 #include "util/run.h"
 
 #include <stdlib.h>
+#include <iostream>
 
 using namespace cvc5::kind;
 using namespace cvc5::context;
@@ -151,16 +152,16 @@ std::string OracleEngine::getBinaryName(const Node n)
 Node OracleEngine::callOracle(const std::string &binary_name, 
                                      const std::vector<Node> &argv)
 {
-  Trace("oracle-engine") << "Running oracle: " << binary_name;
+  Trace("oracle-calls") << "Running oracle: " << binary_name ;
   std::vector<std::string> string_args;
   for (auto &arg : argv)
   {
     std::ostringstream oss;
     oss << arg;
     string_args.push_back(oss.str());
-    Trace("oracle-engine") << ' ' << arg;
+    Trace("oracle-calls") << ' ' << arg;
   }
-  Trace("oracle-engine") << std::endl;
+  Trace("oracle-calls") << std::endl;
 
   // run the oracle binary
   std::ostringstream stdout_stream;
@@ -175,7 +176,7 @@ Node OracleEngine::callOracle(const std::string &binary_name,
   // we assume that an oracle has a return code of 0 or 10. 
   if (run_result != 0 && run_result !=10)
   {
-    Trace("oracle-engine") << "oracle " << binary_name << " has failed with exit code " << run_result << std::endl;
+    Trace("oracle-calls") << "oracle " << binary_name << " has failed with exit code " << run_result << std::endl;
     Assert(run_result==0 || run_result==10);
   }
   // we assume that the oracle returns the result in SMT-LIB format
@@ -212,36 +213,39 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
   // iterate over oracle functions
   for (const Node& f : d_oracleFuns)
   {
-    Trace("oracle-engine-state") << "Oracle fun: " << f << std::endl;
     TNodeTrie* tat = termDatabase->getTermArgTrie(f);
     if(tat)
     {
       std::vector<Node> apps = tat->getLeaves(1);
       std::string binaryName = getBinaryName(f);
-      Trace("oracle-engine-state") << "Oracle fun with binary name "<< binaryName << std::endl;
-
-
+      Trace("oracle-calls") << "Oracle fun "<< f <<" with binary name "<< binaryName 
+        <<" and " << apps.size()<< " applications."<< std::endl;
+  
       // get applications of oracle function
       // iterate over applications
       for (const auto &fapp: apps)
       {
-        Trace("oracle-engine-state") << "Oracle app: " << fapp << std::endl;
+        Trace("oracle-calls") << "Oracle app: " << fapp << ", ";
         std::vector<Node> arguments;
         // evaluate arguments
         for(const auto &arg: fapp)
           arguments.push_back(fm->getValue(arg));
+          // arguments.push_back(eq->getRepresentative(arg));
+          Trace("oracle-calls") << "Arg: " << arg << ", value " << fm->getValue(arg) <<
+          ", representation "<< eq->getRepresentative(arg)<< std::endl;
+        }
 
         // call oracle
         Node response = callOracle(binaryName, arguments);  
-        Trace("oracle-engine-state") << "Node Response " << response;
+        Trace("oracle-calls") << "Node Response " << response;
         NodeManager* nm = NodeManager::currentNM();
         // check consistency with model
         Node predictedResult = eq->getRepresentative(fapp);
-        Trace("oracle-engine-state") << ", expected " << predictedResult << std::endl;
+        Trace("oracle-calls") << ", expected " << predictedResult << std::endl;
 
         if(predictedResult!=response)
         {
-          Trace("oracle-engine-state") << "Inconsistent response! Model expected " << predictedResult << std::endl;
+          Trace("oracle-calls") << "Inconsistent response! Model expected " << predictedResult << std::endl;
           all_fapps_consistent=false;
         }
         // add lemma
@@ -260,7 +264,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
   {
     for(const auto &l: learned_lemmas)
     {
-      Trace("oracle-engine-state") << "Adding lemma " << l << std::endl;
+      // Trace("oracle-engine-state") << "Adding lemma " << l << std::endl;
       d_qim.lemma(l, InferenceId::QUANTIFIERS_ORACLE_INTERFACE);
     }
   }  
