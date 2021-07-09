@@ -23,6 +23,7 @@
 #include "base/check.h"
 #include "expr/node_algorithm.h"
 #include "options/arith_options.h"
+#include "options/bv_options.h"
 #include "options/smt_options.h"
 #include "options/theory_options.h"
 #include "smt/smt_statistics_registry.h"
@@ -370,7 +371,7 @@ bool Theory::collectModelInfo(TheoryModel* m, const std::set<Node>& termSet)
 {
   // FIXME: could move entirely into model engine distributed
   // if we are using an equality engine, assert it to the model
-  if (d_equalityEngine != nullptr)
+  if (d_equalityEngine != nullptr && !termSet.empty())
   {
     Trace("model-builder") << "Assert Equality engine for " << d_id
                            << std::endl;
@@ -628,9 +629,13 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
     // conditional on whether we are using the equality solver
     return options::arithEqSolver();
   }
+  if (id == THEORY_BV)
+  {
+    return options::bvSolver() != options::BVSolver::SIMPLE;
+  }
   return id == THEORY_UF || id == THEORY_DATATYPES || id == THEORY_BAGS
          || id == THEORY_FP || id == THEORY_SETS || id == THEORY_STRINGS
-         || id == THEORY_SEP || id == THEORY_ARRAYS || id == THEORY_BV;
+         || id == THEORY_SEP || id == THEORY_ARRAYS;
 }
 
 bool Theory::needsFactQueue(TheoryId id)
