@@ -187,6 +187,7 @@ Node OracleEngine::callOracle(const std::string &binary_name,
 
 void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
   double clSet = 0;
+  checkedAllOracles=false;
   if (Trace.isOn("oracle-engine"))
   {
     clSet = double(clock()) / double(CLOCKS_PER_SEC);
@@ -268,7 +269,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
       d_qim.lemma(l, InferenceId::QUANTIFIERS_ORACLE_INTERFACE);
     }
   }  
-
+  checkedAllOracles=true;
   // general SMTO: call constraint generators and assumption generators here
   
   if (Trace.isOn("oracle-engine"))
