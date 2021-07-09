@@ -151,7 +151,7 @@ bool BVSolverSimple::preNotifyFact(
       addBBLemma(nn);
     }
   }
-
+  // we do not use an equality engine, return true
   return true;
 }
 
