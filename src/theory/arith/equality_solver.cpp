@@ -78,6 +78,7 @@ TrustNode EqualitySolver::explain(TNode lit)
 }
 bool EqualitySolver::propagateLit(Node lit)
 {
+  // notice this is only used when ee-mode=distributed
   // remember that this was a literal we propagated
   d_propLits.insert(lit);
   return d_aim.propagateLit(lit);

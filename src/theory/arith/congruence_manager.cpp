@@ -83,6 +83,7 @@ ArithCongruenceManager::ArithCongruenceManager(
       // allocate an internal proof equality engine
       d_allocPfee.reset(new eq::ProofEqEngine(c, u, *d_ee, d_pnm));
       d_ee->setProofEqualityEngine(d_allocPfee.get());
+      d_pfee = d_allocPfee.get();
     }
   }
 }
@@ -99,7 +100,7 @@ bool ArithCongruenceManager::needsEqualityEngine(EeSetupInfo& esi)
 
 void ArithCongruenceManager::finishInit(eq::EqualityEngine* ee)
 {
-  // if not already set up
+  // if not already set up, use the official one
   if (d_ee == nullptr)
   {
     d_ee = ee;
@@ -108,9 +109,9 @@ void ArithCongruenceManager::finishInit(eq::EqualityEngine* ee)
     d_ee->addFunctionKind(kind::SINE);
     d_ee->addFunctionKind(kind::IAND);
     d_ee->addFunctionKind(kind::POW2);
+    d_pfee = d_ee->getProofEqualityEngine();
   }
   // have proof equality engine only if proofs are enabled
-  d_pfee = d_ee->getProofEqualityEngine();
   Assert(isProofEnabled() == (d_pfee != nullptr));
 }
 

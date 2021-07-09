@@ -476,10 +476,7 @@ void TheoryDatatypes::preRegisterTerm(TNode n)
   case kind::APPLY_TESTER:
     // add predicate trigger for testers and equalities
     // Get triggered for both equal and dis-equal
-    if (!options::centralEEOpt() || !usesCentralEqualityEngine())
-    {
-      d_equalityEngine->addTriggerPredicate(n);
-    }
+    d_equalityEngine->addTriggerPredicate(n);
     break;
   default:
     // Function applications/predicates

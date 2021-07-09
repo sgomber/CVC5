@@ -838,7 +838,7 @@ void TheoryEngine::notifyPreprocessedAssertions(
 }
 
 bool TheoryEngine::markPropagation(TNode assertion, TNode originalAssertion, theory::TheoryId toTheoryId, theory::TheoryId fromTheoryId) {
-  if (Theory::usesCentralEqualityEngine(toTheoryId))
+  if (toTheoryId != THEORY_ARITH && Theory::usesCentralEqualityEngine(toTheoryId))
   {
     toTheoryId = THEORY_BUILTIN;
   }
@@ -1543,7 +1543,7 @@ TrustNode TheoryEngine::getExplanation(
   while (i < explanationVector.size()) {
     // Get the current literal to explain
     NodeTheoryPair toExplain = explanationVector[i];
-    if (Theory::usesCentralEqualityEngine(toExplain.d_theory))
+    if (toExplain.d_theory != THEORY_ARITH && Theory::usesCentralEqualityEngine(toExplain.d_theory))
     {
       toExplain.d_theory = THEORY_BUILTIN;
     }
