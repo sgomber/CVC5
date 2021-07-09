@@ -176,7 +176,7 @@ class SharedTermsDatabase : public context::ContextNotifyObj {
   /**
    * Asserts the equality to the shared terms database,
    */
-  void assertEquality(TNode equality, bool polarity, TNode reason);
+  void assertShared(TNode n, bool polarity, TNode reason);
 
   /**
    * Return whether the equality is alreday known to the engine

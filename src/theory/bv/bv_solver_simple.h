@@ -21,6 +21,7 @@
 #include "theory/bv/bitblast/proof_bitblaster.h"
 #include "theory/bv/bv_solver.h"
 #include "theory/bv/proof_checker.h"
+#include "context/cdhashset.h"
 
 namespace cvc5 {
 
@@ -38,6 +39,7 @@ namespace bv {
  */
 class BVSolverSimple : public BVSolver
 {
+  using NodeSet = context::CDHashSet<Node>;
  public:
   BVSolverSimple(TheoryState* state,
                  TheoryInferenceManager& inferMgr,
@@ -73,6 +75,8 @@ class BVSolverSimple : public BVSolver
   std::unique_ptr<BBProof> d_bitblaster;
   /** Proof rule checker */
   BVProofRuleChecker d_checker;
+  /** The facts we have added bitblast lemmas for */
+  NodeSet d_bbLemmaFacts;
 };
 
 }  // namespace bv

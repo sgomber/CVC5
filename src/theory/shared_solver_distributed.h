@@ -43,7 +43,7 @@ class SharedSolverDistributed : public SharedSolver
   void setEqualityEngine(eq::EqualityEngine* ee) override;
   //------------------------------------- end initialization
   /** Assert equality to the shared terms database. */
-  void assertSharedEquality(TNode equality,
+  void assertShared(TNode equality,
                             bool polarity,
                             TNode reason) override;
   /**

@@ -590,7 +590,7 @@ void Theory::addSharedTerm(TNode n)
   // if we have an equality engine, add the trigger term
   if (d_equalityEngine != nullptr)
   {
-    if (needsSharedTermEqFacts(d_id) || !options::centralEEOpt()
+    if (needsFactQueue(d_id) || !options::centralEEOpt()
         || !usesCentralEqualityEngine())
     {
       d_equalityEngine->addTriggerTerm(n, d_id);
@@ -633,7 +633,7 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
          || id == THEORY_SEP || id == THEORY_ARRAYS || id == THEORY_BV;
 }
 
-bool Theory::needsSharedTermEqFacts(TheoryId id)
+bool Theory::needsFactQueue(TheoryId id)
 {
   if (id == THEORY_UF || id == THEORY_DATATYPES)
   {

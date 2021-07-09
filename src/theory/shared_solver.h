@@ -102,7 +102,7 @@ class SharedSolver
    * asserted from the SAT solver or a theory propagates an equality between
    * shared terms.
    */
-  virtual void assertSharedEquality(TNode equality,
+  virtual void assertShared(TNode equality,
                                     bool polarity,
                                     TNode reason) = 0;
   /** Is term t a shared term? */

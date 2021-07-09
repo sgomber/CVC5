@@ -83,12 +83,18 @@ BVSolverSimple::BVSolverSimple(TheoryState* s,
                  nullptr,
                  false)
                  : nullptr),
-      d_bitblaster(new BBProof(s, pnm, d_tcpg.get()))
+      d_bitblaster(new BBProof(s, pnm, d_tcpg.get())),
+      d_bbLemmaFacts(s->getUserContext())
 {
 }
 
 void BVSolverSimple::addBBLemma(TNode fact)
 {
+  if (d_bbLemmaFacts.find(fact)!=d_bbLemmaFacts.end())
+  {
+    return;
+  }
+  d_bbLemmaFacts.insert(fact);
   if (!d_bitblaster->hasBBAtom(fact))
   {
     d_bitblaster->bbAtom(fact);

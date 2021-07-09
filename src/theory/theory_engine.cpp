@@ -838,11 +838,6 @@ void TheoryEngine::notifyPreprocessedAssertions(
 }
 
 bool TheoryEngine::markPropagation(TNode assertion, TNode originalAssertion, theory::TheoryId toTheoryId, theory::TheoryId fromTheoryId) {
-  if (toTheoryId != THEORY_ARITH
-      && Theory::usesCentralEqualityEngine(toTheoryId))
-  {
-    toTheoryId = THEORY_BUILTIN;
-  }
   // What and where we are asserting
   NodeTheoryPair toAssert(assertion, toTheoryId, d_propagationMapTimestamp);
   // What and where it came from
@@ -867,14 +862,6 @@ bool TheoryEngine::markPropagation(TNode assertion, TNode originalAssertion, the
 
 
 void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theory::TheoryId toTheoryId, theory::TheoryId fromTheoryId) {
-  // if we're asserting to a theory that uses the central equality engine,
-  // always send to THEORY_BUILTIN
-  /*
-  if (Theory::usesCentralEqualityEngine(toTheoryId))
-  {
-    toTheoryId = THEORY_BUILTIN;
-  }
-  */
   Trace("theory::assertToTheory") << "TheoryEngine::assertToTheory(" << assertion << ", " << originalAssertion << "," << toTheoryId << ", " << fromTheoryId << ")" << endl;
 
   Assert(toTheoryId != fromTheoryId);
@@ -922,17 +909,24 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
     return;
   }
 
-  // If sending to the shared terms database, it's also simple
+  // determine the actual theory that will process/explain the fact, which is
+  // THEORY_BUILTIN if the theory uses the central equality engine
+  TheoryId toTheoryIdProp = (toTheoryId != THEORY_ARITH
+      && Theory::usesCentralEqualityEngine(toTheoryId)) ? THEORY_BUILTIN : toTheoryId;
+  // If sending to the shared solver, it's also simple
   if (toTheoryId == THEORY_BUILTIN) {
-    Assert(assertion.getKind() == kind::EQUAL
-           || (assertion.getKind() == kind::NOT
-               && assertion[0].getKind() == kind::EQUAL))
-        << "atom should be an EQUALity, not `" << assertion << "'";
-    if (markPropagation(assertion, originalAssertion, toTheoryId, fromTheoryId)) {
+  //if (toTheoryIdProp == THEORY_BUILTIN && !Theory::needsFactQueue(toTheoryId) && assertion.getKind()==kind::EQUAL) {
+    if (markPropagation(assertion, originalAssertion, toTheoryIdProp, fromTheoryId)) {
       // assert to the shared solver
       bool polarity = assertion.getKind() != kind::NOT;
       TNode atom = polarity ? assertion : assertion[0];
-      d_sharedSolver->assertSharedEquality(atom, polarity, assertion);
+      d_sharedSolver->assertShared(atom, polarity, assertion);
+      /*
+      if (toTheoryIdProp!=THEORY_BUILTIN)
+      {
+        d_factsAsserted = true;
+      }
+      */
     }
     return;
   }
@@ -941,7 +935,7 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
   // directly to the apropriate theory
   if (fromTheoryId == THEORY_SAT_SOLVER) {
     // We know that this is normalized, so just send it off to the theory
-    if (markPropagation(assertion, originalAssertion, toTheoryId, fromTheoryId)) {
+    if (markPropagation(assertion, originalAssertion, toTheoryIdProp, fromTheoryId)) {
       // Is it preregistered
       bool preregistered = d_propEngine->isSatLiteral(assertion) && Theory::theoryOf(assertion) == toTheoryId;
       // We assert it
@@ -955,6 +949,7 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
   // Propagations to the SAT solver are just enqueued for pickup by
   // the SAT solver later
   if (toTheoryId == THEORY_SAT_SOLVER) {
+    Assert (toTheoryIdProp==toTheoryId);
     if (markPropagation(assertion, originalAssertion, toTheoryId, fromTheoryId)) {
       // Enqueue for propagation to the SAT solver
       d_propagatedLiterals.push_back(assertion);
@@ -984,7 +979,7 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
   if (normalizedLiteral.isConst()) {
     if (!normalizedLiteral.getConst<bool>()) {
       // Mark the propagation for explanations
-      if (markPropagation(normalizedLiteral, originalAssertion, toTheoryId, fromTheoryId)) {
+      if (markPropagation(normalizedLiteral, originalAssertion, toTheoryIdProp, fromTheoryId)) {
         // special case, trust node has no proof generator
         TrustNode trnn = TrustNode::mkTrustConflict(normalizedLiteral);
         // Get the explanation (conflict will figure out where it came from)
@@ -997,7 +992,7 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
   }
 
   // Try and assert (note that we assert the non-normalized one)
-  if (markPropagation(assertion, originalAssertion, toTheoryId, fromTheoryId)) {
+  if (markPropagation(assertion, originalAssertion, toTheoryIdProp, fromTheoryId)) {
     // Check if has been pre-registered with the theory
     bool preregistered = d_propEngine->isSatLiteral(assertion) && Theory::theoryOf(assertion) == toTheoryId;
     // Assert away

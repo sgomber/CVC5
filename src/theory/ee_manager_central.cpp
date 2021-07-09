@@ -67,7 +67,7 @@ void EqEngineManagerCentral::initializeTheories()
     AlwaysAssert(false) << "Expected shared solver to use equality engine";
   }
   // whether to use master equality engine as central
-  bool masterEqToCentral = false; // FIXME: failure on ho tptp benchmark
+  bool masterEqToCentral = true;
   // setup info for each theory
   std::map< TheoryId, EeSetupInfo > esiMap;
   // set of theories that need equality engines
