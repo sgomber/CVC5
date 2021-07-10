@@ -15,15 +15,15 @@
 
 #include "theory/theory_preprocessor.h"
 
+#include "expr/node_algorithm.h"
 #include "expr/skolem_manager.h"
+#include "options/base_options.h"
+#include "printer/printer.h"
 #include "proof/lazy_proof.h"
 #include "smt/logic_exception.h"
 #include "theory/logic_info.h"
 #include "theory/rewriter.h"
 #include "theory/theory_engine.h"
-#include "expr/node_algorithm.h"
-#include "options/base_options.h"
-#include "printer/printer.h"
 
 using namespace std;
 
@@ -174,16 +174,16 @@ TrustNode TheoryPreprocessor::preprocessInternal(
   Trace("tpp") << "TheoryPreprocessor::preprocess: return " << tret.getNode()
                << ", procLemmas=" << procLemmas
                << ", # lemmas = " << newLemmas.size() << std::endl;
-  if (irNode!=tret.getNode())
+  if (irNode != tret.getNode())
   {
-    for (size_t i=0; i<newLemmas.size(); i++)
+    for (size_t i = 0; i < newLemmas.size(); i++)
     {
       skolemLemmas[newSkolems[i]] = newLemmas[i].getNode();
     }
-    NodeManager * nm = NodeManager::currentNM();
+    NodeManager* nm = NodeManager::currentNM();
     Node ant = tret.getNode();
     std::unordered_set<Node> relevantLemmas;
-    std::map<Node,Node> revmap;
+    std::map<Node, Node> revmap;
     for (const std::pair<const Node, Node>& l : skolemLemmas)
     {
       relevantLemmas.insert(l.second);
@@ -217,9 +217,9 @@ TrustNode TheoryPreprocessor::preprocessInternal(
       if (continueCheck)
       {
         std::vector<Node> newAnt;
-        newAnt.insert(newAnt.end(), relevantLemmas.begin(), relevantLemmas.end());
-        newAnt.push_back(tret.getNode());
-        ant = nm->mkAnd(newAnt);
+        newAnt.insert(newAnt.end(), relevantLemmas.begin(),
+    relevantLemmas.end()); newAnt.push_back(tret.getNode()); ant =
+    nm->mkAnd(newAnt);
       }
     }while(continueCheck);
     */
@@ -227,7 +227,7 @@ TrustNode TheoryPreprocessor::preprocessInternal(
     std::unordered_set<Node> syms;
     expr::getSymbols(debugLem, syms);
     std::stringstream os;
-    Printer * p = Printer::getPrinter(options::outputLanguage());
+    Printer* p = Printer::getPrinter(options::outputLanguage());
     for (const Node& s : syms)
     {
       std::stringstream sname;

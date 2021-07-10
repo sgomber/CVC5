@@ -16,18 +16,18 @@
 #include "smt/check_models.h"
 
 #include "base/modal_exception.h"
-#include "options/smt_options.h"
+#include "expr/node_algorithm.h"
 #include "options/proof_options.h"
+#include "options/smt_options.h"
 #include "smt/env.h"
 #include "smt/model.h"
 #include "smt/node_command.h"
 #include "smt/preprocessor.h"
 #include "smt/smt_solver.h"
 #include "theory/rewriter.h"
+#include "theory/smt_engine_subsolver.h"
 #include "theory/substitutions.h"
 #include "theory/theory_engine.h"
-#include "theory/smt_engine_subsolver.h"
-#include "expr/node_algorithm.h"
 
 using namespace cvc5::theory;
 
@@ -61,23 +61,26 @@ void CheckModels::checkModel(Model* m,
   }
   */
   Trace("check-models") << "SmtEngine::checkModels(): pushing core assertions"
-           << std::endl;
+                        << std::endl;
   std::unordered_set<Node> syms;
-  for (const Node& assertion : *al) {
+  for (const Node& assertion : *al)
+  {
     expr::getSymbols(assertion, syms);
-    Trace("check-models") << "SmtEngine::checkModels(): pushing assertion " << assertion << "\n";
+    Trace("check-models") << "SmtEngine::checkModels(): pushing assertion "
+                          << assertion << "\n";
     modelChecker->assertFormula(assertion);
   }
   std::vector<Node> vars;
   std::vector<Node> subs;
   for (const Node& s : syms)
   {
-    Trace("check-models") << "SmtEngine::checkModels(): define symbol " << s << "\n";
+    Trace("check-models") << "SmtEngine::checkModels(): define symbol " << s
+                          << "\n";
     Node sv = m->getValue(s);
     Trace("check-models") << "Define as " << sv << std::endl;
     Node val = sv;
     std::vector<Node> formals;
-    if (sv.getKind()==kind::LAMBDA)
+    if (sv.getKind() == kind::LAMBDA)
     {
       formals.insert(formals.end(), sv[0].begin(), sv[0].end());
       val = sv[1];
@@ -86,32 +89,39 @@ void CheckModels::checkModel(Model* m,
     vars.push_back(s);
     subs.push_back(sv);
   }
-  
-  for (const Node& assertion : *al) {
-    Node as = assertion.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
+
+  for (const Node& assertion : *al)
+  {
+    Node as = assertion.substitute(
+        vars.begin(), vars.end(), subs.begin(), subs.end());
     as = Rewriter::rewrite(as);
     Trace("ajr-temp") << "SR assertion: " << as << std::endl;
   }
   Result r;
-  try {
+  try
+  {
     r = modelChecker->checkSat();
-  } catch(...) {
+  }
+  catch (...)
+  {
     throw;
   }
-  Trace("check-models") << "SmtEngine::checkModels(): result is " << r << std::endl;
-  if(r.asSatisfiabilityResult().isUnknown()) {
+  Trace("check-models") << "SmtEngine::checkModels(): result is " << r
+                        << std::endl;
+  if (r.asSatisfiabilityResult().isUnknown())
+  {
     Warning()
         << "SmtEngine::checkModels(): could not check core result unknown."
         << std::endl;
   }
   else if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
   {
-    InternalError()
-        << "SmtEngine::checkModels(): produced model assertions were unsatisfiable.";
+    InternalError() << "SmtEngine::checkModels(): produced model assertions "
+                       "were unsatisfiable.";
   }
   return;
 #endif
-  
+
   // Throughout, we use Notice() to give diagnostic output.
   //
   // If this function is running, the user gave --check-model (or equivalent),

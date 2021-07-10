@@ -1834,12 +1834,13 @@ void TheoryEngine::handleUserAttribute(const char* attr, Theory* t) {
 }
 
 void TheoryEngine::checkTheoryAssertionsWithModel(bool hardFailure) {
-  if (d_relManager!=nullptr)
+  if (d_relManager != nullptr)
   {
     bool success = false;
-    const std::unordered_set<TNode>& ra = d_relManager->getRelevantAssertions(success);
+    const std::unordered_set<TNode>& ra =
+        d_relManager->getRelevantAssertions(success);
     AlwaysAssert(success);
-    for( const Node& r : ra)
+    for (const Node& r : ra)
     {
       Trace("ajr-temp") << "Relevant assertion: " << r << std::endl;
     }
