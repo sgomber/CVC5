@@ -281,6 +281,8 @@ Node TheoryModel::getModelValue(TNode n) const
       d_modelCache[n] = ret;
       return ret;
     }
+    d_modelCache[n] = n;
+    return n;
   }
   // it might be approximate
   std::map<Node, Node>::const_iterator ita = d_approximations.find(n);

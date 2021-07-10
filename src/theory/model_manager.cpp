@@ -138,6 +138,11 @@ void ModelManager::postProcessModel(bool incomplete)
         << "  PostProcessModel on theory: " << theoryId << std::endl;
     t->postProcessModel(d_model.get());
   }
+  if (Trace.isOn("model-final"))
+  {
+    Trace("model-final") << "Final model:" << std::endl;
+    Trace("model-final") << d_model->debugPrintModelEqc() << std::endl;
+  }
   // also call the model builder's post-process model
   d_modelBuilder->postProcessModel(incomplete, d_model.get());
 }

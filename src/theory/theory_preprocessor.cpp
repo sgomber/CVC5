@@ -21,6 +21,9 @@
 #include "theory/logic_info.h"
 #include "theory/rewriter.h"
 #include "theory/theory_engine.h"
+#include "expr/node_algorithm.h"
+#include "options/base_options.h"
+#include "printer/printer.h"
 
 using namespace std;
 
@@ -171,6 +174,85 @@ TrustNode TheoryPreprocessor::preprocessInternal(
   Trace("tpp") << "TheoryPreprocessor::preprocess: return " << tret.getNode()
                << ", procLemmas=" << procLemmas
                << ", # lemmas = " << newLemmas.size() << std::endl;
+  if (irNode!=tret.getNode())
+  {
+    for (size_t i=0; i<newLemmas.size(); i++)
+    {
+      skolemLemmas[newSkolems[i]] = newLemmas[i].getNode();
+    }
+    NodeManager * nm = NodeManager::currentNM();
+    Node ant = tret.getNode();
+    std::unordered_set<Node> relevantLemmas;
+    std::map<Node,Node> revmap;
+    for (const std::pair<const Node, Node>& l : skolemLemmas)
+    {
+      relevantLemmas.insert(l.second);
+      revmap[l.second] = l.first;
+    }
+    std::vector<Node> newAnt;
+    newAnt.insert(newAnt.end(), relevantLemmas.begin(), relevantLemmas.end());
+    newAnt.push_back(tret.getNode());
+    ant = nm->mkAnd(newAnt);
+    /*
+    bool continueCheck;
+    do
+    {
+      continueCheck = false;
+      std::unordered_set<Node> symsc;
+      expr::getSymbols(ant, symsc);
+      std::map<Node, Node>::iterator itr;
+      for (const Node& s : symsc)
+      {
+        itr = skolemLemmas.find(s);
+        if (itr!=skolemLemmas.end())
+        {
+          if (relevantLemmas.find(itr->second)!=relevantLemmas.end())
+          {
+            relevantLemmas.insert(itr->second);
+            continueCheck = true;
+            revmap[itr->second] = s;
+          }
+        }
+      }
+      if (continueCheck)
+      {
+        std::vector<Node> newAnt;
+        newAnt.insert(newAnt.end(), relevantLemmas.begin(), relevantLemmas.end());
+        newAnt.push_back(tret.getNode());
+        ant = nm->mkAnd(newAnt);
+      }
+    }while(continueCheck);
+    */
+    Node debugLem = nm->mkNode(kind::IMPLIES, ant, irNode);
+    std::unordered_set<Node> syms;
+    expr::getSymbols(debugLem, syms);
+    std::stringstream os;
+    Printer * p = Printer::getPrinter(options::outputLanguage());
+    for (const Node& s : syms)
+    {
+      std::stringstream sname;
+      sname << s;
+      p->toStreamCmdDeclareFunction(os, sname.str(), s.getType());
+    }
+    Trace("tpp-lemma") << os.str();
+    Trace("tpp-lemma") << "(assert (not (=> " << std::endl;
+    if (!relevantLemmas.empty())
+    {
+      Trace("tpp-lemma") << "(and" << std::endl;
+      for (const Node& l : relevantLemmas)
+      {
+        Trace("tpp-lemma") << l << "; from " << revmap[l] << std::endl;
+      }
+      Trace("tpp-lemma") << tret.getNode() << ")" << std::endl;
+    }
+    else
+    {
+      Trace("tpp-lemma") << tret.getNode() << std::endl;
+    }
+    Trace("tpp-lemma") << irNode << ")))" << std::endl;
+    Trace("tpp-lemma") << "(check-sat)" << std::endl;
+    Trace("tpp-lemma") << "(reset)" << std::endl;
+  }
   return tret;
 }
 

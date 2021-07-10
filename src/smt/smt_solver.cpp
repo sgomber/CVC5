@@ -240,6 +240,7 @@ void SmtSolver::processAssertions(Assertions& as)
   {
     Chat() << "converting to CNF..." << endl;
     const std::vector<Node>& assertions = ap.ref();
+    Trace("ajr-temp") << "Assert input formulas " << assertions << std::endl;
     // It is important to distinguish the input assertions from the skolem
     // definitions, as the decision justification heuristic treates the latter
     // specially.

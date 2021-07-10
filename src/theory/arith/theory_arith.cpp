@@ -239,6 +239,10 @@ bool TheoryArith::collectModelValues(TheoryModel* m,
   // get the model from the linear solver
   std::map<Node, Node> arithModel;
   d_internal->collectModelValues(termSet, arithModel);
+  for (const std::pair<const Node, Node>& p : arithModel)
+  {
+    AlwaysAssert(!p.first.getType().isInteger() || p.second.getType().isInteger()) << "Violate integer constraint: " << p.first << " -> " << p.second;
+  }
   // if non-linear is enabled, intercept the model, which may repair its values
   if (d_nonlinearExtension != nullptr)
   {

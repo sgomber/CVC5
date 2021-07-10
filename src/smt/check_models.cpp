@@ -41,6 +41,8 @@ void CheckModels::checkModel(Model* m,
                              context::CDList<Node>* al,
                              bool hardFailure)
 {
+  theory::SubstitutionMap& sm = d_env.getTopLevelSubstitutions().get();
+#if 1
   // initialize the core checker
   std::unique_ptr<SmtEngine> modelChecker;
   initializeSubsolver(modelChecker);
@@ -60,13 +62,14 @@ void CheckModels::checkModel(Model* m,
   */
   Trace("check-models") << "SmtEngine::checkModels(): pushing core assertions"
            << std::endl;
-  theory::SubstitutionMap& sm = d_env.getTopLevelSubstitutions().get();
   std::unordered_set<Node> syms;
   for (const Node& assertion : *al) {
     expr::getSymbols(assertion, syms);
     Trace("check-models") << "SmtEngine::checkModels(): pushing assertion " << assertion << "\n";
     modelChecker->assertFormula(assertion);
   }
+  std::vector<Node> vars;
+  std::vector<Node> subs;
   for (const Node& s : syms)
   {
     Trace("check-models") << "SmtEngine::checkModels(): define symbol " << s << "\n";
@@ -80,6 +83,14 @@ void CheckModels::checkModel(Model* m,
       val = sv[1];
     }
     modelChecker->defineFunction(s, formals, val, false);
+    vars.push_back(s);
+    subs.push_back(sv);
+  }
+  
+  for (const Node& assertion : *al) {
+    Node as = assertion.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
+    as = Rewriter::rewrite(as);
+    Trace("ajr-temp") << "SR assertion: " << as << std::endl;
   }
   Result r;
   try {
@@ -99,7 +110,7 @@ void CheckModels::checkModel(Model* m,
         << "SmtEngine::checkModels(): produced model assertions were unsatisfiable.";
   }
   return;
-  
+#endif
   
   // Throughout, we use Notice() to give diagnostic output.
   //

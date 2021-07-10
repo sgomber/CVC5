@@ -221,6 +221,8 @@ class TheoryPreprocessor
                               bool isPre);
   /** Proofs enabled */
   bool isProofEnabled() const;
+  /** all lemmas */
+  std::map<Node, Node> skolemLemmas;
 };
 
 }  // namespace theory

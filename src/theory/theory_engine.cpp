@@ -1834,6 +1834,16 @@ void TheoryEngine::handleUserAttribute(const char* attr, Theory* t) {
 }
 
 void TheoryEngine::checkTheoryAssertionsWithModel(bool hardFailure) {
+  if (d_relManager!=nullptr)
+  {
+    bool success = false;
+    const std::unordered_set<TNode>& ra = d_relManager->getRelevantAssertions(success);
+    AlwaysAssert(success);
+    for( const Node& r : ra)
+    {
+      Trace("ajr-temp") << "Relevant assertion: " << r << std::endl;
+    }
+  }
   for(TheoryId theoryId = THEORY_FIRST; theoryId < THEORY_LAST; ++theoryId) {
     Theory* theory = d_theoryTable[theoryId];
     if(theory && d_logicInfo.isTheoryEnabled(theoryId)) {
@@ -1868,7 +1878,7 @@ void TheoryEngine::checkTheoryAssertionsWithModel(bool hardFailure) {
               // assertions with unevaluable operators, e.g. transcendental
               // functions. It also may happen for separation logic, where
               // check-model support is limited.
-              Warning() << ss.str();
+              Trace("ajr-temp") << ss.str();
             }
           }
         }
