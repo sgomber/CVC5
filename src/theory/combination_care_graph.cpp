@@ -79,8 +79,8 @@ void CombinationCareGraph::combineTheories()
       Node split = equality.orNode(equality.notNode());
       tsplit = TrustNode::mkTrustLemma(split, nullptr);
     }
-    Trace("combineTheories") << "care split: " << tsplit << " from " << carePair.d_theory << std::endl;
-    d_sharedSolver->sendLemma(tsplit, carePair.d_theory);
+    d_sharedSolver->sendLemma(
+        tsplit, carePair.d_theory, InferenceId::COMBINATION_SPLIT);
 
     // Could check the equality status here:
     //   EqualityStatus es = getEqualityStatus(carePair.d_a, carePair.d_b);
