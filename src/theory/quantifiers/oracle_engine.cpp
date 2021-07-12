@@ -97,7 +97,9 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
     }
     currInterfaces.push_back(q);
     if(d_callers.find(q)==d_callers.end())
+    {
       d_callers.insert(std::pair<Node, OracleCaller>(q,OracleCaller(q)));
+    }
     OracleCaller &caller = d_callers.at(q); 
     Trace("oracle-engine-state") << "Interface: " << q << " with binary name " << caller.getBinaryName() << std::endl;
   }
@@ -111,8 +113,9 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
     {
       std::vector<Node> apps = tat->getLeaves(1);
       if(d_callers.find(f)==d_callers.end())
+      {
         d_callers.insert(std::pair<Node, OracleCaller>(f,OracleCaller(f)));
-
+      }
       OracleCaller &caller = d_callers.at(f); 
 
       Trace("oracle-calls") << "Oracle fun "<< f <<" with binary name "<< caller.getBinaryName() 
