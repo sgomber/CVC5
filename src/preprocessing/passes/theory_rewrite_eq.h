@@ -48,6 +48,8 @@ class TheoryRewriteEq : public PreprocessingPass
    * Returns the trust node corresponding to the rewrite.
    */
   TrustNode rewriteAssertion(TNode assertion);
+  /** Push Ite */
+  Node pushIte(Node ite, Node lhs);
 };
 
 }  // namespace passes

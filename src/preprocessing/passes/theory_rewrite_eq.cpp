@@ -20,6 +20,7 @@
 #include "theory/theory_engine.h"
 
 using namespace cvc5::theory;
+using namespace cvc5::kind;
 
 namespace cvc5 {
 namespace preprocessing {
@@ -96,10 +97,24 @@ TrustNode TheoryRewriteEq::rewriteAssertion(TNode n)
       }
       if (ret.getKind() == kind::EQUAL && !ret[0].getType().isBoolean())
       {
-        // For example, (= x y) ---> (and (>= x y) (<= x y))
-        TrustNode trn = te->ppRewriteEquality(ret);
-        // can make proof producing by using proof generator from trn
-        ret = trn.isNull() ? Node(ret) : trn.getNode();
+        Trace("theory-rewrite-eq") << "TheoryRewriteEq::Rewrite: " << ret << std::endl;
+        // if exactly one side is an ITE
+        bool isIte0 = ret[0].getKind()==kind::ITE;
+        if (isIte0 != (ret[1].getKind()==kind::ITE))
+        {
+          // push to children
+          ret = pushIte(ret[isIte0 ? 0 : 1], ret[isIte0 ? 1 : 0]);
+          TrustNode rret = rewriteAssertion(ret);
+          ret = rret.isNull() ? Node(ret) : rret.getNode();
+          Trace("theory-rewrite-eq") << "...push ITE to " << ret << std::endl;
+        }
+        else
+        {
+          // For example, (= x y) ---> (and (>= x y) (<= x y))
+          TrustNode trn = te->ppRewriteEquality(ret);
+          // can make proof producing by using proof generator from trn
+          ret = trn.isNull() ? Node(ret) : trn.getNode();
+        }
       }
       visited[cur] = ret;
     }
@@ -113,6 +128,53 @@ TrustNode TheoryRewriteEq::rewriteAssertion(TNode n)
   }
   // can make proof producing by providing a term conversion generator here
   return TrustNode::mkTrustRewrite(n, ret, nullptr);
+}
+
+Node TheoryRewriteEq::pushIte(Node ite, Node lhs)
+{
+  NodeManager * nm = NodeManager::currentNM();
+  std::unordered_map<TNode, Node> visited;
+  std::unordered_map<TNode, Node>::iterator it;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(ite);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+    it = visited.find(cur);
+
+    if (it == visited.end()) {
+      visited[cur] = Node::null();
+      if (cur.getKind()==ITE)
+      {
+        visit.push_back(cur);
+        visit.push_back(cur[1]);
+        visit.push_back(cur[2]);
+      }
+      else
+      {
+        // leaf, make equal
+        Assert (cur.getType().isComparableTo(lhs.getType()));
+        visited[cur] = cur.eqNode(lhs);
+      }
+    } else if (it->second.isNull()) {
+      Assert (cur.getKind()==ITE);
+      std::vector<Node> children;
+      children.push_back(cur[0]);
+      for (size_t i=1; i<=2; i++) {
+        Node cn = cur[i];
+        it = visited.find(cn);
+        Assert(it != visited.end());
+        Assert(!it->second.isNull());
+        children.push_back(it->second);
+      }
+      // always changes
+      visited[cur] = nm->mkNode(ITE, children);
+    }
+  } while (!visit.empty());
+  Assert(visited.find(ite) != visited.end());
+  Assert(!visited.find(ite)->second.isNull());
+  return visited[ite];
 }
 
 }  // namespace passes
