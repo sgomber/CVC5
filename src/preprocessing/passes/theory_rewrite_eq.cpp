@@ -67,6 +67,11 @@ TrustNode TheoryRewriteEq::rewriteAssertion(TNode n)
       {
         visited[cur] = cur;
       }
+      else if (cur.isClosure())
+      {
+        // do not apply within quantifiers
+        visited[cur] = cur;
+      }
       else
       {
         visited[cur] = Node::null();
