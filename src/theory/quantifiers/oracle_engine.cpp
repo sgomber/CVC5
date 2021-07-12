@@ -96,7 +96,10 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
       continue;
     }
     currInterfaces.push_back(q);
-    Trace("oracle-engine-state") << "Interface: " << q << " with binary name " << oracleCaller.getBinaryName(q) << std::endl;
+    if(d_callers.find(q)==d_callers.end())
+      d_callers.insert(std::pair<Node, OracleCaller>(q,OracleCaller(q)));
+    OracleCaller &caller = d_callers.at(q); 
+    Trace("oracle-engine-state") << "Interface: " << q << " with binary name " << caller.getBinaryName() << std::endl;
   }
   bool allFappsConsistent=true;
   std::vector<Node> learned_lemmas;
@@ -107,8 +110,12 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
     if(tat)
     {
       std::vector<Node> apps = tat->getLeaves(1);
-      std::string binaryName = oracleCaller.getBinaryName(f);
-      Trace("oracle-calls") << "Oracle fun "<< f <<" with binary name "<< binaryName 
+      if(d_callers.find(f)==d_callers.end())
+        d_callers.insert(std::pair<Node, OracleCaller>(f,OracleCaller(f)));
+
+      OracleCaller &caller = d_callers.at(f); 
+
+      Trace("oracle-calls") << "Oracle fun "<< f <<" with binary name "<< caller.getBinaryName() 
         <<" and " << apps.size()<< " applications."<< std::endl;
   
       // get applications of oracle function
@@ -128,7 +135,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
         }
 
         // call oracle
-        Node response = oracleCaller.callOracle(binaryName, arguments);  
+        Node response = caller.callOracle(arguments);  
         Trace("oracle-calls") << "Node Response " << response;
         NodeManager* nm = NodeManager::currentNM();
         // check consistency with model

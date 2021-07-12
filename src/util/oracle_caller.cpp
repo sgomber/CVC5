@@ -73,10 +73,12 @@ Node OracleCaller::responseParser(std::string &in)
     Assert(0); // throw error here
 }
 
-Node OracleCaller::callOracle(const std::string &binary_name, 
-                                     const std::vector<Node> &argv)
+Node OracleCaller::callOracle(const std::vector<Node> &argv)
 {
-  Trace("oracle-calls") << "Running oracle: " << binary_name ;
+  Trace("oracle-calls") << "Running oracle: " << d_binaryName;
+  if(d_cachedResults.find(argv)!=d_cachedResults.end())
+    return d_cachedResults.at(argv);
+
   std::vector<std::string> string_args;
   for (auto &arg : argv)
   {
@@ -91,7 +93,7 @@ Node OracleCaller::callOracle(const std::string &binary_name,
   std::ostringstream stdout_stream;
 
   auto run_result = run(
-      binary_name,
+      d_binaryName,
       string_args,
       "",
       stdout_stream,
@@ -100,16 +102,18 @@ Node OracleCaller::callOracle(const std::string &binary_name,
   // we assume that an oracle has a return code of 0 or 10. 
   if (run_result != 0 && run_result !=10)
   {
-    Trace("oracle-calls") << "oracle " << binary_name << " has failed with exit code " << run_result << std::endl;
+    Trace("oracle-calls") << "oracle " << d_binaryName << " has failed with exit code " << run_result << std::endl;
     Assert(run_result==0 || run_result==10);
   }
   // we assume that the oracle returns the result in SMT-LIB format
   std::string stringResponse = stdout_stream.str();
   // parse response into a Node
-  return responseParser(stringResponse);
+  Node response = responseParser(stringResponse);
+  d_cachedResults[argv]= response;
+  return response;
 }
 
-std::string OracleCaller::getBinaryName(const Node n)
+std::string OracleCaller::setBinaryName(const Node n)
 {
   // oracle functions have no children
   if(n.getNumChildren()<3)
