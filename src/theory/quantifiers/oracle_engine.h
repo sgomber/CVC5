@@ -82,9 +82,10 @@ class OracleEngine : public QuantifiersModule
  private:
   /** The oracle functions (user-context dependent) */
   context::CDList<Node> d_oracleFuns;
+  /** map of oracle interface nodes to oracle callers **/
+  std::map<Node,OracleCaller> d_callers;
   bool d_consistencyCheckPassed=false;
   bool d_checkedAllOracles=false;
-  OracleCaller oracleCaller;
 };
 
 }  // namespace quantifiers
