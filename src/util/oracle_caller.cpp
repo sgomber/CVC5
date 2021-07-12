@@ -9,9 +9,27 @@
 
 namespace cvc5 {
 
+const std::string WHITESPACE = " \n\r\t\f\v";
+
+std::string ltrim(const std::string &s)
+{
+    size_t start = s.find_first_not_of(WHITESPACE);
+    return (start == std::string::npos) ? "" : s.substr(start);
+}
+ 
+std::string rtrim(const std::string &s)
+{
+    size_t end = s.find_last_not_of(WHITESPACE);
+    return (end == std::string::npos) ? "" : s.substr(0, end + 1);
+}
+ 
+std::string trim(const std::string &s) {
+    return rtrim(ltrim(s));
+}
+
 bool is_digits(const std::string &str)
 {
-    return str.find_first_not_of("0123456789") == std::string::npos;
+  return str.find_first_not_of("0123456789") == std::string::npos;
 }
 
 Node OracleCaller::get_hex_numeral(std::string in)
@@ -48,29 +66,36 @@ Node OracleCaller::responseParser(std::string &in)
   // Assumes the response is a singular integer or bitvector literal
   // Temporary: will eventually be replaced with some subcomponent of full parser
   NodeManager* nm = NodeManager::currentNM();
+  std::string trimmedString = trim(in);
   if(in.at(0)=='#')
   {
     if(in.at(1)=='b')
-      return get_bin_numeral(in);
+      return get_bin_numeral(trimmedString);
     else if(in.at(1)=='x')
-      return get_hex_numeral(in);
+      return get_hex_numeral(trimmedString);
     else
+    {
+      Trace("response-parser")<< "Response string "<< in <<" had # at the start and then was not binary or hex"<<std::endl;
       Assert(0); // throw error here
+    }
   }
-  else if(is_digits(in))
-    return get_dec_numeral(in);
+  else if(is_digits(trimmedString))
+    return get_dec_numeral(trimmedString);
   else if(in.find("true")!=std::string::npos)
   {
     Node result = nm->mkConst(true);
     return result;
   }
-  else if(in.find("false")!=std::string::npos)
+  else if(trimmedString.find("false")!=std::string::npos)
   {
     Node result = nm->mkConst(false);
     return result;
   }
   else
+  {
+    Trace("oracle-calls") <<"Could not parse response "<<in<<std::endl;
     Assert(0); // throw error here
+  }
 }
 
 Node OracleCaller::callOracle(const std::vector<Node> &argv)
@@ -80,12 +105,15 @@ Node OracleCaller::callOracle(const std::vector<Node> &argv)
     return d_cachedResults.at(argv);
 
   std::vector<std::string> string_args;
+  bool first=true;
   for (auto &arg : argv)
   {
     std::ostringstream oss;
     oss << arg;
     string_args.push_back(oss.str());
-    Trace("oracle-calls") << ' ' << arg;
+    if(!first)
+      Trace("oracle-calls") << ' ' << arg;
+    first=false;
   }
   Trace("oracle-calls") << std::endl;
 
