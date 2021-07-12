@@ -48,7 +48,12 @@ class TheoryRewriteEq : public PreprocessingPass
    * Returns the trust node corresponding to the rewrite.
    */
   TrustNode rewriteAssertion(TNode assertion);
-  /** Push Ite */
+  /**
+   * Push term lhs into an ite term. For example, for the input
+   *   (ite C (ite D a b) e), f
+   * this method returns:
+   *   (ite C (ite D (= f a) (= f b)) (= f e))
+   */
   Node pushIte(Node ite, Node lhs);
 };
 

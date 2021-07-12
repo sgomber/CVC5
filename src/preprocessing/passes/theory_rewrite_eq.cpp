@@ -69,7 +69,9 @@ TrustNode TheoryRewriteEq::rewriteAssertion(TNode n)
       }
       else if (cur.isClosure())
       {
-        // do not apply within quantifiers
+        // do not apply within quantifiers. This is particularly important
+        // for recursive function definitions, for which we do not want to
+        // push the left hand side of equalities into ITE terms.
         visited[cur] = cur;
       }
       else
