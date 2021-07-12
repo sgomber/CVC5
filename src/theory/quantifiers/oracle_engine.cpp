@@ -129,15 +129,15 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
         for(const auto &arg: fapp)
         {
           arguments.push_back(fm->getValue(arg));
-          // arguments.push_back(eq->getRepresentative(arg));
-          Trace("oracle-calls") << "Arg: " << arg << ", value " << fm->getValue(arg) <<
-          ", representation "<< eq->getRepresentative(arg)<< std::endl;
         }
 
         // call oracle
-        Node response = caller.callOracle(arguments);  
-        Trace("oracle-calls") << "Node Response " << response;
         NodeManager* nm = NodeManager::currentNM();
+        Node fapp_with_values = nm->mkNode(APPLY_UF, arguments);
+        Trace("oracle-calls") << "fapp with values" << fapp_with_values <<std::endl;
+
+        Node response = caller.callOracle(fapp_with_values);  
+        Trace("oracle-calls") << "Node Response " << response;
         // check consistency with model
         Node predictedResult = eq->getRepresentative(fapp);
         Trace("oracle-calls") << ", expected " << predictedResult << std::endl;
@@ -148,7 +148,6 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
           allFappsConsistent=false;
         }
         // add lemma
-        Node fapp_with_values = nm->mkNode(APPLY_UF, arguments);
         Node lemma = nm->mkNode(EQUAL,response,fapp_with_values);
         learned_lemmas.push_back(lemma);
       }
@@ -183,9 +182,13 @@ bool OracleEngine::checkCompleteFor(Node q)
 {
   // TODO: true if oracle consistency check works
   if(d_consistencyCheckPassed)
+  {
     Trace("oracle-engine-state") << q << " is complete"<< std::endl;
+  }
   else
+  {
     Trace("oracle-engine-state") << q << " is incomplete"<< std::endl;
+  }
   return d_consistencyCheckPassed;
 }
 

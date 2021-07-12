@@ -39,7 +39,7 @@ class OracleCaller
   Node responseParser(std::string &in);
 
   /** Call an oracle with a set of arguments **/
-  Node callOracle(const std::vector<Node> &argv);
+  Node callOracle(const Node fapp);
 
   /** get binary from oracle interface */
   std::string setBinaryName(const Node n);
@@ -53,7 +53,7 @@ class OracleCaller
   private:
   /** name of binary */
   std::string d_binaryName;
-  std::map<std::vector<Node>, Node> d_cachedResults;
+  std::map<Node, Node> d_cachedResults;
 
 };
 

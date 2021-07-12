@@ -70,9 +70,13 @@ Node OracleCaller::responseParser(std::string &in)
   if(in.at(0)=='#')
   {
     if(in.at(1)=='b')
+    {
       return get_bin_numeral(trimmedString);
+    }
     else if(in.at(1)=='x')
+    {
       return get_hex_numeral(trimmedString);
+    }
     else
     {
       Trace("response-parser")<< "Response string "<< in <<" had # at the start and then was not binary or hex"<<std::endl;
@@ -80,7 +84,9 @@ Node OracleCaller::responseParser(std::string &in)
     }
   }
   else if(is_digits(trimmedString))
+  {
     return get_dec_numeral(trimmedString);
+  }
   else if(in.find("true")!=std::string::npos)
   {
     Node result = nm->mkConst(true);
@@ -98,22 +104,23 @@ Node OracleCaller::responseParser(std::string &in)
   }
 }
 
-Node OracleCaller::callOracle(const std::vector<Node> &argv)
+Node OracleCaller::callOracle(const Node fapp)
 {
-  Trace("oracle-calls") << "Running oracle: " << d_binaryName;
-  if(d_cachedResults.find(argv)!=d_cachedResults.end())
-    return d_cachedResults.at(argv);
+  Trace("oracle-calls") << "Running oracle: " << d_binaryName ;
+  if(d_cachedResults.find(fapp)!=d_cachedResults.end())
+  {
+    return d_cachedResults.at(fapp);
+  }
 
   std::vector<std::string> string_args;
-  bool first=true;
-  for (auto &arg : argv)
+  string_args.push_back(d_binaryName);
+
+  for (const auto &arg : fapp)
   {
     std::ostringstream oss;
     oss << arg;
     string_args.push_back(oss.str());
-    if(!first)
-      Trace("oracle-calls") << ' ' << arg;
-    first=false;
+    Trace("oracle-calls") << ' ' << arg;
   }
   Trace("oracle-calls") << std::endl;
 
@@ -137,7 +144,7 @@ Node OracleCaller::callOracle(const std::vector<Node> &argv)
   std::string stringResponse = stdout_stream.str();
   // parse response into a Node
   Node response = responseParser(stringResponse);
-  d_cachedResults[argv]= response;
+  d_cachedResults[fapp]= response;
   return response;
 }
 
@@ -145,13 +152,17 @@ std::string OracleCaller::setBinaryName(const Node n)
 {
   // oracle functions have no children
   if(n.getNumChildren()<3)
+  {
     return n.getAttribute(theory::OracleInterfaceAttribute());
+  }
 
   // oracle interfaces have children, and the attribute is stored in 2nd child 
   for (const Node& v : n[2][0]) 
   { 
     if(v.getAttribute(theory::OracleInterfaceAttribute())!="")
+    {
       return v.getAttribute(theory::OracleInterfaceAttribute());
+    }
   }
   return "";
 } 
