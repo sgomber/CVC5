@@ -57,7 +57,7 @@ Node OracleCaller::get_dec_numeral(std::string in)
   // we accept any sequence of '0'-'9'
   NodeManager* nm = NodeManager::currentNM();
   unsigned int val = std::stoi(in, nullptr, 10);
-  Node result  = nm->mkConst(Rational(val));
+  Node result  = nm->mkConst(Rational(val,1u));
   return result;
 }
 
