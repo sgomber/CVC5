@@ -82,8 +82,6 @@ libcvc5_add_sources(
   string.cpp
   string.h
   system_exception.h
-  tmpfile.cpp
-  tmpfile.h
   unsafe_interrupt_exception.h
   utility.cpp
   utility.h
