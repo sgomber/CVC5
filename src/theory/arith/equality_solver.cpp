@@ -68,11 +68,14 @@ bool EqualitySolver::preNotifyFact(
 
 TrustNode EqualitySolver::explain(TNode lit)
 {
+  Trace("arith-eq-solver-debug") << "explain " << lit << "?" << std::endl;
   // check if we propagated it?
   if (d_propLits.find(lit) == d_propLits.end())
   {
+  Trace("arith-eq-solver-debug") << "...did not propagate" << std::endl;
     return TrustNode::null();
   }
+  Trace("arith-eq-solver-debug") << "...explain via inference manager" << std::endl;
   // if we did, explain with the arithmetic inference manager
   return d_aim.explainLit(lit);
 }
@@ -80,6 +83,7 @@ bool EqualitySolver::propagateLit(Node lit)
 {
   // notice this is only used when ee-mode=distributed
   // remember that this was a literal we propagated
+  Trace("arith-eq-solver-debug") << "propagate lit " << lit << std::endl;
   d_propLits.insert(lit);
   return d_aim.propagateLit(lit);
 }
