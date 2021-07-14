@@ -189,6 +189,10 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
 
 bool OracleEngine::checkCompleteFor(Node q)
 {
+  if (d_qreg.getOwner(q)!=this)
+  {
+    return false;
+  }
   // TODO: true if oracle consistency check works
   if(d_consistencyCheckPassed)
   {
