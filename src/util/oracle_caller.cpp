@@ -109,6 +109,7 @@ Node OracleCaller::callOracle(const Node fapp)
   Trace("oracle-calls") << "Running oracle: " << d_binaryName ;
   if(d_cachedResults.find(fapp)!=d_cachedResults.end())
   {
+     Trace("oracle-calls") <<"\nUsing cached result" << std::endl;
     return d_cachedResults.at(fapp);
   }
 
