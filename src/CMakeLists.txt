@@ -800,6 +800,8 @@ libcvc5_add_sources(
   theory/quantifiers/instantiate.h
   theory/quantifiers/instantiation_list.cpp
   theory/quantifiers/instantiation_list.h
+  theory/quantifiers/master_eq_notify.cpp
+  theory/quantifiers/master_eq_notify.h
   theory/quantifiers/lazy_trie.cpp
   theory/quantifiers/lazy_trie.h
   theory/quantifiers/proof_checker.cpp
