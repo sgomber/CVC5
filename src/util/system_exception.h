@@ -27,18 +27,16 @@ namespace cvc5 {
 class SystemException : public cvc5::Exception
 {
  public:
-  SystemException() :
-    Exception("Interrupted in unsafe state due to "
-              "time/resource limit.") {
+  SystemException()
+      : Exception(
+            "Interrupted in unsafe state due to "
+            "time/resource limit.")
+  {
   }
 
-  SystemException(const std::string& msg) :
-    Exception(msg) {
-  }
+  SystemException(const std::string& msg) : Exception(msg) {}
 
-  SystemException(const char* msg) :
-    Exception(msg) {
-  }
+  SystemException(const char* msg) : Exception(msg) {}
 }; /* class SystemException */
 
 }  // namespace cvc5

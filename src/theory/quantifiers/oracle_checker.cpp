@@ -20,33 +20,32 @@ namespace theory {
 namespace quantifiers {
 
 bool OracleChecker::checkConsistent(
-  const std::vector< std::pair<Node, Node> >& ioPairs, 
-  std::vector<Node>& lemmas)
+    const std::vector<std::pair<Node, Node> >& ioPairs,
+    std::vector<Node>& lemmas)
 {
-  bool consistent=true;
+  bool consistent = true;
   NodeManager* nm = NodeManager::currentNM();
-  for(const auto &ioPair: ioPairs)
+  for (const auto& ioPair : ioPairs)
   {
-    const auto &f = ioPair.first.getOperator();
+    const auto& f = ioPair.first.getOperator();
     // get oracle caller
-    if(d_callers.find(f)==d_callers.end())
+    if (d_callers.find(f) == d_callers.end())
     {
-      d_callers.insert(std::pair<Node, OracleCaller>(f,OracleCaller(f)));
+      d_callers.insert(std::pair<Node, OracleCaller>(f, OracleCaller(f)));
     }
-    OracleCaller &caller = d_callers.at(f); 
+    OracleCaller& caller = d_callers.at(f);
     // get oracle result
 
     Node result = caller.callOracle(ioPair.first);
-    if(result!=ioPair.second)
+    if (result != ioPair.second)
     {
-      Node lemma = nm->mkNode(kind::EQUAL,result,ioPair.first);
+      Node lemma = nm->mkNode(kind::EQUAL, result, ioPair.first);
       lemmas.push_back(lemma);
-      consistent=false;
+      consistent = false;
     }
   }
   return consistent;
 }
-
 
 }  // namespace quantifiers
 }  // namespace theory

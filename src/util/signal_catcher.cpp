@@ -13,13 +13,10 @@
  * Won't work for windows
  */
 
-
 #include "signal_catcher.h"
 #include <assert.h>
 
-
 #include <cstdlib>
-
 
 namespace cvc5 {
 
@@ -41,7 +38,6 @@ void unregister_child()
   child_pid = 0;
 }
 
-
 void install_signal_catcher()
 {
   // declare act to deal with action on signal set
@@ -54,7 +50,6 @@ void install_signal_catcher()
 
   // install signal handler
   sigaction(SIGTERM, &act, nullptr);
-
 }
 
 void remove_signal_catcher()
@@ -77,11 +72,10 @@ void signal_catcher(int sig)
   killpg(0, sig);
 #else
   // pass on to our child, if any
-  if(child_pid != 0)
-    kill(child_pid, sig);
+  if (child_pid != 0) kill(child_pid, sig);
 #endif
 
-  exit(sig); // should contemplate something from sysexits.h
+  exit(sig);  // should contemplate something from sysexits.h
 }
 
-}
+}  // namespace cvc5

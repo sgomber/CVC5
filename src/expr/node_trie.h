@@ -93,7 +93,7 @@ class NodeTemplateTrie
   void clear() { d_data.clear(); }
   /** Is this trie empty? */
   bool empty() const { return d_data.empty(); }
-  /** 
+  /**
    * Get leaves at the given depth, where depth>0. This argument is necessary
    * since we do not know apriori the depth of where data occurs.
    *

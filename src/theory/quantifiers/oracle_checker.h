@@ -30,20 +30,20 @@ namespace quantifiers {
 /**
  * Oracle checker
  */
-class OracleChecker 
+class OracleChecker
 {
  public:
   OracleChecker() {}
   ~OracleChecker() {}
-  
-  /** check predicted ioPairs are consistent with oracles, generate lemmas if not **/
-  bool checkConsistent(
-  const std::vector< std::pair<Node, Node> >& ioPairs, 
-  std::vector<Node>& lemmas);
+
+  /** check predicted ioPairs are consistent with oracles, generate lemmas if
+   * not **/
+  bool checkConsistent(const std::vector<std::pair<Node, Node> >& ioPairs,
+                       std::vector<Node>& lemmas);
 
  private:
   /** map of oracle interface nodes to oracle callers **/
-  std::map<Node,OracleCaller> d_callers;
+  std::map<Node, OracleCaller> d_callers;
 };
 
 }  // namespace quantifiers

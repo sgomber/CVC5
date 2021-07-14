@@ -21,10 +21,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <cstring>
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 
 #include "base/check.h"
@@ -205,7 +205,7 @@ std::string shell_quote(const std::string& src)
 int run(const std::string& what,
         const std::vector<std::string>& argv,
         const std::string& std_input,
-         std::ostream& std_output,
+        std::ostream& std_output,
         const std::string& std_error)
 {
   std::string command;

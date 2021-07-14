@@ -20,13 +20,11 @@
 #include <string>
 #include <vector>
 
-
-
 namespace cvc5 {
 /// This performs shell quoting if necessary on input \p src.
-std::string shell_quote(const std::string &src);
+std::string shell_quote(const std::string& src);
 
-int run(const std::string &what, const std::vector<std::string> &argv);
+int run(const std::string& what, const std::vector<std::string>& argv);
 
 /// This runs the executable given by the file name \p what.
 /// Control returns when execution has finished.
@@ -34,12 +32,11 @@ int run(const std::string &what, const std::vector<std::string> &argv);
 /// Give the empty std::string to retain the default handle.
 /// Any shell-meta characters in the executable, \p argv and the I/O
 /// redirect files are escaped as needed.
-int run(
-  const std::string &what,
-  const std::vector<std::string> &argv,
-  const std::string &std_input,
-  const std::string &std_output,
-  const std::string &std_error);
+int run(const std::string& what,
+        const std::vector<std::string>& argv,
+        const std::string& std_input,
+        const std::string& std_output,
+        const std::string& std_error);
 
 /// This runs the executable given by the file name \p what.
 /// Control returns when execution has finished.
@@ -48,12 +45,11 @@ int run(
 /// Any output to stdout is stored in the \p std_output stream buffer.
 /// Any shell-meta characters in the executable, \p argv and the I/O
 /// redirect files are escaped as needed.
-int run(
-  const std::string &what,
-  const std::vector<std::string> &argv,
-  const std::string &std_input,
-  std::ostream &std_output,
-  const std::string &std_error);
+int run(const std::string& what,
+        const std::vector<std::string>& argv,
+        const std::string& std_input,
+        std::ostream& std_output,
+        const std::string& std_error);
 
-}
-#endif // CVC5__RUN_H
+}  // namespace cvc5
+#endif  // CVC5__RUN_H

@@ -20,10 +20,10 @@
 #include "options/smt_options.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/fmf/first_order_model_fmc.h"
+#include "theory/quantifiers/oracle_checker.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/quantifiers_state.h"
 #include "theory/quantifiers/term_util.h"
-#include "theory/quantifiers/oracle_checker.h"
 
 namespace cvc5 {
 namespace theory {

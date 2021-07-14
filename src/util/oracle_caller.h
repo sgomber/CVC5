@@ -26,17 +26,15 @@ namespace cvc5 {
 class OracleCaller
 {
  public:
-  OracleCaller(const Node oracleInterfaceNode):
-  d_binaryName(setBinaryName(oracleInterfaceNode))
-  {
-  };
+  OracleCaller(const Node oracleInterfaceNode)
+      : d_binaryName(setBinaryName(oracleInterfaceNode)){};
 
   ~OracleCaller() {}
   /** functions for minimal parsing. These will be removed */
   Node get_hex_numeral(std::string in);
   Node get_dec_numeral(std::string in);
   Node get_bin_numeral(std::string in);
-  Node responseParser(std::string &in);
+  Node responseParser(std::string& in);
 
   /** Call an oracle with a set of arguments **/
   Node callOracle(const Node fapp);
@@ -44,19 +42,15 @@ class OracleCaller
   /** get binary from oracle interface */
   std::string setBinaryName(const Node n);
 
-    /** get binary from oracle interface */
-  std::string getBinaryName()
-  {
-    return d_binaryName;
-  }
+  /** get binary from oracle interface */
+  std::string getBinaryName() { return d_binaryName; }
 
-  private:
+ private:
   /** name of binary */
   std::string d_binaryName;
   std::map<Node, Node> d_cachedResults;
-
 };
 
-} // namespace cvc5
+}  // namespace cvc5
 
 #endif /*CVC5__UTIL__ORACLE_CALLER_H*/

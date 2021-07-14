@@ -172,7 +172,7 @@ public:
  /** Declare pool */
  void declarePool(Node p, const std::vector<Node>& initValue);
  /** Declare oracle fun */
- void declareOracleFun(Node f, const std::string &binName);
+ void declareOracleFun(Node f, const std::string& binName);
  //----------end user interface for instantiations
 
  private:

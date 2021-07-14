@@ -23,9 +23,8 @@ void install_signal_catcher();
 void remove_signal_catcher();
 void signal_catcher(int sig);
 
-
 void register_child(pid_t);
 void unregister_child();
-}
+}  // namespace cvc5
 
-#endif // CVC5__SIGNAL_CATCHER_H
+#endif  // CVC5__SIGNAL_CATCHER_H
