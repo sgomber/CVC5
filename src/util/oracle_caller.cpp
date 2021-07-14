@@ -1,7 +1,7 @@
 
 #include "bitvector.h"
 #include "oracle_caller.h"
-#include "rational_gmp_imp.h"
+#include "util/rational.h"
 #include "run.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 
