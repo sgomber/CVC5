@@ -32,6 +32,7 @@ namespace theory {
 namespace quantifiers {
 
 class FirstOrderModel;
+class OracleChecker;
 
 /**
  * Term Registry, which manages notifying modules within quantifiers about
@@ -83,6 +84,8 @@ class TermRegistry
   TermDb* getTermDatabase() const;
   /** get term database sygus */
   TermDbSygus* getTermDatabaseSygus() const;
+  /** get oracle checker */
+  OracleChecker* getOracleChecker() const;
   /** get term enumeration utility */
   TermEnumeration* getTermEnumeration() const;
   /** get the term pools utility */
@@ -105,6 +108,8 @@ class TermRegistry
   std::unique_ptr<TermDb> d_termDb;
   /** sygus term database */
   std::unique_ptr<TermDbSygus> d_sygusTdb;
+  /** oracle checker */
+  std::unique_ptr<OracleChecker> d_ochecker;
   /** extended model object */
   FirstOrderModel* d_qmodel;
 };

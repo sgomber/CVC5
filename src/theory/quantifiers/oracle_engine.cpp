@@ -24,9 +24,6 @@
 #include "theory/quantifiers/term_registry.h"
 #include "theory/quantifiers/term_tuple_enumerator.h"
 
-
-#include <stdlib.h>
-
 using namespace cvc5::kind;
 using namespace cvc5::context;
 
@@ -51,8 +48,9 @@ OracleEngine::OracleEngine(QuantifiersState& qs,
                            QuantifiersInferenceManager& qim,
                            QuantifiersRegistry& qr,
                            TermRegistry& tr)
-    : QuantifiersModule(qs, qim, qr, tr), d_oracleFuns(qs.getUserContext())
+    : QuantifiersModule(qs, qim, qr, tr), d_oracleFuns(qs.getUserContext()), d_ochecker(tr.getOracleChecker())
 {
+  Assert (d_ochecker!=nullptr);
 }
 
 void OracleEngine::presolve() {}
@@ -77,36 +75,6 @@ void OracleEngine::reset_round(Theory::Effort e) {}
 
 void OracleEngine::registerQuantifier(Node q) {}
 
-
-bool OracleEngine::checkConsistent(
-  const std::vector< std::pair<Node, Node> >& ioPairs, 
-  std::vector<Node>& lemmas)
-  {
-    bool consistent=true;
-    NodeManager* nm = NodeManager::currentNM();
-    for(const auto &ioPair: ioPairs)
-    {
-      const auto &f = ioPair.first.getOperator();
-      // get oracle caller
-      if(d_callers.find(f)==d_callers.end())
-      {
-        d_callers.insert(std::pair<Node, OracleCaller>(f,OracleCaller(f)));
-      }
-      OracleCaller &caller = d_callers.at(f); 
-      // get oracle result
-
-      Node result = caller.callOracle(ioPair.first);
-      if(result!=ioPair.second)
-      {
-        Node lemma = nm->mkNode(EQUAL,result,ioPair.first);
-        lemmas.push_back(lemma);
-        consistent=false;
-      }
-    }
-  return consistent;
-}
-
-
 void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
   if(quant_e != QEFFORT_MODEL) 
     { return; }
@@ -128,7 +96,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
   for (unsigned i = 0; i < nquant; i++)
   {
     Node q = fm->getAssertedQuantifier(i);
-    if (!d_qreg.hasOwnership(q, this))
+    if (d_qreg.getOwner(q)!=this)
     {
       continue;
     }
@@ -159,8 +127,10 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
         Node predictedResponse = eq->getRepresentative(fapp);
         ioPairs.push_back(std::pair<Node, Node> (fapp_with_values, predictedResponse));
       }
-      if(!checkConsistent(ioPairs, learned_lemmas))
+      if(!d_ochecker->checkConsistent(ioPairs, learned_lemmas))
+      {
         allFappsConsistent=false;
+      }
     }
   }
   // if all were consistent, we can terminate

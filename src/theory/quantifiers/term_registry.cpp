@@ -23,6 +23,7 @@
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/quantifiers_state.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/quantifiers/oracle_checker.h"
 
 namespace cvc5 {
 namespace theory {
@@ -35,8 +36,13 @@ TermRegistry::TermRegistry(QuantifiersState& qs, QuantifiersRegistry& qr)
       d_termPools(new TermPools(qs)),
       d_termDb(new TermDb(qs, qr)),
       d_sygusTdb(nullptr),
+      d_ochecker(nullptr),
       d_qmodel(nullptr)
 {
+  if (options::oracles())
+  {
+    d_ochecker.reset(new OracleChecker);
+  }
   if (options::sygus() || options::sygusInst())
   {
     // must be constructed here since it is required for datatypes finistInit
@@ -125,6 +131,11 @@ TermDb* TermRegistry::getTermDatabase() const { return d_termDb.get(); }
 TermDbSygus* TermRegistry::getTermDatabaseSygus() const
 {
   return d_sygusTdb.get();
+}
+
+OracleChecker* TermRegistry::getOracleChecker() const
+{
+  return d_ochecker.get();
 }
 
 TermEnumeration* TermRegistry::getTermEnumeration() const

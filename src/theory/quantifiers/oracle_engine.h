@@ -19,7 +19,7 @@
 #define CVC5__THEORY__QUANTIFIERS__ORACLE_ENGINE_H
 
 #include "theory/quantifiers/quant_module.h"
-#include "util/oracle_caller.h"
+#include "theory/quantifiers/oracle_checker.h"
 
 namespace cvc5 {
 namespace theory {
@@ -61,11 +61,6 @@ class OracleEngine : public QuantifiersModule
   /** Identify. */
   std::string identify() const override;
 
-  /** check predicted ioPairs are consistent with oracles, generate lemmas if not **/
-  bool checkConsistent(
-  const std::vector< std::pair<Node, Node> >& ioPairs, 
-  std::vector<Node>& lemmas);
-
   /** Declare oracle fun */
   void declareOracleFun(Node f, const std::string &binName);
 
@@ -87,8 +82,8 @@ class OracleEngine : public QuantifiersModule
  private:
   /** The oracle functions (user-context dependent) */
   context::CDList<Node> d_oracleFuns;
-  /** map of oracle interface nodes to oracle callers **/
-  std::map<Node,OracleCaller> d_callers;
+  /** Pointer to the oracle checker */
+  OracleChecker * d_ochecker;
   bool d_consistencyCheckPassed=false;
   bool d_checkedAllOracles=false;
 };
