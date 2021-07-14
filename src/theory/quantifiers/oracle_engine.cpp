@@ -164,7 +164,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
         // call oracle
         Node fapp_with_values = nm->mkNode(APPLY_UF, arguments);
         Node response = caller.callOracle(fapp_with_values);  
-        Trace("oracle-calls") << "Node Response " << response;
+        Trace("oracle-calls") << "Node Response " << response << std::end;
         ioPairs.push_back(std::pair<Node, Node>(fapp_with_values, response));
       }
       if(!checkConsistent(ioPairs, apps, learned_lemmas))
