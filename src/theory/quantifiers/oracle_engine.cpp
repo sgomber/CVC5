@@ -84,8 +84,7 @@ bool OracleEngine::checkConsistent(
   {
     bool consistent=true;
     NodeManager* nm = NodeManager::currentNM();
-    eq::EqualityEngine* eq = getEqualityEngine();
-    for(size_t i=0; i<ioPairs.size(); i++)
+    for(const auto &ioPair: ioPairs)
     {
       const auto &f = ioPair.first.getOperator();
       // get oracle caller
