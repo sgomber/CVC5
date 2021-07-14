@@ -102,6 +102,7 @@ Node OracleCaller::responseParser(std::string &in)
     Trace("oracle-calls") <<"Could not parse response "<<in<<std::endl;
     Assert(0); // throw error here
   }
+  return Node::null();
 }
 
 Node OracleCaller::callOracle(const Node fapp)
