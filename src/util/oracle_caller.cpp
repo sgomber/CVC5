@@ -1,8 +1,8 @@
 
-#include "bitvector.h"
-#include "oracle_caller.h"
+#include "util/bitvector.h"
+#include "util/oracle_caller.h"
 #include "util/rational.h"
-#include "run.h"
+#include "util/run.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 
 #include <sstream>
