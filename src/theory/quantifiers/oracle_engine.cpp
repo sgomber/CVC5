@@ -57,11 +57,17 @@ OracleEngine::OracleEngine(QuantifiersState& qs,
 
 void OracleEngine::presolve() {}
 
+// do this to play nicely
+// bool InstantiationEngine::needsCheck( Theory::Effort e ){
+//   return d_qstate.getInstWhenNeedsCheck(e);
+// }
+
 bool OracleEngine::needsCheck(Theory::Effort e)
 {
   return e==Theory::Effort::EFFORT_LAST_CALL;
 }
 
+// the model is built at this effort level
 OracleEngine::QEffort OracleEngine::needsModel(Theory::Effort e)
 {
   return QEFFORT_MODEL;
@@ -70,6 +76,36 @@ OracleEngine::QEffort OracleEngine::needsModel(Theory::Effort e)
 void OracleEngine::reset_round(Theory::Effort e) {}
 
 void OracleEngine::registerQuantifier(Node q) {}
+
+
+bool OracleEngine::checkConsistent(
+  const std::vector< std::pair<Node, Node> >& ioPairs, 
+  std::vector<Node>& lemmas)
+  {
+    bool consistent=true;
+    NodeManager* nm = NodeManager::currentNM();
+    for(const auto &ioPair: ioPairs)
+    {
+      const auto &f = ioPair.first.getOperator();
+      // get oracle caller
+      if(d_callers.find(f)==d_callers.end())
+      {
+        d_callers.insert(std::pair<Node, OracleCaller>(f,OracleCaller(f)));
+      }
+      OracleCaller &caller = d_callers.at(f); 
+      // get oracle result
+
+      Node result = caller.callOracle(ioPair.first);
+      if(result!=ioPair.second)
+      {
+        Node lemma = nm->mkNode(EQUAL,result,ioPair.first);
+        lemmas.push_back(lemma);
+        consistent=false;
+      }
+    }
+  return consistent;
+}
+
 
 void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
   if(quant_e != QEFFORT_MODEL) 
@@ -86,6 +122,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
   FirstOrderModel* fm = d_treg.getModel();
   TermDb* termDatabase = d_treg.getTermDatabase();
   eq::EqualityEngine* eq = getEqualityEngine();
+  NodeManager* nm = NodeManager::currentNM();
   unsigned nquant = fm->getNumAssertedQuantifiers();
   std::vector<Node> currInterfaces;
   for (unsigned i = 0; i < nquant; i++)
@@ -96,36 +133,20 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
       continue;
     }
     currInterfaces.push_back(q);
-    if(d_callers.find(q)==d_callers.end())
-    {
-      d_callers.insert(std::pair<Node, OracleCaller>(q,OracleCaller(q)));
-    }
-    OracleCaller &caller = d_callers.at(q); 
-    Trace("oracle-engine-state") << "Interface: " << q << " with binary name " << caller.getBinaryName() << std::endl;
   }
-  bool allFappsConsistent=true;
   std::vector<Node> learned_lemmas;
+  bool allFappsConsistent=true;
   // iterate over oracle functions
   for (const Node& f : d_oracleFuns)
   {
+    std::vector<std::pair<Node, Node> > ioPairs;
     TNodeTrie* tat = termDatabase->getTermArgTrie(f);
     if(tat)
     {
       std::vector<Node> apps = tat->getLeaves(1);
-      if(d_callers.find(f)==d_callers.end())
-      {
-        d_callers.insert(std::pair<Node, OracleCaller>(f,OracleCaller(f)));
-      }
-      OracleCaller &caller = d_callers.at(f); 
-
-      Trace("oracle-calls") << "Oracle fun "<< f <<" with binary name "<< caller.getBinaryName() 
-        <<" and " << apps.size()<< " applications."<< std::endl;
-  
-      // get applications of oracle function
-      // iterate over applications
+      Trace("oracle-calls") << "Oracle fun "<< f <<" with " << apps.size()<< " applications."<< std::endl;
       for (const auto &fapp: apps)
       {
-        Trace("oracle-calls") << "Oracle app: " << fapp << ", ";
         std::vector<Node> arguments;
         arguments.push_back(f);
         // evaluate arguments
@@ -133,27 +154,13 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
         {
           arguments.push_back(fm->getValue(arg));
         }
-
         // call oracle
-        NodeManager* nm = NodeManager::currentNM();
         Node fapp_with_values = nm->mkNode(APPLY_UF, arguments);
-        Trace("oracle-calls") << "fapp with values" << fapp_with_values <<std::endl;
-
-        Node response = caller.callOracle(fapp_with_values);  
-        Trace("oracle-calls") << "Node Response " << response;
-        // check consistency with model
-        Node predictedResult = eq->getRepresentative(fapp);
-        Trace("oracle-calls") << ", expected " << predictedResult << std::endl;
-
-        if(predictedResult!=response)
-        {
-          Trace("oracle-calls") << "Inconsistent response! Model expected " << predictedResult << std::endl;
-          allFappsConsistent=false;
-        }
-        // add lemma
-        Node lemma = nm->mkNode(EQUAL,response,fapp_with_values);
-        learned_lemmas.push_back(lemma);
+        Node predictedResponse = eq->getRepresentative(fapp);
+        ioPairs.push_back(std::pair<Node, Node> (fapp_with_values, predictedResponse));
       }
+      if(!checkConsistent(ioPairs, learned_lemmas))
+        allFappsConsistent=false;
     }
   }
   // if all were consistent, we can terminate
@@ -166,7 +173,6 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e) {
   {
     for(const auto &l: learned_lemmas)
     {
-      // Trace("oracle-engine-state") << "Adding lemma " << l << std::endl;
       d_qim.lemma(l, InferenceId::QUANTIFIERS_ORACLE_INTERFACE);
     }
   }  

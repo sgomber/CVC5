@@ -107,12 +107,13 @@ Node OracleCaller::responseParser(std::string &in)
 
 Node OracleCaller::callOracle(const Node fapp)
 {
-  Trace("oracle-calls") << "Running oracle: " << d_binaryName ;
+
   if(d_cachedResults.find(fapp)!=d_cachedResults.end())
   {
+     Trace("oracle-calls") <<"Using cached oracle result for "<< fapp << std::endl;
     return d_cachedResults.at(fapp);
   }
-
+  Trace("oracle-calls") << "Running oracle: " << d_binaryName ;
   std::vector<std::string> string_args;
   string_args.push_back(d_binaryName);
 
@@ -145,6 +146,7 @@ Node OracleCaller::callOracle(const Node fapp)
   std::string stringResponse = stdout_stream.str();
   // parse response into a Node
   Node response = responseParser(stringResponse);
+  Trace("oracle-calls") << "response "<< response << std::endl;
   d_cachedResults[fapp]= response;
   return response;
 }
