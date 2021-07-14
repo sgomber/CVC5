@@ -61,10 +61,9 @@ class OracleEngine : public QuantifiersModule
   /** Identify. */
   std::string identify() const override;
 
-  /* check pairs of nodes are consistent */
+  /** check predicted ioPairs are consistent with oracles, generate lemmas if not **/
   bool checkConsistent(
   const std::vector< std::pair<Node, Node> >& ioPairs, 
-  std::vector<Node>& apps,
   std::vector<Node>& lemmas);
 
   /** Declare oracle fun */

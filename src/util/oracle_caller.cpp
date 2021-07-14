@@ -145,6 +145,7 @@ Node OracleCaller::callOracle(const Node fapp)
   std::string stringResponse = stdout_stream.str();
   // parse response into a Node
   Node response = responseParser(stringResponse);
+  Trace("oracle-calls") << "response "<< response << std::endl;
   d_cachedResults[fapp]= response;
   return response;
 }
