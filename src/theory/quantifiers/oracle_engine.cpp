@@ -86,7 +86,7 @@ bool OracleEngine::checkConsistent(
     bool consistent=true;
     NodeManager* nm = NodeManager::currentNM();
     eq::EqualityEngine* eq = getEqualityEngine();
-    for(unsigned int i=0; i<ioPairs.size(); i++)
+    for(size_t i=0; i<ioPairs.size(); i++)
     {
       // get predicted result
       Node predictedResult = eq->getRepresentative(apps[i]);
