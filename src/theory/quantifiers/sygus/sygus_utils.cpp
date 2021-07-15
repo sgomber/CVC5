@@ -38,6 +38,38 @@ struct SygusSolutionAttributeId
 };
 typedef expr::Attribute<SygusSolutionAttributeId, Node> SygusSolutionAttribute;
 
+/**
+ * Attribute for mapping declared variables to the corresponding oracle function
+ */
+struct OracleFunAttributeId
+{
+};
+typedef expr::Attribute<OracleFunAttributeId, Node> OracleFunAttribute;
+
+Node SygusUtils::mkSygusBody(const std::vector<Node>& sygusVars,
+                          Node constraints,
+                          const std::vector<Node>& oracleFuns)
+{
+  Node cbody = constraints.notNode();
+  std::vector<Node> svars = sygusVars;
+  if (!oracleFuns.empty())
+  {
+    OracleFunAttribute ofa;
+    for (const Node& of : oracleFuns)
+    {
+      Node v = nm->mkBoundVar(of.getType());
+      v.setAttribute(ofa, of);
+      svars.push_back(v);
+    }
+  }
+  if (!svars.empty())
+  {
+    Node boundVars = nm->mkNode(BOUND_VAR_LIST, svars);
+    cbody = nm->mkNode(EXISTS, boundVars, cbody);
+  }
+  return cbody;
+}
+
 Node SygusUtils::mkSygusConjecture(const std::vector<Node>& fs,
                                    Node conj,
                                    const std::vector<Node>& iattrs)
@@ -179,6 +211,11 @@ TypeNode SygusUtils::getSygusTypeForSynthFun(Node f)
     return gv.getType();
   }
   return TypeNode::null();
+}
+
+Node SygusUtils::getOracleFunctionFor(Node v)
+{
+  return v.getArgTypes(OracleFunAttribute());
 }
 
 }  // namespace quantifiers

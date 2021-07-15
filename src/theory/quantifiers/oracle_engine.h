@@ -10,7 +10,7 @@
  * directory for licensing information.
  * ****************************************************************************
  *
- * Oracle engine
+ * Oracle engine for SMTO
  */
 
 #include "cvc5_private.h"

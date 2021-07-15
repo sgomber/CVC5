@@ -194,14 +194,11 @@ Result SygusSolver::checkSynth(Assertions& as)
                     ? nm->mkConst(true)
                     : (nconstraints == 1 ? d_sygusConstraints[0]
                                          : nm->mkNode(AND, d_sygusConstraints));
-    body = body.notNode();
+    // get the oracle functions from the SMT solver
+    QuantifiersEngine* qe = d_smtSolver.getQuantifiersEngine();
+    std::vector<Node> ofuns = qe->getOracleFuns();
+    body = quantifiers::SygusUtils::mkSygusBody(d_sygusVars, body, ofuns);
     Trace("smt") << "...constructed sygus constraint " << body << std::endl;
-    if (!d_sygusVars.empty())
-    {
-      Node boundVars = nm->mkNode(BOUND_VAR_LIST, d_sygusVars);
-      body = nm->mkNode(EXISTS, boundVars, body);
-      Trace("smt") << "...constructed exists " << body << std::endl;
-    }
     if (!d_sygusFunSymbols.empty())
     {
       body =

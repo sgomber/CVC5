@@ -37,6 +37,7 @@
 #include "theory/quantifiers/sygus/sygus_pbe.h"
 #include "theory/quantifiers/sygus/synth_engine.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
+#include "theory/quantifiers/sygus/oracle_manager.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
@@ -59,7 +60,8 @@ SynthConjecture::SynthConjecture(QuantifiersState& qs,
       d_treg(tr),
       d_stats(s),
       d_tds(tr.getTermDatabaseSygus()),
-      d_verify(d_tds),
+      d_oman(options::oracles() ? new OracleManager(*tr.getOracleChecker()) : nullptr),
+      d_verify(d_tds, d_oman.get()),
       d_hasSolution(false),
       d_ceg_si(new CegSingleInv(tr, s)),
       d_templInfer(new SygusTemplateInfer),

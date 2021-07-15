@@ -31,6 +31,17 @@ class SygusUtils
 {
  public:
   /**
+   * Make (negated) sygus body
+   * 
+   * @param sygusVars The declared sygus variables
+   * @param constraints The conjunction of constraints
+   * @param oracleFuns The declared oracle functions
+   * @return The (negated) sygus conjecture body
+   */
+  static Node mkSygusBody(const std::vector<Node>& sygusVars,
+                          Node constraints,
+                          const std::vector<Node>& oracleFuns = {});
+  /**
    * Make (negated) sygus conjecture of the form
    *   forall fs. conj
    * with instantiation attributes in iattrs. Notice that the marker for
@@ -107,6 +118,10 @@ class SygusUtils
    * function-to-synthesize f.
    */
   static TypeNode getSygusTypeForSynthFun(Node f);
+  /**
+   * Get oracle function for variable
+   */ 
+  static Node getOracleFunctionFor(Node v);
 };
 
 }  // namespace quantifiers

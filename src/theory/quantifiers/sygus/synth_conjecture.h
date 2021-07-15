@@ -41,6 +41,7 @@ namespace quantifiers {
 class CegGrammarConstructor;
 class SygusPbe;
 class SygusStatistics;
+class OracleManager;
 
 /**
  * A base class for generating values for actively-generated enumerators.
@@ -217,6 +218,8 @@ class SynthConjecture
   SygusStatistics& d_stats;
   /** term database sygus of d_qe */
   TermDbSygus* d_tds;
+  /** The oracle manager */
+  std::unique_ptr<OracleManager> d_oman;
   /** The synthesis verify utility */
   SynthVerify d_verify;
   /** The feasible guard. */
