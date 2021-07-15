@@ -246,9 +246,11 @@ theory::eq::EqualityEngine* SharedTermsDatabase::getEqualityEngine()
 void SharedTermsDatabase::assertShared(TNode n, bool polarity, TNode reason)
 {
   Assert(d_equalityEngine != nullptr);
-  Debug("shared-terms-database::assert") << "SharedTermsDatabase::assertShared(" << n << ", " << (polarity ? "true" : "false") << ", " << reason << ")" << endl;
+  Debug("shared-terms-database::assert")
+      << "SharedTermsDatabase::assertShared(" << n << ", "
+      << (polarity ? "true" : "false") << ", " << reason << ")" << endl;
   // Add it to the equality engine
-  if (n.getKind()==kind::EQUAL)
+  if (n.getKind() == kind::EQUAL)
   {
     d_equalityEngine->assertEquality(n, polarity, reason);
   }

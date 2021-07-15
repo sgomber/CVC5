@@ -87,8 +87,8 @@ TrustNode SharedSolverDistributed::explain(TNode literal, TheoryId id)
 }
 
 void SharedSolverDistributed::assertShared(TNode equality,
-                                                   bool polarity,
-                                                   TNode reason)
+                                           bool polarity,
+                                           TNode reason)
 {
   d_sharedTerms.assertShared(equality, polarity, reason);
 }

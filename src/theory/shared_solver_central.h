@@ -42,9 +42,7 @@ class SharedSolverCentral : public SharedSolver
   void setEqualityEngine(eq::EqualityEngine* ee) override;
   //------------------------------------- end initialization
   /** Assert equality to the shared terms database. */
-  void assertShared(TNode equality,
-                            bool polarity,
-                            TNode reason) override;
+  void assertShared(TNode equality, bool polarity, TNode reason) override;
   /**
    * Get equality status based on the equality engine of shared terms database
    */

@@ -260,7 +260,8 @@ void TheoryUF::preRegisterTerm(TNode node)
   {
     case kind::EQUAL:
       // Add the trigger for equality
-      if (!options::centralEEOpt() || !usesCentralEqualityEngine(Theory::theoryOf(node)))
+      if (!options::centralEEOpt()
+          || !usesCentralEqualityEngine(Theory::theoryOf(node)))
       {
         d_equalityEngine->addTriggerPredicate(node);
       }

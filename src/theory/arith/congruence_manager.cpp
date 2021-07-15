@@ -69,8 +69,7 @@ ArithCongruenceManager::ArithCongruenceManager(
   if (options::arithEqSolver())
   {
     // use our own copy
-    d_allocEe.reset(new eq::EqualityEngine(
-        d_notify, c, "arithCong::ee", true));
+    d_allocEe.reset(new eq::EqualityEngine(d_notify, c, "arithCong::ee", true));
     d_ee = d_allocEe.get();
     // set the congruence kinds on the separate equality engine
     d_ee->addFunctionKind(kind::NONLINEAR_MULT);
@@ -554,7 +553,7 @@ void ArithCongruenceManager::assertLitToEqualityEngine(
 {
   if (!options::arithCongMan())
   {
-    Assert (options::arithEqSolver());
+    Assert(options::arithEqSolver());
     return;
   }
   bool isEquality = lit.getKind() != Kind::NOT;

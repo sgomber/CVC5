@@ -25,12 +25,14 @@ namespace theory {
 namespace bv {
 
 BVSolver::BVSolver(TheoryState& state, TheoryInferenceManager& inferMgr)
-    : d_state(state), d_im(inferMgr){}
+    : d_state(state), d_im(inferMgr)
+{
+}
 
 EqualityStatus BVSolver::getEqualityStatus(TNode a, TNode b)
 {
-  eq::EqualityEngine * ee = d_state.getEqualityEngine();
-  if (ee!=nullptr)
+  eq::EqualityEngine* ee = d_state.getEqualityEngine();
+  if (ee != nullptr)
   {
     Assert(ee->hasTerm(a) && ee->hasTerm(b));
 
@@ -54,4 +56,3 @@ EqualityStatus BVSolver::getEqualityStatus(TNode a, TNode b)
 }  // namespace bv
 }  // namespace theory
 }  // namespace cvc5
-

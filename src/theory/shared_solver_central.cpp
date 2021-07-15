@@ -43,7 +43,8 @@ void SharedSolverCentral::preRegisterSharedInternal(TNode t)
   {
     if (!options::centralEEOpt() || Theory::needsFactQueue(Theory::theoryOf(t)))
     {
-      // When sharing is enabled, we propagate from the shared terms manager also
+      // When sharing is enabled, we propagate from the shared terms manager
+      // also
       d_sharedTerms.addEqualityToPropagate(t);
     }
   }
@@ -125,8 +126,8 @@ TrustNode SharedSolverCentral::explain(TNode literal, TheoryId id)
 }
 
 void SharedSolverCentral::assertShared(TNode equality,
-                                               bool polarity,
-                                               TNode reason)
+                                       bool polarity,
+                                       TNode reason)
 {
   d_sharedTerms.assertShared(equality, polarity, reason);
 }
