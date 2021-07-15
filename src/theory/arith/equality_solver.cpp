@@ -60,8 +60,6 @@ bool EqualitySolver::preNotifyFact(
   }
   Trace("arith-eq-solver") << "EqualitySolver::preNotifyFact: " << fact
                            << std::endl;
-  // Trace("arith-eq-solver")
-  //    << "(in state " << d_astate.toString() << ")" << std::endl;
   // we will process
   return false;
 }
@@ -72,10 +70,11 @@ TrustNode EqualitySolver::explain(TNode lit)
   // check if we propagated it?
   if (d_propLits.find(lit) == d_propLits.end())
   {
-  Trace("arith-eq-solver-debug") << "...did not propagate" << std::endl;
+    Trace("arith-eq-solver-debug") << "...did not propagate" << std::endl;
     return TrustNode::null();
   }
-  Trace("arith-eq-solver-debug") << "...explain via inference manager" << std::endl;
+  Trace("arith-eq-solver-debug")
+      << "...explain via inference manager" << std::endl;
   // if we did, explain with the arithmetic inference manager
   return d_aim.explainLit(lit);
 }
