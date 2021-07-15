@@ -50,8 +50,11 @@ Node SygusUtils::mkSygusBody(const std::vector<Node>& sygusVars,
                           Node constraints,
                           const std::vector<Node>& oracleFuns)
 {
+  NodeManager* nm = NodeManager::currentNM();
   Node cbody = constraints.notNode();
   std::vector<Node> svars = sygusVars;
+  // each declared oracle function becomes an inner quantified variable on the
+  // synthesis conjecture
   if (!oracleFuns.empty())
   {
     OracleFunAttribute ofa;
@@ -215,7 +218,7 @@ TypeNode SygusUtils::getSygusTypeForSynthFun(Node f)
 
 Node SygusUtils::getOracleFunctionFor(Node v)
 {
-  return v.getArgTypes(OracleFunAttribute());
+  return v.getAttribute(OracleFunAttribute());
 }
 
 }  // namespace quantifiers
