@@ -631,7 +631,7 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
   }
   if (id == THEORY_BV)
   {
-    return options::bvSolver() != options::BVSolver::SIMPLE;
+    return options::bvSolver() != options::BVSolver::BITBLAST_INTERNAL;
   }
   return id == THEORY_UF || id == THEORY_DATATYPES || id == THEORY_BAGS
          || id == THEORY_FP || id == THEORY_SETS || id == THEORY_STRINGS
