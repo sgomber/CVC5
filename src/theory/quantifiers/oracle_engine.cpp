@@ -206,6 +206,16 @@ void OracleEngine::declareOracleFun(Node f, const std::string& binName)
   d_oracleFuns.push_back(f);
 }
 
+std::vector<Node> OracleEngine::getOracleFuns() const
+{
+  std::vector<Node> ofuns;
+  for (const Node& f : d_oracleFuns)
+  {
+    ofuns.push_back(f);
+  }
+  return ofuns;
+}
+
 Node OracleEngine::mkOracleInterface(const std::vector<Node>& inputs,
                                      const std::vector<Node>& outputs,
                                      Node assume,

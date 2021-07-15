@@ -63,6 +63,8 @@ class OracleEngine : public QuantifiersModule
 
   /** Declare oracle fun */
   void declareOracleFun(Node f, const std::string& binName);
+  /** Get the list of all declared oracle functions */
+  std::vector<Node> getOracleFuns() const;
 
   /** Make an oracle interface quantifier */
   static Node mkOracleInterface(const std::vector<Node>& inputs,

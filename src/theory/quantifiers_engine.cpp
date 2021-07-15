@@ -697,6 +697,10 @@ void QuantifiersEngine::declareOracleFun(Node f, const std::string& binName)
 {
   d_qmodules->d_oracleEngine->declareOracleFun(f, binName);
 }
+std::vector<Node> QuantifiersEngine::getOracleFuns() const
+{
+  return d_qmodules->d_oracleEngine->getOracleFuns();
+}
 
 }  // namespace theory
 }  // namespace cvc5

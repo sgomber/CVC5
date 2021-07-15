@@ -173,6 +173,8 @@ public:
  void declarePool(Node p, const std::vector<Node>& initValue);
  /** Declare oracle fun */
  void declareOracleFun(Node f, const std::string& binName);
+ /** Get the list of all declared oracle functions */
+ std::vector<Node> getOracleFuns() const;
  //----------end user interface for instantiations
 
  private:
