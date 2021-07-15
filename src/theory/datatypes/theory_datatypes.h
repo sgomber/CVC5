@@ -308,10 +308,6 @@ private:
   NotifyClass d_notify;
   /** Proof checker for datatypes */
   DatatypesProofRuleChecker d_checker;
-  /** */
-  context::CDList<Node> d_pendingMerge;
-  /** */
-  context::CDO<size_t> d_pendingMergeProc;
 };/* class TheoryDatatypes */
 
 }  // namespace datatypes

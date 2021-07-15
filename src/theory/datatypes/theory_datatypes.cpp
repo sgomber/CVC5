@@ -65,9 +65,7 @@ TheoryDatatypes::TheoryDatatypes(Context* c,
       d_sygusExtension(nullptr),
       d_state(c, u, valuation),
       d_im(*this, d_state, pnm),
-      d_notify(d_im, *this),
-      d_pendingMerge(c),
-      d_pendingMergeProc(c, 0)
+      d_notify(d_im, *this)
 {
 
   d_true = NodeManager::currentNM()->mkConst( true );
@@ -540,11 +538,8 @@ void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
   if( t1.getType().isDatatype() ){
     Trace("datatypes-merge")
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
-    // Node eq = t1.eqNode(t2);
-    // d_pendingMerge.push_back(eq);
     merge(t1, t2);
   }
-  // Assert(prevPending || !d_im.hasPending());
 }
 void TheoryDatatypes::processPending()
 {
@@ -554,22 +549,7 @@ void TheoryDatatypes::processPending()
     d_im.clearPending();
     return;
   }
-  do
-  {
-    size_t psize = d_pendingMerge.size();
-    for (size_t i = d_pendingMergeProc.get(); i < psize; i++)
-    {
-      Node eq = d_pendingMerge[i];
-      merge(eq[0], eq[1]);
-      if (d_state.isInConflict())
-      {
-        return;
-      }
-    }
-    d_pendingMergeProc = d_pendingMerge.size();
-    d_im.process();
-  } while (d_pendingMergeProc.get() < d_pendingMerge.size()
-           && !d_state.isInConflict());
+  d_im.process();
 }
 
 void TheoryDatatypes::merge( Node t1, Node t2 ){
