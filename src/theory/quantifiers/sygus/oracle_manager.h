@@ -26,8 +26,7 @@ namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-
-/** 
+/**
  */
 class OracleManager
 {

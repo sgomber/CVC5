@@ -32,7 +32,7 @@ class SygusUtils
  public:
   /**
    * Make (negated) sygus body
-   * 
+   *
    * @param sygusVars The declared sygus variables
    * @param constraints The conjunction of constraints
    * @param oracleFuns The declared oracle functions
@@ -120,7 +120,7 @@ class SygusUtils
   static TypeNode getSygusTypeForSynthFun(Node f);
   /**
    * Get oracle function for variable
-   */ 
+   */
   static Node getOracleFunctionFor(Node v);
 };
 

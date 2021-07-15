@@ -19,9 +19,7 @@ namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-
-OracleManager::OracleManager(OracleChecker& oc) : d_oc(oc){}
-
+OracleManager::OracleManager(OracleChecker& oc) : d_oc(oc) {}
 
 }  // namespace quantifiers
 }  // namespace theory

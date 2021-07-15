@@ -47,8 +47,8 @@ struct OracleFunAttributeId
 typedef expr::Attribute<OracleFunAttributeId, Node> OracleFunAttribute;
 
 Node SygusUtils::mkSygusBody(const std::vector<Node>& sygusVars,
-                          Node constraints,
-                          const std::vector<Node>& oracleFuns)
+                             Node constraints,
+                             const std::vector<Node>& oracleFuns)
 {
   NodeManager* nm = NodeManager::currentNM();
   Node cbody = constraints.notNode();
