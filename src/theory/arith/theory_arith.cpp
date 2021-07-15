@@ -80,10 +80,14 @@ ProofRuleChecker* TheoryArith::getProofChecker()
 
 bool TheoryArith::needsEqualityEngine(EeSetupInfo& esi)
 {
+  // if the equality solver is enabled, then it is responsible for setting
+  // up the equality engine
   if (d_eqSolver != nullptr)
   {
     return d_eqSolver->needsEqualityEngine(esi);
   }
+  // otherwise, the linear arithmetic solver is responsible for setting up
+  // the equality engine
   return d_internal->needsEqualityEngine(esi);
 }
 void TheoryArith::finishInit()
@@ -107,9 +111,9 @@ void TheoryArith::finishInit()
   }
   if (d_eqSolver != nullptr)
   {
-    return d_eqSolver->finishInit();
+    d_eqSolver->finishInit();
   }
-  // finish initialize internally
+  // finish initialize in the old linear solver
   d_internal->finishInit();
 }
 
@@ -204,8 +208,11 @@ bool TheoryArith::preNotifyFact(
   bool ret = true;
   if (d_eqSolver != nullptr)
   {
+    // the equality solver may indicate ret = false, after which the assertion
+    // will be asserted to the equality engine in the default way.
     ret = d_eqSolver->preNotifyFact(atom, pol, fact, isPrereg, isInternal);
   }
+  // we also always also notify the internal solver
   d_internal->preNotifyFact(atom, pol, fact);
   return ret;
 }
