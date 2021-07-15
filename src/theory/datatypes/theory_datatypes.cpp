@@ -65,9 +65,7 @@ TheoryDatatypes::TheoryDatatypes(Context* c,
       d_sygusExtension(nullptr),
       d_state(c, u, valuation),
       d_im(*this, d_state, pnm),
-      d_notify(d_im, *this),
-      d_pendingMerge(c),
-      d_pendingMergeProc(c, 0)
+      d_notify(d_im, *this)
 {
 
   d_true = NodeManager::currentNM()->mkConst( true );
@@ -170,24 +168,21 @@ TNode TheoryDatatypes::getEqcConstructor( TNode r ) {
 
 bool TheoryDatatypes::preCheck(Effort level)
 {
-  Trace("datatypes-check") << "TheoryDatatypes::preCheck: " << level
-                           << std::endl;
-  processPending();
   d_im.reset();
+  d_im.clearPending();
   return false;
 }
 
 void TheoryDatatypes::postCheck(Effort level)
 {
-  Trace("datatypes-check") << "TheoryDatatypes::postCheck: " << level
-                           << std::endl;
   // Apply any last pending inferences, which may occur if the last processed
   // fact was an internal one and triggered further internal inferences.
-  processPending();
+  d_im.process();
   if (level == EFFORT_LAST_CALL)
   {
     Assert(d_sygusExtension != nullptr);
     d_sygusExtension->check();
+    return;
   }
   else if (level == EFFORT_FULL && !d_state.isInConflict()
            && !d_im.hasSentLemma() && !d_valuation.needCheck())
@@ -199,7 +194,7 @@ void TheoryDatatypes::postCheck(Effort level)
       Trace("datatypes-proc") << "Check cycles..." << std::endl;
       checkCycles();
       Trace("datatypes-proc") << "...finish check cycles" << std::endl;
-      processPending();
+      d_im.process();
       if (d_state.isInConflict() || d_im.hasSentLemma())
       {
         return;
@@ -370,7 +365,7 @@ void TheoryDatatypes::postCheck(Effort level)
         // we did not add a lemma, process internal inferences. This loop
         // will repeat.
         Trace("datatypes-debug") << "Flush pending facts..." << std::endl;
-        processPending();
+        d_im.process();
       }
     } while (!d_state.isInConflict() && !d_im.hasSentLemma()
              && d_im.hasSentFact());
@@ -435,7 +430,7 @@ void TheoryDatatypes::notifyFact(TNode atom,
   // now, flush pending facts if this wasn't an internal call
   if (!isInternal)
   {
-    processPending();
+    d_im.process();
   }
 }
 
@@ -487,7 +482,7 @@ void TheoryDatatypes::preRegisterTerm(TNode n)
     }
     break;
   }
-  processPending();
+  d_im.process();
 }
 
 TrustNode TheoryDatatypes::ppRewrite(TNode in, std::vector<SkolemLemma>& lems)
@@ -536,49 +531,19 @@ void TheoryDatatypes::eqNotifyNewClass(TNode t){
 /** called when two equivalance classes have merged */
 void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
 {
-  // bool prevPending = d_im.hasPending();
   if( t1.getType().isDatatype() ){
-    Trace("datatypes-merge")
+    Trace("datatypes-debug")
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
-    // Node eq = t1.eqNode(t2);
-    // d_pendingMerge.push_back(eq);
-    merge(t1, t2);
+    merge(t1,t2);
   }
-  // Assert(prevPending || !d_im.hasPending());
-}
-void TheoryDatatypes::processPending()
-{
-  if (d_state.isInConflict())
-  {
-    d_im.reset();
-    d_im.clearPending();
-    return;
-  }
-  do
-  {
-    size_t psize = d_pendingMerge.size();
-    for (size_t i = d_pendingMergeProc.get(); i < psize; i++)
-    {
-      Node eq = d_pendingMerge[i];
-      merge(eq[0], eq[1]);
-      if (d_state.isInConflict())
-      {
-        return;
-      }
-    }
-    d_pendingMergeProc = d_pendingMerge.size();
-    d_im.process();
-  } while (d_pendingMergeProc.get() < d_pendingMerge.size()
-           && !d_state.isInConflict());
 }
 
 void TheoryDatatypes::merge( Node t1, Node t2 ){
   if (!d_state.isInConflict())
   {
-    Trace("datatypes-merge") << "Merge " << t1 << " " << t2 << std::endl;
-    Assert(areEqual(t1, t2));
     TNode trep1 = t1;
     TNode trep2 = t2;
+    Trace("datatypes-debug") << "Merge " << t1 << " " << t2 << std::endl;
     EqcInfo* eqc2 = getOrMakeEqcInfo( t2 );
     if( eqc2 ){
       bool checkInst = false;
@@ -610,7 +575,6 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
           }
           else
           {
-            Assert(areEqual(cons1, cons2));
             //do unification
             for( int i=0; i<(int)cons1.getNumChildren(); i++ ) {
               if( !areEqual( cons1[i], cons2[i] ) ){
@@ -888,7 +852,6 @@ void TheoryDatatypes::addTester(
               eq_terms.push_back( t_arg2 );
               if( t_arg2!=t_arg ){
                 nb << t_arg2.eqNode( t_arg );
-                // AlwaysAssert(areEqual(t_arg2, t_arg));
               }
             }
           }
@@ -1889,7 +1852,7 @@ void TheoryDatatypes::computeRelevantTerms(std::set<Node>& termSet)
   Trace("dt-cmi") << "Have " << termSet.size() << " relevant terms..."
                   << std::endl;
 
-  // also include non-singleton dt equivalence classes  TODO : revisit this
+  //also include non-singleton dt equivalence classes  TODO : revisit this
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
   while( !eqcs_i.isFinished() ){
     TNode r = (*eqcs_i);
