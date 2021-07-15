@@ -77,11 +77,6 @@ BVSolverBitblastInternal::BVSolverBitblastInternal(
 
 void BVSolverBitblastInternal::addBBLemma(TNode fact)
 {
-  if (d_bbLemmaFacts.find(fact)!=d_bbLemmaFacts.end())
-  {
-    return;
-  }
-  d_bbLemmaFacts.insert(fact);
   if (!d_bitblaster->hasBBAtom(fact))
   {
     d_bitblaster->bbAtom(fact);
@@ -142,7 +137,7 @@ bool BVSolverBitblastInternal::preNotifyFact(
       addBBLemma(nn);
     }
   }
-  // we do not use an equality engine, return true
+
   return true;
 }
 
