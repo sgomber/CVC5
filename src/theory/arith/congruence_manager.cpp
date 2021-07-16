@@ -551,11 +551,6 @@ void ArithCongruenceManager::addWatchedPair(ArithVar s, TNode x, TNode y){
 void ArithCongruenceManager::assertLitToEqualityEngine(
     Node lit, TNode reason, std::shared_ptr<ProofNode> pf)
 {
-  if (!options::arithCongMan())
-  {
-    Assert(options::arithEqSolver());
-    return;
-  }
   bool isEquality = lit.getKind() != Kind::NOT;
   Node eq = isEquality ? lit : lit[0];
   Assert(eq.getKind() == Kind::EQUAL);

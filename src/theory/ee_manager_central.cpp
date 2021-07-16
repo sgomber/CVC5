@@ -161,18 +161,21 @@ void EqEngineManagerCentral::initializeTheories()
       Trace("ee-central") << "...uses central" << std::endl;
       // the theory uses the central equality engine
       eet.d_usedEe = &d_centralEqualityEngine;
-      // add to vectors for the kinds of notifications
-      if (esi.needsNotifyNewClass())
+      if (logicInfo.isTheoryEnabled(theoryId))
       {
-        d_centralEENotify.d_newClassNotify.push_back(notify);
-      }
-      if (esi.needsNotifyMerge())
-      {
-        d_centralEENotify.d_mergeNotify.push_back(notify);
-      }
-      if (esi.needsNotifyDisequal())
-      {
-        d_centralEENotify.d_disequalNotify.push_back(notify);
+        // add to vectors for the kinds of notifications
+        if (esi.needsNotifyNewClass())
+        {
+          d_centralEENotify.d_newClassNotify.push_back(notify);
+        }
+        if (esi.needsNotifyMerge())
+        {
+          d_centralEENotify.d_mergeNotify.push_back(notify);
+        }
+        if (esi.needsNotifyDisequal())
+        {
+          d_centralEENotify.d_disequalNotify.push_back(notify);
+        }
       }
       continue;
     }
