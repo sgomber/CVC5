@@ -29,7 +29,8 @@ namespace bv {
 class BVSolver
 {
  public:
-  BVSolver(TheoryState& state, TheoryInferenceManager& inferMgr);
+  BVSolver(TheoryState& state, TheoryInferenceManager& inferMgr)
+      : d_state(state), d_im(inferMgr){};
 
   virtual ~BVSolver() {}
 
@@ -96,7 +97,10 @@ class BVSolver
 
   virtual void notifySharedTerm(TNode t) {}
 
-  virtual EqualityStatus getEqualityStatus(TNode a, TNode b);
+  virtual EqualityStatus getEqualityStatus(TNode a, TNode b)
+  {
+    return EqualityStatus::EQUALITY_UNKNOWN;
+  }
 
   /** Called by abstraction preprocessing pass. */
   virtual bool applyAbstraction(const std::vector<Node>& assertions,
