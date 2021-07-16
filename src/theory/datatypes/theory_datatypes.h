@@ -291,8 +291,6 @@ private:
    * equivalence classes.
    */
   void computeRelevantTerms(std::set<Node>& termSet) override;
-  /** process pending merges */
-  void processPending();
   /** Commonly used terms */
   Node d_true;
   Node d_zero;

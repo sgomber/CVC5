@@ -170,7 +170,7 @@ bool TheoryDatatypes::preCheck(Effort level)
 {
   Trace("datatypes-check") << "TheoryDatatypes::preCheck: " << level
                            << std::endl;
-  processPending();
+  d_im.process();
   d_im.reset();
   return false;
 }
@@ -181,7 +181,7 @@ void TheoryDatatypes::postCheck(Effort level)
                            << std::endl;
   // Apply any last pending inferences, which may occur if the last processed
   // fact was an internal one and triggered further internal inferences.
-  processPending();
+  d_im.process();
   if (level == EFFORT_LAST_CALL)
   {
     Assert(d_sygusExtension != nullptr);
@@ -197,7 +197,7 @@ void TheoryDatatypes::postCheck(Effort level)
       Trace("datatypes-proc") << "Check cycles..." << std::endl;
       checkCycles();
       Trace("datatypes-proc") << "...finish check cycles" << std::endl;
-      processPending();
+      d_im.process();
       if (d_state.isInConflict() || d_im.hasSentLemma())
       {
         return;
@@ -368,7 +368,7 @@ void TheoryDatatypes::postCheck(Effort level)
         // we did not add a lemma, process internal inferences. This loop
         // will repeat.
         Trace("datatypes-debug") << "Flush pending facts..." << std::endl;
-        processPending();
+        d_im.process();
       }
     } while (!d_state.isInConflict() && !d_im.hasSentLemma()
              && d_im.hasSentFact());
@@ -433,7 +433,7 @@ void TheoryDatatypes::notifyFact(TNode atom,
   // now, flush pending facts if this wasn't an internal call
   if (!isInternal)
   {
-    processPending();
+    d_im.process();
   }
 }
 
@@ -485,7 +485,7 @@ void TheoryDatatypes::preRegisterTerm(TNode n)
     }
     break;
   }
-  processPending();
+  d_im.process();
 }
 
 TrustNode TheoryDatatypes::ppRewrite(TNode in, std::vector<SkolemLemma>& lems)
@@ -540,16 +540,6 @@ void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
     merge(t1, t2);
   }
-}
-void TheoryDatatypes::processPending()
-{
-  if (d_state.isInConflict())
-  {
-    d_im.reset();
-    d_im.clearPending();
-    return;
-  }
-  d_im.process();
 }
 
 void TheoryDatatypes::merge( Node t1, Node t2 ){
