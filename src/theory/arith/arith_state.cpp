@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file arith_state.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Arithmetic theory state.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Arithmetic theory state.
+ */
 
 #include "theory/arith/arith_state.h"
 
@@ -20,18 +21,19 @@ namespace cvc5 {
 namespace theory {
 namespace arith {
 
-ArithState::ArithState(TheoryArithPrivate& parent,
-                       context::Context* c,
+ArithState::ArithState(context::Context* c,
                        context::UserContext* u,
                        Valuation val)
-    : TheoryState(c, u, val), d_parent(parent)
+    : TheoryState(c, u, val), d_parent(nullptr)
 {
 }
 
 bool ArithState::isInConflict() const
 {
-  return d_parent.anyConflict() || d_conflict;
+  return d_parent->anyConflict() || d_conflict;
 }
+
+void ArithState::setParent(TheoryArithPrivate* p) { d_parent = p; }
 
 }  // namespace arith
 }  // namespace theory

@@ -1,18 +1,18 @@
-/*********************                                                        */
-/*! \file synth_engine.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Haniel Barbosa, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of the quantifiers module for managing all approaches
- ** to synthesis, in particular, those described in Reynolds et al CAV 2015.
- **
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Haniel Barbosa, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of the quantifiers module for managing all approaches
+ * to synthesis, in particular, those described in Reynolds et al CAV 2015.
+ */
 #include "theory/quantifiers/sygus/synth_engine.h"
 
 #include "options/quantifiers_options.h"
@@ -164,7 +164,7 @@ void SynthEngine::checkOwnership(Node q)
   // take ownership of quantified formulas with sygus attribute, and function
   // definitions when options::sygusRecFun is true.
   QuantAttributes& qa = d_qreg.getQuantAttributes();
-  if (qa.isSygus(q) || (options::sygusRecFun() && qa.isFunDef(q)))
+  if (qa.isSygus(q) || (qa.isFunDef(q) && options::sygusRecFun()))
   {
     d_qreg.setOwner(q, this, 2);
   }
@@ -244,18 +244,6 @@ bool SynthEngine::checkConjecture(SynthConjecture* conj)
   }
   Trace("sygus-engine-debug") << "  *** Refine candidate phase..." << std::endl;
   return conj->doRefine();
-}
-
-void SynthEngine::printSynthSolution(std::ostream& out)
-{
-  Assert(!d_conjs.empty());
-  for (unsigned i = 0, size = d_conjs.size(); i < size; i++)
-  {
-    if (d_conjs[i]->isAssigned())
-    {
-      d_conjs[i]->printSynthSolution(out);
-    }
-  }
 }
 
 bool SynthEngine::getSynthSolutions(

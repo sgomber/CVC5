@@ -1,23 +1,22 @@
-/*********************                                                        */
-/*! \file theory_strings_utils.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Util functions for theory strings.
- **
- ** Util functions for theory strings.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Util functions for theory strings.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__STRINGS__THEORY_STRINGS_UTILS_H
-#define CVC4__THEORY__STRINGS__THEORY_STRINGS_UTILS_H
+#ifndef CVC5__THEORY__STRINGS__THEORY_STRINGS_UTILS_H
+#define CVC5__THEORY__STRINGS__THEORY_STRINGS_UTILS_H
 
 #include <vector>
 
@@ -216,6 +215,15 @@ unsigned getRepeatAmount(TNode node);
 unsigned getLoopMaxOccurrences(TNode node);
 /* Get the minimum occurrences of given regexp loop node. */
 unsigned getLoopMinOccurrences(TNode node);
+
+/**
+ * Make internal quantified formula with bound variable list bvl and body.
+ * Internally, we get a node corresponding to marking a quantified formula as
+ * an "internal" one. This node is provided as the third argument of the
+ * FORALL returned by this method. This ensures that E-matching is not applied
+ * to the quantified formula.
+ */
+Node mkForallInternal(Node bvl, Node body);
 
 }  // namespace utils
 }  // namespace strings

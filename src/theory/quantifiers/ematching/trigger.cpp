@@ -1,20 +1,23 @@
-/*********************                                                        */
-/*! \file trigger.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of trigger class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of trigger class.
+ */
 
 #include "theory/quantifiers/ematching/trigger.h"
 
 #include "expr/skolem_manager.h"
+#include "options/base_options.h"
+#include "options/outputc.h"
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/ematching/candidate_generator.h"
 #include "theory/quantifiers/ematching/inst_match_generator.h"
@@ -65,6 +68,19 @@ Trigger::Trigger(QuantifiersState& qs,
     {
       Trace("trigger") << "   " << n << std::endl;
     }
+  }
+  if (Output.isOn(options::OutputTag::TRIGGER))
+  {
+    QuantAttributes& qa = d_qreg.getQuantAttributes();
+    Output(options::OutputTag::TRIGGER)
+        << "(trigger " << qa.quantToString(q) << " (";
+    for (size_t i = 0, nnodes = d_nodes.size(); i < nnodes; i++)
+    {
+      // note we must display the original form, so we go back to bound vars
+      Node ns = d_qreg.substituteInstConstantsToBoundVariables(d_nodes[i], q);
+      Output(options::OutputTag::TRIGGER) << (i > 0 ? " " : "") << ns;
+    }
+    Output(options::OutputTag::TRIGGER) << "))" << std::endl;
   }
   QuantifiersStatistics& stats = qs.getStats();
   if( d_nodes.size()==1 ){
@@ -162,8 +178,8 @@ Node Trigger::ensureGroundTermPreprocessed(Valuation& val,
                                            std::vector<Node>& gts)
 {
   NodeManager* nm = NodeManager::currentNM();
-  std::unordered_map<TNode, Node, TNodeHashFunction> visited;
-  std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
+  std::unordered_map<TNode, Node> visited;
+  std::unordered_map<TNode, Node>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);

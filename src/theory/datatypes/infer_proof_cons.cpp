@@ -1,24 +1,26 @@
-/*********************                                                        */
-/*! \file infer_proof_cons.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of inference to proof conversion  for datatypes
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of inference to proof conversion  for datatypes.
+ */
 
 #include "theory/datatypes/infer_proof_cons.h"
 
-#include "expr/proof.h"
-#include "expr/proof_checker.h"
+#include "proof/proof.h"
+#include "proof/proof_checker.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
 #include "theory/model_manager.h"
 #include "theory/rewriter.h"
+#include "util/rational.h"
 
 using namespace cvc5::kind;
 
@@ -218,6 +220,12 @@ void InferProofCons::convert(InferenceId infer, TNode conc, TNode exp, CDProof* 
                    {tester1c});
       Node fn = nm->mkConst(false);
       cdp->addStep(fn, PfRule::DT_CLASH, {tester1, tester1c}, {});
+      success = true;
+    }
+    break;
+    case InferenceId::DATATYPES_PURIFY:
+    {
+      cdp->addStep(conc, PfRule::MACRO_SR_PRED_INTRO, {}, {});
       success = true;
     }
     break;

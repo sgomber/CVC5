@@ -1,18 +1,17 @@
-/*********************                                                        */
-/*! \file attribute_white.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Aina Niemetz, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief White box testing of Node attributes.
- **
- ** White box testing of Node attributes.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Aina Niemetz, Morgan Deters
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * White box testing of Node attributes.
+ */
 
 #include <string>
 
@@ -79,7 +78,7 @@ TEST_F(TestNodeWhiteAttribute, attribute_ids)
   // and that the next ID to be assigned is strictly greater than
   // those that have already been assigned.
 
-  unsigned lastId = attr::LastAttributeId<std::string, false>::getId();
+  unsigned lastId = attr::LastAttributeId<std::string>::getId();
   ASSERT_LT(VarNameAttr::s_id, lastId);
   ASSERT_LT(TestStringAttr1::s_id, lastId);
   ASSERT_LT(TestStringAttr2::s_id, lastId);
@@ -88,7 +87,7 @@ TEST_F(TestNodeWhiteAttribute, attribute_ids)
   ASSERT_NE(VarNameAttr::s_id, TestStringAttr2::s_id);
   ASSERT_NE(TestStringAttr1::s_id, TestStringAttr2::s_id);
 
-  lastId = attr::LastAttributeId<bool, false>::getId();
+  lastId = attr::LastAttributeId<bool>::getId();
   ASSERT_LT(TestFlag1::s_id, lastId);
   ASSERT_LT(TestFlag2::s_id, lastId);
   ASSERT_LT(TestFlag3::s_id, lastId);
@@ -105,7 +104,7 @@ TEST_F(TestNodeWhiteAttribute, attribute_ids)
   ASSERT_NE(TestFlag3::s_id, TestFlag5::s_id);
   ASSERT_NE(TestFlag4::s_id, TestFlag5::s_id);
 
-  lastId = attr::LastAttributeId<TypeNode, false>::getId();
+  lastId = attr::LastAttributeId<TypeNode>::getId();
   ASSERT_LT(TypeAttr::s_id, lastId);
 }
 

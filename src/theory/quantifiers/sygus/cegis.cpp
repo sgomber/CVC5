@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file cegis.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Haniel Barbosa, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of cegis
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Haniel Barbosa, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of cegis.
+ */
 
 #include "theory/quantifiers/sygus/cegis.h"
 
@@ -507,7 +508,7 @@ bool Cegis::getRefinementEvalLemmas(const std::vector<Node>& vs,
 
   for (unsigned r = 0; r < 2; r++)
   {
-    std::unordered_set<Node, NodeHashFunction>& rlemmas =
+    std::unordered_set<Node>& rlemmas =
         r == 0 ? d_refinement_lemma_unit : d_refinement_lemma_conj;
     for (const Node& lem : rlemmas)
     {
@@ -584,7 +585,7 @@ bool Cegis::checkRefinementEvalLemmas(const std::vector<Node>& vs,
   // Maybe we already evaluated some terms in refinement lemmas.
   // In particular, the example eval cache for f may have some evaluations
   // cached, which we add to evalVisited and pass to the evaluator below.
-  std::unordered_map<Node, Node, NodeHashFunction> evalVisited;
+  std::unordered_map<Node, Node> evalVisited;
   ExampleInfer* ei = d_parent->getExampleInfer();
   for (unsigned i = 0, vsize = vs.size(); i < vsize; i++)
   {
@@ -610,7 +611,7 @@ bool Cegis::checkRefinementEvalLemmas(const std::vector<Node>& vs,
   Evaluator* eval = d_tds->getEvaluator();
   for (unsigned r = 0; r < 2; r++)
   {
-    std::unordered_set<Node, NodeHashFunction>& rlemmas =
+    std::unordered_set<Node>& rlemmas =
         r == 0 ? d_refinement_lemma_unit : d_refinement_lemma_conj;
     for (const Node& lem : rlemmas)
     {

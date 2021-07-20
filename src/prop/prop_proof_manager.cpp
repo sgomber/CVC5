@@ -1,21 +1,22 @@
-/*********************                                                        */
-/*! \file prop_proof_manager.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Haniel Barbosa
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of the proof manager for the PropPfManager
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Haniel Barbosa
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of the proof manager for the PropPfManager.
+ */
 
 #include "prop/prop_proof_manager.h"
 
-#include "expr/proof_ensure_closed.h"
-#include "expr/proof_node_algorithm.h"
+#include "proof/proof_ensure_closed.h"
+#include "proof/proof_node_algorithm.h"
 #include "prop/prop_proof_manager.h"
 #include "prop/sat_solver.h"
 

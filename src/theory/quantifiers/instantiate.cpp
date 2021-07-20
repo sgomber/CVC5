@@ -1,27 +1,31 @@
-/*********************                                                        */
-/*! \file instantiate.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Tim King, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of instantiate
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Tim King, Morgan Deters
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of instantiate.
+ */
 
 #include "theory/quantifiers/instantiate.h"
 
-#include "expr/lazy_proof.h"
 #include "expr/node_algorithm.h"
-#include "expr/proof_node_manager.h"
+#include "options/base_options.h"
+#include "options/outputc.h"
 #include "options/printer_options.h"
 #include "options/quantifiers_options.h"
 #include "options/smt_options.h"
-#include "proof/proof_manager.h"
+#include "proof/lazy_proof.h"
+#include "proof/proof_node_manager.h"
 #include "smt/logic_exception.h"
+#include "smt/smt_engine.h"
+#include "smt/smt_engine_scope.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/quantifiers/cegqi/inst_strategy_cegqi.h"
 #include "theory/quantifiers/first_order_model.h"
@@ -52,7 +56,9 @@ Instantiate::Instantiate(QuantifiersState& qs,
       d_pnm(pnm),
       d_insts(qs.getUserContext()),
       d_c_inst_match_trie_dom(qs.getUserContext()),
-      d_pfInst(pnm ? new CDProof(pnm) : nullptr)
+      d_pfInst(
+          pnm ? new CDProof(pnm, qs.getUserContext(), "Instantiate::pfInst")
+              : nullptr)
 {
 }
 
@@ -70,16 +76,18 @@ bool Instantiate::reset(Theory::Effort e)
   Trace("inst-debug") << "Reset, effort " << e << std::endl;
   // clear explicitly recorded instantiations
   d_recordedInst.clear();
+  d_instDebugTemp.clear();
   return true;
 }
 
 void Instantiate::registerQuantifier(Node q) {}
-bool Instantiate::checkComplete()
+bool Instantiate::checkComplete(IncompleteId& incId)
 {
   if (!d_recordedInst.empty())
   {
     Trace("quant-engine-debug")
         << "Set incomplete due to recorded instantiations." << std::endl;
+    incId = IncompleteId::QUANTIFIERS_RECORDED_INST;
     return false;
   }
   return true;
@@ -98,7 +106,7 @@ bool Instantiate::addInstantiation(Node q,
                                    bool doVts)
 {
   // For resource-limiting (also does a time check).
-  d_qim.safePoint(ResourceManager::Resource::QuantifierStep);
+  d_qim.safePoint(Resource::QuantifierStep);
   Assert(!d_qstate.isInConflict());
   Assert(terms.size() == q[0].getNumChildren());
   Trace("inst-add-debug") << "For quantified formula " << q
@@ -130,7 +138,7 @@ bool Instantiate::addInstantiation(Node q,
           << std::endl;
       return false;
     }
-#ifdef CVC4_ASSERTIONS
+#ifdef CVC5_ASSERTIONS
     bool bad_inst = false;
     if (TermUtil::containsUninterpretedConstant(terms[i]))
     {
@@ -258,10 +266,10 @@ bool Instantiate::addInstantiation(Node q,
       // ------------------------------ EQ_RESOLVE
       // body
       Node proven = tpBody.getProven();
-      // add the transformation proof, or THEORY_PREPROCESS if none provided
+      // add the transformation proof, or the trusted rule if none provided
       pfTmp->addLazyStep(proven,
                          tpBody.getGenerator(),
-                         PfRule::THEORY_PREPROCESS,
+                         PfRule::QUANTIFIERS_PREPROCESS,
                          true,
                          "Instantiate::getInstantiation:qpreprocess");
       pfTmp->addStep(body, PfRule::EQ_RESOLVE, {orig_body, proven}, {});
@@ -332,7 +340,7 @@ bool Instantiate::addInstantiation(Node q,
   InstLemmaList* ill = getOrMkInstLemmaList(q);
   ill->d_list.push_back(body);
   // add to temporary debug statistics (# inst on this round)
-  d_temp_inst_debug[q]++;
+  d_instDebugTemp[q]++;
   if (Trace.isOn("inst"))
   {
     Trace("inst") << "*** Instantiate " << q << " with " << std::endl;
@@ -376,6 +384,7 @@ bool Instantiate::addInstantiation(Node q,
           orig_body, q[1], maxInstLevel + 1);
     }
   }
+  d_treg.processInstantiation(q, terms);
   Trace("inst-add-debug") << " --> Success." << std::endl;
   ++(d_statistics.d_instantiations);
   return true;
@@ -668,30 +677,29 @@ void Instantiate::getInstantiations(Node q, std::vector<Node>& insts)
 
 bool Instantiate::isProofEnabled() const { return d_pfInst != nullptr; }
 
-void Instantiate::debugPrint(std::ostream& out)
+void Instantiate::notifyEndRound()
 {
   // debug information
   if (Trace.isOn("inst-per-quant-round"))
   {
-    for (std::pair<const Node, uint32_t>& i : d_temp_inst_debug)
+    for (std::pair<const Node, uint32_t>& i : d_instDebugTemp)
     {
-      Trace("inst-per-quant-round") << " * " << i.second << " for " << i.first
-                                    << std::endl;
-      d_temp_inst_debug[i.first] = 0;
+      Trace("inst-per-quant-round")
+          << " * " << i.second << " for " << i.first << std::endl;
     }
   }
-  if (options::debugInst())
+  if (Output.isOn(options::OutputTag::INST))
   {
     bool req = !options::printInstFull();
-    for (std::pair<const Node, uint32_t>& i : d_temp_inst_debug)
+    for (std::pair<const Node, uint32_t>& i : d_instDebugTemp)
     {
       Node name;
       if (!d_qreg.getNameForQuant(i.first, name, req))
       {
         continue;
       }
-      out << "(num-instantiations " << name << " " << i.second << ")"
-          << std::endl;
+      Output(options::OutputTag::INST) << "(num-instantiations " << name << " "
+                                       << i.second << ")" << std::endl;
     }
   }
 }
@@ -739,23 +747,15 @@ InstLemmaList* Instantiate::getOrMkInstLemmaList(TNode q)
 }
 
 Instantiate::Statistics::Statistics()
-    : d_instantiations("Instantiate::Instantiations_Total", 0),
-      d_inst_duplicate("Instantiate::Duplicate_Inst", 0),
-      d_inst_duplicate_eq("Instantiate::Duplicate_Inst_Eq", 0),
-      d_inst_duplicate_ent("Instantiate::Duplicate_Inst_Entailed", 0)
+    : d_instantiations(smtStatisticsRegistry().registerInt(
+        "Instantiate::Instantiations_Total")),
+      d_inst_duplicate(
+          smtStatisticsRegistry().registerInt("Instantiate::Duplicate_Inst")),
+      d_inst_duplicate_eq(smtStatisticsRegistry().registerInt(
+          "Instantiate::Duplicate_Inst_Eq")),
+      d_inst_duplicate_ent(smtStatisticsRegistry().registerInt(
+          "Instantiate::Duplicate_Inst_Entailed"))
 {
-  smtStatisticsRegistry()->registerStat(&d_instantiations);
-  smtStatisticsRegistry()->registerStat(&d_inst_duplicate);
-  smtStatisticsRegistry()->registerStat(&d_inst_duplicate_eq);
-  smtStatisticsRegistry()->registerStat(&d_inst_duplicate_ent);
-}
-
-Instantiate::Statistics::~Statistics()
-{
-  smtStatisticsRegistry()->unregisterStat(&d_instantiations);
-  smtStatisticsRegistry()->unregisterStat(&d_inst_duplicate);
-  smtStatisticsRegistry()->unregisterStat(&d_inst_duplicate_eq);
-  smtStatisticsRegistry()->unregisterStat(&d_inst_duplicate_ent);
 }
 
 }  // namespace quantifiers

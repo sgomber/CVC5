@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file equality_query.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Utilities used for querying about equality information
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mathias Preiner, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Utilities used for querying about equality information.
+ */
 
 #include "theory/quantifiers/equality_query.h"
 
@@ -114,7 +115,7 @@ Node EqualityQuery::getInternalRepresentative(Node a, Node q, size_t index)
     return Node::null();
   }
   // now, make sure that no other member of the class is an instance
-  std::unordered_map<TNode, Node, TNodeHashFunction> cache;
+  std::unordered_map<TNode, Node> cache;
   r_best = getInstance(r_best, eqc, cache);
   // store that this representative was chosen at this point
   if (d_rep_score.find(r_best) == d_rep_score.end())
@@ -141,10 +142,9 @@ Node EqualityQuery::getInternalRepresentative(Node a, Node q, size_t index)
 
 //helper functions
 
-Node EqualityQuery::getInstance(
-    Node n,
-    const std::vector<Node>& eqc,
-    std::unordered_map<TNode, Node, TNodeHashFunction>& cache)
+Node EqualityQuery::getInstance(Node n,
+                                const std::vector<Node>& eqc,
+                                std::unordered_map<TNode, Node>& cache)
 {
   if(cache.find(n) != cache.end()) {
     return cache[n];

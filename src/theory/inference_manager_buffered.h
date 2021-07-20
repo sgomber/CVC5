@@ -1,21 +1,22 @@
-/*********************                                                        */
-/*! \file inference_manager_buffered.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief A buffered inference manager
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * A buffered inference manager.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__INFERENCE_MANAGER_BUFFERED_H
-#define CVC4__THEORY__INFERENCE_MANAGER_BUFFERED_H
+#ifndef CVC5__THEORY__INFERENCE_MANAGER_BUFFERED_H
+#define CVC5__THEORY__INFERENCE_MANAGER_BUFFERED_H
 
 #include "expr/node.h"
 #include "theory/theory_inference.h"
@@ -34,7 +35,7 @@ class InferenceManagerBuffered : public TheoryInferenceManager
   InferenceManagerBuffered(Theory& t,
                            TheoryState& state,
                            ProofNodeManager* pnm,
-                           const std::string& name,
+                           const std::string& statsName,
                            bool cacheLemmas = true);
   virtual ~InferenceManagerBuffered() {}
   /**
@@ -157,6 +158,14 @@ class InferenceManagerBuffered : public TheoryInferenceManager
    * inference.
    */
   void assertInternalFactTheoryInference(TheoryInference* fact);
+
+  /**
+   * Notify this inference manager that a conflict was sent in this SAT context.
+   * This method is called via TheoryEngine when a conflict is sent. This
+   * method will clear all pending facts, lemmas, and phase requirements, as
+   * these will be stale after the solver backtracks.
+   */
+  void notifyInConflict() override;
 
  protected:
   /** A set of pending inferences to be processed as lemmas */

@@ -1,24 +1,23 @@
-/*********************                                                        */
-/*! \file bv_quick_check.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Liana Hadarean, Tim King, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Wrapper around the SAT solver used for bitblasting.
- **
- ** Wrapper around the SAT solver used for bitblasting.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Liana Hadarean, Tim King, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Wrapper around the SAT solver used for bitblasting.
+ */
 
 #include "theory/bv/bv_quick_check.h"
 
 #include "smt/smt_statistics_registry.h"
 #include "theory/bv/bitblast/lazy_bitblaster.h"
-#include "theory/bv/bv_solver_lazy.h"
+#include "theory/bv/bv_solver_layered.h"
 #include "theory/bv/theory_bv_utils.h"
 
 using namespace cvc5::prop;
@@ -28,7 +27,7 @@ namespace theory {
 namespace bv {
 
 BVQuickCheck::BVQuickCheck(const std::string& name,
-                           theory::bv::BVSolverLazy* bv)
+                           theory::bv::BVSolverLayered* bv)
     : d_ctx(),
       d_bitblaster(new TLazyBitblaster(&d_ctx, bv, name, true)),
       d_conflict(),
@@ -352,31 +351,21 @@ Node QuickXPlain::minimizeConflict(TNode confl) {
 }
 
 QuickXPlain::Statistics::Statistics(const std::string& name)
-  : d_xplainTime(name + "::QuickXplain::Time")
-  , d_numSolved(name + "::QuickXplain::NumSolved", 0)
-  , d_numUnknown(name + "::QuickXplain::NumUnknown", 0)
-  , d_numUnknownWasUnsat(name + "::QuickXplain::NumUnknownWasUnsat", 0)
-  , d_numConflictsMinimized(name + "::QuickXplain::NumConflictsMinimized", 0)
-  , d_finalPeriod(name + "::QuickXplain::FinalPeriod", 0)
-  , d_avgMinimizationRatio(name + "::QuickXplain::AvgMinRatio")
+    : d_xplainTime(
+        smtStatisticsRegistry().registerTimer(name + "QuickXplain::Time")),
+      d_numSolved(
+          smtStatisticsRegistry().registerInt(name + "QuickXplain::NumSolved")),
+      d_numUnknown(smtStatisticsRegistry().registerInt(
+          name + "QuickXplain::NumUnknown")),
+      d_numUnknownWasUnsat(smtStatisticsRegistry().registerInt(
+          name + "QuickXplain::NumUnknownWasUnsat")),
+      d_numConflictsMinimized(smtStatisticsRegistry().registerInt(
+          name + "QuickXplain::NumConflictsMinimized")),
+      d_finalPeriod(smtStatisticsRegistry().registerInt(
+          name + "QuickXplain::FinalPeriod")),
+      d_avgMinimizationRatio(smtStatisticsRegistry().registerAverage(
+          name + "QuickXplain::AvgMinRatio"))
 {
-  smtStatisticsRegistry()->registerStat(&d_xplainTime);
-  smtStatisticsRegistry()->registerStat(&d_numSolved);
-  smtStatisticsRegistry()->registerStat(&d_numUnknown);
-  smtStatisticsRegistry()->registerStat(&d_numUnknownWasUnsat);
-  smtStatisticsRegistry()->registerStat(&d_numConflictsMinimized);
-  smtStatisticsRegistry()->registerStat(&d_finalPeriod);
-  smtStatisticsRegistry()->registerStat(&d_avgMinimizationRatio);
-}
-
-QuickXPlain::Statistics::~Statistics() {
-  smtStatisticsRegistry()->unregisterStat(&d_xplainTime);
-  smtStatisticsRegistry()->unregisterStat(&d_numSolved);
-  smtStatisticsRegistry()->unregisterStat(&d_numUnknown);
-  smtStatisticsRegistry()->unregisterStat(&d_numUnknownWasUnsat);
-  smtStatisticsRegistry()->unregisterStat(&d_numConflictsMinimized);
-  smtStatisticsRegistry()->unregisterStat(&d_finalPeriod);
-  smtStatisticsRegistry()->unregisterStat(&d_avgMinimizationRatio);  
 }
 
 }  // namespace bv

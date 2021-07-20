@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file ho_trigger.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of higher-order trigger class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mathias Preiner, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of higher-order trigger class.
+ */
 
 #include <stack>
 
@@ -89,10 +90,10 @@ void HigherOrderTrigger::collectHoVarApplyTerms(
 void HigherOrderTrigger::collectHoVarApplyTerms(
     Node q, std::vector<Node>& ns, std::map<Node, std::vector<Node> >& apps)
 {
-  std::unordered_map<TNode, Node, TNodeHashFunction> visited;
-  std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
+  std::unordered_map<TNode, Node> visited;
+  std::unordered_map<TNode, Node>::iterator it;
   // whether the visited node is a child of a HO_APPLY chain
-  std::unordered_map<TNode, bool, TNodeHashFunction> withinApply;
+  std::unordered_map<TNode, bool> withinApply;
   std::vector<TNode> visit;
   TNode cur;
   for (unsigned i = 0, size = ns.size(); i < size; i++)

@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file ee_manager_distributed.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Management of a distributed approach for equality sharing.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Management of a distributed approach for equality sharing.
+ */
 
 #include "theory/ee_manager_distributed.h"
 
@@ -55,7 +56,7 @@ void EqEngineManagerDistributed::initializeTheories()
     Assert(d_masterEqualityEngine == nullptr);
     QuantifiersEngine* qe = d_te.getQuantifiersEngine();
     Assert(qe != nullptr);
-    d_masterEENotify.reset(new MasterNotifyClass(qe));
+    d_masterEENotify.reset(new quantifiers::MasterNotifyClass(qe));
     d_masterEqualityEngine.reset(new eq::EqualityEngine(*d_masterEENotify.get(),
                                                         d_te.getSatContext(),
                                                         "theory::master",
@@ -106,12 +107,6 @@ void EqEngineManagerDistributed::notifyModel(bool incomplete)
   {
     AlwaysAssert(d_masterEqualityEngine->consistent());
   }
-}
-
-void EqEngineManagerDistributed::MasterNotifyClass::eqNotifyNewClass(TNode t)
-{
-  // adds t to the quantifiers term database
-  d_quantEngine->eqNotifyNewClass(t);
 }
 
 }  // namespace theory

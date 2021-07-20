@@ -1,19 +1,22 @@
-/*********************                                                        */
-/*! \file relevant_domain.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of relevant domain class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mathias Preiner, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of relevant domain class.
+ */
 
 #include "theory/quantifiers/relevant_domain.h"
 
+#include "expr/term_context.h"
+#include "expr/term_context_stack.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/quantifiers_registry.h"
@@ -118,7 +121,7 @@ void RelevantDomain::compute(){
       Node q = fm->getAssertedQuantifier( i );
       Node icf = d_qreg.getInstConstantBody(q);
       Trace("rel-dom-debug") << "compute relevant domain for " << icf << std::endl;
-      computeRelevantDomain( q, icf, true, true );
+      computeRelevantDomain(q);
     }
 
     Trace("rel-dom-debug") << "account for ground terms" << std::endl;
@@ -160,11 +163,58 @@ void RelevantDomain::compute(){
   }
 }
 
-void RelevantDomain::computeRelevantDomain( Node q, Node n, bool hasPol, bool pol ) {
+void RelevantDomain::computeRelevantDomain(Node q)
+{
+  Assert(q.getKind() == FORALL);
+  Node n = d_qreg.getInstConstantBody(q);
+  // we care about polarity in the traversal, so we use a polarity term context
+  PolarityTermContext tc;
+  TCtxStack ctx(&tc);
+  ctx.pushInitial(n);
+  std::unordered_set<std::pair<Node, uint32_t>,
+                     PairHashFunction<Node, uint32_t, std::hash<Node> > >
+      visited;
+  std::pair<Node, uint32_t> curr;
+  Node node;
+  uint32_t nodeVal;
+  std::unordered_set<
+      std::pair<Node, uint32_t>,
+      PairHashFunction<Node, uint32_t, std::hash<Node> > >::const_iterator itc;
+  bool hasPol, pol;
+  while (!ctx.empty())
+  {
+    curr = ctx.getCurrent();
+    itc = visited.find(curr);
+    ctx.pop();
+    if (itc == visited.end())
+    {
+      visited.insert(curr);
+      node = curr.first;
+      // if not a quantified formula
+      if (!node.isClosure())
+      {
+        nodeVal = curr.second;
+        // get the polarity of the current term and process it
+        PolarityTermContext::getFlags(nodeVal, hasPol, pol);
+        computeRelevantDomainNode(q, node, hasPol, pol);
+        // traverse the children
+        ctx.pushChildren(node, nodeVal);
+      }
+    }
+  }
+}
+
+void RelevantDomain::computeRelevantDomainNode(Node q,
+                                               Node n,
+                                               bool hasPol,
+                                               bool pol)
+{
   Trace("rel-dom-debug") << "Compute relevant domain " << n << "..." << std::endl;
   Node op = d_treg.getTermDatabase()->getMatchOperator(n);
-  for( unsigned i=0; i<n.getNumChildren(); i++ ){
-    if( !op.isNull() ){
+  if (!op.isNull())
+  {
+    for (size_t i = 0, nchild = n.getNumChildren(); i < nchild; i++)
+    {
       RDomain * rf = getRDomain( op, i );
       if( n[i].getKind()==ITE ){
         for( unsigned j=1; j<=2; j++ ){
@@ -173,14 +223,6 @@ void RelevantDomain::computeRelevantDomain( Node q, Node n, bool hasPol, bool po
       }else{
         computeRelevantDomainOpCh( rf, n[i] );
       }
-    }
-    // do not recurse under nested closures
-    if (!n[i].isClosure())
-    {
-      bool newHasPol;
-      bool newPol;
-      QuantPhaseReq::getPolarity( n, i, hasPol, pol, newHasPol, newPol );
-      computeRelevantDomain( q, n[i], newHasPol, newPol );
     }
   }
 

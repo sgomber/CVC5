@@ -1,23 +1,24 @@
-/*********************                                                        */
-/*! \file inference_id.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Gereon Kremer, Andrew Reynolds, Andres Noetzli
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Inference enumeration.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Andres Noetzli
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Inference enumeration.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
+
+#ifndef CVC5__THEORY__INFERENCE_ID_H
+#define CVC5__THEORY__INFERENCE_ID_H
 
 #include <iosfwd>
-
-#ifndef CVC4__THEORY__INFERENCE_ID_H
-#define CVC4__THEORY__INFERENCE_ID_H
 
 namespace cvc5 {
 namespace theory {
@@ -40,6 +41,8 @@ enum class InferenceId
   // ---------------------------------- core
   // a conflict when two constants merge in the equality engine (of any theory)
   EQ_CONSTANT_MERGE,
+  // a split from theory combination
+  COMBINATION_SPLIT,
   // ---------------------------------- arith theory
   //-------------------- linear core
   // black box conflicts. It's magic.
@@ -66,6 +69,13 @@ enum class InferenceId
   ARITH_BB_LEMMA,
   ARITH_DIO_CUT,
   ARITH_DIO_DECOMPOSITION,
+  // unate lemma during presolve
+  ARITH_UNATE,
+  // row implication
+  ARITH_ROW_IMPL,
+  // a split that occurs when the non-linear solver changes values of arithmetic
+  // variables in a model, but those variables are inconsistent with assignments
+  // from another theory
   ARITH_SPLIT_FOR_NL_MODEL,
   //-------------------- preprocessing
   // equivalence of term and its preprocessed form
@@ -118,6 +128,15 @@ enum class InferenceId
   ARITH_NL_IAND_SUM_REFINE,
   // bitwise refinements (IAndSolver::checkFullRefine)
   ARITH_NL_IAND_BITWISE_REFINE,
+  //-------------------- nonlinear pow2 solver
+  // initial refinements (Pow2Solver::checkInitialRefine)
+  ARITH_NL_POW2_INIT_REFINE,
+  // value refinements (Pow2Solver::checkFullRefine)
+  ARITH_NL_POW2_VALUE_REFINE,
+  // monotonicity refinements (Pow2Solver::checkFullRefine)
+  ARITH_NL_POW2_MONOTONE_REFINE,
+  // trivial refinements (Pow2Solver::checkFullRefine)
+  ARITH_NL_POW2_TRIVIAL_CASE_REFINE,
   //-------------------- nonlinear cad solver
   // conflict / infeasible subset obtained from cad
   ARITH_NL_CAD_CONFLICT,
@@ -154,10 +173,10 @@ enum class InferenceId
 
   // ---------------------------------- bitvector theory
   BV_BITBLAST_CONFLICT,
-  BV_LAZY_CONFLICT,
-  BV_LAZY_LEMMA,
-  BV_SIMPLE_LEMMA,
-  BV_SIMPLE_BITBLAST_LEMMA,
+  BV_BITBLAST_INTERNAL_EAGER_LEMMA,
+  BV_BITBLAST_INTERNAL_BITBLAST_LEMMA,
+  BV_LAYERED_CONFLICT,
+  BV_LAYERED_LEMMA,
   BV_EXTF_LEMMA,
   BV_EXTF_COLLAPSE,
   // ---------------------------------- end bitvector theory
@@ -229,6 +248,15 @@ enum class InferenceId
   DATATYPES_SYGUS_MT_POS,
   // ---------------------------------- end datatypes theory
 
+  //-------------------------------------- floating point theory
+  // a lemma sent during TheoryFp::ppRewrite
+  FP_PREPROCESS,
+  // a lemma sent during TheoryFp::convertAndEquateTerm
+  FP_EQUATE_TERM,
+  // a lemma sent during TheoryFp::registerTerm
+  FP_REGISTER_TERM,
+  //-------------------------------------- end floating point theory
+
   //-------------------------------------- quantifiers theory
   //-------------------- types of instantiations.
   // Notice the identifiers in this section cover all the techniques used for
@@ -264,6 +292,8 @@ enum class InferenceId
   QUANTIFIERS_INST_SYQI,
   // instantiations from enumerative instantiation
   QUANTIFIERS_INST_ENUM,
+  // instantiations from pool instantiation
+  QUANTIFIERS_INST_POOL,
   //-------------------- bounded integers
   // a proxy lemma from bounded integers, used to control bounds on ground terms
   QUANTIFIERS_BINT_PROXY,
@@ -394,6 +424,7 @@ enum class InferenceId
   SETS_RELS_PRODUCE_COMPOSE,
   SETS_RELS_PRODUCT_SPLIT,
   SETS_RELS_TCLOSURE_FWD,
+  SETS_RELS_TCLOSURE_UP,
   SETS_RELS_TRANSPOSE_EQ,
   SETS_RELS_TRANSPOSE_REV,
   SETS_RELS_TUPLE_REDUCTION,
@@ -754,4 +785,4 @@ std::ostream& operator<<(std::ostream& out, InferenceId i);
 }  // namespace theory
 }  // namespace cvc5
 
-#endif /* CVC4__THEORY__INFERENCE_H */
+#endif /* CVC5__THEORY__INFERENCE_H */

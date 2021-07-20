@@ -1,22 +1,27 @@
-/*********************                                                        */
-/*! \file theory_bags_normal_form_white.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Aina Niemetz, Mudathir Mohamed
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief White box testing of bags normal form
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Aina Niemetz, Mudathir Mohamed
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * White box testing of bags normal form
+ */
 
 #include "expr/dtype.h"
+#include "expr/emptybag.h"
+#include "expr/emptyset.h"
 #include "test_smt.h"
 #include "theory/bags/bags_rewriter.h"
 #include "theory/bags/normal_form.h"
 #include "theory/strings/type_enumerator.h"
+#include "util/rational.h"
+#include "util/string.h"
 
 namespace cvc5 {
 

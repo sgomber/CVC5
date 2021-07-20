@@ -1,23 +1,28 @@
-/*********************                                                        */
-/*! \file theory_bags_type_rules.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Mudathir Mohamed
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Bags theory type rules.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Mudathir Mohamed, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Bags theory type rules.
+ */
 
 #include "theory/bags/theory_bags_type_rules.h"
 
 #include <sstream>
 
 #include "base/check.h"
+#include "expr/emptybag.h"
+#include "theory/bags/make_bag_op.h"
 #include "theory/bags/normal_form.h"
+#include "util/cardinality.h"
+#include "util/rational.h"
 
 namespace cvc5 {
 namespace theory {
@@ -276,6 +281,22 @@ TypeNode ToSetTypeRule::computeType(NodeManager* nodeManager,
   TypeNode elementType = bagType.getBagElementType();
   TypeNode setType = nodeManager->mkSetType(elementType);
   return setType;
+}
+
+Cardinality BagsProperties::computeCardinality(TypeNode type)
+{
+  return Cardinality::INTEGERS;
+}
+
+bool BagsProperties::isWellFounded(TypeNode type)
+{
+  return type[0].isWellFounded();
+}
+
+Node BagsProperties::mkGroundTerm(TypeNode type)
+{
+  Assert(type.isBag());
+  return NodeManager::currentNM()->mkConst(EmptyBag(type));
 }
 }  // namespace bags
 }  // namespace theory

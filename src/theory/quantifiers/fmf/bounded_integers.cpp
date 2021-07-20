@@ -1,23 +1,25 @@
-/*********************                                                        */
-/*! \file bounded_integers.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Bounded integers module
- **
- ** This class manages integer bounds for quantifiers
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Bounded integers module
+ *
+ * This class manages integer bounds for quantifiers.
+ */
 
 #include "theory/quantifiers/fmf/bounded_integers.h"
 
 #include "expr/dtype_cons.h"
 #include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
 #include "options/quantifiers_options.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
@@ -43,7 +45,8 @@ BoundedIntegers::IntRangeDecisionHeuristic::IntRangeDecisionHeuristic(
     : DecisionStrategyFmf(c, valuation), d_range(r), d_ranges_proxied(u)
 {
   if( options::fmfBoundLazy() ){
-    d_proxy_range = isProxy ? r : NodeManager::currentNM()->mkSkolem( "pbir", r.getType() );
+    SkolemManager* sm = NodeManager::currentNM()->getSkolemManager();
+    d_proxy_range = isProxy ? r : sm->mkDummySkolem("pbir", r.getType());
   }else{
     d_proxy_range = r;
   }
@@ -314,7 +317,21 @@ void BoundedIntegers::checkOwnership(Node f)
 {
   //this needs to be done at preregister since it affects e.g. QuantDSplit's preregister
   Trace("bound-int") << "check ownership quantifier " << f << std::endl;
+
+  // determine if we should look at the quantified formula at all
+  if (!options::fmfBound())
+  {
+    // only applying it to internal quantifiers
+    QuantAttributes& qattr = d_qreg.getQuantAttributes();
+    if (!qattr.isInternal(f))
+    {
+      Trace("bound-int") << "...not internal, skip" << std::endl;
+      return;
+    }
+  }
+
   NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
 
   bool success;
   do{
@@ -353,7 +370,7 @@ void BoundedIntegers::checkOwnership(Node f)
           // supported for finite element types #1123). Regardless, this is
           // typically not a limitation since this variable can be bound in a
           // standard way below since its type is finite.
-          if (!v.getType().isInterpretedFinite())
+          if (!d_qstate.isFiniteType(v.getType()))
           {
             setBoundedVar(f, v, BOUND_SET_MEMBER);
             setBoundVar = true;
@@ -413,7 +430,7 @@ void BoundedIntegers::checkOwnership(Node f)
       for( unsigned i=0; i<f[0].getNumChildren(); i++) {
         if( d_bound_type[f].find( f[0][i] )==d_bound_type[f].end() ){
           TypeNode tn = f[0][i].getType();
-          if ((tn.isSort() && tn.isInterpretedFinite())
+          if ((tn.isSort() && d_qstate.isFiniteType(tn))
               || d_qreg.getQuantifiersBoundInference().mayComplete(tn))
           {
             success = true;
@@ -484,8 +501,8 @@ void BoundedIntegers::checkOwnership(Node f)
         if (expr::hasBoundVar(r))
         {
           // introduce a new bound
-          Node new_range = NodeManager::currentNM()->mkSkolem(
-              "bir", r.getType(), "bound for term");
+          Node new_range =
+              sm->mkDummySkolem("bir", r.getType(), "bound for term");
           d_nground_range[f][v] = r;
           d_range[f][v] = new_range;
           r = new_range;
@@ -712,7 +729,22 @@ bool BoundedIntegers::getRsiSubsitution( Node q, Node v, std::vector< Node >& va
     Trace("bound-int-rsi") << "Look up the value for " << d_set[q][i] << " " << i << std::endl;
     int vo = rsi->getVariableOrder(i);
     Assert(q[0][vo] == d_set[q][i]);
-    Node t = rsi->getCurrentTerm(vo, true);
+    TypeNode tn = d_set[q][i].getType();
+    // If the type of tn is not closed enumerable, we must map the value back
+    // to a term that appears in the same equivalence class as the constant.
+    // Notice that this is to ensure that unhandled values (e.g. uninterpreted
+    // constants, datatype values) do not enter instantiations/lemmas, which
+    // can lead to refutation unsoundness. However, it is important that we
+    // conversely do *not* map terms to values in other cases. In particular,
+    // replacing a constant c with a term t can lead to solution unsoundness
+    // if we are instantiating a quantified formula that corresponds to a
+    // reduction for t, since then the reduction is using circular reasoning:
+    // the current value of t is being used to reason about the range of
+    // its axiomatization. This is limited to reductions in the theory of
+    // strings, which use quantification on integers only. Note this
+    // impacts only quantified formulas with 2+ dimensions and dependencies
+    // between dimensions, e.g. str.indexof_re reduction.
+    Node t = rsi->getCurrentTerm(vo, !tn.isClosedEnumerable());
     Trace("bound-int-rsi") << "term : " << t << std::endl;
     vars.push_back( d_set[q][i] );
     subs.push_back( t );

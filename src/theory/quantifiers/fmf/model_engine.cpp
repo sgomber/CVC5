@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file model_engine.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Kshitij Bansal
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of model engine class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Kshitij Bansal
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of model engine class.
+ */
 
 #include "theory/quantifiers/fmf/model_engine.h"
 
@@ -102,8 +103,10 @@ void ModelEngine::check(Theory::Effort e, QEffort quant_e)
     }
 
     if( addedLemmas==0 ){
-      Trace("model-engine-debug") << "No lemmas added, incomplete = " << ( d_incomplete_check || !d_incomplete_quants.empty() ) << std::endl;
-      //CVC4 will answer SAT or unknown
+      Trace("model-engine-debug")
+          << "No lemmas added, incomplete = "
+          << (d_incomplete_check || !d_incompleteQuants.empty()) << std::endl;
+      // cvc5 will answer SAT or unknown
       if( Trace.isOn("fmf-consistent") ){
         Trace("fmf-consistent") << std::endl;
         debugPrint("fmf-consistent");
@@ -112,12 +115,18 @@ void ModelEngine::check(Theory::Effort e, QEffort quant_e)
   }
 }
 
-bool ModelEngine::checkComplete() {
-  return !d_incomplete_check;
+bool ModelEngine::checkComplete(IncompleteId& incId)
+{
+  if (d_incomplete_check)
+  {
+    incId = IncompleteId::QUANTIFIERS_FMF;
+    return false;
+  }
+  return true;
 }
 
 bool ModelEngine::checkCompleteFor( Node q ) {
-  return std::find( d_incomplete_quants.begin(), d_incomplete_quants.end(), q )==d_incomplete_quants.end();
+  return d_incompleteQuants.find(q) == d_incompleteQuants.end();
 }
 
 void ModelEngine::registerQuantifier( Node f ){
@@ -126,7 +135,7 @@ void ModelEngine::registerQuantifier( Node f ){
     for( unsigned i=0; i<f[0].getNumChildren(); i++ ){
       TypeNode tn = f[0][i].getType();
       if( !tn.isSort() ){
-        if (!tn.isInterpretedFinite())
+        if (!d_qstate.isFiniteType(tn))
         {
           if( tn.isInteger() ){
             if( !options::fmfBound() ){
@@ -142,10 +151,6 @@ void ModelEngine::registerQuantifier( Node f ){
       Trace("fmf-warn") << "Warning : Model Engine : may not be able to answer SAT because of formula : " << f << std::endl;
     }
   }
-}
-
-void ModelEngine::assertNode( Node f ){
-
 }
 
 int ModelEngine::checkModel(){
@@ -187,7 +192,7 @@ int ModelEngine::checkModel(){
   if( Trace.isOn("model-engine") ){
     for( unsigned i=0; i<fm->getNumAssertedQuantifiers(); i++ ){
       Node f = fm->getAssertedQuantifier( i );
-      if (fm->isQuantifierActive(f) && d_qreg.hasOwnership(f, this))
+      if (fm->isQuantifierActive(f) && shouldProcess(f))
       {
         int totalInst = 1;
         for( unsigned j=0; j<f[0].getNumChildren(); j++ ){
@@ -209,20 +214,26 @@ int ModelEngine::checkModel(){
                   ? 2
                   : (options::mbqiMode() == options::MbqiMode::TRUST ? 0 : 1);
   for( int e=0; e<e_max; e++) {
-    d_incomplete_quants.clear();
+    d_incompleteQuants.clear();
     for( unsigned i=0; i<fm->getNumAssertedQuantifiers(); i++ ){
       Node q = fm->getAssertedQuantifier( i, true );
       Trace("fmf-exh-inst") << "-> Exhaustive instantiate " << q << ", effort = " << e << "..." << std::endl;
       //determine if we should check this quantifier
-      if (fm->isQuantifierActive(q) && d_qreg.hasOwnership(q, this))
+      if (!fm->isQuantifierActive(q))
       {
-        exhaustiveInstantiate( q, e );
-        if (d_qstate.isInConflict())
-        {
-          break;
-        }
-      }else{
         Trace("fmf-exh-inst") << "-> Inactive : " << q << std::endl;
+        continue;
+      }
+      if (!shouldProcess(q))
+      {
+        Trace("fmf-exh-inst") << "-> Not processed : " << q << std::endl;
+        d_incompleteQuants.insert(q);
+        continue;
+      }
+      exhaustiveInstantiate(q, e);
+      if (d_qstate.isInConflict())
+      {
+        break;
       }
     }
     if( d_addedLemmas>0 ){
@@ -255,7 +266,7 @@ void ModelEngine::exhaustiveInstantiate( Node f, int effort ){
   if( retEi!=0 ){
     if( retEi<0 ){
       Trace("fmf-exh-inst") << "-> Builder determined complete instantiation was impossible." << std::endl;
-      d_incomplete_quants.push_back( f );
+      d_incompleteQuants.insert(f);
     }else{
       Trace("fmf-exh-inst") << "-> Builder determined instantiation(s)." << std::endl;
     }
@@ -311,7 +322,7 @@ void ModelEngine::exhaustiveInstantiate( Node f, int effort ){
     }
     //if the iterator is incomplete, we will return unknown instead of sat if no instantiations are added this round
     if( riter.isIncomplete() ){
-      d_incomplete_quants.push_back( f );
+      d_incompleteQuants.insert(f);
     }
   }
 }
@@ -339,6 +350,23 @@ void ModelEngine::debugPrint( const char* c ){
       }
     }
   }
+}
+
+bool ModelEngine::shouldProcess(Node q)
+{
+  if (!d_qreg.hasOwnership(q, this))
+  {
+    return false;
+  }
+  // if finite model finding or fmf bound is on, we process everything
+  if (options::finiteModelFind() || options::fmfBound())
+  {
+    return true;
+  }
+  // otherwise, we are only using model-based instantiation for internal
+  // quantified formulas
+  QuantAttributes& qattr = d_qreg.getQuantAttributes();
+  return qattr.isInternal(q);
 }
 
 }  // namespace quantifiers

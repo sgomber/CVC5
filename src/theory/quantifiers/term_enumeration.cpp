@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file term_enumeration.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of term enumeration utility
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of term enumeration utility.
+ */
 
 #include "theory/quantifiers/term_enumeration.h"
 
@@ -28,8 +29,7 @@ Node TermEnumeration::getEnumerateTerm(TypeNode tn, unsigned index)
 {
   Trace("term-db-enum") << "Get enumerate term " << tn << " " << index
                         << std::endl;
-  std::unordered_map<TypeNode, size_t, TypeNodeHashFunction>::iterator it =
-      d_typ_enum_map.find(tn);
+  std::unordered_map<TypeNode, size_t>::iterator it = d_typ_enum_map.find(tn);
   size_t teIndex;
   if (it == d_typ_enum_map.end())
   {

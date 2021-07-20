@@ -1,28 +1,28 @@
-/*********************                                                        */
-/*! \file tptp.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Francois Bobot, Haniel Barbosa
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Definition of TPTP parser
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Francois Bobot, Haniel Barbosa
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Definition of TPTP parser.
+ */
 
-#include "parser/antlr_input.h" // Needs to go first.
+#include "cvc5parser_private.h"
+#include "parser/antlr_input.h"  // Needs to go first.
 
-#include "cvc4parser_private.h"
-
-#ifndef CVC4__PARSER__TPTP_H
-#define CVC4__PARSER__TPTP_H
+#ifndef CVC5__PARSER__TPTP_H
+#define CVC5__PARSER__TPTP_H
 
 #include <unordered_map>
 #include <unordered_set>
 
-#include "api/cvc4cpp.h"
+#include "api/cpp/cvc5.h"
 #include "parser/parse_op.h"
 #include "parser/parser.h"
 #include "util/hash.h"
@@ -46,6 +46,9 @@ class Tptp : public Parser {
 
   bool fof() const { return d_fof; }
   void setFof(bool fof) { d_fof = fof; }
+
+  bool hol() const;
+  void setHol();
 
   void forceLogic(const std::string& logic) override;
 
@@ -90,7 +93,6 @@ class Tptp : public Parser {
  protected:
   Tptp(api::Solver* solver,
        SymbolManager* sm,
-       Input* input,
        bool strictMode = false,
        bool parseOnly = false);
 
@@ -193,7 +195,7 @@ class Tptp : public Parser {
   api::Term d_utr_op;
   api::Term d_uts_op;
   // The set of expression that already have a bridge
-  std::unordered_set<api::Term, api::TermHashFunction> d_r_converted;
+  std::unordered_set<api::Term> d_r_converted;
   std::unordered_map<std::string, api::Term> d_distinct_objects;
 
   std::vector< pANTLR3_INPUT_STREAM > d_in_created;
@@ -210,6 +212,7 @@ class Tptp : public Parser {
 
   bool d_cnf; // in a cnf formula
   bool d_fof; // in an fof formula
+  bool d_hol;  // in a thf formula
 };/* class Tptp */
 
 
@@ -240,4 +243,4 @@ enum NonAssoc {
 }  // namespace parser
 }  // namespace cvc5
 
-#endif /* CVC4__PARSER__TPTP_INPUT_H */
+#endif /* CVC5__PARSER__TPTP_INPUT_H */

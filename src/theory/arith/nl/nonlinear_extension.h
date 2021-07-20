@@ -1,22 +1,21 @@
-/*********************                                                        */
-/*! \file nonlinear_extension.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Extensions for incomplete handling of nonlinear multiplication.
- **
- ** Extensions to the theory of arithmetic incomplete handling of nonlinear
- ** multiplication via axiom instantiations.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Extensions to the theory of arithmetic incomplete handling of nonlinear
+ * multiplication via axiom instantiations.
+ */
 
-#ifndef CVC4__THEORY__ARITH__NL__NONLINEAR_EXTENSION_H
-#define CVC4__THEORY__ARITH__NL__NONLINEAR_EXTENSION_H
+#ifndef CVC5__THEORY__ARITH__NL__NONLINEAR_EXTENSION_H
+#define CVC5__THEORY__ARITH__NL__NONLINEAR_EXTENSION_H
 
 #include <map>
 #include <vector>
@@ -34,6 +33,7 @@
 #include "theory/arith/nl/iand_solver.h"
 #include "theory/arith/nl/icp/icp_solver.h"
 #include "theory/arith/nl/nl_model.h"
+#include "theory/arith/nl/pow2_solver.h"
 #include "theory/arith/nl/stats.h"
 #include "theory/arith/nl/strategy.h"
 #include "theory/arith/nl/transcendental/transcendental_solver.h"
@@ -81,7 +81,7 @@ class NlLemma;
  */
 class NonlinearExtension
 {
-  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+  typedef context::CDHashSet<Node> NodeSet;
 
  public:
   NonlinearExtension(TheoryArith& containing,
@@ -278,6 +278,13 @@ class NonlinearExtension
    */
   IAndSolver d_iandSlv;
 
+  /** The pow2 solver
+   *
+   * This is the subsolver responsible for running the procedure for
+   * constraints involving powers of 2.
+   */
+  Pow2Solver d_pow2Slv;
+
   /** The strategy for the nonlinear extension. */
   Strategy d_strategy;
 
@@ -298,4 +305,4 @@ class NonlinearExtension
 }  // namespace theory
 }  // namespace cvc5
 
-#endif /* CVC4__THEORY__ARITH__NONLINEAR_EXTENSION_H */
+#endif /* CVC5__THEORY__ARITH__NONLINEAR_EXTENSION_H */

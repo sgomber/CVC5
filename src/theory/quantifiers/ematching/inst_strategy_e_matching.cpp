@@ -1,19 +1,22 @@
-/*********************                                                        */
-/*! \file inst_strategy_e_matching.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of e matching instantiation strategies
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of e matching instantiation strategies.
+ */
 
 #include "theory/quantifiers/ematching/inst_strategy_e_matching.h"
 
+#include "options/base_options.h"
+#include "options/outputc.h"
 #include "theory/quantifiers/ematching/pattern_term_selector.h"
 #include "theory/quantifiers/ematching/trigger_database.h"
 #include "theory/quantifiers/quant_relevance.h"
@@ -144,6 +147,8 @@ InstStrategyStatus InstStrategyAutoGenTriggers::process(Node f,
         && d_auto_gen_trigger[1][f].empty() && f.getNumChildren() == 2)
     {
       Trace("trigger-warn") << "Could not find trigger for " << f << std::endl;
+      Output(options::OutputTag::TRIGGER)
+          << "(no-trigger " << f << ")" << std::endl;
     }
   }
   if (options::triggerActiveSelMode() != options::TriggerActiveSelMode::ALL)

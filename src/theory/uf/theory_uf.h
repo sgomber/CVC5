@@ -1,24 +1,24 @@
-/*********************                                                        */
-/*! \file theory_uf.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief This is the interface to TheoryUF implementations
- **
- ** This is the interface to TheoryUF implementations.  All
- ** implementations of TheoryUF should inherit from this class.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * This is the interface to TheoryUF implementations
+ *
+ * All implementations of TheoryUF should inherit from this class.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__UF__THEORY_UF_H
-#define CVC4__THEORY__UF__THEORY_UF_H
+#ifndef CVC5__THEORY__UF__THEORY_UF_H
+#define CVC5__THEORY__UF__THEORY_UF_H
 
 #include "expr/node.h"
 #include "expr/node_trie.h"
@@ -111,6 +111,8 @@ private:
   //--------------------------------- initialization
   /** get the official theory rewriter of this theory */
   TheoryRewriter* getTheoryRewriter() override;
+  /** get the proof checker of this theory */
+  ProofRuleChecker* getProofChecker() override;
   /**
    * Returns true if we need an equality engine. If so, we initialize the
    * information regarding how it should be setup. For details, see the
@@ -126,12 +128,6 @@ private:
   bool needsCheckLastEffort() override;
   /** Post-check, called after the fact queue of the theory is processed. */
   void postCheck(Effort level) override;
-  /** Pre-notify fact, return true if processed. */
-  bool preNotifyFact(TNode atom,
-                     bool pol,
-                     TNode fact,
-                     bool isPrereg,
-                     bool isInternal) override;
   /** Notify fact */
   void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal) override;
   //--------------------------------- end standard check
@@ -144,8 +140,7 @@ private:
   void preRegisterTerm(TNode term) override;
   TrustNode explain(TNode n) override;
 
-
-  void ppStaticLearn(TNode in, NodeBuilder<>& learned) override;
+  void ppStaticLearn(TNode in, NodeBuilder& learned) override;
   void presolve() override;
 
   void computeCareGraph() override;
@@ -170,7 +165,7 @@ private:
   bool isHigherOrderType(TypeNode tn);
   TheoryUfRewriter d_rewriter;
   /** Proof rule checker */
-  UfProofRuleChecker d_ufProofChecker;
+  UfProofRuleChecker d_checker;
   /** A (default) theory state object */
   TheoryState d_state;
   /** A (default) inference manager */
@@ -185,4 +180,4 @@ private:
 }  // namespace theory
 }  // namespace cvc5
 
-#endif /* CVC4__THEORY__UF__THEORY_UF_H */
+#endif /* CVC5__THEORY__UF__THEORY_UF_H */

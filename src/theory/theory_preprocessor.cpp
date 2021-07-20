@@ -1,21 +1,22 @@
-/*********************                                                        */
-/*! \file theory_preprocessor.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Dejan Jovanovic, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The theory preprocessor
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Dejan Jovanovic, Morgan Deters
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The theory preprocessor.
+ */
 
 #include "theory/theory_preprocessor.h"
 
-#include "expr/lazy_proof.h"
 #include "expr/skolem_manager.h"
+#include "proof/lazy_proof.h"
 #include "smt/logic_exception.h"
 #include "theory/logic_info.h"
 #include "theory/rewriter.h"
@@ -309,9 +310,14 @@ TrustNode TheoryPreprocessor::theoryPreprocess(
         rtfNode = ttfr.getNode();
         registerTrustedRewrite(ttfr, d_tpgRtf.get(), true);
       }
-      // Finish the conversion by rewriting. This is registered as a
-      // post-rewrite, since it is the last step applied for theory atoms.
-      Node retNode = rewriteWithProof(rtfNode, d_tpgRtf.get(), false);
+      // Finish the conversion by rewriting. Notice that we must consider this a
+      // pre-rewrite since we do not recursively register the rewriting steps
+      // of subterms of rtfNode. For example, if this step rewrites
+      // (not A) ---> B, then if registered a pre-rewrite, it will apply when
+      // reconstructing proofs via d_tpgRtf. However, if it is a post-rewrite
+      // it will fail to apply if another call to this class registers A -> C,
+      // in which case (not C) will be returned instead of B (see issue 6754).
+      Node retNode = rewriteWithProof(rtfNode, d_tpgRtf.get(), true);
       d_rtfCache[current] = retNode;
       continue;
     }
@@ -320,7 +326,7 @@ TrustNode TheoryPreprocessor::theoryPreprocess(
     if (stackHead.children_added)
     {
       // Children have been processed, so substitute
-      NodeBuilder<> builder(current.getKind());
+      NodeBuilder builder(current.getKind());
       if (current.getMetaKind() == kind::metakind::PARAMETERIZED)
       {
         builder << current.getOperator();
@@ -396,7 +402,7 @@ Node TheoryPreprocessor::ppTheoryRewrite(TNode term,
   Node newTerm = term;
   if (!term.isClosure())
   {
-    NodeBuilder<> newNode(term.getKind());
+    NodeBuilder newNode(term.getKind());
     if (term.getMetaKind() == kind::metakind::PARAMETERIZED)
     {
       newNode << term.getOperator();

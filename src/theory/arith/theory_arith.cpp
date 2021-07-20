@@ -1,26 +1,26 @@
-/*********************                                                        */
-/*! \file theory_arith.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Tim King, Alex Ozdemir
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief [[ Add one-line brief description here ]]
- **
- ** [[ Add lengthier description here ]]
- ** \todo document this file
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Tim King, Alex Ozdemir
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Arithmetic theory.
+ */
 
 #include "theory/arith/theory_arith.h"
 
-#include "expr/proof_rule.h"
 #include "options/smt_options.h"
+#include "proof/proof_checker.h"
+#include "proof/proof_rule.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/arith/arith_rewriter.h"
+#include "theory/arith/equality_solver.h"
 #include "theory/arith/infer_bounds.h"
 #include "theory/arith/nl/nonlinear_extension.h"
 #include "theory/arith/theory_arith_private.h"
@@ -42,31 +42,52 @@ TheoryArith::TheoryArith(context::Context* c,
                          const LogicInfo& logicInfo,
                          ProofNodeManager* pnm)
     : Theory(THEORY_ARITH, c, u, out, valuation, logicInfo, pnm),
-      d_internal(
-          new TheoryArithPrivate(*this, c, u, out, valuation, logicInfo, pnm)),
-      d_ppRewriteTimer("theory::arith::ppRewriteTimer"),
-      d_ppPfGen(pnm, c, "Arith::ppRewrite"),
-      d_astate(*d_internal, c, u, valuation),
+      d_ppRewriteTimer(smtStatisticsRegistry().registerTimer(
+          "theory::arith::ppRewriteTimer")),
+      d_astate(c, u, valuation),
       d_im(*this, d_astate, pnm),
+      d_ppre(c, pnm),
+      d_bab(d_astate, d_im, d_ppre, pnm),
+      d_eqSolver(nullptr),
+      d_internal(new TheoryArithPrivate(*this, c, u, d_bab, pnm)),
       d_nonlinearExtension(nullptr),
-      d_arithPreproc(d_astate, d_im, pnm, logicInfo)
+      d_opElim(pnm, logicInfo),
+      d_arithPreproc(d_astate, d_im, pnm, d_opElim),
+      d_rewriter(d_opElim)
 {
-  smtStatisticsRegistry()->registerStat(&d_ppRewriteTimer);
-
+  // currently a cyclic dependency to TheoryArithPrivate
+  d_astate.setParent(d_internal);
   // indicate we are using the theory state object and inference manager
   d_theoryState = &d_astate;
   d_inferManager = &d_im;
+
+  if (options::arithEqSolver())
+  {
+    d_eqSolver.reset(new EqualitySolver(d_astate, d_im));
+  }
 }
 
 TheoryArith::~TheoryArith(){
-  smtStatisticsRegistry()->unregisterStat(&d_ppRewriteTimer);
   delete d_internal;
 }
 
 TheoryRewriter* TheoryArith::getTheoryRewriter() { return &d_rewriter; }
 
+ProofRuleChecker* TheoryArith::getProofChecker()
+{
+  return d_internal->getProofChecker();
+}
+
 bool TheoryArith::needsEqualityEngine(EeSetupInfo& esi)
 {
+  // if the equality solver is enabled, then it is responsible for setting
+  // up the equality engine
+  if (d_eqSolver != nullptr)
+  {
+    return d_eqSolver->needsEqualityEngine(esi);
+  }
+  // otherwise, the linear arithmetic solver is responsible for setting up
+  // the equality engine
   return d_internal->needsEqualityEngine(esi);
 }
 void TheoryArith::finishInit()
@@ -88,7 +109,11 @@ void TheoryArith::finishInit()
     d_nonlinearExtension.reset(
         new nl::NonlinearExtension(*this, d_astate, d_equalityEngine, d_pnm));
   }
-  // finish initialize internally
+  if (d_eqSolver != nullptr)
+  {
+    d_eqSolver->finishInit();
+  }
+  // finish initialize in the old linear solver
   d_internal->finishInit();
 }
 
@@ -101,15 +126,6 @@ void TheoryArith::preRegisterTerm(TNode n)
   d_internal->preRegisterTerm(n);
 }
 
-TrustNode TheoryArith::expandDefinition(Node node)
-{
-  // call eliminate operators, to eliminate partial operators only
-  std::vector<SkolemLemma> lems;
-  TrustNode ret = d_arithPreproc.eliminate(node, lems, true);
-  Assert(lems.empty());
-  return ret;
-}
-
 void TheoryArith::notifySharedTerm(TNode n) { d_internal->notifySharedTerm(n); }
 
 TrustNode TheoryArith::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
@@ -119,7 +135,7 @@ TrustNode TheoryArith::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
 
   if (atom.getKind() == kind::EQUAL)
   {
-    return ppRewriteEq(atom);
+    return d_ppre.ppRewriteEq(atom);
   }
   Assert(Theory::theoryOf(atom) == THEORY_ARITH);
   // Eliminate operators. Notice we must do this here since other
@@ -131,37 +147,14 @@ TrustNode TheoryArith::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
   return d_arithPreproc.eliminate(atom, lems, false);
 }
 
-TrustNode TheoryArith::ppRewriteEq(TNode atom)
-{
-  Assert(atom.getKind() == kind::EQUAL);
-  if (!options::arithRewriteEq())
-  {
-    return TrustNode::null();
-  }
-  Assert(atom[0].getType().isReal());
-  Node leq = NodeBuilder<2>(kind::LEQ) << atom[0] << atom[1];
-  Node geq = NodeBuilder<2>(kind::GEQ) << atom[0] << atom[1];
-  Node rewritten = Rewriter::rewrite(leq.andNode(geq));
-  Debug("arith::preprocess")
-      << "arith::preprocess() : returning " << rewritten << endl;
-  // don't need to rewrite terms since rewritten is not a non-standard op
-  if (proofsEnabled())
-  {
-    return d_ppPfGen.mkTrustedRewrite(
-        atom,
-        rewritten,
-        d_pnm->mkNode(PfRule::INT_TRUST, {}, {atom.eqNode(rewritten)}));
-  }
-  return TrustNode::mkTrustRewrite(atom, rewritten, nullptr);
-}
-
 Theory::PPAssertStatus TheoryArith::ppAssert(
     TrustNode tin, TrustSubstitutionMap& outSubstitutions)
 {
   return d_internal->ppAssert(tin, outSubstitutions);
 }
 
-void TheoryArith::ppStaticLearn(TNode n, NodeBuilder<>& learned) {
+void TheoryArith::ppStaticLearn(TNode n, NodeBuilder& learned)
+{
   d_internal->ppStaticLearn(n, learned);
 }
 
@@ -199,7 +192,7 @@ void TheoryArith::postCheck(Effort level)
     else if (d_internal->foundNonlinear())
     {
       // set incomplete
-      d_im.setIncomplete();
+      d_im.setIncomplete(IncompleteId::ARITH_NL_DISABLED);
     }
   }
 }
@@ -210,10 +203,18 @@ bool TheoryArith::preNotifyFact(
   Trace("arith-check") << "TheoryArith::preNotifyFact: " << fact
                        << ", isPrereg=" << isPrereg
                        << ", isInternal=" << isInternal << std::endl;
-  d_internal->preNotifyFact(atom, pol, fact);
   // We do not assert to the equality engine of arithmetic in the standard way,
   // hence we return "true" to indicate we are finished with this fact.
-  return true;
+  bool ret = true;
+  if (d_eqSolver != nullptr)
+  {
+    // the equality solver may indicate ret = false, after which the assertion
+    // will be asserted to the equality engine in the default way.
+    ret = d_eqSolver->preNotifyFact(atom, pol, fact, isPrereg, isInternal);
+  }
+  // we also always also notify the internal solver
+  d_internal->preNotifyFact(atom, pol, fact);
+  return ret;
 }
 
 bool TheoryArith::needsCheckLastEffort() {
@@ -224,7 +225,19 @@ bool TheoryArith::needsCheckLastEffort() {
   return false;
 }
 
-TrustNode TheoryArith::explain(TNode n) { return d_internal->explain(n); }
+TrustNode TheoryArith::explain(TNode n)
+{
+  if (d_eqSolver != nullptr)
+  {
+    // if the equality solver has an explanation for it, use it
+    TrustNode texp = d_eqSolver->explain(n);
+    if (!texp.isNull())
+    {
+      return texp;
+    }
+  }
+  return d_internal->explain(n);
+}
 
 void TheoryArith::propagate(Effort e) {
   d_internal->propagate(e);
@@ -243,6 +256,40 @@ bool TheoryArith::collectModelValues(TheoryModel* m,
   // get the model from the linear solver
   std::map<Node, Node> arithModel;
   d_internal->collectModelValues(termSet, arithModel);
+  // Double check that the model from the linear solver respects integer types,
+  // if it does not, add a branch and bound lemma. This typically should never
+  // be necessary, but is needed in rare cases.
+  bool addedLemma = false;
+  bool badAssignment = false;
+  for (const std::pair<const Node, Node>& p : arithModel)
+  {
+    if (p.first.getType().isInteger() && !p.second.getType().isInteger())
+    {
+      Assert(false) << "TheoryArithPrivate generated a bad model value for "
+                       "integer variable "
+                    << p.first << " : " << p.second;
+      // must branch and bound
+      TrustNode lem =
+          d_bab.branchIntegerVariable(p.first, p.second.getConst<Rational>());
+      if (d_im.trustedLemma(lem, InferenceId::ARITH_BB_LEMMA))
+      {
+        addedLemma = true;
+      }
+      badAssignment = true;
+    }
+  }
+  if (addedLemma)
+  {
+    // we had to add a branch and bound lemma since the linear solver assigned
+    // a non-integer value to an integer variable.
+    return false;
+  }
+  // this would imply that linear arithmetic's model failed to satisfy a branch
+  // and bound lemma
+  AlwaysAssert(!badAssignment)
+      << "Bad assignment from TheoryArithPrivate::collectModelValues, and no "
+         "branching lemma was sent";
+
   // if non-linear is enabled, intercept the model, which may repair its values
   if (d_nonlinearExtension != nullptr)
   {

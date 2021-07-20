@@ -1,18 +1,17 @@
-/*********************                                                        */
-/*! \file context_black.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Aina Niemetz, Morgan Deters, Dejan Jovanovic
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Black box testing of cvc5::context::Context.
- **
- ** Black box testing of cvc5::context::Context.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Aina Niemetz, Morgan Deters, Dejan Jovanovic
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Black box testing of cvc5::context::Context.
+ */
 
 #include <iostream>
 #include <vector>
@@ -91,10 +90,10 @@ TEST_F(TestContextBlack, push_pop)
   // the interface doesn't declare any exceptions
   d_context->push();
   d_context->pop();
-#ifdef CVC4_ASSERTIONS
+#ifdef CVC5_ASSERTIONS
   ASSERT_DEATH(d_context->pop(), "Cannot pop below level 0");
   ASSERT_DEATH(d_context->pop(), "Cannot pop below level 0");
-#endif /* CVC4_ASSERTIONS */
+#endif /* CVC5_ASSERTIONS */
 }
 
 TEST_F(TestContextBlack, dtor)
@@ -199,8 +198,6 @@ TEST_F(TestContextBlack, pre_post_notify)
   d_context.reset(nullptr);
 }
 
-// TODO: reenable after #2607 is merged in (issue 6047)
-#if 0
 TEST_F(TestContextBlack, top_scope_context_obj)
 {
   // this test's implementation is based on the fact that a
@@ -212,33 +209,60 @@ TEST_F(TestContextBlack, top_scope_context_obj)
 
   d_context->push();
 
-  MyContextObj x(true, d_context.get(), n);
-  MyContextObj y(false, d_context.get(), n);
+  MyContextObj x(false, d_context.get(), n);
+  {
+    MyContextObj y(true, d_context.get(), n);
 
-  ASSERT_EQ(x.d_nsaves, 0);
-  ASSERT_EQ(y.d_nsaves, 0);
+    ASSERT_EQ(x.d_nsaves, 0);
+    ASSERT_EQ(y.d_nsaves, 0);
 
-  x.makeCurrent();
-  y.makeCurrent();
+    x.makeCurrent();
+    y.makeCurrent();
 
-  ASSERT_EQ(x.d_nsaves, 0);
-  ASSERT_EQ(y.d_nsaves, 1);
+    ASSERT_EQ(x.d_nsaves, 1);
+    ASSERT_EQ(y.d_nsaves, 0);
 
-  d_context->push();
+    d_context->push();
 
-  x.makeCurrent();
-  y.makeCurrent();
+    x.makeCurrent();
+    y.makeCurrent();
 
-  ASSERT_EQ(x.d_nsaves, 1);
-  ASSERT_EQ(y.d_nsaves, 2);
+    ASSERT_EQ(x.d_nsaves, 2);
+    ASSERT_EQ(y.d_nsaves, 1);
+
+    d_context->pop();
+
+    // `y` is invalid below the first level because it was allocated in the top
+    // scope. We have to make sure to destroy it before the next pop.
+  }
 
   d_context->pop();
-  d_context->pop();
 
-  ASSERT_EQ(x.d_nsaves, 1);
-  ASSERT_EQ(y.d_nsaves, 2);
+  ASSERT_EQ(x.d_nsaves, 2);
 }
-#endif
+
+TEST_F(TestContextBlack, detect_invalid_obj)
+{
+  MyContextNotifyObj n(d_context.get(), true);
+
+  {
+    // Objects allocated at the bottom scope are allowed to outlive the scope
+    // that they have been allocated in.
+    d_context->push();
+    MyContextObj x(false, d_context.get(), n);
+    d_context->pop();
+  }
+
+  ASSERT_DEATH(
+      {
+        // Objects allocated at the top scope are not allowed to outlive the
+        // scope that they have been allocated in.
+        d_context->push();
+        MyContextObj y(true, d_context.get(), n);
+        d_context->pop();
+      },
+      "d_pScope != nullptr");
+}
 
 }  // namespace test
 }  // namespace cvc5

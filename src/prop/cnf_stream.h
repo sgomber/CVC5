@@ -1,35 +1,35 @@
-/*********************                                                        */
-/*! \file cnf_stream.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Dejan Jovanovic, Haniel Barbosa, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief This class transforms a sequence of formulas into clauses.
- **
- ** This class takes a sequence of formulas.
- ** It outputs a stream of clauses that is propositionally
- ** equi-satisfiable with the conjunction of the formulas.
- ** This stream is maintained in an online fashion.
- **
- ** Unlike other parts of the system it is aware of the PropEngine's
- ** internals such as the representation and translation of [??? -Chris]
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Dejan Jovanovic, Haniel Barbosa, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * This class transforms a sequence of formulas into clauses.
+ *
+ * This class takes a sequence of formulas.
+ * It outputs a stream of clauses that is propositionally
+ * equi-satisfiable with the conjunction of the formulas.
+ * This stream is maintained in an online fashion.
+ *
+ * Unlike other parts of the system it is aware of the PropEngine's
+ * internals such as the representation and translation of [??? -Chris]
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__PROP__CNF_STREAM_H
-#define CVC4__PROP__CNF_STREAM_H
+#ifndef CVC5__PROP__CNF_STREAM_H
+#define CVC5__PROP__CNF_STREAM_H
 
 #include "context/cdhashset.h"
 #include "context/cdinsert_hashmap.h"
 #include "context/cdlist.h"
 #include "expr/node.h"
-#include "proof/proof_manager.h"
 #include "prop/proof_cnf_stream.h"
 #include "prop/registrar.h"
 #include "prop/sat_solver_types.h"
@@ -74,8 +74,7 @@ class CnfStream {
       LiteralToNodeMap;
 
   /** Cache of what literals have been registered to a node. */
-  typedef context::CDInsertHashMap<Node, SatLiteral, NodeHashFunction>
-      NodeToLiteralMap;
+  typedef context::CDInsertHashMap<Node, SatLiteral> NodeToLiteralMap;
 
   /**
    * Constructs a CnfStream that performs equisatisfiable CNF transformations
@@ -164,8 +163,6 @@ class CnfStream {
   /** Retrieves map from literals to nodes. */
   const CnfStream::LiteralToNodeMap& getNodeCache() const;
 
-  void setProof(CnfProof* proof);
-
  protected:
   /**
    * Same as above, except that uses the saved d_removable flag. It calls the
@@ -194,16 +191,16 @@ class CnfStream {
    */
   SatLiteral toCNF(TNode node, bool negated = false);
 
-  /** Specific clausifiers, based on the formula kinds, that clausify a formula,
-   * by calling toCNF into each of the formula's children under the respective
-   * kind, and introduce a literal definitionally equal to it. */
-  SatLiteral handleNot(TNode node);
-  SatLiteral handleXor(TNode node);
-  SatLiteral handleImplies(TNode node);
-  SatLiteral handleIff(TNode node);
-  SatLiteral handleIte(TNode node);
-  SatLiteral handleAnd(TNode node);
-  SatLiteral handleOr(TNode node);
+  /**
+   * Specific clausifiers that clausify a formula based on the given formula
+   * kind and introduce a literal definitionally equal to it.
+   */
+  void handleXor(TNode node);
+  void handleImplies(TNode node);
+  void handleIff(TNode node);
+  void handleIte(TNode node);
+  void handleAnd(TNode node);
+  void handleOr(TNode node);
 
   /** Stores the literal of the given node in d_literalToNodeMap.
    *
@@ -222,7 +219,7 @@ class CnfStream {
   context::CDList<TNode> d_booleanVariables;
 
   /** Formulas that we translated that we are notifying */
-  context::CDHashSet<Node, NodeHashFunction> d_notifyFormulas;
+  context::CDHashSet<Node> d_notifyFormulas;
 
   /** Map from nodes to literals */
   NodeToLiteralMap d_nodeToLiteralMap;
@@ -242,9 +239,6 @@ class CnfStream {
 
   /** The name of this CNF stream*/
   std::string d_name;
-
-  /** Pointer to the proof corresponding to this CnfStream */
-  CnfProof* d_cnfProof;
 
   /**
    * Are we asserting a removable clause (true) or a permanent clause (false).
@@ -315,9 +309,17 @@ class CnfStream {
 
   /** Pointer to resource manager for associated SmtEngine */
   ResourceManager* d_resourceManager;
+
+ private:
+  struct Statistics
+  {
+    Statistics(const std::string& name);
+    TimerStat d_cnfConversionTime;
+  } d_stats;
+
 }; /* class CnfStream */
 
 }  // namespace prop
 }  // namespace cvc5
 
-#endif /* CVC4__PROP__CNF_STREAM_H */
+#endif /* CVC5__PROP__CNF_STREAM_H */

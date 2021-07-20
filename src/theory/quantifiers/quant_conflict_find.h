@@ -1,18 +1,19 @@
-/*********************                                                        */
-/*! \file quant_conflict_find.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Tim King, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief quantifiers conflict find class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Tim King, Morgan Deters
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Quantifiers conflict find class.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
 #ifndef QUANT_CONFLICT_FIND
 #define QUANT_CONFLICT_FIND
@@ -192,8 +193,9 @@ class QuantConflictFind : public QuantifiersModule
 {
   friend class MatchGen;
   friend class QuantInfo;
-  typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeBoolMap;
-private:
+  typedef context::CDHashMap<Node, bool> NodeBoolMap;
+
+ private:
   context::CDO< bool > d_conflict;
   std::map< Kind, Node > d_zero;
   //for storing nodes created during t-constraint solving (prevents memory leaks)
@@ -286,7 +288,6 @@ public:
     IntStat d_inst_rounds;
     IntStat d_entailment_checks;
     Statistics();
-    ~Statistics();
   };
   Statistics d_statistics;
   /** Identify this module */

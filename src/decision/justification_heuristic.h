@@ -1,27 +1,28 @@
-/*********************                                                        */
-/*! \file justification_heuristic.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Kshitij Bansal, Gereon Kremer, Andres Noetzli
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Justification heuristic for decision making
- **
- ** A ATGP-inspired justification-based decision heuristic. See
- ** [insert reference] for more details. This code is, or not, based
- ** on the CVC3 implementation of the same heuristic.
- **
- ** It needs access to the simplified but non-clausal formula.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Kshitij Bansal, Gereon Kremer, Andres Noetzli
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Justification heuristic for decision making
+ *
+ * A ATGP-inspired justification-based decision heuristic. See
+ * [insert reference] for more details. This code is, or not, based
+ * on the CVC3 implementation of the same heuristic.
+ *
+ * It needs access to the simplified but non-clausal formula.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__DECISION__JUSTIFICATION_HEURISTIC
-#define CVC4__DECISION__JUSTIFICATION_HEURISTIC
+#ifndef CVC5__DECISION__JUSTIFICATION_HEURISTIC
+#define CVC5__DECISION__JUSTIFICATION_HEURISTIC
 
 #include <unordered_set>
 #include <utility>
@@ -34,8 +35,7 @@
 #include "expr/node.h"
 #include "options/decision_weight.h"
 #include "prop/sat_solver_types.h"
-#include "util/statistics_registry.h"
-#include "util/stats_timer.h"
+#include "util/statistics_stats.h"
 
 namespace cvc5 {
 namespace decision {
@@ -45,21 +45,17 @@ class JustificationHeuristic : public ITEDecisionStrategy {
   enum SearchResult {FOUND_SPLITTER, NO_SPLITTER, DONT_KNOW};
 
   typedef std::vector<std::pair<Node, Node> > SkolemList;
-  typedef context::CDHashMap<Node, SkolemList, NodeHashFunction> SkolemCache;
+  typedef context::CDHashMap<Node, SkolemList> SkolemCache;
   typedef std::vector<Node> ChildList;
-  typedef context::
-      CDHashMap<Node, std::pair<ChildList, ChildList>, NodeHashFunction>
-          ChildCache;
-  typedef context::CDHashMap<Node,Node,NodeHashFunction> SkolemMap;
-  typedef context::CDHashMap<Node,
-                             std::pair<DecisionWeight, DecisionWeight>,
-                             NodeHashFunction>
+  typedef context::CDHashMap<Node, std::pair<ChildList, ChildList>> ChildCache;
+  typedef context::CDHashMap<Node, Node> SkolemMap;
+  typedef context::CDHashMap<Node, std::pair<DecisionWeight, DecisionWeight>>
       WeightCache;
 
   // being 'justified' is monotonic with respect to decisions
-  typedef context::CDHashSet<Node,NodeHashFunction> JustifiedSet;
+  typedef context::CDHashSet<Node> JustifiedSet;
   JustifiedSet d_justified;
-  typedef context::CDHashMap<Node,DecisionWeight,NodeHashFunction> ExploredThreshold;
+  typedef context::CDHashMap<Node, DecisionWeight> ExploredThreshold;
   ExploredThreshold d_exploredThreshold;
   context::CDO<unsigned>  d_prvsIndex;
   context::CDO<unsigned>  d_threshPrvsIndex;
@@ -86,13 +82,13 @@ class JustificationHeuristic : public ITEDecisionStrategy {
    * splitter. Can happen when exploring assertion corresponding to a
    * term-ITE.
    */
-  std::unordered_set<Node,NodeHashFunction> d_visited;
+  std::unordered_set<Node> d_visited;
 
   /**
    * Set to track visited nodes in a dfs search done in computeSkolems
    * function
    */
-  std::unordered_set<Node, NodeHashFunction> d_visitedComputeSkolems;
+  std::unordered_set<Node> d_visitedComputeSkolems;
 
   /** current decision for the recursive call */
   prop::SatLiteral d_curDecision;
@@ -117,7 +113,7 @@ class JustificationHeuristic : public ITEDecisionStrategy {
   };
 
 public:
- JustificationHeuristic(cvc5::DecisionEngine* de,
+ JustificationHeuristic(DecisionEngineOld* de,
                         context::UserContext* uc,
                         context::Context* c);
 
@@ -172,7 +168,7 @@ private:
   * For big and/or nodes, a cache to save starting index into children
   * for efficiently.
   */
- typedef context::CDHashMap<Node, int, NodeHashFunction> StartIndexCache;
+ typedef context::CDHashMap<Node, int> StartIndexCache;
  StartIndexCache d_startIndexCache;
  int getStartIndex(TNode node);
  void saveStartIndex(TNode node, int val);
@@ -197,4 +193,4 @@ private:
 }/* namespace decision */
 }  // namespace cvc5
 
-#endif /* CVC4__DECISION__JUSTIFICATION_HEURISTIC */
+#endif /* CVC5__DECISION__JUSTIFICATION_HEURISTIC */

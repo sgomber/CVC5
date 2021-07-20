@@ -1,27 +1,29 @@
-/*********************                                                        */
-/*! \file ext_state.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Common data shared by multiple checks
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Common data shared by multiple checks.
+ */
 
 #include "theory/arith/nl/ext/ext_state.h"
 
 #include <vector>
 
 #include "expr/node.h"
-#include "expr/proof.h"
+#include "proof/proof.h"
 #include "theory/arith/inference_manager.h"
 #include "theory/arith/nl/ext/monomial.h"
-#include "theory/arith/nl/nl_model.h"
 #include "theory/arith/nl/nl_lemma_utils.h"
+#include "theory/arith/nl/nl_model.h"
+#include "util/rational.h"
 
 namespace cvc5 {
 namespace theory {

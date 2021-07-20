@@ -1,22 +1,26 @@
-/*********************                                                        */
-/*! \file synth_conjecture.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner, Haniel Barbosa
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of class that encapsulates techniques for a single
- ** (SyGuS) synthesis conjecture.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mathias Preiner, Haniel Barbosa
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of class that encapsulates techniques for a single
+ * (SyGuS) synthesis conjecture.
+ */
 #include "theory/quantifiers/sygus/synth_conjecture.h"
 
 #include "base/configuration.h"
+#include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
 #include "options/base_options.h"
 #include "options/datatypes_options.h"
+#include "options/outputc.h"
 #include "options/quantifiers_options.h"
 #include "printer/printer.h"
 #include "smt/logic_exception.h"
@@ -29,9 +33,9 @@
 #include "theory/quantifiers/sygus/enum_stream_substitution.h"
 #include "theory/quantifiers/sygus/sygus_enumerator.h"
 #include "theory/quantifiers/sygus/sygus_enumerator_basic.h"
-#include "theory/quantifiers/sygus/synth_engine.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
 #include "theory/quantifiers/sygus/sygus_pbe.h"
+#include "theory/quantifiers/sygus/synth_engine.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/rewriter.h"
@@ -55,6 +59,7 @@ SynthConjecture::SynthConjecture(QuantifiersState& qs,
       d_treg(tr),
       d_stats(s),
       d_tds(tr.getTermDatabaseSygus()),
+      d_verify(d_tds),
       d_hasSolution(false),
       d_ceg_si(new CegSingleInv(tr, s)),
       d_templInfer(new SygusTemplateInfer),
@@ -102,9 +107,10 @@ void SynthConjecture::assign(Node q)
   Trace("cegqi") << "SynthConjecture : assign : " << q << std::endl;
   d_quant = q;
   NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
 
   // initialize the guard
-  d_feasible_guard = nm->mkSkolem("G", nm->booleanType());
+  d_feasible_guard = sm->mkDummySkolem("G", nm->booleanType());
   d_feasible_guard = Rewriter::rewrite(d_feasible_guard);
   d_feasible_guard = d_qstate.getValuation().ensureLiteral(d_feasible_guard);
   AlwaysAssert(!d_feasible_guard.isNull());
@@ -170,8 +176,7 @@ void SynthConjecture::assign(Node q)
   for (unsigned i = 0; i < d_embed_quant[0].getNumChildren(); i++)
   {
     vars.push_back(d_embed_quant[0][i]);
-    Node e =
-        NodeManager::currentNM()->mkSkolem("e", d_embed_quant[0][i].getType());
+    Node e = sm->mkDummySkolem("e", d_embed_quant[0][i].getType());
     d_candidates.push_back(e);
   }
   Trace("cegqi") << "Base quantified formula is : " << d_embed_quant
@@ -179,7 +184,7 @@ void SynthConjecture::assign(Node q)
   // construct base instantiation
   d_base_inst = Rewriter::rewrite(d_qim.getInstantiate()->getInstantiation(
       d_embed_quant, vars, d_candidates));
-  if (!d_embedSideCondition.isNull())
+  if (!d_embedSideCondition.isNull() && !vars.empty())
   {
     d_embedSideCondition = d_embedSideCondition.substitute(
         vars.begin(), vars.end(), d_candidates.begin(), d_candidates.end());
@@ -282,6 +287,8 @@ bool SynthConjecture::needsCheck()
     if (!value)
     {
       Trace("sygus-engine-debug") << "Conjecture is infeasible." << std::endl;
+      Warning() << "Warning : the SyGuS conjecture may be infeasible"
+                << std::endl;
       return false;
     }
     else
@@ -367,7 +374,7 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
     }
   }
 
-  bool printDebug = options::debugSygus();
+  bool printDebug = Output.isOn(options::OutputTag::SYGUS);
   if (!constructed_cand)
   {
     // get the model value of the relevant terms from the master module
@@ -437,12 +444,8 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
         }
       }
       Trace("sygus-engine") << std::endl;
-      if (printDebug)
-      {
-        Options& sopts = smt::currentSmtEngine()->getOptions();
-        std::ostream& out = *sopts.getOut();
-        out << "(sygus-enum" << sygusEnumOut.str() << ")" << std::endl;
-      }
+      Output(options::OutputTag::SYGUS)
+          << "(sygus-enum" << sygusEnumOut.str() << ")" << std::endl;
     }
     Assert(candidate_values.empty());
     constructed_cand = d_master->constructCandidates(
@@ -460,6 +463,7 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
   }
 
   NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
 
   // check the side condition if we constructed a candidate
   if (constructed_cand)
@@ -524,7 +528,7 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
     if (printDebug)
     {
       Options& sopts = smt::currentSmtEngine()->getOptions();
-      std::ostream& out = *sopts.getOut();
+      std::ostream& out = *sopts.base.out;
       out << "(sygus-candidate ";
       Assert(d_quant[0].getNumChildren() == candidate_values.size());
       for (unsigned i = 0, ncands = candidate_values.size(); i < ncands; i++)
@@ -540,7 +544,7 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
     {
       for (const Node& v : inst[0][0])
       {
-        Node sk = nm->mkSkolem("rsk", v.getType());
+        Node sk = sm->mkDummySkolem("rsk", v.getType());
         sks.push_back(sk);
         vars.push_back(v);
         Trace("cegqi-check-debug")
@@ -565,60 +569,31 @@ bool SynthConjecture::doCheck(std::vector<Node>& lems)
     return false;
   }
 
-  // simplify the lemma based on the term database sygus utility
-  query = d_tds->rewriteNode(query);
-  // eagerly unfold applications of evaluation function
-  Trace("cegqi-debug") << "pre-unfold counterexample : " << query << std::endl;
   // Record the solution, which may be falsified below. We require recording
   // here since the result of the satisfiability test may be unknown.
   recordSolution(candidate_values);
 
-  if (!query.isConst() || query.getConst<bool>())
+  Result r = d_verify.verify(query, d_ce_sk_vars, d_ce_sk_var_mvs);
+
+  if (r.asSatisfiabilityResult().isSat() == Result::SAT)
   {
-    Trace("sygus-engine") << "  *** Verify with subcall..." << std::endl;
-    Result r = checkWithSubsolver(query, d_ce_sk_vars, d_ce_sk_var_mvs);
-    Trace("sygus-engine") << "  ...got " << r << std::endl;
-    if (r.asSatisfiabilityResult().isSat() == Result::SAT)
-    {
-      if (Trace.isOn("sygus-engine"))
-      {
-        Trace("sygus-engine") << "  * Verification lemma failed for:\n   ";
-        for (unsigned i = 0, size = d_ce_sk_vars.size(); i < size; i++)
-        {
-          Trace("sygus-engine")
-              << d_ce_sk_vars[i] << " -> " << d_ce_sk_var_mvs[i] << " ";
-        }
-        Trace("sygus-engine") << std::endl;
-      }
-      if (Configuration::isAssertionBuild())
-      {
-        // the values for the query should be a complete model
-        Node squery = query.substitute(d_ce_sk_vars.begin(),
-                                       d_ce_sk_vars.end(),
-                                       d_ce_sk_var_mvs.begin(),
-                                       d_ce_sk_var_mvs.end());
-        Trace("cegqi-debug") << "...squery : " << squery << std::endl;
-        squery = Rewriter::rewrite(squery);
-        Trace("cegqi-debug") << "...rewrites to : " << squery << std::endl;
-        Assert(options::sygusRecFun()
-               || (squery.isConst() && squery.getConst<bool>()));
-      }
-      return false;
-    }
-    else if (r.asSatisfiabilityResult().isSat() != Result::UNSAT)
-    {
-      // In the rare case that the subcall is unknown, we simply exclude the
-      // solution, without adding a counterexample point. This should only
-      // happen if the quantifier free logic is undecidable.
-      excludeCurrentSolution(terms, candidate_values);
-      // We should set incomplete, since a "sat" answer should not be
-      // interpreted as "infeasible", which would make a difference in the rare
-      // case where e.g. we had a finite grammar and exhausted the grammar.
-      d_qim.setIncomplete();
-      return false;
-    }
-    // otherwise we are unsat, and we will process the solution below
+    // we have a counterexample
+    return false;
   }
+  else if (r.asSatisfiabilityResult().isSat() != Result::UNSAT)
+  {
+    // In the rare case that the subcall is unknown, we simply exclude the
+    // solution, without adding a counterexample point. This should only
+    // happen if the quantifier free logic is undecidable.
+    excludeCurrentSolution(terms, candidate_values);
+    // We should set incomplete, since a "sat" answer should not be
+    // interpreted as "infeasible", which would make a difference in the rare
+    // case where e.g. we had a finite grammar and exhausted the grammar.
+    d_qim.setIncomplete(IncompleteId::QUANTIFIERS_SYGUS_NO_VERIFY);
+    return false;
+  }
+  // otherwise we are unsat, and we will process the solution below
+
   // now mark that we have a solution
   d_hasSolution = true;
   if (options::sygusStream())
@@ -639,8 +614,12 @@ bool SynthConjecture::checkSideCondition(const std::vector<Node>& cvals) const
 {
   if (!d_embedSideCondition.isNull())
   {
-    Node sc = d_embedSideCondition.substitute(
+    Node sc = d_embedSideCondition;
+    if (!cvals.empty())
+    {
+      sc = sc.substitute(
         d_candidates.begin(), d_candidates.end(), cvals.begin(), cvals.end());
+    }
     Trace("sygus-engine") << "Check side condition..." << std::endl;
     Trace("cegqi-debug") << "Check side condition : " << sc << std::endl;
     Result r = checkWithSubsolver(sc);
@@ -986,7 +965,7 @@ void SynthConjecture::printAndContinueStream(const std::vector<Node>& enums,
   // we have generated a solution, print it
   // get the current output stream
   Options& sopts = smt::currentSmtEngine()->getOptions();
-  printSynthSolution(*sopts.getOut());
+  printSynthSolutionInternal(*sopts.base.out);
   excludeCurrentSolution(enums, values);
 }
 
@@ -1032,7 +1011,7 @@ void SynthConjecture::excludeCurrentSolution(const std::vector<Node>& enums,
   }
 }
 
-void SynthConjecture::printSynthSolution(std::ostream& out)
+void SynthConjecture::printSynthSolutionInternal(std::ostream& out)
 {
   Trace("cegqi-sol-debug") << "Printing synth solution..." << std::endl;
   Assert(d_quant[0].getNumChildren() == d_embed_quant[0].getNumChildren());

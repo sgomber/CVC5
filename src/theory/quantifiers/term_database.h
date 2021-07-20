@@ -1,21 +1,22 @@
-/*********************                                                        */
-/*! \file term_database.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief term database class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Term database class.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__QUANTIFIERS__TERM_DATABASE_H
-#define CVC4__THEORY__QUANTIFIERS__TERM_DATABASE_H
+#ifndef CVC5__THEORY__QUANTIFIERS__TERM_DATABASE_H
+#define CVC5__THEORY__QUANTIFIERS__TERM_DATABASE_H
 
 #include <map>
 #include <unordered_map>
@@ -64,13 +65,12 @@ class DbList
  * lazily for performance reasons.
  */
 class TermDb : public QuantifiersUtil {
-  using NodeBoolMap = context::CDHashMap<Node, bool, NodeHashFunction>;
+  using NodeBoolMap = context::CDHashMap<Node, bool>;
   using NodeList = context::CDList<Node>;
-  using NodeSet = context::CDHashSet<Node, NodeHashFunction>;
-  using TypeNodeDbListMap = context::
-      CDHashMap<TypeNode, std::shared_ptr<DbList>, TypeNodeHashFunction>;
-  using NodeDbListMap =
-      context::CDHashMap<Node, std::shared_ptr<DbList>, NodeHashFunction>;
+  using NodeSet = context::CDHashSet<Node>;
+  using TypeNodeDbListMap =
+      context::CDHashMap<TypeNode, std::shared_ptr<DbList>>;
+  using NodeDbListMap = context::CDHashMap<Node, std::shared_ptr<DbList>>;
 
  public:
   TermDb(QuantifiersState& qs,
@@ -79,7 +79,7 @@ class TermDb : public QuantifiersUtil {
   /** Finish init, which sets the inference manager */
   void finishInit(QuantifiersInferenceManager* qim);
   /** presolve (called once per user check-sat) */
-  void presolve();
+  void presolve() override;
   /** reset (calculate which terms are active) */
   bool reset(Theory::Effort effort) override;
   /** register quantified formula */
@@ -315,7 +315,7 @@ class TermDb : public QuantifiersUtil {
   Node d_true;
   Node d_false;
   /** map from type nodes to a fresh variable we introduced */
-  std::unordered_map<TypeNode, Node, TypeNodeHashFunction> d_type_fv;
+  std::unordered_map<TypeNode, Node> d_type_fv;
   /** inactive map */
   NodeBoolMap d_inactive_map;
   /** count of the number of non-redundant ground terms per operator */
@@ -424,4 +424,4 @@ class TermDb : public QuantifiersUtil {
 }  // namespace theory
 }  // namespace cvc5
 
-#endif /* CVC4__THEORY__QUANTIFIERS__TERM_DATABASE_H */
+#endif /* CVC5__THEORY__QUANTIFIERS__TERM_DATABASE_H */

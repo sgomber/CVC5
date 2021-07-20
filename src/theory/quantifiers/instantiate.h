@@ -1,31 +1,32 @@
-/*********************                                                        */
-/*! \file instantiate.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief instantiate
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mathias Preiner, Morgan Deters
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * instantiate
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__QUANTIFIERS__INSTANTIATE_H
-#define CVC4__THEORY__QUANTIFIERS__INSTANTIATE_H
+#ifndef CVC5__THEORY__QUANTIFIERS__INSTANTIATE_H
+#define CVC5__THEORY__QUANTIFIERS__INSTANTIATE_H
 
 #include <map>
 
 #include "context/cdhashset.h"
 #include "expr/node.h"
-#include "expr/proof.h"
+#include "proof/proof.h"
 #include "theory/inference_id.h"
 #include "theory/quantifiers/inst_match_trie.h"
 #include "theory/quantifiers/quant_util.h"
-#include "util/statistics_registry.h"
+#include "util/statistics_stats.h"
 
 namespace cvc5 {
 
@@ -99,8 +100,8 @@ class InstLemmaList
  */
 class Instantiate : public QuantifiersUtil
 {
-  using NodeInstListMap = context::
-      CDHashMap<Node, std::shared_ptr<InstLemmaList>, NodeHashFunction>;
+  using NodeInstListMap =
+      context::CDHashMap<Node, std::shared_ptr<InstLemmaList>>;
 
  public:
   Instantiate(QuantifiersState& qs,
@@ -109,7 +110,6 @@ class Instantiate : public QuantifiersUtil
               TermRegistry& tr,
               ProofNodeManager* pnm = nullptr);
   ~Instantiate();
-
   /** reset */
   bool reset(Theory::Effort e) override;
   /** register quantifier */
@@ -117,7 +117,7 @@ class Instantiate : public QuantifiersUtil
   /** identify */
   std::string identify() const override { return "Instantiate"; }
   /** check incomplete */
-  bool checkComplete() override;
+  bool checkComplete(IncompleteId& incId) override;
 
   //--------------------------------------rewrite objects
   /** add instantiation rewriter */
@@ -236,11 +236,11 @@ class Instantiate : public QuantifiersUtil
   //--------------------------------------end general utilities
 
   /**
-   * Debug print, called once per instantiation round. This prints
+   * Called once at the end of each instantiation round. This prints
    * instantiations added this round to trace inst-per-quant-round, if
    * applicable, and prints to out if the option debug-inst is enabled.
    */
-  void debugPrint(std::ostream& out);
+  void notifyEndRound();
   /** debug print model, called once, before we terminate with sat/unknown. */
   void debugPrintModel();
 
@@ -289,7 +289,6 @@ class Instantiate : public QuantifiersUtil
     IntStat d_inst_duplicate_eq;
     IntStat d_inst_duplicate_ent;
     Statistics();
-    ~Statistics();
   }; /* class Instantiate::Statistics */
   Statistics d_statistics;
 
@@ -339,7 +338,7 @@ class Instantiate : public QuantifiersUtil
    */
   std::map<Node, std::vector<Node> > d_recordedInst;
   /** statistics for debugging total instantiations per quantifier per round */
-  std::map<Node, uint32_t> d_temp_inst_debug;
+  std::map<Node, uint32_t> d_instDebugTemp;
 
   /** list of all instantiations produced for each quantifier
    *
@@ -352,7 +351,7 @@ class Instantiate : public QuantifiersUtil
    * The list of quantified formulas for which the domain of d_c_inst_match_trie
    * is valid.
    */
-  context::CDHashSet<Node, NodeHashFunction> d_c_inst_match_trie_dom;
+  context::CDHashSet<Node> d_c_inst_match_trie_dom;
   /**
    * A CDProof storing instantiation steps.
    */
@@ -363,4 +362,4 @@ class Instantiate : public QuantifiersUtil
 }  // namespace theory
 }  // namespace cvc5
 
-#endif /* CVC4__THEORY__QUANTIFIERS__INSTANTIATE_H */
+#endif /* CVC5__THEORY__QUANTIFIERS__INSTANTIATE_H */

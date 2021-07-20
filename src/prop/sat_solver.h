@@ -1,34 +1,33 @@
-/*********************                                                        */
-/*! \file sat_solver.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Dejan Jovanovic, Liana Hadarean, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief SAT Solver.
- **
- ** SAT Solver.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Dejan Jovanovic, Liana Hadarean, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * SAT Solver.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__PROP__SAT_SOLVER_H
-#define CVC4__PROP__SAT_SOLVER_H
+#ifndef CVC5__PROP__SAT_SOLVER_H
+#define CVC5__PROP__SAT_SOLVER_H
 
 #include <string>
 
 #include "context/cdlist.h"
 #include "context/context.h"
 #include "expr/node.h"
-#include "expr/proof_node_manager.h"
 #include "proof/clause_id.h"
+#include "proof/proof_node_manager.h"
 #include "prop/bv_sat_solver_notify.h"
 #include "prop/sat_solver_types.h"
-#include "util/statistics_registry.h"
+#include "util/statistics_stats.h"
 
 namespace cvc5 {
 
@@ -169,6 +168,16 @@ class CDCLTSatSolverInterface : public SatSolver
 
   virtual bool isDecision(SatVariable decn) const = 0;
 
+  /**
+   * Return the current decision level of `lit`.
+   */
+  virtual int32_t getDecisionLevel(SatVariable v) const { return -1; }
+
+  /**
+   * Return the user-context level when `lit` was introduced..
+   */
+  virtual int32_t getIntroLevel(SatVariable v) const { return -1; }
+
   virtual std::shared_ptr<ProofNode> getProof() = 0;
 
 }; /* class CDCLTSatSolverInterface */
@@ -211,4 +220,4 @@ inline std::ostream& operator <<(std::ostream& out, prop::SatValue val) {
 }  // namespace prop
 }  // namespace cvc5
 
-#endif /* CVC4__PROP__SAT_MODULE_H */
+#endif /* CVC5__PROP__SAT_MODULE_H */

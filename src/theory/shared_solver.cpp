@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file shared_solver.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The shared solver base class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The shared solver base class.
+ */
 
 #include "theory/shared_solver.h"
 
@@ -33,7 +34,8 @@ SharedSolver::SharedSolver(TheoryEngine& te, ProofNodeManager* pnm)
       d_logicInfo(te.getLogicInfo()),
       d_sharedTerms(&d_te, d_te.getSatContext(), d_te.getUserContext(), pnm),
       d_preRegistrationVisitor(&te, d_te.getSatContext()),
-      d_sharedTermsVisitor(&te, d_sharedTerms, d_te.getSatContext())
+      d_sharedTermsVisitor(&te, d_sharedTerms, d_te.getSatContext()),
+      d_out(te.theoryOf(THEORY_BUILTIN)->getOutputChannel())
 {
 }
 
@@ -103,9 +105,13 @@ EqualityStatus SharedSolver::getEqualityStatus(TNode a, TNode b)
   return EQUALITY_UNKNOWN;
 }
 
-void SharedSolver::sendLemma(TrustNode trn, TheoryId atomsTo)
+bool SharedSolver::propagateLit(TNode predicate, bool value)
 {
-  d_te.lemma(trn, LemmaProperty::NONE, atomsTo);
+  if (value)
+  {
+    return d_out.propagate(predicate);
+  }
+  return d_out.propagate(predicate.notNode());
 }
 
 bool SharedSolver::propagateSharedEquality(theory::TheoryId theory,
@@ -128,6 +134,14 @@ bool SharedSolver::propagateSharedEquality(theory::TheoryId theory,
 }
 
 bool SharedSolver::isShared(TNode t) const { return d_sharedTerms.isShared(t); }
+
+void SharedSolver::sendLemma(TrustNode trn, TheoryId atomsTo, InferenceId id)
+{
+  Trace("im") << "(lemma " << id << " " << trn.getProven() << ")" << std::endl;
+  d_te.lemma(trn, LemmaProperty::NONE, atomsTo);
+}
+
+void SharedSolver::sendConflict(TrustNode trn) { d_out.trustedConflict(trn); }
 
 }  // namespace theory
 }  // namespace cvc5

@@ -1,19 +1,20 @@
-/*********************                                                        */
-/*! \file nonlinear_extension.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief [[ Add one-line brief description here ]]
- **
- ** [[ Add lengthier description here ]]
- ** \todo document this file
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * [[ Add one-line brief description here ]]
+ *
+ * [[ Add lengthier description here ]]
+ * \todo document this file
+ */
 
 #include "theory/arith/nl/nonlinear_extension.h"
 
@@ -26,6 +27,7 @@
 #include "theory/ext_theory.h"
 #include "theory/rewriter.h"
 #include "theory/theory_model.h"
+#include "util/rational.h"
 
 using namespace cvc5::kind;
 
@@ -57,13 +59,15 @@ NonlinearExtension::NonlinearExtension(TheoryArith& containing,
       d_tangentPlaneSlv(&d_extState),
       d_cadSlv(d_im, d_model, state.getUserContext(), pnm),
       d_icpSlv(d_im),
-      d_iandSlv(d_im, state, d_model)
+      d_iandSlv(d_im, state, d_model),
+      d_pow2Slv(d_im, state, d_model)
 {
   d_extTheory.addFunctionKind(kind::NONLINEAR_MULT);
   d_extTheory.addFunctionKind(kind::EXPONENTIAL);
   d_extTheory.addFunctionKind(kind::SINE);
   d_extTheory.addFunctionKind(kind::PI);
   d_extTheory.addFunctionKind(kind::IAND);
+  d_extTheory.addFunctionKind(kind::POW2);
   d_true = NodeManager::currentNM()->mkConst(true);
   d_zero = NodeManager::currentNM()->mkConst(Rational(0));
   d_one = NodeManager::currentNM()->mkConst(Rational(1));
@@ -122,7 +126,7 @@ void NonlinearExtension::getAssertions(std::vector<Node>& assertions)
 
   BoundInference bounds;
 
-  std::unordered_set<Node, NodeHashFunction> init_assertions;
+  std::unordered_set<Node> init_assertions;
 
   for (Theory::assertions_iterator it = d_containing.facts_begin();
        it != d_containing.facts_end();
@@ -217,7 +221,7 @@ bool NonlinearExtension::checkModel(const std::vector<Node>& assertions)
   // relevance here, since we may have discarded literals that are relevant
   // that are entailed based on the techniques in getAssertions.
   std::vector<Node> passertions = assertions;
-  if (options::nlExt())
+  if (options::nlExt() == options::NlExtMode::FULL)
   {
     // preprocess the assertions with the trancendental solver
     if (!d_trSlv.preprocessAssertionsCheckModel(passertions))
@@ -248,7 +252,6 @@ void NonlinearExtension::check(Theory::Effort e)
   Trace("nl-ext") << "NonlinearExtension::check, effort = " << e << std::endl;
   if (e == Theory::EFFORT_FULL)
   {
-    d_extTheory.clearCache();
     d_needsLastCall = true;
     if (options::nlExtRewrites())
     {
@@ -474,8 +477,8 @@ Result::Sat NonlinearExtension::modelBasedRefinement(const std::set<Node>& termS
       }
 
       // we are incomplete
-      if (options::nlExt() && options::nlExtIncPrecision()
-          && d_model.usedApproximate())
+      if (options::nlExt() == options::NlExtMode::FULL
+          && options::nlExtIncPrecision() && d_model.usedApproximate())
       {
         d_trSlv.incrementTaylorDegree();
         needsRecheck = true;
@@ -489,7 +492,7 @@ Result::Sat NonlinearExtension::modelBasedRefinement(const std::set<Node>& termS
         Trace("nl-ext") << "...failed to send lemma in "
                            "NonLinearExtension, set incomplete"
                         << std::endl;
-        d_containing.getOutputChannel().setIncomplete();
+        d_containing.getOutputChannel().setIncomplete(IncompleteId::ARITH_NL);
         return Result::Sat::SAT_UNKNOWN;
       }
     }
@@ -567,6 +570,11 @@ void NonlinearExtension::runStrategy(Theory::Effort effort,
         break;
       case InferStep::IAND_FULL: d_iandSlv.checkFullRefine(); break;
       case InferStep::IAND_INITIAL: d_iandSlv.checkInitialRefine(); break;
+      case InferStep::POW2_INIT:
+        d_pow2Slv.initLastCall(assertions, false_asserts, xts);
+        break;
+      case InferStep::POW2_FULL: d_pow2Slv.checkFullRefine(); break;
+      case InferStep::POW2_INITIAL: d_pow2Slv.checkInitialRefine(); break;
       case InferStep::ICP:
         d_icpSlv.reset(assertions);
         d_icpSlv.check();

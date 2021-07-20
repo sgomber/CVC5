@@ -1,17 +1,18 @@
-/*********************                                                        */
-/*! \file nested_qe.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Methods for counterexample-guided quantifier instantiation
- ** based on nested quantifier elimination.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Methods for counterexample-guided quantifier instantiation
+ * based on nested quantifier elimination.
+ */
 
 #include "theory/quantifiers/cegqi/nested_qe.h"
 
@@ -54,8 +55,7 @@ bool NestedQe::hasProcessed(Node q) const
   return d_qnqe.find(q) != d_qnqe.end();
 }
 
-bool NestedQe::getNestedQuantification(
-    Node q, std::unordered_set<Node, NodeHashFunction>& nqs)
+bool NestedQe::getNestedQuantification(Node q, std::unordered_set<Node>& nqs)
 {
   expr::getKindSubterms(q[1], kind::FORALL, true, nqs);
   return !nqs.empty();
@@ -63,7 +63,7 @@ bool NestedQe::getNestedQuantification(
 
 bool NestedQe::hasNestedQuantification(Node q)
 {
-  std::unordered_set<Node, NodeHashFunction> nqs;
+  std::unordered_set<Node> nqs;
   return getNestedQuantification(q, nqs);
 }
 
@@ -78,7 +78,7 @@ Node NestedQe::doNestedQe(Node q, bool keepTopLevel)
     inputExists = true;
   }
   Assert(q.getKind() == kind::FORALL);
-  std::unordered_set<Node, NodeHashFunction> nqs;
+  std::unordered_set<Node> nqs;
   if (!getNestedQuantification(q, nqs))
   {
     Trace("cegqi-nested-qe-debug")

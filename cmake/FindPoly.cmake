@@ -1,17 +1,20 @@
-#####################
-## FindPoly.cmake
-## Top contributors (to current version):
-##   Gereon Kremer
-## This file is part of the CVC4 project.
-## Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
-## in the top-level source directory and their institutional affiliations.
-## All rights reserved.  See the file COPYING in the top-level source
-## directory for licensing information.
-##
+###############################################################################
+# Top contributors (to current version):
+#   Gereon Kremer
+#
+# This file is part of the cvc5 project.
+#
+# Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+# in the top-level source directory and their institutional affiliations.
+# All rights reserved.  See the file COPYING in the top-level source
+# directory for licensing information.
+# #############################################################################
+#
 # Find LibPoly
 # Poly_FOUND - should always be true
 # Poly - target for the libpoly library
 # Polyxx - target for the C++ interface of libpoly, also links Poly
+##
 
 include(deps-helper)
 
@@ -35,19 +38,19 @@ if(Poly_INCLUDE_DIR
 endif()
 
 if(NOT Poly_FOUND_SYSTEM)
+  check_ep_downloaded("Poly-EP")
+  if(NOT Poly-EP_DOWNLOADED)
+    check_auto_download("Poly" "--no-poly")
+  endif()
+
   include(ExternalProject)
 
-  # TODO(#4706): Use proper release, after the next release
-  set(Poly_VERSION "bae67639726f63ed508a30845108bfdac4a77546")
+  set(Poly_VERSION "f543721215ec17a724dc86820a0430233931a637")
 
   check_if_cross_compiling(CCWIN "Windows" "")
   if(CCWIN)
     # Roughly following https://stackoverflow.com/a/44383330/2375725
     set(patchcmd
-        PATCH_COMMAND
-        patch
-        <SOURCE_DIR>/src/CMakeLists.txt
-        ${CMAKE_CURRENT_LIST_DIR}/deps-utils/Poly-patch-cmake.patch
         # Avoid %z and %llu format specifiers
         COMMAND find <SOURCE_DIR>/ -type f -exec
                 sed -i.orig "s/%z[diu]/%\" PRIu64 \"/g" {} +
@@ -63,19 +66,27 @@ if(NOT Poly_FOUND_SYSTEM)
     unset(patchcmd)
   endif()
 
+  get_target_property(GMP_INCLUDE_DIR GMP INTERFACE_INCLUDE_DIRECTORIES)
+  get_target_property(GMP_LIBRARY GMP IMPORTED_LOCATION)
+  get_filename_component(GMP_LIB_PATH "${GMP_LIBRARY}" DIRECTORY)
+
   ExternalProject_Add(
     Poly-EP
     ${COMMON_EP_CONFIG}
     URL https://github.com/SRI-CSL/libpoly/archive/${Poly_VERSION}.tar.gz
-    URL_HASH SHA1=2e79d5220d3ecbb40811463fcf12c5ddbd4b9f30
-    DOWNLOAD_NAME libpoly.tar.gz
-    ${patchcmd}
+    URL_HASH SHA1=3fad3b310727fa0fb2fdff5a8857709d12f72e04
+    PATCH_COMMAND
+      sed -i.orig
+      "s,add_subdirectory(test/polyxx),add_subdirectory(test/polyxx EXCLUDE_FROM_ALL),g"
+      <SOURCE_DIR>/CMakeLists.txt ${patchcmd}
     CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
                -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
                -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
                -DLIBPOLY_BUILD_PYTHON_API=OFF
                -DLIBPOLY_BUILD_STATIC=ON
                -DLIBPOLY_BUILD_STATIC_PIC=ON
+               -DCMAKE_INCLUDE_PATH=${GMP_INCLUDE_DIR}
+               -DCMAKE_LIBRARY_PATH=${GMP_LIB_PATH}
     BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} static_pic_poly static_pic_polyxx
     INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM} install
     COMMAND ${CMAKE_COMMAND} -E copy src/libpicpoly.a
@@ -88,7 +99,6 @@ if(NOT Poly_FOUND_SYSTEM)
   ExternalProject_Add_Step(
     Poly-EP cleanup
     DEPENDEES install
-    COMMAND ${CMAKE_COMMAND} -E remove_directory <SOURCE_DIR>/test/
     COMMAND ${CMAKE_COMMAND} -E remove_directory <BINARY_DIR>/test/
   )
   add_dependencies(Poly-EP GMP)
@@ -105,6 +115,7 @@ set_target_properties(Poly PROPERTIES IMPORTED_LOCATION "${Poly_LIBRARIES}")
 set_target_properties(
   Poly PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${Poly_INCLUDE_DIR}"
 )
+target_link_libraries(Poly INTERFACE GMP)
 
 add_library(Polyxx STATIC IMPORTED GLOBAL)
 set_target_properties(Polyxx PROPERTIES IMPORTED_LOCATION "${PolyXX_LIBRARIES}")
