@@ -56,8 +56,6 @@ class SkolemDefManager;
  */
 class TheoryProxy : public Registrar
 {
-  using NodeNodeMap = context::CDHashMap<Node, Node, NodeHashFunction>;
-
  public:
   TheoryProxy(PropEngine* propEngine,
               TheoryEngine* theoryEngine,

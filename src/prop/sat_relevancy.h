@@ -12,10 +12,10 @@
  ** \brief Sat relevancy module
  **/
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__PROP__SAT_RELEVANCY_H
-#define CVC4__PROP__SAT_RELEVANCY_H
+#ifndef CVC5__PROP__SAT_RELEVANCY_H
+#define CVC5__PROP__SAT_RELEVANCY_H
 
 #include "context/cdhashmap.h"
 #include "context/cdhashset.h"
@@ -125,7 +125,7 @@ class RlvInfo
  */
 class SatRelevancy
 {
-  typedef context::CDHashMap<TNode, std::shared_ptr<RlvInfo>, TNodeHashFunction>
+  typedef context::CDHashMap<TNode, std::shared_ptr<RlvInfo>>
       RlvMap;
 
  public:
