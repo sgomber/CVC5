@@ -18,28 +18,30 @@
 #define CVC5__PREPROCESSING__UTIL__ANALYZE_CONSTANTS_H
 
 #include "expr/node.h"
-#include "theory/quantifiers/sygus/sygus_enumerator_callback.h"
 #include "expr/subs.h"
+#include "theory/quantifiers/sygus/sygus_enumerator_callback.h"
 
 namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
-class SygusEnumeratorCallbackConstElim : public theory::quantifiers::SygusEnumeratorCallback
+class SygusEnumeratorCallbackConstElim
+    : public theory::quantifiers::SygusEnumeratorCallback
 {
-public:
+ public:
   SygusEnumeratorCallbackConstElim(Node e, const std::vector<Node>& cs);
   /**
    * Add term, return true if the term should be considered in the enumeration
    */
   bool addTerm(Node bn, Node bnr, bool isPre) override;
-private:
+
+ private:
   /** Map from constants to solved form */
   std::map<Node, Node> d_solved;
   /** Substitution */
   Subs d_subs;
 };
-  
+
 /**
  * Analyze
  */

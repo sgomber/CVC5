@@ -16,10 +16,10 @@
 #include "preprocessing/util/analyze_constants.h"
 
 #include "expr/skolem_manager.h"
+#include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/quantifiers/sygus/sygus_enumerator.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
 #include "util/bitvector.h"
-#include "theory/datatypes/sygus_datatype_utils.h"
 
 using namespace cvc5::theory;
 using namespace cvc5::kind;
@@ -28,7 +28,9 @@ namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
-SygusEnumeratorCallbackConstElim::SygusEnumeratorCallbackConstElim(Node e, const std::vector<Node>& cs) : theory::quantifiers::SygusEnumeratorCallback(e)
+SygusEnumeratorCallbackConstElim::SygusEnumeratorCallbackConstElim(
+    Node e, const std::vector<Node>& cs)
+    : theory::quantifiers::SygusEnumeratorCallback(e)
 {
   for (const Node& c : cs)
   {
@@ -39,21 +41,17 @@ SygusEnumeratorCallbackConstElim::SygusEnumeratorCallbackConstElim(Node e, const
 bool SygusEnumeratorCallbackConstElim::addTerm(Node bn, Node bnr, bool isPre)
 {
   std::map<Node, Node>::iterator it = d_solved.find(bnr);
-  if (it!=d_solved.end())
+  if (it != d_solved.end())
   {
     if (it->second.isNull())
     {
       // does it eliminate?
-      
     }
   }
   return true;
 }
 
-AnalyzeConstants::AnalyzeConstants()
-{
-  
-}
+AnalyzeConstants::AnalyzeConstants() {}
 
 void AnalyzeConstants::analyzeConstants(TypeNode tn,
                                         const std::vector<Node>& cs)
@@ -101,7 +99,8 @@ void AnalyzeConstants::analyzeConstants(TypeNode tn,
       Node curr = se.getCurrent();
       if (!curr.isNull())
       {
-        Trace("analyze") << "  " << datatypes::utils::sygusToBuiltin(curr) << std::endl;
+        Trace("analyze") << "  " << datatypes::utils::sygusToBuiltin(curr)
+                         << std::endl;
       }
     }
   }

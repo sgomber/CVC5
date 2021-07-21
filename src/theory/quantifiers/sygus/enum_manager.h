@@ -20,9 +20,9 @@
 
 #include "expr/node.h"
 
-#include "theory/quantifiers/sygus_sampler.h"
-#include "theory/quantifiers/sygus/sygus_enumerator_callback.h"
 #include "theory/quantifiers/sygus/enum_val_generator.h"
+#include "theory/quantifiers/sygus/sygus_enumerator_callback.h"
+#include "theory/quantifiers/sygus_sampler.h"
 
 namespace cvc5 {
 namespace theory {
