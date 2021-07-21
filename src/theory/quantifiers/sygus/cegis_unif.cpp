@@ -19,10 +19,10 @@
 #include "expr/sygus_datatype.h"
 #include "options/quantifiers_options.h"
 #include "printer/printer.h"
+#include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/quantifiers/sygus/sygus_unif_rl.h"
 #include "theory/quantifiers/sygus/synth_conjecture.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
-#include "theory/datatypes/sygus_datatype_utils.h"
 
 using namespace cvc5::kind;
 

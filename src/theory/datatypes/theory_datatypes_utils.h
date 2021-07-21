@@ -92,7 +92,7 @@ bool isNullaryConstructor(const DTypeConstructor& c);
  *   C( x, y ) and z
  */
 bool checkClash(Node n1, Node n2, std::vector<Node>& rew);
-  
+
 }  // namespace utils
 }  // namespace datatypes
 }  // namespace theory

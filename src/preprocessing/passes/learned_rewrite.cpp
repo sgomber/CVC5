@@ -169,7 +169,7 @@ PreprocessingPassResult LearnedRewrite::applyInternal(
 Node LearnedRewrite::rewriteLearnedRec(Node n,
                                        arith::BoundInference& binfer,
                                        std::unordered_set<Node>& lems,
-                         std::unordered_map<TNode, Node>& visited)
+                                       std::unordered_map<TNode, Node>& visited)
 {
   NodeManager* nm = NodeManager::currentNM();
   std::unordered_map<TNode, Node>::iterator it;

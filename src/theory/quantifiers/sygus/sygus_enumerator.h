@@ -56,19 +56,23 @@ class SygusPbe;
 class SygusEnumerator : public EnumValGenerator
 {
  public:
-   /** 
-    * @param tds Pointer to the term database, required if enumShapes or enumAnyConstHoles is true, or if we want to include symmetry breaking from lemmas stored in the sygus term database,
-    * @param p Pointer to the conjecture, required if we wish to conjecture-specific symmetry breaking
-    * @param s Pointer to the statistics
-    * @param enumShapes If true, this enumerator will generate terms having any number of free variables
-    * @param enumAnyConstHoles If true, this enumerator will generate terms where free variables are the arguments to any-constant constructors.
-    */
+  /**
+   * @param tds Pointer to the term database, required if enumShapes or
+   * enumAnyConstHoles is true, or if we want to include symmetry breaking from
+   * lemmas stored in the sygus term database,
+   * @param p Pointer to the conjecture, required if we wish to
+   * conjecture-specific symmetry breaking
+   * @param s Pointer to the statistics
+   * @param enumShapes If true, this enumerator will generate terms having any
+   * number of free variables
+   * @param enumAnyConstHoles If true, this enumerator will generate terms where
+   * free variables are the arguments to any-constant constructors.
+   */
   SygusEnumerator(TermDbSygus* tds = nullptr,
                   SynthConjecture* p = nullptr,
                   SygusStatistics* s = nullptr,
                   bool enumShapes = false,
-                  bool enumAnyConstHoles = false
-                 );
+                  bool enumAnyConstHoles = false);
   ~SygusEnumerator() {}
   /** initialize this class with enumerator e */
   void initialize(Node e) override;
@@ -90,7 +94,8 @@ class SygusEnumerator : public EnumValGenerator
   SygusStatistics* d_stats;
   /** Whether we are enumerating shapes */
   bool d_enumShapes;
-  /** Whether we are enumerating free variables as arguments to any-constant constructors */
+  /** Whether we are enumerating free variables as arguments to any-constant
+   * constructors */
   bool d_enumAnyConstHoles;
   /** Term cache
    *

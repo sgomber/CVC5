@@ -1040,7 +1040,7 @@ Node SygusExtension::registerSearchValue(Node a,
     Node bvr = d_tds->getExtRewriter()->extendedRewrite(bv);
     Trace("sygus-sb-debug") << "  ......search value rewrites to " << bvr << std::endl;
     Trace("dt-sygus") << "  * DT builtin : " << n << " -> " << bvr << std::endl;
-    unsigned sz = utils::getSygusTermSize( nv );      
+    unsigned sz = utils::getSygusTermSize(nv);
     if( d_tds->involvesDivByZero( bvr ) ){
       quantifiers::DivByZeroSygusInvarianceTest dbzet;
       Trace("sygus-sb-mexp-debug") << "Minimize explanation for div-by-zero in "

@@ -15,12 +15,12 @@
 #include "theory/quantifiers/sygus/sygus_pbe.h"
 
 #include "options/quantifiers_options.h"
+#include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/quantifiers/sygus/example_infer.h"
 #include "theory/quantifiers/sygus/sygus_unif_io.h"
 #include "theory/quantifiers/sygus/synth_conjecture.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/quantifiers/term_util.h"
-#include "theory/datatypes/sygus_datatype_utils.h"
 #include "util/random.h"
 
 using namespace cvc5;

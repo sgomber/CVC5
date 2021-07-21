@@ -20,11 +20,11 @@
 #include "options/datatypes_options.h"
 #include "options/quantifiers_options.h"
 #include "smt/logic_exception.h"
+#include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
 #include "theory/quantifiers/sygus/synth_engine.h"
 #include "theory/quantifiers/sygus/type_node_id_trie.h"
 #include "theory/rewriter.h"
-#include "theory/datatypes/sygus_datatype_utils.h"
 
 using namespace cvc5::kind;
 
@@ -36,7 +36,7 @@ SygusEnumerator::SygusEnumerator(TermDbSygus* tds,
                                  SynthConjecture* p,
                                  SygusStatistics* s,
                                  bool enumShapes,
-                  bool enumAnyConstHoles)
+                                 bool enumAnyConstHoles)
     : d_tds(tds),
       d_parent(p),
       d_stats(s),
@@ -59,7 +59,7 @@ void SygusEnumerator::initialize(Node e)
 
   // if we don't have a term database, we don't register symmetry breaking
   // lemmas
-  if (d_tds==nullptr)
+  if (d_tds == nullptr)
   {
     return;
   }
@@ -150,7 +150,8 @@ Node SygusEnumerator::getCurrent()
     if (d_sbExcTlCons.find(ret.getOperator()) != d_sbExcTlCons.end())
     {
       Trace("sygus-enum-exc")
-          << "Exclude (external) : " << datatypes::utils::sygusToBuiltin(ret) << std::endl;
+          << "Exclude (external) : " << datatypes::utils::sygusToBuiltin(ret)
+          << std::endl;
       ret = Node::null();
     }
   }
@@ -341,7 +342,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
   {
     Node bn = datatypes::utils::sygusToBuiltin(n);
     Node bnr = d_extr.extendedRewrite(bn);
-    if (d_stats!=nullptr)
+    if (d_stats != nullptr)
     {
       ++(d_stats->d_enumTermsRewrite);
     }
@@ -370,7 +371,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     // if we are doing PBE symmetry breaking
     if (d_eec != nullptr)
     {
-      if (d_stats!=nullptr)
+      if (d_stats != nullptr)
       {
         ++(d_stats->d_enumTermsExampleEval);
       }
@@ -389,7 +390,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     }
     Trace("sygus-enum-terms") << "tc(" << d_tn << "): term " << bn << std::endl;
   }
-  if (d_stats!=nullptr)
+  if (d_stats != nullptr)
   {
     ++(d_stats->d_enumTerms);
   }
@@ -738,7 +739,7 @@ bool SygusEnumerator::TermEnumMaster::incrementInternal()
   // If we are enumerating shapes, the first enumerated term is a free variable.
   if (d_enumShapes && !d_enumShapesInit)
   {
-    Assert (d_tds!=nullptr);
+    Assert(d_tds != nullptr);
     Node fv = d_tds->getFreeVar(d_tn, 0);
     d_enumShapesInit = true;
     d_currTermSet = true;
@@ -1102,7 +1103,7 @@ void SygusEnumerator::TermEnumMaster::childrenToShape(
 Node SygusEnumerator::TermEnumMaster::convertShape(
     Node n, std::map<TypeNode, int>& vcounter)
 {
-  Assert (d_tds!=nullptr);
+  Assert(d_tds != nullptr);
   NodeManager* nm = NodeManager::currentNM();
   std::unordered_map<TNode, Node> visited;
   std::unordered_map<TNode, Node>::iterator it;
@@ -1215,7 +1216,7 @@ bool SygusEnumerator::TermEnumMasterFv::initialize(SygusEnumerator* se,
 
 Node SygusEnumerator::TermEnumMasterFv::getCurrent()
 {
-  Assert (d_tds!=nullptr);
+  Assert(d_tds != nullptr);
   Node ret = d_se->d_tds->getFreeVar(d_tn, d_currSize);
   Trace("sygus-enum-debug2") << "master_fv(" << d_tn << "): mk " << ret
                              << std::endl;

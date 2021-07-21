@@ -718,7 +718,7 @@ TypeNode substituteAndGeneralizeSygusType(TypeNode sdt,
   return sdtS;
 }
 
-unsigned getSygusTermSize( Node n )
+unsigned getSygusTermSize(Node n)
 {
   if (n.getKind() != APPLY_CONSTRUCTOR)
   {

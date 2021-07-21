@@ -829,7 +829,8 @@ Node SynthConjecture::getEnumeratedValue(Node e, bool& activeIncomplete)
                       == options::SygusActiveGenMode::AUTO);
         // if sygus repair const is enabled, we enumerate terms with free
         // variables as arguments to any-constant constructors
-        d_evg[e].reset(new SygusEnumerator(d_tds, this, &d_stats, false, options::sygusRepairConst()));
+        d_evg[e].reset(new SygusEnumerator(
+            d_tds, this, &d_stats, false, options::sygusRepairConst()));
       }
     }
     Trace("sygus-active-gen")

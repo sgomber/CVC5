@@ -20,10 +20,10 @@
 #include "smt/smt_engine.h"
 #include "smt/smt_engine_scope.h"
 #include "smt/smt_statistics_registry.h"
+#include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/rewriter.h"
-#include "theory/datatypes/sygus_datatype_utils.h"
 
 using namespace std;
 using namespace cvc5::kind;
