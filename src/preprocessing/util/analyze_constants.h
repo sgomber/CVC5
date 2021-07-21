@@ -18,13 +18,6 @@
 #define CVC5__PREPROCESSING__PASSES__ANALYZE_H
 
 #include "expr/node.h"
-#include "preprocessing/preprocessing_pass.h"
-#include "preprocessing/preprocessing_pass_context.h"
-#include "preprocessing/util/analyze_constants.h"
-#include "theory/arith/bound_inference.h"
-#include "util/statistics_stats.h"
-
-#include <iosfwd>
 
 namespace cvc5 {
 namespace preprocessing {
@@ -33,25 +26,11 @@ namespace passes {
 /**
  * Analyze
  */
-class Analyze : public PreprocessingPass
+class AnalyzeConstants
 {
  public:
-  Analyze(PreprocessingPassContext* preprocContext);
+  AnalyzeConstants();
 
- protected:
-  /** utility for analyzing constants */
-  AnalyzeConstants d_aconsts;
-  /** Apply internal */
-  PreprocessingPassResult applyInternal(
-      AssertionPipeline* assertionsToPreprocess) override;
-  /**
-   * Analyze
-   */
-  void analyze(Node n,
-               std::unordered_set<TNode>& visited,
-               std::unordered_set<Kind>& kinds);
-  /** constants of each type */
-  std::unordered_map<TypeNode, std::vector<Node> > d_constants;
   /** Analyze constants */
   void analyzeConstants(TypeNode tn, const std::vector<Node>& cs);
 };

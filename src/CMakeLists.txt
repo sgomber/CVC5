@@ -130,6 +130,8 @@ libcvc5_add_sources(
   preprocessing/preprocessing_pass_context.h
   preprocessing/preprocessing_pass_registry.cpp
   preprocessing/preprocessing_pass_registry.h
+  preprocessing/util/analyze_constants.cpp
+  preprocessing/util/analyze_constants.h
   preprocessing/util/ite_utilities.cpp
   preprocessing/util/ite_utilities.h
   printer/ast/ast_printer.cpp

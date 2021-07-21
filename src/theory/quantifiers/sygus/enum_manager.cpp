@@ -14,6 +14,10 @@
  */
 #include "theory/quantifiers/sygus/enum_manager.h"
 
+#include "theory/quantifiers/inference_manager.h"
+#include "theory/quantifiers/term_registry.h"
+#include "theory/quantifiers/sygus/term_database_sygus.h"
+
 using namespace cvc5::kind;
 using namespace std;
 

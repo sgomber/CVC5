@@ -24,7 +24,9 @@ namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-
+class QuantifiersInferenceManager;
+class TermRegistry;
+class SygusStatistics;
 /** 
  * Management of current value for an enumerator
  */
