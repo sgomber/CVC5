@@ -144,6 +144,8 @@ bool ProcessAssertions::apply(Assertions& as)
   dumpAssertions("post-definition-expansion", assertions);
 
   Debug("smt") << " assertions     : " << assertions.size() << endl;
+  
+  d_passes["analyze"]->apply(&assertions);
 
   if (options::globalNegate())
   {
