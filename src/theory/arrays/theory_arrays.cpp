@@ -645,7 +645,7 @@ void TheoryArrays::preRegisterTermInternal(TNode node)
   {
     return;
   }
-  Trace("arrays") << spaces(getSatContext()->getLevel())
+  Debug("arrays") << spaces(getSatContext()->getLevel())
                   << "TheoryArrays::preRegisterTerm(" << node << ")"
                   << std::endl;
   Kind nk = node.getKind();
@@ -672,10 +672,11 @@ void TheoryArrays::preRegisterTermInternal(TNode node)
   }
   if (d_equalityEngine->hasTerm(node))
   {
-    // Invariant: array terms should be preregistered before being added to the
-    // equality engine
+    // Notice that array terms may be added to its equality engine before
+    // being preregistered in the central equality engine architecture.
+    // Prior to this, an assertion in this case was:
     // Assert(nk != kind::SELECT
-    //       || d_isPreRegistered.find(node) != d_isPreRegistered.end());
+    //         || d_isPreRegistered.find(node) != d_isPreRegistered.end());
     return;
   }
   d_equalityEngine->addTerm(node);
@@ -1555,7 +1556,6 @@ void TheoryArrays::mergeArrays(TNode a, TNode b)
         }
       }
     }
-    Trace("arrays-merge") << "...finshed nl" << std::endl;
 
     TNode constArrA = d_infoMap.getConstArr(a);
     TNode constArrB = d_infoMap.getConstArr(b);
@@ -1569,13 +1569,9 @@ void TheoryArrays::mergeArrays(TNode a, TNode b)
         conflict(constArrA,constArrB);
       }
     }
-    Trace("arrays-merge") << "...finshed const" << std::endl;
-    Trace("arrays-merge") << "may rep " << a << " " << b << std::endl;
 
     TNode mayRepA = d_mayEqualEqualityEngine.getRepresentative(a);
     TNode mayRepB = d_mayEqualEqualityEngine.getRepresentative(b);
-
-    Trace("arrays-merge") << "...finshed may rep" << std::endl;
 
     // If a and b have different default values associated with their mayequal equivalence classes,
     // things get complicated.  Similarly, if two mayequal equivalence classes have different
@@ -1600,15 +1596,12 @@ void TheoryArrays::mergeArrays(TNode a, TNode b)
       mayRepA = d_mayEqualEqualityEngine.getRepresentative(a);
       d_defValues[mayRepA] = defValue;
     }
-    Trace("arrays-merge") << "...finshed may equal ee" << std::endl;
 
     checkRowLemmas(a,b);
     checkRowLemmas(b,a);
-    Trace("arrays-merge") << "...finshed check row" << std::endl;
 
     // merge info adds the list of the 2nd argument to the first
     d_infoMap.mergeInfo(a, b);
-    Trace("arrays-merge") << "...finshed merge info" << std::endl;
 
     if (options::arraysWeakEquivalence()) {
       d_arrayMerges.push_back(a.eqNode(b));
