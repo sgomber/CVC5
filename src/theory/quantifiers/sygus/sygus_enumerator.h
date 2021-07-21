@@ -192,6 +192,8 @@ class SygusEnumerator : public EnumValGenerator
      * breaking).
      */
     SygusEnumeratorCallback* d_sec;
+    /** extended rewriter */
+    ExtendedRewriter d_extr;
     //-------------------------static information about type
     /** is d_tn a sygus type? */
     bool d_isSygusType;

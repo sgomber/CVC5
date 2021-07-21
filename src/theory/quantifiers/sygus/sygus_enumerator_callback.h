@@ -15,8 +15,8 @@
 
 #include "cvc5_private.h"
 
-#ifndef CVC5__THEORY__QUANTIFIERS__SYGUS_ENUMERATOR_CALLBACK_H
-#define CVC5__THEORY__QUANTIFIERS__SYGUS_ENUMERATOR_CALLBACK_H
+#ifndef CVC5__THEORY__QUANTIFIERS__SYGUS__SYGUS_ENUMERATOR_CALLBACK_H
+#define CVC5__THEORY__QUANTIFIERS__SYGUS__SYGUS_ENUMERATOR_CALLBACK_H
 
 #include <unordered_set>
 
@@ -39,7 +39,7 @@ class SygusEnumeratorCallback
   /**
    * Add term, return true if the term should be considered in the enumeration
    */
-  virtual bool addTerm(Node n) = 0;
+  virtual bool addTerm(Node bn, Node bnr, bool isPre) = 0;
 
  protected:
   /** The enumerator */
@@ -59,13 +59,9 @@ class SygusEnumeratorCallbackDefault : public SygusEnumeratorCallback
   /**
    * Add term, return true if the term should be considered in the enumeration
    */
-  bool addTerm(Node n) override;
+  bool addTerm(Node bn, Node bnr, bool isPre) override;
 
  protected:
-  /** The enumerator */
-  Node d_enum;
-  /** The type of enum */
-  TypeNode d_tn;
   /**
    * Pointer to the example evaluation cache utility (used for symmetry
    * breaking).
@@ -75,14 +71,10 @@ class SygusEnumeratorCallbackDefault : public SygusEnumeratorCallback
   SygusStatistics* d_stats;
   /** sampler (for --sygus-rr-verify) */
   SygusSampler* d_samplerRrV;
-  /** extended rewriter */
-  ExtendedRewriter d_extr;
-  /** the set of builtin terms corresponding to the above list */
-  std::unordered_set<Node> d_bterms;
 };
 
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5
 
-#endif /* CVC5__THEORY__QUANTIFIERS__SYGUS_ENUMERATOR_CALLBACK_H */
+#endif /* CVC5__THEORY__QUANTIFIERS__SYGUS__SYGUS_ENUMERATOR_CALLBACK_H */

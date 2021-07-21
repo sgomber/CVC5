@@ -338,9 +338,30 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
   Assert(!n.isNull());
   if (d_sec != nullptr)
   {
-    if (!d_sec->addTerm(n))
+    Node bn = datatypes::utils::sygusToBuiltin(n);
+    Node bnr = d_extr.extendedRewrite(bn);
+    if (d_stats != nullptr)
     {
-      return false;
+      ++(d_stats->d_enumTermsRewrite);
+    }
+    for (size_t i=0; i<2; i++)
+    {
+      if (!d_sec->addTerm(bn, bnr, i==0))
+      {
+        return false;
+      }
+      else if (i==0)
+      {
+        // must be unique up to rewriting
+        if (d_bterms.find(bnr) != d_bterms.end())
+        {
+          Trace("sygus-enum-exc") << "Exclude: " << bn << std::endl;
+          return false;
+        }
+        // insert to builtin term cache, regardless of whether it is redundant
+        // based on examples.
+        d_bterms.insert(bnr);
+      }
     }
   }
   if (d_stats != nullptr)
@@ -1163,7 +1184,7 @@ bool SygusEnumerator::TermEnumMasterFv::initialize(SygusEnumerator* se,
 
 Node SygusEnumerator::TermEnumMasterFv::getCurrent()
 {
-  Assert(d_tds != nullptr);
+  Assert( d_se->d_tds != nullptr);
   Node ret = d_se->d_tds->getFreeVar(d_tn, d_currSize);
   Trace("sygus-enum-debug2") << "master_fv(" << d_tn << "): mk " << ret
                              << std::endl;

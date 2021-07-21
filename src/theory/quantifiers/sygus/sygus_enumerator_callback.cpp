@@ -34,52 +34,39 @@ SygusEnumeratorCallbackDefault::SygusEnumeratorCallbackDefault(
     : SygusEnumeratorCallback(e), d_eec(eec), d_stats(s), d_samplerRrV(ssrv)
 {
 }
-
-bool SygusEnumeratorCallbackDefault::addTerm(Node n)
+bool SygusEnumeratorCallbackDefault::addTerm(Node bn, Node bnr, bool isPre)
 {
-  Node bn = datatypes::utils::sygusToBuiltin(n);
-  Node bnr = d_extr.extendedRewrite(bn);
-  if (d_stats != nullptr)
+  if (isPre)
   {
-    ++(d_stats->d_enumTermsRewrite);
-  }
-  if (d_samplerRrV != nullptr)
-  {
-    if (bn != bnr)
+    if (d_samplerRrV != nullptr)
     {
       d_samplerRrV->checkEquivalent(bn, bnr);
     }
   }
-  // must be unique up to rewriting
-  if (d_bterms.find(bnr) != d_bterms.end())
+  else
   {
-    Trace("sygus-enum-exc") << "Exclude: " << bn << std::endl;
-    return false;
-  }
-  // insert to builtin term cache, regardless of whether it is redundant
-  // based on examples.
-  d_bterms.insert(bnr);
-  // if we are doing PBE symmetry breaking
-  if (d_eec != nullptr)
-  {
-    if (d_stats != nullptr)
+    // if we are doing PBE symmetry breaking
+    if (d_eec != nullptr)
     {
-      ++(d_stats->d_enumTermsExampleEval);
-    }
-    // Is it equivalent under examples?
-    Node bne = d_eec->addSearchVal(d_tn, bnr);
-    if (!bne.isNull())
-    {
-      if (bnr != bne)
+      if (d_stats != nullptr)
       {
-        Trace("sygus-enum-exc")
-            << "Exclude (by examples): " << bn << ", since we already have "
-            << bne << std::endl;
-        return false;
+        ++(d_stats->d_enumTermsExampleEval);
+      }
+      // Is it equivalent under examples?
+      Node bne = d_eec->addSearchVal(d_tn, bnr);
+      if (!bne.isNull())
+      {
+        if (bnr != bne)
+        {
+          Trace("sygus-enum-exc")
+              << "Exclude (by examples): " << bn << ", since we already have "
+              << bne << std::endl;
+          return false;
+        }
       }
     }
+    Trace("sygus-enum-terms") << "tc(" << d_tn << "): term " << bn << std::endl;
   }
-  Trace("sygus-enum-terms") << "tc(" << d_tn << "): term " << bn << std::endl;
   return true;
 }
 
