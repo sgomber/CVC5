@@ -24,16 +24,20 @@ namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-SygusEnumeratorCallback::SygusEnumeratorCallback(Node e,
-                                                 ExampleEvalCache* eec,
-                                                 SygusStatistics* s,
-                                                 SygusSampler* ssrv)
-    : d_enum(e), d_eec(eec), d_stats(s), d_samplerRrV(ssrv)
+SygusEnumeratorCallback::SygusEnumeratorCallback(Node e) : d_enum(e)
 {
   d_tn = e.getType();
 }
 
-bool SygusEnumeratorCallback::addTerm(Node n)
+SygusEnumeratorCallbackDefault::SygusEnumeratorCallbackDefault(Node e,
+                                                 ExampleEvalCache* eec,
+                                                 SygusStatistics* s,
+                                                 SygusSampler* ssrv)
+    : SygusEnumeratorCallback(e), d_eec(eec), d_stats(s), d_samplerRrV(ssrv)
+{
+}
+
+bool SygusEnumeratorCallbackDefault::addTerm(Node n)
 {
   Node bn = datatypes::utils::sygusToBuiltin(n);
   Node bnr = d_extr.extendedRewrite(bn);
@@ -77,7 +81,6 @@ bool SygusEnumeratorCallback::addTerm(Node n)
       }
     }
   }
-  Trace("sygus-enum-terms") << "tc(" << d_tn << "): term " << bn << std::endl;
   return true;
 }
 

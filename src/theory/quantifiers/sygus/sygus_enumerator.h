@@ -22,7 +22,8 @@
 #include <unordered_set>
 #include "expr/node.h"
 #include "expr/type_node.h"
-#include "theory/quantifiers/sygus/synth_conjecture.h"
+#include "theory/quantifiers/sygus/enum_val_generator.h"
+#include "theory/quantifiers/sygus/sygus_enumerator_callback.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 
 namespace cvc5 {
@@ -60,7 +61,7 @@ class SygusEnumerator : public EnumValGenerator
    * @param tds Pointer to the term database, required if enumShapes or
    * enumAnyConstHoles is true, or if we want to include symmetry breaking from
    * lemmas stored in the sygus term database,
-   * @param p Pointer to the conjecture, required if we wish to
+   * @param sec Pointer to the enumerator callback, required if we wish to
    * conjecture-specific symmetry breaking
    * @param s Pointer to the statistics
    * @param enumShapes If true, this enumerator will generate terms having any
@@ -69,7 +70,7 @@ class SygusEnumerator : public EnumValGenerator
    * free variables are the arguments to any-constant constructors.
    */
   SygusEnumerator(TermDbSygus* tds = nullptr,
-                  SynthConjecture* p = nullptr,
+                  SygusEnumeratorCallback* sec = nullptr,
                   SygusStatistics* s = nullptr,
                   bool enumShapes = false,
                   bool enumAnyConstHoles = false);
@@ -84,12 +85,14 @@ class SygusEnumerator : public EnumValGenerator
   Node getCurrent() override;
   /** Are we enumerating shapes? */
   bool isEnumShapes() const;
-
+  
  private:
   /** pointer to term database sygus */
   TermDbSygus* d_tds;
   /** pointer to the synth conjecture that owns this enumerator */
-  SynthConjecture* d_parent;
+  SygusEnumeratorCallback* d_sec;
+  /** if we allocated a default sygus enumerator callback */
+  std::unique_ptr<SygusEnumeratorCallbackDefault> d_secd;
   /** pointer to the statistics */
   SygusStatistics* d_stats;
   /** Whether we are enumerating shapes */
@@ -185,15 +188,11 @@ class SygusEnumerator : public EnumValGenerator
     Node d_enum;
     /** the sygus type of terms in this cache */
     TypeNode d_tn;
-    /** pointer to term database sygus */
-    TermDbSygus* d_tds;
-    /** extended rewriter */
-    ExtendedRewriter d_extr;
     /**
      * Pointer to the example evaluation cache utility (used for symmetry
      * breaking).
      */
-    ExampleEvalCache* d_eec;
+    SygusEnumeratorCallback* d_sec;
     //-------------------------static information about type
     /** is d_tn a sygus type? */
     bool d_isSygusType;
@@ -232,10 +231,6 @@ class SygusEnumerator : public EnumValGenerator
     unsigned d_sizeEnum;
     /** whether this term cache is complete */
     bool d_isComplete;
-    /** sampler (for --sygus-rr-verify) */
-    quantifiers::SygusSampler d_samplerRrV;
-    /** is the above sampler initialized? */
-    bool d_sampleRrVInit;
   };
   /** above cache for each sygus type */
   std::map<TypeNode, TermCache> d_tcache;

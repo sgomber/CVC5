@@ -34,15 +34,33 @@ class SygusSampler;
 class SygusEnumeratorCallback
 {
  public:
-  SygusEnumeratorCallback(Node e,
+  SygusEnumeratorCallback(Node e);
+  virtual ~SygusEnumeratorCallback() {}
+  /** 
+   * Add term, return true if the term should be considered in the enumeration
+   */
+  virtual bool addTerm(Node n) = 0;
+ protected:
+  /** The enumerator */
+  Node d_enum;
+  /** The type of enum */
+  TypeNode d_tn;
+};
+
+class SygusEnumeratorCallbackDefault : public SygusEnumeratorCallback
+{
+ public:
+  SygusEnumeratorCallbackDefault(Node e,
                           ExampleEvalCache* eec = nullptr,
                           SygusStatistics* s = nullptr,
                           SygusSampler* ssrv = nullptr);
-  virtual ~SygusEnumeratorCallback() {}
-  /** Add term, return true if successful */
-  virtual bool addTerm(Node n);
+  virtual ~SygusEnumeratorCallbackDefault() {}
+  /** 
+   * Add term, return true if the term should be considered in the enumeration
+   */
+  bool addTerm(Node n) override;
 
- private:
+ protected:
   /** The enumerator */
   Node d_enum;
   /** The type of enum */
