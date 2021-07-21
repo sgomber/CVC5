@@ -26,17 +26,19 @@
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
-  
-  class ExampleEvalCache;
-  class SygusStatistics;
-  class SygusSampler;
+
+class ExampleEvalCache;
+class SygusStatistics;
+class SygusSampler;
 
 class SygusEnumeratorCallback
 {
  public:
-  SygusEnumeratorCallback(Node e, ExampleEvalCache* eec = nullptr,
-                  SygusStatistics* s = nullptr, SygusSampler* ssrv = nullptr);
-  virtual ~SygusEnumeratorCallback(){}
+  SygusEnumeratorCallback(Node e,
+                          ExampleEvalCache* eec = nullptr,
+                          SygusStatistics* s = nullptr,
+                          SygusSampler* ssrv = nullptr);
+  virtual ~SygusEnumeratorCallback() {}
   /** Add term, return true if successful */
   virtual bool addTerm(Node n);
 

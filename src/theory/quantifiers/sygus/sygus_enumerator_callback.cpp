@@ -15,17 +15,19 @@
 
 #include "theory/quantifiers/sygus/sygus_enumerator_callback.h"
 
+#include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/quantifiers/sygus/example_eval_cache.h"
 #include "theory/quantifiers/sygus/sygus_stats.h"
-#include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/quantifiers/sygus_sampler.h"
 
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-SygusEnumeratorCallback::SygusEnumeratorCallback(Node e, ExampleEvalCache* eec,
-                  SygusStatistics* s, SygusSampler* ssrv)
+SygusEnumeratorCallback::SygusEnumeratorCallback(Node e,
+                                                 ExampleEvalCache* eec,
+                                                 SygusStatistics* s,
+                                                 SygusSampler* ssrv)
     : d_enum(e), d_eec(eec), d_stats(s), d_samplerRrV(ssrv)
 {
   d_tn = e.getType();
@@ -39,7 +41,7 @@ bool SygusEnumeratorCallback::addTerm(Node n)
   {
     ++(d_stats->d_enumTermsRewrite);
   }
-  if (d_samplerRrV!=nullptr)
+  if (d_samplerRrV != nullptr)
   {
     if (bn != bnr)
     {
