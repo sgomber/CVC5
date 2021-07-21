@@ -15,13 +15,20 @@
 
 #include "theory/quantifiers/sygus/sygus_enumerator_callback.h"
 
+#include "theory/quantifiers/sygus/example_eval_cache.h"
+#include "theory/quantifiers/sygus/sygus_stats.h"
+#include "theory/datatypes/sygus_datatype_utils.h"
+#include "theory/quantifiers/sygus_sampler.h"
+
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-SygusEnumeratorCallback::SygusEnumeratorCallback(Node e, ExampleEvalCache* eec)
-    : d_enum(e), d_tn(e.getType()), d_eec(eec)
+SygusEnumeratorCallback::SygusEnumeratorCallback(Node e, ExampleEvalCache* eec,
+                  SygusStatistics* s, SygusSampler* ssrv)
+    : d_enum(e), d_eec(eec), d_stats(s), d_samplerRrV(ssrv)
 {
+  d_tn = e.getType();
 }
 
 bool SygusEnumeratorCallback::addTerm(Node n)
@@ -32,17 +39,11 @@ bool SygusEnumeratorCallback::addTerm(Node n)
   {
     ++(d_stats->d_enumTermsRewrite);
   }
-  if (options::sygusRewVerify())
+  if (d_samplerRrV!=nullptr)
   {
     if (bn != bnr)
     {
-      if (!d_sampleRrVInit)
-      {
-        d_sampleRrVInit = true;
-        d_samplerRrV.initializeSygus(
-            d_tds, d_enum, options::sygusSamples(), false);
-      }
-      d_samplerRrV.checkEquivalent(bn, bnr);
+      d_samplerRrV->checkEquivalent(bn, bnr);
     }
   }
   // must be unique up to rewriting
@@ -75,6 +76,7 @@ bool SygusEnumeratorCallback::addTerm(Node n)
     }
   }
   Trace("sygus-enum-terms") << "tc(" << d_tn << "): term " << bn << std::endl;
+  return true;
 }
 
 }  // namespace quantifiers

@@ -21,21 +21,22 @@
 #include <unordered_set>
 
 #include "expr/node.h"
-#include "theory/quantifiers/extended_rewriter.h"
-#include "theory/quantifiers/sygus/example_eval_cache.h"
-#include "theory/quantifiers/sygus_sampler.h"
+#include "theory/quantifiers/extended_rewrite.h"
 
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
+  
+  class ExampleEvalCache;
+  class SygusStatistics;
+  class SygusSampler;
 
-class SynthConjecture;
-class SygusPbe;
-
-class SygusEnumeratorCallbackEnum
+class SygusEnumeratorCallback
 {
  public:
-  SygusEnumeratorCallbackEnum(ExampleEvalCache* eec);
+  SygusEnumeratorCallback(Node e, ExampleEvalCache* eec = nullptr,
+                  SygusStatistics* s = nullptr, SygusSampler* ssrv = nullptr);
+  virtual ~SygusEnumeratorCallback(){}
   /** Add term, return true if successful */
   virtual bool addTerm(Node n);
 
@@ -44,19 +45,19 @@ class SygusEnumeratorCallbackEnum
   Node d_enum;
   /** The type of enum */
   TypeNode d_tn;
-  /** extended rewriter */
-  ExtendedRewriter d_extr;
   /**
    * Pointer to the example evaluation cache utility (used for symmetry
    * breaking).
    */
   ExampleEvalCache* d_eec;
+  /** pointer to the statistics */
+  SygusStatistics* d_stats;
+  /** sampler (for --sygus-rr-verify) */
+  SygusSampler* d_samplerRrV;
+  /** extended rewriter */
+  ExtendedRewriter d_extr;
   /** the set of builtin terms corresponding to the above list */
   std::unordered_set<Node> d_bterms;
-  /** sampler (for --sygus-rr-verify) */
-  SygusSampler d_samplerRrV;
-  /** is the above sampler initialized? */
-  bool d_sampleRrVInit;
 };
 
 }  // namespace quantifiers
