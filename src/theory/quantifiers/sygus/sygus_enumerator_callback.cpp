@@ -81,6 +81,7 @@ bool SygusEnumeratorCallbackDefault::addTerm(Node n)
       }
     }
   }
+  Trace("sygus-enum-terms") << "tc(" << d_tn << "): term " << bn << std::endl;
   return true;
 }
 

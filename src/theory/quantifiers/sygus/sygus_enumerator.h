@@ -140,8 +140,7 @@ class SygusEnumerator : public EnumValGenerator
     void initialize(SygusStatistics* s,
                     Node e,
                     TypeNode tn,
-                    TermDbSygus* tds,
-                    ExampleEvalCache* ece = nullptr);
+                    SygusEnumeratorCallback* sec = nullptr);
     /** get last constructor class index for weight
      *
      * This returns a minimal index n such that all constructor classes at

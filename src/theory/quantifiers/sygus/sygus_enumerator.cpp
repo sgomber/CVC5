@@ -345,7 +345,6 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     {
       return false;
     }
-    Trace("sygus-enum-terms") << "tc(" << d_tn << "): term " << bn << std::endl;
   }
   if (d_stats != nullptr)
   {
