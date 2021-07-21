@@ -404,6 +404,13 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
     opts.smt.produceAssertions = true;
   }
 
+  if (options::bvAssertInput() && options::produceProofs())
+  {
+    Notice() << "Disabling bv-assert-input since it is incompatible with proofs."
+             << std::endl;
+    opts.bv.bvAssertInput = false;
+  }
+
   // whether we want to force safe unsat cores, i.e., if we are in the default
   // ASSUMPTIONS mode, since other ones are experimental
   bool safeUnsatCores =
@@ -946,9 +953,20 @@ void setDefaults(LogicInfo& logic, bool isInternalSubsolver)
                       ? true
                       : false);
 
-    Trace("smt") << "setting decision mode to " << decMode << std::endl;
     opts.decision.decisionMode = decMode;
-    opts.decision.decisionStopOnly = stoponly;
+    if (stoponly)
+    {
+      if (opts.decision.decisionMode == options::DecisionMode::JUSTIFICATION)
+      {
+        opts.decision.decisionMode = options::DecisionMode::STOPONLY;
+      }
+      else
+      {
+        Assert(opts.decision.decisionMode == options::DecisionMode::INTERNAL);
+      }
+    }
+    Trace("smt") << "setting decision mode to " << opts.decision.decisionMode
+                 << std::endl;
   }
   if (options::incrementalSolving())
   {
