@@ -84,7 +84,6 @@ void Analyze::analyze(Node n,
   } while (!visit.empty());
 }
 
-
 }  // namespace passes
 }  // namespace preprocessing
 }  // namespace cvc5

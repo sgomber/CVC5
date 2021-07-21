@@ -27,16 +27,16 @@ namespace quantifiers {
 class QuantifiersInferenceManager;
 class TermRegistry;
 class SygusStatistics;
-/** 
+/**
  * Management of current value for an enumerator
  */
 class EnumManager
 {
  public:
   EnumManager(Node e,
-                  QuantifiersInferenceManager& qim,
-                  TermRegistry& tr,
-                  SygusStatistics& s);
+              QuantifiersInferenceManager& qim,
+              TermRegistry& tr,
+              SygusStatistics& s);
   ~EnumManager();
   /**
    * Get model value for term n. If n has a value that was excluded by
@@ -49,7 +49,8 @@ class EnumManager
    * Clear waiting
    */
   void notifyCandidate();
-private:
+
+ private:
   /** The enumerator */
   Node d_enum;
   /** Reference to the quantifiers inference manager */

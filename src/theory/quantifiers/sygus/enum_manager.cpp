@@ -15,8 +15,8 @@
 #include "theory/quantifiers/sygus/enum_manager.h"
 
 #include "theory/quantifiers/inference_manager.h"
-#include "theory/quantifiers/term_registry.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
+#include "theory/quantifiers/term_registry.h"
 
 using namespace cvc5::kind;
 using namespace std;
@@ -26,9 +26,9 @@ namespace theory {
 namespace quantifiers {
 
 EnumManager::EnumManager(Node e,
-                  QuantifiersInferenceManager& qim,
-                  TermRegistry& tr,
-                  SygusStatistics& s)
+                         QuantifiersInferenceManager& qim,
+                         TermRegistry& tr,
+                         SygusStatistics& s)
     : d_enum(e),
       d_qim(qim),
       d_treg(tr),
@@ -63,7 +63,7 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
   // management of actively generated enumerators goes here
 
   // initialize the enumerated value generator for e
-  if (d_evg==nullptr)
+  if (d_evg == nullptr)
   {
     if (d_tds->isVariableAgnosticEnumerator(e))
     {
@@ -101,11 +101,8 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
         }
         // if sygus repair const is enabled, we enumerate terms with free
         // variables as arguments to any-constant constructors
-        d_evg.reset(new SygusEnumerator(d_tds,
-                                           d_secd.get(),
-                                           &d_stats,
-                                           false,
-                                           options::sygusRepairConst()));
+        d_evg.reset(new SygusEnumerator(
+            d_tds, d_secd.get(), &d_stats, false, options::sygusRepairConst()));
       }
     }
     Trace("sygus-active-gen")
@@ -117,8 +114,8 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
   // if we have a waiting value, return it
   if (!d_ev_active_gen_waiting.isNull())
   {
-    Trace("sygus-active-gen-debug")
-        << "Active-gen: return waiting " << d_ev_active_gen_waiting << std::endl;
+    Trace("sygus-active-gen-debug") << "Active-gen: return waiting "
+                                    << d_ev_active_gen_waiting << std::endl;
     return d_ev_active_gen_waiting;
   }
   // Check if there is an (abstract) value absE we were actively generating
@@ -151,9 +148,9 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
   {
     v = d_evg->getCurrent();
   }
-  Trace("sygus-active-gen-debug") << "...generated " << v
-                                  << ", with increment success : " << inc
-                                  << std::endl;
+  Trace("sygus-active-gen-debug")
+      << "...generated " << v << ", with increment success : " << inc
+      << std::endl;
   if (!inc)
   {
     // No more concrete values generated from absE.
@@ -221,10 +218,7 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
   return v;
 }
 
-void EnumManager::notifyCandidate()
-{
-  d_ev_active_gen_waiting = Node::null();
-}
+void EnumManager::notifyCandidate() { d_ev_active_gen_waiting = Node::null(); }
 
 }  // namespace quantifiers
 }  // namespace theory

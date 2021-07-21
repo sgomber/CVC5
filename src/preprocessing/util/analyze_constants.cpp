@@ -32,8 +32,8 @@ AnalyzeConstants::AnalyzeConstants(PreprocessingPassContext* preprocContext)
 {
 }
 
-
-void AnalyzeConstants::analyzeConstants(TypeNode tn, const std::vector<Node>& cs)
+void AnalyzeConstants::analyzeConstants(TypeNode tn,
+                                        const std::vector<Node>& cs)
 {
   Trace("analyze") << "Constants of type " << tn << ":" << std::endl;
   for (const Node& c : cs)
