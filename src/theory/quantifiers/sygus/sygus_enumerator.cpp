@@ -52,7 +52,7 @@ void SygusEnumerator::initialize(Node e)
   Trace("sygus-enum") << "SygusEnumerator::initialize " << e << std::endl;
   d_enum = e;
   // allocate the default callback
-  if (d_sec==nullptr && options::sygusSymBreakDynamic())
+  if (d_sec == nullptr && options::sygusSymBreakDynamic())
   {
     d_secd.reset(new SygusEnumeratorCallbackDefault(e, nullptr, d_stats));
     d_sec = d_secd.get();
@@ -173,10 +173,7 @@ Node SygusEnumerator::getCurrent()
 bool SygusEnumerator::isEnumShapes() const { return d_enumShapes; }
 
 SygusEnumerator::TermCache::TermCache()
-    : d_sec(nullptr),
-      d_isSygusType(false),
-      d_numConClasses(0),
-      d_sizeEnum(0)
+    : d_sec(nullptr), d_isSygusType(false), d_numConClasses(0), d_sizeEnum(0)
 {
 }
 
@@ -339,7 +336,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     return true;
   }
   Assert(!n.isNull());
-  if (d_sec!=nullptr)
+  if (d_sec != nullptr)
   {
     if (!d_sec->addTerm(n))
     {

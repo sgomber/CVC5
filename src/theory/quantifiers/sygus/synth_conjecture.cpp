@@ -834,15 +834,19 @@ Node SynthConjecture::getEnumeratedValue(Node e, bool& activeIncomplete)
           if (options::sygusRewVerify())
           {
             d_samplerRrV[e].reset(new SygusSampler);
-              d_samplerRrV[e]->initializeSygus(
-                    d_tds, e, options::sygusSamples(), false);
+            d_samplerRrV[e]->initializeSygus(
+                d_tds, e, options::sygusSamples(), false);
           }
-          d_secd[e].reset(new SygusEnumeratorCallbackDefault(e, eec, &d_stats, d_samplerRrV[e].get()));
+          d_secd[e].reset(new SygusEnumeratorCallbackDefault(
+              e, eec, &d_stats, d_samplerRrV[e].get()));
         }
         // if sygus repair const is enabled, we enumerate terms with free
         // variables as arguments to any-constant constructors
-        d_evg[e].reset(new SygusEnumerator(
-            d_tds, d_secd[e].get(), &d_stats, false, options::sygusRepairConst()));
+        d_evg[e].reset(new SygusEnumerator(d_tds,
+                                           d_secd[e].get(),
+                                           &d_stats,
+                                           false,
+                                           options::sygusRepairConst()));
       }
     }
     Trace("sygus-active-gen")

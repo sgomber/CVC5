@@ -85,7 +85,7 @@ class SygusEnumerator : public EnumValGenerator
   Node getCurrent() override;
   /** Are we enumerating shapes? */
   bool isEnumShapes() const;
-  
+
  private:
   /** pointer to term database sygus */
   TermDbSygus* d_tds;

@@ -29,10 +29,8 @@ SygusEnumeratorCallback::SygusEnumeratorCallback(Node e) : d_enum(e)
   d_tn = e.getType();
 }
 
-SygusEnumeratorCallbackDefault::SygusEnumeratorCallbackDefault(Node e,
-                                                 ExampleEvalCache* eec,
-                                                 SygusStatistics* s,
-                                                 SygusSampler* ssrv)
+SygusEnumeratorCallbackDefault::SygusEnumeratorCallbackDefault(
+    Node e, ExampleEvalCache* eec, SygusStatistics* s, SygusSampler* ssrv)
     : SygusEnumeratorCallback(e), d_eec(eec), d_stats(s), d_samplerRrV(ssrv)
 {
 }

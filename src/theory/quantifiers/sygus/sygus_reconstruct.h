@@ -21,9 +21,9 @@
 #include <map>
 #include <vector>
 
+#include "expr/match_trie.h"
 #include "theory/quantifiers/sygus/rcons_obligation.h"
 #include "theory/quantifiers/sygus/rcons_type_info.h"
-#include "expr/match_trie.h"
 
 namespace cvc5 {
 namespace theory {

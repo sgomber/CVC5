@@ -28,12 +28,12 @@
 #include "theory/quantifiers/sygus/cegis_unif.h"
 #include "theory/quantifiers/sygus/example_eval_cache.h"
 #include "theory/quantifiers/sygus/example_infer.h"
+#include "theory/quantifiers/sygus/sygus_enumerator.h"
 #include "theory/quantifiers/sygus/sygus_process_conj.h"
 #include "theory/quantifiers/sygus/sygus_repair_const.h"
 #include "theory/quantifiers/sygus/sygus_stats.h"
 #include "theory/quantifiers/sygus/synth_verify.h"
 #include "theory/quantifiers/sygus/template_infer.h"
-#include "theory/quantifiers/sygus/sygus_enumerator.h"
 
 namespace cvc5 {
 namespace theory {

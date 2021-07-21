@@ -36,10 +36,11 @@ class SygusEnumeratorCallback
  public:
   SygusEnumeratorCallback(Node e);
   virtual ~SygusEnumeratorCallback() {}
-  /** 
+  /**
    * Add term, return true if the term should be considered in the enumeration
    */
   virtual bool addTerm(Node n) = 0;
+
  protected:
   /** The enumerator */
   Node d_enum;
@@ -51,11 +52,11 @@ class SygusEnumeratorCallbackDefault : public SygusEnumeratorCallback
 {
  public:
   SygusEnumeratorCallbackDefault(Node e,
-                          ExampleEvalCache* eec = nullptr,
-                          SygusStatistics* s = nullptr,
-                          SygusSampler* ssrv = nullptr);
+                                 ExampleEvalCache* eec = nullptr,
+                                 SygusStatistics* s = nullptr,
+                                 SygusSampler* ssrv = nullptr);
   virtual ~SygusEnumeratorCallbackDefault() {}
-  /** 
+  /**
    * Add term, return true if the term should be considered in the enumeration
    */
   bool addTerm(Node n) override;
