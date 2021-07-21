@@ -21,6 +21,7 @@
 #include "theory/datatypes/theory_datatypes_utils.h"
 #include "theory/quantifiers/sygus/sygus_invariance.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
+#include "theory/datatypes/sygus_datatype_utils.h"
 
 using namespace cvc5::kind;
 using namespace std;
@@ -220,7 +221,7 @@ void SygusExplain::getExplanationFor(TermRecBuild& trb,
       // we are tracking term size if positive
       if (sz >= 0)
       {
-        int s = d_tdb->getSygusTermSize(vn[i]);
+        int s = datatypes::utils::getSygusTermSize(vn[i]);
         sz = sz - s;
       }
     }

@@ -23,6 +23,7 @@
 #include "theory/quantifiers/term_util.h"
 #include "theory/rewriter.h"
 #include "theory/strings/word.h"
+#include "theory/datatypes/sygus_datatype_utils.h"
 #include "util/random.h"
 
 #include <math.h>
@@ -835,7 +836,7 @@ Node SygusUnifIo::constructSolutionNode(std::vector<Node>& lemmas)
       if (!vcc.isNull()
           && (d_solution.isNull()
               || (!d_solution.isNull()
-                  && d_tds->getSygusTermSize(vcc) < d_sol_term_size)))
+                  && datatypes::utils::getSygusTermSize(vcc) < d_sol_term_size)))
       {
         if (Trace.isOn("sygus-pbe"))
         {
@@ -846,7 +847,7 @@ Node SygusUnifIo::constructSolutionNode(std::vector<Node>& lemmas)
         }
         d_solution = vcc;
         newSolution = vcc;
-        d_sol_term_size = d_tds->getSygusTermSize(vcc);
+        d_sol_term_size = datatypes::utils::getSygusTermSize(vcc);
         Trace("sygus-pbe-sol")
             << "PBE solution size: " << d_sol_term_size << std::endl;
         // We've determined its feasible, now, enable information gain and

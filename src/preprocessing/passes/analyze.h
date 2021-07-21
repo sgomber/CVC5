@@ -21,6 +21,7 @@
 #include "preprocessing/preprocessing_pass_context.h"
 #include "theory/arith/bound_inference.h"
 #include "util/statistics_stats.h"
+#include "expr/node.h"
 
 #include <iosfwd>
 
@@ -44,7 +45,13 @@ class Analyze : public PreprocessingPass
    * Analyze
    */
   void analyze(Node n,
-                         std::unordered_set<TNode>& visited);
+                         std::unordered_set<TNode>& visited,
+                         std::unordered_set<Kind>& kinds
+              );
+  /** constants of each type */
+  std::unordered_map<TypeNode, std::vector<Node> > d_constants;
+  /** Analyze constants */
+  void analyzeConstants(TypeNode tn, const std::vector<Node>& cs);
 };
 
 }  // namespace passes

@@ -15,8 +15,8 @@
 
 #include "cvc5_private.h"
 
-#ifndef CVC5__THEORY__STRINGS__THEORY_DATATYPES_UTILS_H
-#define CVC5__THEORY__STRINGS__THEORY_DATATYPES_UTILS_H
+#ifndef CVC5__THEORY__DATATYPES__THEORY_DATATYPES_UTILS_H
+#define CVC5__THEORY__DATATYPES__THEORY_DATATYPES_UTILS_H
 
 #include <vector>
 
@@ -92,7 +92,7 @@ bool isNullaryConstructor(const DTypeConstructor& c);
  *   C( x, y ) and z
  */
 bool checkClash(Node n1, Node n2, std::vector<Node>& rew);
-
+  
 }  // namespace utils
 }  // namespace datatypes
 }  // namespace theory

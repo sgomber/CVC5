@@ -17,6 +17,7 @@
 
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/datatypes/sygus_datatype_utils.h"
 #include "util/random.h"
 
 using namespace std;
@@ -52,7 +53,7 @@ Node SygusUnif::getMinimalTerm(const std::vector<Node>& terms)
     unsigned ssize = 0;
     if (it == d_termToSize.end())
     {
-      ssize = d_tds->getSygusTermSize(n);
+      ssize = datatypes::utils::getSygusTermSize(n);
       d_termToSize[n] = ssize;
     }
     else

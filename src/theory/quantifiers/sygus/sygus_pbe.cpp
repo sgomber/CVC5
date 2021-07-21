@@ -20,6 +20,7 @@
 #include "theory/quantifiers/sygus/synth_conjecture.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/datatypes/sygus_datatype_utils.h"
 #include "util/random.h"
 
 using namespace cvc5;
@@ -180,7 +181,7 @@ bool SygusPbe::constructCandidates(const std::vector<Node>& enums,
       Trace("sygus-pbe-enum") << std::endl;
       if (!enum_values[i].isNull())
       {
-        unsigned sz = d_tds->getSygusTermSize(enum_values[i]);
+        unsigned sz = datatypes::utils::getSygusTermSize(enum_values[i]);
         szs.push_back(sz);
         if (i == 0 || sz < min_term_size)
         {
