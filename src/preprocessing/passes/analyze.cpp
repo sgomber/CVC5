@@ -19,6 +19,7 @@
 #include "preprocessing/assertion_pipeline.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
 #include "util/bitvector.h"
+#include "theory/quantifiers/sygus/sygus_enumerator.h"
 
 using namespace cvc5::theory;
 using namespace cvc5::kind;
@@ -104,6 +105,7 @@ void Analyze::analyzeConstants(TypeNode tn, const std::vector<Node>& cs)
   }
   if (tn.isBitVector())
   {
+    Trace("analyze") << "Setting up sygus enumeration..." << std::endl;
     NodeManager* nm = NodeManager::currentNM();
     std::map<TypeNode, std::unordered_set<Node>> extra_cons;
     for (const Node& c : cs)
@@ -122,6 +124,17 @@ void Analyze::analyzeConstants(TypeNode tn, const std::vector<Node>& cs)
                                                                include_cons,
                                                                term_irrelevant);
     Node e = nm->getSkolemManager()->mkDummySkolem("e", stn);
+    quantifiers::SygusEnumerator se;
+    se.initialize(e);
+    size_t counter = 0;
+    while (counter<1000 && se.increment())
+    {
+      Node curr = se.getCurrent();
+      if (!curr.isNull())
+      {
+        Trace("analyze") << "  " << curr << std::endl;
+      }
+    }
   }
 }
 
