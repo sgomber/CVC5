@@ -20,6 +20,10 @@
 
 #include "expr/node.h"
 
+#include "theory/quantifiers/sygus_sampler.h"
+#include "theory/quantifiers/sygus/sygus_enumerator_callback.h"
+#include "theory/quantifiers/sygus/enum_val_generator.h"
+
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
@@ -51,6 +55,10 @@ class EnumManager
   void notifyCandidate();
 
  private:
+  /**
+   * Get model value for term n.
+   */
+  Node getModelValue(Node n);
   /** The enumerator */
   Node d_enum;
   /** Reference to the quantifiers inference manager */

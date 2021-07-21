@@ -10,19 +10,36 @@
  * directory for licensing information.
  * ****************************************************************************
  *
- * Rewriting based on learned literals
+ * Analyzing constants
  */
 #include "cvc5_private.h"
 
-#ifndef CVC5__PREPROCESSING__PASSES__ANALYZE_H
-#define CVC5__PREPROCESSING__PASSES__ANALYZE_H
+#ifndef CVC5__PREPROCESSING__UTIL__ANALYZE_CONSTANTS_H
+#define CVC5__PREPROCESSING__UTIL__ANALYZE_CONSTANTS_H
 
 #include "expr/node.h"
+#include "theory/quantifiers/sygus/sygus_enumerator_callback.h"
+#include "expr/subs.h"
 
 namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
+class SygusEnumeratorCallbackConstElim : public theory::quantifiers::SygusEnumeratorCallback
+{
+public:
+  SygusEnumeratorCallbackConstElim(Node e, const std::vector<Node>& cs);
+  /**
+   * Add term, return true if the term should be considered in the enumeration
+   */
+  bool addTerm(Node bn, Node bnr, bool isPre) override;
+private:
+  /** Map from constants to solved form */
+  std::map<Node, Node> d_solved;
+  /** Substitution */
+  Subs d_subs;
+};
+  
 /**
  * Analyze
  */
@@ -39,4 +56,4 @@ class AnalyzeConstants
 }  // namespace preprocessing
 }  // namespace cvc5
 
-#endif /* CVC5__PREPROCESSING__PASSES__ANALYZE_H */
+#endif /* CVC5__PREPROCESSING__UTIL__ANALYZE_CONSTANTS_H */

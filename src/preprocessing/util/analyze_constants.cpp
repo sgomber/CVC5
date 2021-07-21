@@ -19,6 +19,7 @@
 #include "theory/quantifiers/sygus/sygus_enumerator.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
 #include "util/bitvector.h"
+#include "theory/datatypes/sygus_datatype_utils.h"
 
 using namespace cvc5::theory;
 using namespace cvc5::kind;
@@ -27,9 +28,31 @@ namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
-AnalyzeConstants::AnalyzeConstants(PreprocessingPassContext* preprocContext)
-    : PreprocessingPass(preprocContext, "analyze")
+SygusEnumeratorCallbackConstElim::SygusEnumeratorCallbackConstElim(Node e, const std::vector<Node>& cs) : theory::quantifiers::SygusEnumeratorCallback(e)
 {
+  for (const Node& c : cs)
+  {
+    d_solved[c] = Node::null();
+  }
+}
+
+bool SygusEnumeratorCallbackConstElim::addTerm(Node bn, Node bnr, bool isPre)
+{
+  std::map<Node, Node>::iterator it = d_solved.find(bnr);
+  if (it!=d_solved.end())
+  {
+    if (it->second.isNull())
+    {
+      // does it eliminate?
+      
+    }
+  }
+  return true;
+}
+
+AnalyzeConstants::AnalyzeConstants()
+{
+  
 }
 
 void AnalyzeConstants::analyzeConstants(TypeNode tn,
@@ -69,7 +92,8 @@ void AnalyzeConstants::analyzeConstants(TypeNode tn,
                                                                include_cons,
                                                                term_irrelevant);
     Node e = nm->getSkolemManager()->mkDummySkolem("e", stn);
-    quantifiers::SygusEnumerator se;
+    SygusEnumeratorCallbackConstElim scce(e, cs);
+    quantifiers::SygusEnumerator se(nullptr, &scce);
     se.initialize(e);
     size_t counter = 0;
     while (counter < 1000 && se.increment())
@@ -77,7 +101,7 @@ void AnalyzeConstants::analyzeConstants(TypeNode tn,
       Node curr = se.getCurrent();
       if (!curr.isNull())
       {
-        Trace("analyze") << "  " << curr << std::endl;
+        Trace("analyze") << "  " << datatypes::utils::sygusToBuiltin(curr) << std::endl;
       }
     }
   }

@@ -45,7 +45,7 @@ PreprocessingPassResult Analyze::applyInternal(
     // analyze constants of each type
     for (const std::pair<const TypeNode, std::vector<Node>>& tc : d_constants)
     {
-      d_aconst.analyzeConstants(tc.first, tc.second);
+      d_aconsts.analyzeConstants(tc.first, tc.second);
     }
   }
   return PreprocessingPassResult::NO_CONFLICT;

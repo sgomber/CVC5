@@ -14,9 +14,15 @@
  */
 #include "theory/quantifiers/sygus/enum_manager.h"
 
-#include "theory/quantifiers/inference_manager.h"
+#include "theory/quantifiers/quantifiers_inference_manager.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/quantifiers/term_registry.h"
+#include "theory/quantifiers/sygus/sygus_enumerator.h"
+#include "theory/quantifiers/sygus/sygus_enumerator_basic.h"
+#include "theory/quantifiers/first_order_model.h"
+#include "options/quantifiers_options.h"
+#include "theory/datatypes/sygus_datatype_utils.h"
+#include "theory/quantifiers/sygus/enum_stream_substitution.h"
 
 using namespace cvc5::kind;
 using namespace std;
@@ -125,7 +131,7 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
   if (absE.isNull())
   {
     // None currently exist. The next abstract value is the model value for e.
-    absE = d_treg.getModel()->getValue(n);
+    absE = getModelValue(n);
     if (Trace.isOn("sygus-active-gen"))
     {
       Trace("sygus-active-gen") << "Active-gen: new abstract value : ";
@@ -220,6 +226,10 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
 
 void EnumManager::notifyCandidate() { d_ev_active_gen_waiting = Node::null(); }
 
+Node EnumManager::getModelValue(Node n)
+{
+  return d_treg.getModel()->getValue(n);
+}
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

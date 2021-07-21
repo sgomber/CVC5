@@ -861,8 +861,6 @@ libcvc5_add_sources(
   theory/quantifiers/sygus/cegis_core_connective.h
   theory/quantifiers/sygus/cegis_unif.cpp
   theory/quantifiers/sygus/cegis_unif.h
-  theory/quantifiers/sygus/enum_manager.cpp
-  theory/quantifiers/sygus/enum_manager.h
   theory/quantifiers/sygus/enum_val_generator.h
   theory/quantifiers/sygus/example_eval_cache.cpp
   theory/quantifiers/sygus/example_eval_cache.h
