@@ -782,7 +782,7 @@ void SygusSampler::registerSygusType(TypeNode tn)
 
 void SygusSampler::checkEquivalent(Node bv, Node bvr)
 {
-  if (bv==bvr)
+  if (bv == bvr)
   {
     return;
   }

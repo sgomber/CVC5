@@ -344,13 +344,13 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     {
       ++(d_stats->d_enumTermsRewrite);
     }
-    for (size_t i=0; i<2; i++)
+    for (size_t i = 0; i < 2; i++)
     {
-      if (!d_sec->addTerm(bn, bnr, i==0))
+      if (!d_sec->addTerm(bn, bnr, i == 0))
       {
         return false;
       }
-      else if (i==0)
+      else if (i == 0)
       {
         // must be unique up to rewriting
         if (d_bterms.find(bnr) != d_bterms.end())
@@ -1184,7 +1184,7 @@ bool SygusEnumerator::TermEnumMasterFv::initialize(SygusEnumerator* se,
 
 Node SygusEnumerator::TermEnumMasterFv::getCurrent()
 {
-  Assert( d_se->d_tds != nullptr);
+  Assert(d_se->d_tds != nullptr);
   Node ret = d_se->d_tds->getFreeVar(d_tn, d_currSize);
   Trace("sygus-enum-debug2") << "master_fv(" << d_tn << "): mk " << ret
                              << std::endl;
