@@ -173,7 +173,10 @@ Node SygusEnumerator::getCurrent()
 bool SygusEnumerator::isEnumShapes() const { return d_enumShapes; }
 
 SygusEnumerator::TermCache::TermCache()
-    : d_sec(nullptr), d_isSygusType(false), d_numConClasses(0), d_sizeEnum(0),
+    : d_sec(nullptr),
+      d_isSygusType(false),
+      d_numConClasses(0),
+      d_sizeEnum(0),
       d_isComplete(false)
 {
 }
@@ -351,7 +354,9 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     {
       if (!d_sec->addTerm(bn, bnr, i == 0))
       {
-        Trace("sygus-enum-exc") << "Exclude: " << bn << " due to callback, isPre = " << (i==0) << std::endl;
+        Trace("sygus-enum-exc")
+            << "Exclude: " << bn << " due to callback, isPre = " << (i == 0)
+            << std::endl;
         return false;
       }
       else if (i == 0)
