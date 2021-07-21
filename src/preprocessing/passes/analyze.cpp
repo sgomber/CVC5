@@ -17,9 +17,9 @@
 
 #include "expr/skolem_manager.h"
 #include "preprocessing/assertion_pipeline.h"
+#include "theory/quantifiers/sygus/sygus_enumerator.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
 #include "util/bitvector.h"
-#include "theory/quantifiers/sygus/sygus_enumerator.h"
 
 using namespace cvc5::theory;
 using namespace cvc5::kind;
@@ -127,7 +127,7 @@ void Analyze::analyzeConstants(TypeNode tn, const std::vector<Node>& cs)
     quantifiers::SygusEnumerator se;
     se.initialize(e);
     size_t counter = 0;
-    while (counter<1000 && se.increment())
+    while (counter < 1000 && se.increment())
     {
       Node curr = se.getCurrent();
       if (!curr.isNull())

@@ -19,7 +19,10 @@ namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-SygusEnumeratorCallback::SygusEnumeratorCallback(Node e, ExampleEvalCache* eec) : d_enum(e), d_tn(e.getType()), d_eec(eec){}
+SygusEnumeratorCallback::SygusEnumeratorCallback(Node e, ExampleEvalCache* eec)
+    : d_enum(e), d_tn(e.getType()), d_eec(eec)
+{
+}
 
 bool SygusEnumeratorCallback::addTerm(Node n)
 {

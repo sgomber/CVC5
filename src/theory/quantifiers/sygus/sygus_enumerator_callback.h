@@ -38,17 +38,18 @@ class SygusEnumeratorCallbackEnum
   SygusEnumeratorCallbackEnum(ExampleEvalCache* eec);
   /** Add term, return true if successful */
   virtual bool addTerm(Node n);
+
  private:
-   /** The enumerator */
-   Node d_enum;
-   /** The type of enum */
-   TypeNode d_tn;
+  /** The enumerator */
+  Node d_enum;
+  /** The type of enum */
+  TypeNode d_tn;
   /** extended rewriter */
   ExtendedRewriter d_extr;
   /**
-    * Pointer to the example evaluation cache utility (used for symmetry
-    * breaking).
-    */
+   * Pointer to the example evaluation cache utility (used for symmetry
+   * breaking).
+   */
   ExampleEvalCache* d_eec;
   /** the set of builtin terms corresponding to the above list */
   std::unordered_set<Node> d_bterms;
