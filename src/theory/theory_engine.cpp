@@ -918,7 +918,8 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
   // If sending to the shared solver, it's also simple
   if (toTheoryId == THEORY_BUILTIN) {
     // if (toTheoryIdProp == THEORY_BUILTIN &&
-    // !Theory::needsFactQueue(toTheoryId) && assertion.getKind()==kind::EQUAL) {
+    // !Theory::needsFactQueue(toTheoryId) && assertion.getKind()==kind::EQUAL)
+    // {
     if (markPropagation(
             assertion, originalAssertion, toTheoryIdProp, fromTheoryId))
     {
