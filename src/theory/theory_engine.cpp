@@ -34,6 +34,7 @@
 #include "smt/env.h"
 #include "smt/logic_exception.h"
 #include "smt/output_manager.h"
+#include "theory/analyze_model.h"
 #include "theory/combination_care_graph.h"
 #include "theory/decision_manager.h"
 #include "theory/quantifiers/first_order_model.h"
@@ -155,10 +156,17 @@ void TheoryEngine::finishInit()
                     << options::tcMode() << " not supported";
   }
   // create the relevance filter if any option requires it
-  if (options::relevanceFilter())
+  bool analyzeModel = Trace.isOn("analyze-model");
+  analyzeModel = analyzeModel || Trace.isOn("analyze-model-debug");
+  if (options::relevanceFilter() || analyzeModel)
   {
-    d_relManager.reset(
-        new RelevanceManager(d_env.getUserContext(), theory::Valuation(this)));
+    Valuation val = theory::Valuation(this);
+    d_relManager.reset(new RelevanceManager(d_env.getUserContext(), val));
+    if (analyzeModel)
+    {
+      d_analyzeModel.reset(
+          new AnalyzeModel(val, d_relManager.get(), d_tc->getModel()));
+    }
   }
 
   // initialize the quantifiers engine
@@ -540,6 +548,10 @@ void TheoryEngine::check(Theory::Effort effort) {
         {
           d_tc->buildModel();
         }
+      }
+      else if (d_analyzeModel != nullptr)
+      {
+        d_analyzeModel->analyzeModelFailure();
       }
     }
 

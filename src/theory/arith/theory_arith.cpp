@@ -200,6 +200,18 @@ void TheoryArith::postCheck(Effort level)
 bool TheoryArith::preNotifyFact(
     TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal)
 {
+  if (options::arithPreprocess() == options::ArithPreprocessMode::EAGER)
+  {
+    if (d_arithPreproc.reduceAssertion(atom))
+    {
+      // atom contained extended operators that were eliminated, we can
+      // ignore this atom. Right now, just ignore is_int.
+      if (atom.getKind() == kind::IS_INTEGER)
+      {
+        return true;
+      }
+    }
+  }
   Trace("arith-check") << "TheoryArith::preNotifyFact: " << fact
                        << ", isPrereg=" << isPrereg
                        << ", isInternal=" << isInternal << std::endl;

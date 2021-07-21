@@ -169,7 +169,7 @@ PreprocessingPassResult LearnedRewrite::applyInternal(
 Node LearnedRewrite::rewriteLearnedRec(Node n,
                                        arith::BoundInference& binfer,
                                        std::unordered_set<Node>& lems,
-                                       std::unordered_map<TNode, Node>& visited)
+                         std::unordered_map<TNode, Node>& visited)
 {
   NodeManager* nm = NodeManager::currentNM();
   std::unordered_map<TNode, Node>::iterator it;
@@ -399,6 +399,63 @@ Node LearnedRewrite::rewriteLearned(Node n,
           nr = returnRewriteLearned(nr, ret, LearnedRewriteId::PRED_NEG_UB);
           return nr;
         }
+      }
+      // inferences based on combining div terms
+      Node currDen;
+      Node currNum;
+      std::vector<Node> sum;
+      size_t divCount = 0;
+      bool divTotal = true;
+      for (const std::pair<const Node, Node>& m : msum)
+      {
+        if (m.first.isNull())
+        {
+          sum.push_back(m.second);
+          continue;
+        }
+        Kind mk = m.first.getKind();
+        if (mk == INTS_DIVISION || mk == INTS_DIVISION_TOTAL)
+        {
+          Node factor = ArithMSum::mkCoeffTerm(m.second, m.first[0]);
+          divTotal = divTotal && mk == INTS_DIVISION_TOTAL;
+          divCount++;
+          if (currDen.isNull())
+          {
+            currNum = factor;
+            currDen = m.first[1];
+          }
+          else
+          {
+            factor = nm->mkNode(MULT, factor, currDen);
+            currNum = nm->mkNode(MULT, currNum, m.first[1]);
+            currNum = nm->mkNode(PLUS, currNum, factor);
+            currDen = nm->mkNode(MULT, currDen, m.first[1]);
+          }
+        }
+        else
+        {
+          Node factor = ArithMSum::mkCoeffTerm(m.second, m.first);
+          sum.push_back(factor);
+        }
+      }
+      if (divCount >= 2)
+      {
+        SkolemManager* sm = nm->getSkolemManager();
+        Node r = sm->mkDummySkolem("r", nm->integerType());
+        Node d = nm->mkNode(
+            divTotal ? INTS_DIVISION_TOTAL : INTS_DIVISION, currNum, currDen);
+        sum.push_back(d);
+        sum.push_back(r);
+        Node bound =
+            nm->mkNode(AND,
+                       nm->mkNode(LEQ, nm->mkConst(-Rational(divCount - 1)), r),
+                       nm->mkNode(LEQ, r, nm->mkConst(Rational(divCount - 1))));
+        Node sumn = nm->mkNode(PLUS, sum);
+        Node lit = nm->mkNode(k, sumn, nm->mkConst(Rational(0)));
+        Node lemma = nm->mkNode(IMPLIES, nr, nm->mkNode(AND, lit, bound));
+        Trace("learned-rewrite-div")
+            << "Div collect lemma: " << lemma << std::endl;
+        lems.insert(lemma);
       }
     }
   }

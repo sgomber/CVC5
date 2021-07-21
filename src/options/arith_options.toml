@@ -589,9 +589,36 @@ name   = "Arithmetic Theory"
   help       = "whether to use ICP-style propagations for non-linear arithmetic"
 
 [[option]]
+  name       = "modSplitOverflow"
+  category   = "regular"
+  long       = "mod-split-overflow"
+  type       = "bool"
+  default    = "false"
+  help       = "case split on overflow in reduction of mod"
+
+[[option]]
+  name       = "arithPreprocess"
+  category   = "regular"
+  long       = "arith-pp=MODE"
+  type       = "ArithPreprocessMode"
+  default    = "EXPAND"
+  help       = "mode for preprocessing arithmetic operators"
+  help_mode  = "This decides the policy for preprocessing extended arithmetic operators like div/mod."
+[[option.mode.EXPAND]]
+  name = "expand"
+  help = "Eliminate extended arithmetic operators (very) eagerly during expand definitions."
+[[option.mode.EAGER]]
+  name = "eager"
+  help = "Eliminate extended arithmetic operators eagerly when literals are asserted."
+[[option.mode.LAZY]]
+  name = "lazy"
+  help  = "Eliminate extended arithmetic operators lazily."
+
+[[option]]
   name       = "arithEqSolver"
   category   = "regular"
   long       = "arith-eq-solver"
   type       = "bool"
   default    = "false"
   help       = "whether to use the equality solver in the theory of arithmetic"
+

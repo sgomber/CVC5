@@ -84,6 +84,7 @@ class CombinationEngine;
 class SharedSolver;
 class DecisionManager;
 class RelevanceManager;
+class AnalyzeModel;
 
 }  // namespace theory
 
@@ -158,6 +159,8 @@ class TheoryEngine {
   std::unique_ptr<theory::DecisionManager> d_decManager;
   /** The relevance manager */
   std::unique_ptr<theory::RelevanceManager> d_relManager;
+  /** The analyze model utility */
+  std::unique_ptr<theory::AnalyzeModel> d_analyzeModel;
   /**
    * An empty set of relevant assertions, which is returned as a dummy value for
    * getRelevantAssertions when relevance is disabled.

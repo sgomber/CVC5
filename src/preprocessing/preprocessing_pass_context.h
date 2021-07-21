@@ -57,6 +57,9 @@ class PreprocessingPassContext
     return d_circuitPropagator;
   }
 
+  /** Get the learned literal manager */
+  LearnedLiteralManager* getLearnedLiteralManager();
+
   context::CDHashSet<Node>& getSymsInAssertions() { return d_symsInAssertions; }
 
   void spendResource(Resource r);
