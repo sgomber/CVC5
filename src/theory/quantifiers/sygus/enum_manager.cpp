@@ -14,6 +14,7 @@
  */
 #include "theory/quantifiers/sygus/enum_manager.h"
 
+#include "options/datatypes_options.h"
 #include "options/quantifiers_options.h"
 #include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/quantifiers/first_order_model.h"
@@ -39,7 +40,8 @@ EnumManager::EnumManager(Node e,
       d_qim(qim),
       d_treg(tr),
       d_stats(s),
-      d_tds(tr.getTermDatabaseSygus())
+      d_tds(tr.getTermDatabaseSygus()),
+      d_eec(d_tds, e)
 {
 }
 
@@ -92,10 +94,9 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
                    == options::SygusActiveGenMode::ENUM
                || options::sygusActiveGenMode()
                       == options::SygusActiveGenMode::AUTO);
-        // create the callback
+        // create the enumerator callback
         if (options::sygusSymBreakDynamic())
         {
-          ExampleEvalCache* eec = getExampleEvalCache(e);
           if (options::sygusRewVerify())
           {
             d_samplerRrV.reset(new SygusSampler);
@@ -103,7 +104,7 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
                 d_tds, e, options::sygusSamples(), false);
           }
           d_secd.reset(new SygusEnumeratorCallbackDefault(
-              e, eec, &d_stats, d_samplerRrV.get()));
+              e, &d_eec, &d_stats, d_samplerRrV.get()));
         }
         // if sygus repair const is enabled, we enumerate terms with free
         // variables as arguments to any-constant constructors
@@ -131,7 +132,7 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
   if (absE.isNull())
   {
     // None currently exist. The next abstract value is the model value for e.
-    absE = getModelValue(n);
+    absE = getModelValue(e);
     if (Trace.isOn("sygus-active-gen"))
     {
       Trace("sygus-active-gen") << "Active-gen: new abstract value : ";
@@ -226,10 +227,16 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
 
 void EnumManager::notifyCandidate() { d_ev_active_gen_waiting = Node::null(); }
 
+ExampleEvalCache * EnumManager::getExampleEvalCache()
+{
+  return &d_eec;
+}
+
 Node EnumManager::getModelValue(Node n)
 {
   return d_treg.getModel()->getValue(n);
 }
+
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

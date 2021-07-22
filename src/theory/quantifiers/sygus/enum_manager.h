@@ -23,6 +23,7 @@
 #include "theory/quantifiers/sygus/enum_val_generator.h"
 #include "theory/quantifiers/sygus/sygus_enumerator_callback.h"
 #include "theory/quantifiers/sygus_sampler.h"
+#include "theory/quantifiers/sygus/example_eval_cache.h"
 
 namespace cvc5 {
 namespace theory {
@@ -31,8 +32,12 @@ namespace quantifiers {
 class QuantifiersInferenceManager;
 class TermRegistry;
 class SygusStatistics;
+
 /**
- * Management of current value for an enumerator
+ * Management of current value for an enumerator. This class determines the
+ * current value of an enumerator, which may be its model value if it is
+ * not actively generated, or may be determined by the (fast) enumerator
+ * when it is actively generated.
  */
 class EnumManager
 {
@@ -49,11 +54,13 @@ class EnumManager
    * current value is null but it has not finished generating values.
    */
   Node getEnumeratedValue(bool& activeIncomplete);
-  /**
-   * Clear waiting
+  /** 
+   * Notify that a synthesis candidate was tried, which clears the value
+   * of d_ev_active_gen_waiting.
    */
   void notifyCandidate();
-
+  /** Get the example evaluation cache */
+  ExampleEvalCache * getExampleEvalCache();
  private:
   /**
    * Get model value for term n.
@@ -75,15 +82,17 @@ class EnumManager
   std::unique_ptr<SygusEnumeratorCallbackDefault> d_secd;
   /** enumerator generators for each actively-generated enumerator */
   std::unique_ptr<EnumValGenerator> d_evg;
+  /** example evaluation cache utility for each enumerator */
+  ExampleEvalCache d_eec;
   /**
    * Map from enumerators to whether they are currently being
    * "actively-generated". That is, we are in a state where we have called
-   * d_evg[e].addValue(v) for some v, and d_evg[e].getNext() has not yet
+   * d_evg.addValue(v) for some v, and d_evg.getNext() has not yet
    * returned null. The range of this map stores the abstract value that
    * we are currently generating values from.
    */
   Node d_ev_curr_active_gen;
-  /** the current waiting value of each actively-generated enumerator, if any
+  /** the current waiting value of the actively-generated enumerator, if any
    *
    * This caches values that are actively generated and that we have not yet
    * passed to a call to SygusModule::constructCandidates. An example of when
@@ -95,7 +104,7 @@ class EnumManager
    * a future check when v2 has a proper value, it is returned.
    */
   Node d_ev_active_gen_waiting;
-  /** the first value enumerated for each actively-generated enumerator
+  /** the first value enumerated for the actively-generated enumerator
    *
    * This is to implement an optimization that only guards the blocking lemma
    * for the first value of an actively-generated enumerator.

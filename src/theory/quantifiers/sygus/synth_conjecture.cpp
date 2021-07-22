@@ -1345,7 +1345,13 @@ ExampleEvalCache* SynthConjecture::getExampleEvalCache(Node e)
     d_exampleEvalCache[e].reset(nullptr);
     return nullptr;
   }
-  d_exampleEvalCache[e].reset(new ExampleEvalCache(d_tds, this, f, e));
+  d_exampleEvalCache[e].reset(new ExampleEvalCache(d_tds, e));
+  for (unsigned i = 0, nex = d_exampleInfer->getNumExamples(f); i < nex; i++)
+  {
+    std::vector<Node> input;
+    d_exampleInfer->getExample(f, i, input);
+    d_exampleEvalCache[e]->addExample(input);
+  }
   return d_exampleEvalCache[e].get();
 }
 
