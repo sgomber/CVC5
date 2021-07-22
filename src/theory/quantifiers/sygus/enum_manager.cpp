@@ -35,13 +35,14 @@ namespace quantifiers {
 EnumManager::EnumManager(Node e,
                          QuantifiersInferenceManager& qim,
                          TermRegistry& tr,
-                         SygusStatistics& s)
+                         SygusStatistics& s,
+              bool hasExamples)
     : d_enum(e),
       d_qim(qim),
       d_treg(tr),
       d_stats(s),
       d_tds(tr.getTermDatabaseSygus()),
-      d_eec(d_tds, e)
+      d_eec(hasExamples ? new ExampleEvalCache(d_tds, e) : nullptr)
 {
 }
 
@@ -104,7 +105,7 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
                 d_tds, e, options::sygusSamples(), false);
           }
           d_secd.reset(new SygusEnumeratorCallbackDefault(
-              e, &d_eec, &d_stats, d_samplerRrV.get()));
+              e, d_eec.get(), &d_stats, d_samplerRrV.get()));
         }
         // if sygus repair const is enabled, we enumerate terms with free
         // variables as arguments to any-constant constructors
@@ -225,9 +226,17 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
   return v;
 }
 
-void EnumManager::notifyCandidate() { d_ev_active_gen_waiting = Node::null(); }
+void EnumManager::notifyCandidate(bool modelSuccess) 
+{ 
+  d_ev_active_gen_waiting = Node::null();
+  // clear evaluation
+  if (modelSuccess && d_eec!=nullptr)
+  {
+    d_eec->clearEvaluationAll();
+  }
+}
 
-ExampleEvalCache* EnumManager::getExampleEvalCache() { return &d_eec; }
+ExampleEvalCache* EnumManager::getExampleEvalCache() { return d_eec.get(); }
 
 Node EnumManager::getModelValue(Node n)
 {

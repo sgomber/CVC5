@@ -26,14 +26,13 @@
 #include "theory/quantifiers/sygus/cegis.h"
 #include "theory/quantifiers/sygus/cegis_core_connective.h"
 #include "theory/quantifiers/sygus/cegis_unif.h"
-#include "theory/quantifiers/sygus/example_eval_cache.h"
 #include "theory/quantifiers/sygus/example_infer.h"
-#include "theory/quantifiers/sygus/sygus_enumerator.h"
 #include "theory/quantifiers/sygus/sygus_process_conj.h"
 #include "theory/quantifiers/sygus/sygus_repair_const.h"
 #include "theory/quantifiers/sygus/sygus_stats.h"
 #include "theory/quantifiers/sygus/synth_verify.h"
 #include "theory/quantifiers/sygus/template_infer.h"
+#include "theory/quantifiers/sygus/example_eval_cache.h"
 
 namespace cvc5 {
 namespace theory {
@@ -42,6 +41,7 @@ namespace quantifiers {
 class CegGrammarConstructor;
 class SygusPbe;
 class SygusStatistics;
+class EnumManager;
 
 
 /** a synthesis conjecture
@@ -211,8 +211,8 @@ class SynthConjecture
   std::unique_ptr<SygusRepairConst> d_sygus_rconst;
   /** example inference utility */
   std::unique_ptr<ExampleInfer> d_exampleInfer;
-  /** example evaluation cache utility for each enumerator */
-  std::map<Node, std::unique_ptr<ExampleEvalCache> > d_exampleEvalCache;
+  /** map from enumerators to their enumerator manager */
+  std::map<Node, std::unique_ptr<EnumManager>> d_enumManager;
 
   //------------------------modules
   /** program by examples module */
@@ -250,45 +250,10 @@ class SynthConjecture
   bool getEnumeratedValues(std::vector<Node>& n,
                            std::vector<Node>& v,
                            bool& activeIncomplete);
-  /**
-   * Get model value for term n. If n has a value that was excluded by
-   * datatypes sygus symmetry breaking, this method returns null. It sets
-   * activeIncomplete to true if there is an actively-generated enumerator whose
-   * current value is null but it has not finished generating values.
+  /** 
+   * Get or make enumerator manager for the enumerator e.
    */
-  Node getEnumeratedValue(Node n, bool& activeIncomplete);
-  /** Sygus sampler (for --sygus-rr-verify) */
-  std::map<Node, std::unique_ptr<SygusSampler> > d_samplerRrV;
-  /** if we allocated a default sygus enumerator callback */
-  std::map<Node, std::unique_ptr<SygusEnumeratorCallbackDefault> > d_secd;
-  /** enumerator generators for each actively-generated enumerator */
-  std::map<Node, std::unique_ptr<EnumValGenerator> > d_evg;
-  /**
-   * Map from enumerators to whether they are currently being
-   * "actively-generated". That is, we are in a state where we have called
-   * d_evg[e].addValue(v) for some v, and d_evg[e].getNext() has not yet
-   * returned null. The range of this map stores the abstract value that
-   * we are currently generating values from.
-   */
-  std::map<Node, Node> d_ev_curr_active_gen;
-  /** the current waiting value of each actively-generated enumerator, if any
-   *
-   * This caches values that are actively generated and that we have not yet
-   * passed to a call to SygusModule::constructCandidates. An example of when
-   * this may occur is when there are two actively-generated enumerators e1 and
-   * e2. Say on some iteration we actively-generate v1 for e1, the value
-   * of e2 was excluded by symmetry breaking, and say the current master sygus
-   * module does not handle partial models. Hence, we abort the current check.
-   * We remember that the value of e1 was v1 by storing it here, so that on
-   * a future check when v2 has a proper value, it is returned.
-   */
-  std::map<Node, Node> d_ev_active_gen_waiting;
-  /** the first value enumerated for each actively-generated enumerator
-   *
-   * This is to implement an optimization that only guards the blocking lemma
-   * for the first value of an actively-generated enumerator.
-   */
-  std::map<Node, Node> d_ev_active_gen_first_val;
+  EnumManager * getEnumManagerFor(Node e);
   //------------------------end enumerators
 
   /** list of constants for quantified formula

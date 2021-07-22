@@ -23,6 +23,7 @@
 #include "printer/printer.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 
+#include <sstream>
 #include <numeric>  // for std::iota
 
 using namespace cvc5::kind;
