@@ -15,13 +15,13 @@
 
 #include "preprocessing/util/analyze_constants.h"
 
+#include "expr/node_algorithm.h"
 #include "expr/skolem_manager.h"
 #include "options/datatypes_options.h"
 #include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/quantifiers/sygus/sygus_enumerator.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
 #include "util/bitvector.h"
-#include "expr/node_algorithm.h"
 
 using namespace cvc5::theory;
 using namespace cvc5::kind;
@@ -42,7 +42,7 @@ SygusEnumeratorCallbackConstElim::SygusEnumeratorCallbackConstElim(
 
 bool SygusEnumeratorCallbackConstElim::addTerm(Node bn, Node bnr, bool isPre)
 {
-  if (bn==bnr)
+  if (bn == bnr)
   {
     return true;
   }
@@ -55,7 +55,8 @@ bool SygusEnumeratorCallbackConstElim::addTerm(Node bn, Node bnr, bool isPre)
       Node bns = d_subs.apply(bn);
       if (!expr::hasSubterm(bns, bnr))
       {
-        Trace("analyze-solved") << "SOLVED: " << bnr << " <- " << bns << std::endl;
+        Trace("analyze-solved")
+            << "SOLVED: " << bnr << " <- " << bns << std::endl;
         d_solved[bnr] = bns;
         d_subs.add(bnr, bns);
       }
@@ -84,11 +85,12 @@ void AnalyzeConstants::analyzeConstants(TypeNode tn,
   }
   if (tn.isBitVector())
   {
-    if (tn.getBitVectorSize()<=8 || cs.size()<=1)
+    if (tn.getBitVectorSize() <= 8 || cs.size() <= 1)
     {
       return;
     }
-    Trace("analyze") << "Setting up sygus enumeration for " << cs.size() << " constants for type " << tn << "..." << std::endl;
+    Trace("analyze") << "Setting up sygus enumeration for " << cs.size()
+                     << " constants for type " << tn << "..." << std::endl;
     NodeManager* nm = NodeManager::currentNM();
     std::map<TypeNode, std::unordered_set<Node>> extra_cons;
     for (const Node& c : cs)
@@ -110,18 +112,20 @@ void AnalyzeConstants::analyzeConstants(TypeNode tn,
     SygusEnumeratorCallbackConstElim scce(e, cs);
     quantifiers::SygusEnumerator se(nullptr, &scce);
     se.initialize(e);
-    size_t maxSize = options::sygusAbortSizeTest()>=0 ? static_cast<size_t>(options::sygusAbortSizeTest()) : 3;
+    size_t maxSize = options::sygusAbortSizeTest() >= 0
+                         ? static_cast<size_t>(options::sygusAbortSizeTest())
+                         : 3;
     while (se.increment())
     {
       Node curr = se.getCurrent();
-      if (datatypes::utils::getSygusTermSize(curr)>=maxSize)
+      if (datatypes::utils::getSygusTermSize(curr) >= maxSize)
       {
         break;
       }
       if (!curr.isNull())
       {
-        Trace("analyze-enum") << "  " << datatypes::utils::sygusToBuiltin(curr)
-                         << std::endl;
+        Trace("analyze-enum")
+            << "  " << datatypes::utils::sygusToBuiltin(curr) << std::endl;
       }
     }
     Trace("analyze") << "...finished enumeration" << std::endl;
@@ -141,7 +145,8 @@ void AnalyzeConstants::analyzeConstants(TypeNode tn,
       }
       Trace("analyze") << std::endl;
     }
-    Trace("analyze") << solvedCount << " / " << cs.size() << " constants solved" << std::endl;
+    Trace("analyze") << solvedCount << " / " << cs.size() << " constants solved"
+                     << std::endl;
   }
 }
 

@@ -21,9 +21,9 @@
 #include "expr/node.h"
 
 #include "theory/quantifiers/sygus/enum_val_generator.h"
+#include "theory/quantifiers/sygus/example_eval_cache.h"
 #include "theory/quantifiers/sygus/sygus_enumerator_callback.h"
 #include "theory/quantifiers/sygus_sampler.h"
-#include "theory/quantifiers/sygus/example_eval_cache.h"
 
 namespace cvc5 {
 namespace theory {
@@ -54,13 +54,14 @@ class EnumManager
    * current value is null but it has not finished generating values.
    */
   Node getEnumeratedValue(bool& activeIncomplete);
-  /** 
+  /**
    * Notify that a synthesis candidate was tried, which clears the value
    * of d_ev_active_gen_waiting.
    */
   void notifyCandidate();
   /** Get the example evaluation cache */
-  ExampleEvalCache * getExampleEvalCache();
+  ExampleEvalCache* getExampleEvalCache();
+
  private:
   /**
    * Get model value for term n.

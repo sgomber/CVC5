@@ -227,10 +227,7 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
 
 void EnumManager::notifyCandidate() { d_ev_active_gen_waiting = Node::null(); }
 
-ExampleEvalCache * EnumManager::getExampleEvalCache()
-{
-  return &d_eec;
-}
+ExampleEvalCache* EnumManager::getExampleEvalCache() { return &d_eec; }
 
 Node EnumManager::getModelValue(Node n)
 {
