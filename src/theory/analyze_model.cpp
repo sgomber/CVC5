@@ -52,7 +52,7 @@ void AnalyzeModel::analyzeModelFailure()
   std::vector<bool> expectedValKnown;
   std::stringstream ssa;
   ssa << "(assign";
-  for (const Node& l : lits)
+  for (TNode l : lits)
   {
     size_t id = getOrAssignIdFor(l);
     lvec.push_back(l);
