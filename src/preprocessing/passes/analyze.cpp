@@ -47,6 +47,7 @@ PreprocessingPassResult Analyze::applyInternal(
     {
       d_aconsts.analyzeConstants(tc.first, tc.second);
     }
+    exit(1);
   }
   return PreprocessingPassResult::NO_CONFLICT;
 }

@@ -34,8 +34,6 @@ class SygusEnumeratorCallbackConstElim
    * Add term, return true if the term should be considered in the enumeration
    */
   bool addTerm(Node bn, Node bnr, bool isPre) override;
-
- private:
   /** Map from constants to solved form */
   std::map<Node, Node> d_solved;
   /** Substitution */

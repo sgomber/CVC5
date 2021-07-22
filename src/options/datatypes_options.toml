@@ -172,3 +172,11 @@ name   = "Datatypes Theory"
   type       = "int"
   default    = "-1"
   help       = "tells enumerative sygus to only consider solutions up to term size N (-1 == no limit, default)"
+
+[[option]]
+  name       = "sygusAbortSizeTest"
+  category   = "regular"
+  long       = "sygus-abort-size-test=N"
+  type       = "int"
+  default    = "3"
+  help       = "tells enumerative sygus to only consider solutions up to term size N (-1 == no limit, default)"
