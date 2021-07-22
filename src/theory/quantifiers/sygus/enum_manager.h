@@ -46,19 +46,20 @@ class EnumManager
               QuantifiersInferenceManager& qim,
               TermRegistry& tr,
               SygusStatistics& s,
-              bool hasExamples
-             );
+              bool hasExamples);
   ~EnumManager();
   /**
    * Get model value for term n. If n has a value that was excluded by
    * datatypes sygus symmetry breaking, this method returns null. It sets
-   * activeIncomplete to true if the enumerator we are managing is actively-generated, and its
-   * current value is null but it has not finished generating values.
+   * activeIncomplete to true if the enumerator we are managing is
+   * actively-generated, and its current value is null but it has not finished
+   * generating values.
    */
   Node getEnumeratedValue(bool& activeIncomplete);
   /**
    * Notify that a synthesis candidate was tried, which clears the value
-   * of d_ev_active_gen_waiting, as well as the evaluation cache if modelSuccess is true
+   * of d_ev_active_gen_waiting, as well as the evaluation cache if modelSuccess
+   * is true
    */
   void notifyCandidate(bool modelSuccess);
   /** Get the example evaluation cache */

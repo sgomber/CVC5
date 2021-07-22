@@ -24,7 +24,7 @@
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
-  
+
 class TermDbSygus;
 
 /** Streamer of different values according to variable permutations

@@ -26,13 +26,13 @@
 #include "theory/quantifiers/sygus/cegis.h"
 #include "theory/quantifiers/sygus/cegis_core_connective.h"
 #include "theory/quantifiers/sygus/cegis_unif.h"
+#include "theory/quantifiers/sygus/example_eval_cache.h"
 #include "theory/quantifiers/sygus/example_infer.h"
 #include "theory/quantifiers/sygus/sygus_process_conj.h"
 #include "theory/quantifiers/sygus/sygus_repair_const.h"
 #include "theory/quantifiers/sygus/sygus_stats.h"
 #include "theory/quantifiers/sygus/synth_verify.h"
 #include "theory/quantifiers/sygus/template_infer.h"
-#include "theory/quantifiers/sygus/example_eval_cache.h"
 
 namespace cvc5 {
 namespace theory {
@@ -42,7 +42,6 @@ class CegGrammarConstructor;
 class SygusPbe;
 class SygusStatistics;
 class EnumManager;
-
 
 /** a synthesis conjecture
  * This class implements approaches for a synthesis conjecture, given by data
@@ -250,10 +249,10 @@ class SynthConjecture
   bool getEnumeratedValues(std::vector<Node>& n,
                            std::vector<Node>& v,
                            bool& activeIncomplete);
-  /** 
+  /**
    * Get or make enumerator manager for the enumerator e.
    */
-  EnumManager * getEnumManagerFor(Node e);
+  EnumManager* getEnumManagerFor(Node e);
   //------------------------end enumerators
 
   /** list of constants for quantified formula

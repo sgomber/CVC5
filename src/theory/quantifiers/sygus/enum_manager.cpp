@@ -36,7 +36,7 @@ EnumManager::EnumManager(Node e,
                          QuantifiersInferenceManager& qim,
                          TermRegistry& tr,
                          SygusStatistics& s,
-              bool hasExamples)
+                         bool hasExamples)
     : d_enum(e),
       d_qim(qim),
       d_treg(tr),
@@ -226,11 +226,11 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
   return v;
 }
 
-void EnumManager::notifyCandidate(bool modelSuccess) 
-{ 
+void EnumManager::notifyCandidate(bool modelSuccess)
+{
   d_ev_active_gen_waiting = Node::null();
   // clear evaluation
-  if (modelSuccess && d_eec!=nullptr)
+  if (modelSuccess && d_eec != nullptr)
   {
     d_eec->clearEvaluationAll();
   }
