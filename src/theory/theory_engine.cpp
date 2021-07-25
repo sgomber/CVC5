@@ -911,8 +911,7 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
 
   // determine the actual theory that will process/explain the fact, which is
   // THEORY_BUILTIN if the theory uses the central equality engine
-  TheoryId toTheoryIdProp = (toTheoryId != THEORY_ARITH
-                             && Theory::usesCentralEqualityEngine(toTheoryId))
+  TheoryId toTheoryIdProp = (Theory::expUsingCentralEqualityEngine(toTheoryId))
                                 ? THEORY_BUILTIN
                                 : toTheoryId;
   // If sending to the shared solver, it's also simple
@@ -1553,8 +1552,7 @@ TrustNode TheoryEngine::getExplanation(
   while (i < explanationVector.size()) {
     // Get the current literal to explain
     NodeTheoryPair toExplain = explanationVector[i];
-    if (toExplain.d_theory != THEORY_ARITH
-        && Theory::usesCentralEqualityEngine(toExplain.d_theory))
+    if (Theory::expUsingCentralEqualityEngine(toExplain.d_theory))
     {
       toExplain.d_theory = THEORY_BUILTIN;
     }
@@ -1695,21 +1693,8 @@ TrustNode TheoryEngine::getExplanation(
     Debug("theory::explain")
         << "TheoryEngine::explain(): got explanation " << explanation
         << " got from " << toExplain.d_theory << endl;
-    if (explanation == toExplain.d_node)
-    {
-      Trace("ajr-temp") << "Bad explanation: " << explanation << std::endl;
-    }
     AlwaysAssert(explanation != toExplain.d_node)
-        << "wasn't sent to you, so why are you explaining it trivially";
-    /*
-if (explanation == toExplain.d_node)
-{
-  Debug("theory::explain") << "...identical, keep" << std::endl;
-  AlwaysAssert(false);
-  exp.insert(explanationVector[i++].d_node);
-  continue;
-}
-*/
+        << "wasn't sent to you, so why are you explaining it trivially, for fact " << explanation;
     // Mark the explanation
     NodeTheoryPair newExplain(
         explanation, toExplain.d_theory, toExplain.d_timestamp);

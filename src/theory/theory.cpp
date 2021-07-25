@@ -638,6 +638,11 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
          || id == THEORY_SEP || id == THEORY_ARRAYS;
 }
 
+bool Theory::expUsingCentralEqualityEngine(TheoryId id)
+{
+  return id!=THEORY_ARITH && usesCentralEqualityEngine(id);
+}
+
 bool Theory::needsFactQueue(TheoryId id)
 {
   if (id == THEORY_UF || id == THEORY_DATATYPES)

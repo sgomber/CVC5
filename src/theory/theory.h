@@ -883,10 +883,12 @@ class Theory {
    */
   static bool needsFactQueue(TheoryId id);
 
-  /** uses central equality engine */
+  /** Return true if this theory uses central equality engine */
   bool usesCentralEqualityEngine() const;
   /** uses central equality engine (static) */
   static bool usesCentralEqualityEngine(TheoryId id);
+  /** Explains/propagates via central equality engine only */
+  static bool expUsingCentralEqualityEngine(TheoryId id);
 };/* class Theory */
 
 std::ostream& operator<<(std::ostream& os, theory::Theory::Effort level);

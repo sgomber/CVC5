@@ -534,7 +534,6 @@ void TheoryDatatypes::eqNotifyNewClass(TNode t){
 /** called when two equivalance classes have merged */
 void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
 {
-  // bool prevPending = d_im.hasPending();
   if( t1.getType().isDatatype() ){
     Trace("datatypes-merge")
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
@@ -858,7 +857,6 @@ void TheoryDatatypes::addTester(
               eq_terms.push_back( t_arg2 );
               if( t_arg2!=t_arg ){
                 nb << t_arg2.eqNode( t_arg );
-                // AlwaysAssert(areEqual(t_arg2, t_arg));
               }
             }
           }
