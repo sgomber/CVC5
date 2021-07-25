@@ -85,7 +85,8 @@ void AnalyzeConstants::analyzeConstants(TypeNode tn,
   }
   if (tn.isBitVector())
   {
-    if (tn.getBitVectorSize() <= 8 || cs.size() <= 1)
+    uint32_t w = tn.getBitVectorSize();
+    if (w <= 8 || cs.size() <= 1)
     {
       return;
     }
@@ -131,6 +132,8 @@ void AnalyzeConstants::analyzeConstants(TypeNode tn,
     Trace("analyze") << "...finished enumeration" << std::endl;
     Trace("analyze") << "Constants of type " << tn << ":" << std::endl;
     size_t solvedCount = 0;
+    std::unordered_set<uint32_t> bitTrans;
+    bitTrans.insert(0);
     for (const Node& c : cs)
     {
       const BitVector& bv = c.getConst<BitVector>();
@@ -138,6 +141,15 @@ void AnalyzeConstants::analyzeConstants(TypeNode tn,
       if (scce.d_solved[c].isNull())
       {
         Trace("analyze") << " (req)";
+        bool currBitSet = bv.isBitSet(0);
+        for (uint32_t i=1; i<w; i++)
+        {
+          if (bv.isBitSet(i)!=currBitSet)
+          {
+            bitTrans.insert(i);
+            currBitSet = !currBitSet;
+          }
+        }
       }
       else
       {
@@ -147,6 +159,12 @@ void AnalyzeConstants::analyzeConstants(TypeNode tn,
     }
     Trace("analyze") << solvedCount << " / " << cs.size() << " constants solved"
                      << std::endl;
+    Trace("analyze") << bitTrans.size() << " / " << w << " bits have transitions" << std::endl;
+    for (uint32_t i=0; i<w; i++)
+    {
+      Trace("analyze") << (bitTrans.find((w-i)-1)!=bitTrans.end() ? 1 : 0);
+    }
+    Trace("analyze") << std::endl;
   }
 }
 
