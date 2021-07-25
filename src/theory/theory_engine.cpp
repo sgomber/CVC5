@@ -1531,6 +1531,12 @@ TrustNode TheoryEngine::getExplanation(
 {
   Assert(explanationVector.size() == 1);
   Node conclusion = explanationVector[0].d_node;
+  // if the theory explains using the central equality engine, we always start
+  // with THEORY_BUILTIN.
+  if (Theory::expUsingCentralEqualityEngine(explanationVector[0].d_theory))
+  {
+    explanationVector[0].d_theory = THEORY_BUILTIN;
+  }
   std::shared_ptr<LazyCDProof> lcp;
   if (isProofEnabled())
   {
@@ -1552,10 +1558,6 @@ TrustNode TheoryEngine::getExplanation(
   while (i < explanationVector.size()) {
     // Get the current literal to explain
     NodeTheoryPair toExplain = explanationVector[i];
-    if (Theory::expUsingCentralEqualityEngine(toExplain.d_theory))
-    {
-      toExplain.d_theory = THEORY_BUILTIN;
-    }
 
     Debug("theory::explain")
         << "[i=" << i << "] TheoryEngine::explain(): processing ["
