@@ -1694,7 +1694,9 @@ TrustNode TheoryEngine::getExplanation(
         << "TheoryEngine::explain(): got explanation " << explanation
         << " got from " << toExplain.d_theory << endl;
     AlwaysAssert(explanation != toExplain.d_node)
-        << "wasn't sent to you, so why are you explaining it trivially, for fact " << explanation;
+        << "wasn't sent to you, so why are you explaining it trivially, for "
+           "fact "
+        << explanation;
     // Mark the explanation
     NodeTheoryPair newExplain(
         explanation, toExplain.d_theory, toExplain.d_timestamp);

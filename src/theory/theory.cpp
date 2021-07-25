@@ -640,7 +640,7 @@ bool Theory::usesCentralEqualityEngine(TheoryId id)
 
 bool Theory::expUsingCentralEqualityEngine(TheoryId id)
 {
-  return id!=THEORY_ARITH && usesCentralEqualityEngine(id);
+  return id != THEORY_ARITH && usesCentralEqualityEngine(id);
 }
 
 bool Theory::needsFactQueue(TheoryId id)
