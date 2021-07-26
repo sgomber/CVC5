@@ -2096,6 +2096,7 @@ set(regress_1_tests
   regress1/strings/bug686dd.smt2
   regress1/strings/bug768.smt2
   regress1/strings/bug799-min.smt2
+  regress1/strings/cee-norn-aes-trivially.smt2 
   regress1/strings/chapman150408.smt2
   regress1/strings/cmu-2db2-extf-reg.smt2
   regress1/strings/cmu-5042-0707-2.smt2
