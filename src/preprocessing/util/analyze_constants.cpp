@@ -142,9 +142,9 @@ void AnalyzeConstants::analyzeConstants(TypeNode tn,
       {
         Trace("analyze") << " (req)";
         bool currBitSet = bv.isBitSet(0);
-        for (uint32_t i=1; i<w; i++)
+        for (uint32_t i = 1; i < w; i++)
         {
-          if (bv.isBitSet(i)!=currBitSet)
+          if (bv.isBitSet(i) != currBitSet)
           {
             bitTrans.insert(i);
             currBitSet = !currBitSet;
@@ -159,10 +159,12 @@ void AnalyzeConstants::analyzeConstants(TypeNode tn,
     }
     Trace("analyze") << solvedCount << " / " << cs.size() << " constants solved"
                      << std::endl;
-    Trace("analyze") << bitTrans.size() << " / " << w << " bits have transitions" << std::endl;
-    for (uint32_t i=0; i<w; i++)
+    Trace("analyze") << bitTrans.size() << " / " << w
+                     << " bits have transitions" << std::endl;
+    for (uint32_t i = 0; i < w; i++)
     {
-      Trace("analyze") << (bitTrans.find((w-i)-1)!=bitTrans.end() ? 1 : 0);
+      Trace("analyze") << (bitTrans.find((w - i) - 1) != bitTrans.end() ? 1
+                                                                        : 0);
     }
     Trace("analyze") << std::endl;
   }
