@@ -474,7 +474,8 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
   // call the notify fact method with isInternal = true
   d_theory.notifyFact(atom, pol, expn, true);
   Trace("infer-manager")
-      << "TheoryInferenceManager::finished assertInternalFact, ret=" << ret << std::endl;
+      << "TheoryInferenceManager::finished assertInternalFact, ret=" << ret
+      << std::endl;
   return ret;
 }
 
