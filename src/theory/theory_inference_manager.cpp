@@ -393,7 +393,7 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
   Assert(d_ee != nullptr);
   Trace("infer-manager") << "TheoryInferenceManager::assertInternalFact: "
                          << (pol ? Node(atom) : atom.notNode()) << " from "
-                         << expn << std::endl;
+                         << expn << " / " << iid << " " << id << std::endl;
   if (Configuration::isAssertionBuild())
   {
     // check that all facts hold in the equality engine, to ensure that we
@@ -431,9 +431,8 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
   }
   d_numCurrentFacts++;
   // Now, assert the fact. How to do so depends on whether proofs are enabled.
-  // If no proof production, or no proof rule was given
   bool ret = false;
-  if (d_pfee == nullptr || id == PfRule::UNKNOWN)
+  if (d_pfee == nullptr)
   {
     Trace("infer-manager") << "...assert without proofs..." << std::endl;
     if (atom.getKind() == kind::EQUAL)
@@ -454,6 +453,7 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
   }
   else
   {
+    Assert(id != PfRule::UNKNOWN);
     Trace("infer-manager") << "...assert with proofs..." << std::endl;
     // Note that we reconstruct the original literal lit here, since both the
     // original literal is needed for bookkeeping proofs. It is possible to
