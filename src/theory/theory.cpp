@@ -645,6 +645,10 @@ bool Theory::expUsingCentralEqualityEngine(TheoryId id)
 
 bool Theory::needsFactQueue(TheoryId id)
 {
+  if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
+  {
+    return true;
+  }
   if (id == THEORY_UF || id == THEORY_DATATYPES)
   {
     return false;

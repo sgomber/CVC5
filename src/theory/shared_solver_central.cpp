@@ -108,10 +108,10 @@ TrustNode SharedSolverCentral::explain(TNode literal, TheoryId id)
     Node exp = NodeManager::currentNM()->mkAnd(assumptions);
     */
 
-    Node exp = d_centralEe->mkExplainLit(literal);
-    texp = TrustNode::mkTrustPropExp(literal, exp, nullptr);
+    // explanation using the shared terms database
+    texp = d_sharedTerms.explain(literal);
     Trace("shared-solver")
-        << "\tTerm was propagated by THEORY_BUILTIN. Explanation: " << exp
+        << "\tTerm was propagated by THEORY_BUILTIN. Explanation: " << texp
         << std::endl;
   }
   else
