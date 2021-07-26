@@ -1789,7 +1789,7 @@ void TheorySep::sendLemma( std::vector< Node >& ant, Node conc, InferenceId id, 
       }else{
         Trace("sep-lemma") << "Sep::Lemma: " << conc << " from " << ant
                            << " by " << id << std::endl;
-        TrustNode trn = d_im.mkLemmaExp(conc, ant, {});
+        TrustNode trn = d_im.mkLemmaExp(conc, PfRule::THEORY_INFERENCE, ant, {}, {});
         d_im.addPendingLemma(
             trn.getNode(), id, LemmaProperty::NONE, trn.getGenerator());
       }

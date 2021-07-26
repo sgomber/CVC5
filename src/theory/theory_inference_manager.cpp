@@ -435,6 +435,7 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
   bool ret = false;
   if (d_pfee == nullptr || id == PfRule::UNKNOWN)
   {
+    Trace("infer-manager") << "...assert without proofs..." << std::endl;
     if (atom.getKind() == kind::EQUAL)
     {
       ret = d_ee->assertEquality(atom, pol, expn);
@@ -453,6 +454,7 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
   }
   else
   {
+    Trace("infer-manager") << "...assert with proofs..." << std::endl;
     // Note that we reconstruct the original literal lit here, since both the
     // original literal is needed for bookkeeping proofs. It is possible to
     // optimize this so that a few less nodes are created, but at the cost
@@ -472,7 +474,7 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
   // call the notify fact method with isInternal = true
   d_theory.notifyFact(atom, pol, expn, true);
   Trace("infer-manager")
-      << "TheoryInferenceManager::finished assertInternalFact" << std::endl;
+      << "TheoryInferenceManager::finished assertInternalFact, ret=" << ret << std::endl;
   return ret;
 }
 

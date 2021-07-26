@@ -178,7 +178,7 @@ TrustNode ProofEqEngine::assertConflict(Node lit)
   {
     Assert(Rewriter::rewrite(lit) == d_false)
         << "pfee::assertConflict: conflict literal is not rewritable to "
-           "false";
+           "false, the literal: " << lit;
     std::vector<Node> exp;
     exp.push_back(lit);
     std::vector<Node> args;
