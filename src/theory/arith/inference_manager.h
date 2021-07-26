@@ -101,6 +101,7 @@ class InferenceManager : public InferenceManagerBuffered
   bool propagateLit(TNode lit) override;
   /** has propagated */
   bool hasPropagated(TNode lit) const;
+
  protected:
   /**
    * Adds the given lemma to the cache. Returns true if it has not been in the

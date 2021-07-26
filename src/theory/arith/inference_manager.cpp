@@ -27,7 +27,8 @@ namespace arith {
 InferenceManager::InferenceManager(TheoryArith& ta,
                                    ArithState& astate,
                                    ProofNodeManager* pnm)
-    : InferenceManagerBuffered(ta, astate, pnm, "theory::arith::"), d_propLits(astate.getSatContext())
+    : InferenceManagerBuffered(ta, astate, pnm, "theory::arith::"),
+      d_propLits(astate.getSatContext())
 {
 }
 
@@ -148,14 +149,14 @@ bool InferenceManager::isEntailedFalse(const SimpleTheoryLemma& lem)
 
 bool InferenceManager::propagateLit(TNode lit)
 {
-  Assert (!hasPropagated(lit));
+  Assert(!hasPropagated(lit));
   d_propLits.insert(lit);
   return TheoryInferenceManager::propagateLit(lit);
 }
 
 bool InferenceManager::hasPropagated(TNode lit) const
 {
-  return d_propLits.find(lit)!=d_propLits.end();
+  return d_propLits.find(lit) != d_propLits.end();
 }
 
 }  // namespace arith
