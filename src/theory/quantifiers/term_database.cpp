@@ -1034,9 +1034,9 @@ bool TermDb::reset( Theory::Effort effort ){
           eq = itpe->second;
         }
         Trace("quant-ho") << "- assert purify equality : " << eq << std::endl;
-        // FIXME: this should not be done if ee is the central equality
-        // engine
-        ee->assertEquality(eq, true, eq);
+        // Note that ee may be the central equality engine, in which case this
+        // equality is explained trivially with "true".
+        ee->assertEquality(eq, true, d_true);
         if (!ee->consistent())
         {
           // In some rare cases, purification functions (in the domain of
