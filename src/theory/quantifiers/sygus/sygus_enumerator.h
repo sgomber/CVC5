@@ -61,7 +61,7 @@ class SygusEnumerator : public EnumValGenerator
    * @param tds Pointer to the term database, required if enumShapes or
    * enumAnyConstHoles is true, or if we want to include symmetry breaking from
    * lemmas stored in the sygus term database,
-   * @param sec Pointer to the enumerator callback, required if we wish to
+   * @param sec Pointer to the callback, required e.g. if we wish to do
    * conjecture-specific symmetry breaking
    * @param s Pointer to the statistics
    * @param enumShapes If true, this enumerator will generate terms having any
@@ -89,7 +89,7 @@ class SygusEnumerator : public EnumValGenerator
  private:
   /** pointer to term database sygus */
   TermDbSygus* d_tds;
-  /** pointer to the synth conjecture that owns this enumerator */
+  /** pointer to the enumerator callback we are using (if any) */
   SygusEnumeratorCallback* d_sec;
   /** if we allocated a default sygus enumerator callback */
   std::unique_ptr<SygusEnumeratorCallbackDefault> d_secd;
