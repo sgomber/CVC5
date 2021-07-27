@@ -345,8 +345,8 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
     if (!d_sec->addTerm(n, d_bterms))
     {
       Trace("sygus-enum-exc")
-          << "Exclude: " << datatypes::utils::sygusToBuiltin(n) << " due to callback"
-          << std::endl;
+          << "Exclude: " << datatypes::utils::sygusToBuiltin(n)
+          << " due to callback" << std::endl;
       return false;
     }
   }

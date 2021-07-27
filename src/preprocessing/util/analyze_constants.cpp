@@ -40,7 +40,9 @@ SygusEnumeratorCallbackConstElim::SygusEnumeratorCallbackConstElim(
   }
 }
 
-bool SygusEnumeratorCallbackConstElim::addTermInternal(Node n, Node bn, Node bnr)
+bool SygusEnumeratorCallbackConstElim::addTermInternal(Node n,
+                                                       Node bn,
+                                                       Node bnr)
 {
   if (bn == bnr)
   {
