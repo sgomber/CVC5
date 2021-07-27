@@ -1,3 +1,6 @@
+; COMMAND-LINE: --ee-mode=distributed
+; COMMAND-LINE: --ee-mode=central
+; EXPECT: unsat
 (set-logic ALL)
 (set-info :status unsat)
 (set-option :fmf-bound true)

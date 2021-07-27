@@ -1,4 +1,5 @@
-; COMMAND-LINE: -i
+; COMMAND-LINE: -i --ee-mode=distributed
+; COMMAND-LINE: -i --ee-mode=central
 ; EXPECT: sat
 ; EXPECT: unsat
 (set-logic ALL)

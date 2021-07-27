@@ -1,3 +1,6 @@
+; COMMAND-LINE: --ee-mode=distributed
+; COMMAND-LINE: --ee-mode=central
+; EXPECT: sat
 (set-logic ALL)
 (set-info :status sat)
 (declare-datatypes ((x5 0)) (((x3) (x4))))
