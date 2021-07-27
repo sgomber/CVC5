@@ -287,6 +287,29 @@ void TheoryBV::presolve() { d_internal->presolve(); }
 
 EqualityStatus TheoryBV::getEqualityStatus(TNode a, TNode b)
 {
+  Trace("theory-bv") << "get equality status " << a << " " << b << std::endl;
+  // if not using an equality engine, then by default we don't know the status
+  if (d_equalityEngine != nullptr)
+  {
+    Assert(d_equalityEngine->hasTerm(a) && d_equalityEngine->hasTerm(b));
+
+    // Check for equality (simplest)
+    if (d_equalityEngine->areEqual(a, b))
+    {
+      Trace("theory-bv") << EQUALITY_TRUE << std::endl;
+      // The terms are implied to be equal
+      return EQUALITY_TRUE;
+    }
+
+    // Check for disequality
+    if (d_equalityEngine->areDisequal(a, b, false))
+    {
+      Trace("theory-bv") << EQUALITY_FALSE << std::endl;
+      // The terms are implied to be dis-equal
+      return EQUALITY_FALSE;
+    }
+  }
+  
   EqualityStatus status = d_internal->getEqualityStatus(a, b);
 
   if (status == EqualityStatus::EQUALITY_UNKNOWN)
@@ -296,15 +319,16 @@ EqualityStatus TheoryBV::getEqualityStatus(TNode a, TNode b)
 
     if (value_a.isNull() || value_b.isNull())
     {
+      Trace("theory-bv") << status << std::endl;
       return status;
     }
 
     if (value_a == value_b)
     {
-      Debug("theory-bv") << EQUALITY_TRUE_IN_MODEL << std::endl;
+      Trace("theory-bv") << EQUALITY_TRUE_IN_MODEL << std::endl;
       return EQUALITY_TRUE_IN_MODEL;
     }
-    Debug("theory-bv") << EQUALITY_FALSE_IN_MODEL << std::endl;
+    Trace("theory-bv") << EQUALITY_FALSE_IN_MODEL << std::endl;
     return EQUALITY_FALSE_IN_MODEL;
   }
   return status;
