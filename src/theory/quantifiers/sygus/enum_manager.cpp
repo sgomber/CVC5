@@ -105,7 +105,7 @@ Node EnumManager::getEnumeratedValue(bool& activeIncomplete)
                 d_tds, e, options::sygusSamples(), false);
           }
           d_secd.reset(new SygusEnumeratorCallbackDefault(
-              e, d_eec.get(), &d_stats, d_samplerRrV.get()));
+              e, &d_stats, d_eec.get(), d_samplerRrV.get()));
         }
         // if sygus repair const is enabled, we enumerate terms with free
         // variables as arguments to any-constant constructors

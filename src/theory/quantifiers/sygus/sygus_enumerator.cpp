@@ -54,7 +54,7 @@ void SygusEnumerator::initialize(Node e)
   // allocate the default callback
   if (d_sec == nullptr && options::sygusSymBreakDynamic())
   {
-    d_secd.reset(new SygusEnumeratorCallbackDefault(e, nullptr, d_stats));
+    d_secd.reset(new SygusEnumeratorCallbackDefault(e, d_stats));
     d_sec = d_secd.get();
   }
   d_etype = d_enum.getType();
@@ -342,35 +342,12 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
   Assert(!n.isNull());
   if (d_sec != nullptr)
   {
-    Node bn = datatypes::utils::sygusToBuiltin(n);
-    Node bnr = d_extr.extendedRewrite(bn);
-    if (d_stats != nullptr)
+    if (!d_sec->addTerm(n, d_bterms))
     {
-      ++(d_stats->d_enumTermsRewrite);
-    }
-    // check whether we should keep the term, which is based on the callback,
-    // and the builtin terms
-    for (size_t i = 0; i < 2; i++)
-    {
-      if (!d_sec->addTerm(bn, bnr, i == 0))
-      {
-        Trace("sygus-enum-exc")
-            << "Exclude: " << bn << " due to callback, isPre = " << (i == 0)
-            << std::endl;
-        return false;
-      }
-      else if (i == 0)
-      {
-        // must be unique up to rewriting
-        if (d_bterms.find(bnr) != d_bterms.end())
-        {
-          Trace("sygus-enum-exc") << "Exclude: " << bn << std::endl;
-          return false;
-        }
-        // insert to builtin term cache, regardless of whether it is redundant
-        // based on examples.
-        d_bterms.insert(bnr);
-      }
+      Trace("sygus-enum-exc")
+          << "Exclude: " << datatypes::utils::sygusToBuiltin(n) << " due to callback"
+          << std::endl;
+      return false;
     }
   }
   if (d_stats != nullptr)

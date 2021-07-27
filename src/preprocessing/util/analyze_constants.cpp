@@ -40,7 +40,7 @@ SygusEnumeratorCallbackConstElim::SygusEnumeratorCallbackConstElim(
   }
 }
 
-bool SygusEnumeratorCallbackConstElim::addTerm(Node bn, Node bnr, bool isPre)
+bool SygusEnumeratorCallbackConstElim::addTermInternal(Node n, Node bn, Node bnr)
 {
   if (bn == bnr)
   {
