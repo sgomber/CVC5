@@ -21,8 +21,8 @@
 #include <vector>
 
 #include "expr/node.h"
-#include "util/oracle_caller.h"
 #include "expr/node_converter.h"
+#include "util/oracle_caller.h"
 
 namespace cvc5 {
 namespace theory {
@@ -48,9 +48,10 @@ class OracleChecker : public NodeConverter
 
   /** Evaluate all oracle function applications to constants */
   Node evaluate(Node n);
+
  private:
-   /** Call back to convert */
-   Node postConvert(Node n) override;
+  /** Call back to convert */
+  Node postConvert(Node n) override;
   /** map of oracle interface nodes to oracle callers **/
   std::map<Node, OracleCaller> d_callers;
 };

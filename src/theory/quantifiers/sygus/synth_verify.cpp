@@ -94,7 +94,8 @@ Result SynthVerify::verify(Node query,
         }
       }
       query = nm->mkAnd(qconj);
-      Trace("cegqi-debug") << "after function definitions, query is " << query << std::endl;
+      Trace("cegqi-debug") << "after function definitions, query is " << query
+                           << std::endl;
     }
   }
   Trace("sygus-engine") << "  *** Verify with subcall..." << std::endl;

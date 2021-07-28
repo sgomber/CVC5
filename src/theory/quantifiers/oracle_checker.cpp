@@ -63,7 +63,8 @@ Node OracleChecker::postConvert(Node n)
 {
   Trace("oracle-checker-debug") << "postConvert: " << n << std::endl;
   // if it is an oracle function applied to constant arguments
-  if (n.getKind()==kind::APPLY_UF && OracleCaller::isOracleFunction(n.getOperator()))
+  if (n.getKind() == kind::APPLY_UF
+      && OracleCaller::isOracleFunction(n.getOperator()))
   {
     for (const Node& nc : n)
     {
