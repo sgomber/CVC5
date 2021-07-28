@@ -194,4 +194,7 @@ std::string OracleCaller::getBinaryNameFor(const Node n)
   return "";
 }
 
+
+  const std::map<Node, Node>& OracleCaller::getCachedResults() const { return d_cachedResults; }
+
 }  // namespace cvc5

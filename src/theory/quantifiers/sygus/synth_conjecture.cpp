@@ -651,23 +651,10 @@ bool SynthConjecture::doRefine()
   {
     Trace("cegqi-refine") << "Get model values for skolems..." << std::endl;
     Assert(d_inner_vars.size() == d_ce_sk_vars.size());
-    if (d_ce_sk_var_mvs.empty())
-    {
-      std::vector<Node> model_values;
-      for (const Node& v : d_ce_sk_vars)
-      {
-        Node mv = getModelValue(v);
-        Trace("cegqi-refine") << "  " << v << " -> " << mv << std::endl;
-        model_values.push_back(mv);
-      }
-      sk_subs.insert(sk_subs.end(), model_values.begin(), model_values.end());
-    }
-    else
-    {
-      Assert(d_ce_sk_var_mvs.size() == d_ce_sk_vars.size());
-      sk_subs.insert(
-          sk_subs.end(), d_ce_sk_var_mvs.begin(), d_ce_sk_var_mvs.end());
-    }
+    Assert (!d_ce_sk_var_mvs.empty());
+    Assert(d_ce_sk_var_mvs.size() == d_ce_sk_vars.size());
+    sk_subs.insert(
+        sk_subs.end(), d_ce_sk_var_mvs.begin(), d_ce_sk_var_mvs.end());
     sk_vars.insert(sk_vars.end(), d_inner_vars.begin(), d_inner_vars.end());
   }
   else
@@ -675,7 +662,6 @@ bool SynthConjecture::doRefine()
     Assert(d_inner_vars.empty());
   }
 
-  std::vector<Node> lem_c;
   Trace("cegqi-refine") << "doRefine : Construct refinement lemma..."
                         << std::endl;
   Trace("cegqi-refine-debug")

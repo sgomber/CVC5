@@ -87,6 +87,8 @@ class TermDbSygus {
   FunDefEvaluator* getFunDefEvaluator() { return d_funDefEval.get(); }
   /** evaluation unfolding utility */
   SygusEvalUnfold* getEvalUnfold() { return d_eval_unfold.get(); }
+  /** get the oracle checker */
+  OracleChecker * getOracleChecker() { return d_ochecker; }
   //------------------------------end utilities
 
   //------------------------------enumerators

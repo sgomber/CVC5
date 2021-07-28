@@ -51,6 +51,8 @@ class SynthVerify
                 std::vector<Node>& mvs);
 
  private:
+  /** Get query internal */
+  Node preprocessQueryInternal(Node query);
   /** Pointer to the term database sygus */
   TermDbSygus* d_tds;
   /** The options for subsolver calls */

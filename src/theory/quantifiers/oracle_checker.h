@@ -49,6 +49,12 @@ class OracleChecker : public NodeConverter
   /** Evaluate all oracle function applications to constants */
   Node evaluate(Node n);
 
+  /** Has oracles */
+  bool hasOracles() const;
+  /** Has oracle calls */
+  bool hasOracleCalls(Node f) const;
+  /** Get cached results */
+  const std::map<Node,Node>& getOracleCalls(Node f) const;
  private:
   /** Call back to convert */
   Node postConvert(Node n) override;

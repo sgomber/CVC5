@@ -48,6 +48,8 @@ class OracleCaller
   /** is f an oracle function? */
   static bool isOracleFunction(Node f);
 
+  /** get cached results */
+  const std::map<Node, Node>& getCachedResults() const;
  private:
   /** name of binary */
   std::string d_binaryName;

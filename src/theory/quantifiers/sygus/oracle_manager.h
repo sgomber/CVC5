@@ -27,6 +27,7 @@ namespace theory {
 namespace quantifiers {
 
 /**
+ * To be used for oracle assumptions / constraints.
  */
 class OracleManager
 {

@@ -15,6 +15,8 @@
 
 #include "theory/quantifiers/oracle_checker.h"
 
+#include "theory/rewriter.h"
+
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
@@ -66,18 +68,35 @@ Node OracleChecker::postConvert(Node n)
   if (n.getKind() == kind::APPLY_UF
       && OracleCaller::isOracleFunction(n.getOperator()))
   {
+    bool allConst = true;
     for (const Node& nc : n)
     {
       if (!nc.isConst())
       {
         // non-constant argument, fail
-        return n;
+        allConst = false;
       }
     }
-    // evaluate the application
-    return evaluateApp(n);
+    if (allConst)
+    {
+      // evaluate the application
+      return evaluateApp(n);
+    }
   }
-  return n;
+  // otherwise, always rewrite
+  return Rewriter::rewrite(n);
+}
+bool OracleChecker::hasOracles() const { return !d_callers.empty(); }
+bool OracleChecker::hasOracleCalls(Node f) const {
+  std::map<Node, OracleCaller>::const_iterator it = d_callers.find(f);
+  return it!=d_callers.end();
+}
+const std::map<Node,Node>& OracleChecker::getOracleCalls(Node f) const
+{
+  Assert (hasOracleCalls(f));
+  std::map<Node, OracleCaller>::const_iterator it = d_callers.find(f);
+  return it->second.getCachedResults();
+  
 }
 
 }  // namespace quantifiers
