@@ -762,7 +762,7 @@ Node TermDbSygus::rewriteNode(Node n) const
       // result of rewriting in the return statement below.
     }
   }
-  if (d_ochecker!=nullptr)
+  if (d_ochecker != nullptr)
   {
     // evaluate oracles if possible
   }

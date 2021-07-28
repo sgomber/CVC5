@@ -40,9 +40,9 @@ bool OracleChecker::checkConsistent(
 
 Node OracleChecker::evaluate(Node app)
 {
-  Assert (app.getKind()==APPLY_UF);
+  Assert(app.getKind() == APPLY_UF);
   Node f = app.getOperator();
-  Assert (OracleCaller::isOracleFunction(f));
+  Assert(OracleCaller::isOracleFunction(f));
   // get oracle caller
   if (d_callers.find(f) == d_callers.end())
   {

@@ -47,6 +47,7 @@ class OracleCaller
 
   /** is f an oracle function? */
   static bool isOracleFunction(Node f);
+
  private:
   /** name of binary */
   std::string d_binaryName;

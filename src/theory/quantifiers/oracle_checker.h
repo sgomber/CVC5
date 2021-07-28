@@ -44,6 +44,7 @@ class OracleChecker
    * Evaluate an oracle application
    */
   Node evaluate(Node app);
+
  private:
   /** map of oracle interface nodes to oracle callers **/
   std::map<Node, OracleCaller> d_callers;

@@ -24,11 +24,11 @@
 #include "theory/evaluator.h"
 #include "theory/quantifiers/extended_rewrite.h"
 #include "theory/quantifiers/fun_def_evaluator.h"
+#include "theory/quantifiers/oracle_checker.h"
 #include "theory/quantifiers/sygus/sygus_eval_unfold.h"
 #include "theory/quantifiers/sygus/sygus_explain.h"
 #include "theory/quantifiers/sygus/type_info.h"
 #include "theory/quantifiers/term_database.h"
-#include "theory/quantifiers/oracle_checker.h"
 
 namespace cvc5 {
 namespace theory {
@@ -334,7 +334,7 @@ class TermDbSygus {
   /** evaluation function unfolding utility */
   std::unique_ptr<SygusEvalUnfold> d_eval_unfold;
   /** Pointer to the oracle checker */
-  OracleChecker * d_ochecker;
+  OracleChecker* d_ochecker;
   //------------------------------end utilities
 
   //------------------------------enumerators

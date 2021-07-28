@@ -173,10 +173,10 @@ std::string OracleCaller::getBinaryNameFor(const Node n)
   // oracle functions have no children
   if (n.isVar())
   {
-    Assert (isOracleFunction(n));
+    Assert(isOracleFunction(n));
     return n.getAttribute(theory::OracleInterfaceAttribute());
   }
-  else if (n.getKind()==kind::FORALL)
+  else if (n.getKind() == kind::FORALL)
   {
     // oracle interfaces have children, and the attribute is stored in 2nd child
     for (const Node& v : n[2][0])
