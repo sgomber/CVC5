@@ -42,7 +42,7 @@ bool OracleChecker::checkConsistent(
 
 Node OracleChecker::evaluateApp(Node app)
 {
-  Assert(app.getKind() == APPLY_UF);
+  Assert(app.getKind() == kind::APPLY_UF);
   Node f = app.getOperator();
   Assert(OracleCaller::isOracleFunction(f));
   // get oracle caller
