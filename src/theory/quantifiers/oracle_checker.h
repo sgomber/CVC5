@@ -22,6 +22,7 @@
 
 #include "expr/node.h"
 #include "util/oracle_caller.h"
+#include "expr/node_converter.h"
 
 namespace cvc5 {
 namespace theory {
@@ -30,7 +31,7 @@ namespace quantifiers {
 /**
  * Oracle checker, maintains callers for all oracle functions.
  */
-class OracleChecker
+class OracleChecker : public NodeConverter
 {
  public:
   OracleChecker() {}
@@ -43,9 +44,13 @@ class OracleChecker
   /**
    * Evaluate an oracle application
    */
-  Node evaluate(Node app);
+  Node evaluateApp(Node app);
 
+  /** Evaluate all oracle function applications to constants */
+  Node evaluate(Node n);
  private:
+   /** Call back to convert */
+   Node postConvert(Node n) override;
   /** map of oracle interface nodes to oracle callers **/
   std::map<Node, OracleCaller> d_callers;
 };

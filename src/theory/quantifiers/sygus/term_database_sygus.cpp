@@ -755,7 +755,7 @@ Node TermDbSygus::rewriteNode(Node n) const
       Node fres = d_funDefEval->evaluate(res);
       if (!fres.isNull())
       {
-        return fres;
+        res = fres;
       }
       // It may have failed, in which case there are undefined symbols in res or
       // we reached the limit of evaluations. In this case, we revert to the
@@ -764,7 +764,8 @@ Node TermDbSygus::rewriteNode(Node n) const
   }
   if (d_ochecker != nullptr)
   {
-    // evaluate oracles if possible
+    // evaluate oracles
+    res = d_ochecker->evaluate(res);
   }
   return res;
 }

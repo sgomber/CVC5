@@ -55,10 +55,11 @@ Result SynthVerify::verify(Node query,
                            std::vector<Node>& mvs)
 {
   NodeManager* nm = NodeManager::currentNM();
+  Trace("cegqi-debug") << "pre-rewritten query : " << query << std::endl;
   // simplify the lemma based on the term database sygus utility
   query = d_tds->rewriteNode(query);
   // eagerly unfold applications of evaluation function
-  Trace("cegqi-debug") << "pre-unfold counterexample : " << query << std::endl;
+  Trace("cegqi-debug") << "post-rewritten query : " << query << std::endl;
 
   if (query.isConst())
   {
@@ -93,7 +94,7 @@ Result SynthVerify::verify(Node query,
         }
       }
       query = nm->mkAnd(qconj);
-      Trace("cegqi-debug") << "query is " << query << std::endl;
+      Trace("cegqi-debug") << "after function definitions, query is " << query << std::endl;
     }
   }
   Trace("sygus-engine") << "  *** Verify with subcall..." << std::endl;

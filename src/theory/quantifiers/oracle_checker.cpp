@@ -27,7 +27,7 @@ bool OracleChecker::checkConsistent(
   NodeManager* nm = NodeManager::currentNM();
   for (const auto& ioPair : ioPairs)
   {
-    Node result = evaluate(ioPair.first);
+    Node result = evaluateApp(ioPair.first);
     if (result != ioPair.second)
     {
       Node lemma = nm->mkNode(kind::EQUAL, result, ioPair.first);
@@ -38,7 +38,7 @@ bool OracleChecker::checkConsistent(
   return consistent;
 }
 
-Node OracleChecker::evaluate(Node app)
+Node OracleChecker::evaluateApp(Node app)
 {
   Assert(app.getKind() == APPLY_UF);
   Node f = app.getOperator();
@@ -51,6 +51,32 @@ Node OracleChecker::evaluate(Node app)
   OracleCaller& caller = d_callers.at(f);
   // get oracle result
   return caller.callOracle(app);
+}
+
+Node OracleChecker::evaluate(Node n)
+{
+  // same as convert
+  return convert(n);
+}
+
+Node OracleChecker::postConvert(Node n)
+{
+  Trace("oracle-checker-debug") << "postConvert: " << n << std::endl;
+  // if it is an oracle function applied to constant arguments
+  if (n.getKind()==kind::APPLY_UF && OracleCaller::isOracleFunction(n.getOperator()))
+  {
+    for (const Node& nc : n)
+    {
+      if (!nc.isConst())
+      {
+        // non-constant argument, fail
+        return n;
+      }
+    }
+    // evaluate the application
+    return evaluateApp(n);
+  }
+  return n;
 }
 
 }  // namespace quantifiers
