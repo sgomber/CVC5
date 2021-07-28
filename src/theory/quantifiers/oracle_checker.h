@@ -28,7 +28,7 @@ namespace theory {
 namespace quantifiers {
 
 /**
- * Oracle checker
+ * Oracle checker, maintains callers for all oracle functions.
  */
 class OracleChecker
 {
@@ -40,7 +40,10 @@ class OracleChecker
    * not **/
   bool checkConsistent(const std::vector<std::pair<Node, Node> >& ioPairs,
                        std::vector<Node>& lemmas);
-
+  /**
+   * Evaluate an oracle application
+   */
+  Node evaluate(Node app);
  private:
   /** map of oracle interface nodes to oracle callers **/
   std::map<Node, OracleCaller> d_callers;

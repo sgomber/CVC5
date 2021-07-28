@@ -51,13 +51,14 @@ std::ostream& operator<<(std::ostream& os, EnumeratorRole r)
   return os;
 }
 
-TermDbSygus::TermDbSygus(QuantifiersState& qs)
+TermDbSygus::TermDbSygus(QuantifiersState& qs, OracleChecker* oc)
     : d_qstate(qs),
       d_syexp(new SygusExplain(this)),
       d_ext_rw(new ExtendedRewriter(true)),
       d_eval(new Evaluator),
       d_funDefEval(new FunDefEvaluator),
-      d_eval_unfold(new SygusEvalUnfold(this))
+      d_eval_unfold(new SygusEvalUnfold(this)),
+      d_ochecker(oc)
 {
   d_true = NodeManager::currentNM()->mkConst( true );
   d_false = NodeManager::currentNM()->mkConst( false );
@@ -760,6 +761,10 @@ Node TermDbSygus::rewriteNode(Node n) const
       // we reached the limit of evaluations. In this case, we revert to the
       // result of rewriting in the return statement below.
     }
+  }
+  if (d_ochecker!=nullptr)
+  {
+    // evaluate oracles if possible
   }
   return res;
 }

@@ -27,16 +27,7 @@ bool OracleChecker::checkConsistent(
   NodeManager* nm = NodeManager::currentNM();
   for (const auto& ioPair : ioPairs)
   {
-    const auto& f = ioPair.first.getOperator();
-    // get oracle caller
-    if (d_callers.find(f) == d_callers.end())
-    {
-      d_callers.insert(std::pair<Node, OracleCaller>(f, OracleCaller(f)));
-    }
-    OracleCaller& caller = d_callers.at(f);
-    // get oracle result
-
-    Node result = caller.callOracle(ioPair.first);
+    Node result = evaluate(ioPair.first);
     if (result != ioPair.second)
     {
       Node lemma = nm->mkNode(kind::EQUAL, result, ioPair.first);
@@ -45,6 +36,21 @@ bool OracleChecker::checkConsistent(
     }
   }
   return consistent;
+}
+
+Node OracleChecker::evaluate(Node app)
+{
+  Assert (app.getKind()==APPLY_UF);
+  Node f = app.getOperator();
+  Assert (OracleCaller::isOracleFunction(f));
+  // get oracle caller
+  if (d_callers.find(f) == d_callers.end())
+  {
+    d_callers.insert(std::pair<Node, OracleCaller>(f, OracleCaller(f)));
+  }
+  OracleCaller& caller = d_callers.at(f);
+  // get oracle result
+  return caller.callOracle(app);
 }
 
 }  // namespace quantifiers

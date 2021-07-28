@@ -27,7 +27,7 @@ class OracleCaller
 {
  public:
   OracleCaller(const Node oracleInterfaceNode)
-      : d_binaryName(setBinaryName(oracleInterfaceNode)){};
+      : d_binaryName(getBinaryNameFor(oracleInterfaceNode)){};
 
   ~OracleCaller() {}
   /** functions for minimal parsing. These will be removed */
@@ -40,11 +40,13 @@ class OracleCaller
   Node callOracle(const Node fapp);
 
   /** get binary from oracle interface */
-  std::string setBinaryName(const Node n);
+  static std::string getBinaryNameFor(const Node n);
 
   /** get binary from oracle interface */
   std::string getBinaryName() { return d_binaryName; }
 
+  /** is f an oracle function? */
+  static bool isOracleFunction(Node f);
  private:
   /** name of binary */
   std::string d_binaryName;

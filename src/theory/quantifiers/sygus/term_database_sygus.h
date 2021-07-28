@@ -28,6 +28,7 @@
 #include "theory/quantifiers/sygus/sygus_explain.h"
 #include "theory/quantifiers/sygus/type_info.h"
 #include "theory/quantifiers/term_database.h"
+#include "theory/quantifiers/oracle_checker.h"
 
 namespace cvc5 {
 namespace theory {
@@ -55,7 +56,7 @@ std::ostream& operator<<(std::ostream& os, EnumeratorRole r);
 // TODO :issue #1235 split and document this class
 class TermDbSygus {
  public:
-  TermDbSygus(QuantifiersState& qs);
+  TermDbSygus(QuantifiersState& qs, OracleChecker* oc = nullptr);
   ~TermDbSygus() {}
   /** Finish init, which sets the inference manager */
   void finishInit(QuantifiersInferenceManager* qim);
@@ -332,6 +333,8 @@ class TermDbSygus {
   std::unique_ptr<FunDefEvaluator> d_funDefEval;
   /** evaluation function unfolding utility */
   std::unique_ptr<SygusEvalUnfold> d_eval_unfold;
+  /** Pointer to the oracle checker */
+  OracleChecker * d_ochecker;
   //------------------------------end utilities
 
   //------------------------------enumerators

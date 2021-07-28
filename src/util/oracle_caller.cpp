@@ -1,3 +1,17 @@
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Elizabeth Polgreen
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Oracle caller
+ */
 
 #include "util/oracle_caller.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
@@ -149,21 +163,33 @@ Node OracleCaller::callOracle(const Node fapp)
   return response;
 }
 
-std::string OracleCaller::setBinaryName(const Node n)
+bool OracleCaller::isOracleFunction(Node f)
+{
+  return f.hasAttribute(theory::OracleInterfaceAttribute());
+}
+
+std::string OracleCaller::getBinaryNameFor(const Node n)
 {
   // oracle functions have no children
-  if (n.getNumChildren() < 3)
+  if (n.isVar())
   {
+    Assert (isOracleFunction(n));
     return n.getAttribute(theory::OracleInterfaceAttribute());
   }
-
-  // oracle interfaces have children, and the attribute is stored in 2nd child
-  for (const Node& v : n[2][0])
+  else if (n.getKind()==kind::FORALL)
   {
-    if (v.getAttribute(theory::OracleInterfaceAttribute()) != "")
+    // oracle interfaces have children, and the attribute is stored in 2nd child
+    for (const Node& v : n[2][0])
     {
-      return v.getAttribute(theory::OracleInterfaceAttribute());
+      if (v.getAttribute(theory::OracleInterfaceAttribute()) != "")
+      {
+        return v.getAttribute(theory::OracleInterfaceAttribute());
+      }
     }
+  }
+  else
+  {
+    Assert(false) << "Unexpected node for binary name " << n;
   }
   return "";
 }
