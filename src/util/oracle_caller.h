@@ -50,6 +50,7 @@ class OracleCaller
 
   /** get cached results */
   const std::map<Node, Node>& getCachedResults() const;
+
  private:
   /** name of binary */
   std::string d_binaryName;

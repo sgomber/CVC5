@@ -103,7 +103,7 @@ Result SynthVerify::verify(Node query,
             // information about oracles than we had previously. We rerun the
             // satisfiability check above.
             Node nextQueryp = preprocessQueryInternal(query);
-            if (nextQueryp!=queryp)
+            if (nextQueryp != queryp)
             {
               queryp = nextQueryp;
               finished = false;
@@ -111,13 +111,13 @@ Result SynthVerify::verify(Node query,
           }
           else
           {
-            Assert (!options::sygusRecFun()) << "Expected model from verification step to satisfy query";
+            Assert(!options::sygusRecFun())
+                << "Expected model from verification step to satisfy query";
           }
         }
       }
     }
-  }
-  while (!finished);
+  } while (!finished);
   return r;
 }
 
@@ -134,9 +134,9 @@ Node SynthVerify::preprocessQueryInternal(Node query)
   {
     // if non-constant, we may need to add recursive function definitions
     FunDefEvaluator* feval = d_tds->getFunDefEvaluator();
-    OracleChecker * ochecker = d_tds->getOracleChecker();
+    OracleChecker* ochecker = d_tds->getOracleChecker();
     const std::vector<Node>& fdefs = feval->getDefinitions();
-    if (!fdefs.empty() || (ochecker!=nullptr && ochecker->hasOracles()))
+    if (!fdefs.empty() || (ochecker != nullptr && ochecker->hasOracles()))
     {
       // Get the relevant definitions based on the symbols in the query.
       // Notice in some cases, this may have the effect of making the subcall
@@ -156,18 +156,19 @@ Node SynthVerify::preprocessQueryInternal(Node query)
           qconj.push_back(q);
         }
         // get the relevant cached oracle calls
-        if (ochecker!=nullptr && ochecker->hasOracleCalls(f))
+        if (ochecker != nullptr && ochecker->hasOracleCalls(f))
         {
           const std::map<Node, Node>& ocalls = ochecker->getOracleCalls(f);
-          for (const std::pair<const Node, Node >& oc : ocalls)
+          for (const std::pair<const Node, Node>& oc : ocalls)
           {
             qconj.push_back(oc.first.eqNode(oc.second));
           }
         }
       }
       query = nm->mkAnd(qconj);
-      Trace("cegqi-debug") << "after function definitions + oracle calls, query is " << query
-                           << std::endl;
+      Trace("cegqi-debug")
+          << "after function definitions + oracle calls, query is " << query
+          << std::endl;
     }
   }
   return query;

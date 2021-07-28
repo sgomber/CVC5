@@ -651,7 +651,7 @@ bool SynthConjecture::doRefine()
   {
     Trace("cegqi-refine") << "Get model values for skolems..." << std::endl;
     Assert(d_inner_vars.size() == d_ce_sk_vars.size());
-    Assert (!d_ce_sk_var_mvs.empty());
+    Assert(!d_ce_sk_var_mvs.empty());
     Assert(d_ce_sk_var_mvs.size() == d_ce_sk_vars.size());
     sk_subs.insert(
         sk_subs.end(), d_ce_sk_var_mvs.begin(), d_ce_sk_var_mvs.end());

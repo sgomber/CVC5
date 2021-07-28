@@ -137,8 +137,11 @@ class ExtendedRewriter
    *
    * If this function returns a non-null node ret, then n ---> ret.
    */
-  Node extendedRewriteBcp(
-      Kind andk, Kind ork, Kind notk, std::map<Kind, bool>& bcp_kinds, Node n) const;
+  Node extendedRewriteBcp(Kind andk,
+                          Kind ork,
+                          Kind notk,
+                          std::map<Kind, bool>& bcp_kinds,
+                          Node n) const;
   /** (type-independent) factoring, for example:
    *
    *   ( A V B ) ^ ( A V C ) ----> A V ( B ^ C )
@@ -178,8 +181,12 @@ class ExtendedRewriter
    * This function takes as arguments the kinds that specify EQUAL, AND, OR,
    * and NOT. If the flag isXor is true, the eqk is treated as XOR.
    */
-  Node extendedRewriteEqChain(
-      Kind eqk, Kind andk, Kind ork, Kind notk, Node n, bool isXor = false) const;
+  Node extendedRewriteEqChain(Kind eqk,
+                              Kind andk,
+                              Kind ork,
+                              Kind notk,
+                              Node n,
+                              bool isXor = false) const;
   /** extended rewrite aggressive
    *
    * All aggressive rewriting techniques (those that should be prioritized
@@ -191,7 +198,9 @@ class ExtendedRewriter
    * For term f( ... f( f( base, tn ), t{n-1} ) ... t1 ), returns term base, and
    * appends t1...tn to children.
    */
-  Node decomposeRightAssocChain(Kind k, Node n, std::vector<Node>& children) const;
+  Node decomposeRightAssocChain(Kind k,
+                                Node n,
+                                std::vector<Node>& children) const;
   /** Make right associative chain
    *
    * Sorts children to obtain list { tn...t1 }, and returns the term

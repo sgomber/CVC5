@@ -87,16 +87,16 @@ Node OracleChecker::postConvert(Node n)
   return Rewriter::rewrite(n);
 }
 bool OracleChecker::hasOracles() const { return !d_callers.empty(); }
-bool OracleChecker::hasOracleCalls(Node f) const {
-  std::map<Node, OracleCaller>::const_iterator it = d_callers.find(f);
-  return it!=d_callers.end();
-}
-const std::map<Node,Node>& OracleChecker::getOracleCalls(Node f) const
+bool OracleChecker::hasOracleCalls(Node f) const
 {
-  Assert (hasOracleCalls(f));
+  std::map<Node, OracleCaller>::const_iterator it = d_callers.find(f);
+  return it != d_callers.end();
+}
+const std::map<Node, Node>& OracleChecker::getOracleCalls(Node f) const
+{
+  Assert(hasOracleCalls(f));
   std::map<Node, OracleCaller>::const_iterator it = d_callers.find(f);
   return it->second.getCachedResults();
-  
 }
 
 }  // namespace quantifiers

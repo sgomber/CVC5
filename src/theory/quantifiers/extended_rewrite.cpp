@@ -761,8 +761,11 @@ Node ExtendedRewriter::extendedRewriteNnf(Node ret) const
   return NodeManager::currentNM()->mkNode(nk, new_children);
 }
 
-Node ExtendedRewriter::extendedRewriteBcp(
-    Kind andk, Kind ork, Kind notk, std::map<Kind, bool>& bcp_kinds, Node ret) const
+Node ExtendedRewriter::extendedRewriteBcp(Kind andk,
+                                          Kind ork,
+                                          Kind notk,
+                                          std::map<Kind, bool>& bcp_kinds,
+                                          Node ret) const
 {
   Kind k = ret.getKind();
   Assert(k == andk || k == ork);
@@ -1527,9 +1530,10 @@ Node ExtendedRewriter::extendedRewriteEqChain(
   return Node::null();
 }
 
-Node ExtendedRewriter::partialSubstitute(Node n,
-                                         const std::map<Node, Node>& assign,
-                                         const std::map<Kind, bool>& rkinds) const
+Node ExtendedRewriter::partialSubstitute(
+    Node n,
+    const std::map<Node, Node>& assign,
+    const std::map<Kind, bool>& rkinds) const
 {
   std::unordered_map<TNode, Node> visited;
   std::unordered_map<TNode, Node>::iterator it;
@@ -1601,10 +1605,11 @@ Node ExtendedRewriter::partialSubstitute(Node n,
   return visited[n];
 }
 
-Node ExtendedRewriter::partialSubstitute(Node n,
-                                         const std::vector<Node>& vars,
-                                         const std::vector<Node>& subs,
-                                         const std::map<Kind, bool>& rkinds) const
+Node ExtendedRewriter::partialSubstitute(
+    Node n,
+    const std::vector<Node>& vars,
+    const std::vector<Node>& subs,
+    const std::map<Kind, bool>& rkinds) const
 {
   Assert(vars.size() == subs.size());
   std::map<Node, Node> assign;
