@@ -1565,7 +1565,7 @@ UnsatCore SmtEngine::getUnsatCore() {
 }
 
 void SmtEngine::getRelevantInstantiationTermVectors(
-    std::map<Node, std::vector<InstantiationVec>>& insts)
+    std::map<Node, InstantiationList>& insts)
 {
   Assert(d_state->getMode() == SmtMode::UNSAT);
   // generate with new proofs
@@ -1651,7 +1651,7 @@ void SmtEngine::printInstantiations( std::ostream& out ) {
     // must have a name
     if (d_env->getOptions().printer.printInstMode == options::PrintInstMode::NUM)
     {
-      out << "(num-instantiations " << i.d_quant << " " << i.second.d_inst.size() << ")"
+      out << "(num-instantiations " << i.second.d_quant << " " << i.second.d_inst.size() << ")"
           << std::endl;
     }
     else
@@ -1763,7 +1763,7 @@ void SmtEngine::getInstantiatedQuantifiedFormulas(std::vector<Node>& qs)
 }
 
 void SmtEngine::getInstantiationTermVectors(
-    Node q, std::vector<std::vector<Node>>& tvecs)
+    Node q, InstantiationList& tvecs)
 {
   SmtScope smts(this);
   QuantifiersEngine* qe =

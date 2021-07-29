@@ -69,7 +69,7 @@ class CegSingleInv
    * The list of instantiations that suffice to show the first-order equivalent
    * of the negated synthesis conjecture is unsatisfiable.
    */
-  std::vector<std::vector<Node> > d_inst;
+  InstantiationList d_inst;
   /**
    * The list of instantiation lemmas, corresponding to instantiations of the
    * first order conjecture for the term vectors above.

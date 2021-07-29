@@ -633,17 +633,26 @@ void Instantiate::getInstantiatedQuantifiedFormulas(std::vector<Node>& qs) const
   }
 }
 
-void Instantiate::getInstantiationTermVectors(
-    Node q, std::vector<std::vector<Node> >& tvecs)
-{
+/*
 
+    Node name;
+    if (!qe->getNameForQuant(i.first, name, reqNames))
+    {
+      // did not have a name and we are only printing formulas with names
+      continue;
+    }
+ */
+void Instantiate::getInstantiationTermVectors(
+    Node q, InstantiationList& tvecs)
+{
+/*
   if (options::incrementalSolving())
   {
     std::map<Node, CDInstMatchTrie*>::const_iterator it =
         d_c_inst_match_trie.find(q);
     if (it != d_c_inst_match_trie.end())
     {
-      it->second->getInstantiations(q, tvecs);
+      it->second->getInstantiations(q, tvecs.d_inst);
     }
   }
   else
@@ -652,28 +661,31 @@ void Instantiate::getInstantiationTermVectors(
         d_inst_match_trie.find(q);
     if (it != d_inst_match_trie.end())
     {
-      it->second.getInstantiations(q, tvecs);
+      it->second.getInstantiations(q, tvecs.d_inst);
     }
   }
+  */
 }
 
 void Instantiate::getInstantiationTermVectors(
-    std::map<Node, std::vector<std::vector<Node> > >& insts)
+    std::map<Node, InstantiationList >& insts)
 {
+  /*
   if (options::incrementalSolving())
   {
     for (const auto& t : d_c_inst_match_trie)
     {
-      getInstantiationTermVectors(t.first, insts[t.first]);
+      getInstantiationTermVectors(t.first, insts[t.first].d_inst);
     }
   }
   else
   {
     for (const auto& t : d_inst_match_trie)
     {
-      getInstantiationTermVectors(t.first, insts[t.first]);
+      getInstantiationTermVectors(t.first, insts[t.first].d_inst);
     }
   }
+  */
 }
 
 void Instantiate::getInstantiations(Node q, std::vector<Node>& insts)

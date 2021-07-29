@@ -41,10 +41,8 @@ public:
 /** A list of instantiations for a quantified formula */
 struct InstantiationList
 {
-  InstantiationList(Node q, const std::vector<InstantiationVec >& inst)
-      : d_quant(q), d_inst(inst)
-  {
-  }
+  /** Initialize */
+  void initialize(Node q);
   /** The quantified formula */
   Node d_quant;
   /** The instantiation list */

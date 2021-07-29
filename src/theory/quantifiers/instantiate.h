@@ -27,6 +27,7 @@
 #include "theory/quantifiers/inst_match_trie.h"
 #include "theory/quantifiers/quant_util.h"
 #include "util/statistics_stats.h"
+#include "theory/quantifiers/instantiation_list.h"
 
 namespace cvc5 {
 
