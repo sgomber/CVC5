@@ -638,11 +638,6 @@ bool Theory::expUsingCentralEqualityEngine(TheoryId id)
   return id != THEORY_ARITH && usesCentralEqualityEngine(id);
 }
 
-bool Theory::expUsingCentralEqualityEngine(TheoryId id)
-{
-  return id != THEORY_ARITH && usesCentralEqualityEngine(id);
-}
-
 bool Theory::needsFactQueue(TheoryId id)
 {
   if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
