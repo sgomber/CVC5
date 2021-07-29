@@ -63,7 +63,7 @@ class UnsatCoreManager
    */
   void getRelevantInstantiations(
       std::shared_ptr<ProofNode> pfn,
-      std::map<Node, std::vector<std::vector<Node>>>& insts);
+      std::map<Node, std::vector<InstantiationVec>>& insts);
 
 }; /* class UnsatCoreManager */
 

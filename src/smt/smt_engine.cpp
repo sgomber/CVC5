@@ -1565,7 +1565,7 @@ UnsatCore SmtEngine::getUnsatCore() {
 }
 
 void SmtEngine::getRelevantInstantiationTermVectors(
-    std::map<Node, std::vector<std::vector<Node>>>& insts)
+    std::map<Node, std::vector<InstantiationVec>>& insts)
 {
   Assert(d_state->getMode() == SmtMode::UNSAT);
   // generate with new proofs
@@ -1639,9 +1639,9 @@ void SmtEngine::printInstantiations( std::ostream& out ) {
   }
 
   // Second, extract and print the instantiations
-  std::map<Node, std::vector<std::vector<Node>>> insts;
+  std::map<Node, std::vector<InstantiationVec>> insts;
   getInstantiationTermVectors(insts);
-  for (const std::pair<const Node, std::vector<std::vector<Node>>>& i : insts)
+  for (const std::pair<const Node, std::vector<InstantiationVec>>& i : insts)
   {
     if (i.second.empty())
     {
@@ -1681,7 +1681,7 @@ void SmtEngine::printInstantiations( std::ostream& out ) {
 }
 
 void SmtEngine::getInstantiationTermVectors(
-    std::map<Node, std::vector<std::vector<Node>>>& insts)
+    std::map<Node, std::vector<InstantiationVec>>& insts)
 {
   SmtScope smts(this);
   finishInit();

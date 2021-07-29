@@ -25,17 +25,25 @@
 
 namespace cvc5 {
 
+struct InstantiationVec
+{
+public:
+  InstantiationVec(const std::vector<Node>& vec) : d_vec(vec){}
+  /** The vector of terms */
+  std::vector<Node> d_vec;
+};
+  
 /** A list of instantiations for a quantified formula */
 struct InstantiationList
 {
-  InstantiationList(Node q, const std::vector<std::vector<Node> >& inst)
+  InstantiationList(Node q, const std::vector<InstantiationVec >& inst)
       : d_quant(q), d_inst(inst)
   {
   }
   /** The quantified formula */
   Node d_quant;
   /** The instantiation list */
-  std::vector<std::vector<Node> > d_inst;
+  std::vector<InstantiationVec > d_inst;
 };
 
 /** Print the instantiation list to stream out */

@@ -670,13 +670,13 @@ class CVC5_EXPORT SmtEngine
    * instantiation lemmas above.
    */
   void getInstantiationTermVectors(Node q,
-                                   std::vector<std::vector<Node>>& tvecs);
+                                   std::vector<InstantiationVec>& tvecs);
   /**
    * As above but only the instantiations that were relevant for the
    * refutation.
    */
   void getRelevantInstantiationTermVectors(
-      std::map<Node, std::vector<std::vector<Node>>>& insts);
+      std::map<Node, std::vector<InstantiationVec>>& insts);
   /**
    * Get instantiation term vectors, which maps each instantiated quantified
    * formula to the list of instantiations for that quantified formula. This
@@ -684,7 +684,7 @@ class CVC5_EXPORT SmtEngine
    * preceded by an UNSAT or ENTAILED query
    */
   void getInstantiationTermVectors(
-      std::map<Node, std::vector<std::vector<Node>>>& insts);
+      std::map<Node, std::vector<InstantiationVec>>& insts);
 
   /**
    * Get an unsatisfiable core (only if immediately preceded by an UNSAT or
