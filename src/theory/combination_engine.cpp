@@ -22,7 +22,6 @@
 #include "theory/ee_manager_distributed.h"
 #include "theory/model_manager.h"
 #include "theory/model_manager_distributed.h"
-#include "theory/shared_solver.h"
 #include "theory/shared_solver_central.h"
 #include "theory/shared_solver_distributed.h"
 #include "theory/theory_engine.h"
@@ -60,9 +59,9 @@ CombinationEngine::CombinationEngine(TheoryEngine& te,
   }
   else if (options::eeMode() == options::EqEngineMode::CENTRAL)
   {
-    // use the distributed shared solver
+    // use the central shared solver
     d_sharedSolver.reset(new SharedSolverCentral(d_te, d_pnm));
-    // make the distributed equality engine manager
+    // make the central equality engine manager
     d_eemanager.reset(
         new EqEngineManagerCentral(d_te, *d_sharedSolver.get(), d_pnm));
     // make the distributed model manager

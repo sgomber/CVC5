@@ -1695,7 +1695,7 @@ TrustNode TheoryEngine::getExplanation(
     Debug("theory::explain")
         << "TheoryEngine::explain(): got explanation " << explanation
         << " got from " << toExplain.d_theory << endl;
-    AlwaysAssert(explanation != toExplain.d_node)
+    Assert(explanation != toExplain.d_node)
         << "wasn't sent to you, so why are you explaining it trivially, for "
            "fact "
         << explanation;
