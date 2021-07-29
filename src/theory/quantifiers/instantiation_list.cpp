@@ -20,6 +20,8 @@
 
 namespace cvc5 {
 
+InstantiationVec::InstantiationVec(const std::vector<Node>& vec, theory::InferenceId id, Node pfArg) : d_vec(vec), d_id(id), d_pfArg(pfArg){}
+
 std::ostream& operator<<(std::ostream& out, const InstantiationList& ilist)
 {
   Printer::getPrinter(options::outputLanguage())->toStream(out, ilist);

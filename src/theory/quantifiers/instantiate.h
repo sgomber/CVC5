@@ -259,14 +259,14 @@ class Instantiate : public QuantifiersUtil
    * the current user context for quantified formula q, store them in tvecs.
    */
   void getInstantiationTermVectors(Node q,
-                                   std::vector<std::vector<Node> >& tvecs);
+                                   InstantiationList& tvecs);
   /** get instantiation term vectors
    *
    * Get term vectors for all instantiations lemmas added in the current user
    * context for quantified formula q, store them in tvecs.
    */
   void getInstantiationTermVectors(
-      std::map<Node, std::vector<std::vector<Node> > >& insts);
+      std::map<Node, InstantiationList >& insts);
   /**
    * Get instantiations for quantified formula q. If q is (forall ((x T)) (P
    * x)), this is a list of the form (P t1) ... (P tn) for ground terms ti.

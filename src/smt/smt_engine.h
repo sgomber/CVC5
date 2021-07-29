@@ -30,6 +30,7 @@
 #include "smt/smt_mode.h"
 #include "theory/logic_info.h"
 #include "util/result.h"
+#include "theory/quantifiers/instantiation_list.h"
 
 namespace cvc5 {
 
@@ -670,13 +671,13 @@ class CVC5_EXPORT SmtEngine
    * instantiation lemmas above.
    */
   void getInstantiationTermVectors(Node q,
-                                   std::vector<InstantiationVec>& tvecs);
+                                   InstantiationList& tvecs);
   /**
    * As above but only the instantiations that were relevant for the
    * refutation.
    */
   void getRelevantInstantiationTermVectors(
-      std::map<Node, std::vector<InstantiationVec>>& insts);
+      std::map<Node, InstantiationList>& insts);
   /**
    * Get instantiation term vectors, which maps each instantiated quantified
    * formula to the list of instantiations for that quantified formula. This
@@ -684,7 +685,7 @@ class CVC5_EXPORT SmtEngine
    * preceded by an UNSAT or ENTAILED query
    */
   void getInstantiationTermVectors(
-      std::map<Node, std::vector<InstantiationVec>>& insts);
+      std::map<Node, InstantiationList>& insts);
 
   /**
    * Get an unsatisfiable core (only if immediately preceded by an UNSAT or

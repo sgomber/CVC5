@@ -138,9 +138,9 @@ public:
  void getInstantiatedQuantifiedFormulas(std::vector<Node>& qs);
  /** get instantiation term vectors */
  void getInstantiationTermVectors(Node q,
-                                  std::vector<std::vector<Node> >& tvecs);
+                                  InstantiationList& tvecs);
  void getInstantiationTermVectors(
-     std::map<Node, std::vector<std::vector<Node> > >& insts);
+     std::map<Node, InstantiationList >& insts);
  /**
   * Get instantiations for quantified formula q. If q is (forall ((x T)) (P x)),
   * this is a list of the form (P t1) ... (P tn) for ground terms ti.

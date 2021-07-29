@@ -649,11 +649,11 @@ void QuantifiersEngine::markRelevant( Node q ) {
   d_model->markRelevant( q );
 }
 
-void QuantifiersEngine::getInstantiationTermVectors( Node q, std::vector< std::vector< Node > >& tvecs ) {
+void QuantifiersEngine::getInstantiationTermVectors( Node q, InstantiationList& tvecs ) {
   d_qim.getInstantiate()->getInstantiationTermVectors(q, tvecs);
 }
 
-void QuantifiersEngine::getInstantiationTermVectors( std::map< Node, std::vector< std::vector< Node > > >& insts ) {
+void QuantifiersEngine::getInstantiationTermVectors( std::map< Node, InstantiationList >& insts ) {
   d_qim.getInstantiate()->getInstantiationTermVectors(insts);
 }
 

@@ -1639,33 +1639,26 @@ void SmtEngine::printInstantiations( std::ostream& out ) {
   }
 
   // Second, extract and print the instantiations
-  std::map<Node, std::vector<InstantiationVec>> insts;
+  std::map<Node, InstantiationList> insts;
   getInstantiationTermVectors(insts);
-  for (const std::pair<const Node, std::vector<InstantiationVec>>& i : insts)
+  for (const std::pair<const Node, InstantiationList>& i : insts)
   {
-    if (i.second.empty())
+    if (i.second.d_inst.empty())
     {
       // no instantiations, skip
-      continue;
-    }
-    Node name;
-    if (!qe->getNameForQuant(i.first, name, reqNames))
-    {
-      // did not have a name and we are only printing formulas with names
       continue;
     }
     // must have a name
     if (d_env->getOptions().printer.printInstMode == options::PrintInstMode::NUM)
     {
-      out << "(num-instantiations " << name << " " << i.second.size() << ")"
+      out << "(num-instantiations " << i.d_quant << " " << i.second.d_inst.size() << ")"
           << std::endl;
     }
     else
     {
       Assert(d_env->getOptions().printer.printInstMode
              == options::PrintInstMode::LIST);
-      InstantiationList ilist(name, i.second);
-      out << ilist;
+      out << i.second;
     }
     printed = true;
   }
@@ -1681,7 +1674,7 @@ void SmtEngine::printInstantiations( std::ostream& out ) {
 }
 
 void SmtEngine::getInstantiationTermVectors(
-    std::map<Node, std::vector<InstantiationVec>>& insts)
+    std::map<Node, InstantiationList>& insts)
 {
   SmtScope smts(this);
   finishInit();
