@@ -1090,8 +1090,8 @@ bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
       // We propagate SAT literals to SAT
       assertToTheory(literal, literal, /* to */ THEORY_SAT_SOLVER, /* from */ theory);
     }
+    // BAD: not necessary if (!Theory::expUsingCentralEqualityEngine(theory)) {
     if (theory != THEORY_BUILTIN) {
-      // if (!Theory::usesCentralEqualityEngine(theory)) {
       // Assert to the shared terms database
       assertToTheory(literal, literal, /* to */ THEORY_BUILTIN, /* from */ theory);
     }
