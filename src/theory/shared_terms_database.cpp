@@ -75,7 +75,14 @@ bool SharedTermsDatabase::needsEqualityEngine(EeSetupInfo& esi)
 void SharedTermsDatabase::addEqualityToPropagate(TNode equality) {
   Assert(d_equalityEngine != nullptr);
   d_registeredEqualities.insert(equality);
-  d_equalityEngine->addTriggerPredicate(equality);
+  if (!options::centralEEOpt() || Theory::needsFactQueue(Theory::theoryOf(equality)))
+  {
+    d_equalityEngine->addTriggerPredicate(equality);
+  }
+  else
+  {
+    d_equalityEngine->addTerm(equality);
+  }
   checkForConflict();
 }
 

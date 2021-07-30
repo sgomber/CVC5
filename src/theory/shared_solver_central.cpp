@@ -41,12 +41,9 @@ void SharedSolverCentral::preRegisterSharedInternal(TNode t)
 {
   if (t.getKind() == kind::EQUAL)
   {
-    if (!options::centralEEOpt() || Theory::needsFactQueue(Theory::theoryOf(t)))
-    {
-      // When sharing is enabled, we propagate from the shared terms manager
-      // also
-      d_sharedTerms.addEqualityToPropagate(t);
-    }
+    // When sharing is enabled, we propagate from the shared terms manager
+    // also
+    d_sharedTerms.addEqualityToPropagate(t);
   }
 }
 

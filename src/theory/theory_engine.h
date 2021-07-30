@@ -288,6 +288,11 @@ class TheoryEngine {
 
   /** Time spent in theory combination */
   TimerStat d_combineTheoriesTime;
+  
+  /** Number of marked propagation attempts */
+  IntStat d_markPropAttempts;
+  /** Number of successful marked propagations */
+  IntStat d_markProps;
 
   Node d_true;
   Node d_false;

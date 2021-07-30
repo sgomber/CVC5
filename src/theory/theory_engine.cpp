@@ -252,6 +252,8 @@ TheoryEngine::TheoryEngine(Env& env,
       d_atomRequests(d_env.getContext()),
       d_combineTheoriesTime(smtStatisticsRegistry().registerTimer(
           "TheoryEngine::combineTheoriesTime")),
+      d_markPropAttempts(smtStatisticsRegistry().registerInt("TheoryEngine::markPropAttempts")),
+      d_markProps(smtStatisticsRegistry().registerInt("TheoryEngine::markProps")),
       d_true(),
       d_false(),
       d_interrupted(false),
@@ -843,6 +845,7 @@ bool TheoryEngine::markPropagation(TNode assertion, TNode originalAssertion, the
   // What and where it came from
   NodeTheoryPair toExplain(originalAssertion, fromTheoryId, d_propagationMapTimestamp);
 
+  ++d_markPropAttempts;
   // See if the theory already got this literal
   PropagationMap::const_iterator find = d_propagationMap.find(toAssert);
   if (find != d_propagationMap.end()) {
@@ -851,6 +854,7 @@ bool TheoryEngine::markPropagation(TNode assertion, TNode originalAssertion, the
     return false;
   }
 
+  ++d_markProps;
   Trace("theory::assertToTheory") << "TheoryEngine::markPropagation(): marking [" << d_propagationMapTimestamp << "] " << assertion << ", " << toTheoryId << " from " << originalAssertion << ", " << fromTheoryId << endl;
 
   // Mark the propagation
