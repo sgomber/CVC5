@@ -138,7 +138,7 @@ bool BVSolverBitblastInternal::preNotifyFact(
     }
   }
 
-  return false;
+  return true;
 }
 
 bool BVSolverBitblastInternal::collectModelValues(TheoryModel* m,
