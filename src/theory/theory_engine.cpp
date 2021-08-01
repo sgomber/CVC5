@@ -254,6 +254,8 @@ TheoryEngine::TheoryEngine(Env& env,
           "TheoryEngine::combineTheoriesTime")),
       d_markPropAttempts(smtStatisticsRegistry().registerInt("TheoryEngine::markPropAttempts")),
       d_markProps(smtStatisticsRegistry().registerInt("TheoryEngine::markProps")),
+      d_satPropAttempts(smtStatisticsRegistry().registerInt("TheoryEngine::satPropAttempts")),
+      d_satProps(smtStatisticsRegistry().registerInt("TheoryEngine::satProps")),
       d_true(),
       d_false(),
       d_interrupted(false),
@@ -896,6 +898,7 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
       d_factsAsserted = true;
     } else {
       Assert(toTheoryId == THEORY_SAT_SOLVER);
+      ++d_satPropAttempts;
       // Check for propositional conflict
       bool value;
       if (d_propEngine->hasValue(assertion, value)) {
@@ -909,6 +912,7 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
         }
       }
       d_propagatedLiterals.push_back(assertion);
+      ++d_satProps;
     }
     return;
   }
@@ -1260,6 +1264,16 @@ struct AtomsCollect {
   }
 };
 
+void TheoryEngine::ensureLemmaAtoms(Node n, theory::TheoryId atomsTo)
+{
+  Assert (atomsTo!=THEORY_LAST);
+  Debug("theory::atoms") << "TheoryEngine::ensureLemmaAtoms(" << n << ", " << atomsTo
+                          << ")" << endl;
+  AtomsCollect collectAtoms;
+  NodeVisitor<AtomsCollect>::run(collectAtoms, n);
+  ensureLemmaAtoms(collectAtoms.getAtoms(), atomsTo);
+}
+
 void TheoryEngine::ensureLemmaAtoms(const std::vector<TNode>& atoms, theory::TheoryId atomsTo) {
   for (unsigned i = 0; i < atoms.size(); ++ i) {
 
@@ -1328,7 +1342,6 @@ void TheoryEngine::ensureLemmaAtoms(const std::vector<TNode>& atoms, theory::The
 
 void TheoryEngine::lemma(TrustNode tlemma,
                          theory::LemmaProperty p,
-                         theory::TheoryId atomsTo,
                          theory::TheoryId from)
 {
   // For resource-limiting (also does a time check).
@@ -1358,15 +1371,6 @@ void TheoryEngine::lemma(TrustNode tlemma,
     }
     // ensure closed
     tlemma.debugCheckClosed("te-proof-debug", "TheoryEngine::lemma_initial");
-  }
-
-  // Do we need to check atoms
-  if (atomsTo != theory::THEORY_LAST) {
-    Debug("theory::atoms") << "TheoryEngine::lemma(" << node << ", " << atomsTo
-                           << ")" << endl;
-    AtomsCollect collectAtoms;
-    NodeVisitor<AtomsCollect>::run(collectAtoms, node);
-    ensureLemmaAtoms(collectAtoms.getAtoms(), atomsTo);
   }
 
   if(Dump.isOn("t-lemmas")) {
@@ -1518,7 +1522,7 @@ void TheoryEngine::conflict(TrustNode tconflict, TheoryId theoryId)
     // When only one theory, the conflict should need no processing
     Assert(properConflict(conflict));
     // pass the trust node that was sent from the theory
-    lemma(tconflict, LemmaProperty::REMOVABLE, THEORY_LAST, theoryId);
+    lemma(tconflict, LemmaProperty::REMOVABLE, theoryId);
   }
 }
 

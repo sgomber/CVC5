@@ -129,8 +129,6 @@ class OutputChannel {
    */
   void split(TNode n);
 
-  virtual void splitLemma(TNode n, bool removable = false) = 0;
-
   /**
    * If a decision is made on n, it must be in the phase specified.
    * Note that this is enforced *globally*, i.e., it is completely
