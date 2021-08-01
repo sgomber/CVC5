@@ -143,13 +143,17 @@ bool SharedSolver::isShared(TNode t) const { return d_sharedTerms.isShared(t); }
 void SharedSolver::sendLemma(TrustNode trn, TheoryId atomsTo, InferenceId id)
 {
   // Do we need to check atoms
-  if (atomsTo != theory::THEORY_LAST) {
+  if (atomsTo != theory::THEORY_LAST)
+  {
     d_te.ensureLemmaAtoms(trn.getNode(), atomsTo);
   }
   d_im->trustedLemma(trn, id);
 }
 
-void SharedSolver::sendConflict(TrustNode trn, InferenceId id) { d_im->trustedConflict(trn, id); }
+void SharedSolver::sendConflict(TrustNode trn, InferenceId id)
+{
+  d_im->trustedConflict(trn, id);
+}
 
 }  // namespace theory
 }  // namespace cvc5

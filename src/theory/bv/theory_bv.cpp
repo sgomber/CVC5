@@ -309,7 +309,7 @@ EqualityStatus TheoryBV::getEqualityStatus(TNode a, TNode b)
       return EQUALITY_FALSE;
     }
   }
-  
+
   EqualityStatus status = d_internal->getEqualityStatus(a, b);
 
   if (status == EqualityStatus::EQUALITY_UNKNOWN)

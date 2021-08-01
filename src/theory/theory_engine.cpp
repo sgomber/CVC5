@@ -252,9 +252,12 @@ TheoryEngine::TheoryEngine(Env& env,
       d_atomRequests(d_env.getContext()),
       d_combineTheoriesTime(smtStatisticsRegistry().registerTimer(
           "TheoryEngine::combineTheoriesTime")),
-      d_markPropAttempts(smtStatisticsRegistry().registerInt("TheoryEngine::markPropAttempts")),
-      d_markProps(smtStatisticsRegistry().registerInt("TheoryEngine::markProps")),
-      d_satPropAttempts(smtStatisticsRegistry().registerInt("TheoryEngine::satPropAttempts")),
+      d_markPropAttempts(smtStatisticsRegistry().registerInt(
+          "TheoryEngine::markPropAttempts")),
+      d_markProps(
+          smtStatisticsRegistry().registerInt("TheoryEngine::markProps")),
+      d_satPropAttempts(
+          smtStatisticsRegistry().registerInt("TheoryEngine::satPropAttempts")),
       d_satProps(smtStatisticsRegistry().registerInt("TheoryEngine::satProps")),
       d_true(),
       d_false(),
@@ -1266,9 +1269,9 @@ struct AtomsCollect {
 
 void TheoryEngine::ensureLemmaAtoms(Node n, theory::TheoryId atomsTo)
 {
-  Assert (atomsTo!=THEORY_LAST);
-  Debug("theory::atoms") << "TheoryEngine::ensureLemmaAtoms(" << n << ", " << atomsTo
-                          << ")" << endl;
+  Assert(atomsTo != THEORY_LAST);
+  Debug("theory::atoms") << "TheoryEngine::ensureLemmaAtoms(" << n << ", "
+                         << atomsTo << ")" << endl;
   AtomsCollect collectAtoms;
   NodeVisitor<AtomsCollect>::run(collectAtoms, n);
   ensureLemmaAtoms(collectAtoms.getAtoms(), atomsTo);

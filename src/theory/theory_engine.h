@@ -282,14 +282,15 @@ class TheoryEngine {
   /** Ensure atoms from the given node are sent to the given theory */
   void ensureLemmaAtoms(Node n, theory::TheoryId atomsTo);
   /** Ensure that the given atoms are send to the given theory */
-  void ensureLemmaAtoms(const std::vector<TNode>& atoms, theory::TheoryId atomsTo);
+  void ensureLemmaAtoms(const std::vector<TNode>& atoms,
+                        theory::TheoryId atomsTo);
 
   /** sort inference module */
   std::unique_ptr<theory::SortInference> d_sortInfer;
 
   /** Time spent in theory combination */
   TimerStat d_combineTheoriesTime;
-  
+
   /** Number of marked propagation attempts */
   IntStat d_markPropAttempts;
   /** Number of successful marked propagations */
@@ -299,7 +300,7 @@ class TheoryEngine {
   IntStat d_satPropAttempts;
   /** Number of successful sat propagations */
   IntStat d_satProps;
-  
+
   Node d_true;
   Node d_false;
 

@@ -21,8 +21,8 @@
 #include "theory/builtin/proof_checker.h"
 #include "theory/builtin/theory_builtin_rewriter.h"
 #include "theory/theory.h"
-#include "theory/theory_state.h"
 #include "theory/theory_inference_manager.h"
+#include "theory/theory_state.h"
 
 namespace cvc5 {
 namespace theory {
