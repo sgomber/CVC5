@@ -968,12 +968,12 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
   // the SAT solver later
   if (toTheoryId == THEORY_SAT_SOLVER) {
     Assert(toTheoryIdProp == toTheoryId);
-    if (markPropagation(assertion, originalAssertion, toTheoryId, fromTheoryId)) {
-      // Enqueue for propagation to the SAT solver
-      d_propagatedLiterals.push_back(assertion);
-      // Check for propositional conflicts
-      bool value;
-      if (d_propEngine->hasValue(assertion, value) && !value) {
+    ++d_satPropAttempts;
+    // Check for propositional conflicts
+    bool value;
+    if (d_propEngine->hasValue(assertion, value)) {
+      if (!value)
+      {
         Trace("theory::propagate")
             << "TheoryEngine::assertToTheory(" << assertion << ", "
             << toTheoryId << ", " << fromTheoryId << "): conflict (sharing)"
@@ -982,6 +982,15 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
             << ":THEORY-CONFLICT: " << assertion << std::endl;
         markInConflict();
       }
+      else
+      {
+        return;
+      }
+    }
+    if (markPropagation(assertion, originalAssertion, toTheoryId, fromTheoryId)) {
+      // Enqueue for propagation to the SAT solver
+      d_propagatedLiterals.push_back(assertion);
+      ++d_satProps;
     }
     return;
   }
