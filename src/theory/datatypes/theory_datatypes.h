@@ -80,7 +80,7 @@ private:
     EqcInfo( context::Context* c );
     ~EqcInfo(){}
     /** whether we should check to instantiate this eqc */
-    context::CDO< bool > d_checkInst;
+    context::CDO<bool> d_checkInst;
     //whether we have instantiatied this eqc
     context::CDO< bool > d_inst;
     //constructor equal to this eqc
@@ -274,8 +274,9 @@ private:
   /** get instantiate cons */
   Node getInstantiateCons(Node n, const DType& dt, int index);
   /** check instantiate */
-  bool instantiate( EqcInfo* eqc, Node n );
-private:
+  bool instantiate(EqcInfo* eqc, Node n);
+
+ private:
   //equality queries
   bool hasTerm( TNode a );
   bool areEqual( TNode a, TNode b );

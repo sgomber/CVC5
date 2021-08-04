@@ -216,7 +216,7 @@ void TheoryDatatypes::postCheck(Effort level)
         if( tn.isDatatype() ){
           Trace("datatypes-debug") << "Process equivalence class " << n << std::endl;
           EqcInfo* eqc = getOrMakeEqcInfo( n );
-          if (eqc->d_checkInst)
+          if (eqc!=nullptr && eqc->d_checkInst)
           {
             if (instantiate(eqc, n))
             {
@@ -557,28 +557,35 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
   Assert(areEqual(t1, t2));
   TNode trep1 = t1;
   TNode trep2 = t2;
-  EqcInfo* eqc2 = getOrMakeEqcInfo( t2 );
-  if( eqc2==nullptr ){
+  EqcInfo* eqc2 = getOrMakeEqcInfo(t2);
+  if (eqc2 == nullptr)
+  {
     return;
   }
   bool checkInst = false;
-  if( !eqc2->d_constructor.get().isNull() ){
+  if (!eqc2->d_constructor.get().isNull())
+  {
     trep2 = eqc2->d_constructor.get();
   }
-  EqcInfo* eqc1 = getOrMakeEqcInfo( t1 );
-  if( eqc1 ){
-    Trace("datatypes-debug") << "  merge eqc info " << eqc2 << " into " << eqc1 << std::endl;
-    if( !eqc1->d_constructor.get().isNull() ){
+  EqcInfo* eqc1 = getOrMakeEqcInfo(t1);
+  if (eqc1)
+  {
+    Trace("datatypes-debug")
+        << "  merge eqc info " << eqc2 << " into " << eqc1 << std::endl;
+    if (!eqc1->d_constructor.get().isNull())
+    {
       trep1 = eqc1->d_constructor.get();
     }
-    //check for clash
+    // check for clash
     TNode cons1 = eqc1->d_constructor.get();
     TNode cons2 = eqc2->d_constructor.get();
-    //if both have constructor, then either clash or unification
-    if( !cons1.isNull() && !cons2.isNull() ){
-      Trace("datatypes-debug") << "  constructors : " << cons1 << " " << cons2 << std::endl;
-      Node unifEq = cons1.eqNode( cons2 );
-      std::vector< Node > rew;
+    // if both have constructor, then either clash or unification
+    if (!cons1.isNull() && !cons2.isNull())
+    {
+      Trace("datatypes-debug")
+          << "  constructors : " << cons1 << " " << cons2 << std::endl;
+      Node unifEq = cons1.eqNode(cons2);
+      std::vector<Node> rew;
       if (utils::checkClash(cons1, cons2, rew))
       {
         std::vector<Node> conf;
@@ -591,74 +598,92 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
       else
       {
         Assert(areEqual(cons1, cons2));
-        //do unification
-        for( size_t i=0, nchild = cons1.getNumChildren(); i<nchild; i++ ) {
-          if( !areEqual( cons1[i], cons2[i] ) ){
-            Node eq = cons1[i].eqNode( cons2[i] );
-            d_im.addPendingInference(
-                eq, InferenceId::DATATYPES_UNIF, unifEq);
-            Trace("datatypes-infer") << "DtInfer : cons-inj : " << eq << " by " << unifEq << std::endl;
+        // do unification
+        for (size_t i = 0, nchild = cons1.getNumChildren(); i < nchild; i++)
+        {
+          if (!areEqual(cons1[i], cons2[i]))
+          {
+            Node eq = cons1[i].eqNode(cons2[i]);
+            d_im.addPendingInference(eq, InferenceId::DATATYPES_UNIF, unifEq);
+            Trace("datatypes-infer") << "DtInfer : cons-inj : " << eq << " by "
+                                     << unifEq << std::endl;
           }
         }
       }
     }
-    Trace("datatypes-debug") << "  instantiated : " << eqc1->d_inst << " " << eqc2->d_inst << std::endl;
+    Trace("datatypes-debug") << "  instantiated : " << eqc1->d_inst << " "
+                             << eqc2->d_inst << std::endl;
     eqc1->d_inst = eqc1->d_inst || eqc2->d_inst;
-    if( !cons2.isNull() ){
-      if( cons1.isNull() ){
-        Trace("datatypes-debug") << "  must check if it is okay to set the constructor." << std::endl;
+    if (!cons2.isNull())
+    {
+      if (cons1.isNull())
+      {
+        Trace("datatypes-debug")
+            << "  must check if it is okay to set the constructor."
+            << std::endl;
         checkInst = true;
-        addConstructor( eqc2->d_constructor.get(), eqc1, t1 );
+        addConstructor(eqc2->d_constructor.get(), eqc1, t1);
         if (d_state.isInConflict())
         {
           return;
         }
       }
     }
-  }else{
-    Trace("datatypes-debug") << "  no eqc info for " << t1 << ", must create" << std::endl;
-    //just copy the equivalence class information
-    eqc1 = getOrMakeEqcInfo( t1, true );
-    eqc1->d_inst.set( eqc2->d_inst );
-    eqc1->d_constructor.set( eqc2->d_constructor );
-    eqc1->d_selectors.set( eqc2->d_selectors );
+  }
+  else
+  {
+    Trace("datatypes-debug")
+        << "  no eqc info for " << t1 << ", must create" << std::endl;
+    // just copy the equivalence class information
+    eqc1 = getOrMakeEqcInfo(t1, true);
+    eqc1->d_inst.set(eqc2->d_inst);
+    eqc1->d_constructor.set(eqc2->d_constructor);
+    eqc1->d_selectors.set(eqc2->d_selectors);
   }
 
-  //merge labels
+  // merge labels
   NodeUIntMap::iterator lbl_i = d_labels.find(t2);
-  if( lbl_i != d_labels.end() ){
-    Trace("datatypes-debug") << "  merge labels from " << eqc2 << " " << t2 << std::endl;
+  if (lbl_i != d_labels.end())
+  {
+    Trace("datatypes-debug")
+        << "  merge labels from " << eqc2 << " " << t2 << std::endl;
     size_t n_label = (*lbl_i).second;
     for (size_t i = 0; i < n_label; i++)
     {
       Assert(i < d_labels_data[t2].size());
-      Node t = d_labels_data[ t2 ][i];
+      Node t = d_labels_data[t2][i];
       Node t_arg = d_labels_args[t2][i];
       unsigned tindex = d_labels_tindex[t2][i];
-      addTester( tindex, t, eqc1, t1, t_arg );
+      addTester(tindex, t, eqc1, t1, t_arg);
       if (d_state.isInConflict())
       {
         Trace("datatypes-debug") << "  conflict!" << std::endl;
         return;
       }
     }
-
   }
-  //merge selectors
-  if( !eqc1->d_selectors && eqc2->d_selectors ){
+  // merge selectors
+  if (!eqc1->d_selectors && eqc2->d_selectors)
+  {
     eqc1->d_selectors = true;
     checkInst = true;
   }
   NodeUIntMap::iterator sel_i = d_selector_apps.find(t2);
-  if( sel_i != d_selector_apps.end() ){
-    Trace("datatypes-debug") << "  merge selectors from " << eqc2 << " " << t2 << std::endl;
+  if (sel_i != d_selector_apps.end())
+  {
+    Trace("datatypes-debug")
+        << "  merge selectors from " << eqc2 << " " << t2 << std::endl;
     size_t n_sel = (*sel_i).second;
     for (size_t j = 0; j < n_sel; j++)
     {
-      addSelector( d_selector_apps_data[t2][j], eqc1, t1, eqc2->d_constructor.get().isNull() );
+      addSelector(d_selector_apps_data[t2][j],
+                  eqc1,
+                  t1,
+                  eqc2->d_constructor.get().isNull());
     }
   }
-  if( checkInst ){
+  if (checkInst)
+  {
     if (options::dtLazyInst())
     {
       eqc1->d_checkInst = true;
@@ -666,18 +691,17 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
     else
     {
       Trace("datatypes-debug") << "  checking instantiate" << std::endl;
-      instantiate( eqc1, t1 );
+      instantiate(eqc1, t1);
     }
   }
   Trace("datatypes-debug") << "Finished Merge " << t1 << " " << t2 << std::endl;
-
 }
 
-TheoryDatatypes::EqcInfo::EqcInfo( context::Context* c )
+TheoryDatatypes::EqcInfo::EqcInfo(context::Context* c)
     : d_checkInst(c, false),
-    d_inst( c, false )
-    , d_constructor( c, Node::null() )
-    , d_selectors( c, false )
+      d_inst(c, false),
+      d_constructor(c, Node::null()),
+      d_selectors(c, false)
 {}
 
 bool TheoryDatatypes::hasLabel( EqcInfo* eqc, Node n ){
@@ -845,7 +869,7 @@ void TheoryDatatypes::addTester(
         }
         else
         {
-          instantiate( eqc, n );
+          instantiate(eqc, n);
         }
         // We could propagate is-C1(x) => not is-C2(x) here for all other
         // constructors, but empirically this hurts performance.
@@ -1432,7 +1456,8 @@ Node TheoryDatatypes::getInstantiateCons(Node n, const DType& dt, int index)
   return n_ic;
 }
 
-bool TheoryDatatypes::instantiate( EqcInfo* eqc, Node n ){
+bool TheoryDatatypes::instantiate(EqcInfo* eqc, Node n)
+{
   Trace("datatypes-debug") << "Instantiate: " << n << std::endl;
   //add constructor to equivalence class if not done so already
   int index = getLabelIndex( eqc, n );
@@ -1458,7 +1483,7 @@ bool TheoryDatatypes::instantiate( EqcInfo* eqc, Node n ){
   eqc->d_inst = true;
   Node tt_cons = getInstantiateCons(tt, dt, index);
   Node eq;
-  if (tt==tt_cons)
+  if (tt == tt_cons)
   {
     // not necessary
     return false;
