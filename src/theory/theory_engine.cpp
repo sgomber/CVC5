@@ -218,8 +218,7 @@ context::UserContext* TheoryEngine::getUserContext() const
   return d_env.getUserContext();
 }
 
-TheoryEngine::TheoryEngine(Env& env,
-                           ProofNodeManager* pnm)
+TheoryEngine::TheoryEngine(Env& env, ProofNodeManager* pnm)
     : d_propEngine(nullptr),
       d_env(env),
       d_logicInfo(env.getLogicInfo()),
@@ -969,7 +968,8 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
     ++d_satPropAttempts;
     // Check for propositional conflicts
     bool value;
-    if (d_propEngine->hasValue(assertion, value)) {
+    if (d_propEngine->hasValue(assertion, value))
+    {
       if (!value)
       {
         Trace("theory::propagate")
@@ -985,7 +985,8 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
         return;
       }
     }
-    if (markPropagation(assertion, originalAssertion, toTheoryId, fromTheoryId)) {
+    if (markPropagation(assertion, originalAssertion, toTheoryId, fromTheoryId))
+    {
       // Enqueue for propagation to the SAT solver
       d_propagatedLiterals.push_back(assertion);
       ++d_satProps;
