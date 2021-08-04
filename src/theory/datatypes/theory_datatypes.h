@@ -79,6 +79,8 @@ private:
   public:
     EqcInfo( context::Context* c );
     ~EqcInfo(){}
+    /** whether we should check to instantiate this eqc */
+    context::CDO< bool > d_checkInst;
     //whether we have instantiatied this eqc
     context::CDO< bool > d_inst;
     //constructor equal to this eqc
@@ -158,8 +160,6 @@ private:
   std::map< TypeNode, Node > d_singleton_lemma[2];
   /** Cache for singleton equalities processed */
   BoolMap d_singleton_eq;
-  /** list of all lemmas produced */
-  BoolMap d_lemmas_produced_c;
 private:
   /** assert fact */
   void assertFact( Node fact, Node exp );
@@ -274,7 +274,7 @@ private:
   /** get instantiate cons */
   Node getInstantiateCons(Node n, const DType& dt, int index);
   /** check instantiate */
-  void instantiate( EqcInfo* eqc, Node n );
+  bool instantiate( EqcInfo* eqc, Node n );
 private:
   //equality queries
   bool hasTerm( TNode a );

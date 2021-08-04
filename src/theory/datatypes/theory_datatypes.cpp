@@ -61,7 +61,6 @@ TheoryDatatypes::TheoryDatatypes(Context* c,
       d_collectTermsCacheU(u),
       d_functionTerms(c),
       d_singleton_eq(u),
-      d_lemmas_produced_c(u),
       d_sygusExtension(nullptr),
       d_state(c, u, valuation),
       d_im(*this, d_state, pnm),
@@ -217,6 +216,14 @@ void TheoryDatatypes::postCheck(Effort level)
         if( tn.isDatatype() ){
           Trace("datatypes-debug") << "Process equivalence class " << n << std::endl;
           EqcInfo* eqc = getOrMakeEqcInfo( n );
+          if (eqc->d_checkInst)
+          {
+            if (instantiate(eqc, n))
+            {
+              // need to instantiate this eqc, continue
+              continue;
+            }
+          }
           //if there are more than 1 possible constructors for eqc
           if( !hasLabel( eqc, n ) ){
             Trace("datatypes-debug") << "No constructor..." << std::endl;
@@ -652,16 +659,23 @@ void TheoryDatatypes::merge( Node t1, Node t2 ){
     }
   }
   if( checkInst ){
-    Trace("datatypes-debug") << "  checking instantiate" << std::endl;
-    instantiate( eqc1, t1 );
+    if (options::dtLazyInst())
+    {
+      eqc1->d_checkInst = true;
+    }
+    else
+    {
+      Trace("datatypes-debug") << "  checking instantiate" << std::endl;
+      instantiate( eqc1, t1 );
+    }
   }
-}
-Trace("datatypes-debug") << "Finished Merge " << t1 << " " << t2 << std::endl;
+  Trace("datatypes-debug") << "Finished Merge " << t1 << " " << t2 << std::endl;
 
 }
 
 TheoryDatatypes::EqcInfo::EqcInfo( context::Context* c )
-    : d_inst( c, false )
+    : d_checkInst(c, false),
+    d_inst( c, false )
     , d_constructor( c, Node::null() )
     , d_selectors( c, false )
 {}
@@ -825,7 +839,14 @@ void TheoryDatatypes::addTester(
       const DType& dt = t_arg.getType().getDType();
       Debug("datatypes-labels") << "Labels at " << n_lbl << " / " << dt.getNumConstructors() << std::endl;
       if( tpolarity ){
-        instantiate( eqc, n );
+        if (options::dtLazyInst())
+        {
+          eqc->d_checkInst = true;
+        }
+        else
+        {
+          instantiate( eqc, n );
+        }
         // We could propagate is-C1(x) => not is-C2(x) here for all other
         // constructors, but empirically this hurts performance.
       }else{
@@ -1411,13 +1432,13 @@ Node TheoryDatatypes::getInstantiateCons(Node n, const DType& dt, int index)
   return n_ic;
 }
 
-void TheoryDatatypes::instantiate( EqcInfo* eqc, Node n ){
+bool TheoryDatatypes::instantiate( EqcInfo* eqc, Node n ){
   Trace("datatypes-debug") << "Instantiate: " << n << std::endl;
   //add constructor to equivalence class if not done so already
   int index = getLabelIndex( eqc, n );
   if (index == -1 || eqc->d_inst)
   {
-    return;
+    return false;
   }
   Node exp;
   Node tt;
@@ -1437,9 +1458,10 @@ void TheoryDatatypes::instantiate( EqcInfo* eqc, Node n ){
   eqc->d_inst = true;
   Node tt_cons = getInstantiateCons(tt, dt, index);
   Node eq;
-  if (tt == tt_cons)
+  if (tt==tt_cons)
   {
-    return;
+    // not necessary
+    return false;
   }
   eq = tt.eqNode(tt_cons);
   // Determine if the equality must be sent out as a lemma. Notice that
@@ -1462,9 +1484,10 @@ void TheoryDatatypes::instantiate( EqcInfo* eqc, Node n ){
   }
   Trace("datatypes-infer-debug") << "DtInstantiate : " << eqc << " " << eq
                                  << " forceLemma = " << forceLemma << std::endl;
-  d_im.addPendingInference(eq, InferenceId::DATATYPES_INST, exp, forceLemma);
   Trace("datatypes-infer") << "DtInfer : instantiate : " << eq << " by " << exp
                            << std::endl;
+  d_im.addPendingInference(eq, InferenceId::DATATYPES_INST, exp, forceLemma);
+  return true;
 }
 
 void TheoryDatatypes::checkCycles() {

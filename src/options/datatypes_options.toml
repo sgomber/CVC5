@@ -70,6 +70,14 @@ name   = "Datatypes Theory"
   help       = "when applicable, blast splitting lemmas for all variables at once"
 
 [[option]]
+  name       = "dtLazyInst"
+  category   = "regular"
+  long       = "dt-lazy-inst"
+  type       = "bool"
+  default    = "false"
+  help       = "lazy application of instantiation"
+
+[[option]]
   name       = "dtNestedRec"
   category   = "regular"
   long       = "dt-nested-rec"
