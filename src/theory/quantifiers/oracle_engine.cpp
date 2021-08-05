@@ -116,7 +116,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e)
     TNodeTrie* tat = termDatabase->getTermArgTrie(f);
     if (tat)
     {
-      std::vector<Node> apps = tat->getLeaves(1);
+      std::vector<Node> apps = tat->getLeaves(f.getType().getArgTypes().size());
       Trace("oracle-calls") << "Oracle fun " << f << " with " << apps.size()
                             << " applications." << std::endl;
       for (const auto& fapp : apps)
