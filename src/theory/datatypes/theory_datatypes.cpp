@@ -330,6 +330,8 @@ void TheoryDatatypes::postCheck(Effort level)
                   Node t = utils::mkTester(n, 0, dt);
                   d_im.addPendingInference(
                       t, InferenceId::DATATYPES_SPLIT, d_true);
+                  //d_im.sendDtLemma(t,
+                  //                  InferenceId::DATATYPES_SPLIT);
                   Trace("datatypes-infer") << "DtInfer : 1-cons (full) : " << t << std::endl;
                 }else{
                   Assert(consIndex != -1 || dt.isSygus());
@@ -347,8 +349,7 @@ void TheoryDatatypes::postCheck(Effort level)
                     Node lemma = utils::mkSplit(n, dt);
                     Trace("dt-split-debug") << "Split lemma is : " << lemma << std::endl;
                     d_im.sendDtLemma(lemma,
-                                     InferenceId::DATATYPES_SPLIT,
-                                     LemmaProperty::SEND_ATOMS);
+                                     InferenceId::DATATYPES_SPLIT);
                   }
                   if( !options::dtBlastSplits() ){
                     break;
