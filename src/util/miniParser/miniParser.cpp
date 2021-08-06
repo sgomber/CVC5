@@ -20,6 +20,7 @@
 #include "parser/parser_exception.h"
 #include "util/bitvector.h"
 #include "util/rational.h"
+#include "util/floatingpoint.h"
 
 namespace cvc5 {
 
@@ -157,8 +158,39 @@ Node mini_parsert::function_application()
         }
         else if (id == "+oo" || id == "-oo" || id == "NaN")
         {
-          // parse floating point literals here
-          throw parser::ParserException("Unable to parse NaN, or infinity");
+          // These are the "plus infinity", "minus infinity" and NaN
+          // floating-point literals.
+          if (next_token() != tokenizert::NUMERAL)
+            throw parser::ParserException("expected number after " + id);
+
+          auto width_e = std::stoll(smt2_tokenizer.get_buffer());
+
+          if (next_token() != tokenizert::NUMERAL)
+            throw parser::ParserException("expected second number after " + id);
+
+          auto width_f = std::stoll(smt2_tokenizer.get_buffer());
+
+          if (next_token() != tokenizert::CLOSE)
+            throw parser::ParserException("expected ')' after " + id);
+
+          if (id == "+oo")
+          {
+            Node result = nm->mkConst(FloatingPoint::makeInf(
+                FloatingPointSize(width_e, width_f), false));
+            return result;
+          }
+          else if (id == "-oo")
+          {
+            Node result = nm->mkConst(FloatingPoint::makeInf(
+                FloatingPointSize(width_e, width_f), true));
+            return result;
+          }
+          else  // NaN
+          {
+            Node result = nm->mkConst(
+                FloatingPoint::makeNaN(FloatingPointSize(width_e, width_f)));
+            return result;
+          }
         }
         else
         {
