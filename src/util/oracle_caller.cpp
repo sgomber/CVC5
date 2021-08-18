@@ -41,8 +41,8 @@ Node OracleCaller::callOracle(const Node fapp)
   {
     std::ostringstream oss;
     oss << arg;
-    string_args.push_back(oss.str());
-    Trace("oracle-calls") << ' ' << arg;
+    string_args.push_back("\"" + oss.str() + "\"");
+    Trace("oracle-calls") << arg <<" ";
   }
   Trace("oracle-calls") << std::endl;
 
