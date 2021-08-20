@@ -70,8 +70,8 @@ bool SygusSiUtils::isSingleInvocation(const std::vector<Node>& fs,
     return false;
   }
   bool argsSet = false;
-  std::unordered_set<TNode, TNodeHashFunction> visited;
-  std::unordered_set<TNode, TNodeHashFunction>::iterator it;
+  std::unordered_set<TNode> visited;
+  std::unordered_set<TNode>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(conj);
@@ -177,8 +177,8 @@ bool SygusSiUtils::getSingleInvocations(const std::vector<Node>& fs,
     return true;
   }
   std::map<Node, std::vector<Node>>::iterator ita;
-  std::unordered_set<TNode, TNodeHashFunction> visited;
-  std::unordered_set<TNode, TNodeHashFunction>::iterator it;
+  std::unordered_set<TNode> visited;
+  std::unordered_set<TNode>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(conj);
