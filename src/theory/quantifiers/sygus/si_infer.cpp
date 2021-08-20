@@ -22,6 +22,7 @@
 #include "theory/quantifiers/sygus/sygus_utils.h"
 #include "theory/quantifiers/sygus/sygus_utils_si.h"
 #include "theory/smt_engine_subsolver.h"
+#include "util/rational.h"
 
 using namespace cvc5::kind;
 
@@ -194,7 +195,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
         TypeNode gtype = g.getType();
         AlwaysAssert(typeId.find(gtype) != typeId.end());
         Node tid = nm->mkConst(Rational(typeId[gtype]));
-        Node happ = nm->mkNode(APPLY_UF, h, cid, tid, fvs[j]);
+        Node happ = nm->mkNode(APPLY_UF, {h, cid, tid, fvs[j]});
         Trace("sygus-si-infer")
             << "   ...make argument #" << j << " of " << f << " (ground term "
             << g << "): " << fvs[j] << " " << gtype << " is " << happ
@@ -284,7 +285,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
     Subs siirep;
     // for each function invocation, replace it with the original
     std::map<Node, std::vector<Node>>& gas = gArgs[i];
-    std::unordered_set<Node, NodeHashFunction> sused;
+    std::unordered_set<Node> sused;
     for (const std::pair<const Node, std::vector<Node>>& ga : gas)
     {
       if (ga.second.empty())
@@ -327,7 +328,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
           continue;
         }
         Node sivid = nm->mkConst(Rational(j));
-        Node happ = nm->mkNode(APPLY_UF, h, cid, tid, sivid);
+        Node happ = nm->mkNode(APPLY_UF, {h, cid, tid, sivid});
         Node mh = siInferChecker->getValue(happ);
         Assert(mh.getKind() == CONST_RATIONAL);
         Integer mhi = mh.getConst<Rational>().getNumerator();
@@ -367,7 +368,7 @@ Node SingleInvocationInference::coerceSingleInvocation(
 
   Node fconj = nm->mkAnd(finalConj);
   // get all free variables
-  std::unordered_set<Node, NodeHashFunction> ffvs;
+  std::unordered_set<Node> ffvs;
   expr::getFreeVariables(fconj, ffvs);
   for (const Node& f : fs)
   {
