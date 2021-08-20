@@ -701,9 +701,65 @@ bool QuantifiersRewriter::isVarElim(Node v, Node s)
   return !expr::hasSubterm(s, v) && s.getType().isSubtypeOf(v.getType());
 }
 
-Node QuantifiersRewriter::getVarElimLitBv(Node lit,
-                                          const std::vector<Node>& args,
-                                          Node& var)
+Node QuantifiersRewriter::getVarElimEq(Node lit,
+                                       const std::vector<Node>& args,
+                                       Node& var)
+{
+  Assert(lit.getKind() == EQUAL);
+  Node slv;
+  TypeNode tt = lit[0].getType();
+  if (tt.isReal())
+  {
+    slv = getVarElimEqReal(lit, args, var);
+  }
+  else if (tt.isBitVector())
+  {
+    slv = getVarElimEqBv(lit, args, var);
+  }
+  else if (tt.isStringLike())
+  {
+    slv = getVarElimEqString(lit, args, var);
+  }
+  return slv;
+}
+
+Node QuantifiersRewriter::getVarElimEqReal(Node lit,
+                                           const std::vector<Node>& args,
+                                           Node& var)
+{
+  // for arithmetic, solve the equality
+  std::map<Node, Node> msum;
+  if (!ArithMSum::getMonomialSumLit(lit, msum))
+  {
+    return Node::null();
+  }
+  std::vector<Node>::const_iterator ita;
+  for (std::map<Node, Node>::iterator itm = msum.begin(); itm != msum.end();
+       ++itm)
+  {
+    if (itm->first.isNull())
+    {
+      continue;
+    }
+    ita = std::find(args.begin(), args.end(), itm->first);
+    if (ita != args.end())
+    {
+      Node veq_c;
+      Node val;
+      int ires = ArithMSum::isolate(itm->first, msum, veq_c, val, EQUAL);
+      if (ires != 0 && veq_c.isNull() && isVarElim(itm->first, val))
+      {
+        var = itm->first;
+        return val;
+      }
+    }
+  }
+  return Node::null();
+}
+
+Node QuantifiersRewriter::getVarElimEqBv(Node lit,
+                                         const std::vector<Node>& args,
+                                         Node& var)
 {
   if (Trace.isOn("quant-velim-bv"))
   {
@@ -752,9 +808,9 @@ Node QuantifiersRewriter::getVarElimLitBv(Node lit,
   return Node::null();
 }
 
-Node QuantifiersRewriter::getVarElimLitString(Node lit,
-                                              const std::vector<Node>& args,
-                                              Node& var)
+Node QuantifiersRewriter::getVarElimEqString(Node lit,
+                                             const std::vector<Node>& args,
+                                             Node& var)
 {
   Assert(lit.getKind() == EQUAL);
   NodeManager* nm = NodeManager::currentNM();
@@ -900,48 +956,10 @@ bool QuantifiersRewriter::getVarElimLit(Node lit,
       return true;
     }
   }
-  if (lit.getKind() == EQUAL && lit[0].getType().isReal() && pol)
-  {
-    // for arithmetic, solve the equality
-    std::map< Node, Node > msum;
-    if (ArithMSum::getMonomialSumLit(lit, msum))
-    {
-      for( std::map< Node, Node >::iterator itm = msum.begin(); itm != msum.end(); ++itm ){
-        if( !itm->first.isNull() ){
-          std::vector< Node >::iterator ita = std::find( args.begin(), args.end(), itm->first );
-          if( ita!=args.end() ){
-            Assert(pol);
-            Node veq_c;
-            Node val;
-            int ires = ArithMSum::isolate(itm->first, msum, veq_c, val, EQUAL);
-            if (ires != 0 && veq_c.isNull() && isVarElim(itm->first, val))
-            {
-              Trace("var-elim-quant")
-                  << "Variable eliminate based on solved equality : "
-                  << itm->first << " -> " << val << std::endl;
-              vars.push_back(itm->first);
-              subs.push_back(val);
-              args.erase(ita);
-              return true;
-            }
-          }
-        }
-      }
-    }
-  }
   if (lit.getKind() == EQUAL && pol)
   {
     Node var;
-    Node slv;
-    TypeNode tt = lit[0].getType();
-    if (tt.isBitVector())
-    {
-      slv = getVarElimLitBv(lit, args, var);
-    }
-    else if (tt.isStringLike())
-    {
-      slv = getVarElimLitString(lit, args, var);
-    }
+    Node slv = getVarElimEq(lit, args, var);
     if (!slv.isNull())
     {
       Assert(!var.isNull());
@@ -1061,7 +1079,7 @@ bool QuantifiersRewriter::getVarElimIneq(Node body,
         {
           // compute variables in itm->first, these are not eligible for
           // elimination
-          std::unordered_set<Node, NodeHashFunction> fvs;
+          std::unordered_set<Node> fvs;
           expr::getFreeVariables(m.first, fvs);
           for (const Node& v : fvs)
           {
@@ -1113,8 +1131,7 @@ bool QuantifiersRewriter::getVarElimIneq(Node body,
   }
   // traverse the body, invalidate variables if they occur in places other than
   // the bounds they occur in
-  std::unordered_map<TNode, std::unordered_set<int>, TNodeHashFunction>
-      evisited;
+  std::unordered_map<TNode, std::unordered_set<int>> evisited;
   std::vector<TNode> evisit;
   std::vector<int> evisit_pol;
   TNode ecur;
@@ -1242,13 +1259,12 @@ Node QuantifiersRewriter::computeVarElimination( Node body, std::vector< Node >&
   return body;
 }
 
-Node QuantifiersRewriter::computePrenex(
-    Node q,
-    Node body,
-    std::unordered_set<Node, NodeHashFunction>& args,
-    std::unordered_set<Node, NodeHashFunction>& nargs,
-    bool pol,
-    bool prenexAgg)
+Node QuantifiersRewriter::computePrenex(Node q,
+                                        Node body,
+                                        std::unordered_set<Node>& args,
+                                        std::unordered_set<Node>& nargs,
+                                        bool pol,
+                                        bool prenexAgg)
 {
   NodeManager* nm = NodeManager::currentNM();
   Kind k = body.getKind();
@@ -1267,7 +1283,12 @@ Node QuantifiersRewriter::computePrenex(
         Node vv;
         if (!q.isNull())
         {
-          Node cacheVal = BoundVarManager::getCacheValue(q, v);
+          // We cache based on the original quantified formula, the subformula
+          // that we are pulling variables from (body), and the variable v.
+          // The argument body is required since in rare cases, two subformulas
+          // may share the same variables. This is the case for define-fun
+          // or inferred substitutions that contain quantified formulas.
+          Node cacheVal = BoundVarManager::getCacheValue(q, body, v);
           vv = bvm->mkBoundVar<QRewPrenexAttribute>(cacheVal, vt);
         }
         else
@@ -1377,8 +1398,8 @@ Node QuantifiersRewriter::computePrenexAgg(Node n,
   }
   else
   {
-    std::unordered_set<Node, NodeHashFunction> argsSet;
-    std::unordered_set<Node, NodeHashFunction> nargsSet;
+    std::unordered_set<Node> argsSet;
+    std::unordered_set<Node> nargsSet;
     Node q;
     Node nn = computePrenex(q, n, argsSet, nargsSet, true, true);
     Assert(n != nn || argsSet.empty());
@@ -1794,7 +1815,7 @@ bool QuantifiersRewriter::doOperation(Node q,
 {
   bool is_strict_trigger =
       qa.d_hasPattern
-      && options::userPatternsQuant() == options::UserPatMode::TRUST;
+      && options::userPatternsQuant() == options::UserPatMode::STRICT;
   bool is_std = qa.isStandard() && !is_strict_trigger;
   if (computeOption == COMPUTE_ELIM_SYMBOLS)
   {
@@ -1888,7 +1909,7 @@ Node QuantifiersRewriter::computeOperation(Node f,
     }
     else
     {
-      std::unordered_set<Node, NodeHashFunction> argsSet, nargsSet;
+      std::unordered_set<Node> argsSet, nargsSet;
       n = computePrenex(f, n, argsSet, nargsSet, true, false);
       Assert(nargsSet.empty());
       args.insert(args.end(), argsSet.begin(), argsSet.end());

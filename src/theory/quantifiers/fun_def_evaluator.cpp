@@ -41,7 +41,9 @@ void FunDefEvaluator::assertDefinition(Node q)
   Node f = h.hasOperator() ? h.getOperator() : h;
   Assert(d_funDefMap.find(f) == d_funDefMap.end())
       << "FunDefEvaluator::assertDefinition: function already defined";
+  d_funDefs.push_back(q);
   FunDefInfo& fdi = d_funDefMap[f];
+  fdi.d_quant = q;
   fdi.d_body = QuantAttributes::getFunDefBody(q);
   Assert(!fdi.d_body.isNull());
   fdi.d_args.insert(fdi.d_args.end(), q[0].begin(), q[0].end());
@@ -55,10 +57,10 @@ Node FunDefEvaluator::evaluate(Node n) const
   Assert(Rewriter::rewrite(n) == n);
   Trace("fd-eval") << "FunDefEvaluator: evaluate " << n << std::endl;
   NodeManager* nm = NodeManager::currentNM();
-  std::unordered_map<TNode, unsigned, TNodeHashFunction> funDefCount;
-  std::unordered_map<TNode, unsigned, TNodeHashFunction>::iterator itCount;
-  std::unordered_map<TNode, Node, TNodeHashFunction> visited;
-  std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
+  std::unordered_map<TNode, unsigned> funDefCount;
+  std::unordered_map<TNode, unsigned>::iterator itCount;
+  std::unordered_map<TNode, Node> visited;
+  std::unordered_map<TNode, Node>::iterator it;
   std::map<Node, FunDefInfo>::const_iterator itf;
   std::vector<TNode> visit;
   TNode cur;
@@ -250,6 +252,20 @@ Node FunDefEvaluator::evaluate(Node n) const
 }
 
 bool FunDefEvaluator::hasDefinitions() const { return !d_funDefMap.empty(); }
+
+const std::vector<Node>& FunDefEvaluator::getDefinitions() const
+{
+  return d_funDefs;
+}
+Node FunDefEvaluator::getDefinitionFor(Node f) const
+{
+  std::map<Node, FunDefInfo>::const_iterator it = d_funDefMap.find(f);
+  if (it != d_funDefMap.end())
+  {
+    return it->second.d_quant;
+  }
+  return Node::null();
+}
 
 }  // namespace quantifiers
 }  // namespace theory

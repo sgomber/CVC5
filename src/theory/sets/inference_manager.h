@@ -36,7 +36,7 @@ class TheorySetsPrivate;
  */
 class InferenceManager : public InferenceManagerBuffered
 {
-  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+  typedef context::CDHashSet<Node> NodeSet;
 
  public:
   InferenceManager(Theory& t, SolverState& s, ProofNodeManager* pnm);
@@ -71,6 +71,10 @@ class InferenceManager : public InferenceManagerBuffered
                        InferenceId id,
                        std::vector<Node>& exp,
                        int inferType = 0);
+  /**
+   * Immediately assert an internal fact with the default handling of proofs.
+   */
+  bool assertSetsFact(Node atom, bool polarity, InferenceId id, Node exp);
 
   /** flush the splitting lemma ( n OR (NOT n) )
    *

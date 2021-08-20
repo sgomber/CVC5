@@ -15,6 +15,7 @@
 
 #include "smt/quant_elim_solver.h"
 
+#include "base/modal_exception.h"
 #include "expr/skolem_manager.h"
 #include "expr/subs.h"
 #include "smt/smt_solver.h"
@@ -74,8 +75,7 @@ Node QuantElimSolver::getQuantifierElimination(Assertions& as,
   Assert(ne.getNumChildren() == 3);
   // We consider this to be an entailment check, which also avoids incorrect
   // status reporting (see SmtEngineState::d_expectedStatus).
-  Result r =
-      d_smtSolver.checkSatisfiability(as, std::vector<Node>{ne}, false, true);
+  Result r = d_smtSolver.checkSatisfiability(as, std::vector<Node>{ne}, true);
   Trace("smt-qe") << "Query returned " << r << std::endl;
   if (r.asSatisfiabilityResult().isSat() != Result::UNSAT)
   {

@@ -132,12 +132,9 @@ class TheoryArrays : public Theory {
   IntStat d_numSetModelValConflicts;
 
  public:
-  TheoryArrays(context::Context* c,
-               context::UserContext* u,
+  TheoryArrays(Env& env,
                OutputChannel& out,
                Valuation valuation,
-               const LogicInfo& logicInfo,
-               ProofNodeManager* pnm = nullptr,
                std::string name = "theory::arrays::");
   ~TheoryArrays();
 
@@ -157,8 +154,6 @@ class TheoryArrays : public Theory {
   //--------------------------------- end initialization
 
   std::string identify() const override { return std::string("TheoryArrays"); }
-
-  TrustNode expandDefinition(Node node) override;
 
   /////////////////////////////////////////////////////////////////////////////
   // PREPROCESSING
@@ -217,7 +212,7 @@ class TheoryArrays : public Theory {
   void explain(TNode literal, Node& exp);
 
   /** For debugging only- checks invariants about when things are preregistered*/
-  context::CDHashSet<Node, NodeHashFunction > d_isPreRegistered;
+  context::CDHashSet<Node> d_isPreRegistered;
 
   /** Helper for preRegisterTerm, also used internally */
   void preRegisterTermInternal(TNode n);
@@ -336,7 +331,10 @@ class TheoryArrays : public Theory {
       d_arrays.conflict(t1, t2);
     }
 
-    void eqNotifyNewClass(TNode t) override {}
+    void eqNotifyNewClass(TNode t) override
+    {
+      d_arrays.preRegisterTermInternal(t);
+    }
     void eqNotifyMerge(TNode t1, TNode t2) override
     {
       if (t1.getType().isArray()) {
@@ -376,7 +374,7 @@ class TheoryArrays : public Theory {
   context::CDQueue<RowLemmaType> d_RowQueue;
   context::CDHashSet<RowLemmaType, RowLemmaTypeHashFunction > d_RowAlreadyAdded;
 
-  typedef context::CDHashSet<Node, NodeHashFunction> CDNodeSet;
+  typedef context::CDHashSet<Node> CDNodeSet;
 
   CDNodeSet d_sharedArrays;
   CDNodeSet d_sharedOther;
@@ -386,7 +384,7 @@ class TheoryArrays : public Theory {
   // When a new read term is created, we check the index to see if we know the model value.  If so, we add it to d_constReads (and d_constReadsList)
   // If not, we push it onto d_reads and figure out where it goes at computeCareGraph time.
   // d_constReadsList is used as a backup in case we can't compute the model at computeCareGraph time.
-  typedef std::unordered_map<Node, CTNodeList*, NodeHashFunction> CNodeNListMap;
+  typedef std::unordered_map<Node, CTNodeList*> CNodeNListMap;
   CNodeNListMap d_constReads;
   context::CDList<TNode> d_reads;
   context::CDList<TNode> d_constReadsList;
@@ -412,7 +410,7 @@ class TheoryArrays : public Theory {
   };/* class ContextPopper */
   ContextPopper d_contextPopper;
 
-  std::unordered_map<Node, Node, NodeHashFunction> d_skolemCache;
+  std::unordered_map<Node, Node> d_skolemCache;
   context::CDO<unsigned> d_skolemIndex;
   std::vector<Node> d_skolemAssertions;
 
@@ -422,11 +420,11 @@ class TheoryArrays : public Theory {
   // List of nodes that need permanent references in this context
   context::CDList<Node> d_permRef;
   context::CDList<Node> d_modelConstraints;
-  context::CDHashSet<Node, NodeHashFunction > d_lemmasSaved;
+  context::CDHashSet<Node> d_lemmasSaved;
   std::vector<Node> d_lemmas;
 
   // Default values for each mayEqual equivalence class
-  typedef context::CDHashMap<Node,Node,NodeHashFunction> DefValMap;
+  typedef context::CDHashMap<Node, Node> DefValMap;
   DefValMap d_defValues;
 
   typedef std::unordered_map<std::pair<TNode, TNode>, CTNodeList*, TNodePairHashFunction> ReadBucketMap;

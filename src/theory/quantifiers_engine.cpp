@@ -15,9 +15,11 @@
 
 #include "theory/quantifiers_engine.h"
 
+#include "options/base_options.h"
 #include "options/printer_options.h"
 #include "options/quantifiers_options.h"
 #include "options/smt_options.h"
+#include "options/strings_options.h"
 #include "options/uf_options.h"
 #include "smt/smt_engine_scope.h"
 #include "theory/quantifiers/equality_query.h"
@@ -44,21 +46,55 @@ namespace cvc5 {
 namespace theory {
 
 QuantifiersEngine::QuantifiersEngine(
-    quantifiers::QuantifiersState& qstate,
+    quantifiers::QuantifiersState& qs,
     quantifiers::QuantifiersRegistry& qr,
     quantifiers::TermRegistry& tr,
     quantifiers::QuantifiersInferenceManager& qim,
     ProofNodeManager* pnm)
-    : d_qstate(qstate),
+    : d_qstate(qs),
       d_qim(qim),
       d_te(nullptr),
       d_pnm(pnm),
       d_qreg(qr),
       d_treg(tr),
-      d_model(d_treg.getModel()),
-      d_quants_prereg(qstate.getUserContext()),
-      d_quants_red(qstate.getUserContext())
+      d_model(nullptr),
+      d_quants_prereg(qs.getUserContext()),
+      d_quants_red(qs.getUserContext()),
+      d_numInstRoundsLemma(0)
 {
+  Trace("quant-init-debug")
+      << "Initialize model engine, mbqi : " << options::mbqiMode() << " "
+      << options::fmfBound() << std::endl;
+  // Finite model finding requires specialized ways of building the model.
+  // We require constructing the model here, since it is required for
+  // initializing the CombinationEngine and the rest of quantifiers engine.
+  if (options::fmfBound() || options::stringExp()
+      || (options::finiteModelFind()
+          && (options::mbqiMode() == options::MbqiMode::FMC
+              || options::mbqiMode() == options::MbqiMode::TRUST)))
+  {
+    Trace("quant-init-debug") << "...make fmc builder." << std::endl;
+    d_builder.reset(
+        new quantifiers::fmcheck::FullModelChecker(qs, qim, qr, tr));
+  }
+  else
+  {
+    Trace("quant-init-debug") << "...make default model builder." << std::endl;
+    d_builder.reset(new quantifiers::QModelBuilder(qs, qim, qr, tr));
+  }
+  // set the model object
+  d_builder->finishInit();
+  d_model = d_builder->getModel();
+
+  // Finish initializing the term registry by hooking it up to the model and the
+  // inference manager. The former is required since theories are not given
+  // access to the model in their constructors currently.
+  // The latter is required due to a cyclic dependency between the term
+  // database and the instantiate module. Term database needs inference manager
+  // since it sends out lemmas when term indexing is inconsistent, instantiate
+  // needs term database for entailment checks.
+  d_treg.finishInit(d_model, &d_qim);
+
   // initialize the utilities
   d_util.push_back(d_model->getEqualityQuery());
   // quantifiers registry must come before the remaining utilities
@@ -72,10 +108,13 @@ QuantifiersEngine::~QuantifiersEngine() {}
 
 void QuantifiersEngine::finishInit(TheoryEngine* te)
 {
+  // connect the quantifiers model to the underlying theory model
+  d_model->finishInit(te->getModel());
   d_te = te;
   // Initialize the modules and the utilities here.
   d_qmodules.reset(new quantifiers::QuantifiersModules);
-  d_qmodules->initialize(d_qstate, d_qim, d_qreg, d_treg, d_modules);
+  d_qmodules->initialize(
+      d_qstate, d_qim, d_qreg, d_treg, d_builder.get(), d_modules);
   if (d_qmodules->d_rel_dom.get())
   {
     d_util.push_back(d_qmodules->d_rel_dom.get());
@@ -95,11 +134,7 @@ quantifiers::QuantifiersRegistry& QuantifiersEngine::getQuantifiersRegistry()
 
 quantifiers::QModelBuilder* QuantifiersEngine::getModelBuilder() const
 {
-  return d_qmodules->d_builder.get();
-}
-quantifiers::FirstOrderModel* QuantifiersEngine::getModel() const
-{
-  return d_model;
+  return d_builder.get();
 }
 
 /// !!!!!!!!!!!!!! temporary (project #15)
@@ -112,9 +147,15 @@ quantifiers::TermDbSygus* QuantifiersEngine::getTermDatabaseSygus() const
 
 void QuantifiersEngine::presolve() {
   Trace("quant-engine-proc") << "QuantifiersEngine : presolve " << std::endl;
+  d_numInstRoundsLemma = 0;
   d_qim.clearPending();
-  for( unsigned i=0; i<d_modules.size(); i++ ){
-    d_modules[i]->presolve();
+  for (QuantifiersUtil*& u : d_util)
+  {
+    u->presolve();
+  }
+  for (QuantifiersModule*& mdl : d_modules)
+  {
+    mdl->presolve();
   }
   // presolve with term registry, which populates the term database based on
   // terms registered before presolve when in incremental mode
@@ -208,6 +249,13 @@ void QuantifiersEngine::check( Theory::Effort e ){
   d_qim.reset();
   bool setIncomplete = false;
   IncompleteId setIncompleteId = IncompleteId::QUANTIFIERS;
+  if (options::instMaxRounds() >= 0
+      && d_numInstRoundsLemma >= static_cast<uint32_t>(options::instMaxRounds()))
+  {
+    needsCheck = false;
+    setIncomplete = true;
+    setIncompleteId = IncompleteId::QUANTIFIERS_MAX_INST_ROUNDS;
+  }
 
   Trace("quant-engine-debug2") << "Quantifiers Engine call to check, level = " << e << ", needsCheck=" << needsCheck << std::endl;
   if( needsCheck ){
@@ -425,13 +473,8 @@ void QuantifiersEngine::check( Theory::Effort e ){
     // debug print
     if (d_qim.hasSentLemma())
     {
-      bool debugInstTrace = Trace.isOn("inst-per-quant-round");
-      if (options::debugInst() || debugInstTrace)
-      {
-        Options& sopts = smt::currentSmtEngine()->getOptions();
-        std::ostream& out = *sopts.getOut();
-        d_qim.getInstantiate()->debugPrint(out);
-      }
+      d_qim.getInstantiate()->notifyEndRound();
+      d_numInstRoundsLemma++;
     }
     if( Trace.isOn("quant-engine") ){
       double clSet2 = double(clock())/double(CLOCKS_PER_SEC);
@@ -617,15 +660,6 @@ void QuantifiersEngine::getInstantiationTermVectors( std::map< Node, std::vector
 void QuantifiersEngine::getInstantiations(Node q, std::vector<Node>& insts)
 {
   d_qim.getInstantiate()->getInstantiations(q, insts);
-}
-
-void QuantifiersEngine::printSynthSolution( std::ostream& out ) {
-  if (d_qmodules->d_synth_e)
-  {
-    d_qmodules->d_synth_e->printSynthSolution(out);
-  }else{
-    out << "Internal error : module for synth solution not found." << std::endl;
-  }
 }
 
 void QuantifiersEngine::getInstantiatedQuantifiedFormulas(std::vector<Node>& qs)

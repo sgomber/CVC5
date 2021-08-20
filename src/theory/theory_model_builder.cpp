@@ -16,6 +16,7 @@
 
 #include "expr/dtype.h"
 #include "expr/dtype_cons.h"
+#include "expr/uninterpreted_constant.h"
 #include "options/quantifiers_options.h"
 #include "options/smt_options.h"
 #include "options/theory_options.h"
@@ -340,7 +341,7 @@ bool TheoryEngineModelBuilder::isExcludedUSortValue(
 void TheoryEngineModelBuilder::addToTypeList(
     TypeNode tn,
     std::vector<TypeNode>& type_list,
-    std::unordered_set<TypeNode, TypeNodeHashFunction>& visiting)
+    std::unordered_set<TypeNode>& visiting)
 {
   if (std::find(type_list.begin(), type_list.end(), tn) == type_list.end())
   {
@@ -427,11 +428,11 @@ bool TheoryEngineModelBuilder::buildModel(TheoryModel* tm)
   // the set of equivalence classes that are "assignable", i.e. those that have
   // an assignable expression in them (see isAssignable), and have not already
   // been assigned a constant.
-  std::unordered_set<Node, NodeHashFunction> assignableEqc;
+  std::unordered_set<Node> assignableEqc;
   // The set of equivalence classes that are "evaluable", i.e. those that have
   // an expression in them that is not assignable, and have not already been
   // assigned a constant.
-  std::unordered_set<Node, NodeHashFunction> evaluableEqc;
+  std::unordered_set<Node> evaluableEqc;
   // Assigner objects for relevant equivalence classes that require special
   // ways of assigning values, e.g. those that take into account assignment
   // exclusion sets.
@@ -449,7 +450,7 @@ bool TheoryEngineModelBuilder::buildModel(TheoryModel* tm)
   // should we compute assigner objects?
   bool computeAssigners = tm->hasAssignmentExclusionSets();
   // the set of exclusion sets we have processed
-  std::unordered_set<Node, NodeHashFunction> processedExcSet;
+  std::unordered_set<Node> processedExcSet;
   for (; !eqcs_i.isFinished(); ++eqcs_i)
   {
     Node eqc = *eqcs_i;
@@ -591,13 +592,13 @@ bool TheoryEngineModelBuilder::buildModel(TheoryModel* tm)
     {
       assertedReps[eqc] = rep;
       typeRepSet.add(eqct.getBaseType(), eqc);
-      std::unordered_set<TypeNode, TypeNodeHashFunction> visiting;
+      std::unordered_set<TypeNode> visiting;
       addToTypeList(eqct.getBaseType(), type_list, visiting);
     }
     else
     {
       typeNoRepSet.add(eqct, eqc);
-      std::unordered_set<TypeNode, TypeNodeHashFunction> visiting;
+      std::unordered_set<TypeNode> visiting;
       addToTypeList(eqct, type_list, visiting);
     }
 
@@ -1088,7 +1089,6 @@ void TheoryEngineModelBuilder::postProcessModel(bool incomplete, TheoryModel* m)
 
 void TheoryEngineModelBuilder::debugCheckModel(TheoryModel* tm)
 {
-#ifdef CVC5_ASSERTIONS
   if (tm->hasApproximations())
   {
     // models with approximations may fail the assertions below
@@ -1110,7 +1110,7 @@ void TheoryEngineModelBuilder::debugCheckModel(TheoryModel* tm)
       // if Boolean, it does not necessarily have a constant representative, use
       // get value instead
       rep = tm->getValue(eqc);
-      Assert(rep.isConst());
+      AlwaysAssert(rep.isConst());
     }
     eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, tm->d_equalityEngine);
     for (; !eqc_i.isFinished(); ++eqc_i)
@@ -1118,21 +1118,26 @@ void TheoryEngineModelBuilder::debugCheckModel(TheoryModel* tm)
       Node n = *eqc_i;
       static int repCheckInstance = 0;
       ++repCheckInstance;
-
+      AlwaysAssert(rep.getType().isSubtypeOf(n.getType()))
+          << "Representative " << rep << " of " << n
+          << " violates type constraints (" << rep.getType() << " and "
+          << n.getType() << ")";
       // non-linear mult is not necessarily accurate wrt getValue
       if (n.getKind() != kind::NONLINEAR_MULT)
       {
-        Debug("check-model::rep-checking") << "( " << repCheckInstance << ") "
-                                           << "n: " << n << endl
-                                           << "getValue(n): " << tm->getValue(n)
-                                           << endl
-                                           << "rep: " << rep << endl;
-        Assert(tm->getValue(*eqc_i) == rep)
-            << "run with -d check-model::rep-checking for details";
+        if (tm->getValue(*eqc_i) != rep)
+        {
+          std::stringstream err;
+          err << "Failed representative check:" << std::endl
+              << "( " << repCheckInstance << ") "
+              << "n: " << n << endl
+              << "getValue(n): " << tm->getValue(n) << std::endl
+              << "rep: " << rep << std::endl;
+          AlwaysAssert(tm->getValue(*eqc_i) == rep) << err.str();
+        }
       }
     }
   }
-#endif /* CVC5_ASSERTIONS */
 
   // builder-specific debugging
   debugModel(tm);

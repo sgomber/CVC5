@@ -17,8 +17,11 @@
 
 #include <sstream>
 
+#include "base/modal_exception.h"
 #include "expr/dtype.h"
 #include "expr/skolem_manager.h"
+#include "options/base_options.h"
+#include "options/option_exception.h"
 #include "options/quantifiers_options.h"
 #include "options/smt_options.h"
 #include "printer/printer.h"
@@ -29,6 +32,7 @@
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
 #include "theory/quantifiers/sygus/sygus_utils.h"
 #include "theory/quantifiers_engine.h"
+#include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
 
 using namespace cvc5::theory;
@@ -217,7 +221,7 @@ Result SygusSolver::checkSynth(Assertions& as)
     query.push_back(body);
   }
 
-  Result r = d_smtSolver.checkSatisfiability(as, query, false, false);
+  Result r = d_smtSolver.checkSatisfiability(as, query, false);
 
   // Check that synthesis solutions satisfy the conjecture
   if (options::checkSynthSol()
@@ -248,18 +252,6 @@ bool SygusSolver::getSynthSolutions(std::map<Node, Node>& sol_map)
   return true;
 }
 
-void SygusSolver::printSynthSolution(std::ostream& out)
-{
-  QuantifiersEngine* qe = d_smtSolver.getQuantifiersEngine();
-  if (qe == nullptr)
-  {
-    InternalError()
-        << "SygusSolver::printSynthSolution(): Cannot print synth solution in "
-           "the current logic, which does not include quantifiers";
-  }
-  qe->printSynthSolution(out);
-}
-
 void SygusSolver::checkSynthSolution(Assertions& as)
 {
   NodeManager* nm = NodeManager::currentNM();
@@ -282,7 +274,7 @@ void SygusSolver::checkSynthSolution(Assertions& as)
   }
   Trace("check-synth-sol") << "Got solution map:\n";
   // the set of synthesis conjectures in our assertions
-  std::unordered_set<Node, NodeHashFunction> conjs;
+  std::unordered_set<Node> conjs;
   // For each of the above conjectures, the functions-to-synthesis and their
   // solutions. This is used as a substitution below.
   std::map<Node, std::vector<Node>> fvarMap;
@@ -314,7 +306,7 @@ void SygusSolver::checkSynthSolution(Assertions& as)
   // auxiliary assertions
   std::vector<Node> auxAssertions;
   // expand definitions cache
-  std::unordered_map<Node, Node, NodeHashFunction> cache;
+  std::unordered_map<Node, Node> cache;
   for (Node assertion : *alist)
   {
     Notice() << "SygusSolver::checkSynthSolution(): checking assertion "
@@ -341,8 +333,8 @@ void SygusSolver::checkSynthSolution(Assertions& as)
     // Start new SMT engine to check solutions
     std::unique_ptr<SmtEngine> solChecker;
     initializeSubsolver(solChecker);
-    solChecker->getOptions().set(options::checkSynthSol, false);
-    solChecker->getOptions().set(options::sygusRecFun, false);
+    solChecker->getOptions().smt.checkSynthSol = false;
+    solChecker->getOptions().quantifiers.sygusRecFun = false;
     // get the solution for this conjecture
     std::vector<Node>& fvars = fvarMap[conj];
     std::vector<Node>& fsols = fsolMap[conj];
@@ -382,7 +374,12 @@ void SygusSolver::checkSynthSolution(Assertions& as)
     // definitions that were added as assertions to the sygus problem.
     for (Node a : auxAssertions)
     {
-      solChecker->assertFormula(a);
+      // We require rewriting here, e.g. so that define-fun from the original
+      // problem are rewritten to true. If this is not the case, then the
+      // assertions module of the subsolver will complain about assertions
+      // with free variables.
+      Node ar = theory::Rewriter::rewrite(a);
+      solChecker->assertFormula(ar);
     }
     Result r = solChecker->checkSat();
     Notice() << "SygusSolver::checkSynthSolution(): result is " << r

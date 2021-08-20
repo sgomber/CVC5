@@ -285,8 +285,7 @@ class TermDbSygus {
    */
   Node evaluateWithUnfolding(Node n);
   /** same as above, but with a cache of visited nodes */
-  Node evaluateWithUnfolding(
-      Node n, std::unordered_map<Node, Node, NodeHashFunction>& visited);
+  Node evaluateWithUnfolding(Node n, std::unordered_map<Node, Node>& visited);
   /** is evaluation point?
    *
    * Returns true if n is of the form eval( x, c1...cn ) for some variable x
@@ -457,7 +456,6 @@ class TermDbSygus {
 
   Node getSygusNormalized( Node n, std::map< TypeNode, int >& var_count, std::map< Node, Node >& subs );
   Node getNormalized(TypeNode t, Node prog);
-  unsigned getSygusTermSize( Node n );
   /** involves div-by-zero */
   bool involvesDivByZero( Node n );
   /** get anchor */

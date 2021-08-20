@@ -18,12 +18,14 @@
 
 #include "context/context.h"
 #include "expr/node.h"
-#include "expr/term_conversion_proof_generator.h"
 #include "options/base_options.h"
+#include "options/smt_options.h"
 #include "printer/printer.h"
+#include "proof/conv_proof_generator.h"
 #include "smt/dump_manager.h"
 #include "smt/smt_engine_stats.h"
 #include "theory/rewriter.h"
+#include "theory/trust_substitutions.h"
 #include "util/resource_manager.h"
 #include "util/statistics_registry.h"
 
@@ -37,10 +39,12 @@ Env::Env(NodeManager* nm, Options* opts)
       d_nodeManager(nm),
       d_proofNodeManager(nullptr),
       d_rewriter(new theory::Rewriter()),
+      d_topLevelSubs(new theory::TrustSubstitutionMap(d_userContext.get())),
       d_dumpManager(new DumpManager(d_userContext.get())),
       d_logic(),
       d_statisticsRegistry(std::make_unique<StatisticsRegistry>()),
       d_options(),
+      d_originalOptions(opts),
       d_resourceManager()
 {
   if (opts != nullptr)
@@ -54,9 +58,14 @@ Env::~Env() {}
 
 void Env::setProofNodeManager(ProofNodeManager* pnm)
 {
+  Assert(pnm != nullptr);
+  Assert(d_proofNodeManager == nullptr);
   d_proofNodeManager = pnm;
   d_rewriter->setProofNodeManager(pnm);
+  d_topLevelSubs->setProofNodeManager(pnm);
 }
+
+void Env::setFilename(const std::string& filename) { d_filename = filename; }
 
 void Env::shutdown()
 {
@@ -74,7 +83,30 @@ NodeManager* Env::getNodeManager() const { return d_nodeManager; }
 
 ProofNodeManager* Env::getProofNodeManager() { return d_proofNodeManager; }
 
+const std::string& Env::getFilename() const { return d_filename; }
+
+bool Env::isSatProofProducing() const
+{
+  return d_proofNodeManager != nullptr
+         && (!d_options.smt.unsatCores
+             || d_options.smt.unsatCoresMode
+                    != options::UnsatCoresMode::ASSUMPTIONS);
+}
+
+bool Env::isTheoryProofProducing() const
+{
+  return d_proofNodeManager != nullptr
+         && (!d_options.smt.unsatCores
+             || d_options.smt.unsatCoresMode
+                    == options::UnsatCoresMode::FULL_PROOF);
+}
+
 theory::Rewriter* Env::getRewriter() { return d_rewriter.get(); }
+
+theory::TrustSubstitutionMap& Env::getTopLevelSubstitutions()
+{
+  return *d_topLevelSubs.get();
+}
 
 DumpManager* Env::getDumpManager() { return d_dumpManager.get(); }
 
@@ -87,6 +119,8 @@ StatisticsRegistry& Env::getStatisticsRegistry()
 
 const Options& Env::getOptions() const { return d_options; }
 
+const Options& Env::getOriginalOptions() const { return *d_originalOptions; }
+
 ResourceManager* Env::getResourceManager() const
 {
   return d_resourceManager.get();
@@ -94,9 +128,9 @@ ResourceManager* Env::getResourceManager() const
 
 const Printer& Env::getPrinter()
 {
-  return *Printer::getPrinter(d_options[options::outputLanguage]);
+  return *Printer::getPrinter(d_options.base.outputLanguage);
 }
 
-std::ostream& Env::getDumpOut() { return *d_options.getOut(); }
+std::ostream& Env::getDumpOut() { return *d_options.base.out; }
 
 }  // namespace cvc5

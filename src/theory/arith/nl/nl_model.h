@@ -52,7 +52,7 @@ class NlModel
   friend class NonlinearExtension;
 
  public:
-  NlModel(context::Context* c);
+  NlModel();
   ~NlModel();
   /**
    * This method is called once at the beginning of a last call effort check,
@@ -194,7 +194,8 @@ class NlModel
   void getModelValueRepair(
       std::map<Node, Node>& arithModel,
       std::map<Node, std::pair<Node, Node>>& approximations,
-      std::map<Node, Node>& witnesses);
+      std::map<Node, Node>& witnesses,
+      bool witnessToValue);
 
  private:
   /** The current model */
@@ -322,7 +323,7 @@ class NlModel
    * These literals are exempt from check-model, since they are satisfied by
    * definition of our model construction.
    */
-  std::unordered_map<Node, Node, NodeHashFunction> d_check_model_solved;
+  std::unordered_map<Node, Node> d_check_model_solved;
   /** did we use an approximation on this call to last-call effort? */
   bool d_used_approx;
 }; /* class NlModel */

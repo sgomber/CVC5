@@ -41,12 +41,7 @@ class TheorySets : public Theory
   friend class TheorySetsRels;
  public:
   /** Constructs a new instance of TheorySets w.r.t. the provided contexts. */
-  TheorySets(context::Context* c,
-             context::UserContext* u,
-             OutputChannel& out,
-             Valuation valuation,
-             const LogicInfo& logicInfo,
-             ProofNodeManager* pnm);
+  TheorySets(Env& env, OutputChannel& out, Valuation valuation);
   ~TheorySets() override;
 
   //--------------------------------- initialization
@@ -78,8 +73,6 @@ class TheorySets : public Theory
   Node getModelValue(TNode) override;
   std::string identify() const override { return "THEORY_SETS"; }
   void preRegisterTerm(TNode node) override;
-  /**  Expand partial operators (choose) from n. */
-  TrustNode expandDefinition(Node n) override;
   /**
    * If the sets-ext option is not set and we have an extended operator,
    * we throw an exception. Additionally, we expand operators like choose

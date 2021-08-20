@@ -22,7 +22,7 @@
 #include <unordered_set>
 #include "expr/node.h"
 #include "expr/type_node.h"
-#include "theory/quantifiers/sygus/synth_conjecture.h"
+#include "theory/quantifiers/sygus/enum_val_generator.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/type_enumerator.h"
 
@@ -61,7 +61,7 @@ class EnumValGeneratorBasic : public EnumValGenerator
   /** the current term */
   Node d_currTerm;
   /** cache of (enumerated) builtin values we have enumerated so far */
-  std::unordered_set<Node, NodeHashFunction> d_cache;
+  std::unordered_set<Node> d_cache;
 };
 
 }  // namespace quantifiers

@@ -359,23 +359,6 @@ Node TermDbSygus::sygusToBuiltin(Node n, TypeNode tn)
   return ret;
 }
 
-unsigned TermDbSygus::getSygusTermSize( Node n ){
-  if (n.getKind() != APPLY_CONSTRUCTOR)
-  {
-    return 0;
-  }
-  unsigned sum = 0;
-  for (unsigned i = 0; i < n.getNumChildren(); i++)
-  {
-    sum += getSygusTermSize(n[i]);
-  }
-  const DType& dt = datatypes::utils::datatypeOf(n.getOperator());
-  int cindex = datatypes::utils::indexOf(n.getOperator());
-  Assert(cindex >= 0 && cindex < (int)dt.getNumConstructors());
-  unsigned weight = dt[cindex].getWeight();
-  return weight + sum;
-}
-
 bool TermDbSygus::registerSygusType(TypeNode tn)
 {
   std::map<TypeNode, bool>::iterator it = d_registerStatus.find(tn);
@@ -507,17 +490,16 @@ void TermDbSygus::registerEnumerator(Node e,
       if (options::sygusActiveGenMode() == options::SygusActiveGenMode::AUTO)
       {
         // We use active generation if the grammar of the enumerator does not
-        // have ITE and is not Boolean. Experimentally, it is better to
-        // use passive generation for these cases since it enables useful
-        // search space pruning techniques, e.g. evaluation unfolding,
+        // have ITE and does not have Boolean connectives. Experimentally, it
+        // is better to use passive generation for these cases since it enables
+        // useful search space pruning techniques, e.g. evaluation unfolding,
         // conjecture-specific symmetry breaking. Also, if sygus-stream is
         // enabled, we always use active generation, since the use cases of
         // sygus stream are to find many solutions to an easy problem, where
         // the bottleneck often becomes the large number of "exclude the current
         // solution" clauses.
-        const DType& dt = et.getDType();
         if (options::sygusStream()
-            || (!eti.hasIte() && !dt.getSygusType().isBoolean()))
+            || (!eti.hasIte() && !eti.hasBoolConnective()))
         {
           isActiveGen = true;
         }
@@ -1019,11 +1001,10 @@ Node TermDbSygus::evaluateBuiltin(TypeNode tn,
   return rewriteNode(res);
 }
 
-Node TermDbSygus::evaluateWithUnfolding(
-    Node n, std::unordered_map<Node, Node, NodeHashFunction>& visited)
+Node TermDbSygus::evaluateWithUnfolding(Node n,
+                                        std::unordered_map<Node, Node>& visited)
 {
-  std::unordered_map<Node, Node, NodeHashFunction>::iterator it =
-      visited.find(n);
+  std::unordered_map<Node, Node>::iterator it = visited.find(n);
   if( it==visited.end() ){
     Node ret = n;
     while (ret.getKind() == DT_SYGUS_EVAL
@@ -1069,7 +1050,7 @@ Node TermDbSygus::evaluateWithUnfolding(
 
 Node TermDbSygus::evaluateWithUnfolding(Node n)
 {
-  std::unordered_map<Node, Node, NodeHashFunction> visited;
+  std::unordered_map<Node, Node> visited;
   return evaluateWithUnfolding(n, visited);
 }
 

@@ -1,6 +1,5 @@
 id     = "ARRAYS"
-name   = "Arrays theory"
-header = "options/arrays_options.h"
+name   = "Arrays Theory"
 
 [[option]]
   name       = "arraysOptimizeLinear"
@@ -46,7 +45,7 @@ header = "options/arrays_options.h"
   name       = "arraysConfig"
   category   = "regular"
   long       = "arrays-config=N"
-  type       = "int"
+  type       = "int64_t"
   default    = "0"
   help       = "set different array option configurations - for developers only"
 
@@ -62,7 +61,7 @@ header = "options/arrays_options.h"
   name       = "arraysPropagate"
   category   = "regular"
   long       = "arrays-prop=N"
-  type       = "int"
+  type       = "int64_t"
   default    = "2"
   help       = "propagation effort for arrays: 0 is none, 1 is some, 2 is full"
 

@@ -62,7 +62,7 @@ namespace sets {
  */
 class CardinalityExtension
 {
-  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+  typedef context::CDHashSet<Node> NodeSet;
 
  public:
   /**
@@ -357,9 +357,12 @@ class CardinalityExtension
   std::vector<Node> d_oSetEqc;
   /**
    * This maps set terms to the set of representatives of their "parent" sets,
-   * see checkCardCycles.
+   * see checkCardCycles. Parents are stored as a pair of the form
+   *   (r, t)
+   * where t is the parent term and r is the representative of equivalence
+   * class of t.
    */
-  std::map<Node, std::vector<Node> > d_card_parent;
+  std::map<Node, std::vector<std::pair<Node, Node>>> d_cardParent;
   /**
    * Maps equivalence classes + set terms in that equivalence class to their
    * "flat form" (see checkNormalForms).

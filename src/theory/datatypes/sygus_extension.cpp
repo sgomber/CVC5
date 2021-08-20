@@ -156,8 +156,7 @@ void SygusExtension::registerTerm(Node n)
     bool success = false;
     if( n.getKind()==kind::APPLY_SELECTOR_TOTAL ){
       registerTerm(n[0]);
-      std::unordered_map<Node, Node, NodeHashFunction>::iterator it =
-          d_term_to_anchor.find(n[0]);
+      std::unordered_map<Node, Node>::iterator it = d_term_to_anchor.find(n[0]);
       if( it!=d_term_to_anchor.end() ) {
         d_term_to_anchor[n] = it->second;
         unsigned sel_weight =
@@ -333,7 +332,7 @@ void SygusExtension::assertTesterInternal(int tindex, TNode n, Node exp)
     }
 
     // add the above symmetry breaking predicates to lemmas
-    std::unordered_map<TNode, TNode, TNodeHashFunction> cache;
+    std::unordered_map<TNode, TNode> cache;
     Node rlv = getRelevancyCondition(n);
     for (std::pair<Node, InferenceId>& sbl : sbLemmas)
     {
@@ -450,8 +449,8 @@ Node SygusExtension::eliminateTraversalPredicates(Node n)
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
-  std::unordered_map<TNode, Node, TNodeHashFunction> visited;
-  std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
+  std::unordered_map<TNode, Node> visited;
+  std::unordered_map<TNode, Node>::iterator it;
   std::map<Node, Node>::iterator ittb;
   std::vector<TNode> visit;
   TNode cur;
@@ -765,12 +764,12 @@ Node SygusExtension::getSimpleSymBreakPred(Node e,
             deq_child[1].push_back(1);
           }
         }
-        if (nk == ITE || nk == STRING_STRREPL || nk == STRING_STRREPLALL)
+        if (nk == ITE || nk == STRING_REPLACE || nk == STRING_REPLACE_ALL)
         {
           deq_child[0].push_back(1);
           deq_child[1].push_back(2);
         }
-        if (nk == STRING_STRREPL || nk == STRING_STRREPLALL)
+        if (nk == STRING_REPLACE || nk == STRING_REPLACE_ALL)
         {
           deq_child[0].push_back(0);
           deq_child[1].push_back(1);
@@ -948,8 +947,7 @@ void SygusExtension::registerSearchTerm(TypeNode tn,
                                         bool topLevel)
 {
   //register this term
-  std::unordered_map<Node, Node, NodeHashFunction>::iterator ita =
-      d_term_to_anchor.find(n);
+  std::unordered_map<Node, Node>::iterator ita = d_term_to_anchor.find(n);
   Assert(ita != d_term_to_anchor.end());
   Node a = ita->second;
   Assert(!a.isNull());
@@ -1042,7 +1040,7 @@ Node SygusExtension::registerSearchValue(Node a,
     Node bvr = d_tds->getExtRewriter()->extendedRewrite(bv);
     Trace("sygus-sb-debug") << "  ......search value rewrites to " << bvr << std::endl;
     Trace("dt-sygus") << "  * DT builtin : " << n << " -> " << bvr << std::endl;
-    unsigned sz = d_tds->getSygusTermSize( nv );      
+    unsigned sz = utils::getSygusTermSize(nv);
     if( d_tds->involvesDivByZero( bvr ) ){
       quantifiers::DivByZeroSygusInvarianceTest dbzet;
       Trace("sygus-sb-mexp-debug") << "Minimize explanation for div-by-zero in "
@@ -1050,12 +1048,9 @@ Node SygusExtension::registerSearchValue(Node a,
       registerSymBreakLemmaForValue(a, nv, dbzet, Node::null(), var_count);
       return Node::null();
     }else{
-      std::unordered_map<Node, Node, NodeHashFunction>& scasv =
-          sca.d_search_val[tn];
-      std::unordered_map<Node, unsigned, NodeHashFunction>& scasvs =
-          sca.d_search_val_sz[tn];
-      std::unordered_map<Node, Node, NodeHashFunction>::iterator itsv =
-          scasv.find(bvr);
+      std::unordered_map<Node, Node>& scasv = sca.d_search_val[tn];
+      std::unordered_map<Node, unsigned>& scasvs = sca.d_search_val_sz[tn];
+      std::unordered_map<Node, Node>::iterator itsv = scasv.find(bvr);
       Node bad_val_bvr;
       bool by_examples = false;
       if (itsv == scasv.end())
@@ -1148,7 +1143,7 @@ Node SygusExtension::registerSearchValue(Node a,
           }
           Trace("sygus-sb-exc") << std::endl;
         }
-        Assert(d_tds->getSygusTermSize(bad_val) == sz);
+        Assert(utils::getSygusTermSize(bad_val) == sz);
 
         // generalize the explanation for why the analog of bad_val
         // is equivalent to bvr
@@ -1182,7 +1177,7 @@ void SygusExtension::registerSymBreakLemmaForValue(
 {
   TypeNode tn = val.getType();
   Node x = getFreeVar(tn);
-  unsigned sz = d_tds->getSygusTermSize(val);
+  unsigned sz = utils::getSygusTermSize(val);
   std::vector<Node> exp;
   d_tds->getExplain()->getExplanationFor(x, val, exp, et, valr, var_count, sz);
   Node lem =
@@ -1264,7 +1259,7 @@ void SygusExtension::addSymBreakLemmasFor(TypeNode tn,
     Trace("sygus-sb-debug2")
         << "add lemmas up to size " << max_sz << ", which is (search_size) "
         << csz << " - (depth) " << d << std::endl;
-    std::unordered_map<TNode, TNode, TNodeHashFunction> cache;
+    std::unordered_map<TNode, TNode> cache;
     for (std::pair<const uint64_t, std::vector<Node>>& sbls : its->second)
     {
       if (sbls.first <= max_sz)
@@ -1443,8 +1438,7 @@ void SygusExtension::notifySearchSize(TNode m, uint64_t s, Node exp)
 
 unsigned SygusExtension::getSearchSizeFor( Node n ) {
   Trace("sygus-sb-debug2") << "get search size for term : " << n << std::endl;
-  std::unordered_map<Node, Node, NodeHashFunction>::iterator ita =
-      d_term_to_anchor.find(n);
+  std::unordered_map<Node, Node>::iterator ita = d_term_to_anchor.find(n);
   Assert(ita != d_term_to_anchor.end());
   return getSearchSizeForAnchor( ita->second );
 }
@@ -1497,7 +1491,7 @@ void SygusExtension::incrementCurrentSearchSize(TNode m)
                       && !s.second.empty()))
               {
                 Node rlv = getRelevancyCondition(t);
-                std::unordered_map<TNode, TNode, TNodeHashFunction> cache;
+                std::unordered_map<TNode, TNode> cache;
                 for (const Node& lem : s.second)
                 {
                   Node slem = lem.substitute(x, t, cache);

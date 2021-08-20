@@ -1,6 +1,6 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Yancheng Ou, Michael Chang
+ *   Michael Chang, Yancheng Ou
  *
  * This file is part of the cvc5 project.
  *
@@ -21,68 +21,65 @@
 using namespace cvc5::smt;
 namespace cvc5::omt {
 
-std::pair<OptResult, Node> OMTOptimizerInteger::optimize(
-    SmtEngine* parentSMTSolver, Node target, ObjectiveType objType)
+OptimizationResult OMTOptimizerInteger::optimize(SmtEngine* optChecker,
+                                                 TNode target,
+                                                 bool isMinimize)
 {
   // linear search for integer goal
   // the smt engine to which we send intermediate queries
   // for the linear search.
-  std::unique_ptr<SmtEngine> optChecker =
-      OMTOptimizer::createOptCheckerWithTimeout(parentSMTSolver, false);
   NodeManager* nm = optChecker->getNodeManager();
-
+  optChecker->push();
   Result intermediateSatResult = optChecker->checkSat();
   // Model-value of objective (used in optimization loop)
   Node value;
-  if (intermediateSatResult.isUnknown())
+  if (intermediateSatResult.isUnknown()
+      || intermediateSatResult.isSat() == Result::UNSAT)
   {
-    return std::make_pair(OptResult::OPT_UNKNOWN, value);
+    return OptimizationResult(intermediateSatResult, value);
   }
-  if (intermediateSatResult.isSat() == Result::UNSAT)
-  {
-    return std::make_pair(OptResult::OPT_UNSAT, value);
-  }
-  // asserts objective > old_value (used in optimization loop)
+  // node storing target > old_value (used in optimization loop)
   Node increment;
   Kind incrementalOperator = kind::NULL_EXPR;
-  if (objType == ObjectiveType::OBJECTIVE_MINIMIZE)
+  if (isMinimize)
   {
-    // if objective is MIN, then assert optimization_target <
-    // current_model_value
+    // if objective is minimize,
+    // then assert optimization_target < current_model_value
     incrementalOperator = kind::LT;
   }
-  else if (objType == ObjectiveType::OBJECTIVE_MAXIMIZE)
+  else
   {
-    // if objective is MAX, then assert optimization_target >
-    // current_model_value
+    // if objective is maximize,
+    // then assert optimization_target > current_model_value
     incrementalOperator = kind::GT;
   }
+  Result lastSatResult = intermediateSatResult;
   // Workhorse of linear search:
   // This loop will keep incrmenting/decrementing the objective until unsat
   // When unsat is hit,
   // the optimized value is the model value just before the unsat call
   while (intermediateSatResult.isSat() == Result::SAT)
   {
+    lastSatResult = intermediateSatResult;
     value = optChecker->getValue(target);
     Assert(!value.isNull());
     increment = nm->mkNode(incrementalOperator, target, value);
     optChecker->assertFormula(increment);
     intermediateSatResult = optChecker->checkSat();
   }
-  return std::make_pair(OptResult::OPT_OPTIMAL, value);
+  optChecker->pop();
+  return OptimizationResult(lastSatResult, value);
 }
 
-std::pair<OptResult, Node> OMTOptimizerInteger::minimize(
-    SmtEngine* parentSMTSolver, Node target)
+OptimizationResult OMTOptimizerInteger::minimize(SmtEngine* optChecker,
+                                                 TNode target)
 {
-  return this->optimize(
-      parentSMTSolver, target, ObjectiveType::OBJECTIVE_MINIMIZE);
+  return this->optimize(optChecker, target, true);
 }
-std::pair<OptResult, Node> OMTOptimizerInteger::maximize(
-    SmtEngine* parentSMTSolver, Node target)
+OptimizationResult OMTOptimizerInteger::maximize(SmtEngine* optChecker,
+                                                 TNode target)
 {
-  return this->optimize(
-      parentSMTSolver, target, ObjectiveType::OBJECTIVE_MAXIMIZE);
+  return this->optimize(optChecker, target, false);
 }
 
 }  // namespace cvc5::omt

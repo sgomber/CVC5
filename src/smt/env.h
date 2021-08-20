@@ -44,6 +44,7 @@ class DumpManager;
 
 namespace theory {
 class Rewriter;
+class TrustSubstitutionMap;
 }
 
 /**
@@ -81,14 +82,38 @@ class Env
    */
   ProofNodeManager* getProofNodeManager();
 
+  /** Return the input name, or the empty string if not set */
+  const std::string& getFilename() const;
+
+  /**
+   * Check whether the SAT solver should produce proofs. Other than whether
+   * the proof node manager is set, SAT proofs are only generated when the
+   * unsat core mode is not ASSUMPTIONS.
+   */
+  bool isSatProofProducing() const;
+
+  /**
+   * Check whether theories should produce proofs as well. Other than whether
+   * the proof node manager is set, theory engine proofs are conditioned on the
+   * relationship between proofs and unsat cores: the unsat cores are in
+   * FULL_PROOF mode, no proofs are generated on theory engine.
+   */
+  bool isTheoryProofProducing() const;
+
   /** Get a pointer to the Rewriter owned by this Env. */
   theory::Rewriter* getRewriter();
+
+  /** Get a reference to the top-level substitution map */
+  theory::TrustSubstitutionMap& getTopLevelSubstitutions();
 
   /** Get a pointer to the underlying dump manager. */
   smt::DumpManager* getDumpManager();
 
   /** Get the options object (const version only) owned by this Env. */
   const Options& getOptions() const;
+
+  /** Get the original options object (const version only). */
+  const Options& getOriginalOptions() const;
 
   /** Get the resource manager owned by this Env. */
   ResourceManager* getResourceManager() const;
@@ -116,10 +141,13 @@ class Env
  private:
   /* Private initialization ------------------------------------------------- */
 
-  /** Set the statistics registry */
-  void setStatisticsRegistry(StatisticsRegistry* statReg);
   /** Set proof node manager if it exists */
   void setProofNodeManager(ProofNodeManager* pnm);
+  /**
+   * Set that the file name of the current instance is the given string. This
+   * is used for various purposes (e.g. get-info, SZS status).
+   */
+  void setFilename(const std::string& filename);
 
   /* Private shutdown ------------------------------------------------------- */
   /**
@@ -151,6 +179,8 @@ class Env
    * specific to an SmtEngine/TheoryEngine instance.
    */
   std::unique_ptr<theory::Rewriter> d_rewriter;
+  /** The top level substitutions */
+  std::unique_ptr<theory::TrustSubstitutionMap> d_topLevelSubs;
   /** The dump manager */
   std::unique_ptr<smt::DumpManager> d_dumpManager;
   /**
@@ -176,8 +206,20 @@ class Env
    * consider during solving and initialization.
    */
   Options d_options;
+  /**
+   * A pointer to the original options object as stored in the api::Solver.
+   * The referenced objects holds the options as initially parsed before being
+   * changed, e.g., by setDefaults().
+   */
+  const Options* d_originalOptions;
   /** Manager for limiting time and abstract resource usage. */
   std::unique_ptr<ResourceManager> d_resourceManager;
+
+  /**
+   * The input file name or the name set through (set-info :filename ...), if
+   * any.
+   */
+  std::string d_filename;
 }; /* class Env */
 
 }  // namespace cvc5

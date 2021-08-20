@@ -27,6 +27,7 @@
 namespace cvc5 {
 
 class SmtEngine;
+class Env;
 class TheoryEngine;
 class ResourceManager;
 class ProofNodeManager;
@@ -63,9 +64,8 @@ struct SmtEngineStatistics;
 class SmtSolver
 {
  public:
-  SmtSolver(SmtEngine& smt,
+  SmtSolver(Env& env,
             SmtEngineState& state,
-            ResourceManager* rm,
             Preprocessor& pp,
             SmtEngineStatistics& stats);
   ~SmtSolver();
@@ -73,11 +73,8 @@ class SmtSolver
    * Create theory engine, prop engine based on the logic info.
    *
    * @param logicInfo the logic information
-   * @param proofForUnsatCoreMode whether this SmtSolver will operate in unsat
-   * core mode. If true, proofs will not be produced in the theory engine.
    */
-  void finishInit(const LogicInfo& logicInfo,
-                  bool proofForUnsatCoreMode = false);
+  void finishInit(const LogicInfo& logicInfo);
   /** Reset all assertions, global declarations, etc.  */
   void resetAssertions();
   /**
@@ -105,13 +102,11 @@ class SmtSolver
    * during this call.
    * @param assumptions The assumptions for this check-sat call, which are
    * temporary assertions.
-   * @param inUnsatCore Whether assumptions are in the unsat core.
    * @param isEntailmentCheck Whether this is an entailment check (assumptions
    * are negated in this case).
    */
   Result checkSatisfiability(Assertions& as,
                              const std::vector<Node>& assumptions,
-                             bool inUnsatCore,
                              bool isEntailmentCheck);
   /**
    * Process the assertions that have been asserted in as. This moves the set of
@@ -119,11 +114,6 @@ class SmtSolver
    * into the SMT solver, and clears the buffer.
    */
   void processAssertions(Assertions& as);
-  /**
-   * Set proof node manager. Enables proofs in this SmtSolver. Should be
-   * called before finishInit.
-   */
-  void setProofNodeManager(ProofNodeManager* pnm);
   //------------------------------------------ access methods
   /** Get a pointer to the TheoryEngine owned by this solver. */
   TheoryEngine* getTheoryEngine();
@@ -136,21 +126,14 @@ class SmtSolver
   //------------------------------------------ end access methods
 
  private:
-  /** Reference to the parent SMT engine */
-  SmtEngine& d_smt;
+  /** Reference to the environment */
+  Env& d_env;
   /** Reference to the state of the SmtEngine */
   SmtEngineState& d_state;
-  /** Pointer to a resource manager (owned by SmtEngine) */
-  ResourceManager* d_rm;
   /** Reference to the preprocessor of SmtEngine */
   Preprocessor& d_pp;
   /** Reference to the statistics of SmtEngine */
   SmtEngineStatistics& d_stats;
-  /**
-   * Pointer to the proof node manager used by this SmtSolver. A non-null
-   * proof node manager indicates that proofs are enabled.
-   */
-  ProofNodeManager* d_pnm;
   /** The theory engine */
   std::unique_ptr<TheoryEngine> d_theoryEngine;
   /** The propositional engine */

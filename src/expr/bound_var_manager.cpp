@@ -16,6 +16,7 @@
 #include "expr/bound_var_manager.h"
 
 #include "expr/node_manager_attributes.h"
+#include "util/rational.h"
 
 namespace cvc5 {
 
@@ -36,6 +37,10 @@ void BoundVarManager::setNameAttr(Node v, const std::string& name)
 Node BoundVarManager::getCacheValue(TNode cv1, TNode cv2)
 {
   return NodeManager::currentNM()->mkNode(kind::SEXPR, cv1, cv2);
+}
+Node BoundVarManager::getCacheValue(TNode cv1, TNode cv2, TNode cv3)
+{
+  return NodeManager::currentNM()->mkNode(kind::SEXPR, cv1, cv2, cv3);
 }
 
 Node BoundVarManager::getCacheValue(TNode cv1, TNode cv2, size_t i)

@@ -24,6 +24,7 @@
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 
 #include <numeric>  // for std::iota
+#include <sstream>
 
 using namespace cvc5::kind;
 
@@ -74,12 +75,12 @@ void EnumStreamPermutation::reset(Node value)
   }
   // collect variables occurring in value
   std::vector<Node> vars;
-  std::unordered_set<Node, NodeHashFunction> visited;
+  std::unordered_set<Node> visited;
   collectVars(value, vars, visited);
   // partition permutation variables
   d_curr_ind = 0;
   Trace("synth-stream-concrete") << " ..permutting vars :";
-  std::unordered_set<Node, NodeHashFunction> seen_vars;
+  std::unordered_set<Node> seen_vars;
   for (const Node& v_cons : vars)
   {
     Assert(cons_var.find(v_cons) != cons_var.end());
@@ -231,10 +232,9 @@ unsigned EnumStreamPermutation::getVarClassSize(unsigned id) const
   return it->second.size();
 }
 
-void EnumStreamPermutation::collectVars(
-    Node n,
-    std::vector<Node>& vars,
-    std::unordered_set<Node, NodeHashFunction>& visited)
+void EnumStreamPermutation::collectVars(Node n,
+                                        std::vector<Node>& vars,
+                                        std::unordered_set<Node>& visited)
 {
   if (visited.find(n) != visited.end())
   {

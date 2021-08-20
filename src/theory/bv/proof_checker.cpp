@@ -22,6 +22,7 @@ namespace bv {
 void BVProofRuleChecker::registerTo(ProofChecker* pc)
 {
   pc->registerChecker(PfRule::BV_BITBLAST, this);
+  pc->registerChecker(PfRule::BV_BITBLAST_STEP, this);
   pc->registerChecker(PfRule::BV_EAGER_ATOM, this);
 }
 
@@ -31,12 +32,17 @@ Node BVProofRuleChecker::checkInternal(PfRule id,
 {
   if (id == PfRule::BV_BITBLAST)
   {
-    BBSimple bb(nullptr);
     Assert(children.empty());
     Assert(args.size() == 1);
-    bb.bbAtom(args[0]);
-    Node n = bb.getStoredBBAtom(args[0]);
-    return args[0].eqNode(n);
+    Assert(args[0].getKind() == kind::EQUAL);
+    return args[0];
+  }
+  else if (id == PfRule::BV_BITBLAST_STEP)
+  {
+    Assert(children.empty());
+    Assert(args.size() == 1);
+    Assert(args[0].getKind() == kind::EQUAL);
+    return args[0];
   }
   else if (id == PfRule::BV_EAGER_ATOM)
   {

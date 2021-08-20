@@ -34,17 +34,14 @@ class BVSolver;
 
 class TheoryBV : public Theory
 {
-  /* BVSolverLazy accesses methods from theory in a way that is deprecated and
-   * will be removed in the future. For now we allow direct access. */
-  friend class BVSolverLazy;
+  /* BVSolverLayered accesses methods from theory in a way that is deprecated
+   * and will be removed in the future. For now we allow direct access. */
+  friend class BVSolverLayered;
 
  public:
-  TheoryBV(context::Context* c,
-           context::UserContext* u,
+  TheoryBV(Env& env,
            OutputChannel& out,
            Valuation valuation,
-           const LogicInfo& logicInfo,
-           ProofNodeManager* pnm = nullptr,
            std::string name = "");
 
   ~TheoryBV();
@@ -62,8 +59,6 @@ class TheoryBV : public Theory
   bool needsEqualityEngine(EeSetupInfo& esi) override;
 
   void finishInit() override;
-
-  TrustNode expandDefinition(Node node) override;
 
   void preRegisterTerm(TNode n) override;
 
@@ -84,6 +79,8 @@ class TheoryBV : public Theory
   void propagate(Effort e) override;
 
   TrustNode explain(TNode n) override;
+
+  void computeRelevantTerms(std::set<Node>& termSet) override;
 
   /** Collect model values in m based on the relevant terms given by termSet */
   bool collectModelValues(TheoryModel* m,
@@ -109,6 +106,8 @@ class TheoryBV : public Theory
  private:
   void notifySharedTerm(TNode t) override;
 
+  Node getValue(TNode node);
+
   /** Internal BV solver. */
   std::unique_ptr<BVSolver> d_internal;
 
@@ -123,6 +122,24 @@ class TheoryBV : public Theory
 
   /** The notify class for equality engine. */
   TheoryEqNotifyClass d_notify;
+
+  /** Flag indicating whether `d_modelCache` should be invalidated. */
+  context::CDO<bool> d_invalidateModelCache;
+
+  /**
+   * Cache for getValue() calls.
+   *
+   * Is cleared at the beginning of a getValue() call if the
+   * `d_invalidateModelCache` flag is set to true.
+   */
+  std::unordered_map<Node, Node> d_modelCache;
+
+  /** TheoryBV statistics. */
+  struct Statistics
+  {
+    Statistics(const std::string& name);
+    IntStat d_solveSubstitutions;
+  } d_stats;
 
 }; /* class TheoryBV */
 

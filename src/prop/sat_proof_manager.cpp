@@ -15,11 +15,11 @@
 
 #include "prop/sat_proof_manager.h"
 
-#include "expr/proof_node_algorithm.h"
 #include "options/proof_options.h"
+#include "proof/proof_node_algorithm.h"
+#include "proof/theory_proof_step_buffer.h"
 #include "prop/cnf_stream.h"
 #include "prop/minisat/minisat.h"
-#include "theory/theory_proof_step_buffer.h"
 
 namespace cvc5 {
 namespace prop {
@@ -162,6 +162,16 @@ void SatProofManager::endResChain(Node conclusion,
                                   const std::set<SatLiteral>& conclusionLits)
 {
   Trace("sat-proof") << ", " << conclusion << "\n";
+  if (d_resChains.hasGenerator(conclusion))
+  {
+    Trace("sat-proof")
+        << "SatProofManager::endResChain: skip repeated proof of " << conclusion
+        << "\n";
+    // clearing
+    d_resLinks.clear();
+    d_redundantLits.clear();
+    return;
+  }
   // first process redundant literals
   std::set<SatLiteral> visited;
   unsigned pos = d_resLinks.size();
@@ -240,11 +250,6 @@ void SatProofManager::endResChain(Node conclusion,
       return;
     }
   }
-  if (Trace.isOn("sat-proof") && d_resChains.hasGenerator(conclusion))
-  {
-    Trace("sat-proof") << "SatProofManager::endResChain: replacing proof of "
-                       << conclusion << "\n";
-  }
   // since the conclusion can be both reordered and without duplicates and the
   // SAT solver does not record this information, we use a MACRO_RESOLUTION
   // step, which bypasses these. Note that we could generate a chain resolution
@@ -252,7 +257,7 @@ void SatProofManager::endResChain(Node conclusion,
   // post-processing.
   ProofStep ps(PfRule::MACRO_RESOLUTION_TRUST, children, args);
   // note that we must tell the proof generator to overwrite if repeated
-  d_resChainPg.addStep(conclusion, ps, CDPOverwrite::ALWAYS);
+  d_resChainPg.addStep(conclusion, ps);
   // the premises of this resolution may not have been justified yet, so we do
   // not pass assumptions to check closedness
   d_resChains.addLazyStep(conclusion, &d_resChainPg);
@@ -330,12 +335,16 @@ void SatProofManager::processRedundantLit(
                      !negated);
 }
 
-void SatProofManager::explainLit(
-    SatLiteral lit, std::unordered_set<TNode, TNodeHashFunction>& premises)
+void SatProofManager::explainLit(SatLiteral lit,
+                                 std::unordered_set<TNode>& premises)
 {
   Trace("sat-proof") << push << "SatProofManager::explainLit: Lit: " << lit;
   Node litNode = getClauseNode(lit);
   Trace("sat-proof") << " [" << litNode << "]\n";
+  // Note that if we had two literals for (= a b) and (= b a) and we had already
+  // a proof for (= a b) this test would return true for (= b a), which could
+  // lead to open proof. However we should never have two literals like this in
+  // the SAT solver since they'd be rewritten to the same one
   if (d_resChainPg.hasProofFor(litNode))
   {
     Trace("sat-proof") << "SatProofManager::explainLit: already justified "
@@ -393,7 +402,7 @@ void SatProofManager::explainLit(
     {
       continue;
     }
-    std::unordered_set<TNode, TNodeHashFunction> childPremises;
+    std::unordered_set<TNode> childPremises;
     explainLit(~currLit, childPremises);
     // save to resolution chain premises / arguments
     Assert(d_cnfStream->getNodeCache().find(currLit)
@@ -462,7 +471,7 @@ void SatProofManager::finalizeProof(Node inConflictNode,
     Trace("sat-proof-debug2")
         << push << "SatProofManager::finalizeProof: saved proofs in chain:\n";
     std::map<Node, std::shared_ptr<ProofNode>> links = d_resChains.getLinks();
-    std::unordered_set<Node, NodeHashFunction> skip;
+    std::unordered_set<Node> skip;
     for (const std::pair<const Node, std::shared_ptr<ProofNode>>& link : links)
     {
       if (skip.count(link.first))
@@ -546,12 +555,12 @@ void SatProofManager::finalizeProof(Node inConflictNode,
   // we call explainLit on each ~l_i while accumulating the children and
   // arguments for the resolution step to conclude false.
   std::vector<Node> children{inConflictNode}, args;
-  std::unordered_set<TNode, TNodeHashFunction> premises;
+  std::unordered_set<TNode> premises;
   for (unsigned i = 0, size = inConflict.size(); i < size; ++i)
   {
     Assert(d_cnfStream->getNodeCache().find(inConflict[i])
            != d_cnfStream->getNodeCache().end());
-    std::unordered_set<TNode, TNodeHashFunction> childPremises;
+    std::unordered_set<TNode> childPremises;
     explainLit(~inConflict[i], childPremises);
     Node negatedLitNode = d_cnfStream->getNodeCache()[~inConflict[i]];
     // save to resolution chain premises / arguments
@@ -659,7 +668,7 @@ void SatProofManager::finalizeProof(Node inConflictNode,
       // mark another iteration for the loop, as some resolution link may be
       // connected because of the new justifications
       expanded = true;
-      std::unordered_set<TNode, TNodeHashFunction> childPremises;
+      std::unordered_set<TNode> childPremises;
       explainLit(it->second, childPremises);
       // add the premises used in the justification. We know they will have
       // been as expanded as possible

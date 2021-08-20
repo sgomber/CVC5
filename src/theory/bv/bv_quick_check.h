@@ -35,7 +35,7 @@ class TheoryModel;
 namespace bv {
 
 class TLazyBitblaster;
-class BVSolverLazy;
+class BVSolverLayered;
 
 class BVQuickCheck
 {
@@ -46,7 +46,7 @@ class BVQuickCheck
   void setConflict();
 
  public:
-  BVQuickCheck(const std::string& name, theory::bv::BVSolverLazy* bv);
+  BVQuickCheck(const std::string& name, theory::bv::BVSolverLayered* bv);
   ~BVQuickCheck();
   bool inConflict();
   Node getConflict() { return d_conflict; }
@@ -100,8 +100,7 @@ class BVQuickCheck
   bool collectModelValues(theory::TheoryModel* model,
                           const std::set<Node>& termSet);
 
-  typedef std::unordered_set<TNode, TNodeHashFunction>::const_iterator
-      vars_iterator;
+  typedef std::unordered_set<TNode>::const_iterator vars_iterator;
   vars_iterator beginVars();
   vars_iterator endVars();
 

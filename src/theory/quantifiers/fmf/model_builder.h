@@ -30,6 +30,7 @@ class FirstOrderModel;
 class QuantifiersState;
 class QuantifiersRegistry;
 class QuantifiersInferenceManager;
+class TermRegistry;
 
 class QModelBuilder : public TheoryEngineModelBuilder
 {
@@ -43,9 +44,11 @@ class QModelBuilder : public TheoryEngineModelBuilder
 
  public:
   QModelBuilder(QuantifiersState& qs,
+                QuantifiersInferenceManager& qim,
                 QuantifiersRegistry& qr,
-                QuantifiersInferenceManager& qim);
-
+                TermRegistry& tr);
+  /** finish init, which sets the model object */
+  virtual void finishInit();
   //do exhaustive instantiation  
   // 0 :  failed, but resorting to true exhaustive instantiation may work
   // >0 : success
@@ -53,23 +56,27 @@ class QModelBuilder : public TheoryEngineModelBuilder
   virtual int doExhaustiveInstantiation( FirstOrderModel * fm, Node f, int effort ) { return false; }
   //whether to construct model
   virtual bool optUseModel();
-  /** exist instantiation ? */
-  virtual bool existsInstantiation( Node f, InstMatch& m, bool modEq = true, bool modInst = false ) { return false; }
   //debug model
   void debugModel(TheoryModel* m) override;
   //statistics 
   unsigned getNumAddedLemmas() { return d_addedLemmas; }
   unsigned getNumTriedLemmas() { return d_triedLemmas; }
+  /** get the model we are using */
+  FirstOrderModel* getModel();
 
  protected:
-  /** Pointer to quantifiers engine */
-  QuantifiersEngine* d_qe;
   /** The quantifiers state object */
   QuantifiersState& d_qstate;
+  /** The quantifiers inference manager */
+  QuantifiersInferenceManager& d_qim;
   /** Reference to the quantifiers registry */
   QuantifiersRegistry& d_qreg;
-  /** The quantifiers inference manager */
-  quantifiers::QuantifiersInferenceManager& d_qim;
+  /** Term registry */
+  TermRegistry& d_treg;
+  /** Pointer to the model object we are using */
+  FirstOrderModel* d_model;
+  /** The model object we have allocated */
+  std::unique_ptr<FirstOrderModel> d_modelAloc;
 };
 
 }  // namespace quantifiers

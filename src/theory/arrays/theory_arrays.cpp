@@ -18,11 +18,12 @@
 #include <map>
 #include <memory>
 
+#include "expr/array_store_all.h"
 #include "expr/kind.h"
 #include "expr/node_algorithm.h"
-#include "expr/proof_checker.h"
 #include "options/arrays_options.h"
 #include "options/smt_options.h"
+#include "proof/proof_checker.h"
 #include "smt/logic_exception.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/arrays/skolem_cache.h"
@@ -54,14 +55,11 @@ const bool d_solveWrite2 = false;
   //bool d_useNonLinearOpt = true;
   //bool d_eagerIndexSplitting = false;
 
-TheoryArrays::TheoryArrays(context::Context* c,
-                           context::UserContext* u,
+TheoryArrays::TheoryArrays(Env& env,
                            OutputChannel& out,
                            Valuation valuation,
-                           const LogicInfo& logicInfo,
-                           ProofNodeManager* pnm,
                            std::string name)
-    : Theory(THEORY_ARRAYS, c, u, out, valuation, logicInfo, pnm, name),
+    : Theory(THEORY_ARRAYS, env, out, valuation, name),
       d_numRow(
           smtStatisticsRegistry().registerInt(name + "number of Row lemmas")),
       d_numExt(
@@ -82,36 +80,37 @@ TheoryArrays::TheoryArrays(context::Context* c,
           name + "number of setModelVal splits")),
       d_numSetModelValConflicts(smtStatisticsRegistry().registerInt(
           name + "number of setModelVal conflicts")),
-      d_ppEqualityEngine(u, name + "pp", true),
-      d_ppFacts(u),
-      d_state(c, u, valuation),
-      d_im(*this, d_state, pnm),
-      d_literalsToPropagate(c),
-      d_literalsToPropagateIndex(c, 0),
-      d_isPreRegistered(c),
-      d_mayEqualEqualityEngine(c, name + "mayEqual", true),
+      d_ppEqualityEngine(getUserContext(), name + "pp", true),
+      d_ppFacts(getUserContext()),
+      d_rewriter(d_pnm),
+      d_state(env, valuation),
+      d_im(*this, d_state, d_pnm),
+      d_literalsToPropagate(getSatContext()),
+      d_literalsToPropagateIndex(getSatContext(), 0),
+      d_isPreRegistered(getSatContext()),
+      d_mayEqualEqualityEngine(getSatContext(), name + "mayEqual", true),
       d_notify(*this),
-      d_backtracker(c),
-      d_infoMap(c, &d_backtracker, name),
-      d_mergeQueue(c),
+      d_backtracker(getSatContext()),
+      d_infoMap(getSatContext(), &d_backtracker, name),
+      d_mergeQueue(getSatContext()),
       d_mergeInProgress(false),
-      d_RowQueue(c),
-      d_RowAlreadyAdded(u),
-      d_sharedArrays(c),
-      d_sharedOther(c),
-      d_sharedTerms(c, false),
-      d_reads(c),
-      d_constReadsList(c),
+      d_RowQueue(getSatContext()),
+      d_RowAlreadyAdded(getUserContext()),
+      d_sharedArrays(getSatContext()),
+      d_sharedOther(getSatContext()),
+      d_sharedTerms(getSatContext(), false),
+      d_reads(getSatContext()),
+      d_constReadsList(getSatContext()),
       d_constReadsContext(new context::Context()),
-      d_contextPopper(c, d_constReadsContext),
-      d_skolemIndex(c, 0),
-      d_decisionRequests(c),
-      d_permRef(c),
-      d_modelConstraints(c),
-      d_lemmasSaved(c),
-      d_defValues(c),
+      d_contextPopper(getSatContext(), d_constReadsContext),
+      d_skolemIndex(getSatContext(), 0),
+      d_decisionRequests(getSatContext()),
+      d_permRef(getSatContext()),
+      d_modelConstraints(getSatContext()),
+      d_lemmasSaved(getSatContext()),
+      d_defValues(getSatContext()),
       d_readTableContext(new context::Context()),
-      d_arrayMerges(c),
+      d_arrayMerges(getSatContext()),
       d_inCheckModel(false),
       d_dstrat(new TheoryArraysDecisionStrategy(this)),
       d_dstratInit(false)
@@ -150,6 +149,8 @@ bool TheoryArrays::needsEqualityEngine(EeSetupInfo& esi)
 {
   esi.d_notify = &d_notify;
   esi.d_name = d_instanceName + "ee";
+  esi.d_notifyNewClass = true;
+  esi.d_notifyMerge = true;
   return true;
 }
 
@@ -300,7 +301,7 @@ Node TheoryArrays::solveWrite(TNode term, bool solve1, bool solve2, bool ppCheck
 TrustNode TheoryArrays::ppRewrite(TNode term, std::vector<SkolemLemma>& lems)
 {
   // first, see if we need to expand definitions
-  TrustNode texp = expandDefinition(term);
+  TrustNode texp = d_rewriter.expandDefinition(term);
   if (!texp.isNull())
   {
     return texp;
@@ -551,7 +552,7 @@ void TheoryArrays::weakEquivMakeRepIndex(TNode node) {
 }
 
 void TheoryArrays::weakEquivAddSecondary(TNode index, TNode arrayFrom, TNode arrayTo, TNode reason) {
-  std::unordered_set<TNode, TNodeHashFunction> marked;
+  std::unordered_set<TNode> marked;
   vector<TNode> index_trail;
   vector<TNode>::iterator it, iend;
   Node equivalence_trail = reason;
@@ -642,20 +643,15 @@ void TheoryArrays::preRegisterTermInternal(TNode node)
   {
     return;
   }
-  Debug("arrays") << spaces(getSatContext()->getLevel()) << "TheoryArrays::preRegisterTerm(" << node << ")" << std::endl;
+  Debug("arrays") << spaces(getSatContext()->getLevel())
+                  << "TheoryArrays::preRegisterTerm(" << node << ")"
+                  << std::endl;
   Kind nk = node.getKind();
   if (nk == kind::EQUAL)
   {
     // Add the trigger for equality
     // NOTE: note that if the equality is true or false already, it might not be added
     d_equalityEngine->addTriggerPredicate(node);
-    return;
-  }
-  else if (d_equalityEngine->hasTerm(node))
-  {
-    // Invariant: array terms should be preregistered before being added to the equality engine
-    Assert(nk != kind::SELECT
-           || d_isPreRegistered.find(node) != d_isPreRegistered.end());
     return;
   }
   // add to equality engine and the may equality engine
@@ -671,6 +667,15 @@ void TheoryArrays::preRegisterTermInternal(TNode node)
       throw LogicException(ss.str());
     }
     d_mayEqualEqualityEngine.addTerm(node);
+  }
+  if (d_equalityEngine->hasTerm(node))
+  {
+    // Notice that array terms may be added to its equality engine before
+    // being preregistered in the central equality engine architecture.
+    // Prior to this, an assertion in this case was:
+    // Assert(nk != kind::SELECT
+    //         || d_isPreRegistered.find(node) != d_isPreRegistered.end());
+    return;
   }
   d_equalityEngine->addTerm(node);
 
@@ -1043,7 +1048,8 @@ bool TheoryArrays::collectModelValues(TheoryModel* m,
   std::vector<Node> arrays;
 
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
-  for (; !eqcs_i.isFinished(); ++eqcs_i) {
+  for (; !eqcs_i.isFinished(); ++eqcs_i)
+  {
     Node eqc = (*eqcs_i);
     if (!eqc.getType().isArray())
     {
@@ -1051,9 +1057,11 @@ bool TheoryArrays::collectModelValues(TheoryModel* m,
       continue;
     }
     eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, d_equalityEngine);
-    for (; !eqc_i.isFinished(); ++eqc_i) {
+    for (; !eqc_i.isFinished(); ++eqc_i)
+    {
       Node n = *eqc_i;
-      // If this EC is an array type and it contains something other than STORE nodes, we have to compute a representative explicitly
+      // If this EC is an array type and it contains something other than STORE
+      // nodes, we have to compute a representative explicitly
       if (termSet.find(n) != termSet.end())
       {
         if (n.getKind() != kind::STORE)
@@ -1068,10 +1076,13 @@ bool TheoryArrays::collectModelValues(TheoryModel* m,
   // Build a list of all the relevant reads, indexed by the store representative
   std::map<Node, std::vector<Node> > selects;
   set<Node>::iterator set_it = termSet.begin(), set_it_end = termSet.end();
-  for (; set_it != set_it_end; ++set_it) {
+  for (; set_it != set_it_end; ++set_it)
+  {
     Node n = *set_it;
-    // If this term is a select, record that the EC rep of its store parameter is being read from using this term
-    if (n.getKind() == kind::SELECT) {
+    // If this term is a select, record that the EC rep of its store parameter
+    // is being read from using this term
+    if (n.getKind() == kind::SELECT)
+    {
       selects[d_equalityEngine->getRepresentative(n[0])].push_back(n);
     }
   }
@@ -1081,71 +1092,82 @@ bool TheoryArrays::collectModelValues(TheoryModel* m,
   TypeSet defaultValuesSet;
 
   // Compute all default values already in use
-  //if (fullModel) {
-    for (size_t i=0; i<arrays.size(); ++i) {
-      TNode nrep = d_equalityEngine->getRepresentative(arrays[i]);
-      d_mayEqualEqualityEngine.addTerm(nrep); // add the term in case it isn't there already
-      TNode mayRep = d_mayEqualEqualityEngine.getRepresentative(nrep);
-      it = d_defValues.find(mayRep);
-      if (it != d_defValues.end()) {
-        defaultValuesSet.add(nrep.getType().getArrayConstituentType(), (*it).second);
-      }
+  // if (fullModel) {
+  for (size_t i = 0; i < arrays.size(); ++i)
+  {
+    TNode nrep = d_equalityEngine->getRepresentative(arrays[i]);
+    d_mayEqualEqualityEngine.addTerm(
+        nrep);  // add the term in case it isn't there already
+    TNode mayRep = d_mayEqualEqualityEngine.getRepresentative(nrep);
+    it = d_defValues.find(mayRep);
+    if (it != d_defValues.end())
+    {
+      defaultValuesSet.add(nrep.getType().getArrayConstituentType(),
+                           (*it).second);
     }
+  }
   //}
 
-  // Loop through all array equivalence classes that need a representative computed
-    for (size_t i = 0; i < arrays.size(); ++i)
+  // Loop through all array equivalence classes that need a representative
+  // computed
+  for (size_t i = 0; i < arrays.size(); ++i)
+  {
+    TNode n = arrays[i];
+    TNode nrep = d_equalityEngine->getRepresentative(n);
+
+    // if (fullModel) {
+    // Compute default value for this array - there is one default value for
+    // every mayEqual equivalence class
+    TNode mayRep = d_mayEqualEqualityEngine.getRepresentative(nrep);
+    it = d_defValues.find(mayRep);
+    // If this mayEqual EC doesn't have a default value associated, get the next
+    // available default value for the associated array element type
+    if (it == d_defValues.end())
     {
-      TNode n = arrays[i];
-      TNode nrep = d_equalityEngine->getRepresentative(n);
-
-      // if (fullModel) {
-      // Compute default value for this array - there is one default value for
-      // every mayEqual equivalence class
-      TNode mayRep = d_mayEqualEqualityEngine.getRepresentative(nrep);
-      it = d_defValues.find(mayRep);
-      // If this mayEqual EC doesn't have a default value associated, get the next available default value for the associated array element type
-      if (it == d_defValues.end()) {
-        TypeNode valueType = nrep.getType().getArrayConstituentType();
-        rep = defaultValuesSet.nextTypeEnum(valueType);
-        if (rep.isNull()) {
-          Assert(defaultValuesSet.getSet(valueType)->begin()
-                 != defaultValuesSet.getSet(valueType)->end());
-          rep = *(defaultValuesSet.getSet(valueType)->begin());
-        }
-        Trace("arrays-models") << "New default value = " << rep << endl;
-        d_defValues[mayRep] = rep;
+      TypeNode valueType = nrep.getType().getArrayConstituentType();
+      rep = defaultValuesSet.nextTypeEnum(valueType);
+      if (rep.isNull())
+      {
+        Assert(defaultValuesSet.getSet(valueType)->begin()
+               != defaultValuesSet.getSet(valueType)->end());
+        rep = *(defaultValuesSet.getSet(valueType)->begin());
       }
-      else {
-        rep = (*it).second;
-      }
+      Trace("arrays-models") << "New default value = " << rep << endl;
+      d_defValues[mayRep] = rep;
+    }
+    else
+    {
+      rep = (*it).second;
+    }
 
-      // Build the STORE_ALL term with the default value
-      rep = nm->mkConst(ArrayStoreAll(nrep.getType(), rep));
-      /*
+    // Build the STORE_ALL term with the default value
+    rep = nm->mkConst(ArrayStoreAll(nrep.getType(), rep));
+    /*
+  }
+  else {
+    std::unordered_map<Node, Node>::iterator it = d_skolemCache.find(n);
+    if (it == d_skolemCache.end()) {
+      rep = nm->mkSkolem("array_collect_model_var", n.getType(), "base model
+  variable for array collectModelInfo"); d_skolemCache[n] = rep;
     }
     else {
-      std::unordered_map<Node, Node, NodeHashFunction>::iterator it = d_skolemCache.find(n);
-      if (it == d_skolemCache.end()) {
-        rep = nm->mkSkolem("array_collect_model_var", n.getType(), "base model variable for array collectModelInfo");
-        d_skolemCache[n] = rep;
-      }
-      else {
-        rep = (*it).second;
-      }
+      rep = (*it).second;
     }
+  }
 */
 
     // For each read, require that the rep stores the right value
     vector<Node>& reads = selects[nrep];
-    for (unsigned j = 0; j < reads.size(); ++j) {
+    for (unsigned j = 0; j < reads.size(); ++j)
+    {
       rep = nm->mkNode(kind::STORE, rep, reads[j][1], reads[j]);
     }
     if (!m->assertEquality(n, rep, true))
     {
       return false;
     }
-    if (!n.isConst()) {
+    if (!n.isConst())
+    {
       m->assertSkeleton(rep);
     }
   }
@@ -1181,7 +1203,7 @@ Node TheoryArrays::getSkolem(TNode ref)
   // the call to SkolemCache::getExtIndexSkolem should be deterministic, but use
   // cache anyways for now
   Node skolem;
-  std::unordered_map<Node, Node, NodeHashFunction>::iterator it = d_skolemCache.find(ref);
+  std::unordered_map<Node, Node>::iterator it = d_skolemCache.find(ref);
   if (it == d_skolemCache.end()) {
     Assert(ref.getKind() == kind::NOT && ref[0].getKind() == kind::EQUAL);
     // make the skolem using the skolem cache utility
@@ -1651,7 +1673,7 @@ void TheoryArrays::checkRowForIndex(TNode i, TNode a)
     }
     d_im.assertInference(selConst.eqNode(defValue),
                          true,
-                         InferenceId::UNKNOWN,
+                         InferenceId::ARRAYS_CONST_ARRAY_DEFAULT,
                          d_true,
                          PfRule::ARRAYS_TRUST);
   }
@@ -1867,8 +1889,11 @@ void TheoryArrays::queueRowLemma(RowLemmaType lem)
       {
         preRegisterTermInternal(aj2);
       }
-      d_im.assertInference(
-          aj.eqNode(aj2), true, InferenceId::UNKNOWN, d_true, PfRule::MACRO_SR_PRED_INTRO);
+      d_im.assertInference(aj.eqNode(aj2),
+                           true,
+                           InferenceId::ARRAYS_EQ_TAUTOLOGY,
+                           d_true,
+                           PfRule::MACRO_SR_PRED_INTRO);
     }
     Node bj2 = Rewriter::rewrite(bj);
     if (bj != bj2) {
@@ -1879,8 +1904,11 @@ void TheoryArrays::queueRowLemma(RowLemmaType lem)
       {
         preRegisterTermInternal(bj2);
       }
-      d_im.assertInference(
-          bj.eqNode(bj2), true, InferenceId::UNKNOWN, d_true, PfRule::MACRO_SR_PRED_INTRO);
+      d_im.assertInference(bj.eqNode(bj2),
+                           true,
+                           InferenceId::ARRAYS_EQ_TAUTOLOGY,
+                           d_true,
+                           PfRule::MACRO_SR_PRED_INTRO);
     }
     if (aj2 == bj2) {
       return;
@@ -1898,14 +1926,22 @@ void TheoryArrays::queueRowLemma(RowLemmaType lem)
       {
         preRegisterTermInternal(bj2);
       }
-      d_im.assertInference(eq1, true, InferenceId::UNKNOWN, d_true, PfRule::MACRO_SR_PRED_INTRO);
+      d_im.assertInference(eq1,
+                           true,
+                           InferenceId::ARRAYS_EQ_TAUTOLOGY,
+                           d_true,
+                           PfRule::MACRO_SR_PRED_INTRO);
       return;
     }
 
     Node eq2 = i.eqNode(j);
     Node eq2_r = Rewriter::rewrite(eq2);
     if (eq2_r == d_true) {
-      d_im.assertInference(eq2, true, InferenceId::UNKNOWN, d_true, PfRule::MACRO_SR_PRED_INTRO);
+      d_im.assertInference(eq2,
+                           true,
+                           InferenceId::ARRAYS_EQ_TAUTOLOGY,
+                           d_true,
+                           PfRule::MACRO_SR_PRED_INTRO);
       return;
     }
 
@@ -1984,8 +2020,11 @@ bool TheoryArrays::dischargeLemmas()
       {
         preRegisterTermInternal(aj2);
       }
-      d_im.assertInference(
-          aj.eqNode(aj2), true, InferenceId::UNKNOWN, d_true, PfRule::MACRO_SR_PRED_INTRO);
+      d_im.assertInference(aj.eqNode(aj2),
+                           true,
+                           InferenceId::ARRAYS_EQ_TAUTOLOGY,
+                           d_true,
+                           PfRule::MACRO_SR_PRED_INTRO);
     }
     Node bj2 = Rewriter::rewrite(bj);
     if (bj != bj2) {
@@ -1996,8 +2035,11 @@ bool TheoryArrays::dischargeLemmas()
       {
         preRegisterTermInternal(bj2);
       }
-      d_im.assertInference(
-          bj.eqNode(bj2), true, InferenceId::UNKNOWN, d_true, PfRule::MACRO_SR_PRED_INTRO);
+      d_im.assertInference(bj.eqNode(bj2),
+                           true,
+                           InferenceId::ARRAYS_EQ_TAUTOLOGY,
+                           d_true,
+                           PfRule::MACRO_SR_PRED_INTRO);
     }
     if (aj2 == bj2) {
       continue;
@@ -2015,14 +2057,22 @@ bool TheoryArrays::dischargeLemmas()
       {
         preRegisterTermInternal(bj2);
       }
-      d_im.assertInference(eq1, true, InferenceId::UNKNOWN, d_true, PfRule::MACRO_SR_PRED_INTRO);
+      d_im.assertInference(eq1,
+                           true,
+                           InferenceId::ARRAYS_EQ_TAUTOLOGY,
+                           d_true,
+                           PfRule::MACRO_SR_PRED_INTRO);
       continue;
     }
 
     Node eq2 = i.eqNode(j);
     Node eq2_r = Rewriter::rewrite(eq2);
     if (eq2_r == d_true) {
-      d_im.assertInference(eq2, true, InferenceId::UNKNOWN, d_true, PfRule::MACRO_SR_PRED_INTRO);
+      d_im.assertInference(eq2,
+                           true,
+                           InferenceId::ARRAYS_EQ_TAUTOLOGY,
+                           d_true,
+                           PfRule::MACRO_SR_PRED_INTRO);
       continue;
     }
 
@@ -2066,62 +2116,6 @@ Node TheoryArrays::TheoryArraysDecisionStrategy::getNextDecisionRequest()
 std::string TheoryArrays::TheoryArraysDecisionStrategy::identify() const
 {
   return std::string("th_arrays_dec");
-}
-
-TrustNode TheoryArrays::expandDefinition(Node node)
-{
-  NodeManager* nm = NodeManager::currentNM();
-  Kind kind = node.getKind();
-
-  /* Expand
-   *
-   *   (eqrange a b i j)
-   *
-   * to
-   *
-   *  forall k . i <= k <= j => a[k] = b[k]
-   *
-   */
-  if (kind == kind::EQ_RANGE)
-  {
-    TNode a = node[0];
-    TNode b = node[1];
-    TNode i = node[2];
-    TNode j = node[3];
-    Node k = nm->mkBoundVar(i.getType());
-    Node bvl = nm->mkNode(kind::BOUND_VAR_LIST, k);
-    TypeNode type = k.getType();
-
-    Kind kle;
-    Node range;
-    if (type.isBitVector())
-    {
-      kle = kind::BITVECTOR_ULE;
-    }
-    else if (type.isFloatingPoint())
-    {
-      kle = kind::FLOATINGPOINT_LEQ;
-    }
-    else if (type.isInteger() || type.isReal())
-    {
-      kle = kind::LEQ;
-    }
-    else
-    {
-      Unimplemented() << "Type " << type << " is not supported for predicate "
-                      << kind;
-    }
-
-    range = nm->mkNode(kind::AND, nm->mkNode(kle, i, k), nm->mkNode(kle, k, j));
-
-    Node eq = nm->mkNode(kind::EQUAL,
-                         nm->mkNode(kind::SELECT, a, k),
-                         nm->mkNode(kind::SELECT, b, k));
-    Node implies = nm->mkNode(kind::IMPLIES, range, eq);
-    Node ret = nm->mkNode(kind::FORALL, bvl, implies);
-    return TrustNode::mkTrustRewrite(node, ret, nullptr);
-  }
-  return TrustNode::null();
 }
 
 void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet)

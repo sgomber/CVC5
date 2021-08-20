@@ -15,8 +15,8 @@
 
 #include "theory/quantifiers/theory_quantifiers.h"
 
-#include "expr/proof_node_manager.h"
 #include "options/quantifiers_options.h"
+#include "proof/proof_node_manager.h"
 #include "theory/quantifiers/quantifiers_macros.h"
 #include "theory/quantifiers/quantifiers_modules.h"
 #include "theory/quantifiers/quantifiers_rewriter.h"
@@ -30,17 +30,14 @@ namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-TheoryQuantifiers::TheoryQuantifiers(Context* c,
-                                     context::UserContext* u,
+TheoryQuantifiers::TheoryQuantifiers(Env& env,
                                      OutputChannel& out,
-                                     Valuation valuation,
-                                     const LogicInfo& logicInfo,
-                                     ProofNodeManager* pnm)
-    : Theory(THEORY_QUANTIFIERS, c, u, out, valuation, logicInfo, pnm),
-      d_qstate(c, u, valuation, logicInfo),
+                                     Valuation valuation)
+    : Theory(THEORY_QUANTIFIERS, env, out, valuation),
+      d_qstate(env, valuation, getLogicInfo()),
       d_qreg(),
       d_treg(d_qstate, d_qreg),
-      d_qim(*this, d_qstate, d_qreg, d_treg, pnm),
+      d_qim(*this, d_qstate, d_qreg, d_treg, d_pnm),
       d_qengine(nullptr)
 {
   out.handleUserAttribute( "fun-def", this );
@@ -49,18 +46,9 @@ TheoryQuantifiers::TheoryQuantifiers(Context* c,
   out.handleUserAttribute( "quant-elim", this );
   out.handleUserAttribute( "quant-elim-partial", this );
 
-  // Finish initializing the term registry by hooking it up to the inference
-  // manager. This is required due to a cyclic dependency between the term
-  // database and the instantiate module. Term database needs inference manager
-  // since it sends out lemmas when term indexing is inconsistent, instantiate
-  // needs term database for entailment checks.
-  d_treg.finishInit(&d_qim);
-
   // construct the quantifiers engine
-  d_qengine.reset(new QuantifiersEngine(d_qstate, d_qreg, d_treg, d_qim, pnm));
-
-  //!!!!!!!!!!!!!! temporary (project #15)
-  d_treg.getModel()->finishInit(d_qengine.get());
+  d_qengine.reset(
+      new QuantifiersEngine(d_qstate, d_qreg, d_treg, d_qim, d_pnm));
 
   // indicate we are using the quantifiers theory state object
   d_theoryState = &d_qstate;

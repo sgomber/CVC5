@@ -39,11 +39,10 @@ namespace transcendental {
 
 TranscendentalSolver::TranscendentalSolver(InferenceManager& im,
                                            NlModel& m,
-                                           ProofNodeManager* pnm,
-                                           context::UserContext* c)
-    : d_tstate(im, m, pnm, c), d_expSlv(&d_tstate), d_sineSlv(&d_tstate)
+                                           Env& env)
+    : d_tstate(im, m, env), d_expSlv(&d_tstate), d_sineSlv(&d_tstate)
 {
-  d_taylor_degree = options::nlExtTfTaylorDegree();
+  d_taylor_degree = d_tstate.d_env.getOptions().arith.nlExtTfTaylorDegree;
 }
 
 TranscendentalSolver::~TranscendentalSolver() {}
@@ -291,8 +290,7 @@ bool TranscendentalSolver::checkTfTangentPlanesFun(Node tf, unsigned d)
 
   // compute the concavity
   int region = -1;
-  std::unordered_map<Node, int, NodeHashFunction>::iterator itr =
-      d_tstate.d_tf_region.find(tf);
+  std::unordered_map<Node, int>::iterator itr = d_tstate.d_tf_region.find(tf);
   if (itr != d_tstate.d_tf_region.end())
   {
     region = itr->second;

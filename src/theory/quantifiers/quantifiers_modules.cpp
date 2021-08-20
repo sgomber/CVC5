@@ -16,6 +16,7 @@
 #include "theory/quantifiers/quantifiers_modules.h"
 
 #include "options/quantifiers_options.h"
+#include "options/strings_options.h"
 #include "theory/quantifiers/relevant_domain.h"
 #include "theory/quantifiers/term_registry.h"
 
@@ -28,7 +29,6 @@ QuantifiersModules::QuantifiersModules()
       d_alpha_equiv(nullptr),
       d_inst_engine(nullptr),
       d_model_engine(nullptr),
-      d_builder(nullptr),
       d_bint(nullptr),
       d_qcf(nullptr),
       d_sg_gen(nullptr),
@@ -45,6 +45,7 @@ void QuantifiersModules::initialize(QuantifiersState& qs,
                                     QuantifiersInferenceManager& qim,
                                     QuantifiersRegistry& qr,
                                     TermRegistry& tr,
+                                    QModelBuilder* builder,
                                     std::vector<QuantifiersModule*>& modules)
 {
   // add quantifiers modules
@@ -74,29 +75,17 @@ void QuantifiersModules::initialize(QuantifiersState& qs,
     d_synth_e.reset(new SynthEngine(qs, qim, qr, tr));
     modules.push_back(d_synth_e.get());
   }
-  // finite model finding
-  if (options::fmfBound())
+  // bounded integer instantiation is used when the user requests it via
+  // fmfBound, or if strings are enabled.
+  if (options::fmfBound() || options::stringExp())
   {
     d_bint.reset(new BoundedIntegers(qs, qim, qr, tr));
     modules.push_back(d_bint.get());
   }
-  if (options::finiteModelFind() || options::fmfBound())
+
+  if (options::finiteModelFind() || options::fmfBound() || options::stringExp())
   {
-    Trace("quant-init-debug")
-        << "Initialize model engine, mbqi : " << options::mbqiMode() << " "
-        << options::fmfBound() << std::endl;
-    if (tr.useFmcModel())
-    {
-      Trace("quant-init-debug") << "...make fmc builder." << std::endl;
-      d_builder.reset(new fmcheck::FullModelChecker(qs, qr, qim));
-    }
-    else
-    {
-      Trace("quant-init-debug")
-          << "...make default model builder." << std::endl;
-      d_builder.reset(new QModelBuilder(qs, qr, qim));
-    }
-    d_model_engine.reset(new ModelEngine(qs, qim, qr, tr, d_builder.get()));
+    d_model_engine.reset(new ModelEngine(qs, qim, qr, tr, builder));
     modules.push_back(d_model_engine.get());
   }
   if (options::quantDynamicSplit() != options::QuantDSplitMode::NONE)

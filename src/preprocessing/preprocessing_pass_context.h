@@ -23,8 +23,8 @@
 #define CVC5__PREPROCESSING__PREPROCESSING_PASS_CONTEXT_H
 
 #include "context/cdhashset.h"
+#include "preprocessing/learned_literal_manager.h"
 #include "smt/smt_engine.h"
-#include "theory/trust_substitutions.h"
 #include "util/resource_manager.h"
 
 namespace cvc5 {
@@ -43,29 +43,23 @@ class PreprocessingPassContext
  public:
   PreprocessingPassContext(
       SmtEngine* smt,
-      theory::booleans::CircuitPropagator* circuitPropagator,
-      ProofNodeManager* pnm);
+      Env& env,
+      theory::booleans::CircuitPropagator* circuitPropagator);
 
   SmtEngine* getSmt() { return d_smt; }
   TheoryEngine* getTheoryEngine() { return d_smt->getTheoryEngine(); }
   prop::PropEngine* getPropEngine() { return d_smt->getPropEngine(); }
-  context::Context* getUserContext() { return d_smt->getUserContext(); }
-  context::Context* getDecisionContext() { return d_smt->getContext(); }
+  context::Context* getUserContext();
+  context::Context* getDecisionContext();
 
   theory::booleans::CircuitPropagator* getCircuitPropagator()
   {
     return d_circuitPropagator;
   }
 
-  context::CDHashSet<Node, NodeHashFunction>& getSymsInAssertions()
-  {
-    return d_symsInAssertions;
-  }
+  context::CDHashSet<Node>& getSymsInAssertions() { return d_symsInAssertions; }
 
-  void spendResource(Resource r)
-  {
-    d_resourceManager->spendResource(r);
-  }
+  void spendResource(Resource r);
 
   /** Get the current logic info of the SmtEngine */
   const LogicInfo& getLogicInfo() { return d_smt->getLogicInfo(); }
@@ -81,11 +75,32 @@ class PreprocessingPassContext
   void recordSymbolsInAssertions(const std::vector<Node>& assertions);
 
   /**
-   * Add substitution to theory model.
+   * Notify learned literal. This method is called when a literal is
+   * entailed by the current set of assertions.
+   *
+   * It should be rewritten, and such that top level substitutions have
+   * been applied to it.
+   */
+  void notifyLearnedLiteral(TNode lit);
+  /**
+   * Get the learned literals
+   */
+  std::vector<Node> getLearnedLiterals();
+  /**
+   * Add substitution to the top-level substitutions, which also as a
+   * consequence is used by the theory model.
    * @param lhs The node replaced by node 'rhs'
    * @param rhs The node to substitute node 'lhs'
+   * @param pg The proof generator that can provide a proof of lhs == rhs.
    */
-  void addModelSubstitution(const Node& lhs, const Node& rhs);
+  void addSubstitution(const Node& lhs,
+                       const Node& rhs,
+                       ProofGenerator* pg = nullptr);
+  /** Same as above, with proof id */
+  void addSubstitution(const Node& lhs,
+                       const Node& rhs,
+                       PfRule id,
+                       const std::vector<Node>& args);
 
   /** The the proof node manager associated with this context, if it exists */
   ProofNodeManager* getProofNodeManager();
@@ -93,23 +108,20 @@ class PreprocessingPassContext
  private:
   /** Pointer to the SmtEngine that this context was created in. */
   SmtEngine* d_smt;
-
-  /** Pointer to the ResourceManager for this context. */
-  ResourceManager* d_resourceManager;
-
-  /* The top level substitutions */
-  theory::TrustSubstitutionMap d_topLevelSubstitutions;
-
+  /** Reference to the environment. */
+  Env& d_env;
   /** Instance of the circuit propagator */
   theory::booleans::CircuitPropagator* d_circuitPropagator;
-  /** Pointer to the proof node manager, if it exists */
-  ProofNodeManager* d_pnm;
+  /**
+   * The learned literal manager
+   */
+  LearnedLiteralManager d_llm;
 
   /**
    * The (user-context-dependent) set of symbols that occur in at least one
    * assertion in the current user context.
    */
-  context::CDHashSet<Node, NodeHashFunction> d_symsInAssertions;
+  context::CDHashSet<Node> d_symsInAssertions;
 
 };  // class PreprocessingPassContext
 

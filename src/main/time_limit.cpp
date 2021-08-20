@@ -55,6 +55,8 @@
 #include <cerrno>
 #include <cstring>
 
+#include "base/exception.h"
+#include "options/base_options.h"
 #include "signal_handlers.h"
 
 namespace cvc5 {
@@ -78,7 +80,7 @@ TimeLimit::~TimeLimit()
 
 TimeLimit install_time_limit(const Options& opts)
 {
-  unsigned long ms = opts.getCumulativeTimeLimit();
+  uint64_t ms = opts.base.cumulativeMillisecondLimit;
   // Skip if no time limit shall be set.
   if (ms == 0) {
     return TimeLimit();

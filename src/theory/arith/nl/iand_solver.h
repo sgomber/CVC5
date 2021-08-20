@@ -39,7 +39,7 @@ class NlModel;
  */
 class IAndSolver
 {
-  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+  typedef context::CDHashSet<Node> NodeSet;
 
  public:
   IAndSolver(InferenceManager& im, ArithState& state, NlModel& model);
@@ -85,6 +85,8 @@ class IAndSolver
   InferenceManager& d_im;
   /** Reference to the non-linear model object */
   NlModel& d_model;
+  /** Reference to the arithmetic state */
+  ArithState& d_astate;
   /** commonly used terms */
   Node d_false;
   Node d_true;

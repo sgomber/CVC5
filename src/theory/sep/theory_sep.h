@@ -39,8 +39,8 @@ namespace sep {
 
 class TheorySep : public Theory {
   typedef context::CDList<Node> NodeList;
-  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
-  typedef context::CDHashMap<Node, Node, NodeHashFunction> NodeNodeMap;
+  typedef context::CDHashSet<Node> NodeSet;
+  typedef context::CDHashMap<Node, Node> NodeNodeMap;
 
   /////////////////////////////////////////////////////////////////////////////
   // MISC
@@ -77,12 +77,7 @@ class TheorySep : public Theory {
       bool underSpatial);
 
  public:
-  TheorySep(context::Context* c,
-            context::UserContext* u,
-            OutputChannel& out,
-            Valuation valuation,
-            const LogicInfo& logicInfo,
-            ProofNodeManager* pnm = nullptr);
+  TheorySep(Env& env, OutputChannel& out, Valuation valuation);
   ~TheorySep();
 
   /**

@@ -32,7 +32,7 @@ namespace theory {
 namespace arith {
 namespace nl {
 
-NlModel::NlModel(context::Context* c) : d_used_approx(false)
+NlModel::NlModel() : d_used_approx(false)
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
@@ -242,7 +242,7 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
   // all remaining variables are constrained to their exact model values
   Trace("nl-ext-cm-debug") << "  set exact bounds for remaining variables..."
                            << std::endl;
-  std::unordered_set<TNode, TNodeHashFunction> visited;
+  std::unordered_set<TNode> visited;
   std::vector<TNode> visit;
   TNode cur;
   for (const Node& a : assertions)
@@ -479,10 +479,10 @@ bool NlModel::solveEqualitySimple(Node eq,
   NodeManager* nm = NodeManager::currentNM();
   // the list of variables that occur as a monomial in msum, and whose value
   // is so far unconstrained in the model.
-  std::unordered_set<Node, NodeHashFunction> unc_vars;
+  std::unordered_set<Node> unc_vars;
   // the list of variables that occur as a factor in a monomial, and whose
   // value is so far unconstrained in the model.
-  std::unordered_set<Node, NodeHashFunction> unc_vars_factor;
+  std::unordered_set<Node> unc_vars_factor;
   for (std::pair<const Node, Node>& m : msum)
   {
     Node v = m.first;
@@ -797,7 +797,7 @@ bool NlModel::simpleCheckModelLit(Node lit)
   Trace("nl-ext-cms-debug")
       << "* Try univariate quadratic analysis..." << std::endl;
   std::vector<Node> vs_invalid;
-  std::unordered_set<Node, NodeHashFunction> vs;
+  std::unordered_set<Node> vs;
   std::map<Node, Node> v_a;
   std::map<Node, Node> v_b;
   // get coefficients...
@@ -1263,7 +1263,8 @@ void NlModel::printModelValue(const char* c, Node n, unsigned prec) const
 void NlModel::getModelValueRepair(
     std::map<Node, Node>& arithModel,
     std::map<Node, std::pair<Node, Node>>& approximations,
-    std::map<Node, Node>& witnesses)
+    std::map<Node, Node>& witnesses,
+    bool witnessToValue)
 {
   Trace("nl-model") << "NlModel::getModelValueRepair:" << std::endl;
   // If we extended the model with entries x -> 0 for unconstrained values,
@@ -1289,7 +1290,7 @@ void NlModel::getModelValueRepair(
       pred = nm->mkNode(AND, nm->mkNode(GEQ, v, l), nm->mkNode(GEQ, u, v));
       Trace("nl-model") << v << " approximated as " << pred << std::endl;
       Node witness;
-      if (options::modelWitnessValue())
+      if (witnessToValue)
       {
         // witness is the midpoint
         witness = nm->mkNode(

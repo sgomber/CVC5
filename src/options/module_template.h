@@ -16,34 +16,51 @@
  * expands this template and generates a <module>_options.h file.
  */
 
-#include "cvc5_private.h"
+${visibility_include}$
 
-#ifndef CVC5__OPTIONS__${id}$_H
-#define CVC5__OPTIONS__${id}$_H
+#ifndef CVC5__OPTIONS__${id_cap}$_H
+#define CVC5__OPTIONS__${id_cap}$_H
 
 #include "options/options.h"
 
 // clang-format off
 ${includes}$
+// clang-format on
 
+namespace cvc5::options {
+
+// clang-format off
+${modes_decl}$
+// clang-format on
+
+#if defined(CVC5_MUZZLED) || defined(CVC5_COMPETITION_MODE)
+#  define DO_SEMANTIC_CHECKS_BY_DEFAULT false
+#else /* CVC5_MUZZLED || CVC5_COMPETITION_MODE */
+#  define DO_SEMANTIC_CHECKS_BY_DEFAULT true
+#endif /* CVC5_MUZZLED || CVC5_COMPETITION_MODE */
+
+struct Holder${id_cap}$
+{
+// clang-format off
 ${holder_spec}$
+// clang-format on
+};
 
-namespace cvc5 {
-namespace options {
+#undef DO_SEMANTIC_CHECKS_BY_DEFAULT
 
-${modes}$
+// clang-format off
+${wrap_funs}$
+// clang-format on
 
-${decls}$
+namespace ${id}$
+{
+// clang-format off
+${option_names}$
 
-}  // namespace options
+${defaults_decl}$
+// clang-format on
+}
 
-${specs}$
+}  // namespace cvc5::options
 
-namespace options {
-${inls}$
-
-}  // namespace options
-}  // namespace cvc5
-
-#endif /* CVC5__OPTIONS__${id}$_H */
-//clang-format on
+#endif /* CVC5__OPTIONS__${id_cap}$_H */

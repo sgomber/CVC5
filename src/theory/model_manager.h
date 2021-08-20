@@ -26,6 +26,7 @@
 namespace cvc5 {
 
 class TheoryEngine;
+class Env;
 
 namespace theory {
 
@@ -42,7 +43,7 @@ class TheoryModel;
 class ModelManager
 {
  public:
-  ModelManager(TheoryEngine& te, EqEngineManager& eem);
+  ModelManager(TheoryEngine& te, Env& env, EqEngineManager& eem);
   virtual ~ModelManager();
   /**
    * Finish initializing this class, which allocates the model, the model
@@ -73,7 +74,7 @@ class ModelManager
    */
   void postProcessModel(bool incomplete);
   /** Get a pointer to model object maintained by this class. */
-  theory::TheoryModel* getModel();
+  TheoryModel* getModel();
   //------------------------ finer grained control over model building
   /**
    * Prepare model, which is the manager-specific method for setting up the
@@ -107,26 +108,11 @@ class ModelManager
    * @return true if we are in conflict.
    */
   bool collectModelBooleanVariables();
-  /**
-   * Collect asserted terms for theory with the given identifier, add to
-   * termSet.
-   *
-   * @param tid The theory whose assertions we are collecting
-   * @param termSet The set to add terms to
-   * @param includeShared Whether to include the shared terms of the theory
-   */
-  void collectAssertedTerms(TheoryId tid,
-                            std::set<Node>& termSet,
-                            bool includeShared = true) const;
-  /**
-   * Helper function for collectAssertedTerms, adds all subterms
-   * belonging to theory tid to termSet.
-   */
-  void collectTerms(TheoryId tid, TNode n, std::set<Node>& termSet) const;
+
   /** Reference to the theory engine */
   TheoryEngine& d_te;
-  /** Logic info of theory engine (cached) */
-  const LogicInfo& d_logicInfo;
+  /** Reference to the environment */
+  Env& d_env;
   /** The equality engine manager */
   EqEngineManager& d_eem;
   /**
@@ -138,14 +124,12 @@ class ModelManager
   eq::EqualityEngine* d_modelEqualityEngine;
   /** The equality engine of the model, if we allocated it */
   std::unique_ptr<eq::EqualityEngine> d_modelEqualityEngineAlloc;
-  /** The model object we are using */
-  theory::TheoryModel* d_model;
   /** The model object we have allocated (if one exists) */
-  std::unique_ptr<theory::TheoryModel> d_alocModel;
+  std::unique_ptr<TheoryModel> d_model;
   /** The model builder object we are using */
-  theory::TheoryEngineModelBuilder* d_modelBuilder;
+  TheoryEngineModelBuilder* d_modelBuilder;
   /** The model builder object we have allocated (if one exists) */
-  std::unique_ptr<theory::TheoryEngineModelBuilder> d_alocModelBuilder;
+  std::unique_ptr<TheoryEngineModelBuilder> d_alocModelBuilder;
   /** whether we have tried to build this model in the current context */
   bool d_modelBuilt;
   /** whether this model has been built successfully */

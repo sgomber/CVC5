@@ -47,8 +47,8 @@ namespace {
  */
 void getMaxGroundTerms(TNode n,
                        TypeNode tn,
-                       std::unordered_set<Node, NodeHashFunction>& terms,
-                       std::unordered_set<TNode, TNodeHashFunction>& cache,
+                       std::unordered_set<Node>& terms,
+                       std::unordered_set<TNode>& cache,
                        bool skip_quant = false)
 {
   if (options::sygusInstTermSel() != options::SygusInstTermSelMode::MAX
@@ -100,12 +100,11 @@ void getMaxGroundTerms(TNode n,
  *               term was already found in a subterm.
  * @param skip_quant: Do not traverse quantified formulas (skip quantifiers).
  */
-void getMinGroundTerms(
-    TNode n,
-    TypeNode tn,
-    std::unordered_set<Node, NodeHashFunction>& terms,
-    std::unordered_map<TNode, std::pair<bool, bool>, TNodeHashFunction>& cache,
-    bool skip_quant = false)
+void getMinGroundTerms(TNode n,
+                       TypeNode tn,
+                       std::unordered_set<Node>& terms,
+                       std::unordered_map<TNode, std::pair<bool, bool>>& cache,
+                       bool skip_quant = false)
 {
   if (options::sygusInstTermSel() != options::SygusInstTermSelMode::MIN
       && options::sygusInstTermSel() != options::SygusInstTermSelMode::BOTH)
@@ -169,9 +168,8 @@ void getMinGroundTerms(
  * @param extra_cons: A map of TypeNode to constants, which are added in
  *                    addition to the default grammar.
  */
-void addSpecialValues(
-    const TypeNode& tn,
-    std::map<TypeNode, std::unordered_set<Node, NodeHashFunction>>& extra_cons)
+void addSpecialValues(const TypeNode& tn,
+                      std::map<TypeNode, std::unordered_set<Node>>& extra_cons)
 {
   if (tn.isBitVector())
   {
@@ -260,7 +258,7 @@ void SygusInst::check(Theory::Effort e, QEffort quant_e)
     Assert(inst_constants.size() == dt_evals.size());
     Assert(inst_constants.size() == q[0].getNumChildren());
 
-    std::vector<Node> terms, eval_unfold_lemmas;
+    std::vector<Node> terms, values, eval_unfold_lemmas;
     for (size_t i = 0, size = q[0].getNumChildren(); i < size; ++i)
     {
       Node dt_var = inst_constants[i];
@@ -268,6 +266,7 @@ void SygusInst::check(Theory::Effort e, QEffort quant_e)
       Node value = model->getValue(dt_var);
       Node t = datatypes::utils::sygusToBuiltin(value);
       terms.push_back(t);
+      values.push_back(value);
 
       std::vector<Node> exp;
       syexplain.getExplanationForEquality(dt_var, value, exp);
@@ -287,7 +286,10 @@ void SygusInst::check(Theory::Effort e, QEffort quant_e)
 
     if (mode == options::SygusInstMode::PRIORITY_INST)
     {
-      if (!inst->addInstantiation(q, terms, InferenceId::QUANTIFIERS_INST_SYQI))
+      if (!inst->addInstantiation(q,
+                                  terms,
+                                  InferenceId::QUANTIFIERS_INST_SYQI,
+                                  nm->mkNode(kind::SEXPR, values)))
       {
         sendEvalUnfoldLemmas(eval_unfold_lemmas);
       }
@@ -296,13 +298,19 @@ void SygusInst::check(Theory::Effort e, QEffort quant_e)
     {
       if (!sendEvalUnfoldLemmas(eval_unfold_lemmas))
       {
-        inst->addInstantiation(q, terms, InferenceId::QUANTIFIERS_INST_SYQI);
+        inst->addInstantiation(q,
+                               terms,
+                               InferenceId::QUANTIFIERS_INST_SYQI,
+                               nm->mkNode(kind::SEXPR, values));
       }
     }
     else
     {
       Assert(mode == options::SygusInstMode::INTERLEAVE);
-      inst->addInstantiation(q, terms, InferenceId::QUANTIFIERS_INST_SYQI);
+      inst->addInstantiation(q,
+                             terms,
+                             InferenceId::QUANTIFIERS_INST_SYQI,
+                             nm->mkNode(kind::SEXPR, values));
       sendEvalUnfoldLemmas(eval_unfold_lemmas);
     }
   }
@@ -331,19 +339,16 @@ void SygusInst::registerQuantifier(Node q)
 
   Trace("sygus-inst") << "Register " << q << std::endl;
 
-  std::map<TypeNode, std::unordered_set<Node, NodeHashFunction>> extra_cons;
-  std::map<TypeNode, std::unordered_set<Node, NodeHashFunction>> exclude_cons;
-  std::map<TypeNode, std::unordered_set<Node, NodeHashFunction>> include_cons;
-  std::unordered_set<Node, NodeHashFunction> term_irrelevant;
+  std::map<TypeNode, std::unordered_set<Node>> extra_cons;
+  std::map<TypeNode, std::unordered_set<Node>> exclude_cons;
+  std::map<TypeNode, std::unordered_set<Node>> include_cons;
+  std::unordered_set<Node> term_irrelevant;
 
   /* Collect relevant local ground terms for each variable type. */
   if (options::sygusInstScope() == options::SygusInstScope::IN
       || options::sygusInstScope() == options::SygusInstScope::BOTH)
   {
-    std::unordered_map<TypeNode,
-                       std::unordered_set<Node, NodeHashFunction>,
-                       TypeNodeHashFunction>
-        relevant_terms;
+    std::unordered_map<TypeNode, std::unordered_set<Node>> relevant_terms;
     for (const Node& var : q[0])
     {
       TypeNode tn = var.getType();
@@ -351,10 +356,9 @@ void SygusInst::registerQuantifier(Node q)
       /* Collect relevant ground terms for type tn. */
       if (relevant_terms.find(tn) == relevant_terms.end())
       {
-        std::unordered_set<Node, NodeHashFunction> terms;
-        std::unordered_set<TNode, TNodeHashFunction> cache_max;
-        std::unordered_map<TNode, std::pair<bool, bool>, TNodeHashFunction>
-            cache_min;
+        std::unordered_set<Node> terms;
+        std::unordered_set<TNode> cache_max;
+        std::unordered_map<TNode, std::pair<bool, bool>> cache_min;
 
         getMinGroundTerms(q, tn, terms, cache_min);
         getMaxGroundTerms(q, tn, terms, cache_max);
@@ -383,10 +387,9 @@ void SygusInst::registerQuantifier(Node q)
       /* Collect relevant ground terms for type tn. */
       if (d_global_terms.find(tn) == d_global_terms.end())
       {
-        std::unordered_set<Node, NodeHashFunction> terms;
-        std::unordered_set<TNode, TNodeHashFunction> cache_max;
-        std::unordered_map<TNode, std::pair<bool, bool>, TNodeHashFunction>
-            cache_min;
+        std::unordered_set<Node> terms;
+        std::unordered_set<TNode> cache_max;
+        std::unordered_map<TNode, std::pair<bool, bool>> cache_min;
 
         for (const Node& a : d_notified_assertions)
         {

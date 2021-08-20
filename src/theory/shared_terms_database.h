@@ -22,10 +22,10 @@
 
 #include "context/cdhashset.h"
 #include "expr/node.h"
-#include "expr/proof_node_manager.h"
+#include "proof/proof_node_manager.h"
+#include "proof/trust_node.h"
 #include "theory/ee_setup_info.h"
 #include "theory/theory_id.h"
-#include "theory/trust_node.h"
 #include "theory/uf/equality_engine.h"
 #include "theory/uf/proof_equality_engine.h"
 #include "util/statistics_stats.h"
@@ -47,7 +47,7 @@ class SharedTermsDatabase : public context::ContextNotifyObj {
   IntStat d_statSharedTerms;
 
   // Needs to be a map from Nodes as after a backtrack they might not exist
-  typedef std::unordered_map<Node, shared_terms_list, TNodeHashFunction> SharedTermsMap;
+  typedef std::unordered_map<Node, shared_terms_list> SharedTermsMap;
 
   /** A map from atoms to a list of shared terms */
   SharedTermsMap d_atomsToTerms;
@@ -66,12 +66,11 @@ class SharedTermsDatabase : public context::ContextNotifyObj {
   SharedTermsTheoriesMap d_termsToTheories;
 
   /** Map from term to theories that have already been notified about the shared term */
-  typedef context::CDHashMap<TNode, theory::TheoryIdSet, TNodeHashFunction>
-      AlreadyNotifiedMap;
+  typedef context::CDHashMap<TNode, theory::TheoryIdSet> AlreadyNotifiedMap;
   AlreadyNotifiedMap d_alreadyNotifiedMap;
 
   /** The registered equalities for propagation */
-  typedef context::CDHashSet<Node, NodeHashFunction> RegisteredEqualitiesSet;
+  typedef context::CDHashSet<Node> RegisteredEqualitiesSet;
   RegisteredEqualitiesSet d_registeredEqualities;
 
  private:
@@ -175,9 +174,9 @@ class SharedTermsDatabase : public context::ContextNotifyObj {
   //-------------------------------------------- end initialization
 
   /**
-   * Asserts the equality to the shared terms database,
+   * Asserts n to the shared terms database with given polarity and reason
    */
-  void assertEquality(TNode equality, bool polarity, TNode reason);
+  void assertShared(TNode n, bool polarity, TNode reason);
 
   /**
    * Return whether the equality is alreday known to the engine
@@ -187,7 +186,7 @@ class SharedTermsDatabase : public context::ContextNotifyObj {
   /**
    * Returns an explanation of the propagation that came from the database.
    */
-  theory::TrustNode explain(TNode literal) const;
+  TrustNode explain(TNode literal) const;
 
   /**
    * Add an equality to propagate.
@@ -272,8 +271,10 @@ class SharedTermsDatabase : public context::ContextNotifyObj {
   context::UserContext* d_userContext;
   /** Equality engine */
   theory::eq::EqualityEngine* d_equalityEngine;
-  /** Proof equality engine */
-  std::unique_ptr<theory::eq::ProofEqEngine> d_pfee;
+  /** Proof equality engine, if we allocated one */
+  std::unique_ptr<theory::eq::ProofEqEngine> d_pfeeAlloc;
+  /** The proof equality engine we are using */
+  theory::eq::ProofEqEngine* d_pfee;
   /** The proof node manager */
   ProofNodeManager* d_pnm;
 };

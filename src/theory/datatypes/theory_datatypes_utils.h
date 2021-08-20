@@ -15,8 +15,8 @@
 
 #include "cvc5_private.h"
 
-#ifndef CVC5__THEORY__STRINGS__THEORY_DATATYPES_UTILS_H
-#define CVC5__THEORY__STRINGS__THEORY_DATATYPES_UTILS_H
+#ifndef CVC5__THEORY__DATATYPES__THEORY_DATATYPES_UTILS_H
+#define CVC5__THEORY__DATATYPES__THEORY_DATATYPES_UTILS_H
 
 #include <vector>
 
@@ -54,12 +54,12 @@ int isTester(Node n, Node& a);
 int isTester(Node n);
 /**
  * Get the index of a constructor or tester in its datatype, or the
- * index of a selector in its constructor.  (Zero is always the
+ * index of a selector or updater in its constructor.  (Zero is always the
  * first index.)
  */
 size_t indexOf(Node n);
 /**
- * Get the index of constructor corresponding to selector.
+ * Get the index of constructor corresponding to selector or updater.
  * (Zero is always the first index.)
  */
 size_t cindexOf(Node n);

@@ -49,7 +49,7 @@ class BitblastSolver : public SubtheorySolver
   context::CDQueue<TNode> d_bitblastQueue;
   Statistics d_statistics;
 
-  typedef std::unordered_map<Node, Node, NodeHashFunction> NodeMap;
+  typedef std::unordered_map<Node, Node> NodeMap;
   NodeMap d_modelCache;
   context::CDO<bool> d_validModelCache;
 
@@ -63,7 +63,7 @@ class BitblastSolver : public SubtheorySolver
   void setConflict(TNode conflict);
 
  public:
-  BitblastSolver(context::Context* c, BVSolverLazy* bv);
+  BitblastSolver(context::Context* c, BVSolverLayered* bv);
   ~BitblastSolver();
 
   void preRegister(TNode node) override;

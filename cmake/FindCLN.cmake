@@ -34,7 +34,11 @@ if(CLN_INCLUDE_DIR AND CLN_LIBRARIES)
 endif()
 
 if(NOT CLN_FOUND_SYSTEM)
-  check_auto_download("CLN" "--no-cln")
+  check_ep_downloaded("CLN-EP")
+  if(NOT CLN-EP_DOWNLOADED)
+    check_auto_download("CLN" "--no-cln")
+  endif()
+
   include(ExternalProject)
 
   fail_if_cross_compiling("Windows" "" "CLN" "autoconf fails")
@@ -54,7 +58,10 @@ if(NOT CLN_FOUND_SYSTEM)
     URL "https://www.ginac.de/CLN/cln.git/?p=cln.git\\\;a=snapshot\\\;h=cln_${CLN_TAG}\\\;sf=tgz"
     URL_HASH SHA1=71d02b90ef0575f06b7bafb8690f73e8064d8228
     DOWNLOAD_NAME cln.tgz
-    CONFIGURE_COMMAND cd <SOURCE_DIR> && ./autogen.sh && autoreconf -iv
+    CONFIGURE_COMMAND
+      ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> ./autogen.sh
+    COMMAND
+      ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> autoreconf -iv
     COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --disable-shared
             --enable-static --with-pic
     BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libcln.a

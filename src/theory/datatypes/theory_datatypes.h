@@ -42,9 +42,9 @@ class TheoryDatatypes : public Theory {
  private:
   typedef context::CDList<Node> NodeList;
   /** maps nodes to an index in a vector */
-  typedef context::CDHashMap<Node, size_t, NodeHashFunction> NodeUIntMap;
-  typedef context::CDHashMap<Node, bool, NodeHashFunction> BoolMap;
-  typedef context::CDHashMap<Node, Node, NodeHashFunction> NodeMap;
+  typedef context::CDHashMap<Node, size_t> NodeUIntMap;
+  typedef context::CDHashMap<Node, bool> BoolMap;
+  typedef context::CDHashMap<Node, Node> NodeMap;
 
  private:
   //notification class for equality engine
@@ -158,8 +158,6 @@ private:
   std::map< TypeNode, Node > d_singleton_lemma[2];
   /** Cache for singleton equalities processed */
   BoolMap d_singleton_eq;
-  /** list of all lemmas produced */
-  BoolMap d_lemmas_produced_c;
 private:
   /** assert fact */
   void assertFact( Node fact, Node exp );
@@ -183,12 +181,7 @@ private:
   void computeCareGraph() override;
 
  public:
-  TheoryDatatypes(context::Context* c,
-                  context::UserContext* u,
-                  OutputChannel& out,
-                  Valuation valuation,
-                  const LogicInfo& logicInfo,
-                  ProofNodeManager* pnm = nullptr);
+  TheoryDatatypes(Env& env, OutputChannel& out, Valuation valuation);
   ~TheoryDatatypes();
 
   //--------------------------------- initialization
@@ -227,7 +220,6 @@ private:
   void notifyFact(TNode atom, bool pol, TNode fact, bool isInternal) override;
   //--------------------------------- end standard check
   void preRegisterTerm(TNode n) override;
-  TrustNode expandDefinition(Node n) override;
   TrustNode ppRewrite(TNode n, std::vector<SkolemLemma>& lems) override;
   EqualityStatus getEqualityStatus(TNode a, TNode b) override;
   std::string identify() const override
@@ -274,9 +266,10 @@ private:
   void collectTerms( Node n );
   /** get instantiate cons */
   Node getInstantiateCons(Node n, const DType& dt, int index);
-  /** check instantiate */
-  void instantiate( EqcInfo* eqc, Node n );
-private:
+  /** check instantiate, return true if an inference was generated. */
+  bool instantiate(EqcInfo* eqc, Node n);
+
+ private:
   //equality queries
   bool hasTerm( TNode a );
   bool areEqual( TNode a, TNode b );
