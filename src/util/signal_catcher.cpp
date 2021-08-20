@@ -14,6 +14,7 @@
  */
 
 #include "signal_catcher.h"
+
 #include <assert.h>
 
 #include <cstdlib>

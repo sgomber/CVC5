@@ -24,15 +24,13 @@
 #include "expr/node.h"
 #include "tokenizer.h"
 
-
-
-namespace cvc5{
+namespace cvc5 {
 
 class mini_parsert
 {
-public:
-  explicit mini_parsert(std::istream &_in)
-    : exit(false), smt2_tokenizer(_in), parenthesis_level(0)
+ public:
+  explicit mini_parsert(std::istream& _in)
+      : exit(false), smt2_tokenizer(_in), parenthesis_level(0)
   {
     setup_expressions();
   }
@@ -40,7 +38,7 @@ public:
   Node expression();
   bool exit;
 
-protected:
+ protected:
   tokenizert smt2_tokenizer;
   // we extend next_token to track the parenthesis level
   std::size_t parenthesis_level;
@@ -51,13 +49,12 @@ protected:
   void setup_expressions();
 
   std::vector<Node> operands();
-  Node function_application(const Node &function,const std::vector<Node> &op);
+  Node function_application(const Node& function, const std::vector<Node>& op);
   Node function_application();
 
   // kind::Kind_t parse_rounding_mode(const std::string &mode_string);
   // Node function_application_fp(std::vector<Node> ops);
-
 };
 
-}
-#endif // CVC5__UTIL__MINIPARSER_MINIPARSER_H
+}  // namespace cvc5
+#endif  // CVC5__UTIL__MINIPARSER_MINIPARSER_H

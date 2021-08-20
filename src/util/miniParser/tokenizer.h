@@ -15,21 +15,20 @@
 #ifndef CVC5__UTIL__MINIPARSER_TOKENIZER_H
 #define CVC5__UTIL__MINIPARSER_TOKENIZER_H
 
-#include "base/exception.h"
-
 #include <sstream>
 #include <string>
 
-namespace cvc5 {
+#include "base/exception.h"
 
+namespace cvc5 {
 
 class tokenizert
 {
-public:
-  explicit tokenizert(std::istream &_in) : peeked(false), token(NONE)
+ public:
+  explicit tokenizert(std::istream& _in) : peeked(false), token(NONE)
   {
-    in=&_in;
-    line_no=1;
+    in = &_in;
+    line_no = 1;
   }
 
   using tokent = enum {
@@ -47,28 +46,22 @@ public:
 
   tokent peek()
   {
-    if(peeked)
+    if (peeked)
       return token;
     else
     {
       get_token_from_stream();
-      peeked=true;
+      peeked = true;
       return token;
     }
   }
 
-  const std::string &get_buffer() const
-  {
-    return buffer;
-  }
+  const std::string& get_buffer() const { return buffer; }
 
-  bool token_is_quoted_symbol() const
-  {
-    return quoted_symbol;
-  }
+  bool token_is_quoted_symbol() const { return quoted_symbol; }
 
-protected:
-  std::istream *in;
+ protected:
+  std::istream* in;
   unsigned line_no;
   std::string buffer;
   bool quoted_symbol = false;
@@ -79,7 +72,7 @@ protected:
   /// or the end of file is reached
   void skip_to_end_of_list();
 
-private:
+ private:
   tokent get_decimal_numeral();
   tokent get_hex_numeral();
   tokent get_bin_numeral();
@@ -92,6 +85,6 @@ private:
   void get_token_from_stream();
 };
 
-}
+}  // namespace cvc5
 
-#endif // CVC5__UTIL__MINIPARSER_TOKENIZER_H
+#endif  // CVC5__UTIL__MINIPARSER_TOKENIZER_H

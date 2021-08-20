@@ -14,12 +14,13 @@
  */
 
 #include "tmpfile.h"
-#include <filesystem>
+
+#include <unistd.h>
 
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 
-#include <unistd.h>
 #include "system_exception.h"
 
 namespace cvc5 {

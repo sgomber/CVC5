@@ -19,6 +19,7 @@
 #define CVC5__THEORY__QUANTIFIERS__SYGUS__ORACLE_MANAGER_H
 
 #include <unordered_set>
+
 #include "expr/node.h"
 #include "theory/quantifiers/oracle_checker.h"
 

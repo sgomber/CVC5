@@ -151,7 +151,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e)
   {
     for (const auto& l : learned_lemmas)
     {
-      Trace("oracle-engine-state") << "adding lemma "<< l <<std::endl;
+      Trace("oracle-engine-state") << "adding lemma " << l << std::endl;
       d_qim.lemma(l, InferenceId::QUANTIFIERS_ORACLE_INTERFACE);
     }
   }

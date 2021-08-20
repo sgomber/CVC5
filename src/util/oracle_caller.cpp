@@ -14,16 +14,16 @@
  */
 
 #include "util/oracle_caller.h"
-#include "theory/quantifiers/quantifiers_attributes.h"
-#include "util/bitvector.h"
-#include "util/rational.h"
-#include "util/run.h"
-#include "util/miniParser/miniParser.h"
 
 #include <sstream>
 
-namespace cvc5 {
+#include "theory/quantifiers/quantifiers_attributes.h"
+#include "util/bitvector.h"
+#include "util/miniParser/miniParser.h"
+#include "util/rational.h"
+#include "util/run.h"
 
+namespace cvc5 {
 
 Node OracleCaller::callOracle(const Node fapp)
 {
@@ -33,7 +33,7 @@ Node OracleCaller::callOracle(const Node fapp)
                           << std::endl;
     return d_cachedResults.at(fapp);
   }
-  Trace("oracle-calls") << "Running oracle: " << d_binaryName<<" ";
+  Trace("oracle-calls") << "Running oracle: " << d_binaryName << " ";
   std::vector<std::string> string_args;
   string_args.push_back(d_binaryName);
 
@@ -42,7 +42,7 @@ Node OracleCaller::callOracle(const Node fapp)
     std::ostringstream oss;
     oss << arg;
     string_args.push_back(" \"" + oss.str() + "\"");
-    Trace("oracle-calls") << arg <<" ";
+    Trace("oracle-calls") << arg << " ";
   }
   Trace("oracle-calls") << std::endl;
 
@@ -53,12 +53,12 @@ Node OracleCaller::callOracle(const Node fapp)
 
   // we assume that the oracle returns the result in SMT-LIB format
   std::istringstream oracle_response_istream(stdout_stream.str());
-  
+
   // we assume that an oracle has a return code of 0 or 10.
   if (run_result != 0 && run_result != 10)
   {
     Trace("oracle-calls") << "oracle " << d_binaryName
-                          << " has failed with exit code " << run_result 
+                          << " has failed with exit code " << run_result
                           << std::endl;
     Assert(run_result == 0 || run_result == 10);
   }

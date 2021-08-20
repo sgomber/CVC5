@@ -19,8 +19,8 @@
 
 #include "parser/parser_exception.h"
 #include "util/bitvector.h"
-#include "util/rational.h"
 #include "util/floatingpoint.h"
+#include "util/rational.h"
 
 namespace cvc5 {
 
@@ -116,7 +116,7 @@ Node mini_parsert::expression()
     case tokenizert::CLOSE: CVC5_FALLTHROUGH;
     case tokenizert::STRING_LITERAL: CVC5_FALLTHROUGH;
     case tokenizert::NONE: CVC5_FALLTHROUGH;
-    case tokenizert::KEYWORD: 
+    case tokenizert::KEYWORD:
       throw parser::ParserException("unexpected token in an expression");
   }
 
@@ -151,9 +151,7 @@ Node mini_parsert::function_application()
             throw parser::ParserException(
                 "expected ')' after bitvector literal");
 
-          Node result = nm->mkConst(BitVector(
-              width,
-              Integer(valString,10)));
+          Node result = nm->mkConst(BitVector(width, Integer(valString, 10)));
           return result;
         }
         else if (id == "+oo" || id == "-oo" || id == "NaN")

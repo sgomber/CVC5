@@ -14,9 +14,10 @@
  */
 
 #include "tokenizer.h"
-#include "parser/parser_exception.h"
 
 #include <istream>
+
+#include "parser/parser_exception.h"
 
 namespace cvc5 {
 
@@ -26,11 +27,10 @@ bool tokenizert::is_simple_symbol_character(char ch)
   // ~ ! @ $ % ^ & * _ - + = < > . ? /
   // that does not start with a digit and is not a reserved word.
 
-  return isalnum(ch) ||
-     ch=='~' || ch=='!' || ch=='@' || ch=='$' || ch=='%' ||
-     ch=='^' || ch=='&' || ch=='*' || ch=='_' || ch=='-' ||
-     ch=='+' || ch=='=' || ch=='<' || ch=='>' || ch=='.' ||
-     ch=='?' || ch=='/';
+  return isalnum(ch) || ch == '~' || ch == '!' || ch == '@' || ch == '$'
+         || ch == '%' || ch == '^' || ch == '&' || ch == '*' || ch == '_'
+         || ch == '-' || ch == '+' || ch == '=' || ch == '<' || ch == '>'
+         || ch == '.' || ch == '?' || ch == '/';
 }
 
 tokenizert::tokent tokenizert::get_simple_symbol()
@@ -42,22 +42,22 @@ tokenizert::tokent tokenizert::get_simple_symbol()
   buffer.clear();
 
   char ch;
-  while(in->get(ch))
+  while (in->get(ch))
   {
-    if(is_simple_symbol_character(ch))
+    if (is_simple_symbol_character(ch))
     {
-      buffer+=ch;
+      buffer += ch;
     }
     else
     {
-      in->unget(); // put back
+      in->unget();  // put back
       quoted_symbol = false;
       return SYMBOL;
     }
   }
 
   // eof -- this is ok here
-  if(buffer.empty())
+  if (buffer.empty())
     return END_OF_FILE;
   else
   {
@@ -73,21 +73,21 @@ tokenizert::tokent tokenizert::get_decimal_numeral()
   buffer.clear();
 
   char ch;
-  while(in->get(ch))
+  while (in->get(ch))
   {
-    if(isdigit(ch) || ch=='.')
+    if (isdigit(ch) || ch == '.')
     {
-      buffer+=ch;
+      buffer += ch;
     }
     else
     {
-      in->unget(); // put back
+      in->unget();  // put back
       return NUMERAL;
     }
   }
 
   // eof -- this is ok here
-  if(buffer.empty())
+  if (buffer.empty())
     return END_OF_FILE;
   else
     return NUMERAL;
@@ -98,25 +98,25 @@ tokenizert::tokent tokenizert::get_bin_numeral()
   // we accept any sequence of '0' or '1'
 
   buffer.clear();
-  buffer+='#';
-  buffer+='b';
+  buffer += '#';
+  buffer += 'b';
 
   char ch;
-  while(in->get(ch))
+  while (in->get(ch))
   {
-    if(ch=='0' || ch=='1')
+    if (ch == '0' || ch == '1')
     {
-      buffer+=ch;
+      buffer += ch;
     }
     else
     {
-      in->unget(); // put back
+      in->unget();  // put back
       return NUMERAL;
     }
   }
 
   // eof -- this is ok here
-  if(buffer.empty())
+  if (buffer.empty())
     return END_OF_FILE;
   else
     return NUMERAL;
@@ -127,25 +127,25 @@ tokenizert::tokent tokenizert::get_hex_numeral()
   // we accept any sequence of '0'-'9', 'a'-'f', 'A'-'F'
 
   buffer.clear();
-  buffer+='#';
-  buffer+='x';
+  buffer += '#';
+  buffer += 'x';
 
   char ch;
-  while(in->get(ch))
+  while (in->get(ch))
   {
-    if(isxdigit(ch))
+    if (isxdigit(ch))
     {
-      buffer+=ch;
+      buffer += ch;
     }
     else
     {
-      in->unget(); // put back
+      in->unget();  // put back
       return NUMERAL;
     }
   }
 
   // eof -- this is ok here
-  if(buffer.empty())
+  if (buffer.empty())
     return END_OF_FILE;
   else
     return NUMERAL;
@@ -161,18 +161,17 @@ tokenizert::tokent tokenizert::get_quoted_symbol()
   buffer.clear();
 
   char ch;
-  while(in->get(ch))
+  while (in->get(ch))
   {
-    if(ch=='|')
+    if (ch == '|')
     {
       quoted_symbol = true;
-      return SYMBOL; // done
+      return SYMBOL;  // done
     }
 
-    buffer+=ch;
+    buffer += ch;
 
-    if(ch=='\n')
-      line_no++;
+    if (ch == '\n') line_no++;
   }
 
   // Hmpf. Eof before end of quoted symbol. This is an error.
@@ -184,26 +183,26 @@ tokenizert::tokent tokenizert::get_string_literal()
   buffer.clear();
 
   char ch;
-  while(in->get(ch))
+  while (in->get(ch))
   {
-    if(ch=='"')
+    if (ch == '"')
     {
       // quotes may be escaped by repeating
-      if(in->get(ch))
+      if (in->get(ch))
       {
-        if(ch=='"')
+        if (ch == '"')
         {
         }
         else
         {
           in->unget();
-          return STRING_LITERAL; // done
+          return STRING_LITERAL;  // done
         }
       }
       else
-        return STRING_LITERAL; // done
+        return STRING_LITERAL;  // done
     }
-    buffer+=ch;
+    buffer += ch;
   }
 
   // Hmpf. Eof before end of string literal. This is an error.
@@ -212,7 +211,7 @@ tokenizert::tokent tokenizert::get_string_literal()
 
 tokenizert::tokent tokenizert::next_token()
 {
-  if(peeked)
+  if (peeked)
     peeked = false;
   else
     get_token_from_stream();
@@ -224,103 +223,101 @@ void tokenizert::get_token_from_stream()
 {
   char ch;
 
-  while(in->get(ch))
+  while (in->get(ch))
   {
-    switch(ch)
+    switch (ch)
     {
-    case '\n':
-      line_no++;
-      break;
+      case '\n': line_no++; break;
 
-    case ' ':
-    case '\r':
-    case '\t':
-    case static_cast<char>(160): // non-breaking space
-      // skip any whitespace
-      break;
+      case ' ':
+      case '\r':
+      case '\t':
+      case static_cast<char>(160):  // non-breaking space
+        // skip any whitespace
+        break;
 
-    case ';': // comment
-      // skip until newline
-      while(in->get(ch))
-      {
-        if(ch=='\n')
+      case ';':  // comment
+        // skip until newline
+        while (in->get(ch))
         {
-          line_no++;
-          break;
+          if (ch == '\n')
+          {
+            line_no++;
+            break;
+          }
         }
-      }
-      break;
+        break;
 
-    case '(':
-      // produce sub-expression
-      token = OPEN;
-      return;
-
-    case ')':
-      // done with sub-expression
-      token = CLOSE;
-      return;
-
-    case '|': // quoted symbol
-      token = get_quoted_symbol();
-      return;
-
-    case '"': // string literal
-      token = get_string_literal();
-      return;
-
-    case ':': // keyword
-      token = get_simple_symbol();
-      if(token == SYMBOL)
-      {
-        token = KEYWORD;
+      case '(':
+        // produce sub-expression
+        token = OPEN;
         return;
-      }
-      else
-        throw parser::ParserException("expecting symbol after colon");
 
-    case '#':
-      if(in->get(ch))
-      {
-        if(ch=='b')
+      case ')':
+        // done with sub-expression
+        token = CLOSE;
+        return;
+
+      case '|':  // quoted symbol
+        token = get_quoted_symbol();
+        return;
+
+      case '"':  // string literal
+        token = get_string_literal();
+        return;
+
+      case ':':  // keyword
+        token = get_simple_symbol();
+        if (token == SYMBOL)
         {
-          token = get_bin_numeral();
-          return;
-        }
-        else if(ch=='x')
-        {
-          token = get_hex_numeral();
+          token = KEYWORD;
           return;
         }
         else
-          throw parser::ParserException("unknown numeral token");
-      }
-      else
-        throw parser::ParserException("unexpected EOF in numeral token");
-      break;
+          throw parser::ParserException("expecting symbol after colon");
 
-    default: // likely a simple symbol or a numeral
-      if(isdigit(ch))
-      {
-        in->unget();
-        token = get_decimal_numeral();
-        return;
-      }
-      else if(is_simple_symbol_character(ch))
-      {
-        in->unget();
-        token = get_simple_symbol();
-        return;
-      }
-      else
-      {
-        // illegal character, error
-        throw parser::ParserException("unexpected character ");
-      }
+      case '#':
+        if (in->get(ch))
+        {
+          if (ch == 'b')
+          {
+            token = get_bin_numeral();
+            return;
+          }
+          else if (ch == 'x')
+          {
+            token = get_hex_numeral();
+            return;
+          }
+          else
+            throw parser::ParserException("unknown numeral token");
+        }
+        else
+          throw parser::ParserException("unexpected EOF in numeral token");
+        break;
+
+      default:  // likely a simple symbol or a numeral
+        if (isdigit(ch))
+        {
+          in->unget();
+          token = get_decimal_numeral();
+          return;
+        }
+        else if (is_simple_symbol_character(ch))
+        {
+          in->unget();
+          token = get_simple_symbol();
+          return;
+        }
+        else
+        {
+          // illegal character, error
+          throw parser::ParserException("unexpected character ");
+        }
     }
   }
 
   token = END_OF_FILE;
 }
 
-}
+}  // namespace cvc5
