@@ -1035,7 +1035,7 @@ class CVC5_EXPORT SmtEngine
   /**
    * Get assertions internal, which is only called after initialization. This
    * should be used internally to get the assertions instead of getAssertions
-   * or getExpandedAssertions, which may trigger initialization and state
+   * or getExpandedAssertions, which may trigger initialization and SMT state
    * changes.
    */
   std::vector<Node> getAssertionsInternal();

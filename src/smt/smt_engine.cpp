@@ -1236,8 +1236,9 @@ Model* SmtEngine::getModel() {
   {
     // If we enabled model cores, we compute a model core for m based on our
     // (expanded) assertions using the model core builder utility
-    std::vector<Node> eassertsProc = getExpandedAssertions();
-    ModelCoreBuilder::setModelCore(eassertsProc,
+    std::vector<Node> asserts = getAssertionsInternal();
+    d_pp->expandDefinitions(asserts);
+    ModelCoreBuilder::setModelCore(asserts,
                                    m->getTheoryModel(),
                                    d_env->getOptions().smt.modelCoresMode);
   }
