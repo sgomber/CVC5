@@ -1754,14 +1754,32 @@ void GetModelCommand::invoke(api::Solver* solver, SymbolManager* sm)
   try
   {
     d_result = solver->getSmtEngine()->getModel();
+    //Printer * p = Printer::getPrinter(language);
+    // print the declared sorts
+    std::vector<api::Sort> declareSorts = sm->getModelDeclareSorts();
+    for (const api::Sort& s : declareSorts)
+    {
+      //toStreamModelSort(out, m, tn);
+    }
+    // print the declared terms
+    std::vector<api::Term> declareTerms = sm->getModelDeclareTerms();
+    for (const api::Term& t : declareTerms)
+    {
+      // take into account model core, independently of the format
+      if (!solver->isModelCoreSymbol(t))
+      {
+      Trace("model-core") << "Not model core: " << t << std::endl;
+        continue;
+      }
+      Trace("model-core") << "Model core: " << t << std::endl;
+      //toStreamModelTerm(out, m, n);
+    }
     // set the model declarations, which determines what is printed in the model
     d_result->clearModelDeclarations();
-    std::vector<api::Sort> declareSorts = sm->getModelDeclareSorts();
     for (const api::Sort& s : declareSorts)
     {
       d_result->addDeclarationSort(sortToTypeNode(s));
     }
-    std::vector<api::Term> declareTerms = sm->getModelDeclareTerms();
     for (const api::Term& t : declareTerms)
     {
       d_result->addDeclarationTerm(termToNode(t));

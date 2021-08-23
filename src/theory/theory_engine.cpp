@@ -646,12 +646,14 @@ TheoryModel* TheoryEngine::getBuiltModel()
   AlwaysAssert(options::produceModels());
   if (!d_inSatMode)
   {
+    Trace("ajr-temp") << "...not SAT mode" << std::endl;
     // not available, perhaps due to interuption.
     return nullptr;
   }
   // must build model at this point
   if (!d_tc->buildModel())
   {
+    Trace("ajr-temp") << "...failed build" << std::endl;
     return nullptr;
   }
   return d_tc->getModel();
