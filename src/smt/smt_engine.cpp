@@ -1238,9 +1238,8 @@ Model* SmtEngine::getModel() {
     // (expanded) assertions using the model core builder utility
     std::vector<Node> asserts = getAssertionsInternal();
     d_pp->expandDefinitions(asserts);
-    ModelCoreBuilder::setModelCore(asserts,
-                                   m->getTheoryModel(),
-                                   d_env->getOptions().smt.modelCoresMode);
+    ModelCoreBuilder::setModelCore(
+        asserts, m->getTheoryModel(), d_env->getOptions().smt.modelCoresMode);
   }
   // set the information on the SMT-level model
   Assert(m != nullptr);
