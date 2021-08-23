@@ -138,7 +138,7 @@ Node Preprocessor::expandDefinitions(const Node& node,
 void Preprocessor::expandDefinitions(std::vector<Node>& ns)
 {
   std::unordered_map<Node, Node> cache;
-  for (size_t i=0, nasserts=ns.size(); i<nasserts; i++)
+  for (size_t i = 0, nasserts = ns.size(); i < nasserts; i++)
   {
     ns[i] = expandDefinitions(ns[i], cache);
   }

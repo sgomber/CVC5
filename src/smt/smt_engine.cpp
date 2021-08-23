@@ -1331,7 +1331,7 @@ std::pair<Node, Node> SmtEngine::getSepHeapAndNilExpr(void)
 
 std::vector<Node> SmtEngine::getAssertionsInternal()
 {
-  Assert (d_state->isFullyInited());
+  Assert(d_state->isFullyInited());
   context::CDList<Node>* al = d_asserts->getAssertionList();
   Assert(al != nullptr);
   std::vector<Node> res;
