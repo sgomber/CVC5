@@ -892,7 +892,7 @@ void SetDefaults::setDefaults(LogicInfo& logic, Options& opts)
   }
   else if (opts.smt.sortInference)
   {
-    disableModels = true;
+    //disableModels = true;
     sOptNoModel = "sort-inference";
   }
   else if (opts.prop.minisatUseElim)
