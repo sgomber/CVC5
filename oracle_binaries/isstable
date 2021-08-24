@@ -1,4 +1,8 @@
-echo isstable_exec "$1" "$2" "$3" "$4" >> oracle_log.file
-isstable_exec "$1" "$2" "$3" "$4"  > result.file 2>&1
-cat result.file
+echo isstable_exec "$1" "$2" "$3" "$4" >> isstable_oracle_log.file
+isstable_exec "$1" "$2" "$3" "$4"  > isstable_result.file 2>&1
+cat isstable_result.file
 
+# mac only
+# echo isstable_exec_mac "$1" "$2" "$3" "$4" >> isstable_oracle_log.file
+# isstable_exec_mac "$1" "$2" "$3" "$4"  > isstable_result.file 2>&1
+# cat isstable_result.file
