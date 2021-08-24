@@ -1,0 +1,4 @@
+echo isstable_exec "$1" "$2" "$3" "$4" >> oracle_log.file
+isstable_exec "$1" "$2" "$3" "$4"  > result.file 2>&1
+cat result.file
+
