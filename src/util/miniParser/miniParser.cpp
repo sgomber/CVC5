@@ -120,7 +120,7 @@ Node mini_parsert::expression()
       throw parser::ParserException("unexpected token in an expression");
   }
 
-  Assert(0);
+  Unhandled();
 }
 
 Node mini_parsert::function_application()
@@ -297,7 +297,7 @@ Node mini_parsert::function_application()
       return tmp;
   }
 
-  Assert(0);  // unreachable
+  Unhandled();  // unreachable
 }
 
 // here we parse floats constructed with "(fp ...)"
