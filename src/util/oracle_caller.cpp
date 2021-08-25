@@ -60,7 +60,7 @@ Node OracleCaller::callOracle(const Node fapp)
     Trace("oracle-calls") << "oracle " << d_binaryName
                           << " has failed with exit code " << run_result
                           << std::endl;
-    Assert(run_result == 0 || run_result == 10);
+    AlwaysAssert(run_result == 0 || run_result == 10);
   }
 
   // parse response into a Node
