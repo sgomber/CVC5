@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# script is used for FNT division
-
 here=`dirname $0`
 cvc5=$here/cvc5
 bench="$1"
@@ -9,7 +7,7 @@ bench="$1"
 file=${bench##*/}
 filename=${file%.*}
 
-echo "------- cvc5-fnt : $bench at $2..."
+echo "------- cvc5-thf for SAT : $bench at $2..."
 
 # use: trywith [params..]
 # to attempt a run.  If an SZS ontology result is printed, then
@@ -18,7 +16,7 @@ echo "------- cvc5-fnt : $bench at $2..."
 function trywith {
   limit=$1; shift;
   echo "--- Run $@ at $limit...";
-  (ulimit -S -t "$limit";$cvc5 --lang=tptp --no-type-checking --no-interactive --dump-models --force-no-limit-cpu-while-dump "$@" $bench) 2>/dev/null |
+  (ulimit -S -t "$limit";$cvc5 --lang=tptp --no-checking --no-interactive --force-logic="UFNIRA" --dump-models --force-no-limit-cpu-while-dump "$@" $bench) 2>/dev/null |
   (read w1 w2 w3 result w4 w5;
   case "$result" in
   Satisfiable) echo "$w1 $w2 $w3 $result $w4 $w5";cat;exit 0;;
@@ -28,10 +26,10 @@ function trywith {
 }
 function finishwith {
   echo "--- Run $@...";
-  $cvc5 --lang=tptp --no-type-checking --no-interactive --dump-models --force-no-limit-cpu-while-dump "$@" $bench
+  $cvc5 --lang=tptp --no-type-checking --no-interactive --force-logic="UFNIRA" --dump-models --force-no-limit-cpu-while-dump "$@" $bench
 }
 
-# designed for 120 seconds
-trywith 30 --finite-model-find
-finishwith --finite-model-find --macros-quant --macros-quant-mode=all --sort-inference
+# designed for 300 seconds
+trywith 2 --uf-ho --finite-model-find --ho-elim
+finishwith --uf-ho --finite-model-find
 # echo "% SZS status" "GaveUp for $filename"
