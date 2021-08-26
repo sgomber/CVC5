@@ -105,7 +105,7 @@ class DTypeConstructor
    * variable, or constant that this constructor encodes in this deep embedding.
    */
   Node getSygusOp() const;
-  /** 
+  /**
    * Get the external sygus operator, which is how the constructor should be
    * printed in a final solution. This differs from the above method
    */
