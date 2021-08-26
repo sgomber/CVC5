@@ -22,8 +22,6 @@
 #include "expr/node_algorithm.h"
 #include "expr/sygus_datatype.h"
 #include "smt/env.h"
-#include "smt/smt_engine.h"
-#include "smt/smt_engine_scope.h"
 #include "theory/evaluator.h"
 #include "theory/rewriter.h"
 
@@ -179,11 +177,6 @@ Node mkSygusTerm(const DType& dt,
       }
       else
       {
-        // Only expand definitions if the operator is not constant, since
-        // calling expandDefinitions on them should be a no-op. This check
-        // ensures we don't try to expand e.g. bitvector extract operators,
-        // whose type is undefined, and thus should not be passed to
-        // expandDefinitions.
         opn = Rewriter::rewrite(opn);
         SygusOpRewrittenAttribute sora;
         opn.setAttribute(sora, opn);
