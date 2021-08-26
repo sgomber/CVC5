@@ -84,8 +84,10 @@ void SygusDatatype::initializeDatatype(TypeNode sygusType,
   d_dt.setSygus(sygusType, sygusVars, allowConst, allowAll);
   for (unsigned i = 0, ncons = d_cons.size(); i < ncons; ++i)
   {
-    // add (sygus) constructor
+    // add (sygus) constructor, notice we assume that the external
+    // operator is the same as the internal one
     d_dt.addSygusConstructor(d_cons[i].d_op,
+                             d_cons[i].d_op,
                              d_cons[i].d_name,
                              d_cons[i].d_argTypes,
                              d_cons[i].d_weight);

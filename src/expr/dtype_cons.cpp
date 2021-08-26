@@ -90,16 +90,22 @@ Node DTypeConstructor::getTester() const
   return d_tester;
 }
 
-void DTypeConstructor::setSygus(Node op)
+void DTypeConstructor::setSygus(Node op, Node oop)
 {
   Assert(!isResolved());
   d_sygusOp = op;
+  d_sygusOpExt = oop.isNull() ? op : oop;
 }
 
 Node DTypeConstructor::getSygusOp() const
 {
   Assert(isResolved());
   return d_sygusOp;
+}
+Node DTypeConstructor::getExternalSygusOp() const
+{
+  Assert(isResolved());
+  return d_sygusOpExt;
 }
 
 bool DTypeConstructor::isSygusIdFunc() const

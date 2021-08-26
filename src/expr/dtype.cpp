@@ -228,6 +228,7 @@ void DType::addConstructor(std::shared_ptr<DTypeConstructor> c)
 }
 
 void DType::addSygusConstructor(Node op,
+                                Node eop,
                                 const std::string& cname,
                                 const std::vector<TypeNode>& cargs,
                                 int weight)
@@ -239,7 +240,7 @@ void DType::addSygusConstructor(Node op,
   unsigned cweight = weight >= 0 ? weight : (cargs.empty() ? 0 : 1);
   std::shared_ptr<DTypeConstructor> c =
       std::make_shared<DTypeConstructor>(name, cweight);
-  c->setSygus(op);
+  c->setSygus(op, eop);
   for (size_t j = 0, nargs = cargs.size(); j < nargs; j++)
   {
     std::stringstream sname;

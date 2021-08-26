@@ -173,6 +173,8 @@ class DType
    *
    * @param op : the builtin operator, constant, or variable that this
    * constructor encodes
+   * @param eop : the external form of the operator (see
+   * DTypeConstructor::getExternalSygusOp).
    * @param cname the name of the constructor (for printing only)
    * @param cargs the arguments of the constructor.
    * It should be the case that cargs are sygus datatypes that
@@ -185,6 +187,7 @@ class DType
    * constructors.
    */
   void addSygusConstructor(Node op,
+                           Node eop,
                            const std::string& cname,
                            const std::vector<TypeNode>& cargs,
                            int weight = -1);

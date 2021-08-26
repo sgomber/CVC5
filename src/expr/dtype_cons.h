@@ -95,9 +95,9 @@ class DTypeConstructor
   /** set sygus
    *
    * Set that this constructor is a sygus datatype constructor that encodes
-   * operator op.
+   * operator op, where eop is the external operator (see below).
    */
-  void setSygus(Node op);
+  void setSygus(Node op, Node eop = Node::null());
   /** get sygus op
    *
    * This method returns the operator or term that this constructor represents
@@ -105,6 +105,11 @@ class DTypeConstructor
    * variable, or constant that this constructor encodes in this deep embedding.
    */
   Node getSygusOp() const;
+  /** 
+   * Get the external sygus operator, which is how the constructor should be
+   * printed in a final solution. This differs from the above method
+   */
+  Node getExternalSygusOp() const;
   /** is this a sygus identity function?
    *
    * This returns true if the sygus operator of this datatype constructor is
@@ -315,6 +320,8 @@ class DTypeConstructor
   std::vector<std::shared_ptr<DTypeSelector> > d_args;
   /** sygus operator */
   Node d_sygusOp;
+  /** external sygus operator */
+  Node d_sygusOpExt;
   /** weight */
   unsigned d_weight;
   /** shared selectors for each type
