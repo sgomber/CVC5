@@ -155,10 +155,11 @@ Node mkSygusTerm(const DType& dt,
   }
   else
   {
-    opn = dt[i].getSygusOp();
+    Node op = dt[i].getSygusOp();
+    opn = op;
     // Get the normalized version of the sygus operator. We do this by
     // expanding definitions, rewriting it, and eliminating partial operators.
-    if (!opn.hasAttribute(SygusOpRewrittenAttribute()))
+    if (!op.hasAttribute(SygusOpRewrittenAttribute()))
     {
       if (opn.isConst())
       {
@@ -179,12 +180,12 @@ Node mkSygusTerm(const DType& dt,
       {
         opn = Rewriter::rewrite(opn);
         SygusOpRewrittenAttribute sora;
-        opn.setAttribute(sora, opn);
+        op.setAttribute(sora, opn);
       }
     }
     else
     {
-      opn = opn.getAttribute(SygusOpRewrittenAttribute());
+      opn = op.getAttribute(SygusOpRewrittenAttribute());
     }
   }
   return mkSygusTerm(opn, children, doBetaReduction);
