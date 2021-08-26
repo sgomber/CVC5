@@ -4612,10 +4612,10 @@ void Grammar::addSygusConstructorTerm(
                   cvc5::kind::LAMBDA, *lbvl.d_node, *op.d_node));
   }
   std::vector<TypeNode> cargst = Sort::sortVectorToTypeNodes(cargs);
-  Node ne = *op.d_node;
+  Node n = *op.d_node;
   // must compute its expanded form
-  Node n = d_smtEngine->expandDefinitions(ne);
-  dt.d_dtype->addSygusConstructor(n, ne, ssCName.str(), cargst);
+  Node nexp = n.isConst() ? n : d_solver->getSmtEngine()->expandDefinitions(n);
+  dt.d_dtype->addSygusConstructor(nexp, n, ssCName.str(), cargst);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -4695,7 +4695,8 @@ void Grammar::addSygusConstructorVariables(DatatypeDecl& dt,
       std::stringstream ss;
       ss << v;
       std::vector<TypeNode> cargs;
-      dt.d_dtype->addSygusConstructor(*v.d_node, ss.str(), cargs);
+      Node vn = *v.d_node;
+      dt.d_dtype->addSygusConstructor(vn, vn, ss.str(), cargs);
     }
   }
   ////////
