@@ -41,8 +41,8 @@ Node OracleCaller::callOracle(const Node fapp)
   {
     std::ostringstream oss;
     oss << arg;
-    string_args.push_back(" \"" + oss.str() + "\"");
-    Trace("oracle-calls") << arg << " ";
+    string_args.push_back(oss.str());
+    Trace("oracle-calls") << " \""<<  arg << "\" ";
   }
   Trace("oracle-calls") << std::endl;
 
@@ -53,19 +53,20 @@ Node OracleCaller::callOracle(const Node fapp)
 
   // we assume that the oracle returns the result in SMT-LIB format
   std::istringstream oracle_response_istream(stdout_stream.str());
+  Trace("oracle-calls") <<" response "<< stdout_stream.str() << " and run result " << run_result << std::endl;
 
-  // we assume that an oracle has a return code of 0 or 10.
-  if (run_result != 0 && run_result != 10)
-  {
-    Trace("oracle-calls") << "oracle " << d_binaryName
-                          << " has failed with exit code " << run_result
-                          << std::endl;
-    AlwaysAssert(run_result == 0 || run_result == 10);
-  }
+  // // we assume that an oracle has a return code of 0 or 10.
+  // if (run_result != 0 && run_result != 10)
+  // {
+  //   Trace("oracle-calls") << "oracle " << d_binaryName
+  //                         << " has failed with exit code " << run_result
+  //                         << std::endl;
+  //   AlwaysAssert(run_result == 0 || run_result == 10);
+  // }
 
   // parse response into a Node
   Node response = mini_parsert(oracle_response_istream).expression();
-  Trace("oracle-calls") << "response " << response << std::endl;
+  Trace("oracle-calls") << "response node " << response << std::endl;
   d_cachedResults[fapp] = response;
   return response;
 }
