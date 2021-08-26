@@ -17,6 +17,8 @@
 
 #include <sstream>
 
+#include "options/base_options.h"
+#include "options/outputc.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "util/bitvector.h"
 #include "util/miniParser/miniParser.h"
@@ -33,7 +35,7 @@ Node OracleCaller::callOracle(const Node fapp)
                           << std::endl;
     return d_cachedResults.at(fapp);
   }
-  Trace("oracle-calls") << "Running oracle: " << d_binaryName << " ";
+  Output(options::OutputTag::ORACLES) << "Running oracle: " << d_binaryName << " ";
   std::vector<std::string> string_args;
   string_args.push_back(d_binaryName);
 
@@ -41,10 +43,10 @@ Node OracleCaller::callOracle(const Node fapp)
   {
     std::ostringstream oss;
     oss << arg;
-    string_args.push_back(" \"" + oss.str() + "\"");
-    Trace("oracle-calls") << arg << " ";
+    string_args.push_back(oss.str());
+    Output(options::OutputTag::ORACLES) << " \""<<  arg << "\" ";
   }
-  Trace("oracle-calls") << std::endl;
+  Output(options::OutputTag::ORACLES) << std::endl;
 
   // run the oracle binary
   std::ostringstream stdout_stream;
@@ -53,19 +55,20 @@ Node OracleCaller::callOracle(const Node fapp)
 
   // we assume that the oracle returns the result in SMT-LIB format
   std::istringstream oracle_response_istream(stdout_stream.str());
+  Output(options::OutputTag::ORACLES) <<" response "<< stdout_stream.str() << " with run result " << run_result << std::endl;
 
-  // we assume that an oracle has a return code of 0 or 10.
-  if (run_result != 0 && run_result != 10)
-  {
-    Trace("oracle-calls") << "oracle " << d_binaryName
-                          << " has failed with exit code " << run_result
-                          << std::endl;
-    AlwaysAssert(run_result == 0 || run_result == 10);
-  }
+  // // we assume that an oracle has a return code of 0 or 10.
+  // if (run_result != 0 && run_result != 10)
+  // {
+  //   Trace("oracle-calls") << "oracle " << d_binaryName
+  //                         << " has failed with exit code " << run_result
+  //                         << std::endl;
+  //   AlwaysAssert(run_result == 0 || run_result == 10);
+  // }
 
   // parse response into a Node
   Node response = mini_parsert(oracle_response_istream).expression();
-  Trace("oracle-calls") << "response " << response << std::endl;
+  Trace("oracle-calls") << "response node " << response << std::endl;
   d_cachedResults[fapp] = response;
   return response;
 }
