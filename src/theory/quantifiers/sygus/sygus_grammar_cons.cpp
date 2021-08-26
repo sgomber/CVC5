@@ -1234,7 +1234,7 @@ void CegGrammarConstructor::mkSygusDefaultGrammar(
         // a generalization of a non-Boolean variable (which has weight 0).
         // This ensures that e.g. ( c1*x >= 0 ) has the same weight as
         // ( x >= 0 ).
-        sdts[iat].d_sdt.addConstructor(op, ssop.str(), opCArgs, 0);
+        sdts[iat].d_sdt.addConstructor(op, op, ssop.str(), opCArgs, 0);
       }
     }
     if (polynomialGrammar)
@@ -1255,7 +1255,7 @@ void CegGrammarConstructor::mkSygusDefaultGrammar(
       // a simultaneous generalization of set of non-Boolean variables.
       // This ensures that ( c1*x + c2*y >= 0 ) has the same weight as
       // e.g. ( x >= 0 ) or ( y >= 0 ).
-      sdts[iat].d_sdt.addConstructor(op, "polynomial", cargsAnyTerm, 0);
+      sdts[iat].d_sdt.addConstructor(op, op, "polynomial", cargsAnyTerm, 0);
       // mark that predicates should be of the form (= pol 0) and (<= pol 0)
       itgat->second.second = true;
     }
@@ -1560,7 +1560,7 @@ TypeNode CegGrammarConstructor::mkSygusTemplateTypeRec( Node templ, Node templ_a
     std::stringstream ssdc;
     ssdc << fun << "_templ_cons_" << tcount;
     // we have a single sygus constructor that encodes the template
-    sdts.back().addConstructor(op, ssdc.str(), argTypes);
+    sdts.back().addConstructor(op, op, ssdc.str(), argTypes);
     sdts.back().initializeDatatype(templ.getType(), bvl, true, true);
     // extract the datatypes from the sygus datatype objects
     std::vector<DType> datatypes;
@@ -1595,7 +1595,8 @@ void CegGrammarConstructor::SygusDatatypeGenerator::addConstructor(
 {
   if (shouldInclude(op))
   {
-    d_sdt.addConstructor(op, name, consTypes, weight);
+    // always use the same external vs internal op
+    d_sdt.addConstructor(op, op, name, consTypes, weight);
   }
 }
 void CegGrammarConstructor::SygusDatatypeGenerator::addConstructor(

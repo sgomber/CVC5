@@ -283,7 +283,7 @@ PreprocessingPassResult SynthRewRulesPass::applyInternal(
       {
         std::stringstream ssc;
         ssc << "C_" << i << "_" << v;
-        sdts[i].addConstructor(v, ssc.str(), argList);
+        sdts[i].addConstructor(v, v, ssc.str(), argList);
       }
     }
     // add the constructor for the operator if it is not a variable
@@ -346,6 +346,7 @@ PreprocessingPassResult SynthRewRulesPass::applyInternal(
           sscs << "C_factor_" << i << "_" << j;
           // ID function is not printed and does not count towards weight
           sdts[i].addConstructor(lambdaOp,
+                                 lambdaOp,
                                  sscs.str(),
                                  argListc,
                                  0);
@@ -357,13 +358,13 @@ PreprocessingPassResult SynthRewRulesPass::applyInternal(
         argListc.push_back(recType);
         std::stringstream ssc;
         ssc << "C_" << i << "_rec_" << op;
-        sdts[i].addConstructor(op, ssc.str(), argListc);
+        sdts[i].addConstructor(op, op, ssc.str(), argListc);
       }
       else
       {
         std::stringstream ssc;
         ssc << "C_" << i << "_" << op;
-        sdts[i].addConstructor(op, ssc.str(), argList);
+        sdts[i].addConstructor(op, op, ssc.str(), argList);
       }
     }
     Assert(sdts[i].getNumConstructors() > 0);
@@ -414,6 +415,7 @@ PreprocessingPassResult SynthRewRulesPass::applyInternal(
       ssc << "Ctl_" << i;
       // the no-op should not be printed, hence we pass an empty callback
       sdttl.addConstructor(lambdaOp,
+                           lambdaOp,
                            ssc.str(),
                            argList,
                            0);

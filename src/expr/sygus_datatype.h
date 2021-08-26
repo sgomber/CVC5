@@ -42,6 +42,8 @@ class SygusDatatypeConstructor
  public:
   /** The operator that the constructor encodes. */
   Node d_op;
+  /** The external operator */
+  Node d_eop;
   /** Name of the constructor. */
   std::string d_name;
   /** List of argument types. */
@@ -86,6 +88,7 @@ class SygusDatatype
    * sygus datatype types that encode integer.
    */
   void addConstructor(Node op,
+                      Node eop,
                       const std::string& name,
                       const std::vector<TypeNode>& argTypes,
                       int weight = -1);

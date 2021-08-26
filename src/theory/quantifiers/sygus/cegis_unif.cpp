@@ -476,7 +476,7 @@ Node CegisUnifEnumDecisionStrategy::mkLiteral(unsigned n)
       unresolvedTypes.insert(u);
       std::vector<TypeNode> cargsEmpty;
       Node cr = nm->mkConst(Rational(1));
-      sdt.addConstructor(cr, "1", cargsEmpty);
+      sdt.addConstructor(cr, cr, "1", cargsEmpty);
       std::vector<TypeNode> cargsPlus;
       cargsPlus.push_back(u);
       cargsPlus.push_back(u);

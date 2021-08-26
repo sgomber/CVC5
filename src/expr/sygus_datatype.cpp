@@ -27,15 +27,18 @@ SygusDatatype::SygusDatatype(const std::string& name) : d_dt(DType(name)) {}
 std::string SygusDatatype::getName() const { return d_dt.getName(); }
 
 void SygusDatatype::addConstructor(Node op,
+                                   Node eop,
                                    const std::string& name,
                                    const std::vector<TypeNode>& argTypes,
                                    int weight)
 {
   d_cons.push_back(SygusDatatypeConstructor());
-  d_cons.back().d_op = op;
-  d_cons.back().d_name = name;
-  d_cons.back().d_argTypes = argTypes;
-  d_cons.back().d_weight = weight;
+  SygusDatatypeConstructor& sdc = d_cons.back();
+  sdc.d_op = op;
+  sdc.d_eop = eop.isNull() ? op : eop;
+  sdc.d_name = name;
+  sdc.d_argTypes = argTypes;
+  sdc.d_weight = weight;
 }
 
 void SygusDatatype::addAnyConstantConstructor(TypeNode tn)
@@ -52,14 +55,14 @@ void SygusDatatype::addAnyConstantConstructor(TypeNode tn)
   std::vector<TypeNode> builtinArg;
   builtinArg.push_back(tn);
   addConstructor(
-      av, cname, builtinArg, 0);
+      av, av, cname, builtinArg, 0);
 }
 void SygusDatatype::addConstructor(Kind k,
                                    const std::vector<TypeNode>& argTypes,
                                    int weight)
 {
-  NodeManager* nm = NodeManager::currentNM();
-  addConstructor(nm->operatorOf(k), kindToString(k), argTypes, weight);
+  Node op = NodeManager::currentNM()->operatorOf(k);
+  addConstructor(op, op, kindToString(k), argTypes, weight);
 }
 
 size_t SygusDatatype::getNumConstructors() const { return d_cons.size(); }
@@ -84,10 +87,9 @@ void SygusDatatype::initializeDatatype(TypeNode sygusType,
   d_dt.setSygus(sygusType, sygusVars, allowConst, allowAll);
   for (unsigned i = 0, ncons = d_cons.size(); i < ncons; ++i)
   {
-    // add (sygus) constructor, notice we assume that the external
-    // operator is the same as the internal one
+    // add (sygus) constructor
     d_dt.addSygusConstructor(d_cons[i].d_op,
-                             d_cons[i].d_op,
+                             d_cons[i].d_eop,
                              d_cons[i].d_name,
                              d_cons[i].d_argTypes,
                              d_cons[i].d_weight);

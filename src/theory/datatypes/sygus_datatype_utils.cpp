@@ -632,9 +632,11 @@ TypeNode substituteAndGeneralizeSygusType(TypeNode sdt,
       for (unsigned j = 0, ncons = dtc.getNumConstructors(); j < ncons; j++)
       {
         Node op = dtc[j].getSygusOp();
+        Node eop = dtc[j].getSygusOp();
         // apply the substitution to the argument
         Node ops =
             op.substitute(syms.begin(), syms.end(), vars.begin(), vars.end());
+            Node eops = eop.substitute(syms.begin(), syms.end(), vars.begin(), vars.end());
         Trace("dtsygus-gen-debug") << "  Process constructor " << op << " / "
                                    << ops << "..." << std::endl;
         std::vector<TypeNode> cargs;
@@ -666,7 +668,7 @@ TypeNode substituteAndGeneralizeSygusType(TypeNode sdt,
         std::stringstream ss;
         ss << ops.getKind();
         Trace("dtsygus-gen-debug") << "Add constructor : " << ops << std::endl;
-        sdts.back().addConstructor(ops, ss.str(), cargs);
+        sdts.back().addConstructor(ops, eops, ss.str(), cargs);
       }
       Trace("dtsygus-gen-debug")
           << "Set sygus : " << dtc.getSygusType() << " " << abvl << std::endl;

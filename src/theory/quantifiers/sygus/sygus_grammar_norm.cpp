@@ -102,7 +102,7 @@ void SygusGrammarNorm::TypeObject::addConsInfo(
   }
 
   d_sdt.addConstructor(
-      sygus_op, cons.getName(), consTypes, cons.getWeight());
+      sygus_op, cons.getExternalSygusOp(), cons.getName(), consTypes, cons.getWeight());
 }
 
 void SygusGrammarNorm::TypeObject::initializeDatatype(
@@ -218,6 +218,7 @@ void SygusGrammarNorm::TransfChain::buildType(SygusGrammarNorm* sygus_norm,
     std::vector<TypeNode> ctypes;
     ctypes.push_back(t);
     to.d_sdt.addConstructor(iden_op,
+                            iden_op,
                             "id",
                             ctypes,
                             0);
@@ -227,7 +228,8 @@ void SygusGrammarNorm::TransfChain::buildType(SygusGrammarNorm* sygus_norm,
     std::vector<TypeNode> ctypesp;
     ctypesp.push_back(t);
     ctypesp.push_back(to.d_unres_tn);
-    to.d_sdt.addConstructor(nm->operatorOf(PLUS), kindToString(PLUS), ctypesp);
+    Node plusOp = nm->operatorOf(PLUS);
+    to.d_sdt.addConstructor(plusOp, plusOp, kindToString(PLUS), ctypesp);
     Trace("sygus-grammar-normalize-chain")
         << "\tAdding PLUS to " << to.d_unres_tn << " with arg types "
         << to.d_unres_tn << " and " << t << "\n";
@@ -259,6 +261,7 @@ void SygusGrammarNorm::TransfChain::buildType(SygusGrammarNorm* sygus_norm,
   std::vector<TypeNode> ctypes;
   ctypes.push_back(sygus_norm->normalizeSygusRec(to.d_tn, dt, d_elem_pos));
   to.d_sdt.addConstructor(iden_op,
+                          iden_op,
                           "id_next",
                           ctypes,
                           0);
@@ -443,7 +446,7 @@ TypeNode SygusGrammarNorm::normalizeSygusRec(TypeNode tn,
         std::stringstream ss;
         ss << op;
         std::vector<TypeNode> ctypes;
-        to.d_sdt.addConstructor(op, ss.str(), ctypes);
+        to.d_sdt.addConstructor(op, op, ss.str(), ctypes);
       }
     }
   }
