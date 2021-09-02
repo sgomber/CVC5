@@ -214,7 +214,10 @@ void SygusInst::reset_round(Theory::Effort e)
   for (uint32_t i = 0; i < nasserted; ++i)
   {
     Node q = model->getAssertedQuantifier(i);
-
+    // We only process the quantified formula if we have ownership of it. Notice
+    // this excludes quantified formulas that e.g. cegqi has taken ownership,
+    // which will be the case for any pure LIA/LRA quantified formulas when
+    // both cegqi and syqi are enabled at the same time.
     if (model->isQuantifierActive(q) && d_qreg.hasOwnership(q, this))
     {
       d_active_quant.insert(q);
