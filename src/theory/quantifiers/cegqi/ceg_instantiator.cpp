@@ -286,7 +286,7 @@ CegHandledStatus CegInstantiator::isCbqiTerm(Node n)
     if (visited.find(cur) == visited.end())
     {
       visited.insert(cur);
-      if (cur.getKind() != BOUND_VARIABLE && !cur.isConst())
+      if (!cur.isVar() && !cur.isConst())
       {
         if (cur.getKind() == FORALL || cur.getKind() == WITNESS)
         {
@@ -295,6 +295,14 @@ CegHandledStatus CegInstantiator::isCbqiTerm(Node n)
         else
         {
           CegHandledStatus curr = isCbqiKind(cur.getKind());
+          if (curr==CEG_UNHANDLED)
+          {
+            // ground terms can always be partially handled
+            if (!TermUtil::hasBoundVarAttr(cur))
+            {
+              curr = CEG_PARTIALLY_HANDLED;
+            }
+          }
           if (curr < ret)
           {
             ret = curr;
