@@ -720,8 +720,11 @@ void SetDefaults::setDefaultsPost(const LogicInfo& logic, Options& opts) const
   }
 
   // set all defaults in the quantifiers theory, which includes sygus
-  setDefaultsQuantifiers(logic, opts);
-
+  if (logic.isTheoryEnabled(THEORY_QUANTIFIERS))
+  {
+    setDefaultsQuantifiers(logic, opts);
+  }
+  
   // until bugs 371,431 are fixed
   if (!opts.prop.minisatUseElimWasSetByUser)
   {
@@ -1477,6 +1480,15 @@ void SetDefaults::setDefaultsQuantifiers(const LogicInfo& logic,
   if (!logic.isTheoryEnabled(THEORY_DATATYPES))
   {
     opts.quantifiers.quantDynamicSplit = options::QuantDSplitMode::NONE;
+  }
+
+  if (opts.arith.nlRlvMode != options::NlRlvMode::NONE)
+  {
+    // Theory relevance is incompatible with CEGQI and SyQI, since there is no
+    // appropriate policy for the relevance of counterexample lemmas. Hence,
+    // we throw an option exception if quantifiers are enabled.
+    throw OptionException(std::string(
+        "--nl-ext-rlv!=none is not allowed in quantified logics."));
   }
 }
 

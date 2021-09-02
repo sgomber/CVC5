@@ -215,7 +215,7 @@ void SygusInst::reset_round(Theory::Effort e)
   {
     Node q = model->getAssertedQuantifier(i);
 
-    if (model->isQuantifierActive(q))
+    if (model->isQuantifierActive(q) && d_qreg.hasOwnership(q, this))
     {
       d_active_quant.insert(q);
       Node lit = getCeLiteral(q);
