@@ -1997,4 +1997,6 @@ void TheoryEngine::initializeProofChecker(ProofChecker* pc)
   }
 }
 
+theory::Rewriter* TheoryEngine::getRewriter() { return d_env.getRewriter(); }
+
 }  // namespace cvc5

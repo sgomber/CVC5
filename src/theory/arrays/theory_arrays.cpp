@@ -90,8 +90,7 @@ TheoryArrays::TheoryArrays(Env& env,
       d_isPreRegistered(getSatContext()),
       d_mayEqualEqualityEngine(getSatContext(), name + "mayEqual", true),
       d_notify(*this),
-      d_backtracker(getSatContext()),
-      d_infoMap(getSatContext(), &d_backtracker, name),
+      d_infoMap(getSatContext(), name),
       d_mergeQueue(getSatContext()),
       d_mergeInProgress(false),
       d_RowQueue(getSatContext()),
@@ -1671,11 +1670,12 @@ void TheoryArrays::checkRowForIndex(TNode i, TNode a)
     {
       preRegisterTermInternal(selConst);
     }
+    // not currently supported in proofs, use THEORY_INFERENCE
     d_im.assertInference(selConst.eqNode(defValue),
                          true,
                          InferenceId::ARRAYS_CONST_ARRAY_DEFAULT,
                          d_true,
-                         PfRule::ARRAYS_TRUST);
+                         PfRule::THEORY_INFERENCE);
   }
 
   const CTNodeList* stores = d_infoMap.getStores(a);
