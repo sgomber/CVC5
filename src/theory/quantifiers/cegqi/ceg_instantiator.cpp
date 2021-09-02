@@ -253,20 +253,21 @@ bool CegInstantiator::isEligible( Node n ) {
 CegHandledStatus CegInstantiator::isCbqiKind(Kind k)
 {
   if (quantifiers::TermUtil::isBoolConnective(k) || k == PLUS || k == GEQ
-      || k == EQUAL || k == MULT || k == NONLINEAR_MULT || k == DIVISION
-      || k == DIVISION_TOTAL || k == INTS_DIVISION || k == INTS_DIVISION_TOTAL
-      || k == INTS_MODULUS || k == INTS_MODULUS_TOTAL || k == TO_INTEGER
-      || k == IS_INTEGER)
+      || k == EQUAL || k == MULT)
   {
+    // we are complete for LIA, LRA
     return CEG_HANDLED;
   }
 
   // CBQI typically works for satisfaction-complete theories
   TheoryId t = kindToTheoryId(k);
-  if (t == THEORY_BV || t == THEORY_FP || t == THEORY_DATATYPES
-      || t == THEORY_BOOL)
+  if (t == THEORY_BOOL)
   {
     return CEG_HANDLED;
+  }
+  else if (t == THEORY_ARITH || t == THEORY_BV || t == THEORY_FP || t == THEORY_DATATYPES)
+  {
+    return CEG_PARTIALLY_HANDLED;
   }
   return CEG_UNHANDLED;
 }
@@ -285,7 +286,7 @@ CegHandledStatus CegInstantiator::isCbqiTerm(Node n)
     if (visited.find(cur) == visited.end())
     {
       visited.insert(cur);
-      if (cur.getKind() != BOUND_VARIABLE && TermUtil::hasBoundVarAttr(cur))
+      if (cur.getKind() != BOUND_VARIABLE && !cur.isConst())
       {
         if (cur.getKind() == FORALL || cur.getKind() == WITNESS)
         {
@@ -304,10 +305,7 @@ CegHandledStatus CegInstantiator::isCbqiTerm(Node n)
               return CEG_UNHANDLED;
             }
           }
-          for (const Node& nc : cur)
-          {
-            visit.push_back(nc);
-          }
+          visit.insert(visit.end(), cur.begin(), cur.end());
         }
       }
     }
