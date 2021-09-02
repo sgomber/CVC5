@@ -1485,8 +1485,9 @@ void SetDefaults::setDefaultsQuantifiers(const LogicInfo& logic,
   if (opts.arith.nlRlvMode != options::NlRlvMode::NONE)
   {
     // Theory relevance is incompatible with CEGQI and SyQI, since there is no
-    // appropriate policy for the relevance of counterexample lemmas. Hence,
-    // we throw an option exception if quantifiers are enabled.
+    // appropriate policy for the relevance of counterexample lemmas (when their
+    // guard is entailed to be false, the entire lemma is relevant, not just the
+    // guard). Hence, we throw an option exception if quantifiers are enabled.
     throw OptionException(
         std::string("--nl-ext-rlv!=none is not allowed in quantified logics."));
   }
