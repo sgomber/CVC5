@@ -681,10 +681,7 @@ void SetDefaults::setDefaultsPost(const LogicInfo& logic, Options& opts) const
   }
 
   // set all defaults in the quantifiers theory, which includes sygus
-  if (logic.isTheoryEnabled(THEORY_QUANTIFIERS))
-  {
-    setDefaultsQuantifiers(logic, opts);
-  }
+  setDefaultsQuantifiers(logic, opts);
 
   // until bugs 371,431 are fixed
   if (!opts.prop.minisatUseElimWasSetByUser)
