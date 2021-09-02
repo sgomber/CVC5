@@ -724,7 +724,7 @@ void SetDefaults::setDefaultsPost(const LogicInfo& logic, Options& opts) const
   {
     setDefaultsQuantifiers(logic, opts);
   }
-  
+
   // until bugs 371,431 are fixed
   if (!opts.prop.minisatUseElimWasSetByUser)
   {
@@ -1487,8 +1487,8 @@ void SetDefaults::setDefaultsQuantifiers(const LogicInfo& logic,
     // Theory relevance is incompatible with CEGQI and SyQI, since there is no
     // appropriate policy for the relevance of counterexample lemmas. Hence,
     // we throw an option exception if quantifiers are enabled.
-    throw OptionException(std::string(
-        "--nl-ext-rlv!=none is not allowed in quantified logics."));
+    throw OptionException(
+        std::string("--nl-ext-rlv!=none is not allowed in quantified logics."));
   }
 }
 
