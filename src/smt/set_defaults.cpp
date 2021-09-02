@@ -461,7 +461,7 @@ void SetDefaults::finalizeLogic(LogicInfo& logic, Options& opts) const
 
   // widen the logic
   widenLogic(logic, opts);
-  
+
   // check if we have any options that are not supported with quantified logics
   if (logic.isQuantified())
   {
@@ -469,8 +469,9 @@ void SetDefaults::finalizeLogic(LogicInfo& logic, Options& opts) const
     if (incompatibleWithQuantifiers(opts, reasonNoQuant))
     {
       std::stringstream ss;
-      ss << reasonNoQuant.str() << " not supported in quantified logics."
-      throw OptionException(ss.str());
+      ss << reasonNoQuant.str()
+         << " not supported in quantified logics." throw OptionException(
+                ss.str());
     }
   }
 }
@@ -878,8 +879,9 @@ bool SetDefaults::incompatibleWithProofs(Options& opts,
   // options that are automatically set to support proofs
   if (opts.bv.bvAssertInput)
   {
-    Notice() << "Disabling bv-assert-input since it is incompatible with proofs."
-             << std::endl;
+    Notice()
+        << "Disabling bv-assert-input since it is incompatible with proofs."
+        << std::endl;
     opts.bv.bvAssertInput = false;
   }
   // If proofs are required and the user did not specify a specific BV solver,
@@ -1124,7 +1126,8 @@ bool SetDefaults::safeUnsatCores(const Options& opts) const
   return opts.smt.unsatCoresMode == options::UnsatCoresMode::ASSUMPTIONS;
 }
 
-bool SetDefaults::incompatibleWithQuantifiers(Options& opts, std::ostream& reason) const
+bool SetDefaults::incompatibleWithQuantifiers(Options& opts,
+                                              std::ostream& reason) const
 {
   if (opts.smt.ackermann)
   {
@@ -1234,7 +1237,7 @@ void SetDefaults::widenLogic(LogicInfo& logic, Options& opts) const
 void SetDefaults::setDefaultsQuantifiers(const LogicInfo& logic,
                                          Options& opts) const
 {
-  Assert (logic.isQuantified());
+  Assert(logic.isQuantified());
 
   if (opts.quantifiers.sygusInstWasSetByUser)
   {
@@ -1371,9 +1374,8 @@ void SetDefaults::setDefaultsQuantifiers(const LogicInfo& logic,
   // counterexample-guided instantiation for non-sygus
   // enable if any possible quantifiers with arithmetic, datatypes or bitvectors
   if ((logic.isTheoryEnabled(THEORY_ARITH)
-           || logic.isTheoryEnabled(THEORY_DATATYPES)
-           || logic.isTheoryEnabled(THEORY_BV)
-           || logic.isTheoryEnabled(THEORY_FP))
+       || logic.isTheoryEnabled(THEORY_DATATYPES)
+       || logic.isTheoryEnabled(THEORY_BV) || logic.isTheoryEnabled(THEORY_FP))
       || opts.quantifiers.cegqiAll)
   {
     if (!opts.quantifiers.cegqiWasSetByUser)
