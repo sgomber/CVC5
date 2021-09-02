@@ -113,13 +113,8 @@ PropEngine::PropEngine(TheoryEngine* te, Env& env)
   // theory proxy first
   d_theoryProxy = new TheoryProxy(
       this, d_theoryEngine, d_decisionEngine.get(), d_skdm.get(), d_env);
-  d_cnfStream = new CnfStream(d_satSolver,
-                              d_theoryProxy,
-                              userContext,
-                              &d_env,
-                              rm,
-                              flp,
-                              "prop");
+  d_cnfStream = new CnfStream(
+      d_satSolver, d_theoryProxy, userContext, &d_env, rm, flp, "prop");
 
   // connect theory proxy
   d_theoryProxy->finishInit(d_cnfStream);

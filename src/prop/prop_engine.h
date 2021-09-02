@@ -22,8 +22,8 @@
 
 #include "context/cdlist.h"
 #include "expr/node.h"
-#include "prop/sat_relevancy.h"
 #include "proof/trust_node.h"
+#include "prop/sat_relevancy.h"
 #include "prop/skolem_def_manager.h"
 #include "theory/output_channel.h"
 #include "util/result.h"

@@ -125,8 +125,7 @@ class RlvInfo
  */
 class SatRelevancy
 {
-  typedef context::CDHashMap<TNode, std::shared_ptr<RlvInfo>>
-      RlvMap;
+  typedef context::CDHashMap<TNode, std::shared_ptr<RlvInfo>> RlvMap;
 
  public:
   SatRelevancy(CDCLTSatSolverInterface* satSolver,
