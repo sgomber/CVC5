@@ -22,6 +22,7 @@
 #include <fstream>
 #include <iostream>
 
+#include "api/cpp/cvc5.h"
 #include "base/configuration.h"
 #include "base/output.h"
 #include "main/command_executor.h"
@@ -47,31 +48,51 @@ using namespace cvc5::language;
  * problems.  That's why main() wraps runCvc5() in the first place.
  * Put everything in runCvc5().
  */
-int main(int argc, char* argv[]) {
-  Options opts;
-  try {
-    return runCvc5(argc, argv, opts);
-  } catch(OptionException& e) {
+int main(int argc, char* argv[])
+{
+  std::unique_ptr<api::Solver> solver;
+  try
+  {
+    solver = std::make_unique<api::Solver>();
+    return runCvc5(argc, argv, solver);
+  }
+  catch (cvc5::api::CVC5ApiOptionException& e)
+  {
 #ifdef CVC5_COMPETITION_MODE
-    *opts.base.out << "unknown" << endl;
+    solver->getDriverOptions().out() << "unknown" << std::endl;
 #endif
-    cerr << "(error \"" << e << "\")" << endl
+    cerr << "(error \"" << e.getMessage() << "\")" << endl
          << endl
          << "Please use --help to get help on command-line options." << endl;
-  } catch(Exception& e) {
+  }
+  catch (OptionException& e)
+  {
 #ifdef CVC5_COMPETITION_MODE
-    *opts.base.out << "unknown" << endl;
+    solver->getDriverOptions().out() << "unknown" << std::endl;
 #endif
-    if (language::isOutputLang_smt2(opts.base.outputLanguage))
+    cerr << "(error \"" << e.getMessage() << "\")" << endl
+         << endl
+         << "Please use --help to get help on command-line options." << endl;
+  }
+  catch (Exception& e)
+  {
+#ifdef CVC5_COMPETITION_MODE
+    solver->getDriverOptions().out() << "unknown" << std::endl;
+#endif
+    if (solver->getOption("output-language") == "LANG_SMTLIB_V2_6")
     {
-      *opts.base.out << "(error \"" << e << "\")" << endl;
-    } else {
-      *opts.base.err << "(error \"" << e << "\")" << endl;
+      solver->getDriverOptions().out()
+          << "(error \"" << e << "\")" << std::endl;
     }
-    if (opts.base.statistics && pExecutor != nullptr)
+    else
     {
-      totalTime.reset();
-      pExecutor->printStatistics(*opts.base.err);
+      solver->getDriverOptions().err()
+          << "(error \"" << e << "\")" << std::endl;
+    }
+    if (solver->getOptionInfo("stats").boolValue()
+        && main::pExecutor != nullptr)
+    {
+      pExecutor->printStatistics(solver->getDriverOptions().err());
     }
   }
   exit(1);

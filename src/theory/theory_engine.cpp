@@ -218,14 +218,12 @@ context::UserContext* TheoryEngine::getUserContext() const
   return d_env.getUserContext();
 }
 
-TheoryEngine::TheoryEngine(Env& env,
-                           OutputManager& outMgr,
-                           ProofNodeManager* pnm)
+TheoryEngine::TheoryEngine(Env& env)
     : d_propEngine(nullptr),
       d_env(env),
       d_logicInfo(env.getLogicInfo()),
-      d_outMgr(outMgr),
-      d_pnm(pnm),
+      d_pnm(d_env.isTheoryProofProducing() ? d_env.getProofNodeManager()
+                                           : nullptr),
       d_lazyProof(d_pnm != nullptr
                       ? new LazyCDProof(d_pnm,
                                         nullptr,
@@ -238,7 +236,6 @@ TheoryEngine::TheoryEngine(Env& env,
       d_quantEngine(nullptr),
       d_decManager(new DecisionManager(d_env.getUserContext())),
       d_relManager(nullptr),
-      d_eager_model_building(false),
       d_inConflict(d_env.getContext(), false),
       d_inSatMode(false),
       d_hasShutDown(false),
@@ -256,8 +253,7 @@ TheoryEngine::TheoryEngine(Env& env,
       d_false(),
       d_interrupted(false),
       d_inPreregister(false),
-      d_factsAsserted(d_env.getContext(), false),
-      d_attr_handle()
+      d_factsAsserted(d_env.getContext(), false)
 {
   for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST;
       ++ theoryId)
@@ -311,7 +307,16 @@ void TheoryEngine::preRegister(TNode preprocessed) {
       // the atom should not have free variables
       Debug("theory") << "TheoryEngine::preRegister: " << preprocessed
                       << std::endl;
-      Assert(!expr::hasFreeVar(preprocessed));
+      if (Configuration::isAssertionBuild())
+      {
+        std::unordered_set<Node> fvs;
+        expr::getFreeVariables(preprocessed, fvs);
+        if (!fvs.empty())
+        {
+          Unhandled() << "Preregistered term with free variable: "
+                      << preprocessed << ", fv=" << *fvs.begin();
+        }
+      }
       // should not have witness
       Assert(!expr::hasSubtermKind(kind::WITNESS, preprocessed));
 
@@ -367,8 +372,8 @@ void TheoryEngine::printAssertions(const char* tag) {
 
 void TheoryEngine::dumpAssertions(const char* tag) {
   if (Dump.isOn(tag)) {
-    const Printer& printer = d_outMgr.getPrinter();
-    std::ostream& out = d_outMgr.getDumpOut();
+    const Printer& printer = d_env.getPrinter();
+    std::ostream& out = d_env.getDumpOut();
     printer.toStreamCmdComment(out, "Starting completeness check");
     for (TheoryId theoryId = THEORY_FIRST; theoryId < THEORY_LAST; ++theoryId) {
       Theory* theory = d_theoryTable[theoryId];
@@ -538,14 +543,9 @@ void TheoryEngine::check(Theory::Effort effort) {
       }
       if (!d_inConflict && !needCheck())
       {
-        // If d_eager_model_building is false, then we only mark that we
-        // are in "SAT mode". We build the model later only if the user asks
-        // for it via getBuiltModel.
+        // We only mark that we are in "SAT mode". We build the model later only
+        // if the user asks for it via getBuiltModel.
         d_inSatMode = true;
-        if (d_eager_model_building)
-        {
-          d_tc->buildModel();
-        }
       }
     }
 
@@ -1252,6 +1252,16 @@ struct AtomsCollect {
   }
 };
 
+void TheoryEngine::ensureLemmaAtoms(TNode n, theory::TheoryId atomsTo)
+{
+  Assert(atomsTo != THEORY_LAST);
+  Debug("theory::atoms") << "TheoryEngine::ensureLemmaAtoms(" << n << ", "
+                         << atomsTo << ")" << endl;
+  AtomsCollect collectAtoms;
+  NodeVisitor<AtomsCollect>::run(collectAtoms, n);
+  ensureLemmaAtoms(collectAtoms.getAtoms(), atomsTo);
+}
+
 void TheoryEngine::ensureLemmaAtoms(const std::vector<TNode>& atoms, theory::TheoryId atomsTo) {
   for (unsigned i = 0; i < atoms.size(); ++ i) {
 
@@ -1320,7 +1330,6 @@ void TheoryEngine::ensureLemmaAtoms(const std::vector<TNode>& atoms, theory::The
 
 void TheoryEngine::lemma(TrustNode tlemma,
                          theory::LemmaProperty p,
-                         theory::TheoryId atomsTo,
                          theory::TheoryId from)
 {
   // For resource-limiting (also does a time check).
@@ -1352,20 +1361,11 @@ void TheoryEngine::lemma(TrustNode tlemma,
     tlemma.debugCheckClosed("te-proof-debug", "TheoryEngine::lemma_initial");
   }
 
-  // Do we need to check atoms
-  if (atomsTo != theory::THEORY_LAST) {
-    Debug("theory::atoms") << "TheoryEngine::lemma(" << node << ", " << atomsTo
-                           << ")" << endl;
-    AtomsCollect collectAtoms;
-    NodeVisitor<AtomsCollect>::run(collectAtoms, node);
-    ensureLemmaAtoms(collectAtoms.getAtoms(), atomsTo);
-  }
-
   if(Dump.isOn("t-lemmas")) {
     // we dump the negation of the lemma, to show validity of the lemma
     Node n = lemma.negate();
-    const Printer& printer = d_outMgr.getPrinter();
-    std::ostream& out = d_outMgr.getDumpOut();
+    const Printer& printer = d_env.getPrinter();
+    std::ostream& out = d_env.getDumpOut();
     printer.toStreamCmdComment(out, "theory lemma: expect valid");
     printer.toStreamCmdCheckSat(out, n);
   }
@@ -1419,8 +1419,8 @@ void TheoryEngine::conflict(TrustNode tconflict, TheoryId theoryId)
   markInConflict();
 
   if(Dump.isOn("t-conflicts")) {
-    const Printer& printer = d_outMgr.getPrinter();
-    std::ostream& out = d_outMgr.getDumpOut();
+    const Printer& printer = d_env.getPrinter();
+    std::ostream& out = d_env.getDumpOut();
     printer.toStreamCmdComment(out, "theory conflict: expect unsat");
     printer.toStreamCmdCheckSat(out, conflict);
   }
@@ -1510,7 +1510,7 @@ void TheoryEngine::conflict(TrustNode tconflict, TheoryId theoryId)
     // When only one theory, the conflict should need no processing
     Assert(properConflict(conflict));
     // pass the trust node that was sent from the theory
-    lemma(tconflict, LemmaProperty::REMOVABLE, THEORY_LAST, theoryId);
+    lemma(tconflict, LemmaProperty::REMOVABLE, theoryId);
   }
 }
 
@@ -1838,27 +1838,6 @@ TrustNode TheoryEngine::getExplanation(
 
 bool TheoryEngine::isProofEnabled() const { return d_pnm != nullptr; }
 
-void TheoryEngine::setUserAttribute(const std::string& attr,
-                                    Node n,
-                                    const std::vector<Node>& node_values,
-                                    const std::string& str_value)
-{
-  Trace("te-attr") << "set user attribute " << attr << " " << n << endl;
-  if( d_attr_handle.find( attr )!=d_attr_handle.end() ){
-    for( size_t i=0; i<d_attr_handle[attr].size(); i++ ){
-      d_attr_handle[attr][i]->setUserAttribute(attr, n, node_values, str_value);
-    }
-  } else {
-    //unhandled exception?
-  }
-}
-
-void TheoryEngine::handleUserAttribute(const char* attr, Theory* t) {
-  Trace("te-attr") << "Handle user attribute " << attr << " " << t << endl;
-  std::string str( attr );
-  d_attr_handle[ str ].push_back( t );
-}
-
 void TheoryEngine::checkTheoryAssertionsWithModel(bool hardFailure) {
   for(TheoryId theoryId = THEORY_FIRST; theoryId < THEORY_LAST; ++theoryId) {
     Theory* theory = d_theoryTable[theoryId];
@@ -1991,5 +1970,7 @@ void TheoryEngine::initializeProofChecker(ProofChecker* pc)
     }
   }
 }
+
+theory::Rewriter* TheoryEngine::getRewriter() { return d_env.getRewriter(); }
 
 }  // namespace cvc5

@@ -16,6 +16,7 @@
 #include "smt/proof_manager.h"
 
 #include "options/base_options.h"
+#include "options/main_options.h"
 #include "options/proof_options.h"
 #include "options/smt_options.h"
 #include "proof/dot/dot_printer.h"
@@ -23,17 +24,19 @@
 #include "proof/proof_node_algorithm.h"
 #include "proof/proof_node_manager.h"
 #include "smt/assertions.h"
+#include "smt/env.h"
 #include "smt/preprocess_proof_generator.h"
 #include "smt/proof_post_processor.h"
 
 namespace cvc5 {
 namespace smt {
 
-PfManager::PfManager(context::UserContext* u, SmtEngine* smte)
-    : d_pchecker(new ProofChecker(options::proofPedantic())),
+PfManager::PfManager(Env& env, SmtEngine* smte)
+    : d_env(env),
+      d_pchecker(new ProofChecker(options::proofPedantic())),
       d_pnm(new ProofNodeManager(d_pchecker.get())),
       d_pppg(new PreprocessProofGenerator(
-          d_pnm.get(), u, "smt::PreprocessProofGenerator")),
+          d_pnm.get(), env.getUserContext(), "smt::PreprocessProofGenerator")),
       d_pfpp(new ProofPostproccess(
           d_pnm.get(),
           smte,
@@ -79,6 +82,8 @@ PfManager::PfManager(context::UserContext* u, SmtEngine* smte)
         d_pfpp->setEliminateRule(PfRule::THEORY_REWRITE);
       }
     }
+    // theory-specific lazy proof reconstruction
+    d_pfpp->setEliminateRule(PfRule::STRING_INFERENCE);
     d_pfpp->setEliminateRule(PfRule::BV_BITBLAST);
   }
   d_false = NodeManager::currentNM()->mkConst(false);
@@ -156,6 +161,13 @@ void PfManager::printProof(std::ostream& out,
   {
     proof::DotPrinter dotPrinter;
     dotPrinter.print(out, fp.get());
+  }
+  else if (options::proofFormatMode() == options::ProofFormatMode::TPTP)
+  {
+    out << "% SZS output start Proof for " << d_env.getOptions().driver.filename << std::endl;
+    // TODO (proj #37) print in TPTP compliant format
+    out << *fp << std::endl;
+    out << "% SZS output end Proof for " << d_env.getOptions().driver.filename << std::endl;
   }
   else
   {
