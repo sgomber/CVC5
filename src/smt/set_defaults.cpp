@@ -470,7 +470,8 @@ void SetDefaults::finalizeLogic(LogicInfo& logic, Options& opts) const
     {
       std::stringstream ss;
       ss << reasonNoQuant.str()
-         << " not supported in quantified logics." throw OptionException(
+         << " not supported in quantified logics.";
+         throw OptionException(
                 ss.str());
     }
   }
