@@ -32,6 +32,7 @@ namespace cvc5 {
 
 class DecisionEngine;
 class TheoryEngine;
+class Env;
 
 namespace prop {
 
@@ -130,8 +131,7 @@ class SatRelevancy
  public:
   SatRelevancy(CDCLTSatSolverInterface* satSolver,
                TheoryEngine* theoryEngine,
-               context::Context* context,
-               context::UserContext* userContext,
+               Env& env,
                CnfStream* cnfStream,
                options::SatRelevancyMode mode);
 
@@ -227,8 +227,6 @@ class SatRelevancy
   CDCLTSatSolverInterface* d_satSolver;
   /** Pointer to theory engine */
   TheoryEngine* d_theoryEngine;
-  /** Pointer to the SAT context */
-  context::Context* d_context;
   /** pointer to the CNF stream */
   CnfStream* d_cnfStream;
   /**

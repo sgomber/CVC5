@@ -147,21 +147,19 @@ void RlvInfo::setMarkedPreregistered()
 
 SatRelevancy::SatRelevancy(CDCLTSatSolverInterface* satSolver,
                            TheoryEngine* theoryEngine,
-                           context::Context* context,
-                           context::UserContext* userContext,
+                           Env& env,
                            CnfStream* cnfStream,
                            options::SatRelevancyMode mode)
     : d_satSolver(satSolver),
       d_theoryEngine(theoryEngine),
-      d_context(context),
       d_cnfStream(cnfStream),
-      d_inputs(userContext),
-      d_numInputs(context, 0),
+      d_inputs(env.getUserContext()),
+      d_numInputs(env.getSatContext(), 0),
       d_rlvMap(context),
-      d_numAsserts(context, 0),
-      d_numAssertsEnq(context, 0),
-      d_numAssertsRlv(context, 0),
-      d_numAssertsPrereg(context, 0),
+      d_numAsserts(env.getSatContext(), 0),
+      d_numAssertsEnq(env.getSatContext(), 0),
+      d_numAssertsRlv(env.getSatContext(), 0),
+      d_numAssertsPrereg(env.getSatContext(), 0),
       d_mode(mode)
 {
   // temporary
