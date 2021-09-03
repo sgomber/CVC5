@@ -25,9 +25,9 @@
 #include "expr/node.h"
 #include "options/prop_options.h"
 #include "prop/sat_solver.h"
+#include "smt/env_obj.h"
 #include "theory/theory.h"
 #include "util/statistics_registry.h"
-#include "smt/env_obj.h"
 
 namespace cvc5 {
 
