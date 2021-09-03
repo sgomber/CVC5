@@ -27,6 +27,7 @@
 #include "prop/sat_solver.h"
 #include "theory/theory.h"
 #include "util/statistics_registry.h"
+#include "smt/env_obj.h"
 
 namespace cvc5 {
 
@@ -124,7 +125,7 @@ class RlvInfo
 /**
  * SAT relevancy management
  */
-class SatRelevancy
+class SatRelevancy : protected EnvObj
 {
   typedef context::CDHashMap<TNode, std::shared_ptr<RlvInfo>> RlvMap;
 

@@ -150,16 +150,17 @@ SatRelevancy::SatRelevancy(CDCLTSatSolverInterface* satSolver,
                            Env& env,
                            CnfStream* cnfStream,
                            options::SatRelevancyMode mode)
-    : d_satSolver(satSolver),
+    : EnvObj(env),
+      d_satSolver(satSolver),
       d_theoryEngine(theoryEngine),
       d_cnfStream(cnfStream),
       d_inputs(env.getUserContext()),
-      d_numInputs(env.getSatContext(), 0),
-      d_rlvMap(context),
-      d_numAsserts(env.getSatContext(), 0),
-      d_numAssertsEnq(env.getSatContext(), 0),
-      d_numAssertsRlv(env.getSatContext(), 0),
-      d_numAssertsPrereg(env.getSatContext(), 0),
+      d_numInputs(env.getContext(), 0),
+      d_rlvMap(env.getContext()),
+      d_numAsserts(env.getContext(), 0),
+      d_numAssertsEnq(env.getContext(), 0),
+      d_numAssertsRlv(env.getContext(), 0),
+      d_numAssertsPrereg(env.getContext(), 0),
       d_mode(mode)
 {
   // temporary
@@ -585,7 +586,7 @@ RlvInfo* SatRelevancy::getOrMkRlvInfo(TNode n)
   {
     return it->second.get();
   }
-  std::shared_ptr<RlvInfo> rwi = std::make_shared<RlvInfo>(d_context);
+  std::shared_ptr<RlvInfo> rwi = std::make_shared<RlvInfo>(d_env.getContext());
   d_rlvMap.insert(n, rwi);
   return rwi.get();
 }

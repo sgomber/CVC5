@@ -65,7 +65,7 @@ void TheoryProxy::finishInit(CDCLTSatSolverInterface* satSolver,
   {
     d_satRlv.reset(new SatRelevancy(satSolver,
                                     d_theoryEngine,
-                                    env,
+                                    d_env,
                                     cnfStream,
                                     options::satTheoryRelevancy()));
   }
