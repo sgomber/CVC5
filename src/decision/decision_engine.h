@@ -64,7 +64,12 @@ class DecisionEngine
    * Notify this class that the literal n has been asserted, possibly
    * propagated by the SAT solver.
    */
-  virtual void notifyAsserted(TNode n) {}
+  virtual void notifyActiveSkolemDefs(std::vector<TNode>& defs) {}
+  /**
+   * Track active skolem defs, whether we need to call the above method
+   * when appropriate.
+   */
+  virtual bool needsActiveSkolemDefs() const { return false; }
 
  protected:
   /** Get next internal, the engine-specific implementation of getNext */

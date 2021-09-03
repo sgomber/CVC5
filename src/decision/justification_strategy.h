@@ -32,11 +32,6 @@
 #include "prop/sat_solver_types.h"
 
 namespace cvc5 {
-
-namespace prop {
-class SkolemDefManager;
-}
-
 namespace decision {
 
 /**
@@ -124,7 +119,6 @@ class JustificationStrategy : public DecisionEngine
   /** Constructor */
   JustificationStrategy(context::Context* c,
                         context::UserContext* u,
-                        prop::SkolemDefManager* skdm,
                         ResourceManager* rm);
 
   /** Presolve, called at the beginning of each check-sat call */
@@ -164,8 +158,9 @@ class JustificationStrategy : public DecisionEngine
    * n is sent to TheoryEngine. This activates skolem definitions for skolems
    * k that occur in n.
    */
-  void notifyAsserted(TNode n) override;
-
+  void notifyActiveSkolemDefs(std::vector<TNode>& defs) override;
+  /** */
+  bool needsActiveSkolemDefs() const override;
  private:
   /**
    * Helper method to insert assertions in `toProcess` to `d_assertions` or
@@ -224,8 +219,6 @@ class JustificationStrategy : public DecisionEngine
   static bool isTheoryLiteral(TNode n);
   /** Is n a theory atom? */
   static bool isTheoryAtom(TNode n);
-  /** Pointer to the skolem definition manager */
-  prop::SkolemDefManager* d_skdm;
   /** The assertions, which are user-context dependent. */
   AssertionList d_assertions;
   /** The skolem assertions */

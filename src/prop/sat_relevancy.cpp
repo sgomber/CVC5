@@ -193,12 +193,15 @@ void SatRelevancy::notifyLemma(TNode lem, context::CDQueue<TNode>& queue)
   Trace("sat-rlv") << "notifyLemma: finished" << std::endl;
 }
 
-void SatRelevancy::notifyActivatedSkolemDef(TNode n,
+void SatRelevancy::notifyActivatedSkolemDefs(const std::vector<TNode>& defs,
                                             context::CDQueue<TNode>& queue)
 {
-  Trace("sat-rlv") << "notifyActivatedSkolemDef: " << n << std::endl;
+  Trace("sat-rlv") << "notifyActivatedSkolemDefs " << std::endl;
   // set the lemma is currently relevant
-  setRelevant(n, true, &queue);
+  for (TNode n : defs)
+  {
+    setRelevant(n, true, &queue);
+  }
   Trace("sat-rlv") << "notifyActivatedSkolemDef: finished" << std::endl;
 }
 

@@ -90,7 +90,7 @@ PropEngine::PropEngine(TheoryEngine* te, Env& env)
       || dmode == options::DecisionMode::STOPONLY)
   {
     d_decisionEngine.reset(new decision::JustificationStrategy(
-        satContext, userContext, d_skdm.get(), rm));
+        satContext, userContext, rm));
   }
   else if (dmode == options::DecisionMode::JUSTIFICATION_OLD
            || dmode == options::DecisionMode::STOPONLY_OLD)
