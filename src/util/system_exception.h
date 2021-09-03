@@ -29,8 +29,8 @@ class SystemException : public cvc5::Exception
  public:
   SystemException()
       : Exception(
-          "Interrupted in unsafe state due to "
-          "time/resource limit.")
+            "Interrupted in unsafe state due to "
+            "time/resource limit.")
   {
   }
 
