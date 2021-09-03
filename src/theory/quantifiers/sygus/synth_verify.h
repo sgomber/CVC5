@@ -34,7 +34,9 @@ namespace quantifiers {
 class SynthVerify
 {
  public:
-  SynthVerify(TermDbSygus* tds);
+  SynthVerify(const Options& opts,
+              const LogicInfo& logicInfo,
+              TermDbSygus* tds);
   ~SynthVerify();
   /**
    * Verification call, which takes into account specific aspects of the
@@ -57,6 +59,8 @@ class SynthVerify
   TermDbSygus* d_tds;
   /** The options for subsolver calls */
   Options d_subOptions;
+  /** The logic info for subsolver calls */
+  const LogicInfo& d_subLogicInfo;
 };
 
 }  // namespace quantifiers
