@@ -153,7 +153,8 @@ class SatRelevancy : protected EnvObj
    *
    * The notification of lemmas is SAT-context dependent.
    */
-  void notifyActivatedSkolemDefs(const std::vector<TNode>& lems, context::CDQueue<TNode>& queue);
+  void notifyActivatedSkolemDefs(const std::vector<TNode>& lems,
+                                 context::CDQueue<TNode>& queue);
   /**
    * Notify that the SAT solver has asserted literal l, which may be a theory
    * atom or a formula. Adds the literals that should be asserted to the theory

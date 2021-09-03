@@ -194,7 +194,7 @@ void SatRelevancy::notifyLemma(TNode lem, context::CDQueue<TNode>& queue)
 }
 
 void SatRelevancy::notifyActivatedSkolemDefs(const std::vector<TNode>& defs,
-                                            context::CDQueue<TNode>& queue)
+                                             context::CDQueue<TNode>& queue)
 {
   Trace("sat-rlv") << "notifyActivatedSkolemDefs " << std::endl;
   // set the lemma is currently relevant

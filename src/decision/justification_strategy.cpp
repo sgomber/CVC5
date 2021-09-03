@@ -506,7 +506,7 @@ bool JustificationStrategy::needsActiveSkolemDefs() const
 
 void JustificationStrategy::notifyActiveSkolemDefs(std::vector<TNode>& defs)
 {
-  Assert (d_jhSkRlvMode == options::JutificationSkolemRlvMode::ASSERT);
+  Assert(d_jhSkRlvMode == options::JutificationSkolemRlvMode::ASSERT);
   // assertion processed makes all skolems in assertion active,
   // which triggers their definitions to becoming relevant
   insertToAssertionList(defs, true);

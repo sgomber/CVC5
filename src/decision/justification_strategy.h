@@ -161,6 +161,7 @@ class JustificationStrategy : public DecisionEngine
   void notifyActiveSkolemDefs(std::vector<TNode>& defs) override;
   /** */
   bool needsActiveSkolemDefs() const override;
+
  private:
   /**
    * Helper method to insert assertions in `toProcess` to `d_assertions` or

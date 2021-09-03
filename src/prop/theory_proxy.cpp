@@ -125,7 +125,7 @@ void TheoryProxy::theoryCheck(theory::Theory::Effort effort) {
     d_queue.pop();
     // now, assert to theory engine
     d_theoryEngine->assertFact(assertion);
-    bool dmNeedsActiveDefs = d_decisionEngine->needsActiveSkolemDefs(); 
+    bool dmNeedsActiveDefs = d_decisionEngine->needsActiveSkolemDefs();
     if (dmNeedsActiveDefs || d_satRlv != nullptr)
     {
       Assert(d_skdm != nullptr);
@@ -135,7 +135,7 @@ void TheoryProxy::theoryCheck(theory::Theory::Effort effort) {
       // which triggers their definitions to becoming relevant
       std::vector<TNode> activeSkolemDefs;
       d_skdm->notifyAsserted(assertion, activeSkolemDefs, true);
-      if (d_satRlv!=nullptr)
+      if (d_satRlv != nullptr)
       {
         d_satRlv->notifyActivatedSkolemDefs(activeSkolemDefs, d_queue);
       }
