@@ -16,6 +16,7 @@
 #include "theory/quantifiers/oracle_checker.h"
 
 #include "theory/rewriter.h"
+#include "expr/node_algorithm.h"
 
 namespace cvc5 {
 namespace theory {
@@ -71,11 +72,28 @@ Node OracleChecker::postConvert(Node n)
     bool allConst = true;
     for (const Node& nc : n)
     {
-      if (!nc.isConst())
+      if (nc.isConst())
       {
-        // non-constant argument, fail
-        allConst = false;
+        continue;
       }
+      // special case: assume all closed lambdas are constants
+      if (nc.getKind()==kind::LAMBDA)
+      {
+        // if the lambda does not have a free variable (BOUND_VARIABLE)
+        if (!expr::hasFreeVar(nc))
+        {
+          // it also cannot have any free symbol
+          std::unordered_set<Node> syms;
+          expr::getSymbols(nc, syms);
+          if (syms.empty())
+          {
+            continue;
+          }
+        }
+      }
+      // non-constant argument, fail
+      allConst = false;
+      break;
     }
     if (allConst)
     {

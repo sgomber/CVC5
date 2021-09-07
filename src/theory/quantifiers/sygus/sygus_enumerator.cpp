@@ -804,12 +804,12 @@ bool SygusEnumerator::TermEnumMaster::incrementInternal()
     d_currSize++;
     Trace("sygus-enum-debug2") << "master(" << d_tn
                                << "): size++ : " << d_currSize << "\n";
-    if (Trace.isOn("sygus-engine"))
+    if (Trace.isOn("sygus-engine-debug"))
     {
       // am i the master enumerator? if so, print
       if (d_se->d_tlEnum == this)
       {
-        Trace("sygus-engine") << "SygusEnumerator::size = " << d_currSize
+        Trace("sygus-engine-debug") << "SygusEnumerator::size = " << d_currSize
                               << std::endl;
       }
     }

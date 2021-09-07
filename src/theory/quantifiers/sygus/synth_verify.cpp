@@ -79,7 +79,8 @@ Result SynthVerify::verify(Node query,
     r = checkWithSubsolver(queryp, vars, mvs, d_subOptions, d_subLogicInfo);
     finished = true;
     Trace("sygus-engine") << "  ...got " << r << std::endl;
-    if (r.asSatisfiabilityResult().isSat() == Result::SAT)
+    // we try to learn models for "sat" and "unknown" here
+    if (r.asSatisfiabilityResult().isSat() != Result::UNSAT)
     {
       if (Trace.isOn("sygus-engine"))
       {
@@ -119,7 +120,7 @@ Result SynthVerify::verify(Node query,
           }
           else
           {
-            Assert(!options::sygusRecFun())
+            Assert(!options::sygusRecFun() || r.asSatisfiabilityResult().isSat()==Result::SAT_UNKNOWN)
                 << "Expected model from verification step to satisfy query";
           }
         }
@@ -137,7 +138,6 @@ Node SynthVerify::preprocessQueryInternal(Node query)
   query = d_tds->rewriteNode(query);
   // eagerly unfold applications of evaluation function
   Trace("cegqi-debug") << "post-rewritten query : " << query << std::endl;
-
   if (!query.isConst())
   {
     // if non-constant, we may need to add recursive function definitions
