@@ -76,7 +76,7 @@ Result SynthVerify::verify(Node query,
       }
       // sat, but we need to get arbtirary model values below
     }
-    r = checkWithSubsolver(queryp, vars, mvs, &d_subOptions);
+    r = checkWithSubsolver(queryp, vars, mvs, d_subOptions, d_subLogicInfo);
     finished = true;
     Trace("sygus-engine") << "  ...got " << r << std::endl;
     if (r.asSatisfiabilityResult().isSat() == Result::SAT)

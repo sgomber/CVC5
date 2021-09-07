@@ -1291,7 +1291,7 @@ std::string DeclareOracleFunCommand::getCommandName() const
 void DeclareOracleFunCommand::toStream(std::ostream& out,
                                        int toDepth,
                                        size_t dag,
-                                       OutputLanguage language) const
+                                       Language language) const
 {
   Printer::getPrinter(language)->toStreamCmdDeclareOracleFun(
       out, termToNode(d_func), d_binName);
@@ -1362,7 +1362,7 @@ std::string DefineOracleInterfaceCommand::getCommandName() const
 void DefineOracleInterfaceCommand::toStream(std::ostream& out,
                                             int toDepth,
                                             size_t dag,
-                                            OutputLanguage language) const
+                                            Language language) const
 {
   Printer::getPrinter(language)->toStreamCmdDefineOracleInterface(
       out,

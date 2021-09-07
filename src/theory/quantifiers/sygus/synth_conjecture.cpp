@@ -37,6 +37,7 @@
 #include "theory/quantifiers/term_util.h"
 #include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
+#include "theory/quantifiers/sygus/oracle_manager.h"
 
 using namespace cvc5::kind;
 using namespace std;
