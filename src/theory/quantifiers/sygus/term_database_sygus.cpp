@@ -1021,44 +1021,7 @@ Node TermDbSygus::evaluateBuiltin(TypeNode tn,
 Node TermDbSygus::evaluateWithUnfolding(Node n,
                                         std::unordered_map<Node, Node>& visited)
 {
-  std::unordered_map<Node, Node>::iterator it = visited.find(n);
-  if( it==visited.end() ){
-    Node ret = n;
-    while (ret.getKind() == DT_SYGUS_EVAL
-           && ret[0].getKind() == APPLY_CONSTRUCTOR)
-    {
-      if (ret == n && ret[0].isConst())
-      {
-        // use rewriting, possibly involving recursive functions
-        ret = rewriteNode(ret);
-      }
-      else
-      {
-        ret = d_eval_unfold->unfold(ret);
-      }
-    }    
-    if( ret.getNumChildren()>0 ){
-      std::vector< Node > children;
-      if( ret.getMetaKind() == kind::metakind::PARAMETERIZED ){
-        children.push_back( ret.getOperator() );
-      }
-      bool childChanged = false;
-      for( unsigned i=0; i<ret.getNumChildren(); i++ ){
-        Node nc = evaluateWithUnfolding(ret[i], visited);
-        childChanged = childChanged || nc!=ret[i];
-        children.push_back( nc );
-      }
-      if( childChanged ){
-        ret = NodeManager::currentNM()->mkNode( ret.getKind(), children );
-      }
-      // use rewriting, possibly involving recursive functions
-      ret = rewriteNode(ret);
-    }
-    visited[n] = ret;
-    return ret;
-  }else{
-    return it->second;
-  }
+  return rewriteNode(n);
 }
 
 Node TermDbSygus::evaluateWithUnfolding(Node n)
