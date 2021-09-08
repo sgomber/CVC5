@@ -459,11 +459,10 @@ class CVC5_EXPORT DeclareOracleFunCommand : public Command
   void invoke(api::Solver* solver, SymbolManager* sm) override;
   Command* clone() const override;
   std::string getCommandName() const override;
-  void toStream(
-      std::ostream& out,
-      int toDepth = -1,
-      size_t dag = 1,
-      Language language = Language::LANG_AUTO) const override;
+  void toStream(std::ostream& out,
+                int toDepth = -1,
+                size_t dag = 1,
+                Language language = Language::LANG_AUTO) const override;
 
  protected:
   /** The oracle function */
@@ -489,11 +488,10 @@ class CVC5_EXPORT DefineOracleInterfaceCommand : public Command
   void invoke(api::Solver* solver, SymbolManager* sm) override;
   Command* clone() const override;
   std::string getCommandName() const override;
-  void toStream(
-      std::ostream& out,
-      int toDepth = -1,
-      size_t dag = 1,
-      Language language = Language::LANG_AUTO) const override;
+  void toStream(std::ostream& out,
+                int toDepth = -1,
+                size_t dag = 1,
+                Language language = Language::LANG_AUTO) const override;
 
  protected:
   /** The input arguments for the interface we are defining */

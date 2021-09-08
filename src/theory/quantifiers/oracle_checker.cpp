@@ -15,8 +15,8 @@
 
 #include "theory/quantifiers/oracle_checker.h"
 
-#include "theory/rewriter.h"
 #include "expr/node_algorithm.h"
+#include "theory/rewriter.h"
 
 namespace cvc5 {
 namespace theory {
@@ -77,7 +77,7 @@ Node OracleChecker::postConvert(Node n)
         continue;
       }
       // special case: assume all closed lambdas are constants
-      if (nc.getKind()==kind::LAMBDA)
+      if (nc.getKind() == kind::LAMBDA)
       {
         // if the lambda does not have a free variable (BOUND_VARIABLE)
         if (!expr::hasFreeVar(nc))

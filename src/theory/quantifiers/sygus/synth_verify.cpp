@@ -120,7 +120,8 @@ Result SynthVerify::verify(Node query,
           }
           else
           {
-            Assert(!options::sygusRecFun() || r.asSatisfiabilityResult().isSat()==Result::SAT_UNKNOWN)
+            Assert(!options::sygusRecFun()
+                   || r.asSatisfiabilityResult().isSat() == Result::SAT_UNKNOWN)
                 << "Expected model from verification step to satisfy query";
           }
         }

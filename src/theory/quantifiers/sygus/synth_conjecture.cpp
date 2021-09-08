@@ -30,6 +30,7 @@
 #include "theory/quantifiers/instantiate.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/sygus/enum_value_manager.h"
+#include "theory/quantifiers/sygus/oracle_manager.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
 #include "theory/quantifiers/sygus/sygus_pbe.h"
 #include "theory/quantifiers/sygus/synth_engine.h"
@@ -37,7 +38,6 @@
 #include "theory/quantifiers/term_util.h"
 #include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
-#include "theory/quantifiers/sygus/oracle_manager.h"
 
 using namespace cvc5::kind;
 using namespace std;
