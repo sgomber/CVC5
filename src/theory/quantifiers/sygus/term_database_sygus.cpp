@@ -750,7 +750,7 @@ Node TermDbSygus::rewriteNode(Node n) const
   {
     res = rewrite(n);
   }
-  Trace("ajr-temp") << "Rewrite node post-rewrite: " << n << std::endl;
+  Trace("ajr-temp") << "Rewrite node post-rewrite: " << res << std::endl;
   if (res.isConst())
   {
     // constant, we are done
