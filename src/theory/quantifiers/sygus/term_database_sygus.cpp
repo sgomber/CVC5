@@ -740,15 +740,17 @@ SygusTypeInfo& TermDbSygus::getTypeInfo(TypeNode tn)
 
 Node TermDbSygus::rewriteNode(Node n) const
 {
+  Trace("ajr-temp") << "Rewrite node: " << n << std::endl;
   Node res;
   if (options::sygusExtRew())
   {
-    res = d_ext_rw->extendedRewrite(n);
+    res = extendedRewrite(n);
   }
   else
   {
-    res = Rewriter::rewrite(n);
+    res = rewrite(n);
   }
+  Trace("ajr-temp") << "Rewrite node post-rewrite: " << n << std::endl;
   if (res.isConst())
   {
     // constant, we are done
@@ -775,6 +777,7 @@ Node TermDbSygus::rewriteNode(Node n) const
     // evaluate oracles
     res = d_ochecker->evaluate(res);
   }
+  Trace("ajr-temp") << "Rewrite node post-oracles: " << res << std::endl;
   return res;
 }
 
