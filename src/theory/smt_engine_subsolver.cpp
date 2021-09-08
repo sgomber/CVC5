@@ -126,7 +126,8 @@ Result checkWithSubsolver(Node query,
   initializeSubsolver(smte, opts, logicInfo, needsTimeout, timeout);
   smte->assertFormula(query);
   r = smte->checkSat();
-  if (r.asSatisfiabilityResult().isSat() == Result::SAT)
+  if (r.asSatisfiabilityResult().isSat() == Result::SAT ||
+    r.asSatisfiabilityResult().isSat() == Result::SAT_UNKNOWN)
   {
     for (const Node& v : vars)
     {

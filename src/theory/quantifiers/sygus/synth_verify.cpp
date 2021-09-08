@@ -94,12 +94,10 @@ Result SynthVerify::verify(Node query,
       // check whether the query is satisfied by the model
       if (options::oracles() || Configuration::isAssertionBuild())
       {
+        Assert (vars.size()==mvs.size());
         // the values for the query should be a complete model
-        Node squery = query;
-        if (!mvs.empty())
-        {
-          squery = squery.substitute(vars.begin(), vars.end(), mvs.begin(), mvs.end());
-        }
+        Node squery =
+            query.substitute(vars.begin(), vars.end(), mvs.begin(), mvs.end());
         Trace("cegqi-debug") << "...squery : " << squery << std::endl;
         squery = d_tds->rewriteNode(squery);
         Trace("cegqi-debug") << "...rewrites to : " << squery << std::endl;
