@@ -1,8 +1,10 @@
 (set-logic HO_BV)
 
 (synth-fun tweak ((pixel (_ BitVec 8))) (_ BitVec 8)
-(( NTnonbool (_ BitVec 8)))
-((NTnonbool (_ BitVec 8)(pixel (_ bv255 8) (bvxor NTnonbool NTnonbool)))
+	(( NTnonbool (_ BitVec 8))(NTbool Bool))
+((NTnonbool (_ BitVec 8)(pixel (_ bv0 8) (_ bv1 8)(bvadd NTnonbool NTnonbool)(bvsub NTnonbool NTnonbool)(bvshl NTnonbool NTnonbool)(bvlshr NTnonbool NTnonbool)(bvurem NTnonbool NTnonbool)(ite NTbool NTnonbool NTnonbool)))
+(NTbool Bool((and NTbool NTbool)(or NTbool NTbool)(not NTbool)(= NTnonbool NTnonbool)(bvuge NTnonbool NTnonbool)(bvugt NTnonbool NTnonbool)))
+
 ))
 
 ; abusing pixel_oracle.sh both for 'correctness' and 'hints'
