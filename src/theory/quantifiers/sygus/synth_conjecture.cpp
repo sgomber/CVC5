@@ -61,7 +61,7 @@ SynthConjecture::SynthConjecture(Env& env,
       d_tds(tr.getTermDatabaseSygus()),
       d_oman(options::oracles() ? new OracleManager(*tr.getOracleChecker())
                                 : nullptr),
-      d_verify(qs.options(), qs.getLogicInfo(), d_tds),
+      d_verify(options(), logicInfo(), d_tds),
       d_hasSolution(false),
       d_ceg_si(new CegSingleInv(env, tr, s)),
       d_templInfer(new SygusTemplateInfer),
