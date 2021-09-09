@@ -742,7 +742,7 @@ Node TermDbSygus::rewriteNode(Node n) const
 {
   Trace("ajr-temp") << "Rewrite node: " << n << std::endl;
   Node res;
-  if (options::sygusExtRew())
+  if (options().quantifiers.sygusExtRew)
   {
     res = extendedRewrite(n);
   }
@@ -1016,18 +1016,6 @@ Node TermDbSygus::evaluateBuiltin(TypeNode tn,
   // Call the rewrite node function, which may involve recursive function
   // evaluation.
   return rewriteNode(res);
-}
-
-Node TermDbSygus::evaluateWithUnfolding(Node n,
-                                        std::unordered_map<Node, Node>& visited)
-{
-  return rewriteNode(n);
-}
-
-Node TermDbSygus::evaluateWithUnfolding(Node n)
-{
-  std::unordered_map<Node, Node> visited;
-  return evaluateWithUnfolding(n, visited);
 }
 
 bool TermDbSygus::isEvaluationPoint(Node n) const
