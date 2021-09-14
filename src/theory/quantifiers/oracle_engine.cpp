@@ -44,12 +44,13 @@ struct OracleOutputVarAttributeId
 typedef expr::Attribute<OracleOutputVarAttributeId, bool>
     OracleOutputVarAttribute;
 
-OracleEngine::OracleEngine(QuantifiersState& qs,
+OracleEngine::OracleEngine(Env& env,
+                           QuantifiersState& qs,
                            QuantifiersInferenceManager& qim,
                            QuantifiersRegistry& qr,
                            TermRegistry& tr)
-    : QuantifiersModule(qs, qim, qr, tr),
-      d_oracleFuns(qs.getUserContext()),
+    : QuantifiersModule(env, qs, qim, qr, tr),
+      d_oracleFuns(userContext()),
       d_ochecker(tr.getOracleChecker())
 {
   Assert(d_ochecker != nullptr);

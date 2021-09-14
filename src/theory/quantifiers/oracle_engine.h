@@ -31,7 +31,8 @@ namespace quantifiers {
 class OracleEngine : public QuantifiersModule
 {
  public:
-  OracleEngine(QuantifiersState& qs,
+  OracleEngine(Env& env,
+               QuantifiersState& qs,
                QuantifiersInferenceManager& qim,
                QuantifiersRegistry& qr,
                TermRegistry& tr);
