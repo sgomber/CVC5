@@ -51,7 +51,7 @@ RelevantDomain::RDomain * RelevantDomain::RDomain::getParent() {
   if( !d_parent ){
     return this;
   }
-  RDomain* p = d_parent->getParent();
+  RDomain * p = d_parent->getParent();
   d_parent = p;
   return p;
 }
@@ -87,11 +87,8 @@ RelevantDomain::~RelevantDomain() {
 
 }
 
-RelevantDomain::RDomain* RelevantDomain::getRDomain(Node n,
-                                                    size_t i,
-                                                    bool getParent)
-{
-  RelevantDomain::RDomain* rd = &d_rel_doms[n][i];
+RelevantDomain::RDomain * RelevantDomain::getRDomain( Node n, size_t i, bool getParent ) {
+  RelevantDomain::RDomain * rd = &d_rel_doms[n][i];
   return getParent ? rd->getParent() : rd;
 }
 
@@ -102,83 +99,77 @@ bool RelevantDomain::reset( Theory::Effort e ) {
 
 void RelevantDomain::registerQuantifier(Node q) {}
 void RelevantDomain::compute(){
-  if( !d_is_computed ){
-    d_is_computed = true;
-    d_rel_doms.clear();
-    FirstOrderModel* fm = d_treg.getModel();
-    for( unsigned i=0; i<fm->getNumAssertedQuantifiers(); i++ ){
-      Node q = fm->getAssertedQuantifier( i );
-      Node icf = d_qreg.getInstConstantBody(q);
-      Trace("rel-dom-debug") << "compute relevant domain for " << icf << std::endl;
-      computeRelevantDomain(q);
-    }
+  if( d_is_computed ){
+    return;
+  }
+  d_is_computed = true;
+  d_rel_doms.clear();
+  FirstOrderModel* fm = d_treg.getModel();
+  for( size_t i=0, nquants = fm->getNumAssertedQuantifiers(); i<nquants; i++ ){
+    Node q = fm->getAssertedQuantifier( i );
+    Node icf = d_qreg.getInstConstantBody(q);
+    Trace("rel-dom-debug") << "compute relevant domain for " << icf << std::endl;
+    computeRelevantDomain(q);
+  }
 
-    Trace("rel-dom-debug") << "account for ground terms" << std::endl;
-    TermDb* db = d_treg.getTermDatabase();
-    for (unsigned k = 0; k < db->getNumOperators(); k++)
-    {
-      Node op = db->getOperator(k);
-      unsigned sz = db->getNumGroundTerms( op );
-      for( unsigned i=0; i<sz; i++ ){
-        Node n = db->getGroundTerm(op, i);
-        //if it is a non-redundant term
-        if( db->isTermActive( n ) ){
-          for (size_t j = 0, nchild = n.getNumChildren(); j < nchild; j++)
-          {
-            getRDomain(op, j)->addTerm(n[j]);
-            Trace("rel-dom-debug") << "...add ground term " << n[j] << " to rel dom " << op << "[" << j << "]" << std::endl;
-          }
-        }
+  Trace("rel-dom-debug") << "account for ground terms" << std::endl;
+  TermDb* db = d_treg.getTermDatabase();
+  for (size_t k = 0, nops = db->getNumOperators(); k < nops; k++)
+  {
+    Node op = db->getOperator(k);
+    size_t sz = db->getNumGroundTerms( op );
+    for( size_t i=0; i<sz; i++ ){
+      Node n = db->getGroundTerm(op, i);
+      //if it is a non-redundant term
+      if( !db->isTermActive( n ) ){
+        continue;
+      }
+      for( size_t j=0, nchild = n.getNumChildren(); j<nchild; j++ ){
+        getRDomain( op, j )->addTerm( n[j] );
+        Trace("rel-dom-debug") << "...add ground term " << n[j] << " to rel dom " << op << "[" << j << "]" << std::endl;
       }
     }
-    //print debug
-    for (std::map<Node, std::map<size_t, RDomain> >::iterator it =
-             d_rel_doms.begin();
-         it != d_rel_doms.end();
-         ++it)
-    {
-      Trace("rel-dom") << "Relevant domain for " << it->first << " : " << std::endl;
-      for (std::map<size_t, RDomain>::iterator it2 = it->second.begin();
-           it2 != it->second.end();
-           ++it2)
+  }
+  //print debug
+  for( std::pair< const Node, std::map< size_t, RDomain > >& d : d_rel_doms ){
+    Trace("rel-dom") << "Relevant domain for " << d.first << " : " << std::endl;
+    for( std::pair< const size_t, RDomain >& dd : d.second ){
+      Trace("rel-dom") << "   " << dd.first << " : ";
+      RDomain* r = &dd.second;
+      RDomain* rp = r->getParent();
+      if( r==rp ){
+        r->removeRedundantTerms(d_qs);
+        Trace("rel-dom") << r->d_terms;
+      }else{
+        Trace("rel-dom") << "Dom( " << d.first << ", " << dd.first << " ) ";
+      }
+      Trace("rel-dom") << std::endl;
+      /*
+      if (Configuration::isAssertionBuild())
       {
-        Trace("rel-dom") << "   " << it2->first << " : ";
-        RDomain* r = &it2->second;
-        RDomain* rp = r->getParent();
-        if( r==rp ){
-          r->removeRedundantTerms(d_qs);
-          Trace("rel-dom") << r->d_terms;
-        }else{
-          Trace("rel-dom") << "Dom( " << it->first << ", " << it2->first
-                           << " ) ";
-        }
-        Trace("rel-dom") << std::endl;
-        if (Configuration::isAssertionBuild())
+        Node o = d.first;
+        TypeNode expectedType;
+        if (o.getKind()==FORALL)
         {
-          Node o = it->first;
-          TypeNode expectedType;
-          if (o.getKind() == FORALL)
+          Assert (dd.first<o[0].getNumChildren());
+          expectedType = o[0][dd.first].getType();
+        }
+        else
+        {
+          TypeNode otn = o.getType();
+          Assert(otn.isFunction());
+          Assert(dd.first<otn.getNumChildren());
+          expectedType = otn[dd.first];
+        }
+        for (const Node& t : r->d_terms)
+        {
+          if (!t.getType().isComparableTo(expectedType))
           {
-            Assert(it2->first < o[0].getNumChildren());
-            expectedType = o[0][it2->first].getType();
-          }
-          else
-          {
-            TypeNode otn = o.getType();
-            Assert(otn.isFunction());
-            Assert(it2->first < otn.getNumChildren());
-            expectedType = otn[it2->first];
-          }
-          for (const Node& t : r->d_terms)
-          {
-            if (!t.getType().isComparableTo(expectedType))
-            {
-              Unhandled() << "Bad type for relevant domain " << t.getType()
-                          << " " << expectedType;
-            }
+            Unhandled() << "Bad type for relevant domain " << t.getType() << " " << expectedType;
           }
         }
       }
+      */
     }
   }
 }
@@ -250,23 +241,19 @@ void RelevantDomain::computeRelevantDomainNode(Node q,
     //compute the information for what this literal does
     computeRelevantDomainLit( q, hasPol, pol, n );
     RDomainLit& rdl = d_rel_dom_lit[hasPol][pol][n];
-    if (rdl.d_merge)
-    {
-      Assert(rdl.d_rd[0] != NULL && rdl.d_rd[1] != NULL);
-      RDomain* rd1 = rdl.d_rd[0]->getParent();
-      RDomain* rd2 = rdl.d_rd[1]->getParent();
+    if( rdl.d_merge ){
+      Assert(rdl.d_rd[0] != NULL
+             && rdl.d_rd[1] != NULL);
+      RDomain * rd1 = rdl.d_rd[0]->getParent();
+      RDomain * rd2 = rdl.d_rd[1]->getParent();
       if( rd1!=rd2 ){
         rd1->merge( rd2 );
       }
-    }
-    else
-    {
-      if (rdl.d_rd[0] != NULL)
-      {
-        RDomain* rd = rdl.d_rd[0]->getParent();
-        for (unsigned i = 0; i < rdl.d_val.size(); i++)
-        {
-          rd->addTerm(rdl.d_val[i]);
+    }else{
+      if( rdl.d_rd[0]!=NULL ){
+        RDomain * rd = rdl.d_rd[0]->getParent();
+        for( unsigned i=0; i<rdl.d_val.size(); i++ ){
+          rd->addTerm( rdl.d_val[i] );
         }
       }
     }
@@ -359,17 +346,14 @@ void RelevantDomain::computeRelevantDomainLit( Node q, bool hasPol, bool pol, No
                   if( veq_c.isNull() ){
                     r_add = val;
                     varLhs = (ires==1);
-                    rdl.d_rd[0] = getRDomain(
-                        q, var.getAttribute(InstVarNumAttribute()), false);
+                    rdl.d_rd[0] = getRDomain( q, var.getAttribute(InstVarNumAttribute()), false );
                     rdl.d_rd[1] = NULL;
                   }
                 }
               }else if( !hasNonVar ){
                 //merge the domains
-                rdl.d_rd[0] = getRDomain(
-                    q, var.getAttribute(InstVarNumAttribute()), false);
-                rdl.d_rd[1] = getRDomain(
-                    q, var2.getAttribute(InstVarNumAttribute()), false);
+                rdl.d_rd[0] = getRDomain( q, var.getAttribute(InstVarNumAttribute()), false );
+                rdl.d_rd[1] = getRDomain( q, var2.getAttribute(InstVarNumAttribute()), false );
                 rdl.d_merge = true;
               }
             }
@@ -377,33 +361,30 @@ void RelevantDomain::computeRelevantDomainLit( Node q, bool hasPol, bool pol, No
         }
       }
     }
-    if (rdl.d_merge)
-    {
+    if( rdl.d_merge ){
       //do not merge if constant negative polarity
       if( hasPol && !pol ){
         rdl.d_merge = false;
       }
-    }
-    else if (!r_add.isNull() && !TermUtil::hasInstConstAttr(r_add))
-    {
+    }else if( !r_add.isNull() && !TermUtil::hasInstConstAttr( r_add ) ){
       Trace("rel-dom-debug") << "...add term " << r_add << ", pol = " << pol << ", kind = " << n.getKind() << std::endl;
       //the negative occurrence adds the term to the domain
       if( !hasPol || !pol ){
-        rdl.d_val.push_back(r_add);
+        rdl.d_val.push_back( r_add );
       }
       //the positive occurence adds other terms
       if( ( !hasPol || pol ) && n[0].getType().isInteger() ){
         if( n.getKind()==EQUAL ){
           for( unsigned i=0; i<2; i++ ){
-            rdl.d_val.push_back(ArithMSum::offset(r_add, i == 0 ? 1 : -1));
+            rdl.d_val.push_back(
+                ArithMSum::offset(r_add, i == 0 ? 1 : -1));
           }
         }else if( n.getKind()==GEQ ){
-          rdl.d_val.push_back(ArithMSum::offset(r_add, varLhs ? 1 : -1));
+          rdl.d_val.push_back(
+              ArithMSum::offset(r_add, varLhs ? 1 : -1));
         }
       }
-    }
-    else
-    {
+    }else{
       rdl.d_rd[0] = NULL;
       rdl.d_rd[1] = NULL;
     }
