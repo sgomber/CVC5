@@ -94,7 +94,7 @@ Result SynthVerify::verify(Node query,
       // check whether the query is satisfied by the model
       if (options::oracles() || Configuration::isAssertionBuild())
       {
-        Assert (vars.size()==mvs.size());
+        Assert(vars.size() == mvs.size());
         // the values for the query should be a complete model
         Node squery =
             query.substitute(vars.begin(), vars.end(), mvs.begin(), mvs.end());
