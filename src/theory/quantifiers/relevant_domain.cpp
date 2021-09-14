@@ -50,11 +50,10 @@ void RelevantDomain::RDomain::addTerm( Node t ) {
 RelevantDomain::RDomain * RelevantDomain::RDomain::getParent() {
   if( !d_parent ){
     return this;
-  }else{
-    RDomain * p = d_parent->getParent();
-    d_parent = p;
-    return p;
   }
+  RDomain * p = d_parent->getParent();
+  d_parent = p;
+  return p;
 }
 
 void RelevantDomain::RDomain::removeRedundantTerms(QuantifiersState& qs)
@@ -85,22 +84,12 @@ RelevantDomain::RelevantDomain(Env& env,
 }
 
 RelevantDomain::~RelevantDomain() {
-  for( std::map< Node, std::map< int, RDomain * > >::iterator itr = d_rel_doms.begin(); itr != d_rel_doms.end(); ++itr ){
-    for( std::map< int, RDomain * >::iterator itr2 = itr->second.begin(); itr2 != itr->second.end(); ++itr2 ){
-      RDomain * current = (*itr2).second;
-      Assert(current != NULL);
-      delete current;
-    }
-  }
+
 }
 
-RelevantDomain::RDomain * RelevantDomain::getRDomain( Node n, int i, bool getParent ) {
-  if( d_rel_doms.find( n )==d_rel_doms.end() || d_rel_doms[n].find( i )==d_rel_doms[n].end() ){
-    d_rel_doms[n][i] = new RDomain;
-    d_rn_map[d_rel_doms[n][i]] = n;
-    d_ri_map[d_rel_doms[n][i]] = i;
-  }
-  return getParent ? d_rel_doms[n][i]->getParent() : d_rel_doms[n][i];
+RelevantDomain::RDomain * RelevantDomain::getRDomain( Node n, size_t i, bool getParent ) {
+  RelevantDomain::RDomain * rd = &d_rel_doms[n][i];
+  return getParent ? rd->getParent() : rd;
 }
 
 bool RelevantDomain::reset( Theory::Effort e ) {
@@ -112,11 +101,7 @@ void RelevantDomain::registerQuantifier(Node q) {}
 void RelevantDomain::compute(){
   if( !d_is_computed ){
     d_is_computed = true;
-    for( std::map< Node, std::map< int, RDomain * > >::iterator it = d_rel_doms.begin(); it != d_rel_doms.end(); ++it ){
-      for( std::map< int, RDomain * >::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2 ){
-        it2->second->reset();
-      }
-    }
+    d_rel_doms.clear();
     FirstOrderModel* fm = d_treg.getModel();
     for( unsigned i=0; i<fm->getNumAssertedQuantifiers(); i++ ){
       Node q = fm->getAssertedQuantifier( i );
@@ -135,30 +120,51 @@ void RelevantDomain::compute(){
         Node n = db->getGroundTerm(op, i);
         //if it is a non-redundant term
         if( db->isTermActive( n ) ){
-          for( unsigned j=0; j<n.getNumChildren(); j++ ){
-            RDomain * rf = getRDomain( op, j );
-            rf->addTerm( n[j] );
+          for( size_t j=0, nchild = n.getNumChildren(); j<nchild; j++ ){
+            getRDomain( op, j )->addTerm( n[j] );
             Trace("rel-dom-debug") << "...add ground term " << n[j] << " to rel dom " << op << "[" << j << "]" << std::endl;
           }
         }
       }
     }
     //print debug
-    for( std::map< Node, std::map< int, RDomain * > >::iterator it = d_rel_doms.begin(); it != d_rel_doms.end(); ++it ){
+    for( std::map< Node, std::map< size_t, RDomain > >::iterator it = d_rel_doms.begin(); it != d_rel_doms.end(); ++it ){
       Trace("rel-dom") << "Relevant domain for " << it->first << " : " << std::endl;
-      for( std::map< int, RDomain * >::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2 ){
+      for( std::map< size_t, RDomain >::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2 ){
         Trace("rel-dom") << "   " << it2->first << " : ";
-        RDomain * r = it2->second;
-        RDomain * rp = r->getParent();
+        RDomain* r = &it2->second;
+        RDomain* rp = r->getParent();
         if( r==rp ){
           r->removeRedundantTerms(d_qs);
-          for( unsigned i=0; i<r->d_terms.size(); i++ ){
-            Trace("rel-dom") << r->d_terms[i] << " ";
-          }
+          Trace("rel-dom") << r->d_terms;
         }else{
-          Trace("rel-dom") << "Dom( " << d_rn_map[rp] << ", " << d_ri_map[rp] << " ) ";
+          Trace("rel-dom") << "Dom( " << it->first << ", " << it2->first << " ) ";
         }
         Trace("rel-dom") << std::endl;
+        if (Configuration::isAssertionBuild())
+        {
+          Node o = it->first;
+          TypeNode expectedType;
+          if (o.getKind()==FORALL)
+          {
+            Assert (it2->first<o[0].getNumChildren());
+            expectedType = o[0][it2->first].getType();
+          }
+          else
+          {
+            TypeNode otn = o.getType();
+            Assert(otn.isFunction());
+            Assert(it2->first<otn.getNumChildren());
+            expectedType = otn[it2->first];
+          }
+          for (const Node& t : r->d_terms)
+          {
+            if (!t.getType().isComparableTo(expectedType))
+            {
+              Unhandled() << "Bad type for relevant domain " << t.getType() << " " << expectedType;
+            }
+          }
+        }
       }
     }
   }
@@ -230,19 +236,20 @@ void RelevantDomain::computeRelevantDomainNode(Node q,
   if( ( ( n.getKind()==EQUAL && !n[0].getType().isBoolean() ) || n.getKind()==GEQ ) && TermUtil::hasInstConstAttr( n ) ){
     //compute the information for what this literal does
     computeRelevantDomainLit( q, hasPol, pol, n );
-    if( d_rel_dom_lit[hasPol][pol][n].d_merge ){
-      Assert(d_rel_dom_lit[hasPol][pol][n].d_rd[0] != NULL
-             && d_rel_dom_lit[hasPol][pol][n].d_rd[1] != NULL);
-      RDomain * rd1 = d_rel_dom_lit[hasPol][pol][n].d_rd[0]->getParent();
-      RDomain * rd2 = d_rel_dom_lit[hasPol][pol][n].d_rd[1]->getParent();
+    RDomainLit& rdl = d_rel_dom_lit[hasPol][pol][n];
+    if( rdl.d_merge ){
+      Assert(rdl.d_rd[0] != NULL
+             && rdl.d_rd[1] != NULL);
+      RDomain * rd1 = rdl.d_rd[0]->getParent();
+      RDomain * rd2 = rdl.d_rd[1]->getParent();
       if( rd1!=rd2 ){
         rd1->merge( rd2 );
       }
     }else{
-      if( d_rel_dom_lit[hasPol][pol][n].d_rd[0]!=NULL ){
-        RDomain * rd = d_rel_dom_lit[hasPol][pol][n].d_rd[0]->getParent();
-        for( unsigned i=0; i<d_rel_dom_lit[hasPol][pol][n].d_val.size(); i++ ){
-          rd->addTerm( d_rel_dom_lit[hasPol][pol][n].d_val[i] );
+      if( rdl.d_rd[0]!=NULL ){
+        RDomain * rd = rdl.d_rd[0]->getParent();
+        for( unsigned i=0; i<rdl.d_val.size(); i++ ){
+          rd->addTerm( rdl.d_val[i] );
         }
       }
     }
@@ -272,7 +279,8 @@ void RelevantDomain::computeRelevantDomainOpCh( RDomain * rf, Node n ) {
 
 void RelevantDomain::computeRelevantDomainLit( Node q, bool hasPol, bool pol, Node n ) {
   if( d_rel_dom_lit[hasPol][pol].find( n )==d_rel_dom_lit[hasPol][pol].end() ){
-    d_rel_dom_lit[hasPol][pol][n].d_merge = false;
+    RDomainLit& rdl = d_rel_dom_lit[hasPol][pol][n];
+    rdl.d_merge = false;
     int varCount = 0;
     int varCh = -1;
     for( unsigned i=0; i<n.getNumChildren(); i++ ){
@@ -281,24 +289,24 @@ void RelevantDomain::computeRelevantDomainLit( Node q, bool hasPol, bool pol, No
         // different from q
         Node qi = TermUtil::getInstConstAttr(n[i]);
         unsigned id = n[i].getAttribute(InstVarNumAttribute());
-        d_rel_dom_lit[hasPol][pol][n].d_rd[i] = getRDomain(qi, id, false);
+        rdl.d_rd[i] = getRDomain(qi, id, false);
         varCount++;
         varCh = i;
       }else{
-        d_rel_dom_lit[hasPol][pol][n].d_rd[i] = NULL;
+        rdl.d_rd[i] = NULL;
       }
     }
     
     Node r_add;
     bool varLhs = true;
     if( varCount==2 ){
-      d_rel_dom_lit[hasPol][pol][n].d_merge = true;
+      rdl.d_merge = true;
     }else{
       if( varCount==1 ){
         r_add = n[1-varCh];
         varLhs = (varCh==0);
-        d_rel_dom_lit[hasPol][pol][n].d_rd[0] = d_rel_dom_lit[hasPol][pol][n].d_rd[varCh];
-        d_rel_dom_lit[hasPol][pol][n].d_rd[1] = NULL;
+        rdl.d_rd[0] = rdl.d_rd[varCh];
+        rdl.d_rd[1] = NULL;
       }else{
         //solve the inequality for one/two variables, if possible
         if( n[0].getType().isReal() ){
@@ -334,47 +342,47 @@ void RelevantDomain::computeRelevantDomainLit( Node q, bool hasPol, bool pol, No
                   if( veq_c.isNull() ){
                     r_add = val;
                     varLhs = (ires==1);
-                    d_rel_dom_lit[hasPol][pol][n].d_rd[0] = getRDomain( q, var.getAttribute(InstVarNumAttribute()), false );
-                    d_rel_dom_lit[hasPol][pol][n].d_rd[1] = NULL;
+                    rdl.d_rd[0] = getRDomain( q, var.getAttribute(InstVarNumAttribute()), false );
+                    rdl.d_rd[1] = NULL;
                   }
                 }
               }else if( !hasNonVar ){
                 //merge the domains
-                d_rel_dom_lit[hasPol][pol][n].d_rd[0] = getRDomain( q, var.getAttribute(InstVarNumAttribute()), false );
-                d_rel_dom_lit[hasPol][pol][n].d_rd[1] = getRDomain( q, var2.getAttribute(InstVarNumAttribute()), false );
-                d_rel_dom_lit[hasPol][pol][n].d_merge = true;
+                rdl.d_rd[0] = getRDomain( q, var.getAttribute(InstVarNumAttribute()), false );
+                rdl.d_rd[1] = getRDomain( q, var2.getAttribute(InstVarNumAttribute()), false );
+                rdl.d_merge = true;
               }
             }
           }
         }
       }
     }
-    if( d_rel_dom_lit[hasPol][pol][n].d_merge ){
+    if( rdl.d_merge ){
       //do not merge if constant negative polarity
       if( hasPol && !pol ){
-        d_rel_dom_lit[hasPol][pol][n].d_merge = false;
+        rdl.d_merge = false;
       }
     }else if( !r_add.isNull() && !TermUtil::hasInstConstAttr( r_add ) ){
       Trace("rel-dom-debug") << "...add term " << r_add << ", pol = " << pol << ", kind = " << n.getKind() << std::endl;
       //the negative occurrence adds the term to the domain
       if( !hasPol || !pol ){
-        d_rel_dom_lit[hasPol][pol][n].d_val.push_back( r_add );
+        rdl.d_val.push_back( r_add );
       }
       //the positive occurence adds other terms
       if( ( !hasPol || pol ) && n[0].getType().isInteger() ){
         if( n.getKind()==EQUAL ){
           for( unsigned i=0; i<2; i++ ){
-            d_rel_dom_lit[hasPol][pol][n].d_val.push_back(
+            rdl.d_val.push_back(
                 ArithMSum::offset(r_add, i == 0 ? 1 : -1));
           }
         }else if( n.getKind()==GEQ ){
-          d_rel_dom_lit[hasPol][pol][n].d_val.push_back(
+          rdl.d_val.push_back(
               ArithMSum::offset(r_add, varLhs ? 1 : -1));
         }
       }
     }else{
-      d_rel_dom_lit[hasPol][pol][n].d_rd[0] = NULL;
-      d_rel_dom_lit[hasPol][pol][n].d_rd[1] = NULL;
+      rdl.d_rd[0] = NULL;
+      rdl.d_rd[1] = NULL;
     }
   }
 }
