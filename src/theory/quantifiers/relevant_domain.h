@@ -114,7 +114,7 @@ class RelevantDomain : public QuantifiersUtil
   /** the relevant domains for each quantified formula and function,
    * for each variable # and argument #.
    */
-  std::map< Node, std::map< size_t, RDomain > > d_rel_doms;
+  std::map<Node, std::map<size_t, RDomain> > d_rel_doms;
   /** Reference to the quantifiers state object */
   QuantifiersState& d_qs;
   /** Reference to the quantifiers registry */
@@ -155,7 +155,7 @@ class RelevantDomain : public QuantifiersUtil
   /** Compute the relevant domain when the term n
    * is in a position to be included in relevant domain rf.
    */
-  void computeRelevantDomainOpCh(RDomain * rf, Node n);
+  void computeRelevantDomainOpCh(RDomain* rf, Node n);
   /** compute relevant domain for literal.
    *
    * Updates the relevant domains based on a literal n in quantified

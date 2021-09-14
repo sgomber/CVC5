@@ -296,7 +296,8 @@ void TermTupleEnumeratorBase::next(/*out*/ std::vector<Node>& terms)
     if (!terms[variableIx].isNull())
     {
       Trace("inst-alg-rd") << terms[variableIx].getType() << " ";
-      Trace("inst-alg-rd") << d_quantifier[0][variableIx] << " " << d_quantifier[0][variableIx].getType();
+      Trace("inst-alg-rd") << d_quantifier[0][variableIx] << " "
+                           << d_quantifier[0][variableIx].getType();
     }
     Trace("inst-alg-rd") << "&&";
     Assert(terms[variableIx].isNull()
