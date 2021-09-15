@@ -1637,6 +1637,11 @@ void Smt2Printer::toStreamCmdGetUnsatCore(std::ostream& out) const
   out << "(get-unsat-core)" << std::endl;
 }
 
+void Smt2Printer::toStreamCmdGetDifficulty(std::ostream& out) const
+{
+  out << "(get-difficulty)" << std::endl;
+}
+
 void Smt2Printer::toStreamCmdSetBenchmarkStatus(std::ostream& out,
                                                 Result::Sat status) const
 {
@@ -1900,6 +1905,11 @@ void Smt2Printer::toStreamCmdDeclareVar(std::ostream& out,
 void Smt2Printer::toStreamCmdConstraint(std::ostream& out, Node n) const
 {
   out << "(constraint " << n << ')' << std::endl;
+}
+
+void Smt2Printer::toStreamCmdAssume(std::ostream& out, Node n) const
+{
+  out << "(assume " << n << ')' << std::endl;
 }
 
 void Smt2Printer::toStreamCmdInvConstraint(
