@@ -35,7 +35,7 @@
 
 namespace cvc5 {
 namespace theory {
-  
+
 class QuantifiersEngine;
 class DecisionManager;
 
