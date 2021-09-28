@@ -7425,7 +7425,6 @@ Term Solver::declareOracleFun(const std::string& symbol,
                               const Sort& sort,
                               const std::string& binName) const
 {
-  NodeManagerScope scope(getNodeManager());
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_DOMAIN_SORTS(sorts);
   CVC5_API_SOLVER_CHECK_CODOMAIN_SORT(sort);
@@ -7441,7 +7440,6 @@ Term Solver::declareOracleFunHelper(const std::string& symbol,
                                     const Sort& sort,
                                     const std::string& binName) const
 {
-  NodeManagerScope scope(getNodeManager());
   TypeNode type = *sort.d_type;
   if (!sorts.empty())
   {
@@ -7459,7 +7457,6 @@ void Solver::defineOracleInterface(const std::vector<Term>& inputs,
                                    Term constraint,
                                    const std::string& binName) const
 {
-  NodeManagerScope scope(getNodeManager());
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_TERMS(inputs);
   CVC5_API_SOLVER_CHECK_TERMS(outputs);
