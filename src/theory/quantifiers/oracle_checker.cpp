@@ -17,6 +17,7 @@
 
 #include "expr/node_algorithm.h"
 #include "theory/rewriter.h"
+#include "smt/env.h"
 
 namespace cvc5 {
 namespace theory {
@@ -52,8 +53,21 @@ Node OracleChecker::evaluateApp(Node app)
     d_callers.insert(std::pair<Node, OracleCaller>(f, OracleCaller(f)));
   }
   OracleCaller& caller = d_callers.at(f);
+
+
   // get oracle result
-  return caller.callOracle(app);
+  Node ret;
+  int runResult;
+  bool ranOracle = caller.callOracle(app, ret, runResult);
+  if (ranOracle)
+  {
+    // prints the result of the oracle, if it was computed in the call above.
+    // this prints the original application, its result, and the exit code
+    // of the binary.
+    d_env.getOutput(options::OutputTag::ORACLES) << "(oracle-call " << app << " " << ret << " " << runResult << ")" << std::endl;
+  }
+  Assert (!ret.isNull());
+  return ret;
 }
 
 Node OracleChecker::evaluate(Node n)

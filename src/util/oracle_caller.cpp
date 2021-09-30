@@ -26,40 +26,34 @@
 
 namespace cvc5 {
 
-Node OracleCaller::callOracle(const Node fapp)
+bool OracleCaller::callOracle(const Node fapp, Node& res, int& runResult)
 {
-  if (d_cachedResults.find(fapp) != d_cachedResults.end())
+  std::map<Node, Node>::iterator it = d_cachedResults.find(fapp);
+  if (it != d_cachedResults.end())
   {
     Trace("oracle-calls") << "Using cached oracle result for " << fapp
                           << std::endl;
-    return d_cachedResults.at(fapp);
+    res = it->second;
+    // don't bother setting runResult
+    return false;
   }
-  //Output(options::OutputTag::ORACLES)
-  //    << "Running oracle: " << d_binaryName << " ";
   std::vector<std::string> string_args;
   string_args.push_back(d_binaryName);
 
-  for (const auto& arg : fapp)
+  for (const Node& arg : fapp)
   {
     std::ostringstream oss;
     oss << arg;
     string_args.push_back(oss.str());
-    //Output(options::OutputTag::ORACLES) << " \"" << arg << "\" ";
   }
-  //Output(options::OutputTag::ORACLES) << std::endl;
 
   // run the oracle binary
   std::ostringstream stdout_stream;
 
-  auto run_result = run(d_binaryName, string_args, "", stdout_stream, "");
+  runResult = run(d_binaryName, string_args, "", stdout_stream, "");
 
   // we assume that the oracle returns the result in SMT-LIB format
   std::istringstream oracle_response_istream(stdout_stream.str());
-  /*
-  Output(options::OutputTag::ORACLES)
-      << " response " << stdout_stream.str() << " with run result "
-      << run_result << std::endl;
-      */ //FIXME
 
   // // we assume that an oracle has a return code of 0 or 10.
   // if (run_result != 0 && run_result != 10)
@@ -74,7 +68,8 @@ Node OracleCaller::callOracle(const Node fapp)
   Node response = mini_parsert(oracle_response_istream).expression();
   Trace("oracle-calls") << "response node " << response << std::endl;
   d_cachedResults[fapp] = response;
-  return response;
+  res = response;
+  return true;
 }
 
 bool OracleCaller::isOracleFunction(Node f)

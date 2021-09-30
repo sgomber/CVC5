@@ -36,8 +36,15 @@ class OracleCaller
   Node get_bin_numeral(std::string in);
   Node responseParser(std::string& in);
 
-  /** Call an oracle with a set of arguments **/
-  Node callOracle(const Node fapp);
+  /** 
+   * Call an oracle with a set of arguments, store in result res.
+   *
+   * Return true if the call was made, and false if it was already cached.
+   * 
+   * If this method returns true, then runResult is set to the result returned
+   * from executing the binary.
+   */
+  bool callOracle(Node fapp, Node& res, int& runResult);
 
   /** get binary from oracle interface */
   static std::string getBinaryNameFor(const Node n);

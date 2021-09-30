@@ -25,6 +25,9 @@
 #include "util/oracle_caller.h"
 
 namespace cvc5 {
+
+class Env;
+
 namespace theory {
 namespace quantifiers {
 
@@ -34,7 +37,7 @@ namespace quantifiers {
 class OracleChecker : public NodeConverter
 {
  public:
-  OracleChecker() {}
+  OracleChecker(Env& env) : d_env(env) {}
   ~OracleChecker() {}
 
   /** check predicted ioPairs are consistent with oracles, generate lemmas if
@@ -59,6 +62,8 @@ class OracleChecker : public NodeConverter
  private:
   /** Call back to convert */
   Node postConvert(Node n) override;
+  /** Reference to the env */
+  Env& d_env;
   /** map of oracle interface nodes to oracle callers **/
   std::map<Node, OracleCaller> d_callers;
 };

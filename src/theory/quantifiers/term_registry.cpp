@@ -46,7 +46,7 @@ TermRegistry::TermRegistry(Env& env,
 {
   if (options::oracles())
   {
-    d_ochecker.reset(new OracleChecker);
+    d_ochecker.reset(new OracleChecker(env));
   }
   if (options::sygus() || options::sygusInst())
   {
