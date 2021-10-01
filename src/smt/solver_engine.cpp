@@ -1084,10 +1084,10 @@ void SolverEngine::declareOracleFun(Node var, const std::string& binName)
 }
 
 void SolverEngine::defineOracleInterface(const std::vector<Node>& inputs,
-                                      const std::vector<Node>& outputs,
-                                      Node assume,
-                                      Node constraint,
-                                      const std::string& binName)
+                                         const std::vector<Node>& outputs,
+                                         Node assume,
+                                         Node constraint,
+                                         const std::string& binName)
 {
   finishInit();
   d_state->doPendingPops();
