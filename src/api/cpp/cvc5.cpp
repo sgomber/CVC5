@@ -7440,7 +7440,7 @@ Term Solver::declareOracleFunHelper(const std::string& symbol,
     type = d_nodeMgr->mkFunctionType(types, type);
   }
   Node fun = d_nodeMgr->mkVar(symbol, type);
-  d_smtEngine->declareOracleFun(fun, binName);
+  d_slv->declareOracleFun(fun, binName);
   return Term(this, fun);
 }
 
@@ -7459,7 +7459,7 @@ void Solver::defineOracleInterface(const std::vector<Term>& inputs,
   //////// all checks before this line
   std::vector<Node> inputn = Term::termVectorToNodes(inputs);
   std::vector<Node> outputn = Term::termVectorToNodes(outputs);
-  d_smtEngine->defineOracleInterface(
+  d_slv->defineOracleInterface(
       inputn, outputn, *assume.d_node, *constraint.d_node, binName);
   ////////
   CVC5_API_TRY_CATCH_END;

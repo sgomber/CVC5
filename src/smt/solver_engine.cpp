@@ -1083,7 +1083,7 @@ void SolverEngine::declareOracleFun(Node var, const std::string& binName)
   }
 }
 
-void SmtEngine::defineOracleInterface(const std::vector<Node>& inputs,
+void SolverEngine::defineOracleInterface(const std::vector<Node>& inputs,
                                       const std::vector<Node>& outputs,
                                       Node assume,
                                       Node constraint,
