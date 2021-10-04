@@ -26,6 +26,7 @@
 #include "prop/skolem_def_manager.h"
 #include "theory/output_channel.h"
 #include "util/result.h"
+#include "smt/env_obj.h"
 
 namespace cvc5 {
 
@@ -50,13 +51,13 @@ class TheoryProxy;
  * PropEngine is the abstraction of a Sat Solver, providing methods for
  * solving the SAT problem and conversion to CNF (via the CnfStream).
  */
-class PropEngine
+class PropEngine : protected EnvObj
 {
  public:
   /**
    * Create a PropEngine with a particular decision and theory engine.
    */
-  PropEngine(TheoryEngine* te, Env& env);
+  PropEngine(Env& env, TheoryEngine* te);
 
   /**
    * Destructor.
@@ -351,9 +352,6 @@ class PropEngine
 
   /** The theory engine we will be using */
   TheoryEngine* d_theoryEngine;
-
-  /** Reference to the environment */
-  Env& d_env;
 
   /** The decision engine we will be using */
   std::unique_ptr<decision::DecisionEngine> d_decisionEngine;

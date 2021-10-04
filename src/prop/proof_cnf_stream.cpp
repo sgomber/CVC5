@@ -23,10 +23,9 @@
 namespace cvc5 {
 namespace prop {
 
-ProofCnfStream::ProofCnfStream(context::UserContext* u,
+ProofCnfStream::ProofCnfStream(Env& env,
                                CnfStream& cnfStream,
-                               SatProofManager* satPM,
-                               ProofNodeManager* pnm)
+                               SatProofManager* satPM)
     : d_cnfStream(cnfStream),
       d_satPM(satPM),
       d_proof(pnm, nullptr, u, "ProofCnfStream::LazyCDProof"),
