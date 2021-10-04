@@ -24,7 +24,7 @@
 #include "context/context.h"
 #include "prop/minisat/minisat.h"
 #include "prop/sat_solver.h"
-#include "smt/env.h"
+#include "util/statistics_stats.h"
 
 namespace cvc5 {
 namespace prop {
@@ -32,18 +32,19 @@ namespace prop {
 class SatSolverFactory
 {
  public:
-  static BVSatSolverInterface* createMinisat(Env& env, 
+  static BVSatSolverInterface* createMinisat(context::Context* mainSatContext,
+                                             StatisticsRegistry& registry,
                                              const std::string& name = "");
 
-  static MinisatSatSolver* createCDCLTMinisat(Env& env);
+  static MinisatSatSolver* createCDCLTMinisat(StatisticsRegistry& registry);
 
-  static SatSolver* createCryptoMinisat(Env& env, 
+  static SatSolver* createCryptoMinisat(StatisticsRegistry& registry,
                                         const std::string& name = "");
 
-  static SatSolver* createCadical(Env& env, 
+  static SatSolver* createCadical(StatisticsRegistry& registry,
                                   const std::string& name = "");
 
-  static SatSolver* createKissat(Env& env, 
+  static SatSolver* createKissat(StatisticsRegistry& registry,
                                  const std::string& name = "");
 }; /* class SatSolverFactory */
 
