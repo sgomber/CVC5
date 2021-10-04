@@ -112,7 +112,10 @@ PropEngine::PropEngine(Env& env, TheoryEngine* te)
   d_theoryProxy->finishInit(d_cnfStream);
   bool satProofs = d_env.isSatProofProducing();
   // connect SAT solver
-  d_satSolver->initialize(d_theoryProxy);
+  d_satSolver->initialize(d_env.getContext(),
+                          d_theoryProxy,
+                          d_env.getUserContext(),
+                          satProofs ? pnm : nullptr);
 
   d_decisionEngine->finishInit(d_satSolver, d_cnfStream);
   if (satProofs)
