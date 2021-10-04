@@ -238,10 +238,3 @@ name   = "Base"
   name       = "resourceWeightHolder"
   category   = "undocumented"
   type       = "std::vector<std::string>"
-
-# Stores then enabled output tags.
-[[option]]
-  name       = "outputTagHolder"
-  category   = "undocumented"
-  includes   = ["<bitset>"]
-  type       = "std::vector<std::string>"
