@@ -90,7 +90,7 @@ class CnfStream : protected EnvObj {
    * @param name string identifier to distinguish between different instances
    * even for non-theory literals.
    */
-  CnfStream(Env* env,
+  CnfStream(Env& env,
             SatSolver* satSolver,
             Registrar* registrar,
             FormulaLitPolicy flpol = FormulaLitPolicy::INTERNAL,

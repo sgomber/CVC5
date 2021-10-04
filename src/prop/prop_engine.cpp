@@ -69,7 +69,7 @@ PropEngine::PropEngine(Env& env, TheoryEngine* te)
     : EnvObj(env),
       d_inCheckSat(false),
       d_theoryEngine(te),
-      d_skdm(new SkolemDefManager(env),
+      d_skdm(new SkolemDefManager(env)),
       d_theoryProxy(nullptr),
       d_satSolver(nullptr),
       d_cnfStream(nullptr),
@@ -97,13 +97,14 @@ PropEngine::PropEngine(Env& env, TheoryEngine* te)
     d_decisionEngine.reset(new decision::DecisionEngineEmpty(env));
   }
 
-  d_satSolver = SatSolverFactory::createCDCLTMinisat(env, smtStatisticsRegistry());
+  d_satSolver = SatSolverFactory::createCDCLTMinisat(smtStatisticsRegistry());
 
   // CNF stream and theory proxy required pointers to each other, make the
   // theory proxy first
   d_theoryProxy = new TheoryProxy(
       this, d_theoryEngine, d_decisionEngine.get(), d_skdm.get(), env);
   d_cnfStream = new CnfStream(env,
+                              d_satSolver,
                               d_theoryProxy,
                               FormulaLitPolicy::TRACK,
                               "prop");
@@ -115,7 +116,7 @@ PropEngine::PropEngine(Env& env, TheoryEngine* te)
   d_satSolver->initialize(d_env.getContext(),
                           d_theoryProxy,
                           d_env.getUserContext(),
-                          satProofs ? pnm : nullptr);
+                          satProofs ? d_env.getProofNodeManager() : nullptr);
 
   d_decisionEngine->finishInit(d_satSolver, d_cnfStream);
   if (satProofs)
@@ -125,7 +126,7 @@ PropEngine::PropEngine(Env& env, TheoryEngine* te)
         *d_cnfStream,
         static_cast<MinisatSatSolver*>(d_satSolver)->getProofManager()));
     d_ppm.reset(
-        new PropPfManager(userContext, d_env.getProofNodeManager(), d_satSolver, d_pfCnfStream.get()));
+        new PropPfManager(userContext(), d_env.getProofNodeManager(), d_satSolver, d_pfCnfStream.get()));
   }
 }
 

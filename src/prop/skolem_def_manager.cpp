@@ -16,13 +16,13 @@
 #include "prop/skolem_def_manager.h"
 
 #include "expr/attribute.h"
+#include "smt/env.h"
 
 namespace cvc5 {
 namespace prop {
 
-SkolemDefManager::SkolemDefManager(context::Context* context,
-                                   context::UserContext* userContext)
-    : d_skDefs(userContext), d_skActive(context)
+SkolemDefManager::SkolemDefManager(Env& env)
+    : d_skDefs(env.getUserContext()), d_skActive(env.getContext())
 {
 }
 

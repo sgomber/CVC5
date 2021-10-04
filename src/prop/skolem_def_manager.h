@@ -28,6 +28,9 @@
 #include "expr/node.h"
 
 namespace cvc5 {
+
+class Env;
+
 namespace prop {
 
 /**
@@ -45,8 +48,7 @@ class SkolemDefManager
   using NodeSet = context::CDHashSet<Node>;
 
  public:
-  SkolemDefManager(context::Context* context,
-                   context::UserContext* userContext);
+  SkolemDefManager(Env& env);
 
   ~SkolemDefManager();
 

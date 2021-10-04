@@ -58,10 +58,10 @@ CnfStream::CnfStream(Env& env,
 bool CnfStream::assertClause(TNode node, SatClause& c)
 {
   Trace("cnf") << "Inserting into stream " << c << " node = " << node << "\n";
-  if (Dump.isOn("clauses") && d_env != nullptr)
+  if (Dump.isOn("clauses"))
   {
-    const Printer& printer = d_env->getPrinter();
-    std::ostream& out = d_env->getDumpOut();
+    const Printer& printer = d_env.getPrinter();
+    std::ostream& out = d_env.getDumpOut();
     if (c.size() == 1)
     {
       printer.toStreamCmdAssert(out, getNode(c[0]));

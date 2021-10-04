@@ -37,7 +37,7 @@ SmtSolver::SmtSolver(Env& env,
                      SmtEngineState& state,
                      Preprocessor& pp,
                      SmtEngineStatistics& stats)
-    : d_env(env),
+    : EnvObj(env),
       d_state(state),
       d_pp(pp),
       d_stats(stats),
@@ -71,7 +71,7 @@ void SmtSolver::finishInit(const LogicInfo& logicInfo)
    * are unregistered by the obsolete PropEngine object before registered
    * again by the new PropEngine object */
   d_propEngine.reset(nullptr);
-  d_propEngine.reset(new prop::PropEngine(d_theoryEngine.get(), d_env));
+  d_propEngine.reset(new prop::PropEngine(d_env, d_theoryEngine.get()));
 
   Trace("smt-debug") << "Setting up theory engine..." << std::endl;
   d_theoryEngine->setPropEngine(getPropEngine());
@@ -87,7 +87,7 @@ void SmtSolver::resetAssertions()
    * statistics are unregistered by the obsolete PropEngine object before
    * registered again by the new PropEngine object */
   d_propEngine.reset(nullptr);
-  d_propEngine.reset(new prop::PropEngine(d_theoryEngine.get(), d_env));
+  d_propEngine.reset(new prop::PropEngine(d_env, d_theoryEngine.get()));
   d_theoryEngine->setPropEngine(getPropEngine());
   // Notice that we do not reset TheoryEngine, nor does it require calling
   // finishInit again. In particular, TheoryEngine::finishInit does not
@@ -135,7 +135,7 @@ Result SmtSolver::checkSatisfiability(Assertions& as,
   Trace("smt") << "SmtSolver::check()" << endl;
 
   const std::string& filename = d_env.getOptions().driver.filename;
-  ResourceManager* rm = d_env.getResourceManager();
+  ResourceManager* rm = resourceManager();
   if (rm->out())
   {
     Result::UnknownExplanation why =
@@ -179,7 +179,7 @@ Result SmtSolver::checkSatisfiability(Assertions& as,
       // includes linear arithmetic and bitvectors, which are the primary
       // targets for the global negate option. Other logics are possible here
       // but not considered.
-      LogicInfo logic = d_env.getLogicInfo();
+      const LogicInfo& logic = logicInfo();
       if ((logic.isPure(theory::THEORY_ARITH) && logic.isLinear()) ||
           logic.isPure(theory::THEORY_BV))
       {
@@ -205,7 +205,7 @@ Result SmtSolver::checkSatisfiability(Assertions& as,
 void SmtSolver::processAssertions(Assertions& as)
 {
   TimerStat::CodeTimer paTimer(d_stats.d_processAssertionsTime);
-  d_env.getResourceManager()->spendResource(Resource::PreprocessStep);
+  resourceManager()->spendResource(Resource::PreprocessStep);
   Assert(d_state.isFullyReady());
 
   preprocessing::AssertionPipeline& ap = as.getAssertionPipeline();

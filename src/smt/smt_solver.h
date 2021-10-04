@@ -23,11 +23,11 @@
 #include "expr/node.h"
 #include "theory/logic_info.h"
 #include "util/result.h"
+#include "smt/env_obj.h"
 
 namespace cvc5 {
 
 class SolverEngine;
-class Env;
 class TheoryEngine;
 class ResourceManager;
 class ProofNodeManager;
@@ -61,7 +61,7 @@ struct SmtEngineStatistics;
  * models) can be queries using other classes that examine the state of the
  * TheoryEngine directly, which can be accessed via getTheoryEngine.
  */
-class SmtSolver
+class SmtSolver : protected EnvObj
 {
  public:
   SmtSolver(Env& env,
@@ -126,8 +126,6 @@ class SmtSolver
   //------------------------------------------ end access methods
 
  private:
-  /** Reference to the environment */
-  Env& d_env;
   /** Reference to the state of the SolverEngine */
   SmtEngineState& d_state;
   /** Reference to the preprocessor of SolverEngine */
