@@ -156,19 +156,6 @@ class TheoryEngine : protected EnvObj
    */
   prop::PropEngine* getPropEngine() const { return d_propEngine; }
 
-  /** Get the proof node manager */
-  ProofNodeManager* getProofNodeManager() const;
-
-  /**
-   * Get a pointer to the underlying sat context.
-   */
-  context::Context* getSatContext() const;
-
-  /**
-   * Get a pointer to the underlying user context.
-   */
-  context::UserContext* getUserContext() const;
-
   /**
    * Get a pointer to the underlying quantifiers engine.
    */
@@ -218,7 +205,7 @@ class TheoryEngine : protected EnvObj
    */
   bool isRelevant(Node lit) const;
   /**
-   * This is called at shutdown time by the SmtEngine, just before
+   * This is called at shutdown time by the SolverEngine, just before
    * destruction.  It is important because there are destruction
    * ordering issues between PropEngine and Theory.
    */
@@ -388,6 +375,14 @@ class TheoryEngine : protected EnvObj
    * error.
    */
   const std::unordered_set<TNode>& getRelevantAssertions(bool& success);
+
+  /**
+   * Get difficulty map, which populates dmap, mapping preprocessed assertions
+   * to a value that estimates their difficulty for solving the current problem.
+   *
+   * For details, see theory/difficuly_manager.h.
+   */
+  void getDifficultyMap(std::map<Node, Node>& dmap);
 
   /**
    * Forwards an entailment check according to the given theoryOfMode.

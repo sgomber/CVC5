@@ -46,7 +46,7 @@ TheoryProxy::TheoryProxy(PropEngine* propEngine,
       d_theoryEngine(theoryEngine),
       d_queue(env.getContext()),
       d_satRlv(nullptr),
-      d_tpp(*theoryEngine, env.getUserContext(), env.getProofNodeManager()),
+      d_tpp(env, *theoryEngine),
       d_skdm(skdm),
       d_env(env)
 {
