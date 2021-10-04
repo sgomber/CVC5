@@ -28,7 +28,10 @@ ProofCnfStream::ProofCnfStream(Env& env,
                                SatProofManager* satPM)
     : d_cnfStream(cnfStream),
       d_satPM(satPM),
-      d_proof(env.getProofNodeManager(), nullptr, env.getUserContext(), "ProofCnfStream::LazyCDProof"),
+      d_proof(env.getProofNodeManager(),
+              nullptr,
+              env.getUserContext(),
+              "ProofCnfStream::LazyCDProof"),
       d_blocked(env.getUserContext())
 {
 }

@@ -24,9 +24,9 @@
 #include "expr/node.h"
 #include "proof/trust_node.h"
 #include "prop/skolem_def_manager.h"
+#include "smt/env_obj.h"
 #include "theory/output_channel.h"
 #include "util/result.h"
-#include "smt/env_obj.h"
 
 namespace cvc5 {
 
