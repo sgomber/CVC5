@@ -1948,12 +1948,6 @@ std::pair<bool, Node> TheoryEngine::entailmentCheck(options::TheoryOfMode mode,
   }
 }
 
-bool TheoryEngine::isFiniteType(TypeNode tn) const
-{
-  return isCardinalityClassFinite(tn.getCardinalityClass(),
-                                  options::finiteModelFind());
-}
-
 void TheoryEngine::spendResource(Resource r)
 {
   d_env.getResourceManager()->spendResource(r);
