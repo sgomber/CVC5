@@ -492,12 +492,12 @@ Node QuantifiersRewriter::computeProcessTerms2(
   Trace("quantifiers-rewrite-term-debug2")
       << "Returning " << ret << " for " << body << std::endl;
   // do context-independent rewriting
-  if (ret.getKind() == EQUAL
-      && d_opts.quantifiers.iteLiftQuant != options::IteLiftQuantMode::NONE)
+  if (ret.getKind() == EQUAL)
   {
     for (size_t i = 0; i < 2; i++)
     {
-      if (ret[i].getKind() == ITE)
+      Kind k = ret[i].getKind();
+      if (k == ITE && d_opts.quantifiers.iteLiftQuant != options::IteLiftQuantMode::NONE)
       {
         Node no = i == 0 ? ret[1] : ret[0];
         if (no.getKind() != ITE)
@@ -524,6 +524,27 @@ Node QuantifiersRewriter::computeProcessTerms2(
           }
         }
       }
+      else if (k==APPLY_CONSTRUCTOR && i==0)
+      {
+        if (ret[1].getKind()==APPLY_CONSTRUCTOR)
+        {
+          if (ret[0].getOperator()==ret[1].getOperator())
+          {
+            // (C t1 ... tn) = (C s1 ... sn) --> (and (= t1 s1) ... (= tn sn))
+            std::vector<Node> conj;
+            for (size_t j=0, nchild = ret[0].getNumChildren(); j<nchild; j++)
+            {
+              conj.push_back(nm->mkNode(EQUAL, ret[0][j], ret[1][j]));
+            }
+            ret = nm->mkAnd(conj);
+          }
+          else
+          {
+            // (C t1 ... tn) = (C' s1 ... sm) ---> false
+            ret = nm->mkConst(false);
+          }
+        }
+      }
     }
   }
   else if (ret.getKind() == SELECT && ret[0].getKind() == STORE)
@@ -539,7 +560,8 @@ Node QuantifiersRewriter::computeProcessTerms2(
       st = st[0];
     }
     ret = nm->mkNode(SELECT, st, index);
-    // conditions
+    // we eliminate select over store eagerly
+    // (select (store A i j) k)) ----> (ite (= i k) j (select A k))
     for (int i = (iconds.size() - 1); i >= 0; i--)
     {
       ret = nm->mkNode(ITE, iconds[i], elements[i], ret);
