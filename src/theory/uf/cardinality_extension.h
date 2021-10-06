@@ -377,11 +377,11 @@ class CardinalityExtension : protected EnvObj
   void check( Theory::Effort level );
   /** presolve */
   void presolve();
-  /** 
+  /**
    * Called when TheoryUF::ppRewrite is called on n, this initializes the
    * finite model finding decision strategy when applicable.
    */
-  void notifyPpRewrite( TNode n );
+  void notifyPpRewrite(TNode n);
   /** identify */
   std::string identify() const { return std::string("CardinalityExtension"); }
   //print debug

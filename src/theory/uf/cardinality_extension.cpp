@@ -1614,7 +1614,7 @@ SortModel* CardinalityExtension::getSortModel(Node n)
   std::map< TypeNode, SortModel* >::iterator it = d_rep_model.find( tn );
   //pre-register the type if not done already
   if( it==d_rep_model.end() ){
-    notifyPpRewrite( n );
+    notifyPpRewrite(n);
     it = d_rep_model.find( tn );
   }
   if( it!=d_rep_model.end() ){

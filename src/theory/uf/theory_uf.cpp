@@ -250,7 +250,7 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
   {
     d_thss->notifyPpRewrite(node);
   }
-  
+
   return TrustNode::null();
 }
 
