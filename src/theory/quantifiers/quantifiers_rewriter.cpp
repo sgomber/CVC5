@@ -497,7 +497,8 @@ Node QuantifiersRewriter::computeProcessTerms2(
     for (size_t i = 0; i < 2; i++)
     {
       Kind k = ret[i].getKind();
-      if (k == ITE && d_opts.quantifiers.iteLiftQuant != options::IteLiftQuantMode::NONE)
+      if (k == ITE
+          && d_opts.quantifiers.iteLiftQuant != options::IteLiftQuantMode::NONE)
       {
         Node no = i == 0 ? ret[1] : ret[0];
         if (no.getKind() != ITE)
@@ -524,15 +525,16 @@ Node QuantifiersRewriter::computeProcessTerms2(
           }
         }
       }
-      else if (k==APPLY_CONSTRUCTOR && i==0)
+      else if (k == APPLY_CONSTRUCTOR && i == 0)
       {
-        if (ret[1].getKind()==APPLY_CONSTRUCTOR)
+        if (ret[1].getKind() == APPLY_CONSTRUCTOR)
         {
-          if (ret[0].getOperator()==ret[1].getOperator())
+          if (ret[0].getOperator() == ret[1].getOperator())
           {
             // (C t1 ... tn) = (C s1 ... sn) --> (and (= t1 s1) ... (= tn sn))
             std::vector<Node> conj;
-            for (size_t j=0, nchild = ret[0].getNumChildren(); j<nchild; j++)
+            for (size_t j = 0, nchild = ret[0].getNumChildren(); j < nchild;
+                 j++)
             {
               conj.push_back(nm->mkNode(EQUAL, ret[0][j], ret[1][j]));
             }
