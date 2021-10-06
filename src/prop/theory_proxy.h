@@ -70,8 +70,6 @@ class TheoryProxy : public Registrar
   /** Finish initialize */
   void finishInit(CDCLTSatSolverInterface* satSolver, CnfStream* cnfStream);
 
-  void presolve();
-
   /** Presolve, which calls presolve for the modules managed by this class */
   void presolve();
 
