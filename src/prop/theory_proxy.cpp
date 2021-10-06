@@ -82,12 +82,6 @@ void TheoryProxy::presolve()
   }
 }
 
-void TheoryProxy::presolve()
-{
-  d_decisionEngine->presolve();
-  d_theoryEngine->presolve();
-}
-
 void TheoryProxy::notifyAssertion(Node a, TNode skolem)
 {
   if (skolem.isNull())
@@ -145,7 +139,7 @@ void TheoryProxy::theoryCheck(theory::Theory::Effort effort) {
       {
         d_satRlv->notifyActivatedSkolemDefs(activeSkolemDefs, d_queue);
       }
-      if (dmNeedsActiveDefs)
+      if (d_dmNeedsActiveDefs)
       {
         d_decisionEngine->notifyActiveSkolemDefs(activeSkolemDefs);
       }
