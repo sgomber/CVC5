@@ -244,16 +244,19 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
       throw LogicException(ss.str());
     }
   }
+  // notify the cardinality extension, which initializes the decision strategy
+  // in node is of an uninterpreted sort.
+  if (d_thss != nullptr)
+  {
+    d_thss->notifyPpRewrite(node);
+  }
+  
   return TrustNode::null();
 }
 
 void TheoryUF::preRegisterTerm(TNode node)
 {
   Debug("uf") << "TheoryUF::preRegisterTerm(" << node << ")" << std::endl;
-
-  if (d_thss != NULL) {
-    d_thss->preRegisterTerm(node);
-  }
 
   // we always use APPLY_UF if not higher-order, HO_APPLY if higher-order
   Assert(node.getKind() != kind::HO_APPLY || logicInfo().isHigherOrder());
