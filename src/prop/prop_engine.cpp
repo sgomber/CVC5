@@ -88,8 +88,7 @@ PropEngine::PropEngine(TheoryEngine* te, Env& env)
   if (dmode == options::DecisionMode::JUSTIFICATION
       || dmode == options::DecisionMode::STOPONLY)
   {
-    d_decisionEngine.reset(
-        new decision::JustificationStrategy(env));
+    d_decisionEngine.reset(new decision::JustificationStrategy(env));
   }
   else if (dmode == options::DecisionMode::JUSTIFICATION_OLD
            || dmode == options::DecisionMode::STOPONLY_OLD)
@@ -386,7 +385,7 @@ Result PropEngine::checkSat() {
   ScopedBool scopedBool(d_inCheckSat);
   d_inCheckSat = true;
 
-  // TODO This currently ignores conflicts (a dangerous practice).
+  // Note this currently ignores conflicts (a dangerous practice).
   d_theoryProxy->presolve();
 
   if(options::preprocessOnly()) {

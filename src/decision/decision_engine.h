@@ -61,8 +61,8 @@ class DecisionEngine : protected EnvObj
    */
   virtual void addSkolemDefinition(TNode lem, TNode skolem) = 0;
   /**
-   * Notify this class that the literal n has been asserted, possibly
-   * propagated by the SAT solver.
+   * Notify this class that the list of lemmas defs are now active in the
+   * current SAT context.
    */
   virtual void notifyActiveSkolemDefs(std::vector<TNode>& defs) {}
   /**

@@ -43,6 +43,7 @@ TheoryProxy::TheoryProxy(PropEngine* propEngine,
     : d_propEngine(propEngine),
       d_cnfStream(nullptr),
       d_decisionEngine(decisionEngine),
+      d_dmNeedsActiveDefs(d_decisionEngine->needsActiveSkolemDefs()),
       d_theoryEngine(theoryEngine),
       d_queue(env.getContext()),
       d_satRlv(nullptr),
@@ -79,6 +80,12 @@ void TheoryProxy::presolve()
   {
     d_satRlv->presolve(d_queue);
   }
+}
+
+void TheoryProxy::presolve()
+{
+  d_decisionEngine->presolve();
+  d_theoryEngine->presolve();
 }
 
 void TheoryProxy::notifyAssertion(Node a, TNode skolem)
@@ -125,8 +132,7 @@ void TheoryProxy::theoryCheck(theory::Theory::Effort effort) {
     d_queue.pop();
     // now, assert to theory engine
     d_theoryEngine->assertFact(assertion);
-    bool dmNeedsActiveDefs = d_decisionEngine->needsActiveSkolemDefs();
-    if (dmNeedsActiveDefs || d_satRlv != nullptr)
+    if (d_dmNeedsActiveDefs || d_satRlv != nullptr)
     {
       Assert(d_skdm != nullptr);
       Trace("sat-rlv-assert")

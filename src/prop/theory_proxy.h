@@ -72,6 +72,9 @@ class TheoryProxy : public Registrar
 
   void presolve();
 
+  /** Presolve, which calls presolve for the modules managed by this class */
+  void presolve();
+
   /** Notify a lemma, possibly corresponding to a skolem definition */
   void notifyAssertion(Node lem, TNode skolem = TNode::null());
 
@@ -151,6 +154,12 @@ class TheoryProxy : public Registrar
 
   /** The decision engine we are using. */
   decision::DecisionEngine* d_decisionEngine;
+
+  /**
+   * Whether the decision engine needs notification of active skolem
+   * definitions, see DecisionEngine::needsActiveSkolemDefs.
+   */
+  bool d_dmNeedsActiveDefs;
 
   /** The theory engine we are using. */
   TheoryEngine* d_theoryEngine;
