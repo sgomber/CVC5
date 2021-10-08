@@ -40,6 +40,7 @@ bool OracleCaller::callOracle(const Node fapp, Node& res, int& runResult)
   std::vector<std::string> string_args;
   string_args.push_back(d_binaryName);
 
+  Trace("oracle-calls") << "Call oracle " << fapp << std::endl;
   for (const Node& arg : fapp)
   {
     std::ostringstream oss;
