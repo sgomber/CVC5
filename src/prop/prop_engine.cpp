@@ -255,6 +255,8 @@ void PropEngine::assertTrustedLemmaInternal(TrustNode trn, bool removable)
 void PropEngine::assertInternal(
     TNode node, bool negated, bool removable, bool input, ProofGenerator* pg)
 {
+  // TODO: if doing virtual clause deletion, ensure node is unique here?
+  // TODO: a "virtual removable" flag?
   // Assert as (possibly) removable
   if (options::unsatCoresMode() == options::UnsatCoresMode::ASSUMPTIONS)
   {

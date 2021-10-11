@@ -58,7 +58,7 @@ Instantiate::Instantiate(Env& env,
       d_pfInst(pnm ? new CDProof(pnm, userContext(), "Instantiate::pfInst")
                    : nullptr)
 {
-  d_usingCmt = options().smt.incrementalSolving;
+  d_usingCmt = options().base.incrementalSolving;
 }
 
 Instantiate::~Instantiate()
