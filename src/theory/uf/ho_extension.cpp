@@ -34,8 +34,8 @@ HoExtension::HoExtension(Env& env,
     : EnvObj(env),
       d_state(state),
       d_im(im),
-      d_extensionality(userContext()),
-      d_uf_std_skolem(userContext())
+      d_extensionality(lemmaContext()),
+      d_uf_std_skolem(lemmaContext())
 {
   d_true = NodeManager::currentNM()->mkConst(true);
 }

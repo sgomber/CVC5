@@ -349,6 +349,8 @@ class Instantiate : public QuantifiersUtil
    * is valid.
    */
   context::CDHashSet<Node> d_c_inst_match_trie_dom;
+  /** Whether we are using the context-dependent instantiation match trie */
+  bool d_usingCmt;
   /**
    * A CDProof storing instantiation steps.
    */

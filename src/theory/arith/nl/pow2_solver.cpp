@@ -37,7 +37,7 @@ Pow2Solver::Pow2Solver(Env& env,
                        InferenceManager& im,
                        ArithState& state,
                        NlModel& model)
-    : EnvObj(env), d_im(im), d_model(model), d_initRefine(userContext())
+    : EnvObj(env), d_im(im), d_model(model), d_initRefine(lemmaContext())
 {
   NodeManager* nm = NodeManager::currentNM();
   d_false = nm->mkConst(false);

@@ -58,6 +58,7 @@ Instantiate::Instantiate(Env& env,
       d_pfInst(pnm ? new CDProof(pnm, userContext(), "Instantiate::pfInst")
                    : nullptr)
 {
+  d_usingCmt = options().smt.incrementalSolving;
 }
 
 Instantiate::~Instantiate()
@@ -500,7 +501,7 @@ bool Instantiate::existsInstantiation(Node q,
                                       std::vector<Node>& terms,
                                       bool modEq)
 {
-  if (options::incrementalSolving())
+  if (d_usingCmt)
   {
     std::map<Node, CDInstMatchTrie*>::iterator it = d_c_inst_match_trie.find(q);
     if (it != d_c_inst_match_trie.end())
@@ -585,7 +586,7 @@ Node Instantiate::getInstantiation(Node q, std::vector<Node>& terms, bool doVts)
 
 bool Instantiate::recordInstantiationInternal(Node q, std::vector<Node>& terms)
 {
-  if (options::incrementalSolving())
+  if (d_usingCmt)
   {
     Trace("inst-add-debug")
         << "Adding into context-dependent inst trie" << std::endl;
@@ -603,7 +604,7 @@ bool Instantiate::recordInstantiationInternal(Node q, std::vector<Node>& terms)
 
 bool Instantiate::removeInstantiationInternal(Node q, std::vector<Node>& terms)
 {
-  if (options::incrementalSolving())
+  if (d_usingCmt)
   {
     std::map<Node, CDInstMatchTrie*>::iterator it = d_c_inst_match_trie.find(q);
     if (it != d_c_inst_match_trie.end())
@@ -629,7 +630,7 @@ void Instantiate::getInstantiationTermVectors(
     Node q, std::vector<std::vector<Node> >& tvecs)
 {
 
-  if (options::incrementalSolving())
+  if (d_usingCmt)
   {
     std::map<Node, CDInstMatchTrie*>::const_iterator it =
         d_c_inst_match_trie.find(q);
@@ -652,7 +653,7 @@ void Instantiate::getInstantiationTermVectors(
 void Instantiate::getInstantiationTermVectors(
     std::map<Node, std::vector<std::vector<Node> > >& insts)
 {
-  if (options::incrementalSolving())
+  if (d_usingCmt)
   {
     for (const auto& t : d_c_inst_match_trie)
     {

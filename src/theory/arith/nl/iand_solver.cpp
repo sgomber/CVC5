@@ -42,7 +42,7 @@ IAndSolver::IAndSolver(Env& env,
       d_im(im),
       d_model(model),
       d_astate(state),
-      d_initRefine(userContext())
+      d_initRefine(lemmaContext())
 {
   NodeManager* nm = NodeManager::currentNM();
   d_false = nm->mkConst(false);
