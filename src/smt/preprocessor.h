@@ -27,11 +27,15 @@
 
 namespace cvc5 {
 
-class SolverEngine;
+class TheoryEngine;
 
 namespace preprocessing {
 class PreprocessingPassContext;
 }
+namespace prop {
+class PropEngine;
+}
+
 namespace smt {
 
 class AbstractValues;
@@ -49,12 +53,12 @@ class PreprocessProofGenerator;
 class Preprocessor : protected EnvObj
 {
  public:
-  Preprocessor(Env& env, AbstractValues& abs, SmtEngineStatistics& stats);
+  Preprocessor(Env& env, AbstractValues& abs, SolverEngineStatistics& stats);
   ~Preprocessor();
   /**
    * Finish initialization
    */
-  void finishInit(SolverEngine* slv);
+  void finishInit(TheoryEngine* te, prop::PropEngine* pe);
   /**
    * Process the assertions that have been asserted in argument as. Returns
    * true if no conflict was discovered while preprocessing them.

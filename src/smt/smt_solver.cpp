@@ -22,8 +22,8 @@
 #include "smt/env.h"
 #include "smt/preprocessor.h"
 #include "smt/smt_engine_state.h"
-#include "smt/smt_engine_stats.h"
 #include "smt/solver_engine.h"
+#include "smt/solver_engine_stats.h"
 #include "theory/logic_info.h"
 #include "theory/theory_engine.h"
 #include "theory/theory_traits.h"
@@ -35,11 +35,11 @@ namespace smt {
 
 SmtSolver::SmtSolver(Env& env,
                      SmtEngineState& state,
-                     Preprocessor& pp,
-                     SmtEngineStatistics& stats)
+                     AbstractValues& abs,
+                     SolverEngineStatistics& stats)
     : d_env(env),
       d_state(state),
-      d_pp(pp),
+      d_pp(env, abs, stats),
       d_stats(stats),
       d_theoryEngine(nullptr),
       d_propEngine(nullptr)
@@ -78,6 +78,8 @@ void SmtSolver::finishInit()
   Trace("smt-debug") << "Finishing init for theory engine..." << std::endl;
   d_theoryEngine->finishInit();
   d_propEngine->finishInit();
+
+  d_pp.finishInit(d_theoryEngine.get(), d_propEngine.get());
 }
 
 void SmtSolver::resetAssertions()
@@ -93,6 +95,8 @@ void SmtSolver::resetAssertions()
   // finishInit again. In particular, TheoryEngine::finishInit does not
   // depend on knowing the associated PropEngine.
   d_propEngine->finishInit();
+  // must reset the preprocessor as well
+  d_pp.finishInit(d_theoryEngine.get(), d_propEngine.get());
 }
 
 void SmtSolver::interrupt()
