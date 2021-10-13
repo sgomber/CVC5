@@ -486,7 +486,7 @@ bool Instantiate::addInstantiationExpFail(Node q,
 }
 
 void Instantiate::recordInstantiation(Node q,
-                                      std::vector<Node>& terms,
+                                      const std::vector<Node>& terms,
                                       bool doVts)
 {
   Trace("inst-debug") << "Record instantiation for " << q << std::endl;
@@ -498,7 +498,7 @@ void Instantiate::recordInstantiation(Node q,
 }
 
 bool Instantiate::existsInstantiation(Node q,
-                                      std::vector<Node>& terms,
+                                      const std::vector<Node>& terms,
                                       bool modEq)
 {
   if (d_usingCmt)
@@ -521,8 +521,8 @@ bool Instantiate::existsInstantiation(Node q,
 }
 
 Node Instantiate::getInstantiation(Node q,
-                                   std::vector<Node>& vars,
-                                   std::vector<Node>& terms,
+                                   const std::vector<Node>& vars,
+                                   const std::vector<Node>& terms,
                                    InferenceId id,
                                    Node pfArg,
                                    bool doVts,
@@ -577,14 +577,17 @@ Node Instantiate::getInstantiation(Node q,
   return body;
 }
 
-Node Instantiate::getInstantiation(Node q, std::vector<Node>& terms, bool doVts)
+Node Instantiate::getInstantiation(Node q,
+                                   const std::vector<Node>& terms,
+                                   bool doVts)
 {
   Assert(d_qreg.d_vars.find(q) != d_qreg.d_vars.end());
   return getInstantiation(
       q, d_qreg.d_vars[q], terms, InferenceId::UNKNOWN, Node::null(), doVts);
 }
 
-bool Instantiate::recordInstantiationInternal(Node q, std::vector<Node>& terms)
+bool Instantiate::recordInstantiationInternal(Node q,
+                                              const std::vector<Node>& terms)
 {
   if (d_usingCmt)
   {
@@ -602,7 +605,8 @@ bool Instantiate::recordInstantiationInternal(Node q, std::vector<Node>& terms)
   return d_inst_match_trie[q].addInstMatch(d_qstate, q, terms);
 }
 
-bool Instantiate::removeInstantiationInternal(Node q, std::vector<Node>& terms)
+bool Instantiate::removeInstantiationInternal(Node q,
+                                              const std::vector<Node>& terms)
 {
   if (d_usingCmt)
   {
