@@ -72,7 +72,7 @@ void QuantInfo::initialize( QuantConflictFind * p, Node q, Node qn ) {
     d_var_num[q[0][i]] = i;
     d_vars.push_back( q[0][i] );
     d_var_types.push_back( q[0][i].getType() );
-    d_allVars.push_back( q[0][i]);
+    d_allVars.push_back(q[0][i]);
   }
 
   registerNode( qn, true, true );

@@ -127,8 +127,9 @@ private: //for completing match
   //optimization: number of variables set, to track when we can stop
   std::map< int, bool > d_vars_set;
   std::vector< Node > d_extra_var;
-  std::vector< Node > d_allVars;
-public:
+  std::vector<Node> d_allVars;
+
+ public:
   bool isBaseMatchComplete();
 public:
   QuantInfo();

@@ -452,7 +452,7 @@ bool Instantiate::addInstantiationExpFail(Node q,
     {
       // if we still fail, we are not critical
       failMask[ii] = false;
-      if (inFailMask.size()+1==tsize)
+      if (inFailMask.size() + 1 == tsize)
       {
         // can never fail with all
         break;

@@ -99,9 +99,10 @@ class EntailmentCheck : public QuantifiersUtil
    * Wrt evaluateTerm, this version does not construct new terms, and
    * thus is less aggressive.
    */
-  TNode getEntailedTerm(TNode n, 
-                  const std::vector<Node>& vars,
-                  std::vector<Node>& subs, bool subsRep);
+  TNode getEntailedTerm(TNode n,
+                        const std::vector<Node>& vars,
+                        std::vector<Node>& subs,
+                        bool subsRep);
   /** is entailed
    * Checks whether the current context entails n with polarity pol, based on
    * the equality information in the quantifiers state. Returns true if the
@@ -121,6 +122,7 @@ class EntailmentCheck : public QuantifiersUtil
                   std::vector<Node>& subs,
                   bool subsRep,
                   bool pol);
+
  protected:
   /** helper for evaluate term */
   Node evaluateTerm2(TNode n,
@@ -137,7 +139,7 @@ class EntailmentCheck : public QuantifiersUtil
   Node d_true;
   Node d_false;
   /** cache for is entailed with given polarity */
-  std::unordered_map<Node, int > d_cacheEntailed;
+  std::unordered_map<Node, int> d_cacheEntailed;
   /** cache for entailed term */
   std::unordered_map<Node, TNode> d_cacheEntailedTerm;
 }; /* class EntailmentCheck */
