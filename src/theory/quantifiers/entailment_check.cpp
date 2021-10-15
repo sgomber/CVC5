@@ -224,10 +224,7 @@ Node EntailmentCheck::evaluateTerm2(TNode n,
   return ret;
 }
 
-TNode EntailmentCheck::getEntailedTerm2(TNode n,
-                                        std::map<TNode, TNode>& subs,
-                                        bool subsRep,
-                                        bool hasSubs)
+TNode EntailmentCheck::getEntailedTerm2(TNode n)
 {
   Trace("term-db-entail") << "get entailed term : " << n << std::endl;
   if (d_qstate.hasTerm(n))
@@ -237,59 +234,52 @@ TNode EntailmentCheck::getEntailedTerm2(TNode n,
   }
   else if (n.getKind() == BOUND_VARIABLE)
   {
-    if (hasSubs)
-    {
-      std::map<TNode, TNode>::iterator it = subs.find(n);
-      if (it != subs.end())
-      {
-        Trace("term-db-entail")
-            << "...substitution is : " << it->second << std::endl;
-        if (subsRep)
-        {
-          Assert(d_qstate.hasTerm(it->second));
-          Assert(d_qstate.getRepresentative(it->second) == it->second);
-          return it->second;
-        }
-        return getEntailedTerm2(it->second, subs, subsRep, hasSubs);
-      }
-    }
+    return TNode::null();
   }
-  else if (n.getKind() == ITE)
+  std::unordered_map<Node, TNode>::iterator itc = d_cacheEntailedTerm.find(n);
+  if (itc!=d_cacheEntailedTerm.end())
+  {
+    return itc->second;
+  }
+  if (n.getKind() == ITE)
   {
     for (uint32_t i = 0; i < 2; i++)
     {
-      if (isEntailed2(n[0], subs, subsRep, hasSubs, i == 0))
+      if (isEntailed2(n[0], i == 0))
       {
-        return getEntailedTerm2(n[i == 0 ? 1 : 2], subs, subsRep, hasSubs);
+        TNode ret = getEntailedTerm2(n[i == 0 ? 1 : 2]);
+        d_cacheEntailedTerm[n] = ret;
+        return ret;
       }
     }
   }
-  else
+  else if (n.hasOperator())
   {
-    if (n.hasOperator())
+    TNode f = d_tdb.getMatchOperator(n);
+    if (!f.isNull())
     {
-      TNode f = d_tdb.getMatchOperator(n);
-      if (!f.isNull())
+      std::vector<TNode> args;
+      for (size_t i = 0, nchild = n.getNumChildren(); i < nchild; i++)
       {
-        std::vector<TNode> args;
-        for (size_t i = 0, nchild = n.getNumChildren(); i < nchild; i++)
+        TNode c = getEntailedTerm2(n[i]);
+        if (c.isNull())
         {
-          TNode c = getEntailedTerm2(n[i], subs, subsRep, hasSubs);
-          if (c.isNull())
-          {
-            return TNode::null();
-          }
-          c = d_qstate.getRepresentative(c);
-          Trace("term-db-entail") << "  child " << i << " : " << c << std::endl;
-          args.push_back(c);
+          d_cacheEntailedTerm[n] = TNode::null();
+          return TNode::null();
         }
-        TNode nn = d_tdb.getCongruentTerm(f, args);
-        Trace("term-db-entail")
-            << "  got congruent term " << nn << " for " << n << std::endl;
-        return nn;
+        c = d_qstate.getRepresentative(c);
+        Trace("term-db-entail") << "  child " << i << " : " << c << std::endl;
+        args.push_back(c);
       }
+      TNode nn = d_tdb.getCongruentTerm(f, args);
+      d_cacheEntailedTerm[n] = nn;
+      Trace("term-db-entail")
+          << "  got congruent term " << nn << " for " << n << std::endl;
+      return nn;
     }
   }
+  
+  d_cacheEntailedTerm[n] = TNode::null();
   return TNode::null();
 }
 
@@ -325,21 +315,29 @@ TNode EntailmentCheck::getEntailedTerm(TNode n)
 }
 
 bool EntailmentCheck::isEntailed2(
-    TNode n, std::map<TNode, TNode>& subs, bool subsRep, bool hasSubs, bool pol)
-{
+    TNode n, bool pol)
+{  
+  std::unordered_map<Node, int >::iterator it = d_cacheEntailed.find(n);
+  if (it !=d_cacheEntailed.end())
+  {
+    // must match
+    return it->second==(pol ? 1 : -1);
+  }
   Trace("term-db-entail") << "Check entailed : " << n << ", pol = " << pol
                           << std::endl;
   Assert(n.getType().isBoolean());
-  if (n.getKind() == EQUAL && !n[0].getType().isBoolean())
+  Kind k = n.getKind();
+  if (k == EQUAL && !n[0].getType().isBoolean())
   {
-    TNode n1 = getEntailedTerm2(n[0], subs, subsRep, hasSubs);
+    TNode n1 = getEntailedTerm2(n[0]);
     if (!n1.isNull())
     {
-      TNode n2 = getEntailedTerm2(n[1], subs, subsRep, hasSubs);
+      TNode n2 = getEntailedTerm2(n[1]);
       if (!n2.isNull())
       {
         if (n1 == n2)
         {
+          d_cacheEntailed[n] = 1;
           return pol;
         }
         else
@@ -348,86 +346,100 @@ bool EntailmentCheck::isEntailed2(
           Assert(d_qstate.hasTerm(n2));
           if (pol)
           {
-            return d_qstate.areEqual(n1, n2);
+            if (d_qstate.areEqual(n1, n2))
+            {
+              d_cacheEntailed[n] = 1;
+              return true;
+            }
           }
-          else
+          else if (d_qstate.areDisequal(n1, n2))
           {
-            return d_qstate.areDisequal(n1, n2);
+            d_cacheEntailed[n] = -1;
+            return true;
           }
-        }
-      }
-    }
-  }
-  else if (n.getKind() == NOT)
-  {
-    return isEntailed2(n[0], subs, subsRep, hasSubs, !pol);
-  }
-  else if (n.getKind() == OR || n.getKind() == AND)
-  {
-    bool simPol = (pol && n.getKind() == OR) || (!pol && n.getKind() == AND);
-    for (size_t i = 0, nchild = n.getNumChildren(); i < nchild; i++)
-    {
-      if (isEntailed2(n[i], subs, subsRep, hasSubs, pol))
-      {
-        if (simPol)
-        {
-          return true;
-        }
-      }
-      else
-      {
-        if (!simPol)
-        {
+          // terms are known, but neither equal nor disequal
+          // don't cache?
           return false;
         }
       }
     }
-    return !simPol;
-    // Boolean equality here
+    // at least one term is unknown
+    d_cacheEntailed[n] = 0;
+  }
+  else if (k == NOT)
+  {
+    return isEntailed2(n[0], !pol);
+  }
+  else if (k == OR || k == AND)
+  {
+    bool simPol = (pol && k == OR) || (!pol && k == AND);
+    for (size_t i = 0, nchild = n.getNumChildren(); i < nchild; i++)
+    {
+      if (isEntailed2(n[i], pol))
+      {
+        if (simPol)
+        {
+          d_cacheEntailed[n] = pol ? 1 : -1;
+          return true;
+        }
+      }
+      else if (!simPol)
+      {
+        // value is unknown with this polarity
+        return false;
+      }
+    }
+    if (!simPol)
+    {
+      return true;
+    }
   }
   else if (n.getKind() == EQUAL || n.getKind() == ITE)
   {
     for (size_t i = 0; i < 2; i++)
     {
-      if (isEntailed2(n[0], subs, subsRep, hasSubs, i == 0))
+      if (isEntailed2(n[0], i == 0))
       {
         size_t ch = (n.getKind() == EQUAL || i == 0) ? 1 : 2;
         bool reqPol = (n.getKind() == ITE || i == 0) ? pol : !pol;
-        return isEntailed2(n[ch], subs, subsRep, hasSubs, reqPol);
+        return isEntailed2(n[ch], reqPol);
       }
     }
+    // the first child is unknown, thus we are unknown
+    d_cacheEntailed[n] = 0;
   }
-  else if (n.getKind() == APPLY_UF)
+  else if (k == APPLY_UF)
   {
-    TNode n1 = getEntailedTerm2(n, subs, subsRep, hasSubs);
+    TNode n1 = getEntailedTerm2(n);
     if (!n1.isNull())
     {
       Assert(d_qstate.hasTerm(n1));
       if (n1 == d_true)
       {
+        d_cacheEntailed[n] = 1;
         return pol;
       }
       else if (n1 == d_false)
       {
+        d_cacheEntailed[n] = -1;
         return !pol;
       }
-      else
-      {
-        return d_qstate.getRepresentative(n1) == (pol ? d_true : d_false);
-      }
+      return d_qstate.getRepresentative(n1) == (pol ? d_true : d_false);
     }
+    // term is unknown, cache
+    d_cacheEntailed[n] = 0;
   }
-  else if (n.getKind() == FORALL && !pol)
+  else if (k == FORALL && !pol)
   {
-    return isEntailed2(n[1], subs, subsRep, hasSubs, pol);
+    // existentials in rare cases can be entailed
+    return isEntailed2(n[1], pol);
   }
   return false;
 }
 
 bool EntailmentCheck::isEntailed(TNode n, bool pol)
 {
-  std::map<TNode, TNode> subs;
-  return isEntailed2(n, subs, false, false, pol);
+  return isEntailed2(n, pol);
 }
 
 bool EntailmentCheck::isEntailed(TNode n,
@@ -435,7 +447,9 @@ bool EntailmentCheck::isEntailed(TNode n,
                                  bool subsRep,
                                  bool pol)
 {
-  return isEntailed2(n, subs, subsRep, true, pol);
+  
+  
+  return isEntailed2(n, pol);
 }
 
 }  // namespace quantifiers

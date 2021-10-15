@@ -124,15 +124,9 @@ class EntailmentCheck : protected EnvObj
                      bool computeExp,
                      bool reqHasTerm);
   /** helper for get entailed term */
-  TNode getEntailedTerm2(TNode n,
-                         std::map<TNode, TNode>& subs,
-                         bool subsRep,
-                         bool hasSubs);
+  TNode getEntailedTerm2(TNode n);
   /** helper for is entailed */
   bool isEntailed2(TNode n,
-                   std::map<TNode, TNode>& subs,
-                   bool subsRep,
-                   bool hasSubs,
                    bool pol);
   /** The quantifiers state object */
   QuantifiersState& d_qstate;
@@ -141,6 +135,10 @@ class EntailmentCheck : protected EnvObj
   /** boolean terms */
   Node d_true;
   Node d_false;
+  /** cache for is entailed with given polarity */
+  std::unordered_map<Node, int > d_cacheEntailed;
+  /** cache for entailed term */
+  std::unordered_map<Node, TNode> d_cacheEntailedTerm;
 }; /* class EntailmentCheck */
 
 }  // namespace quantifiers
