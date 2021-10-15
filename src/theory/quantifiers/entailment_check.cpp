@@ -237,7 +237,7 @@ TNode EntailmentCheck::getEntailedTerm(TNode n)
     return TNode::null();
   }
   std::unordered_map<Node, TNode>::iterator itc = d_cacheEntailedTerm.find(n);
-  if (itc!=d_cacheEntailedTerm.end())
+  if (itc != d_cacheEntailedTerm.end())
   {
     return itc->second;
   }
@@ -278,7 +278,7 @@ TNode EntailmentCheck::getEntailedTerm(TNode n)
       return nn;
     }
   }
-  
+
   d_cacheEntailedTerm[n] = TNode::null();
   return TNode::null();
 }
@@ -302,14 +302,14 @@ Node EntailmentCheck::evaluateTerm(TNode n,
 }
 
 TNode EntailmentCheck::getEntailedTerm(TNode n,
-                  const std::vector<Node>& vars,
-                  std::vector<Node>& subs, 
+                                       const std::vector<Node>& vars,
+                                       std::vector<Node>& subs,
                                        bool subsRep)
 {
-  Assert (vars.size()==subs.size());
+  Assert(vars.size() == subs.size());
   if (!subsRep)
   {
-    for (size_t i=0, nsubs = subs.size(); i<nsubs; i++)
+    for (size_t i = 0, nsubs = subs.size(); i < nsubs; i++)
     {
       subs[i] = d_qstate.getRepresentative(subs[i]);
     }
@@ -318,14 +318,13 @@ TNode EntailmentCheck::getEntailedTerm(TNode n,
   return getEntailedTerm(nn);
 }
 
-bool EntailmentCheck::isEntailed(
-    TNode n, bool pol)
-{  
-  std::unordered_map<Node, int >::iterator it = d_cacheEntailed.find(n);
-  if (it !=d_cacheEntailed.end())
+bool EntailmentCheck::isEntailed(TNode n, bool pol)
+{
+  std::unordered_map<Node, int>::iterator it = d_cacheEntailed.find(n);
+  if (it != d_cacheEntailed.end())
   {
     // must match
-    return it->second==(pol ? 1 : -1);
+    return it->second == (pol ? 1 : -1);
   }
   Trace("term-db-entail") << "Check entailed : " << n << ", pol = " << pol
                           << std::endl;
@@ -448,15 +447,15 @@ bool EntailmentCheck::isEntailed(
 }
 
 bool EntailmentCheck::isEntailed(TNode n,
-                  const std::vector<Node>& vars,
-                  std::vector<Node>& subs, 
+                                 const std::vector<Node>& vars,
+                                 std::vector<Node>& subs,
                                  bool subsRep,
                                  bool pol)
 {
-  Assert (vars.size()==subs.size());
+  Assert(vars.size() == subs.size());
   if (!subsRep)
   {
-    for (size_t i=0, nsubs = subs.size(); i<nsubs; i++)
+    for (size_t i = 0, nsubs = subs.size(); i < nsubs; i++)
     {
       subs[i] = d_qstate.getRepresentative(subs[i]);
     }
