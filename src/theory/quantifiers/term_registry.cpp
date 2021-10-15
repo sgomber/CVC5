@@ -18,6 +18,7 @@
 #include "options/base_options.h"
 #include "options/quantifiers_options.h"
 #include "options/smt_options.h"
+#include "theory/quantifiers/entailment_check.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/fmf/first_order_model_fmc.h"
 #include "theory/quantifiers/ho_term_database.h"
@@ -40,6 +41,7 @@ TermRegistry::TermRegistry(Env& env,
       d_termPools(new TermPools(env, qs)),
       d_termDb(logicInfo().isHigherOrder() ? new HoTermDb(env, qs, qr)
                                            : new TermDb(env, qs, qr)),
+      d_echeck(new EntailmentCheck(env, qs, *d_termDb.get())),
       d_sygusTdb(nullptr),
       d_ochecker(nullptr),
       d_qmodel(nullptr)
@@ -141,6 +143,11 @@ TermDbSygus* TermRegistry::getTermDatabaseSygus() const
 OracleChecker* TermRegistry::getOracleChecker() const
 {
   return d_ochecker.get();
+}
+
+EntailmentCheck* TermRegistry::getEntailmentCheck() const
+{
+  return d_echeck.get();
 }
 
 TermEnumeration* TermRegistry::getTermEnumeration() const
