@@ -72,6 +72,7 @@ void QuantInfo::initialize( QuantConflictFind * p, Node q, Node qn ) {
     d_var_num[q[0][i]] = i;
     d_vars.push_back( q[0][i] );
     d_var_types.push_back( q[0][i].getType() );
+    d_allVars.push_back( q[0][i]);
   }
 
   registerNode( qn, true, true );
@@ -254,6 +255,7 @@ void QuantInfo::flatten( Node n, bool beneathQuant ) {
         registerNode( n, false, false );
       }else if( n.getKind()==BOUND_VARIABLE ){
         d_extra_var.push_back( n );
+        d_allVars.push_back(n);
       }else{
         for( unsigned i=0; i<n.getNumChildren(); i++ ){
           flatten( n[i], beneathQuant );
@@ -580,17 +582,15 @@ bool QuantInfo::isTConstraintSpurious(QuantConflictFind* p,
     EntailmentCheck* echeck = p->getTermRegistry().getEntailmentCheck();
     if (p->atConflictEffort()) {
       Trace("qcf-instance-check") << "Possible conflict instance for " << d_q << " : " << std::endl;
-      std::map< TNode, TNode > subs;
-      for( unsigned i=0; i<terms.size(); i++ ){
-        Trace("qcf-instance-check") << "  " << terms[i] << std::endl;
-        subs[d_q[0][i]] = terms[i];
-      }
+      size_t origSize = terms.size();
       for( unsigned i=0; i<d_extra_var.size(); i++ ){
         Node n = getCurrentExpValue( d_extra_var[i] );
         Trace("qcf-instance-check") << "  " << d_extra_var[i] << " -> " << n << std::endl;
-        subs[d_extra_var[i]] = n;
+        terms.push_back(n);
       }
-      if (!echeck->isEntailed(d_q[1], subs, false, false))
+      bool isEnt = echeck->isEntailed(d_q[1], d_allVars, terms, false, false);
+      terms.resize(origSize);
+      if (!isEnt)
       {
         Trace("qcf-instance-check") << "...not entailed to be false." << std::endl;
         return true;

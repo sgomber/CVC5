@@ -103,6 +103,7 @@ QuantifiersEngine::QuantifiersEngine(
   d_util.push_back(tr.getTermDatabase());
   d_util.push_back(qim.getInstantiate());
   d_util.push_back(tr.getTermPools());
+  d_util.push_back(tr.getEntailmentCheck());
 }
 
 QuantifiersEngine::~QuantifiersEngine() {}

@@ -26,7 +26,7 @@ namespace theory {
 namespace quantifiers {
 
 EntailmentCheck::EntailmentCheck(Env& env, QuantifiersState& qs, TermDb& tdb)
-    : EnvObj(env), d_qstate(qs), d_tdb(tdb)
+    : QuantifiersUtil(env), d_qstate(qs), d_tdb(tdb)
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
@@ -224,7 +224,7 @@ Node EntailmentCheck::evaluateTerm2(TNode n,
   return ret;
 }
 
-TNode EntailmentCheck::getEntailedTerm2(TNode n)
+TNode EntailmentCheck::getEntailedTerm(TNode n)
 {
   Trace("term-db-entail") << "get entailed term : " << n << std::endl;
   if (d_qstate.hasTerm(n))
@@ -245,9 +245,9 @@ TNode EntailmentCheck::getEntailedTerm2(TNode n)
   {
     for (uint32_t i = 0; i < 2; i++)
     {
-      if (isEntailed2(n[0], i == 0))
+      if (isEntailed(n[0], i == 0))
       {
-        TNode ret = getEntailedTerm2(n[i == 0 ? 1 : 2]);
+        TNode ret = getEntailedTerm(n[i == 0 ? 1 : 2]);
         d_cacheEntailedTerm[n] = ret;
         return ret;
       }
@@ -261,7 +261,7 @@ TNode EntailmentCheck::getEntailedTerm2(TNode n)
       std::vector<TNode> args;
       for (size_t i = 0, nchild = n.getNumChildren(); i < nchild; i++)
       {
-        TNode c = getEntailedTerm2(n[i]);
+        TNode c = getEntailedTerm(n[i]);
         if (c.isNull())
         {
           d_cacheEntailedTerm[n] = TNode::null();
@@ -302,19 +302,23 @@ Node EntailmentCheck::evaluateTerm(TNode n,
 }
 
 TNode EntailmentCheck::getEntailedTerm(TNode n,
-                                       std::map<TNode, TNode>& subs,
+                  const std::vector<Node>& vars,
+                  std::vector<Node>& subs, 
                                        bool subsRep)
 {
-  return getEntailedTerm2(n, subs, subsRep, true);
+  Assert (vars.size()==subs.size());
+  if (!subsRep)
+  {
+    for (size_t i=0, nsubs = subs.size(); i<nsubs; i++)
+    {
+      subs[i] = d_qstate.getRepresentative(subs[i]);
+    }
+  }
+  Node nn = n.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
+  return getEntailedTerm(nn);
 }
 
-TNode EntailmentCheck::getEntailedTerm(TNode n)
-{
-  std::map<TNode, TNode> subs;
-  return getEntailedTerm2(n, subs, false, false);
-}
-
-bool EntailmentCheck::isEntailed2(
+bool EntailmentCheck::isEntailed(
     TNode n, bool pol)
 {  
   std::unordered_map<Node, int >::iterator it = d_cacheEntailed.find(n);
@@ -329,10 +333,10 @@ bool EntailmentCheck::isEntailed2(
   Kind k = n.getKind();
   if (k == EQUAL && !n[0].getType().isBoolean())
   {
-    TNode n1 = getEntailedTerm2(n[0]);
+    TNode n1 = getEntailedTerm(n[0]);
     if (!n1.isNull())
     {
-      TNode n2 = getEntailedTerm2(n[1]);
+      TNode n2 = getEntailedTerm(n[1]);
       if (!n2.isNull())
       {
         if (n1 == n2)
@@ -368,14 +372,14 @@ bool EntailmentCheck::isEntailed2(
   }
   else if (k == NOT)
   {
-    return isEntailed2(n[0], !pol);
+    return isEntailed(n[0], !pol);
   }
   else if (k == OR || k == AND)
   {
     bool simPol = (pol && k == OR) || (!pol && k == AND);
     for (size_t i = 0, nchild = n.getNumChildren(); i < nchild; i++)
     {
-      if (isEntailed2(n[i], pol))
+      if (isEntailed(n[i], pol))
       {
         if (simPol)
         {
@@ -398,11 +402,11 @@ bool EntailmentCheck::isEntailed2(
   {
     for (size_t i = 0; i < 2; i++)
     {
-      if (isEntailed2(n[0], i == 0))
+      if (isEntailed(n[0], i == 0))
       {
         size_t ch = (n.getKind() == EQUAL || i == 0) ? 1 : 2;
         bool reqPol = (n.getKind() == ITE || i == 0) ? pol : !pol;
-        return isEntailed2(n[ch], reqPol);
+        return isEntailed(n[ch], reqPol);
       }
     }
     // the first child is unknown, thus we are unknown
@@ -410,7 +414,7 @@ bool EntailmentCheck::isEntailed2(
   }
   else if (k == APPLY_UF)
   {
-    TNode n1 = getEntailedTerm2(n);
+    TNode n1 = getEntailedTerm(n);
     if (!n1.isNull())
     {
       Assert(d_qstate.hasTerm(n1));
@@ -432,24 +436,34 @@ bool EntailmentCheck::isEntailed2(
   else if (k == FORALL && !pol)
   {
     // existentials in rare cases can be entailed
-    return isEntailed2(n[1], pol);
+    return isEntailed(n[1], pol);
   }
   return false;
 }
 
-bool EntailmentCheck::isEntailed(TNode n, bool pol)
-{
-  return isEntailed2(n, pol);
-}
-
 bool EntailmentCheck::isEntailed(TNode n,
-                                 std::map<TNode, TNode>& subs,
+                  const std::vector<Node>& vars,
+                  std::vector<Node>& subs, 
                                  bool subsRep,
                                  bool pol)
 {
-  
-  
-  return isEntailed2(n, pol);
+  Assert (vars.size()==subs.size());
+  if (!subsRep)
+  {
+    for (size_t i=0, nsubs = subs.size(); i<nsubs; i++)
+    {
+      subs[i] = d_qstate.getRepresentative(subs[i]);
+    }
+  }
+  Node nn = n.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
+  return isEntailed(nn, pol);
+}
+
+bool EntailmentCheck::reset(Theory::Effort effort)
+{
+  d_cacheEntailed.clear();
+  d_cacheEntailedTerm.clear();
+  return true;
 }
 
 }  // namespace quantifiers

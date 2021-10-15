@@ -1364,7 +1364,14 @@ bool ConjectureGenerator::notifySubstitution( TNode glhs, std::map< TNode, TNode
   Trace("sg-cconj-debug") << "Evaluate RHS : : " << rhs << std::endl;
   //get the representative of rhs with substitution subs
   EntailmentCheck* echeck = d_treg.getEntailmentCheck();
-  TNode grhs = echeck->getEntailedTerm(rhs, subs, true);
+  std::vector<Node> vars;
+  std::vector<Node> terms;
+  for (const std::pair<const TNode, TNode>& s : subs)
+  {
+    vars.push_back(s.first);
+    terms.push_back(s.second);
+  }
+  TNode grhs = echeck->getEntailedTerm(rhs, vars, terms, true);
   Trace("sg-cconj-debug") << "...done evaluating term, got : " << grhs << std::endl;
   if( !grhs.isNull() ){
     if( glhs!=grhs ){

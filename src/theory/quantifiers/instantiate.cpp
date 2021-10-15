@@ -202,12 +202,7 @@ bool Instantiate::addInstantiation(Node q,
   {
     // should check consistency of equality engine
     // (if not aborting on utility's reset)
-    std::map<TNode, TNode> subs;
-    for (unsigned i = 0, size = terms.size(); i < size; i++)
-    {
-      subs[q[0][i]] = terms[i];
-    }
-    if (ec->isEntailed(q[1], subs, false, true))
+    if (ec->isEntailed(q[1], d_qreg.d_vars[q], terms, false, true))
     {
       Trace("inst-add-debug") << " --> Currently entailed." << std::endl;
       ++(d_statistics.d_inst_duplicate_ent);
@@ -416,11 +411,11 @@ bool Instantiate::addInstantiationExpFail(Node q,
   // set up information for below
   std::vector<Node>& vars = d_qreg.d_vars[q];
   Assert(tsize == vars.size());
-  std::map<TNode, TNode> subs;
   for (size_t i = 0; i < tsize; i++)
   {
-    subs[vars[i]] = terms[i];
+    terms[i] = d_qstate.getRepresentative(terms[i]);
   }
+  std::unordered_set<size_t> inFailMask;
   // get the instantiation body
   InferenceId idNone = InferenceId::UNKNOWN;
   Node nulln;
@@ -434,26 +429,21 @@ bool Instantiate::addInstantiationExpFail(Node q,
     // replace with the identity substitution
     Node prev = terms[ii];
     terms[ii] = vars[ii];
-    subs.erase(vars[ii]);
-    if (subs.empty())
-    {
-      // will never succeed with empty substitution
-      break;
-    }
     Trace("inst-exp-fail") << "- revert " << ii << std::endl;
     // check whether we are still redundant
     bool success = false;
+    // recompute the instantiation
+    Node ibodyc = getInstantiation(q, vars, terms, idNone, nulln, doVts);
     // check entailment, only if option is set
     if (options::instNoEntail())
     {
       Trace("inst-exp-fail") << "  check entailment" << std::endl;
-      success = echeck->isEntailed(q[1], subs, false, true);
+      success = echeck->isEntailed(ibodyc, true);
       Trace("inst-exp-fail") << "  entailed: " << success << std::endl;
     }
     // check whether the instantiation rewrites to the same thing
     if (!success)
     {
-      Node ibodyc = getInstantiation(q, vars, terms, idNone, nulln, doVts);
       ibodyc = rewrite(ibodyc);
       success = (ibodyc == ibody);
       Trace("inst-exp-fail") << "  rewrite invariant: " << success << std::endl;
@@ -462,10 +452,15 @@ bool Instantiate::addInstantiationExpFail(Node q,
     {
       // if we still fail, we are not critical
       failMask[ii] = false;
+      if (inFailMask.size()+1==tsize)
+      {
+        // can never fail with all
+        break;
+      }
+      inFailMask.insert(ii);
     }
     else
     {
-      subs[vars[ii]] = prev;
       terms[ii] = prev;
       // not necessary to proceed if expFull is false
       if (!expFull)

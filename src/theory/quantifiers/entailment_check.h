@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "expr/node.h"
-#include "smt/env_obj.h"
+#include "theory/quantifiers/quant_util.h"
 
 namespace cvc5 {
 namespace theory {
@@ -37,11 +37,15 @@ class TermDb;
  * It works by looking at the term argument trie data structures in term
  * database. For details, see e.g. Section 4.1 of Reynolds et al TACAS 2018.
  */
-class EntailmentCheck : protected EnvObj
+class EntailmentCheck : public QuantifiersUtil
 {
  public:
   EntailmentCheck(Env& env, QuantifiersState& qs, TermDb& tdb);
   ~EntailmentCheck();
+  /** reset (clear caches) */
+  bool reset(Theory::Effort effort) override;
+  /** identify */
+  std::string identify() const override { return "EntailmentCheck"; }
   /** evaluate term
    *
    * Returns a term n' such that n = n' is entailed based on the equality
@@ -95,7 +99,9 @@ class EntailmentCheck : protected EnvObj
    * Wrt evaluateTerm, this version does not construct new terms, and
    * thus is less aggressive.
    */
-  TNode getEntailedTerm(TNode n, std::map<TNode, TNode>& subs, bool subsRep);
+  TNode getEntailedTerm(TNode n, 
+                  const std::vector<Node>& vars,
+                  std::vector<Node>& subs, bool subsRep);
   /** is entailed
    * Checks whether the current context entails n with polarity pol, based on
    * the equality information in the quantifiers state. Returns true if the
@@ -111,10 +117,10 @@ class EntailmentCheck : protected EnvObj
    * according to in the quantifiers state.
    */
   bool isEntailed(TNode n,
-                  std::map<TNode, TNode>& subs,
+                  const std::vector<Node>& vars,
+                  std::vector<Node>& subs,
                   bool subsRep,
                   bool pol);
-
  protected:
   /** helper for evaluate term */
   Node evaluateTerm2(TNode n,
@@ -123,11 +129,6 @@ class EntailmentCheck : protected EnvObj
                      bool useEntailmentTests,
                      bool computeExp,
                      bool reqHasTerm);
-  /** helper for get entailed term */
-  TNode getEntailedTerm2(TNode n);
-  /** helper for is entailed */
-  bool isEntailed2(TNode n,
-                   bool pol);
   /** The quantifiers state object */
   QuantifiersState& d_qstate;
   /** Reference to the term database */
