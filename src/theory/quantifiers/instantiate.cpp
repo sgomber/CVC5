@@ -434,25 +434,21 @@ bool Instantiate::addInstantiationExpFail(Node q,
     bool success = false;
     // recompute the instantiation
     Node ibodyc = getInstantiation(q, vars, terms, idNone, nulln, doVts);
+    ibodyc = rewrite(ibodyc);
+    success = (ibodyc == ibody);
+    Trace("inst-exp-fail") << "  rewrite invariant: " << success << std::endl;
     // check entailment, only if option is set
-    if (options::instNoEntail())
+    if (!success && options::instNoEntail())
     {
       Trace("inst-exp-fail") << "  check entailment" << std::endl;
       success = echeck->isEntailed(ibodyc, true);
       Trace("inst-exp-fail") << "  entailed: " << success << std::endl;
     }
-    // check whether the instantiation rewrites to the same thing
-    if (!success)
-    {
-      ibodyc = rewrite(ibodyc);
-      success = (ibodyc == ibody);
-      Trace("inst-exp-fail") << "  rewrite invariant: " << success << std::endl;
-    }
     if (success)
     {
       // if we still fail, we are not critical
       failMask[ii] = false;
-      if (inFailMask.size() + 1 == tsize)
+      if (inFailMask.size()+1==tsize)
       {
         // can never fail with all
         break;
