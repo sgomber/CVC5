@@ -239,7 +239,9 @@ void PropEngine::assertLemma(TrustNode tlemma, theory::LemmaProperty p)
   assertLemmasInternal(tplemma, ppLemmas, p);
 }
 
-void PropEngine::assertTrustedLemmaInternal(TrustNode trn, bool removable, bool virt)
+void PropEngine::assertTrustedLemmaInternal(TrustNode trn,
+                                            bool removable,
+                                            bool virt)
 {
   Node node = trn.getNode();
   Debug("prop::lemmas") << "assertLemma(" << node << ")" << std::endl;
@@ -249,11 +251,16 @@ void PropEngine::assertTrustedLemmaInternal(TrustNode trn, bool removable, bool 
       || options::unsatCores()
       || (options::unsatCores()
           && options::unsatCoresMode() != options::UnsatCoresMode::FULL_PROOF));
-  assertInternal(trn.getNode(), negated, removable, virt, false, trn.getGenerator());
+  assertInternal(
+      trn.getNode(), negated, removable, virt, false, trn.getGenerator());
 }
 
-void PropEngine::assertInternal(
-    TNode node, bool negated, bool removable, bool virt, bool input, ProofGenerator* pg)
+void PropEngine::assertInternal(TNode node,
+                                bool negated,
+                                bool removable,
+                                bool virt,
+                                bool input,
+                                ProofGenerator* pg)
 {
   // Assert as (possibly) removable
   if (options::unsatCoresMode() == options::UnsatCoresMode::ASSUMPTIONS)

@@ -20,15 +20,15 @@
 #ifndef CVC5__PROP_ENGINE_H
 #define CVC5__PROP_ENGINE_H
 
-#include "context/cdlist.h"
 #include "context/cdhashset.h"
+#include "context/cdlist.h"
 #include "expr/node.h"
 #include "proof/trust_node.h"
 #include "prop/skolem_def_manager.h"
+#include "smt/env_obj.h"
 #include "theory/output_channel.h"
 #include "theory/skolem_lemma.h"
 #include "util/result.h"
-#include "smt/env_obj.h"
 
 namespace cvc5 {
 
@@ -56,6 +56,7 @@ class TheoryProxy;
 class PropEngine : protected EnvObj
 {
   typedef context::CDHashSet<Node> NodeSet;
+
  public:
   /**
    * Create a PropEngine with a particular decision and theory engine.
