@@ -50,6 +50,10 @@ bool isLemmaPropertyNeedsJustify(LemmaProperty p)
 {
   return (p & LemmaProperty::NEEDS_JUSTIFY) != LemmaProperty::NONE;
 }
+bool isLemmaPropertyVirtual(LemmaProperty p)
+{
+  return (p & LemmaProperty::VIRTUAL) != LemmaProperty::NONE;
+}
 
 std::ostream& operator<<(std::ostream& out, LemmaProperty p)
 {
@@ -71,6 +75,10 @@ std::ostream& operator<<(std::ostream& out, LemmaProperty p)
     if (isLemmaPropertyNeedsJustify(p))
     {
       out << " NEEDS_JUSTIFY";
+    }
+    if (isLemmaPropertyVirtual(p))
+    {
+      out << " VIRTUAL";
     }
     out << " }";
   }
