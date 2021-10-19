@@ -66,9 +66,9 @@ public:
 };
 
 PropEngine::PropEngine(TheoryEngine* te, Env& env)
-    : d_inCheckSat(false),
+    : EnvObj(env),
+      d_inCheckSat(false),
       d_theoryEngine(te),
-      d_env(env),
       d_skdm(new SkolemDefManager(d_env.getContext(), d_env.getUserContext())),
       d_theoryProxy(nullptr),
       d_satSolver(nullptr),
@@ -76,7 +76,8 @@ PropEngine::PropEngine(TheoryEngine* te, Env& env)
       d_pfCnfStream(nullptr),
       d_ppm(nullptr),
       d_interrupted(false),
-      d_assumptions(d_env.getUserContext())
+      d_assumptions(userContext()),
+      d_virtualLemmaCache(userContext())
 {
   Debug("prop") << "Constructing the PropEngine" << std::endl;
   context::UserContext* userContext = d_env.getUserContext();
@@ -199,13 +200,12 @@ void PropEngine::assertInputFormulas(
   for (const Node& node : assertions)
   {
     Debug("prop") << "assertFormula(" << node << ")" << std::endl;
-    assertInternal(node, false, false, true);
+    assertInternal(node, false, false, false, true);
   }
 }
 
 void PropEngine::assertLemma(TrustNode tlemma, theory::LemmaProperty p)
 {
-  bool removable = isLemmaPropertyRemovable(p);
 
   // call preprocessor
   std::vector<theory::SkolemLemma> ppLemmas;
@@ -236,10 +236,10 @@ void PropEngine::assertLemma(TrustNode tlemma, theory::LemmaProperty p)
   }
 
   // now, assert the lemmas
-  assertLemmasInternal(tplemma, ppLemmas, removable);
+  assertLemmasInternal(tplemma, ppLemmas, p);
 }
 
-void PropEngine::assertTrustedLemmaInternal(TrustNode trn, bool removable)
+void PropEngine::assertTrustedLemmaInternal(TrustNode trn, bool removable, bool virt)
 {
   Node node = trn.getNode();
   Debug("prop::lemmas") << "assertLemma(" << node << ")" << std::endl;
@@ -249,11 +249,11 @@ void PropEngine::assertTrustedLemmaInternal(TrustNode trn, bool removable)
       || options::unsatCores()
       || (options::unsatCores()
           && options::unsatCoresMode() != options::UnsatCoresMode::FULL_PROOF));
-  assertInternal(trn.getNode(), negated, removable, false, trn.getGenerator());
+  assertInternal(trn.getNode(), negated, removable, virt, false, trn.getGenerator());
 }
 
 void PropEngine::assertInternal(
-    TNode node, bool negated, bool removable, bool input, ProofGenerator* pg)
+    TNode node, bool negated, bool removable, bool virt, bool input, ProofGenerator* pg)
 {
   // Assert as (possibly) removable
   if (options::unsatCoresMode() == options::UnsatCoresMode::ASSUMPTIONS)
@@ -293,15 +293,17 @@ void PropEngine::assertInternal(
 void PropEngine::assertLemmasInternal(
     TrustNode trn,
     const std::vector<theory::SkolemLemma>& ppLemmas,
-    bool removable)
+    theory::LemmaProperty p)
 {
+  bool removable = isLemmaPropertyRemovable(p);
+  bool virt = isLemmaPropertyVirtual(p);
   if (!trn.isNull())
   {
-    assertTrustedLemmaInternal(trn, removable);
+    assertTrustedLemmaInternal(trn, removable, virt);
   }
   for (const theory::SkolemLemma& lem : ppLemmas)
   {
-    assertTrustedLemmaInternal(lem.d_lemma, removable);
+    assertTrustedLemmaInternal(lem.d_lemma, removable, virt);
   }
   // assert to decision engine
   if (!removable)
@@ -507,7 +509,7 @@ Node PropEngine::getPreprocessedTerm(TNode n)
   TrustNode tpn = d_theoryProxy->preprocess(n, newLemmas);
   // send lemmas corresponding to the skolems introduced by preprocessing n
   TrustNode trnNull;
-  assertLemmasInternal(trnNull, newLemmas, false);
+  assertLemmasInternal(trnNull, newLemmas, theory::LemmaProperty::NONE);
   return tpn.isNull() ? Node(n) : tpn.getNode();
 }
 

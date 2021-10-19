@@ -21,12 +21,14 @@
 #define CVC5__PROP_ENGINE_H
 
 #include "context/cdlist.h"
+#include "context/cdhashset.h"
 #include "expr/node.h"
 #include "proof/trust_node.h"
 #include "prop/skolem_def_manager.h"
 #include "theory/output_channel.h"
 #include "theory/skolem_lemma.h"
 #include "util/result.h"
+#include "smt/env_obj.h"
 
 namespace cvc5 {
 
@@ -51,8 +53,9 @@ class TheoryProxy;
  * PropEngine is the abstraction of a Sat Solver, providing methods for
  * solving the SAT problem and conversion to CNF (via the CnfStream).
  */
-class PropEngine
+class PropEngine : protected EnvObj
 {
+  typedef context::CDHashSet<Node> NodeSet;
  public:
   /**
    * Create a PropEngine with a particular decision and theory engine.
@@ -313,13 +316,15 @@ class PropEngine
    * @param trn the trust node storing the formula to assert
    * @param removable whether this lemma can be quietly removed based
    * on an activity heuristic
+   * @param virt whether this lemma is virtual
    */
-  void assertTrustedLemmaInternal(TrustNode trn, bool removable);
+  void assertTrustedLemmaInternal(TrustNode trn, bool removable, bool virt);
   /**
    * Assert node as a formula to the CNF stream
    * @param node The formula to assert
    * @param negated Whether to assert the negation of node
    * @param removable Whether the formula is removable
+   * @param virt Whether the formula is a virtual lemma
    * @param input Whether the formula came from the input
    * @param pg Pointer to a proof generator that can provide a proof of node
    * (or its negation if negated is true).
@@ -327,6 +332,7 @@ class PropEngine
   void assertInternal(TNode node,
                       bool negated,
                       bool removable,
+                      bool virt,
                       bool input,
                       ProofGenerator* pg = nullptr);
   /**
@@ -337,7 +343,7 @@ class PropEngine
    */
   void assertLemmasInternal(TrustNode trn,
                             const std::vector<theory::SkolemLemma>& ppLemmas,
-                            bool removable);
+                            theory::LemmaProperty p);
 
   /**
    * Indicates that the SAT solver is currently solving something and we should
@@ -347,9 +353,6 @@ class PropEngine
 
   /** The theory engine we will be using */
   TheoryEngine* d_theoryEngine;
-
-  /** Reference to the environment */
-  Env& d_env;
 
   /** The decision engine we will be using */
   std::unique_ptr<decision::DecisionEngine> d_decisionEngine;
@@ -382,6 +385,11 @@ class PropEngine
    * cores are enabled.
    */
   context::CDList<Node> d_assumptions;
+  /**
+   * A cache of all virtual lemmas sent to the SAT solver, which is a
+   * user-context-dependent set of nodes.
+   */
+  NodeSet d_virtualLemmaCache;
 };
 
 }  // namespace prop
