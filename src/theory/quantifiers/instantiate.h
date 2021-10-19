@@ -310,7 +310,7 @@ class Instantiate : public QuantifiersUtil
   /** Get or make the instantiation list for quantified formula q */
   InstLemmaList* getOrMkInstLemmaList(TNode q);
   /** The context in which instantiation lemmas live */
-  context::Context * instContext() const;
+  context::Context* instContext() const;
   /** Uses context-dependent tries */
   bool needsContextDependentInst() const;
 

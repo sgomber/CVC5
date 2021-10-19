@@ -329,7 +329,8 @@ TrustNode TheoryInferenceManager::mkLemmaExp(Node conc,
 bool TheoryInferenceManager::hasCachedLemma(TNode lem, LemmaProperty p)
 {
   Node rewritten = Rewriter::rewrite(lem);
-  NodeSet& cache = isLemmaPropertyVirtual(p) ? d_virtualLemmasSent : d_lemmasSent;
+  NodeSet& cache =
+      isLemmaPropertyVirtual(p) ? d_virtualLemmasSent : d_lemmasSent;
   return cache.find(rewritten) != cache.end();
 }
 
@@ -538,7 +539,8 @@ bool TheoryInferenceManager::hasSentFact() const
 bool TheoryInferenceManager::cacheLemma(TNode lem, LemmaProperty p)
 {
   Node rewritten = Rewriter::rewrite(lem);
-  NodeSet& cache = isLemmaPropertyVirtual(p) ? d_virtualLemmasSent : d_lemmasSent;
+  NodeSet& cache =
+      isLemmaPropertyVirtual(p) ? d_virtualLemmasSent : d_lemmasSent;
   if (cache.find(rewritten) != cache.end())
   {
     return false;
