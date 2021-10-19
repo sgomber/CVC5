@@ -319,15 +319,16 @@ bool Instantiate::addInstantiation(Node q,
 
   // added lemma, which checks for lemma duplication
   bool addedLem = false;
+  LemmaProperty p = options().quantifiers.virtualInst ? LemmaProperty::VIRTUAL : LemmaProperty::NONE;
   if (hasProof)
   {
     // use proof generator
     addedLem =
-        d_qim.addPendingLemma(lem, id, LemmaProperty::NONE, d_pfInst.get());
+        d_qim.addPendingLemma(lem, id, p, d_pfInst.get());
   }
   else
   {
-    addedLem = d_qim.addPendingLemma(lem, id);
+    addedLem = d_qim.addPendingLemma(lem, id, p);
   }
 
   if (!addedLem)
@@ -507,8 +508,7 @@ bool Instantiate::existsInstantiation(Node q,
     std::map<Node, CDInstMatchTrie*>::iterator it = d_c_inst_match_trie.find(q);
     if (it != d_c_inst_match_trie.end())
     {
-      return it->second->existsInstMatch(
-          instContext(), d_qstate, q, terms, modEq);
+      return it->second->existsInstMatch(instContext(), d_qstate, q, terms, modEq);
     }
   }
   else
@@ -635,6 +635,7 @@ void Instantiate::getInstantiatedQuantifiedFormulas(std::vector<Node>& qs) const
 void Instantiate::getInstantiationTermVectors(
     Node q, std::vector<std::vector<Node> >& tvecs)
 {
+
   if (needsContextDependentInst())
   {
     std::map<Node, CDInstMatchTrie*>::const_iterator it =
@@ -760,7 +761,7 @@ InstLemmaList* Instantiate::getOrMkInstLemmaList(TNode q)
   return ill.get();
 }
 
-context::Context* Instantiate::instContext() const
+context::Context * Instantiate::instContext() const
 {
   return options().quantifiers.virtualInst ? context() : userContext();
 }
