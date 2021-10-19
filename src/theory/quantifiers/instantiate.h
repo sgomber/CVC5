@@ -309,6 +309,10 @@ class Instantiate : public QuantifiersUtil
   static Node ensureType(Node n, TypeNode tn);
   /** Get or make the instantiation list for quantified formula q */
   InstLemmaList* getOrMkInstLemmaList(TNode q);
+  /** The context in which instantiation lemmas live */
+  context::Context * instContext() const;
+  /** Uses context-dependent tries */
+  bool needsContextDependentInst() const;
 
   /** Reference to the quantifiers state */
   QuantifiersState& d_qstate;

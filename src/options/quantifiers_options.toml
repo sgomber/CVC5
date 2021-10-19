@@ -474,6 +474,14 @@ name   = "Quantifiers"
   help       = "maximum number of instantiation rounds (-1 == no limit, default)"
 
 [[option]]
+  name       = "virtualInst"
+  category   = "regular"
+  long       = "virtual-inst"
+  type       = "bool"
+  default    = "false"
+  help       = "Mark instantiations as virtual clauses"
+
+[[option]]
   name       = "quantRepMode"
   category   = "regular"
   long       = "quant-rep-mode=MODE"

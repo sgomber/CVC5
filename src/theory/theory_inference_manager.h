@@ -457,6 +457,11 @@ class TheoryInferenceManager : protected EnvObj
    * nodes. Notice that this cache does not depedent on lemma property.
    */
   NodeSet d_lemmasSent;
+  /**
+   * A cache of all virtual lemmas sent, which is a SAT-context-dependent set of
+   * nodes. 
+   */
+  NodeSet d_virtualLemmasSent;
   /** The number of conflicts sent since the last call to reset. */
   uint32_t d_numConflicts;
   /** The number of lemmas sent since the last call to reset. */

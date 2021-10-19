@@ -45,6 +45,7 @@ TheoryInferenceManager::TheoryInferenceManager(Env& env,
       d_cacheLemmas(cacheLemmas),
       d_keep(context()),
       d_lemmasSent(userContext()),
+      d_virtualLemmasSent(context()),
       d_numConflicts(0),
       d_numCurrentLemmas(0),
       d_numCurrentFacts(0),
@@ -58,6 +59,7 @@ TheoryInferenceManager::TheoryInferenceManager(Env& env,
   // don't add true lemma
   Node truen = NodeManager::currentNM()->mkConst(true);
   d_lemmasSent.insert(truen);
+  d_virtualLemmasSent.insert(truen);
 }
 
 TheoryInferenceManager::~TheoryInferenceManager()
@@ -327,7 +329,8 @@ TrustNode TheoryInferenceManager::mkLemmaExp(Node conc,
 bool TheoryInferenceManager::hasCachedLemma(TNode lem, LemmaProperty p)
 {
   Node rewritten = Rewriter::rewrite(lem);
-  return d_lemmasSent.find(rewritten) != d_lemmasSent.end();
+  NodeSet& cache = isLemmaPropertyVirtual(p) ? d_virtualLemmasSent : d_lemmasSent;
+  return cache.find(rewritten) != cache.end();
 }
 
 uint32_t TheoryInferenceManager::numSentLemmas() const
@@ -535,11 +538,12 @@ bool TheoryInferenceManager::hasSentFact() const
 bool TheoryInferenceManager::cacheLemma(TNode lem, LemmaProperty p)
 {
   Node rewritten = Rewriter::rewrite(lem);
-  if (d_lemmasSent.find(rewritten) != d_lemmasSent.end())
+  NodeSet& cache = isLemmaPropertyVirtual(p) ? d_virtualLemmasSent : d_lemmasSent;
+  if (cache.find(rewritten) != cache.end())
   {
     return false;
   }
-  d_lemmasSent.insert(rewritten);
+  cache.insert(rewritten);
   return true;
 }
 

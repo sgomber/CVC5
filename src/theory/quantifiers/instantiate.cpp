@@ -502,12 +502,12 @@ bool Instantiate::existsInstantiation(Node q,
                                       const std::vector<Node>& terms,
                                       bool modEq)
 {
-  if (options::incrementalSolving())
+  if (needsContextDependentInst())
   {
     std::map<Node, CDInstMatchTrie*>::iterator it = d_c_inst_match_trie.find(q);
     if (it != d_c_inst_match_trie.end())
     {
-      return it->second->existsInstMatch(userContext(), d_qstate, q, terms, modEq);
+      return it->second->existsInstMatch(instContext(), d_qstate, q, terms, modEq);
     }
   }
   else
@@ -590,17 +590,17 @@ Node Instantiate::getInstantiation(Node q,
 bool Instantiate::recordInstantiationInternal(Node q,
                                               const std::vector<Node>& terms)
 {
-  if (options::incrementalSolving())
+  if (needsContextDependentInst())
   {
     Trace("inst-add-debug")
         << "Adding into context-dependent inst trie" << std::endl;
     const auto res = d_c_inst_match_trie.insert({q, nullptr});
     if (res.second)
     {
-      res.first->second = new CDInstMatchTrie(userContext());
+      res.first->second = new CDInstMatchTrie(instContext());
     }
     d_c_inst_match_trie_dom.insert(q);
-    return res.first->second->addInstMatch(userContext(), d_qstate, q, terms);
+    return res.first->second->addInstMatch(instContext(), d_qstate, q, terms);
   }
   Trace("inst-add-debug") << "Adding into inst trie" << std::endl;
   return d_inst_match_trie[q].addInstMatch(d_qstate, q, terms);
@@ -609,7 +609,7 @@ bool Instantiate::recordInstantiationInternal(Node q,
 bool Instantiate::removeInstantiationInternal(Node q,
                                               const std::vector<Node>& terms)
 {
-  if (options::incrementalSolving())
+  if (needsContextDependentInst())
   {
     std::map<Node, CDInstMatchTrie*>::iterator it = d_c_inst_match_trie.find(q);
     if (it != d_c_inst_match_trie.end())
@@ -635,7 +635,7 @@ void Instantiate::getInstantiationTermVectors(
     Node q, std::vector<std::vector<Node> >& tvecs)
 {
 
-  if (options::incrementalSolving())
+  if (needsContextDependentInst())
   {
     std::map<Node, CDInstMatchTrie*>::const_iterator it =
         d_c_inst_match_trie.find(q);
@@ -658,7 +658,7 @@ void Instantiate::getInstantiationTermVectors(
 void Instantiate::getInstantiationTermVectors(
     std::map<Node, std::vector<std::vector<Node> > >& insts)
 {
-  if (options::incrementalSolving())
+  if (needsContextDependentInst())
   {
     for (const auto& t : d_c_inst_match_trie)
     {
@@ -758,6 +758,16 @@ InstLemmaList* Instantiate::getOrMkInstLemmaList(TNode q)
       std::make_shared<InstLemmaList>(userContext());
   d_insts.insert(q, ill);
   return ill.get();
+}
+
+context::Context * Instantiate::instContext() const
+{
+  return options().quantifiers.virtualInst ? context() : userContext();
+}
+
+bool Instantiate::needsContextDependentInst() const
+{
+  return options().quantifiers.virtualInst || options().base.incrementalSolving;
 }
 
 Instantiate::Statistics::Statistics()
