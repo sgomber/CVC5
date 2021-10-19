@@ -29,7 +29,7 @@ JustificationStrategy::JustificationStrategy(Env& env)
           userContext(),
           context(),
           options::jhRlvOrder()),  // assertions are user-context dependent
-      d_skolemAssertions(
+      d_satCdAssertions(
           context(), context()),  // skolem assertions are SAT-context dependent
       d_justified(context()),
       d_stack(context()),
@@ -50,7 +50,7 @@ void JustificationStrategy::presolve()
   d_currStatusDec = false;
   // reset the dynamic assertion list data
   d_assertions.presolve();
-  d_skolemAssertions.presolve();
+  d_satCdAssertions.presolve();
   // clear the stack
   d_stack.clear();
 }
@@ -478,17 +478,18 @@ prop::SatValue JustificationStrategy::lookupValue(TNode n)
 
 bool JustificationStrategy::isDone() { return !refreshCurrentAssertion(); }
 
-void JustificationStrategy::addAssertion(TNode assertion, bool isLemma)
+void JustificationStrategy::addAssertion(TNode assertion, bool isVirtualLemma)
 {
-  Trace("jh-assert") << "addAssertion " << assertion << std::endl;
+  Trace("jh-assert") << "addAssertion " << assertion << ", is virtual lemma = " << isVirtualLemma << std::endl;
   std::vector<TNode> toProcess;
   toProcess.push_back(assertion);
-  insertToAssertionList(toProcess, false);
+  // if virtual lemma, it is added to the SAT-context dependent list
+  insertToAssertionList(toProcess, isVirtualLemma);
 }
 
 void JustificationStrategy::addSkolemDefinition(TNode lem,
                                                 TNode skolem,
-                                                bool isLemma)
+                                                bool isVirtualLemma)
 {
   Trace("jh-assert") << "addSkolemDefinition " << lem << " / " << skolem
                      << std::endl;
@@ -499,6 +500,8 @@ void JustificationStrategy::addSkolemDefinition(TNode lem,
     toProcess.push_back(lem);
     insertToAssertionList(toProcess, false);
   }
+  // isVirtualLemma is ignored; skolem definitions are always dynamically
+  // activated
 }
 bool JustificationStrategy::needsActiveSkolemDefs() const
 {
@@ -517,11 +520,11 @@ void JustificationStrategy::notifyActiveSkolemDefs(std::vector<TNode>& defs)
 }
 
 void JustificationStrategy::insertToAssertionList(std::vector<TNode>& toProcess,
-                                                  bool useSkolemList)
+                                                  bool useSatCdList)
 {
-  AssertionList& al = useSkolemList ? d_skolemAssertions : d_assertions;
+  AssertionList& al = useSatCdList ? d_satCdAssertions : d_assertions;
   IntStat& sizeStat =
-      useSkolemList ? d_stats.d_maxSkolemDefsSize : d_stats.d_maxAssertionsSize;
+      useSatCdList ? d_stats.d_maxSkolemDefsSize : d_stats.d_maxAssertionsSize;
   // always miniscope AND and negated OR immediately
   size_t index = 0;
   // must keep some intermediate nodes below around for ref counting
@@ -597,10 +600,10 @@ bool JustificationStrategy::refreshCurrentAssertion()
   return refreshCurrentAssertionFromList(!skFirst);
 }
 
-bool JustificationStrategy::refreshCurrentAssertionFromList(bool useSkolemList)
+bool JustificationStrategy::refreshCurrentAssertionFromList(bool useSatCdList)
 {
-  AssertionList& al = useSkolemList ? d_skolemAssertions : d_assertions;
-  bool doWatchStatus = !useSkolemList;
+  AssertionList& al = useSatCdList ? d_satCdAssertions : d_assertions;
+  bool doWatchStatus = !useSatCdList;
   d_currUnderStatus = Node::null();
   TNode curr = al.getNextAssertion();
   SatValue currValue;

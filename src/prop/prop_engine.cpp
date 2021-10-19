@@ -258,8 +258,7 @@ void PropEngine::assertInternal(
   // if virtual, guard and cache
   if (virt)
   {
-    NodeSet::iterator it = d_virtualLemmaCache.find(node);
-    if (it!=d_virtualLemmaCache.end())
+    if (d_virtualLemmaCache.find(node)!=d_virtualLemmaCache.end())
     {
       // already added, nothing to do
       return;
@@ -323,11 +322,11 @@ void PropEngine::assertLemmasInternal(
     if (!trn.isNull())
     {
       // notify the theory proxy of the lemma
-      d_theoryProxy->notifyAssertion(trn.getProven(), TNode::null(), true);
+      d_theoryProxy->notifyAssertion(trn.getProven(), TNode::null(), virt);
     }
     for (const theory::SkolemLemma& lem : ppLemmas)
     {
-      d_theoryProxy->notifyAssertion(lem.getProven(), lem.d_skolem, true);
+      d_theoryProxy->notifyAssertion(lem.getProven(), lem.d_skolem, virt);
     }
   }
 }

@@ -72,7 +72,7 @@ SatLiteral DecisionEngineOld::getNextInternal(bool& stopSearch)
   return d_decisionStopOnly ? undefSatLiteral : ret;
 }
 
-void DecisionEngineOld::addAssertion(TNode assertion, bool isLemma)
+void DecisionEngineOld::addAssertion(TNode assertion, bool isVirtualLemma)
 {
   // new assertions, reset whatever result we knew
   d_result = SAT_VALUE_UNKNOWN;
@@ -84,7 +84,7 @@ void DecisionEngineOld::addAssertion(TNode assertion, bool isLemma)
 
 void DecisionEngineOld::addSkolemDefinition(TNode lem,
                                             TNode skolem,
-                                            bool isLemma)
+                                            bool isVirtualLemma)
 {
   // new assertions, reset whatever result we knew
   d_result = SAT_VALUE_UNKNOWN;

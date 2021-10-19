@@ -145,12 +145,12 @@ class JustificationStrategy : public DecisionEngine
    * Notify this class that assertion is an (input) assertion, not corresponding
    * to a skolem definition.
    */
-  void addAssertion(TNode assertion, bool isLemma) override;
+  void addAssertion(TNode assertion, bool isVirtualLemma) override;
   /**
    * Notify this class that lem is the skolem definition for skolem, which is
    * a part of the current assertions.
    */
-  void addSkolemDefinition(TNode lem, TNode skolem, bool isLemma) override;
+  void addSkolemDefinition(TNode lem, TNode skolem, bool isVirtualLemma) override;
   /**
    * Notify this class that the list of lemmas defs are now active in the
    * current SAT context. This is triggered when a literal lit is sent to
@@ -224,8 +224,8 @@ class JustificationStrategy : public DecisionEngine
   static bool isTheoryAtom(TNode n);
   /** The assertions, which are user-context dependent. */
   AssertionList d_assertions;
-  /** The skolem assertions */
-  AssertionList d_skolemAssertions;
+  /** The SAT-context dependent assertions */
+  AssertionList d_satCdAssertions;
 
   /** Mapping from non-negated nodes to their SAT value */
   context::CDInsertHashMap<Node, prop::SatValue> d_justified;

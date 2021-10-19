@@ -62,16 +62,16 @@ void TheoryProxy::presolve()
   d_theoryEngine->presolve();
 }
 
-void TheoryProxy::notifyAssertion(Node a, TNode skolem, bool isLemma)
+void TheoryProxy::notifyAssertion(Node a, TNode skolem, bool isVirtualLemma)
 {
   if (skolem.isNull())
   {
-    d_decisionEngine->addAssertion(a, isLemma);
+    d_decisionEngine->addAssertion(a, isVirtualLemma);
   }
   else
   {
     d_skdm->notifySkolemDefinition(skolem, a);
-    d_decisionEngine->addSkolemDefinition(a, skolem, isLemma);
+    d_decisionEngine->addSkolemDefinition(a, skolem, isVirtualLemma);
   }
 }
 

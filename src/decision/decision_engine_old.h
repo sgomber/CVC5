@@ -92,12 +92,12 @@ class DecisionEngineOld : public decision::DecisionEngine
    * Notify this class that assertion is an (input) assertion, not corresponding
    * to a skolem definition.
    */
-  void addAssertion(TNode assertion, bool isLemma) override;
+  void addAssertion(TNode assertion, bool isVirtualLemma) override;
   /**
    * Notify this class  that lem is the skolem definition for skolem, which is
    * a part of the current assertions.
    */
-  void addSkolemDefinition(TNode lem, TNode skolem, bool isLemma) override;
+  void addSkolemDefinition(TNode lem, TNode skolem, bool isVirtualLemma) override;
 
   // Interface for Strategies to use stuff stored in Decision Engine
   // (which was possibly requested by them on initialization)

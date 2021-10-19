@@ -74,7 +74,7 @@ class TheoryProxy : public Registrar
    */
   void notifyAssertion(Node lem,
                        TNode skolem = TNode::null(),
-                       bool isLemma = false);
+                       bool isVirtualLemma = false);
 
   void theoryCheck(theory::Theory::Effort effort);
 
