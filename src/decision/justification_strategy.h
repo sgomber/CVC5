@@ -150,7 +150,9 @@ class JustificationStrategy : public DecisionEngine
    * Notify this class that lem is the skolem definition for skolem, which is
    * a part of the current assertions.
    */
-  void addSkolemDefinition(TNode lem, TNode skolem, bool isVirtualLemma) override;
+  void addSkolemDefinition(TNode lem,
+                           TNode skolem,
+                           bool isVirtualLemma) override;
   /**
    * Notify this class that the list of lemmas defs are now active in the
    * current SAT context. This is triggered when a literal lit is sent to

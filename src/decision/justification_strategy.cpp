@@ -480,7 +480,8 @@ bool JustificationStrategy::isDone() { return !refreshCurrentAssertion(); }
 
 void JustificationStrategy::addAssertion(TNode assertion, bool isVirtualLemma)
 {
-  Trace("jh-assert") << "addAssertion " << assertion << ", is virtual lemma = " << isVirtualLemma << std::endl;
+  Trace("jh-assert") << "addAssertion " << assertion
+                     << ", is virtual lemma = " << isVirtualLemma << std::endl;
   std::vector<TNode> toProcess;
   toProcess.push_back(assertion);
   // if virtual lemma, it is added to the SAT-context dependent list
