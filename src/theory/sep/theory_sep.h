@@ -65,8 +65,6 @@ class TheorySep : public Theory {
   /** A buffered inference manager */
   InferenceManagerBuffered d_im;
 
-  Node mkAnd( std::vector< TNode >& assumptions );
-
   int processAssertion(
       Node n,
       std::map<int, std::map<Node, int> >& visited,
@@ -233,11 +231,9 @@ class TheorySep : public Theory {
   NodeSet d_reduce;
   std::map< Node, std::map< Node, Node > > d_red_conc;
   std::map< Node, std::map< Node, Node > > d_neg_guard;
-  std::vector< Node > d_neg_guards;
   /** a (singleton) decision strategy for each negative guard. */
   std::map<Node, std::unique_ptr<DecisionStrategySingleton> >
       d_neg_guard_strategy;
-  std::map< Node, Node > d_guard_to_assertion;
   NodeList d_spatial_assertions;
 
   //data,ref type (globally fixed)
@@ -264,8 +260,6 @@ class TheorySep : public Theory {
   std::map< Node, unsigned > d_type_ref_card_id;
   std::map< TypeNode, std::vector< Node > > d_type_references_all;
   std::map< TypeNode, unsigned > d_card_max;
-  //for empty argument
-  std::map< TypeNode, Node > d_emp_arg;
   //map from ( atom, label, child index ) -> label
   std::map< Node, std::map< Node, std::map< int, Node > > > d_label_map;
   std::map< Node, Node > d_label_map_parent;

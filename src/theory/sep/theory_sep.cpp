@@ -117,17 +117,6 @@ void TheorySep::preRegisterTerm(TNode n)
   }
 }
 
-Node TheorySep::mkAnd( std::vector< TNode >& assumptions ) {
-  if( assumptions.empty() ){
-    return d_true;
-  }else if( assumptions.size()==1 ){
-    return assumptions[0];
-  }else{
-    return NodeManager::currentNM()->mkNode( kind::AND, assumptions );
-  }
-}
-
-
 /////////////////////////////////////////////////////////////////////////////
 // T-PROPAGATION / REGISTRATION
 /////////////////////////////////////////////////////////////////////////////
@@ -260,6 +249,12 @@ void TheorySep::postProcessModel( TheoryModel* m ){
 
 void TheorySep::presolve() {
   Trace("sep-pp") << "Presolving" << std::endl;
+  // reset all data that is unique to a check-sat
+  d_bounds_init = false;
+  d_type_references_card.clear();
+  d_type_ref_card_id.clear();
+  d_type_references_all.clear();
+  d_card_max.clear();
 }
 
 
@@ -484,8 +479,6 @@ void TheorySep::reduceFact(TNode atom, bool polarity, TNode fact)
     Trace("sep-lemma-debug")
         << "Neg guard : " << slbl << " " << satom << " " << lit << std::endl;
     AlwaysAssert(!lit.isNull());
-    d_neg_guards.push_back(lit);
-    d_guard_to_assertion[lit] = satom;
     // Node lem = nm->mkNode( EQUAL, lit, conc );
     Node lem = nm->mkNode(OR, lit.negate(), conc);
     Trace("sep-lemma") << "Sep::Lemma : (neg) reduction : " << lem << std::endl;
