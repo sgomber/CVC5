@@ -17,6 +17,7 @@
 
 #include "expr/dtype_cons.h"
 #include "options/base_options.h"
+#include "options/smt_options.h"
 #include "printer/printer.h"
 #include "proof/unsat_core.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
@@ -42,6 +43,14 @@ CegisCoreConnective::CegisCoreConnective(Env& env,
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
+  // Determine the options to use for the subsolvers we spawn. We require
+  // models and unsat cores
+  d_subOptions.copyValues(env.getOptions());
+  d_subOptions.smt.unsatCores = true;
+  d_subOptions.smt.unsatCoresMode = options::UnsatCoresMode::ASSUMPTIONS;
+  d_subOptions.smt.produceModels = true;
+  d_subOptions.smt.produceProofs = false;
+  d_subOptions.smt.checkProofs = false;
 }
 
 bool CegisCoreConnective::processInitialize(Node conj,
@@ -667,7 +676,7 @@ Node CegisCoreConnective::constructSolutionFromPool(Component& ccheck,
     addSuccess = false;
     // try a new core
     std::unique_ptr<SolverEngine> checkSol;
-    initializeSubsolver(checkSol, d_env);
+    initializeSubsolver(checkSol, d_subOptions, d_env.getLogicInfo());
     Trace("sygus-ccore") << "----- Check candidate " << an << std::endl;
     std::vector<Node> rasserts = asserts;
     rasserts.push_back(d_sc);
@@ -708,7 +717,7 @@ Node CegisCoreConnective::constructSolutionFromPool(Component& ccheck,
           // In terms of Variant #2, this is the check "if S ^ U is unsat"
           Trace("sygus-ccore") << "----- Check side condition" << std::endl;
           std::unique_ptr<SolverEngine> checkSc;
-          initializeSubsolver(checkSc, d_env);
+          initializeSubsolver(checkSc, d_subOptions, d_env.getLogicInfo());
           std::vector<Node> scasserts;
           scasserts.insert(scasserts.end(), uasserts.begin(), uasserts.end());
           scasserts.push_back(d_sc);

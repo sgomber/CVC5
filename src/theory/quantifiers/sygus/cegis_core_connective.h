@@ -26,6 +26,7 @@
 #include "smt/env_obj.h"
 #include "theory/quantifiers/sygus/cegis.h"
 #include "util/result.h"
+#include "options/options.h"
 
 namespace cvc5 {
 
@@ -311,6 +312,8 @@ class CegisCoreConnective : public Cegis
    * a subset of d_vars.
    */
   Node d_sc;
+  /** The options for subsolver calls */
+  Options d_subOptions;
   //-----------------------------------for SMT engine calls
   /**
    * Return the result of checking satisfiability of formula n.
