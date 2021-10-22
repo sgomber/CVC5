@@ -211,10 +211,9 @@ TheoryEngine::TheoryEngine(Env& env)
       d_logicInfo(env.getLogicInfo()),
       d_pnm(d_env.isTheoryProofProducing() ? d_env.getProofNodeManager()
                                            : nullptr),
-      d_lazyProofs(
-          d_pnm != nullptr ? new CDProofSet<LazyCDProof>(
-              d_pnm, userContext(), "TheoryEngine::LazyProofs")
-                           : nullptr),
+      d_lazyProofs(d_pnm != nullptr ? new CDProofSet<LazyCDProof>(
+                       d_pnm, userContext(), "TheoryEngine::LazyProofs")
+                                    : nullptr),
       d_tepg(new TheoryEngineProofGenerator(d_pnm, userContext())),
       d_tc(nullptr),
       d_sharedSolver(nullptr),
@@ -1177,13 +1176,12 @@ TrustNode TheoryEngine::getExplanation(TNode node)
       // check if no generator, if so, add THEORY_LEMMA
       if (texplanation.getGenerator() == nullptr)
       {
-        LazyCDProof * lp = d_lazyProofs->allocateProof(nullptr, userContext());
+        LazyCDProof* lp = d_lazyProofs->allocateProof(nullptr, userContext());
         Node proven = texplanation.getProven();
         TheoryId tid = theoryOf(atom)->getId();
         Node tidn = builtin::BuiltinProofRuleChecker::mkTheoryIdNode(tid);
         lp->addStep(proven, PfRule::THEORY_LEMMA, {}, {proven, tidn});
-        texplanation =
-            TrustNode::mkTrustPropExp(node, explanation, lp);
+        texplanation = TrustNode::mkTrustPropExp(node, explanation, lp);
       }
     }
     return texplanation;
@@ -1340,7 +1338,7 @@ void TheoryEngine::lemma(TrustNode tlemma,
     // ensure proof: set THEORY_LEMMA if no generator is provided
     if (tlemma.getGenerator() == nullptr)
     {
-      LazyCDProof * lp = d_lazyProofs->allocateProof(nullptr, userContext());
+      LazyCDProof* lp = d_lazyProofs->allocateProof(nullptr, userContext());
       // internal lemmas should have generators
       Assert(from != THEORY_LAST);
       // add theory lemma step to proof
@@ -1424,7 +1422,7 @@ void TheoryEngine::conflict(TrustNode tconflict, TheoryId theoryId)
   // In the multiple-theories case, we need to reconstruct the conflict
   if (d_logicInfo.isSharingEnabled()) {
     // the proof we will be using
-    LazyCDProof * lp = nullptr;
+    LazyCDProof* lp = nullptr;
     // Create the workplace for explanations
     std::vector<NodeTheoryPair> vec;
     vec.push_back(
@@ -1448,8 +1446,7 @@ void TheoryEngine::conflict(TrustNode tconflict, TheoryId theoryId)
                               << tncExp.identifyGenerator() << std::endl;
       if (tconflict.getGenerator() != nullptr)
       {
-        lp->addLazyStep(tconflict.getProven(),
-                                 tconflict.getGenerator());
+        lp->addLazyStep(tconflict.getProven(), tconflict.getGenerator());
       }
       else
       {
@@ -1465,10 +1462,8 @@ void TheoryEngine::conflict(TrustNode tconflict, TheoryId theoryId)
       Trace("te-proof-debug") << "add lazy step " << tncExp.identifyGenerator()
                               << " for " << proven << std::endl;
       lp->addLazyStep(proven, tncExp.getGenerator());
-      pfgEnsureClosed(proven,
-                      lp,
-                      "te-proof-debug",
-                      "TheoryEngine::conflict_during");
+      pfgEnsureClosed(
+          proven, lp, "te-proof-debug", "TheoryEngine::conflict_during");
       Node fullConflictNeg = fullConflict.notNode();
       std::vector<Node> children;
       children.push_back(proven);
@@ -1494,8 +1489,7 @@ void TheoryEngine::conflict(TrustNode tconflict, TheoryId theoryId)
       }
     }
     // pass the processed trust node
-    TrustNode tconf =
-        TrustNode::mkTrustConflict(fullConflict, lp);
+    TrustNode tconf = TrustNode::mkTrustConflict(fullConflict, lp);
     Debug("theory::conflict")
         << "TheoryEngine::conflict(" << conflict << ", " << theoryId
         << "): full = " << fullConflict << endl;
