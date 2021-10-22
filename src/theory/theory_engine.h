@@ -26,6 +26,7 @@
 #include "expr/node.h"
 #include "options/theory_options.h"
 #include "proof/trust_node.h"
+#include "proof/proof_set.h"
 #include "smt/env_obj.h"
 #include "theory/atom_requests.h"
 #include "theory/engine_output_channel.h"
@@ -531,7 +532,7 @@ class TheoryEngine : protected EnvObj
    *
    * This stores instructions for how to construct proofs for all theory lemmas.
    */
-  std::shared_ptr<LazyCDProof> d_lazyProof;
+  std::unique_ptr<CDProofSet<LazyCDProof>> d_lazyProofs;
   /** The proof generator */
   std::shared_ptr<TheoryEngineProofGenerator> d_tepg;
   //--------------------------------- end new proofs
