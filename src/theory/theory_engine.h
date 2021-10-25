@@ -475,9 +475,18 @@ class TheoryEngine : protected EnvObj
   TrustNode getExplanation(std::vector<NodeTheoryPair>& explanationVector);
 
   /**
-   * Add to proof
+   * Add explanation to proof. This adds texplains[index] to the lazy proof
+   * lcp. This may involve recursive calls in the case that we have a
+   * dependency between the order of explanations modulo symmetry.
+   * 
+   * @param lcp The lazy proof we are constructing
+   * @param index The index in texplains we are currently adding
+   * @param exp The set of formulas we have already explained
+   * @param texplains The entire list of explanations we are processing
+   * @param texpIndex Maps formulas to the index in texplains that explained
+   * them.
    */
-  void addToProof(
+  void addExplanationToProof(
       LazyCDProof* lcp,
       size_t index,
       std::set<TNode>& exp,
