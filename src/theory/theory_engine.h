@@ -473,13 +473,16 @@ class TheoryEngine : protected EnvObj
    * theory that sent the literal.
    */
   TrustNode getExplanation(std::vector<NodeTheoryPair>& explanationVector);
-  
+
   /**
    * Add to proof
    */
-  void addToProof(LazyCDProof * lcp, size_t index, std::set<TNode>& exp, const std::vector<std::pair<theory::TheoryId, TrustNode>>& texplains,
-    const std::map< Node, size_t>& texpIndex
-  );
+  void addToProof(
+      LazyCDProof* lcp,
+      size_t index,
+      std::set<TNode>& exp,
+      const std::vector<std::pair<theory::TheoryId, TrustNode>>& texplains,
+      const std::map<Node, size_t>& texpIndex);
 
   /** Are proofs enabled? */
   bool isProofEnabled() const;

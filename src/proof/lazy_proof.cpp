@@ -27,8 +27,10 @@ LazyCDProof::LazyCDProof(ProofNodeManager* pnm,
                          ProofGenerator* dpg,
                          context::Context* c,
                          const std::string& name,
-              bool autoSym)
-    : CDProof(pnm, c, name, autoSym), d_gens(c ? c : &d_context), d_defaultGen(dpg)
+                         bool autoSym)
+    : CDProof(pnm, c, name, autoSym),
+      d_gens(c ? c : &d_context),
+      d_defaultGen(dpg)
 {
 }
 

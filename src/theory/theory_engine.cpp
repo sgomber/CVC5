@@ -1737,19 +1737,20 @@ TrustNode TheoryEngine::getExplanation(
       }
       Trace("te-proof-exp") << "=== Replay explanations..." << std::endl;
     }
-    std::map< Node, size_t> texpIndex;
-    for (size_t j=0, tsize = texplains.size(); j<tsize; j++)
+    std::map<Node, size_t> texpIndex;
+    for (size_t j = 0, tsize = texplains.size(); j < tsize; j++)
     {
-      Trace("te-proof-exp") << "Map: " << texplains[j].second.getProven()[1] << " -> " << j << std::endl;
+      Trace("te-proof-exp") << "Map: " << texplains[j].second.getProven()[1]
+                            << " -> " << j << std::endl;
       texpIndex[texplains[j].second.getProven()[1]] = j;
     }
     // Now, go back and add the necessary steps of theory explanations, i.e.
     // add those that prove things that aren't in the final explanation. We
     // iterate in reverse order so that most recent steps take priority. This
     // avoids cyclic proofs in the lazy proof we are building (lcp).
-    for (size_t j=0, tsize = texplains.size(); j<tsize; j++)
+    for (size_t j = 0, tsize = texplains.size(); j < tsize; j++)
     {
-      addToProof(lcp.get(), tsize-1-j, exp, texplains, texpIndex);
+      addToProof(lcp.get(), tsize - 1 - j, exp, texplains, texpIndex);
     }
     // store in the proof generator
     TrustNode trn = d_tepg->mkTrustExplain(conclusion, expNode, lcp);
@@ -1760,8 +1761,12 @@ TrustNode TheoryEngine::getExplanation(
   return TrustNode::mkTrustPropExp(conclusion, expNode, nullptr);
 }
 
-void TheoryEngine::addToProof(LazyCDProof * lcp, size_t index, std::set<TNode>& exp, const std::vector<std::pair<TheoryId, TrustNode>>& texplains,
-    const std::map< Node, size_t>& texpIndex)
+void TheoryEngine::addToProof(
+    LazyCDProof* lcp,
+    size_t index,
+    std::set<TNode>& exp,
+    const std::vector<std::pair<TheoryId, TrustNode>>& texplains,
+    const std::map<Node, size_t>& texpIndex)
 {
   TrustNode trn = texplains[index].second;
   Assert(trn.getKind() == TrustNodeKind::PROP_EXP);
@@ -1794,18 +1799,20 @@ void TheoryEngine::addToProof(LazyCDProof * lcp, size_t index, std::set<TNode>& 
     if (tConc == tExp)
     {
       // first, ensure we have processed all formulas that have been explained
-      std::map< Node, size_t>::const_iterator itt;
+      std::map<Node, size_t>::const_iterator itt;
       for (const Node& tc : tConc)
       {
         itt = texpIndex.find(tc);
-        if (itt!=texpIndex.end())
+        if (itt != texpIndex.end())
         {
-          Trace("te-proof-exp") << "...process explanation of child " << tc << " first" << std::endl;
+          Trace("te-proof-exp") << "...process explanation of child " << tc
+                                << " first" << std::endl;
           addToProof(lcp, itt->second, exp, texplains, texpIndex);
         }
         else
         {
-          Trace("te-proof-exp") << "...ready to explain child " << tc << std::endl;
+          Trace("te-proof-exp")
+              << "...ready to explain child " << tc << std::endl;
         }
       }
       // dummy trust node, do AND expansion
