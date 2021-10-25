@@ -1737,92 +1737,19 @@ TrustNode TheoryEngine::getExplanation(
       }
       Trace("te-proof-exp") << "=== Replay explanations..." << std::endl;
     }
+    std::map< Node, size_t> texpIndex;
+    for (size_t j=0, tsize = texplains.size(); j<tsize; j++)
+    {
+      Trace("te-proof-exp") << "Map: " << texplains[j].second.getProven()[1] << " -> " << j << std::endl;
+      texpIndex[texplains[j].second.getProven()[1]] = j;
+    }
     // Now, go back and add the necessary steps of theory explanations, i.e.
     // add those that prove things that aren't in the final explanation. We
     // iterate in reverse order so that most recent steps take priority. This
     // avoids cyclic proofs in the lazy proof we are building (lcp).
-    for (std::vector<std::pair<TheoryId, TrustNode>>::reverse_iterator
-             it = texplains.rbegin(),
-             itEnd = texplains.rend();
-         it != itEnd;
-         ++it)
+    for (size_t j=0, tsize = texplains.size(); j<tsize; j++)
     {
-      TrustNode trn = it->second;
-      Assert(trn.getKind() == TrustNodeKind::PROP_EXP);
-      Node proven = trn.getProven();
-      Assert(proven.getKind() == kind::IMPLIES);
-      Node tConc = proven[1];
-      Trace("te-proof-exp") << "- Process " << trn << std::endl;
-      if (exp.find(tConc) != exp.end())
-      {
-        // already added to proof
-        Trace("te-proof-exp") << "...already added" << std::endl;
-        continue;
-      }
-      Node symTConc = CDProof::getSymmFact(tConc);
-      if (!symTConc.isNull())
-      {
-        if (exp.find(symTConc) != exp.end())
-        {
-          // symmetric direction
-          Trace("te-proof-exp") << "...already added (SYMM)" << std::endl;
-          continue;
-        }
-      }
-      // remember that we've explained this formula, to avoid cycles in lcp
-      exp.insert(tConc);
-      TheoryId ttid = it->first;
-      Node tExp = proven[0];
-      if (ttid == THEORY_LAST)
-      {
-        if (tConc == tExp)
-        {
-          // dummy trust node, do AND expansion
-          Assert(tConc.getKind() == kind::AND);
-          // tConc[0] ... tConc[n]
-          // ---------------------- AND_INTRO
-          // tConc
-          std::vector<Node> pfChildren;
-          pfChildren.insert(pfChildren.end(), tConc.begin(), tConc.end());
-          lcp->addStep(tConc, PfRule::AND_INTRO, pfChildren, {});
-          Trace("te-proof-exp") << "...via AND_INTRO" << std::endl;
-          continue;
-        }
-        // otherwise should hold by rewriting
-        Assert(Rewriter::rewrite(tConc) == Rewriter::rewrite(tExp));
-        // tExp
-        // ---- MACRO_SR_PRED_TRANSFORM
-        // tConc
-        lcp->addStep(tConc, PfRule::MACRO_SR_PRED_TRANSFORM, {tExp}, {tConc});
-        Trace("te-proof-exp") << "...via MACRO_SR_PRED_TRANSFORM" << std::endl;
-        continue;
-      }
-      if (CDProof::isSame(tExp, tConc))
-      {
-        // trivial
-        Trace("te-proof-exp") << "...trivial" << std::endl;
-        continue;
-      }
-      //       ------------- Via theory
-      // tExp  tExp => tConc
-      // ---------------------------------MODUS_PONENS
-      // tConc
-      if (trn.getGenerator() != nullptr)
-      {
-        Trace("te-proof-exp") << "...via theory generator" << std::endl;
-        lcp->addLazyStep(proven, trn.getGenerator());
-      }
-      else
-      {
-        Trace("te-proof-exp") << "...via trust THEORY_LEMMA" << std::endl;
-        // otherwise, trusted theory lemma
-        Node tidn = builtin::BuiltinProofRuleChecker::mkTheoryIdNode(it->first);
-        lcp->addStep(proven, PfRule::THEORY_LEMMA, {}, {proven, tidn});
-      }
-      std::vector<Node> pfChildren;
-      pfChildren.push_back(trn.getNode());
-      pfChildren.push_back(proven);
-      lcp->addStep(tConc, PfRule::MODUS_PONENS, pfChildren, {});
+      addToProof(lcp.get(), tsize-1-j, exp, texplains, texpIndex);
     }
     // store in the proof generator
     TrustNode trn = d_tepg->mkTrustExplain(conclusion, expNode, lcp);
@@ -1831,6 +1758,102 @@ TrustNode TheoryEngine::getExplanation(
   }
 
   return TrustNode::mkTrustPropExp(conclusion, expNode, nullptr);
+}
+
+void TheoryEngine::addToProof(LazyCDProof * lcp, size_t index, std::set<TNode>& exp, const std::vector<std::pair<TheoryId, TrustNode>>& texplains,
+    const std::map< Node, size_t>& texpIndex)
+{
+  TrustNode trn = texplains[index].second;
+  Assert(trn.getKind() == TrustNodeKind::PROP_EXP);
+  Node proven = trn.getProven();
+  Assert(proven.getKind() == kind::IMPLIES);
+  Node tConc = proven[1];
+  Trace("te-proof-exp") << "- Process " << trn << std::endl;
+  if (exp.find(tConc) != exp.end())
+  {
+    // already added to proof
+    Trace("te-proof-exp") << "...already added" << std::endl;
+    return;
+  }
+  Node symTConc = CDProof::getSymmFact(tConc);
+  if (!symTConc.isNull())
+  {
+    if (exp.find(symTConc) != exp.end())
+    {
+      // symmetric direction
+      Trace("te-proof-exp") << "...already added (SYMM)" << std::endl;
+      return;
+    }
+  }
+  // remember that we've explained this formula, to avoid cycles in lcp
+  exp.insert(tConc);
+  TheoryId ttid = texplains[index].first;
+  Node tExp = proven[0];
+  if (ttid == THEORY_LAST)
+  {
+    if (tConc == tExp)
+    {
+      // first, ensure we have processed all formulas that have been explained
+      std::map< Node, size_t>::const_iterator itt;
+      for (const Node& tc : tConc)
+      {
+        itt = texpIndex.find(tc);
+        if (itt!=texpIndex.end())
+        {
+          Trace("te-proof-exp") << "...process explanation of child " << tc << " first" << std::endl;
+          addToProof(lcp, itt->second, exp, texplains, texpIndex);
+        }
+        else
+        {
+          Trace("te-proof-exp") << "...ready to explain child " << tc << std::endl;
+        }
+      }
+      // dummy trust node, do AND expansion
+      Assert(tConc.getKind() == kind::AND);
+      // tConc[0] ... tConc[n]
+      // ---------------------- AND_INTRO
+      // tConc
+      std::vector<Node> pfChildren;
+      pfChildren.insert(pfChildren.end(), tConc.begin(), tConc.end());
+      lcp->addStep(tConc, PfRule::AND_INTRO, pfChildren, {});
+      Trace("te-proof-exp") << "...via AND_INTRO" << std::endl;
+      return;
+    }
+    // otherwise should hold by rewriting
+    Assert(Rewriter::rewrite(tConc) == Rewriter::rewrite(tExp));
+    // tExp
+    // ---- MACRO_SR_PRED_TRANSFORM
+    // tConc
+    lcp->addStep(tConc, PfRule::MACRO_SR_PRED_TRANSFORM, {tExp}, {tConc});
+    Trace("te-proof-exp") << "...via MACRO_SR_PRED_TRANSFORM" << std::endl;
+    return;
+  }
+  if (CDProof::isSame(tExp, tConc))
+  {
+    // trivial
+    Trace("te-proof-exp") << "...trivial" << std::endl;
+    return;
+  }
+  //       ------------- Via theory
+  // tExp  tExp => tConc
+  // ---------------------------------MODUS_PONENS
+  // tConc
+  if (trn.getGenerator() != nullptr)
+  {
+    Trace("te-proof-exp") << "...via theory generator" << std::endl;
+    lcp->addLazyStep(proven, trn.getGenerator());
+  }
+  else
+  {
+    Trace("te-proof-exp") << "...via trust THEORY_LEMMA" << std::endl;
+    // otherwise, trusted theory lemma
+    Node tidn = builtin::BuiltinProofRuleChecker::mkTheoryIdNode(ttid);
+    lcp->addStep(proven, PfRule::THEORY_LEMMA, {}, {proven, tidn});
+  }
+  std::vector<Node> pfChildren;
+  pfChildren.push_back(trn.getNode());
+  pfChildren.push_back(proven);
+  lcp->addStep(tConc, PfRule::MODUS_PONENS, pfChildren, {});
 }
 
 bool TheoryEngine::isProofEnabled() const { return d_pnm != nullptr; }
