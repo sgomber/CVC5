@@ -622,17 +622,36 @@ Node getExpandedDefinitionForm(Node op)
 
 Node getAnchorFor(TNode n)
 {
-  
+  Node ret;
+  if( n.getKind()==kind::APPLY_SELECTOR_TOTAL ){
+    ret = getAnchorFor(n[0]);
+  }else if( n.isVar() ){
+    ret = n;
+  }
+  return ret;
 }
 
 uint64_t getDepthFor(TNode n)
 {
-  
+  uint64_t ret;
+  if( n.getKind()==kind::APPLY_SELECTOR_TOTAL ){
+    uint64_t selWeight =
+       getSelectorWeight(n[0].getType(), n.getOperator());
+    ret = selWeight + getDepthFor(n[0]);
+  }else if( n.isVar() ){
+    ret = 0;
+  }
+  return ret;
 }
 
 bool isTypeTopLevel( TypeNode tn, TNode n )
 {
-  
+  if( n.getType()==tn ){
+    return false;
+  }else if( n.getKind()==kind::APPLY_SELECTOR_TOTAL ){
+    return computeTopLevel( tn, n[0] );
+  }
+  return true;
 }
 
 }  // namespace utils
