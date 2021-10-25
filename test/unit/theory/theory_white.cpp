@@ -1,18 +1,17 @@
-/*********************                                                        */
-/*! \file theory_white.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Aina Niemetz, Tim King, Dejan Jovanovic
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Black box testing of CVC4::theory::Theory.
- **
- ** Black box testing of CVC4::theory::Theory.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Aina Niemetz, Dejan Jovanovic
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Black box testing of cvc5::theory::Theory.
+ */
 
 #include <memory>
 #include <vector>
@@ -24,7 +23,7 @@
 #include "theory/theory_engine.h"
 #include "util/resource_manager.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 using namespace theory;
 using namespace expr;
@@ -38,30 +37,19 @@ class TestTheoryWhite : public TestSmtNoFinishInit
   void SetUp() override
   {
     TestSmtNoFinishInit::SetUp();
-    d_context = d_smtEngine->getContext();
-    d_user_context = d_smtEngine->getUserContext();
-    d_logicInfo.reset(new LogicInfo());
-    d_logicInfo->lock();
-    d_smtEngine->finishInit();
-    delete d_smtEngine->getTheoryEngine()->d_theoryTable[THEORY_BUILTIN];
-    delete d_smtEngine->getTheoryEngine()->d_theoryOut[THEORY_BUILTIN];
-    d_smtEngine->getTheoryEngine()->d_theoryTable[THEORY_BUILTIN] = nullptr;
-    d_smtEngine->getTheoryEngine()->d_theoryOut[THEORY_BUILTIN] = nullptr;
+    d_slvEngine->finishInit();
+    delete d_slvEngine->getTheoryEngine()->d_theoryTable[THEORY_BUILTIN];
+    delete d_slvEngine->getTheoryEngine()->d_theoryOut[THEORY_BUILTIN];
+    d_slvEngine->getTheoryEngine()->d_theoryTable[THEORY_BUILTIN] = nullptr;
+    d_slvEngine->getTheoryEngine()->d_theoryOut[THEORY_BUILTIN] = nullptr;
 
-    d_dummy_theory.reset(new DummyTheory<THEORY_BUILTIN>(d_context,
-                                                         d_user_context,
-                                                         d_outputChannel,
-                                                         Valuation(nullptr),
-                                                         *d_logicInfo,
-                                                         nullptr));
+    d_dummy_theory.reset(new DummyTheory<THEORY_BUILTIN>(
+        d_slvEngine->getEnv(), d_outputChannel, Valuation(nullptr)));
     d_outputChannel.clear();
     d_atom0 = d_nodeManager->mkConst(true);
     d_atom1 = d_nodeManager->mkConst(false);
   }
 
-  Context* d_context;
-  UserContext* d_user_context;
-  std::unique_ptr<LogicInfo> d_logicInfo;
   DummyOutputChannel d_outputChannel;
   std::unique_ptr<DummyTheory<THEORY_BUILTIN>> d_dummy_theory;
   Node d_atom0;
@@ -73,14 +61,8 @@ TEST_F(TestTheoryWhite, effort)
   Theory::Effort s = Theory::EFFORT_STANDARD;
   Theory::Effort f = Theory::EFFORT_FULL;
 
-  ASSERT_TRUE(Theory::standardEffortOnly(s));
-  ASSERT_FALSE(Theory::standardEffortOnly(f));
-
   ASSERT_FALSE(Theory::fullEffort(s));
   ASSERT_TRUE(Theory::fullEffort(f));
-
-  ASSERT_TRUE(Theory::standardEffortOrMore(s));
-  ASSERT_TRUE(Theory::standardEffortOrMore(f));
 }
 
 TEST_F(TestTheoryWhite, done)
@@ -101,7 +83,7 @@ TEST_F(TestTheoryWhite, outputChannel)
 {
   Node n = d_atom0.orNode(d_atom1);
   d_outputChannel.lemma(n);
-  d_outputChannel.split(d_atom0);
+  d_outputChannel.lemma(d_atom0.orNode(d_atom0.notNode()));
   Node s = d_atom0.orNode(d_atom0.notNode());
   ASSERT_EQ(d_outputChannel.d_callHistory.size(), 2u);
   ASSERT_EQ(d_outputChannel.d_callHistory[0], std::make_pair(LEMMA, n));
@@ -109,4 +91,4 @@ TEST_F(TestTheoryWhite, outputChannel)
   d_outputChannel.d_callHistory.clear();
 }
 }  // namespace test
-}  // namespace CVC4
+}  // namespace cvc5

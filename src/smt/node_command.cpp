@@ -1,18 +1,17 @@
-/*********************                                                        */
-/*! \file node_command.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Abdalrhman Mohamed, Yoni Zohar, Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of NodeCommand functions.
- **
- ** Implementation of NodeCommand functions.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Abdalrhman Mohamed, Yoni Zohar, Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of NodeCommand functions.
+ */
 
 #include "smt/node_command.h"
 
@@ -20,7 +19,7 @@
 
 #include "printer/printer.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 /* -------------------------------------------------------------------------- */
 /* class NodeCommand                                                          */
@@ -60,7 +59,7 @@ DeclareFunctionNodeCommand::DeclareFunctionNodeCommand(const std::string& id,
 void DeclareFunctionNodeCommand::toStream(std::ostream& out,
                                           int toDepth,
                                           size_t dag,
-                                          OutputLanguage language) const
+                                          Language language) const
 {
   Printer::getPrinter(language)->toStreamCmdDeclareFunction(out, d_id, d_type);
 }
@@ -86,7 +85,7 @@ DeclareTypeNodeCommand::DeclareTypeNodeCommand(const std::string& id,
 void DeclareTypeNodeCommand::toStream(std::ostream& out,
                                       int toDepth,
                                       size_t dag,
-                                      OutputLanguage language) const
+                                      Language language) const
 {
   Printer::getPrinter(language)->toStreamCmdDeclareType(out, d_type);
 }
@@ -113,7 +112,7 @@ DeclareDatatypeNodeCommand::DeclareDatatypeNodeCommand(
 void DeclareDatatypeNodeCommand::toStream(std::ostream& out,
                                           int toDepth,
                                           size_t dag,
-                                          OutputLanguage language) const
+                                          Language language) const
 {
   Printer::getPrinter(language)->toStreamCmdDatatypeDeclaration(out,
                                                                 d_datatypes);
@@ -140,7 +139,7 @@ DefineFunctionNodeCommand::DefineFunctionNodeCommand(
 void DefineFunctionNodeCommand::toStream(std::ostream& out,
                                          int toDepth,
                                          size_t dag,
-                                         OutputLanguage language) const
+                                         Language language) const
 {
   TypeNode tn = d_fun.getType();
   bool hasRange =
@@ -158,4 +157,4 @@ NodeCommand* DefineFunctionNodeCommand::clone() const
   return new DefineFunctionNodeCommand(d_id, d_fun, d_formals, d_formula);
 }
 
-}  // namespace CVC4
+}  // namespace cvc5

@@ -1,19 +1,19 @@
-/*********************                                                        */
-/*! \file theory_arith.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Tim King, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Arithmetic theory.
- ** Arithmetic theory.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Tim King, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Arithmetic theory.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
 #pragma once
 
@@ -21,16 +21,19 @@
 #include "theory/arith/arith_preprocess.h"
 #include "theory/arith/arith_rewriter.h"
 #include "theory/arith/arith_state.h"
+#include "theory/arith/branch_and_bound.h"
 #include "theory/arith/inference_manager.h"
+#include "theory/arith/pp_rewrite_eq.h"
 #include "theory/theory.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arith {
 namespace nl {
 class NonlinearExtension;
 }
 
+class EqualitySolver;
 class TheoryArithPrivate;
 
 /**
@@ -39,28 +42,16 @@ class TheoryArithPrivate;
  * http://research.microsoft.com/en-us/um/people/leonardo/cav06.pdf
  */
 class TheoryArith : public Theory {
- private:
   friend class TheoryArithPrivate;
-
-  TheoryArithPrivate* d_internal;
-
-  TimerStat d_ppRewriteTimer;
-
-  /** Used to prove pp-rewrites */
-  EagerProofGenerator d_ppPfGen;
-
  public:
-  TheoryArith(context::Context* c,
-              context::UserContext* u,
-              OutputChannel& out,
-              Valuation valuation,
-              const LogicInfo& logicInfo,
-              ProofNodeManager* pnm = nullptr);
+  TheoryArith(Env& env, OutputChannel& out, Valuation valuation);
   virtual ~TheoryArith();
 
   //--------------------------------- initialization
   /** get the official theory rewriter of this theory */
   TheoryRewriter* getTheoryRewriter() override;
+  /** get the proof checker of this theory */
+  ProofRuleChecker* getProofChecker() override;
   /**
    * Returns true if this theory needs an equality engine, which is assigned
    * to it (d_equalityEngine) by the equality engine manager during
@@ -72,11 +63,6 @@ class TheoryArith : public Theory {
   /** finish initialization */
   void finishInit() override;
   //--------------------------------- end initialization
-  /**
-   * Expand definition, which eliminates extended operators like div/mod in
-   * the given node.
-   */
-  TrustNode expandDefinition(Node node) override;
   /**
    * Does non-context dependent setup for a node connected to a theory.
    */
@@ -120,7 +106,7 @@ class TheoryArith : public Theory {
    * symbols.
    */
   TrustNode ppRewrite(TNode atom, std::vector<SkolemLemma>& lems) override;
-  void ppStaticLearn(TNode in, NodeBuilder<>& learned) override;
+  void ppStaticLearn(TNode in, NodeBuilder& learned) override;
 
   std::string identify() const override { return std::string("TheoryArith"); }
 
@@ -140,29 +126,65 @@ class TheoryArith : public Theory {
 
  private:
   /**
-   * Preprocess equality, applies ppRewrite for equalities. This method is
-   * distinct from ppRewrite since it is not allowed to construct lemmas.
+   * Update d_arithModelCache (if it is empty right now) and compute the termSet
+   * by calling collectAssertedTerms.
    */
-  TrustNode ppRewriteEq(TNode eq);
+  void updateModelCache(std::set<Node>& termSet);
+  /**
+   * Update d_arithModelCache (if it is empty right now) using the given
+   * termSet.
+   */
+  void updateModelCache(const std::set<Node>& termSet);
+  /**
+   * Perform a sanity check on the model that all integer variables are assigned
+   * to integer values. If an integer variables is assigned to a non-integer
+   * value, but the respective lemma can not be added (i.e. it has already been
+   * added) an assertion triggers. Otherwise teturns true if a lemma was added,
+   * false otherwise.
+   */
+  bool sanityCheckIntegerModel();
+
   /** Get the proof equality engine */
   eq::ProofEqEngine* getProofEqEngine();
+  /** Timer for ppRewrite */
+  TimerStat d_ppRewriteTimer;
   /** The state object wrapping TheoryArithPrivate  */
   ArithState d_astate;
   /** The arith::InferenceManager. */
   InferenceManager d_im;
+  /** The preprocess rewriter for equality */
+  PreprocessRewriteEq d_ppre;
+  /** The branch and bound utility */
+  BranchAndBound d_bab;
+  /** The equality solver */
+  std::unique_ptr<EqualitySolver> d_eqSolver;
+  /** The (old) linear arithmetic solver */
+  TheoryArithPrivate* d_internal;
 
   /**
    * The non-linear extension, responsible for all approaches for non-linear
    * arithmetic.
    */
   std::unique_ptr<nl::NonlinearExtension> d_nonlinearExtension;
+  /** The operator elimination utility */
+  OperatorElim d_opElim;
   /** The preprocess utility */
   ArithPreprocess d_arithPreproc;
   /** The theory rewriter for this theory. */
   ArithRewriter d_rewriter;
 
+  /**
+   * Caches the current arithmetic model with the following life cycle:
+   * postCheck retrieves the model from arith_private and puts it into the
+   * cache. If nonlinear reasoning is enabled, the cache is used for (and
+   * possibly updated by) model-based refinement in postCheck.
+   * In collectModelValues, the cache is filtered for the termSet and then
+   * used to augment the TheoryModel.
+   */
+  std::map<Node, Node> d_arithModelCache;
+
 };/* class TheoryArith */
 
-}/* CVC4::theory::arith namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace arith
+}  // namespace theory
+}  // namespace cvc5

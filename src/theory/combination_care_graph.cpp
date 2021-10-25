@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file combination_care_graph.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Dejan Jovanovic
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Management of a care graph based approach for theory combination.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Dejan Jovanovic
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Management of a care graph based approach for theory combination.
+ */
 
 #include "theory/combination_care_graph.h"
 
@@ -18,16 +19,15 @@
 #include "prop/prop_engine.h"
 #include "theory/care_graph.h"
 #include "theory/model_manager.h"
+#include "theory/shared_solver.h"
 #include "theory/theory_engine.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 
 CombinationCareGraph::CombinationCareGraph(
-    TheoryEngine& te,
-    const std::vector<Theory*>& paraTheories,
-    ProofNodeManager* pnm)
-    : CombinationEngine(te, paraTheories, pnm)
+    Env& env, TheoryEngine& te, const std::vector<Theory*>& paraTheories)
+    : CombinationEngine(env, te, paraTheories)
 {
 }
 
@@ -76,7 +76,8 @@ void CombinationCareGraph::combineTheories()
       Node split = equality.orNode(equality.notNode());
       tsplit = TrustNode::mkTrustLemma(split, nullptr);
     }
-    sendLemma(tsplit, carePair.d_theory);
+    d_sharedSolver->sendLemma(
+        tsplit, carePair.d_theory, InferenceId::COMBINATION_SPLIT);
 
     // Could check the equality status here:
     //   EqualityStatus es = getEqualityStatus(carePair.d_a, carePair.d_b);
@@ -99,4 +100,4 @@ bool CombinationCareGraph::buildModel()
 }
 
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

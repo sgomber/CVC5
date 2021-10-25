@@ -1,25 +1,28 @@
-/*********************                                                        */
-/*! \file subs.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Simple substitution utility
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Simple substitution utility.
+ */
 
-#ifndef CVC4__EXPR__SUBS_H
-#define CVC4__EXPR__SUBS_H
+#ifndef CVC5__EXPR__SUBS_H
+#define CVC5__EXPR__SUBS_H
 
 #include <map>
+#include <optional>
 #include <vector>
+
 #include "expr/node.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 /**
  * Helper substitution class. Stores a substitution in parallel vectors
@@ -40,6 +43,8 @@ class Subs
   bool contains(Node v) const;
   /** Get the substitution for v if it exists, or null otherwise */
   Node getSubs(Node v) const;
+  /** Find the substitution for v, or return std::nullopt */
+  std::optional<Node> find(TNode v) const;
   /** Add v -> k for fresh skolem of the same type as v */
   void add(Node v);
   /** Add v -> k for fresh skolem of the same type as v for each v in vs */
@@ -66,6 +71,8 @@ class Subs
   std::map<Node, Node> toMap() const;
   /** Get string for this substitution */
   std::string toString() const;
+  /** clear the substitution */
+  void clear();
   /** The data */
   std::vector<Node> d_vars;
   std::vector<Node> d_subs;
@@ -80,6 +87,6 @@ class Subs
  */
 std::ostream& operator<<(std::ostream& out, const Subs& s);
 
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__EXPR__SUBS_H */
+#endif /* CVC5__EXPR__SUBS_H */

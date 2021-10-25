@@ -1,18 +1,17 @@
-/*********************                                                        */
-/*! \file exception.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Tim King, Morgan Deters, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief CVC4's exception base class and some associated utilities
- **
- ** CVC4's exception base class and some associated utilities.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Tim King, Morgan Deters, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * cvc5's exception base class and some associated utilities.
+ */
 
 #include "base/exception.h"
 
@@ -20,6 +19,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ostream>
 #include <sstream>
 #include <string>
 
@@ -27,7 +27,7 @@
 
 using namespace std;
 
-namespace CVC4 {
+namespace cvc5 {
 
 std::string Exception::toString() const
 {
@@ -35,6 +35,8 @@ std::string Exception::toString() const
   toStream(ss);
   return ss.str();
 }
+
+void Exception::toStream(std::ostream& os) const { os << d_msg; }
 
 thread_local LastExceptionBuffer* LastExceptionBuffer::s_currentBuffer = nullptr;
 
@@ -135,14 +137,14 @@ void IllegalArgumentException::construct(const char* header, const char* extra,
 
   setMessage(string(buf));
 
-#ifdef CVC4_DEBUG
+#ifdef CVC5_DEBUG
   LastExceptionBuffer* buffer = LastExceptionBuffer::getCurrent();
   if(buffer != nullptr){
     if(buffer->getContents() == nullptr) {
       buffer->setContents(buf);
     }
   }
-#endif /* CVC4_DEBUG */
+#endif /* CVC5_DEBUG */
   delete [] buf;
 }
 
@@ -176,15 +178,15 @@ void IllegalArgumentException::construct(const char* header, const char* extra,
 
   setMessage(string(buf));
 
-#ifdef CVC4_DEBUG
+#ifdef CVC5_DEBUG
   LastExceptionBuffer* buffer = LastExceptionBuffer::getCurrent();
   if(buffer != nullptr){
     if(buffer->getContents() == nullptr) {
       buffer->setContents(buf);
     }
   }
-#endif /* CVC4_DEBUG */
+#endif /* CVC5_DEBUG */
   delete [] buf;
 }
 
-} /* namespace CVC4 */
+}  // namespace cvc5

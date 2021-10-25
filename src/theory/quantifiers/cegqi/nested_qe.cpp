@@ -1,29 +1,31 @@
-/*********************                                                        */
-/*! \file nested_qe.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Methods for counterexample-guided quantifier instantiation
- ** based on nested quantifier elimination.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Methods for counterexample-guided quantifier instantiation
+ * based on nested quantifier elimination.
+ */
 
 #include "theory/quantifiers/cegqi/nested_qe.h"
 
 #include "expr/node_algorithm.h"
 #include "expr/subs.h"
+#include "smt/env.h"
 #include "theory/smt_engine_subsolver.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-NestedQe::NestedQe(context::UserContext* u) : d_qnqe(u) {}
+NestedQe::NestedQe(Env& env) : d_env(env), d_qnqe(d_env.getUserContext()) {}
 
 bool NestedQe::process(Node q, std::vector<Node>& lems)
 {
@@ -34,7 +36,7 @@ bool NestedQe::process(Node q, std::vector<Node>& lems)
     return (*it).second != q;
   }
   Trace("cegqi-nested-qe") << "Check nested QE on " << q << std::endl;
-  Node qqe = doNestedQe(q, true);
+  Node qqe = doNestedQe(d_env, q, true);
   d_qnqe[q] = qqe;
   if (qqe == q)
   {
@@ -54,8 +56,7 @@ bool NestedQe::hasProcessed(Node q) const
   return d_qnqe.find(q) != d_qnqe.end();
 }
 
-bool NestedQe::getNestedQuantification(
-    Node q, std::unordered_set<Node, NodeHashFunction>& nqs)
+bool NestedQe::getNestedQuantification(Node q, std::unordered_set<Node>& nqs)
 {
   expr::getKindSubterms(q[1], kind::FORALL, true, nqs);
   return !nqs.empty();
@@ -63,11 +64,11 @@ bool NestedQe::getNestedQuantification(
 
 bool NestedQe::hasNestedQuantification(Node q)
 {
-  std::unordered_set<Node, NodeHashFunction> nqs;
+  std::unordered_set<Node> nqs;
   return getNestedQuantification(q, nqs);
 }
 
-Node NestedQe::doNestedQe(Node q, bool keepTopLevel)
+Node NestedQe::doNestedQe(Env& env, Node q, bool keepTopLevel)
 {
   NodeManager* nm = NodeManager::currentNM();
   Node qOrig = q;
@@ -78,7 +79,7 @@ Node NestedQe::doNestedQe(Node q, bool keepTopLevel)
     inputExists = true;
   }
   Assert(q.getKind() == kind::FORALL);
-  std::unordered_set<Node, NodeHashFunction> nqs;
+  std::unordered_set<Node> nqs;
   if (!getNestedQuantification(q, nqs))
   {
     Trace("cegqi-nested-qe-debug")
@@ -88,7 +89,7 @@ Node NestedQe::doNestedQe(Node q, bool keepTopLevel)
       return qOrig;
     }
     // just do ordinary quantifier elimination
-    Node qqe = doQe(q);
+    Node qqe = doQe(env, q);
     Trace("cegqi-nested-qe-debug") << "...did ordinary qe" << std::endl;
     return qqe;
   }
@@ -104,7 +105,7 @@ Node NestedQe::doNestedQe(Node q, bool keepTopLevel)
   for (const Node& nq : nqs)
   {
     Node nqk = sk.apply(nq);
-    Node nqqe = doNestedQe(nqk);
+    Node nqqe = doNestedQe(env, nqk);
     if (nqqe == nqk)
     {
       // failed
@@ -130,14 +131,14 @@ Node NestedQe::doNestedQe(Node q, bool keepTopLevel)
   return nm->mkNode(inputExists ? kind::EXISTS : kind::FORALL, qargs);
 }
 
-Node NestedQe::doQe(Node q)
+Node NestedQe::doQe(Env& env, Node q)
 {
   Assert(q.getKind() == kind::FORALL);
   Trace("cegqi-nested-qe") << "  Apply qe to " << q << std::endl;
   NodeManager* nm = NodeManager::currentNM();
   q = nm->mkNode(kind::EXISTS, q[0], q[1].negate());
-  std::unique_ptr<SmtEngine> smt_qe;
-  initializeSubsolver(smt_qe);
+  std::unique_ptr<SolverEngine> smt_qe;
+  initializeSubsolver(smt_qe, env);
   Node qqe = smt_qe->getQuantifierElimination(q, true, false);
   if (expr::hasBoundVar(qqe))
   {
@@ -152,4 +153,4 @@ Node NestedQe::doQe(Node q)
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

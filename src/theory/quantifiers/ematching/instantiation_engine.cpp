@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file instantiation_engine.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of instantiation engine class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of instantiation engine class
+ */
 
 #include "theory/quantifiers/ematching/instantiation_engine.h"
 
@@ -22,44 +23,46 @@
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
-#include "theory/quantifiers_engine.h"
 
-using namespace std;
-using namespace CVC4::kind;
-using namespace CVC4::context;
-using namespace CVC4::theory::inst;
+using namespace cvc5::kind;
+using namespace cvc5::context;
+using namespace cvc5::theory::quantifiers::inst;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-InstantiationEngine::InstantiationEngine(QuantifiersEngine* qe,
+InstantiationEngine::InstantiationEngine(Env& env,
                                          QuantifiersState& qs,
                                          QuantifiersInferenceManager& qim,
-                                         QuantifiersRegistry& qr)
-    : QuantifiersModule(qs, qim, qr, qe),
+                                         QuantifiersRegistry& qr,
+                                         TermRegistry& tr)
+    : QuantifiersModule(env, qs, qim, qr, tr),
       d_instStrategies(),
       d_isup(),
       d_i_ag(),
       d_quants(),
+      d_trdb(d_env, qs, qim, qr, tr),
       d_quant_rel(nullptr)
 {
-  if (options::relevantTriggers())
+  if (options().quantifiers.relevantTriggers)
   {
-    d_quant_rel.reset(new quantifiers::QuantRelevance);
+    d_quant_rel.reset(new quantifiers::QuantRelevance(env));
   }
-  if (options::eMatching()) {
+  if (options().quantifiers.eMatching)
+  {
     // these are the instantiation strategies for E-matching
     // user-provided patterns
-    if (options::userPatternsQuant() != options::UserPatMode::IGNORE)
+    if (options().quantifiers.userPatternsQuant != options::UserPatMode::IGNORE)
     {
-      d_isup.reset(new InstStrategyUserPatterns(d_quantEngine, qs, qim, qr));
+      d_isup.reset(
+          new InstStrategyUserPatterns(d_env, d_trdb, qs, qim, qr, tr));
       d_instStrategies.push_back(d_isup.get());
     }
 
     // auto-generated patterns
     d_i_ag.reset(new InstStrategyAutoGenTriggers(
-        d_quantEngine, qs, qim, qr, d_quant_rel.get()));
+        d_env, d_trdb, qs, qim, qr, tr, d_quant_rel.get()));
     d_instStrategies.push_back(d_i_ag.get());
   }
 }
@@ -134,7 +137,7 @@ void InstantiationEngine::reset_round( Theory::Effort e ){
 
 void InstantiationEngine::check(Theory::Effort e, QEffort quant_e)
 {
-  CodeTimer codeTimer(d_quantEngine->d_statistics.d_ematching_time);
+  CodeTimer codeTimer(d_qstate.getStats().d_ematching_time);
   if (quant_e != QEFFORT_STANDARD)
   {
     return;
@@ -149,11 +152,11 @@ void InstantiationEngine::check(Theory::Effort e, QEffort quant_e)
   // collect all active quantified formulas belonging to this
   bool quantActive = false;
   d_quants.clear();
-  FirstOrderModel* m = d_quantEngine->getModel();
+  FirstOrderModel* m = d_treg.getModel();
   size_t nquant = m->getNumAssertedQuantifiers();
   for (size_t i = 0; i < nquant; i++)
   {
-    Node q = d_quantEngine->getModel()->getAssertedQuantifier(i, true);
+    Node q = m->getAssertedQuantifier(i, true);
     if (shouldProcess(q) && m->isQuantifierActive(q))
     {
       quantActive = true;
@@ -200,16 +203,12 @@ bool InstantiationEngine::checkCompleteFor( Node q ) {
 
 void InstantiationEngine::checkOwnership(Node q)
 {
-  if( options::strictTriggers() && q.getNumChildren()==3 ){
+  if (options().quantifiers.userPatternsQuant == options::UserPatMode::STRICT
+      && q.getNumChildren() == 3)
+  {
     //if strict triggers, take ownership of this quantified formula
-    bool hasPat = false;
-    for( unsigned i=0; i<q[2].getNumChildren(); i++ ){
-      if( q[2][i].getKind()==INST_PATTERN || q[2][i].getKind()==INST_NO_PATTERN  ){
-        hasPat = true;
-        break;
-      }
-    }
-    if( hasPat ){
+    if (QuantAttributes::hasPattern(q))
+    {
       d_qreg.setOwner(q, this, 1);
     }
   }
@@ -264,7 +263,7 @@ bool InstantiationEngine::shouldProcess(Node q)
   }
   // also ignore internal quantifiers
   QuantAttributes& qattr = d_qreg.getQuantAttributes();
-  if (qattr.isInternal(q))
+  if (qattr.isQuantBounded(q))
   {
     return false;
   }
@@ -273,4 +272,4 @@ bool InstantiationEngine::shouldProcess(Node q)
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

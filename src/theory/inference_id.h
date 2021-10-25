@@ -1,25 +1,28 @@
-/*********************                                                        */
-/*! \file inference_id.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Gereon Kremer, Andrew Reynolds, Andres Noetzli
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Inference enumeration.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Andres Noetzli
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Inference enumeration.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
+
+#ifndef CVC5__THEORY__INFERENCE_ID_H
+#define CVC5__THEORY__INFERENCE_ID_H
 
 #include <iosfwd>
 
-#ifndef CVC4__THEORY__INFERENCE_ID_H
-#define CVC4__THEORY__INFERENCE_ID_H
+#include "expr/node.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 
 /** Types of inferences used in the procedure
@@ -37,6 +40,14 @@ namespace theory {
  */
 enum class InferenceId
 {
+  // ---------------------------------- core
+  // a conflict when two constants merge in the equality engine (of any theory)
+  EQ_CONSTANT_MERGE,
+  // a split from theory combination
+  COMBINATION_SPLIT,
+  // ---------------------------------- ext theory
+  // a simplification from the extended theory utility
+  EXTT_SIMPLIFY,
   // ---------------------------------- arith theory
   //-------------------- linear core
   // black box conflicts. It's magic.
@@ -49,6 +60,12 @@ enum class InferenceId
   ARITH_CONF_TRICHOTOMY,
   // conflicting upper bound
   ARITH_CONF_UPPER,
+  // conflict from simplex
+  ARITH_CONF_SIMPLEX,
+  // conflict from sum-of-infeasibility simplex
+  ARITH_CONF_SOI_SIMPLEX,
+  // conflict when getting constraint from fact queue
+  ARITH_CONF_FACT_QUEUE,
   // introduces split on a disequality
   ARITH_SPLIT_DEQ,
   // tighten integer inequalities to ceiling
@@ -59,6 +76,13 @@ enum class InferenceId
   ARITH_BB_LEMMA,
   ARITH_DIO_CUT,
   ARITH_DIO_DECOMPOSITION,
+  // unate lemma during presolve
+  ARITH_UNATE,
+  // row implication
+  ARITH_ROW_IMPL,
+  // a split that occurs when the non-linear solver changes values of arithmetic
+  // variables in a model, but those variables are inconsistent with assignments
+  // from another theory
   ARITH_SPLIT_FOR_NL_MODEL,
   //-------------------- preprocessing
   // equivalence of term and its preprocessed form
@@ -111,6 +135,15 @@ enum class InferenceId
   ARITH_NL_IAND_SUM_REFINE,
   // bitwise refinements (IAndSolver::checkFullRefine)
   ARITH_NL_IAND_BITWISE_REFINE,
+  //-------------------- nonlinear pow2 solver
+  // initial refinements (Pow2Solver::checkInitialRefine)
+  ARITH_NL_POW2_INIT_REFINE,
+  // value refinements (Pow2Solver::checkFullRefine)
+  ARITH_NL_POW2_VALUE_REFINE,
+  // monotonicity refinements (Pow2Solver::checkFullRefine)
+  ARITH_NL_POW2_MONOTONE_REFINE,
+  // trivial refinements (Pow2Solver::checkFullRefine)
+  ARITH_NL_POW2_TRIVIAL_CASE_REFINE,
   //-------------------- nonlinear cad solver
   // conflict / infeasible subset obtained from cad
   ARITH_NL_CAD_CONFLICT,
@@ -128,6 +161,10 @@ enum class InferenceId
   ARRAYS_READ_OVER_WRITE,
   ARRAYS_READ_OVER_WRITE_1,
   ARRAYS_READ_OVER_WRITE_CONTRA,
+  // (= (select (as const (Array T1 T2) x) y) x)
+  ARRAYS_CONST_ARRAY_DEFAULT,
+  // an internally inferred tautological equality
+  ARRAYS_EQ_TAUTOLOGY,
   // ---------------------------------- end arrays theory
 
   // ---------------------------------- bags theory
@@ -147,10 +184,10 @@ enum class InferenceId
 
   // ---------------------------------- bitvector theory
   BV_BITBLAST_CONFLICT,
-  BV_LAZY_CONFLICT,
-  BV_LAZY_LEMMA,
-  BV_SIMPLE_LEMMA,
-  BV_SIMPLE_BITBLAST_LEMMA,
+  BV_BITBLAST_INTERNAL_EAGER_LEMMA,
+  BV_BITBLAST_INTERNAL_BITBLAST_LEMMA,
+  BV_LAYERED_CONFLICT,
+  BV_LAYERED_LEMMA,
   BV_EXTF_LEMMA,
   BV_EXTF_COLLAPSE,
   // ---------------------------------- end bitvector theory
@@ -222,6 +259,15 @@ enum class InferenceId
   DATATYPES_SYGUS_MT_POS,
   // ---------------------------------- end datatypes theory
 
+  //-------------------------------------- floating point theory
+  // a lemma sent during TheoryFp::ppRewrite
+  FP_PREPROCESS,
+  // a lemma sent during TheoryFp::convertAndEquateTerm
+  FP_EQUATE_TERM,
+  // a lemma sent during TheoryFp::registerTerm
+  FP_REGISTER_TERM,
+  //-------------------------------------- end floating point theory
+
   //-------------------------------------- quantifiers theory
   //-------------------- types of instantiations.
   // Notice the identifiers in this section cover all the techniques used for
@@ -257,7 +303,20 @@ enum class InferenceId
   QUANTIFIERS_INST_SYQI,
   // instantiations from enumerative instantiation
   QUANTIFIERS_INST_ENUM,
+  // instantiations from pool instantiation
+  QUANTIFIERS_INST_POOL,
+  //-------------------- bounded integers
+  // a proxy lemma from bounded integers, used to control bounds on ground terms
+  QUANTIFIERS_BINT_PROXY,
+  // a proxy lemma to minimize an instantiation of non-ground terms
+  QUANTIFIERS_BINT_MIN_NG,
   //-------------------- counterexample-guided instantiation
+  // a counterexample lemma
+  QUANTIFIERS_CEGQI_CEX,
+  // an auxiliary lemma from counterexample lemma
+  QUANTIFIERS_CEGQI_CEX_AUX,
+  // a reduction lemma for nested quantifier elimination
+  QUANTIFIERS_CEGQI_NESTED_QE,
   // G2 => G1 where G2 is a counterexample literal for a nested quantifier whose
   // counterexample literal is G1.
   QUANTIFIERS_CEGQI_CEX_DEP,
@@ -268,6 +327,8 @@ enum class InferenceId
   // infinity > c
   QUANTIFIERS_CEGQI_VTS_LB_INF,
   //-------------------- syntax-guided instantiation
+  // a counterexample lemma
+  QUANTIFIERS_SYQI_CEX,
   // evaluation unfolding for syntax-guided instantiation
   QUANTIFIERS_SYQI_EVAL_UNFOLD,
   //-------------------- sygus solver
@@ -280,13 +341,73 @@ enum class InferenceId
   QUANTIFIERS_SYGUS_EXCLUDE_CURRENT,
   // manual exclusion of a current solution for sygus-stream
   QUANTIFIERS_SYGUS_STREAM_EXCLUDE_CURRENT,
+  // Q where Q was solved by a subcall to the single invocation module
+  QUANTIFIERS_SYGUS_SI_SOLVED,
+  // Q where Q was (trusted) solved by sampling
+  QUANTIFIERS_SYGUS_SAMPLE_TRUST_SOLVED,
+  // Q where Q was solved by a verification subcall
+  QUANTIFIERS_SYGUS_VERIFY_SOLVED,
   // ~Q where Q is a PBE conjecture with conflicting examples
   QUANTIFIERS_SYGUS_EXAMPLE_INFER_CONTRA,
-  //-------------------- reductions
+  // unif+pi symmetry breaking between multiple enumerators
+  QUANTIFIERS_SYGUS_UNIF_PI_INTER_ENUM_SB,
+  // unif+pi separation lemma
+  QUANTIFIERS_SYGUS_UNIF_PI_SEPARATION,
+  // unif+pi lemma for fairness of size of enumerators
+  QUANTIFIERS_SYGUS_UNIF_PI_FAIR_SIZE,
+  // unif+pi lemma for removing redundant operators
+  QUANTIFIERS_SYGUS_UNIF_PI_REM_OPS,
+  // symmetry breaking for enumerators
+  QUANTIFIERS_SYGUS_UNIF_PI_ENUM_SB,
+  // constraining terms to be in the domain of output
+  QUANTIFIERS_SYGUS_UNIF_PI_DOMAIN,
+  // condition exclusion from sygus unif
+  QUANTIFIERS_SYGUS_UNIF_PI_COND_EXCLUDE,
+  // refinement lemma from sygus unif
+  QUANTIFIERS_SYGUS_UNIF_PI_REFINEMENT,
+  // symmetry breaking lemma from unsat core learning algorithm initialization
+  QUANTIFIERS_SYGUS_CEGIS_UCL_SYM_BREAK,
+  // candidate exclusion lemma from unsat core learning algorithm
+  QUANTIFIERS_SYGUS_CEGIS_UCL_EXCLUDE,
+  // candidate exclusion lemma from repair constants algorithm
+  QUANTIFIERS_SYGUS_REPAIR_CONST_EXCLUDE,
+  // a counterexample-guided inductive synthesis refinement lemma
+  QUANTIFIERS_SYGUS_CEGIS_REFINE,
+  // a cegis refinement lemma found by sampling
+  QUANTIFIERS_SYGUS_CEGIS_REFINE_SAMPLE,
+  // a lemma based on refinement lemma evaluation
+  QUANTIFIERS_SYGUS_REFINE_EVAL,
+  // an evaluation unfolding lemma
+  QUANTIFIERS_SYGUS_EVAL_UNFOLD,
+  // candidate exclusion lemma from programming-by-examples
+  QUANTIFIERS_SYGUS_PBE_EXCLUDE,
+  // a lemma generated while constructing a candidate solution for PBE
+  QUANTIFIERS_SYGUS_PBE_CONSTRUCT_SOL,
+  //-------------------- dynamic splitting
+  // a dynamic split from quantifiers
+  QUANTIFIERS_DSPLIT,
+  //-------------------- induction / conjecture generation
+  // a split on a conjecture for inductive theorem proving
+  QUANTIFIERS_CONJ_GEN_SPLIT,
+  // enumeration of ground terms for inductive theorem proving
+  QUANTIFIERS_CONJ_GEN_GT_ENUM,
+  //-------------------- miscellaneous
   // skolemization
   QUANTIFIERS_SKOLEMIZE,
   // Q1 <=> Q2, where Q1 and Q2 are alpha equivalent
   QUANTIFIERS_REDUCE_ALPHA_EQ,
+  // a higher-order match predicate lemma
+  QUANTIFIERS_HO_MATCH_PRED,
+  // purification of non-variable higher-order function
+  QUANTIFIERS_HO_PURIFY,
+  // reduction of quantifiers that don't have triggers that cover all variables
+  QUANTIFIERS_PARTIAL_TRIGGER_REDUCE,
+  // a purification lemma for a ground term appearing in a quantified formula,
+  // used to ensure E-matching has equality information for that term
+  QUANTIFIERS_GT_PURIFY,
+  // when term indexing discovers disequal congruent terms in the master
+  // equality engine
+  QUANTIFIERS_TDB_DEQ_CONG,
   //-------------------------------------- end quantifiers theory
 
   // ---------------------------------- sep theory
@@ -321,9 +442,13 @@ enum class InferenceId
 
   // ---------------------------------- sets theory
   //-------------------- sets core solver
+  // split when computing care graph
+  SETS_CG_SPLIT,
   SETS_COMPREHENSION,
   SETS_DEQ,
   SETS_DOWN_CLOSURE,
+  // conflict when two singleton/emptyset terms merge
+  SETS_EQ_CONFLICT,
   SETS_EQ_MEM,
   SETS_EQ_MEM_CONFLICT,
   SETS_MEM_EQ,
@@ -336,6 +461,8 @@ enum class InferenceId
   SETS_UP_UNIV,
   SETS_UNIV_TYPE,
   //-------------------- sets cardinality solver
+  // split on emptyset
+  SETS_CARD_SPLIT_EMPTY,
   // cycle of cardinalities, hence all sets have the same
   SETS_CARD_CYCLE,
   // two sets have the same cardinality
@@ -360,11 +487,13 @@ enum class InferenceId
   SETS_RELS_IDENTITY_UP,
   SETS_RELS_JOIN_COMPOSE,
   SETS_RELS_JOIN_IMAGE_DOWN,
+  SETS_RELS_JOIN_IMAGE_UP,
   SETS_RELS_JOIN_SPLIT_1,
   SETS_RELS_JOIN_SPLIT_2,
   SETS_RELS_PRODUCE_COMPOSE,
   SETS_RELS_PRODUCT_SPLIT,
   SETS_RELS_TCLOSURE_FWD,
+  SETS_RELS_TCLOSURE_UP,
   SETS_RELS_TRANSPOSE_EQ,
   SETS_RELS_TRANSPOSE_REV,
   SETS_RELS_TUPLE_REDUCTION,
@@ -544,12 +673,25 @@ enum class InferenceId
   // is unknown, we apply the inference:
   //   len(s) != len(t) V len(s) = len(t)
   STRINGS_DEQ_LENGTH_SP,
+  // Disequality extensionality
+  // x != y => ( seq.len(x) != seq.len(y) or
+  //             ( seq.nth(x, d) != seq.nth(y, d) ^ 0 <= d < seq.len(x) ) )
+  STRINGS_DEQ_EXTENSIONALITY,
   //-------------------- codes solver
   // str.to_code( v ) = rewrite( str.to_code(c) )
   // where v is the proxy variable for c.
   STRINGS_CODE_PROXY,
   // str.code(x) = -1 V str.code(x) != str.code(y) V x = y
   STRINGS_CODE_INJ,
+  //-------------------- sequence update solver
+  // update over unit
+  STRINGS_ARRAY_UPDATE_UNIT,
+  // update over conatenation
+  STRINGS_ARRAY_UPDATE_CONCAT,
+  // nth over unit
+  STRINGS_ARRAY_NTH_UNIT,
+  // nth over conatenation
+  STRINGS_ARRAY_NTH_CONCAT,
   //-------------------- regexp solver
   // regular expression normal form conflict
   //   ( x in R ^ x = y ^ rewrite((str.in_re y R)) = false ) => false
@@ -630,9 +772,11 @@ enum class InferenceId
   // f(x1, .., xn) and P is the reduction predicate for f
   // (see theory_strings_preprocess).
   STRINGS_REDUCTION,
-  //-------------------- prefix conflict
-  // prefix conflict (coarse-grained)
+  //-------------------- merge conflicts
+  // prefix conflict
   STRINGS_PREFIX_CONFLICT,
+  // arithmetic bound conflict
+  STRINGS_ARITH_BOUND_CONFLICT,
   //-------------------- other
   // a lemma added during term registration for an atomic term
   STRINGS_REGISTER_TERM_ATOMIC,
@@ -722,7 +866,13 @@ const char* toString(InferenceId i);
  */
 std::ostream& operator<<(std::ostream& out, InferenceId i);
 
-}  // namespace theory
-}  // namespace CVC4
+/** Make node from inference id */
+Node mkInferenceIdNode(InferenceId i);
 
-#endif /* CVC4__THEORY__INFERENCE_H */
+/** get an inference identifier from a node, return false if we fail */
+bool getInferenceId(TNode n, InferenceId& i);
+
+}  // namespace theory
+}  // namespace cvc5
+
+#endif /* CVC5__THEORY__INFERENCE_H */

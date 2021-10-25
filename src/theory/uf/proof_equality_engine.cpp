@@ -1,48 +1,53 @@
-/*********************                                                        */
-/*! \file proof_equality_engine.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of the proof-producing equality engine
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of the proof-producing equality engine.
+ */
 
 #include "theory/uf/proof_equality_engine.h"
 
-#include "expr/lazy_proof_chain.h"
-#include "expr/proof_node.h"
-#include "expr/proof_node_manager.h"
+#include "proof/lazy_proof_chain.h"
+#include "proof/proof_node.h"
+#include "proof/proof_node_manager.h"
+#include "smt/env.h"
 #include "theory/rewriter.h"
 #include "theory/uf/eq_proof.h"
 #include "theory/uf/equality_engine.h"
 #include "theory/uf/proof_checker.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace eq {
 
-ProofEqEngine::ProofEqEngine(context::Context* c,
-                             context::UserContext* u,
-                             EqualityEngine& ee,
-                             ProofNodeManager* pnm)
-    : EagerProofGenerator(pnm, u, "pfee::" + ee.identify()),
+ProofEqEngine::ProofEqEngine(Env& env, EqualityEngine& ee)
+    : EagerProofGenerator(env.getProofNodeManager(),
+                          env.getUserContext(),
+                          "pfee::" + ee.identify()),
       d_ee(ee),
-      d_factPg(c, pnm),
-      d_pnm(pnm),
-      d_proof(pnm, nullptr, c, "pfee::LazyCDProof::" + ee.identify()),
-      d_keep(c)
+      d_factPg(env.getContext(), env.getProofNodeManager()),
+      d_assumpPg(env.getProofNodeManager()),
+      d_pnm(env.getProofNodeManager()),
+      d_proof(env.getProofNodeManager(),
+              nullptr,
+              env.getContext(),
+              "pfee::LazyCDProof::" + ee.identify()),
+      d_keep(env.getContext())
 {
   NodeManager* nm = NodeManager::currentNM();
   d_true = nm->mkConst(true);
   d_false = nm->mkConst(false);
-  AlwaysAssert(pnm != nullptr)
+  AlwaysAssert(env.getProofNodeManager() != nullptr)
       << "Should not construct ProofEqEngine without proof node manager";
 }
 
@@ -224,7 +229,7 @@ TrustNode ProofEqEngine::assertLemma(Node conc,
   LazyCDProof* curr;
   TrustNodeKind tnk;
   // same policy as above: for conflicts, use existing lazy proof
-  if (conc == d_false)
+  if (conc == d_false && noExplain.empty())
   {
     curr = &d_proof;
     tnk = TrustNodeKind::CONFLICT;
@@ -263,7 +268,7 @@ TrustNode ProofEqEngine::assertLemma(Node conc,
   LazyCDProof* curr;
   TrustNodeKind tnk;
   // same policy as above: for conflicts, use existing lazy proof
-  if (conc == d_false)
+  if (conc == d_false && noExplain.empty())
   {
     curr = &d_proof;
     tnk = TrustNodeKind::CONFLICT;
@@ -313,6 +318,8 @@ void ProofEqEngine::explainVecWithProof(TrustNodeKind& tnk,
       assumps.push_back(e);
       // it is not a conflict, since it may involve new literals
       tnk = TrustNodeKind::LEMMA;
+      // ensure this is an assumption
+      curr->addLazyStep(e, &d_assumpPg);
     }
   }
 }
@@ -349,7 +356,7 @@ TrustNode ProofEqEngine::ensureProofForFact(Node conc,
     return TrustNode::null();
   }
   // clone it so that we have a fresh copy
-  pfBody = pfBody->clone();
+  pfBody = d_pnm->clone(pfBody);
   Trace("pfee-proof") << "pfee::ensureProofForFact: add scope" << std::endl;
   // The free assumptions must be closed by assumps, which should be passed
   // as arguments of SCOPE. However, some of the free assumptions may not
@@ -549,4 +556,4 @@ void ProofEqEngine::explainWithProof(Node lit,
 
 }  // namespace eq
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

@@ -1,27 +1,26 @@
-/*********************                                                        */
-/*! \file smt2_printer.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Abdalrhman Mohamed, Andrew Reynolds, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The pretty-printer interface for the SMT2 output language
- **
- ** The pretty-printer interface for the SMT2 output language.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Abdalrhman Mohamed, Andrew Reynolds, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The pretty-printer interface for the SMT2 output language.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__PRINTER__SMT2_PRINTER_H
-#define CVC4__PRINTER__SMT2_PRINTER_H
+#ifndef CVC5__PRINTER__SMT2_PRINTER_H
+#define CVC5__PRINTER__SMT2_PRINTER_H
 
 #include "printer/printer.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 class LetBinding;
 
@@ -35,11 +34,11 @@ enum Variant
                    // support for the string standard
 };                 /* enum Variant */
 
-class Smt2Printer : public CVC4::Printer
+class Smt2Printer : public cvc5::Printer
 {
  public:
   Smt2Printer(Variant variant = no_variant) : d_variant(variant) {}
-  using CVC4::Printer::toStream;
+  using cvc5::Printer::toStream;
   void toStream(std::ostream& out,
                 TNode n,
                 int toDepth,
@@ -48,8 +47,8 @@ class Smt2Printer : public CVC4::Printer
   void toStream(std::ostream& out, const smt::Model& m) const override;
   /**
    * Writes the unsat core to the stream out.
-   * We use the expression names that are stored in the SMT engine associated
-   * with the core (UnsatCore::getSmtEngine) for printing named assertions.
+   * We use the expression names that are associated with the core
+   * (UnsatCore::getCoreNames) for printing named assertions.
    */
   void toStream(std::ostream& out, const UnsatCore& core) const override;
 
@@ -100,8 +99,7 @@ class Smt2Printer : public CVC4::Printer
       const std::vector<Node>& formulas) const override;
 
   /** Print check-sat command */
-  void toStreamCmdCheckSat(std::ostream& out,
-                           Node n = Node::null()) const override;
+  void toStreamCmdCheckSat(std::ostream& out) const override;
 
   /** Print check-sat-assuming command */
   void toStreamCmdCheckSatAssuming(
@@ -124,6 +122,9 @@ class Smt2Printer : public CVC4::Printer
 
   /** Print constraint command */
   void toStreamCmdConstraint(std::ostream& out, Node n) const override;
+
+  /** Print assume command */
+  void toStreamCmdAssume(std::ostream& out, Node n) const override;
 
   /** Print inv-constraint command */
   void toStreamCmdInvConstraint(std::ostream& out,
@@ -163,12 +164,11 @@ class Smt2Printer : public CVC4::Printer
   /** Print get-unsat-core command */
   void toStreamCmdGetUnsatCore(std::ostream& out) const override;
 
+  /** Print get-difficulty command */
+  void toStreamCmdGetDifficulty(std::ostream& out) const override;
+
   /** Print get-assertions command */
   void toStreamCmdGetAssertions(std::ostream& out) const override;
-
-  /** Print set-info :status command */
-  void toStreamCmdSetBenchmarkStatus(std::ostream& out,
-                                     Result::Sat status) const override;
 
   /** Print set-logic command */
   void toStreamCmdSetBenchmarkLogic(std::ostream& out,
@@ -205,10 +205,6 @@ class Smt2Printer : public CVC4::Printer
   /** Print quit command */
   void toStreamCmdQuit(std::ostream& out) const override;
 
-  /** Print comment command */
-  void toStreamCmdComment(std::ostream& out,
-                          const std::string& comment) const override;
-
   /** Print declare-heap command */
   void toStreamCmdDeclareHeap(std::ostream& out,
                               TypeNode locType,
@@ -236,6 +232,8 @@ class Smt2Printer : public CVC4::Printer
                 TNode n,
                 int toDepth,
                 LetBinding* lbind = nullptr) const;
+  /** To stream type node, which ensures tn is printed in smt2 format */
+  void toStreamType(std::ostream& out, TypeNode tn) const;
   /**
    * To stream, with a forced type. This method is used in some corner cases
    * to force a node n to be printed as if it had type tn. This is used e.g.
@@ -251,16 +249,16 @@ class Smt2Printer : public CVC4::Printer
    * tn declared via declare-sort or declare-datatype.
    */
   void toStreamModelSort(std::ostream& out,
-                         const smt::Model& m,
-                         TypeNode tn) const override;
+                         TypeNode tn,
+                         const std::vector<Node>& elements) const override;
 
   /**
    * To stream model term. This prints the appropriate output for term
    * n declared via declare-fun.
    */
   void toStreamModelTerm(std::ostream& out,
-                         const smt::Model& m,
-                         Node n) const override;
+                         const Node& n,
+                         const Node& value) const override;
 
   /**
    * To stream with let binding. This prints n, possibly in the scope
@@ -275,6 +273,6 @@ class Smt2Printer : public CVC4::Printer
 
 }  // namespace smt2
 }  // namespace printer
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__PRINTER__SMT2_PRINTER_H */
+#endif /* CVC5__PRINTER__SMT2_PRINTER_H */

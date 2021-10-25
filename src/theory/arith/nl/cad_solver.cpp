@@ -1,51 +1,49 @@
-/*********************                                                        */
-/*! \file cad_solver.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of new non-linear solver
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Gereon Kremer, Andrew Reynolds, Andres Noetzli
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of new non-linear solver.
+ */
 
 #include "theory/arith/nl/cad_solver.h"
 
-#include "theory/inference_id.h"
+#include "expr/skolem_manager.h"
 #include "theory/arith/inference_manager.h"
 #include "theory/arith/nl/cad/cdcac.h"
 #include "theory/arith/nl/nl_model.h"
 #include "theory/arith/nl/poly_conversion.h"
+#include "theory/inference_id.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arith {
 namespace nl {
 
-CadSolver::CadSolver(InferenceManager& im,
-                     NlModel& model,
-                     context::Context* ctx,
-                     ProofNodeManager* pnm)
+CadSolver::CadSolver(Env& env, InferenceManager& im, NlModel& model)
     :
-#ifdef CVC4_POLY_IMP
-      d_CAC(ctx, pnm),
+#ifdef CVC5_POLY_IMP
+      d_CAC(env),
 #endif
       d_foundSatisfiability(false),
       d_im(im),
       d_model(model)
 {
-  d_ranVariable =
-      NodeManager::currentNM()->mkSkolem("__z",
-                                         NodeManager::currentNM()->realType(),
-                                         "",
-                                         NodeManager::SKOLEM_EXACT_NAME);
-#ifdef CVC4_POLY_IMP
-  ProofChecker* pc = pnm != nullptr ? pnm->getChecker() : nullptr;
-  if (pc != nullptr)
+  NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
+  d_ranVariable = sm->mkDummySkolem(
+      "__z", nm->realType(), "", NodeManager::SKOLEM_EXACT_NAME);
+#ifdef CVC5_POLY_IMP
+  if (env.isTheoryProofProducing())
   {
+    ProofChecker* pc = env.getProofNodeManager()->getChecker();
     // add checkers
     d_proofChecker.registerTo(pc);
   }
@@ -56,7 +54,7 @@ CadSolver::~CadSolver() {}
 
 void CadSolver::initLastCall(const std::vector<Node>& assertions)
 {
-#ifdef CVC4_POLY_IMP
+#ifdef CVC5_POLY_IMP
   if (Trace.isOn("nl-cad"))
   {
     Trace("nl-cad") << "CadSolver::initLastCall" << std::endl;
@@ -83,7 +81,7 @@ void CadSolver::initLastCall(const std::vector<Node>& assertions)
 
 void CadSolver::checkFull()
 {
-#ifdef CVC4_POLY_IMP
+#ifdef CVC5_POLY_IMP
   if (d_CAC.getConstraints().getConstraints().empty()) {
     Trace("nl-cad") << "No constraints. Return." << std::endl;
     return;
@@ -115,12 +113,12 @@ void CadSolver::checkFull()
 
 void CadSolver::checkPartial()
 {
-#ifdef CVC4_POLY_IMP
+#ifdef CVC5_POLY_IMP
   if (d_CAC.getConstraints().getConstraints().empty()) {
     Trace("nl-cad") << "No constraints. Return." << std::endl;
     return;
   }
-  auto covering = d_CAC.getUnsatCover(0, true);
+  auto covering = d_CAC.getUnsatCover(true);
   if (covering.empty())
   {
     d_foundSatisfiability = true;
@@ -165,7 +163,7 @@ void CadSolver::checkPartial()
 
 bool CadSolver::constructModelIfAvailable(std::vector<Node>& assertions)
 {
-#ifdef CVC4_POLY_IMP
+#ifdef CVC5_POLY_IMP
   if (!d_foundSatisfiability)
   {
     return false;
@@ -182,11 +180,11 @@ bool CadSolver::constructModelIfAvailable(std::vector<Node>& assertions)
     Node value = value_to_node(d_CAC.getModel().get(v), d_ranVariable);
     if (value.isConst())
     {
-      d_model.addCheckModelSubstitution(variable, value);
+      d_model.addSubstitution(variable, value);
     }
     else
     {
-      d_model.addCheckModelWitness(variable, value);
+      d_model.addWitness(variable, value);
     }
     Trace("nl-cad") << "-> " << v << " = " << value << std::endl;
   }
@@ -212,4 +210,4 @@ bool CadSolver::constructModelIfAvailable(std::vector<Node>& assertions)
 }  // namespace nl
 }  // namespace arith
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

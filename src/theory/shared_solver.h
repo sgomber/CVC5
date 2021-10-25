@@ -1,28 +1,31 @@
-/*********************                                                        */
-/*! \file shared_solver.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Dejan Jovanovic
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Base class for shared solver
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Dejan Jovanovic, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Base class for shared solver.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__SHARED_SOLVER__H
-#define CVC4__THEORY__SHARED_SOLVER__H
+#ifndef CVC5__THEORY__SHARED_SOLVER__H
+#define CVC5__THEORY__SHARED_SOLVER__H
 
 #include "expr/node.h"
+#include "smt/env_obj.h"
+#include "theory/inference_id.h"
 #include "theory/shared_terms_database.h"
 #include "theory/term_registration_visitor.h"
 #include "theory/valuation.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 class LogicInfo;
 class ProofNodeManager;
@@ -31,6 +34,7 @@ class TheoryEngine;
 namespace theory {
 
 struct EeSetupInfo;
+class TheoryInferenceManager;
 
 /**
  * A base class for shared solver. The shared solver is the component of theory
@@ -41,10 +45,10 @@ struct EeSetupInfo;
  * (2) Be the official interface for equality statuses,
  * (3) Propagate equalities to TheoryEngine when necessary and explain them.
  */
-class SharedSolver
+class SharedSolver : protected EnvObj
 {
  public:
-  SharedSolver(TheoryEngine& te, ProofNodeManager* pnm);
+  SharedSolver(Env& env, TheoryEngine& te);
   virtual ~SharedSolver() {}
   //------------------------------------- initialization
   /**
@@ -92,20 +96,23 @@ class SharedSolver
    */
   virtual TrustNode explain(TNode literal, TheoryId id) = 0;
   /**
-   * Assert equality to the shared terms database.
+   * Assert n to the shared terms database.
    *
    * This method is called by TheoryEngine when a fact has been marked to
    * send to THEORY_BUILTIN, meaning that shared terms database should
-   * maintain this fact. This is the case when either an equality is
-   * asserted from the SAT solver or a theory propagates an equality between
-   * shared terms.
+   * maintain this fact. In the distributed equality engine architecture,
+   * this is the case when either an equality is asserted from the SAT solver
+   * or a theory propagates an equality between shared terms.
    */
-  virtual void assertSharedEquality(TNode equality,
-                                    bool polarity,
-                                    TNode reason) = 0;
+  virtual void assertShared(TNode n, bool polarity, TNode reason) = 0;
   /** Is term t a shared term? */
   virtual bool isShared(TNode t) const;
 
+  /**
+   * Propagate the predicate with polarity value on the output channel of this
+   * solver.
+   */
+  bool propagateLit(TNode predicate, bool value);
   /**
    * Method called by equalityEngine when a becomes (dis-)equal to b and a and b
    * are shared with the theory. Returns false if there is a direct conflict
@@ -116,7 +123,9 @@ class SharedSolver
                                TNode b,
                                bool value);
   /** Send lemma to the theory engine, atomsTo is the theory to send atoms to */
-  void sendLemma(TrustNode trn, TheoryId atomsTo);
+  void sendLemma(TrustNode trn, TheoryId atomsTo, InferenceId id);
+  /** Send conflict to the theory engine */
+  void sendConflict(TrustNode trn, InferenceId id);
 
  protected:
   /** Solver-specific pre-register shared */
@@ -131,9 +140,11 @@ class SharedSolver
   PreRegisterVisitor d_preRegistrationVisitor;
   /** Visitor for collecting shared terms */
   SharedTermsVisitor d_sharedTermsVisitor;
+  /** Theory inference manager of theory builtin */
+  TheoryInferenceManager* d_im;
 };
 
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__SHARED_SOLVER__H */
+#endif /* CVC5__THEORY__SHARED_SOLVER__H */

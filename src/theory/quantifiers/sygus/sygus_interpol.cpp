@@ -1,44 +1,45 @@
-/*********************                                                        */
-/*! \file sygus_interpol.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Ying Sheng, Abdalrhman Mohamed, Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of sygus interpolation utility, which
- ** transforms an input of axioms and conjecture into an interpolation problem,
- *and solve it.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Ying Sheng, Abdalrhman Mohamed, Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of sygus interpolation utility, which transforms an input of
+ * axioms and conjecture into an interpolation problem, and solve it.
+ */
 
 #include "theory/quantifiers/sygus/sygus_interpol.h"
 
 #include <sstream>
 
+#include "base/modal_exception.h"
 #include "expr/dtype.h"
 #include "expr/node_algorithm.h"
 #include "options/smt_options.h"
+#include "smt/env.h"
 #include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
-#include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-SygusInterpol::SygusInterpol() {}
+SygusInterpol::SygusInterpol(Env& env) : EnvObj(env) {}
 
 void SygusInterpol::collectSymbols(const std::vector<Node>& axioms,
                                    const Node& conj)
 {
   Trace("sygus-interpol-debug") << "Collect symbols..." << std::endl;
-  std::unordered_set<Node, NodeHashFunction> symSetAxioms;
-  std::unordered_set<Node, NodeHashFunction> symSetConj;
+  std::unordered_set<Node> symSetAxioms;
+  std::unordered_set<Node> symSetConj;
   for (size_t i = 0, size = axioms.size(); i < size; i++)
   {
     expr::getSymbols(axioms[i], symSetAxioms);
@@ -95,7 +96,7 @@ void SygusInterpol::createVariables(bool needsShared)
 void SygusInterpol::getIncludeCons(
     const std::vector<Node>& axioms,
     const Node& conj,
-    std::map<TypeNode, std::unordered_set<Node, NodeHashFunction>>& result)
+    std::map<TypeNode, std::unordered_set<Node>>& result)
 {
   NodeManager* nm = NodeManager::currentNM();
   Assert(options::produceInterpols() != options::ProduceInterpols::NONE);
@@ -115,38 +116,35 @@ void SygusInterpol::getIncludeCons(
   else if (options::produceInterpols() == options::ProduceInterpols::SHARED)
   {
     // Get operators from axioms
-    std::map<TypeNode, std::unordered_set<Node, NodeHashFunction>>
-        include_cons_axioms;
+    std::map<TypeNode, std::unordered_set<Node>> include_cons_axioms;
     Node tmpAssumptions =
         (axioms.size() == 1 ? axioms[0] : nm->mkNode(kind::AND, axioms));
     expr::getOperatorsMap(tmpAssumptions, include_cons_axioms);
 
     // Get operators from conj
-    std::map<TypeNode, std::unordered_set<Node, NodeHashFunction>>
-        include_cons_conj;
+    std::map<TypeNode, std::unordered_set<Node>> include_cons_conj;
     expr::getOperatorsMap(conj, include_cons_conj);
 
     // Compute intersection
-    for (std::map<TypeNode,
-                  std::unordered_set<Node, NodeHashFunction>>::iterator it =
+    for (std::map<TypeNode, std::unordered_set<Node>>::iterator it =
              include_cons_axioms.begin();
          it != include_cons_axioms.end();
          it++)
     {
       TypeNode tn = it->first;
-      std::unordered_set<Node, NodeHashFunction> axiomsOps = it->second;
-      std::map<TypeNode, std::unordered_set<Node, NodeHashFunction>>::iterator
-          concIter = include_cons_conj.find(tn);
+      std::unordered_set<Node> axiomsOps = it->second;
+      std::map<TypeNode, std::unordered_set<Node>>::iterator concIter =
+          include_cons_conj.find(tn);
       if (concIter != include_cons_conj.end())
       {
-        std::unordered_set<Node, NodeHashFunction> conjOps = concIter->second;
+        std::unordered_set<Node> conjOps = concIter->second;
         for (const Node& n : axiomsOps)
         {
           if (conjOps.find(n) != conjOps.end())
           {
             if (result.find(tn) == result.end())
             {
-              result[tn] = std::unordered_set<Node, NodeHashFunction>();
+              result[tn] = std::unordered_set<Node>();
             }
             result[tn].insert(n);
           }
@@ -183,11 +181,11 @@ TypeNode SygusInterpol::setSynthGrammar(const TypeNode& itpGType,
   else
   {
     // set default grammar
-    std::map<TypeNode, std::unordered_set<Node, NodeHashFunction>> extra_cons;
-    std::map<TypeNode, std::unordered_set<Node, NodeHashFunction>> exclude_cons;
-    std::map<TypeNode, std::unordered_set<Node, NodeHashFunction>> include_cons;
+    std::map<TypeNode, std::unordered_set<Node>> extra_cons;
+    std::map<TypeNode, std::unordered_set<Node>> exclude_cons;
+    std::map<TypeNode, std::unordered_set<Node>> include_cons;
     getIncludeCons(axioms, conj, include_cons);
-    std::unordered_set<Node, NodeHashFunction> terms_irrelevant;
+    std::unordered_set<Node> terms_irrelevant;
     itpGTypeS = CegGrammarConstructor::mkSygusDefaultType(
         NodeManager::currentNM()->booleanType(),
         d_ibvlShared,
@@ -256,13 +254,15 @@ void SygusInterpol::mkSygusConjecture(Node itp,
   constraint = constraint.substitute(
       d_syms.begin(), d_syms.end(), d_vars.begin(), d_vars.end());
   Trace("sygus-interpol-debug") << constraint << "...finish" << std::endl;
-  constraint = Rewriter::rewrite(constraint);
+  constraint = rewrite(constraint);
 
   d_sygusConj = constraint;
   Trace("sygus-interpol") << "Generate: " << d_sygusConj << std::endl;
 }
 
-bool SygusInterpol::findInterpol(SmtEngine* subSolver, Node& interpol, Node itp)
+bool SygusInterpol::findInterpol(SolverEngine* subSolver,
+                                 Node& interpol,
+                                 Node itp)
 {
   // get the synthesis solution
   std::map<Node, Node> sols;
@@ -272,12 +272,12 @@ bool SygusInterpol::findInterpol(SmtEngine* subSolver, Node& interpol, Node itp)
   if (its == sols.end())
   {
     Trace("sygus-interpol")
-        << "SmtEngine::getInterpol: could not find solution!" << std::endl;
+        << "SolverEngine::getInterpol: could not find solution!" << std::endl;
     throw RecoverableModalException(
         "Could not find solution for get-interpol.");
     return false;
   }
-  Trace("sygus-interpol") << "SmtEngine::getInterpol: solution is "
+  Trace("sygus-interpol") << "SolverEngine::getInterpol: solution is "
                           << its->second << std::endl;
   interpol = its->second;
   // replace back the created variables to original symbols.
@@ -325,8 +325,8 @@ bool SygusInterpol::solveInterpolation(const std::string& name,
   Node itp = mkPredicate(name);
   mkSygusConjecture(itp, axioms, conj);
 
-  std::unique_ptr<SmtEngine> subSolver;
-  initializeSubsolver(subSolver);
+  std::unique_ptr<SolverEngine> subSolver;
+  initializeSubsolver(subSolver, d_env);
   // get the logic
   LogicInfo l = subSolver->getLogicInfo().getUnlockedCopy();
   // enable everything needed for sygus
@@ -339,15 +339,15 @@ bool SygusInterpol::solveInterpolation(const std::string& name,
   }
   std::vector<Node> vars_empty;
   subSolver->declareSynthFun(itp, grammarType, false, vars_empty);
-  Trace("sygus-interpol") << "SmtEngine::getInterpol: made conjecture : "
+  Trace("sygus-interpol") << "SolverEngine::getInterpol: made conjecture : "
                           << d_sygusConj << ", solving for "
                           << d_sygusConj[0][0] << std::endl;
   subSolver->assertSygusConstraint(d_sygusConj);
 
-  Trace("sygus-interpol") << "  SmtEngine::getInterpol check sat..."
+  Trace("sygus-interpol") << "  SolverEngine::getInterpol check sat..."
                           << std::endl;
   Result r = subSolver->checkSynth();
-  Trace("sygus-interpol") << "  SmtEngine::getInterpol result: " << r
+  Trace("sygus-interpol") << "  SolverEngine::getInterpol result: " << r
                           << std::endl;
   if (r.asSatisfiabilityResult().isSat() == Result::UNSAT)
   {
@@ -358,4 +358,4 @@ bool SygusInterpol::solveInterpolation(const std::string& name,
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

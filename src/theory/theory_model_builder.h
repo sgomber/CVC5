@@ -1,30 +1,32 @@
-/*********************                                                        */
-/*! \file theory_model_builder.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Model class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mathias Preiner, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Model class.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__THEORY_MODEL_BUILDER_H
-#define CVC4__THEORY__THEORY_MODEL_BUILDER_H
+#ifndef CVC5__THEORY__THEORY_MODEL_BUILDER_H
+#define CVC5__THEORY__THEORY_MODEL_BUILDER_H
 
 #include <unordered_map>
 #include <unordered_set>
 
+#include "smt/env_obj.h"
 #include "theory/theory_model.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
-class TheoryEngine;
+class Env;
 
 namespace theory {
 
@@ -41,13 +43,13 @@ namespace theory {
  * this will set up the data structures in TheoryModel to represent
  * a model for the current set of assertions.
  */
-class TheoryEngineModelBuilder
+class TheoryEngineModelBuilder : protected EnvObj
 {
-  typedef std::unordered_map<Node, Node, NodeHashFunction> NodeMap;
-  typedef std::unordered_set<Node, NodeHashFunction> NodeSet;
+  typedef std::unordered_map<Node, Node> NodeMap;
+  typedef std::unordered_set<Node> NodeSet;
 
  public:
-  TheoryEngineModelBuilder();
+  TheoryEngineModelBuilder(Env& env);
   virtual ~TheoryEngineModelBuilder() {}
   /**
    * Should be called only on models m after they have been prepared
@@ -163,10 +165,9 @@ class TheoryEngineModelBuilder
    * For example, if tn is (Array Int Bool) and type_list is empty,
    * then we append ( Int, Bool, (Array Int Bool) ) to type_list.
    */
-  void addToTypeList(
-      TypeNode tn,
-      std::vector<TypeNode>& type_list,
-      std::unordered_set<TypeNode, TypeNodeHashFunction>& visiting);
+  void addToTypeList(TypeNode tn,
+                     std::vector<TypeNode>& type_list,
+                     std::unordered_set<TypeNode>& visiting);
   /** assign function f based on the model m.
   * This construction is based on "table form". For example:
   * (f 0 1) = 1
@@ -207,8 +208,8 @@ class TheoryEngineModelBuilder
    * Assign all unassigned functions in the model m (those returned by
    * TheoryModel::getFunctionsToAssign),
    * using the two functions above. Currently:
-   * If ufHo is disabled, we call assignFunction for all functions.
-   * If ufHo is enabled, we call assignHoFunction.
+   * If HO logic is disabled, we call assignFunction for all functions.
+   * If HO logic is enabled, we call assignHoFunction.
    */
   void assignFunctions(TheoryModel* m);
 
@@ -300,7 +301,7 @@ class TheoryEngineModelBuilder
 
   //---------------------------------for debugging finite model finding
   /** does type tn involve an uninterpreted sort? */
-  bool involvesUSort(TypeNode tn);
+  bool involvesUSort(TypeNode tn) const;
   /** is v an excluded value based on uninterpreted sorts?
    * This gives an assertion failure in the case that v contains
    * an uninterpreted constant whose index is out of the bounds
@@ -310,10 +311,9 @@ class TheoryEngineModelBuilder
                             Node v,
                             std::map<Node, bool>& visited);
   //---------------------------------end for debugging finite model finding
-
 }; /* class TheoryEngineModelBuilder */
 
-} /* CVC4::theory namespace */
-} /* CVC4 namespace */
+}  // namespace theory
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__THEORY_MODEL_BUILDER_H */
+#endif /* CVC5__THEORY__THEORY_MODEL_BUILDER_H */

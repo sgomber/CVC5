@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file theory_inference_manager.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief An inference manager for Theory
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * An inference manager for Theory.
+ */
 
 #include "theory/theory_inference_manager.h"
 
@@ -22,61 +23,73 @@
 #include "theory/uf/equality_engine.h"
 #include "theory/uf/proof_equality_engine.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 
-TheoryInferenceManager::TheoryInferenceManager(Theory& t,
+TheoryInferenceManager::TheoryInferenceManager(Env& env,
+                                               Theory& t,
                                                TheoryState& state,
-                                               ProofNodeManager* pnm,
-                                               const std::string& name,
+                                               const std::string& statsName,
                                                bool cacheLemmas)
-    : d_theory(t),
+    : EnvObj(env),
+      d_theory(t),
       d_theoryState(state),
       d_out(t.getOutputChannel()),
       d_ee(nullptr),
-      d_pnm(pnm),
+      d_decManager(nullptr),
+      d_pfee(nullptr),
       d_cacheLemmas(cacheLemmas),
-      d_keep(t.getSatContext()),
-      d_lemmasSent(t.getUserContext()),
+      d_keep(context()),
+      d_lemmasSent(userContext()),
       d_numConflicts(0),
       d_numCurrentLemmas(0),
       d_numCurrentFacts(0),
-      d_conflictIdStats(name + "::inferencesConflict"),
-      d_factIdStats(name + "::inferencesFact"),
-      d_lemmaIdStats(name + "::inferencesLemma")
+      d_conflictIdStats(statisticsRegistry().registerHistogram<InferenceId>(
+          statsName + "inferencesConflict")),
+      d_factIdStats(statisticsRegistry().registerHistogram<InferenceId>(
+          statsName + "inferencesFact")),
+      d_lemmaIdStats(statisticsRegistry().registerHistogram<InferenceId>(
+          statsName + "inferencesLemma"))
 {
   // don't add true lemma
   Node truen = NodeManager::currentNM()->mkConst(true);
   d_lemmasSent.insert(truen);
-  smtStatisticsRegistry()->registerStat(&d_conflictIdStats);
-  smtStatisticsRegistry()->registerStat(&d_factIdStats);
-  smtStatisticsRegistry()->registerStat(&d_lemmaIdStats);
 }
 
 TheoryInferenceManager::~TheoryInferenceManager()
 {
-  smtStatisticsRegistry()->unregisterStat(&d_conflictIdStats);
-  smtStatisticsRegistry()->unregisterStat(&d_factIdStats);
-  smtStatisticsRegistry()->unregisterStat(&d_lemmaIdStats);
 }
 
 void TheoryInferenceManager::setEqualityEngine(eq::EqualityEngine* ee)
 {
   d_ee = ee;
   // if proofs are enabled, also make a proof equality engine to wrap ee
-  // if it is non-null
-  if (d_pnm != nullptr && d_ee != nullptr)
+  // if it is non-null. If its proof equality engine has already been assigned,
+  // use it. This is to ensure that all theories use the same proof equality
+  // engine when in ee-mode=central.
+  if (isProofEnabled() && d_ee != nullptr)
   {
-    d_pfee.reset(new eq::ProofEqEngine(d_theoryState.getSatContext(),
-                                       d_theoryState.getUserContext(),
-                                       *d_ee,
-                                       d_pnm));
+    d_pfee = d_ee->getProofEqualityEngine();
+    if (d_pfee == nullptr)
+    {
+      d_pfeeAlloc = std::make_unique<eq::ProofEqEngine>(d_env, *d_ee);
+      d_pfee = d_pfeeAlloc.get();
+      d_ee->setProofEqualityEngine(d_pfee);
+    }
   }
 }
 
-bool TheoryInferenceManager::isProofEnabled() const { return d_pnm != nullptr; }
+void TheoryInferenceManager::setDecisionManager(DecisionManager* dm)
+{
+  d_decManager = dm;
+}
+
+bool TheoryInferenceManager::isProofEnabled() const
+{
+  return d_env.isTheoryProofProducing();
+}
 
 void TheoryInferenceManager::reset()
 {
@@ -91,34 +104,31 @@ bool TheoryInferenceManager::hasSent() const
          || d_numCurrentFacts > 0;
 }
 
-eq::ProofEqEngine* TheoryInferenceManager::getProofEqEngine()
-{
-  return d_pfee.get();
-}
+eq::ProofEqEngine* TheoryInferenceManager::getProofEqEngine() { return d_pfee; }
 
 void TheoryInferenceManager::conflictEqConstantMerge(TNode a, TNode b)
 {
   if (!d_theoryState.isInConflict())
   {
     TrustNode tconf = explainConflictEqConstantMerge(a, b);
-    d_theoryState.notifyInConflict();
-    d_out.trustedConflict(tconf);
+    trustedConflict(tconf, InferenceId::EQ_CONSTANT_MERGE);
   }
 }
 
 void TheoryInferenceManager::conflict(TNode conf, InferenceId id)
 {
-  d_conflictIdStats << id;
-  d_theoryState.notifyInConflict();
-  d_out.conflict(conf);
-  ++d_numConflicts;
+  TrustNode tconf = TrustNode::mkTrustConflict(conf, nullptr);
+  return trustedConflict(tconf, id);
 }
 
 void TheoryInferenceManager::trustedConflict(TrustNode tconf, InferenceId id)
 {
   d_conflictIdStats << id;
-  d_theoryState.notifyInConflict();
+  resourceManager()->spendResource(id);
+  Trace("im") << "(conflict " << id << " " << tconf.getProven() << ")"
+              << std::endl;
   d_out.trustedConflict(tconf);
+  ++d_numConflicts;
 }
 
 void TheoryInferenceManager::conflictExp(InferenceId id,
@@ -246,6 +256,10 @@ bool TheoryInferenceManager::trustedLemma(const TrustNode& tlem,
     }
   }
   d_lemmaIdStats << id;
+  resourceManager()->spendResource(id);
+  Trace("im") << "(lemma " << id << " " << tlem.getProven() << ")" << std::endl;
+  // shouldn't send trivially true or false lemmas
+  Assert(!Rewriter::rewrite(tlem.getProven()).isConst());
   d_numCurrentLemmas++;
   d_out.trustedLemma(tlem, p);
   return true;
@@ -332,8 +346,8 @@ bool TheoryInferenceManager::assertInternalFact(TNode atom,
                                                 InferenceId id,
                                                 TNode exp)
 {
-  d_factIdStats << id;
-  return processInternalFact(atom, pol, PfRule::UNKNOWN, {exp}, {}, nullptr);
+  return processInternalFact(
+      atom, pol, id, PfRule::UNKNOWN, {exp}, {}, nullptr);
 }
 
 bool TheoryInferenceManager::assertInternalFact(TNode atom,
@@ -344,8 +358,7 @@ bool TheoryInferenceManager::assertInternalFact(TNode atom,
                                                 const std::vector<Node>& args)
 {
   Assert(pfr != PfRule::UNKNOWN);
-  d_factIdStats << id;
-  return processInternalFact(atom, pol, pfr, exp, args, nullptr);
+  return processInternalFact(atom, pol, id, pfr, exp, args, nullptr);
 }
 
 bool TheoryInferenceManager::assertInternalFact(TNode atom,
@@ -354,19 +367,23 @@ bool TheoryInferenceManager::assertInternalFact(TNode atom,
                                                 const std::vector<Node>& exp,
                                                 ProofGenerator* pg)
 {
-  d_factIdStats << id;
-  return processInternalFact(atom, pol, PfRule::ASSUME, exp, {}, pg);
+  return processInternalFact(atom, pol, id, PfRule::ASSUME, exp, {}, pg);
 }
 
 bool TheoryInferenceManager::processInternalFact(TNode atom,
                                                  bool pol,
+                                                 InferenceId iid,
                                                  PfRule id,
                                                  const std::vector<Node>& exp,
                                                  const std::vector<Node>& args,
                                                  ProofGenerator* pg)
 {
+  d_factIdStats << iid;
+  resourceManager()->spendResource(iid);
   // make the node corresponding to the explanation
   Node expn = NodeManager::currentNM()->mkAnd(exp);
+  Trace("im") << "(fact " << iid << " " << (pol ? Node(atom) : atom.notNode())
+              << " " << expn << ")" << std::endl;
   // call the pre-notify fact method with preReg = false, isInternal = true
   if (d_theory.preNotifyFact(atom, pol, expn, false, true))
   {
@@ -376,13 +393,49 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
   }
   Assert(d_ee != nullptr);
   Trace("infer-manager") << "TheoryInferenceManager::assertInternalFact: "
-                         << expn << std::endl;
+                         << (pol ? Node(atom) : atom.notNode()) << " from "
+                         << expn << " / " << iid << " " << id << std::endl;
+  if (Configuration::isAssertionBuild())
+  {
+    // check that all facts hold in the equality engine, to ensure that we
+    // aren't processing a stale fact
+    std::vector<Node> expc = exp;
+    for (size_t i = 0; i < expc.size(); i++)
+    {
+      Node e = expc[i];
+      bool epol = e.getKind() != NOT;
+      Node eatom = epol ? e : e[0];
+      Trace("infer-manager")
+          << "...check " << eatom << " " << epol << std::endl;
+      if (eatom.getKind() == AND)
+      {
+        Assert(epol);
+        for (const Node& ea : eatom)
+        {
+          expc.push_back(ea);
+        }
+        continue;
+      }
+      else if (eatom.getKind() == EQUAL)
+      {
+        Assert(d_ee->hasTerm(eatom[0]));
+        Assert(d_ee->hasTerm(eatom[1]));
+        Assert(!epol || d_ee->areEqual(eatom[0], eatom[1]));
+        Assert(epol || d_ee->areDisequal(eatom[0], eatom[1], false));
+      }
+      else
+      {
+        Assert(d_ee->hasTerm(eatom));
+        Assert(d_ee->areEqual(eatom, NodeManager::currentNM()->mkConst(epol)));
+      }
+    }
+  }
   d_numCurrentFacts++;
   // Now, assert the fact. How to do so depends on whether proofs are enabled.
-  // If no proof production, or no proof rule was given
   bool ret = false;
-  if (d_pfee == nullptr || id == PfRule::UNKNOWN)
+  if (d_pfee == nullptr)
   {
+    Trace("infer-manager") << "...assert without proofs..." << std::endl;
     if (atom.getKind() == kind::EQUAL)
     {
       ret = d_ee->assertEquality(atom, pol, expn);
@@ -401,6 +454,8 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
   }
   else
   {
+    Assert(id != PfRule::UNKNOWN);
+    Trace("infer-manager") << "...assert with proofs..." << std::endl;
     // Note that we reconstruct the original literal lit here, since both the
     // original literal is needed for bookkeeping proofs. It is possible to
     // optimize this so that a few less nodes are created, but at the cost
@@ -420,7 +475,8 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
   // call the notify fact method with isInternal = true
   d_theory.notifyFact(atom, pol, expn, true);
   Trace("infer-manager")
-      << "TheoryInferenceManager::finished assertInternalFact" << std::endl;
+      << "TheoryInferenceManager::finished assertInternalFact, ret=" << ret
+      << std::endl;
   return ret;
 }
 
@@ -488,22 +544,35 @@ bool TheoryInferenceManager::cacheLemma(TNode lem, LemmaProperty p)
   return true;
 }
 
+DecisionManager* TheoryInferenceManager::getDecisionManager()
+{
+  return d_decManager;
+}
+
 void TheoryInferenceManager::requirePhase(TNode n, bool pol)
 {
   return d_out.requirePhase(n, pol);
 }
 
-void TheoryInferenceManager::spendResource(ResourceManager::Resource r)
+void TheoryInferenceManager::spendResource(Resource r)
 {
   d_out.spendResource(r);
 }
 
-void TheoryInferenceManager::safePoint(ResourceManager::Resource r)
+void TheoryInferenceManager::safePoint(Resource r)
 {
   d_out.safePoint(r);
 }
 
-void TheoryInferenceManager::setIncomplete() { d_out.setIncomplete(); }
+void TheoryInferenceManager::setIncomplete(IncompleteId id)
+{
+  d_out.setIncomplete(id);
+}
+
+void TheoryInferenceManager::notifyInConflict()
+{
+  d_theoryState.notifyInConflict();
+}
 
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

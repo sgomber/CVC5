@@ -1,27 +1,28 @@
-/*********************                                                        */
-/*! \file callbacks.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Tim King, Haniel Barbosa, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief [[ Add one-line brief description here ]]
- **
- ** [[ Add lengthier description here ]]
- ** \todo document this file
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Tim King, Haniel Barbosa, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * [[ Add one-line brief description here ]]
+ *
+ * [[ Add lengthier description here ]]
+ * \todo document this file
+ */
 
 #include "theory/arith/callbacks.h"
 
-#include "expr/proof_node.h"
-#include "theory/arith/proof_macros.h"
+#include "expr/skolem_manager.h"
+#include "proof/proof_node.h"
 #include "theory/arith/theory_arith_private.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arith {
 
@@ -46,7 +47,9 @@ TempVarMalloc::TempVarMalloc(TheoryArithPrivate& ta)
 : d_ta(ta)
 {}
 ArithVar TempVarMalloc::request(){
-  Node skolem = mkRealSkolem("tmpVar");
+  NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
+  Node skolem = sm->mkDummySkolem("tmpVar", nm->realType());
   return d_ta.requestArithVar(skolem, false, true);
 }
 void TempVarMalloc::release(ArithVar v){
@@ -69,11 +72,12 @@ void RaiseConflict::raiseConflict(ConstraintCP c, InferenceId id) const{
   d_ta.raiseConflict(c, id);
 }
 
-FarkasConflictBuilder::FarkasConflictBuilder()
-  : d_farkas()
-  , d_constraints()
-  , d_consequent(NullConstraint)
-  , d_consequentSet(false)
+FarkasConflictBuilder::FarkasConflictBuilder(bool produceProofs)
+    : d_farkas(),
+      d_constraints(),
+      d_consequent(NullConstraint),
+      d_consequentSet(false),
+      d_produceProofs(produceProofs)
 {
   reset();
 }
@@ -90,17 +94,20 @@ void FarkasConflictBuilder::reset(){
   d_consequent = NullConstraint;
   d_constraints.clear();
   d_consequentSet = false;
-  ARITH_PROOF(d_farkas.clear());
+  if (d_produceProofs)
+  {
+    d_farkas.clear();
+  }
   Assert(!underConstruction());
 }
 
 /* Adds a constraint to the constraint under construction. */
 void FarkasConflictBuilder::addConstraint(ConstraintCP c, const Rational& fc){
   Assert(
-      !ARITH_PROOF_ON()
+      !d_produceProofs
       || (!underConstruction() && d_constraints.empty() && d_farkas.empty())
       || (underConstruction() && d_constraints.size() + 1 == d_farkas.size()));
-  Assert(ARITH_PROOF_ON() || d_farkas.empty());
+  Assert(d_produceProofs || d_farkas.empty());
   Assert(c->isTrue());
 
   if(d_consequent == NullConstraint){
@@ -108,14 +115,17 @@ void FarkasConflictBuilder::addConstraint(ConstraintCP c, const Rational& fc){
   } else {
     d_constraints.push_back(c);
   }
-  ARITH_PROOF(d_farkas.push_back(fc));
-  Assert(!ARITH_PROOF_ON() || d_constraints.size() + 1 == d_farkas.size());
-  Assert(ARITH_PROOF_ON() || d_farkas.empty());
+  if (d_produceProofs)
+  {
+    d_farkas.push_back(fc);
+  }
+  Assert(!d_produceProofs || d_constraints.size() + 1 == d_farkas.size());
+  Assert(d_produceProofs || d_farkas.empty());
 }
 
 void FarkasConflictBuilder::addConstraint(ConstraintCP c, const Rational& fc, const Rational& mult){
   Assert(!mult.isZero());
-  if (ARITH_PROOF_ON() && !mult.isOne())
+  if (d_produceProofs && !mult.isOne())
   {
     Rational prod = fc * mult;
     addConstraint(c, prod);
@@ -138,7 +148,10 @@ void FarkasConflictBuilder::makeLastConsequent(){
     ConstraintCP last = d_constraints.back();
     d_constraints.back() = d_consequent;
     d_consequent = last;
-    ARITH_PROOF(std::swap(d_farkas.front(), d_farkas.back()));
+    if (d_produceProofs)
+    {
+      std::swap(d_farkas.front(), d_farkas.back());
+    }
     d_consequentSet = true;
   }
 
@@ -151,14 +164,14 @@ ConstraintCP FarkasConflictBuilder::commitConflict(){
   Assert(underConstruction());
   Assert(!d_constraints.empty());
   Assert(
-      !ARITH_PROOF_ON()
+      !d_produceProofs
       || (!underConstruction() && d_constraints.empty() && d_farkas.empty())
       || (underConstruction() && d_constraints.size() + 1 == d_farkas.size()));
-  Assert(ARITH_PROOF_ON() || d_farkas.empty());
+  Assert(d_produceProofs || d_farkas.empty());
   Assert(d_consequentSet);
 
   ConstraintP not_c = d_consequent->getNegation();
-  RationalVectorCP coeffs = ARITH_NULLPROOF(&d_farkas);
+  RationalVectorCP coeffs = d_produceProofs ? &d_farkas : nullptr;
   not_c->impliedByFarkas(d_constraints, coeffs, true );
 
   reset();
@@ -194,6 +207,6 @@ BoundCounts BoundCountingLookup::hasBounds(ArithVar basic) const {
   return boundsInfo(basic).hasBounds();
 }
 
-}/* CVC4::theory::arith namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace arith
+}  // namespace theory
+}  // namespace cvc5

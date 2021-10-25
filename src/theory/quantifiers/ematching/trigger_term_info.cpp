@@ -1,25 +1,27 @@
-/*********************                                                        */
-/*! \file trigger_term_info.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Yoni Zohar
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of trigger term info class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Yoni Zohar
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of trigger term info class.
+ */
 
 #include "theory/quantifiers/ematching/trigger_term_info.h"
 
 #include "theory/quantifiers/term_util.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
+namespace quantifiers {
 namespace inst {
 
 void TriggerTermInfo::init(Node q, Node n, int reqPol, Node reqPolEq)
@@ -68,6 +70,46 @@ bool TriggerTermInfo::isRelationalTriggerKind(Kind k)
   return k == EQUAL || k == GEQ;
 }
 
+bool TriggerTermInfo::isUsableRelationTrigger(Node n)
+{
+  bool hasPol, pol;
+  Node lit;
+  return isUsableRelationTrigger(n, hasPol, pol, lit);
+}
+bool TriggerTermInfo::isUsableRelationTrigger(Node n,
+                                              bool& hasPol,
+                                              bool& pol,
+                                              Node& lit)
+{
+  // relational triggers (not) (= (~ x t) true|false), where ~ in { =, >= }.
+  hasPol = false;
+  pol = n.getKind() != NOT;
+  lit = pol ? n : n[0];
+  if (lit.getKind() == EQUAL && lit[1].getType().isBoolean()
+      && lit[1].isConst())
+  {
+    hasPol = true;
+    pol = lit[1].getConst<bool>() ? pol : !pol;
+    lit = lit[0];
+  }
+  // is it a relational trigger?
+  if ((lit.getKind() == EQUAL && lit[0].getType().isReal())
+      || lit.getKind() == GEQ)
+  {
+    // if one side of the relation is a variable and the other side is a ground
+    // term, we can treat this using the relational match generator
+    for (size_t i = 0; i < 2; i++)
+    {
+      if (lit[i].getKind() == INST_CONSTANT
+          && !quantifiers::TermUtil::hasInstConstAttr(lit[1 - i]))
+      {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 bool TriggerTermInfo::isSimpleTrigger(Node n)
 {
   Node t = n.getKind() == NOT ? n[0] : n;
@@ -103,7 +145,7 @@ int32_t TriggerTermInfo::getTriggerWeight(Node n)
   {
     return 0;
   }
-  if (isAtomicTrigger(n))
+  if (isAtomicTrigger(n) || isUsableRelationTrigger(n))
   {
     return 1;
   }
@@ -111,5 +153,6 @@ int32_t TriggerTermInfo::getTriggerWeight(Node n)
 }
 
 }  // namespace inst
+}  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

@@ -1,37 +1,38 @@
-/*********************                                                        */
-/*! \file cdcac.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implements the CDCAC approach.
- **
- ** Implements the CDCAC approach as described in
- ** https://arxiv.org/pdf/2003.05633.pdf.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implements the CDCAC approach as described in
+ * https://arxiv.org/pdf/2003.05633.pdf.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__ARITH__NL__CAD__CDCAC_H
-#define CVC4__THEORY__ARITH__NL__CAD__CDCAC_H
+#ifndef CVC5__THEORY__ARITH__NL__CAD__CDCAC_H
+#define CVC5__THEORY__ARITH__NL__CAD__CDCAC_H
 
-#ifdef CVC4_POLY_IMP
+#ifdef CVC5_POLY_IMP
 
 #include <poly/polyxx.h>
 
 #include <vector>
 
+#include "smt/env.h"
+#include "smt/env_obj.h"
 #include "theory/arith/nl/cad/cdcac_utils.h"
 #include "theory/arith/nl/cad/constraints.h"
 #include "theory/arith/nl/cad/proof_generator.h"
 #include "theory/arith/nl/cad/variable_ordering.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arith {
 namespace nl {
@@ -44,13 +45,11 @@ namespace cad {
  * This class implements Cylindrical Algebraic Coverings as presented in
  * https://arxiv.org/pdf/2003.05633.pdf
  */
-class CDCAC
+class CDCAC : protected EnvObj
 {
  public:
   /** Initialize this method with the given variable ordering. */
-  CDCAC(context::Context* ctx,
-        ProofNodeManager* pnm,
-        const std::vector<poly::Variable>& ordering = {});
+  CDCAC(Env& env, const std::vector<poly::Variable>& ordering = {});
 
   /** Reset this instance. */
   void reset();
@@ -102,9 +101,11 @@ class CDCAC
 
   /**
    * Collects the coefficients required for projection from the given
-   * polynomial. Implements Algorithm 6.
+   * polynomial. Implements Algorithm 6, depending on the command line
+   * arguments. Either directly implements Algorithm 6, or improved variants
+   * based on Lazard's projection.
    */
-  PolyVector requiredCoefficients(const poly::Polynomial& p) const;
+  PolyVector requiredCoefficients(const poly::Polynomial& p);
 
   /**
    * Constructs a characterization of the given covering.
@@ -122,13 +123,7 @@ class CDCAC
                                            const poly::Value& sample);
 
   /**
-   * Main method that checks for the satisfiability of the constraints.
-   * Recursively explores possible assignments and excludes regions based on the
-   * coverings. Returns either a covering for the lowest dimension or an empty
-   * vector. If the covering is empty, the result is SAT and an assignment can
-   * be obtained from d_assignment. If the covering is not empty, the result is
-   * UNSAT and an infeasible subset can be extracted from the returned covering.
-   * Implements Algorithm 2.
+   * Internal implementation of getUnsatCover().
    * @param curVariable The id of the variable (within d_variableOrdering) to
    * be considered. This argument is used to manage the recursion internally and
    * should always be zero if called externally.
@@ -136,8 +131,24 @@ class CDCAC
    * interval obtained from a recursive call. The result is not (necessarily) an
    * unsat cover, but merely a list of infeasible intervals.
    */
-  std::vector<CACInterval> getUnsatCover(std::size_t curVariable = 0,
-                                         bool returnFirstInterval = false);
+  std::vector<CACInterval> getUnsatCoverImpl(std::size_t curVariable = 0,
+                                             bool returnFirstInterval = false);
+
+  /**
+   * Main method that checks for the satisfiability of the constraints.
+   * Recursively explores possible assignments and excludes regions based on the
+   * coverings. Returns either a covering for the lowest dimension or an empty
+   * vector. If the covering is empty, the result is SAT and an assignment can
+   * be obtained from d_assignment. If the covering is not empty, the result is
+   * UNSAT and an infeasible subset can be extracted from the returned covering.
+   * Implements Algorithm 2.
+   * This method itself only takes care of the outermost proof scope and calls
+   * out to getUnsatCoverImpl() with curVariable set to zero.
+   * @param returnFirstInterval If true, the function returns after the first
+   * interval obtained from a recursive call. The result is not (necessarily) an
+   * unsat cover, but merely a list of infeasible intervals.
+   */
+  std::vector<CACInterval> getUnsatCover(bool returnFirstInterval = false);
 
   void startNewProof();
   /**
@@ -204,13 +215,16 @@ class CDCAC
 
   /** The proof generator */
   std::unique_ptr<CADProofGenerator> d_proof;
+
+  /** The next interval id */
+  size_t d_nextIntervalId = 1;
 };
 
 }  // namespace cad
 }  // namespace nl
 }  // namespace arith
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
 #endif
 

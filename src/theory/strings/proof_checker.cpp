@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file proof_checker.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of strings proof checker
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of strings proof checker.
+ */
 
 #include "theory/strings/proof_checker.h"
 
@@ -25,9 +26,9 @@
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
@@ -52,8 +53,8 @@ void StringProofRuleChecker::registerTo(ProofChecker* pc)
   pc->registerChecker(PfRule::RE_ELIM, this);
   pc->registerChecker(PfRule::STRING_CODE_INJ, this);
   pc->registerChecker(PfRule::STRING_SEQ_UNIT_INJ, this);
-  // trusted rules
-  pc->registerTrustedChecker(PfRule::STRING_TRUST, this, 2);
+  // trusted rule
+  pc->registerTrustedChecker(PfRule::STRING_INFERENCE, this, 2);
 }
 
 Node StringProofRuleChecker::checkInternal(PfRule id,
@@ -274,7 +275,7 @@ Node StringProofRuleChecker::checkInternal(PfRule id,
       t0 = nm->mkNode(STRING_CONCAT, isRev ? w1 : t0, isRev ? t0 : w1);
     }
     // use skolem cache
-    SkolemCache skc(false);
+    SkolemCache skc(nullptr);
     std::vector<Node> newSkolems;
     Node conc = CoreSolver::getConclusion(t0, s0, id, isRev, &skc, newSkolems);
     return conc;
@@ -293,10 +294,10 @@ Node StringProofRuleChecker::checkInternal(PfRule id,
     {
       return Node::null();
     }
-    SkolemCache sc(false);
+    SkolemCache skc(nullptr);
     std::vector<Node> newSkolems;
     Node conc = CoreSolver::getConclusion(
-        atom[0][0], atom[1], id, isRev, &sc, newSkolems);
+        atom[0][0], atom[1], id, isRev, &skc, newSkolems);
     return conc;
   }
   else if (id == PfRule::STRING_REDUCTION
@@ -314,7 +315,7 @@ Node StringProofRuleChecker::checkInternal(PfRule id,
     {
       Assert(args.size() == 1);
       // we do not use optimizations
-      SkolemCache skc(false);
+      SkolemCache skc(nullptr);
       std::vector<Node> conj;
       ret = StringsPreprocess::reduce(t, conj, &skc);
       conj.push_back(t.eqNode(ret));
@@ -323,8 +324,8 @@ Node StringProofRuleChecker::checkInternal(PfRule id,
     else if (id == PfRule::STRING_EAGER_REDUCTION)
     {
       Assert(args.size() == 1);
-      SkolemCache skc(false);
-      ret = TermRegistry::eagerReduce(t, &skc);
+      SkolemCache skc(nullptr);
+      ret = TermRegistry::eagerReduce(t, &skc, d_alphaCard);
     }
     else if (id == PfRule::STRING_LENGTH_POS)
     {
@@ -411,8 +412,8 @@ Node StringProofRuleChecker::checkInternal(PfRule id,
     if (id == PfRule::RE_UNFOLD_POS)
     {
       std::vector<Node> newSkolems;
-      SkolemCache sc;
-      conc = RegExpOpr::reduceRegExpPos(skChild, &sc, newSkolems);
+      SkolemCache skc(nullptr);
+      conc = RegExpOpr::reduceRegExpPos(skChild, &skc, newSkolems);
     }
     else if (id == PfRule::RE_UNFOLD_NEG)
     {
@@ -505,11 +506,9 @@ Node StringProofRuleChecker::checkInternal(PfRule id,
     AlwaysAssert(t[0].getType() == t[1].getType());
     return t[0].eqNode(t[1]);
   }
-  else if (id == PfRule::STRING_TRUST)
+  else if (id == PfRule::STRING_INFERENCE)
   {
-    // "trusted" rules
-    Assert(!args.empty());
-    Assert(args[0].getType().isBoolean());
+    Assert(args.size() >= 3);
     return args[0];
   }
   return Node::null();
@@ -517,4 +516,4 @@ Node StringProofRuleChecker::checkInternal(PfRule id,
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

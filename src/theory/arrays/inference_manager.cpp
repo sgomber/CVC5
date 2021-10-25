@@ -1,36 +1,37 @@
-/*********************                                                        */
-/*! \file inference_manager.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Arrays inference manager
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Arrays inference manager.
+ */
 
 #include "theory/arrays/inference_manager.h"
 
 #include "options/smt_options.h"
+#include "theory/builtin/proof_checker.h"
 #include "theory/theory.h"
 #include "theory/theory_state.h"
 #include "theory/uf/equality_engine.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arrays {
 
-InferenceManager::InferenceManager(Theory& t,
-                                   TheoryState& state,
-                                   ProofNodeManager* pnm)
-    : TheoryInferenceManager(t, state, pnm, "theory::arrays", false),
-      d_lemmaPg(pnm ? new EagerProofGenerator(pnm,
-                                              state.getUserContext(),
+InferenceManager::InferenceManager(Env& env, Theory& t, TheoryState& state)
+    : TheoryInferenceManager(env, t, state, "theory::arrays::", false),
+      d_lemmaPg(isProofEnabled()
+                    ? new EagerProofGenerator(env.getProofNodeManager(),
+                                              userContext(),
                                               "ArrayLemmaProofGenerator")
                     : nullptr)
 {
@@ -116,17 +117,19 @@ void InferenceManager::convert(PfRule& id,
       break;
     case PfRule::ARRAYS_EXT: children.push_back(exp); break;
     default:
-      if (id != PfRule::ARRAYS_TRUST)
+      if (id != PfRule::THEORY_INFERENCE)
       {
         Assert(false) << "Unknown rule " << id << "\n";
       }
       children.push_back(exp);
       args.push_back(conc);
-      id = PfRule::ARRAYS_TRUST;
+      args.push_back(
+          builtin::BuiltinProofRuleChecker::mkTheoryIdNode(THEORY_ARRAYS));
+      id = PfRule::THEORY_INFERENCE;
       break;
   }
 }
 
 }  // namespace arrays
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

@@ -1,46 +1,54 @@
-/*********************                                                        */
-/*! \file proof_post_processor.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Haniel Barbosa
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The module for processing proof nodes
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Haniel Barbosa, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The module for processing proof nodes.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__SMT__PROOF_POST_PROCESSOR_H
-#define CVC4__SMT__PROOF_POST_PROCESSOR_H
+#ifndef CVC5__SMT__PROOF_POST_PROCESSOR_H
+#define CVC5__SMT__PROOF_POST_PROCESSOR_H
 
 #include <map>
+#include <sstream>
 #include <unordered_set>
 
-#include "expr/proof_node_updater.h"
+#include "proof/proof_node_updater.h"
+#include "smt/proof_final_callback.h"
 #include "smt/witness_form.h"
-#include "util/statistics_registry.h"
-#include "util/stats_histogram.h"
+#include "theory/inference_id.h"
+#include "util/statistics_stats.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
-class SmtEngine;
+class Env;
+
+namespace rewriter {
+class RewriteDb;
+}
 
 namespace smt {
 
 /**
- * A callback class used by SmtEngine for post-processing proof nodes by
+ * A callback class used by SolverEngine for post-processing proof nodes by
  * connecting proofs of preprocessing, and expanding macro PfRule applications.
  */
 class ProofPostprocessCallback : public ProofNodeUpdaterCallback
 {
  public:
-  ProofPostprocessCallback(ProofNodeManager* pnm,
-                           SmtEngine* smte,
-                           ProofGenerator* pppg);
+  ProofPostprocessCallback(Env& env,
+                           ProofGenerator* pppg,
+                           rewriter::RewriteDb* rdb,
+                           bool updateScopedAssumptions);
   ~ProofPostprocessCallback() {}
   /**
    * Initialize, called once for each new ProofNode to process. This initializes
@@ -56,6 +64,7 @@ class ProofPostprocessCallback : public ProofNodeUpdaterCallback
   void setEliminateRule(PfRule rule);
   /** Should proof pn be updated? */
   bool shouldUpdate(std::shared_ptr<ProofNode> pn,
+                    const std::vector<Node>& fa,
                     bool& continueUpdate) override;
   /** Update the proof rule application. */
   bool update(Node res,
@@ -68,10 +77,10 @@ class ProofPostprocessCallback : public ProofNodeUpdaterCallback
  private:
   /** Common constants */
   Node d_true;
-  /** The proof node manager */
+  /** Reference to the env */
+  Env& d_env;
+  /** Pointer to the proof node manager */
   ProofNodeManager* d_pnm;
-  /** Pointer to the SmtEngine, which should have proofs enabled */
-  SmtEngine* d_smte;
   /** The preprocessing proof generator */
   ProofGenerator* d_pppg;
   /** The witness form proof generator */
@@ -80,6 +89,8 @@ class ProofPostprocessCallback : public ProofNodeUpdaterCallback
   std::vector<Node> d_wfAssumptions;
   /** Kinds of proof rules we are eliminating */
   std::unordered_set<PfRule, PfRuleHashFunction> d_elimRules;
+  /** Whether we post-process assumptions in scope. */
+  bool d_updateScopedAssumptions;
   //---------------------------------reset at the begining of each update
   /** Mapping assumptions to their proof from preprocessing */
   std::map<Node, std::shared_ptr<ProofNode> > d_assumpToProof;
@@ -231,52 +242,26 @@ class ProofPostprocessCallback : public ProofNodeUpdaterCallback
                              CDProof* cdp);
 };
 
-/** Final callback class, for stats and pedantic checking */
-class ProofPostprocessFinalCallback : public ProofNodeUpdaterCallback
-{
- public:
-  ProofPostprocessFinalCallback(ProofNodeManager* pnm);
-  ~ProofPostprocessFinalCallback();
-  /**
-   * Initialize, called once for each new ProofNode to process. This initializes
-   * static information to be used by successive calls to update.
-   */
-  void initializeUpdate();
-  /** Should proof pn be updated? Returns false, adds to stats. */
-  bool shouldUpdate(std::shared_ptr<ProofNode> pn,
-                    bool& continueUpdate) override;
-  /** was pedantic failure */
-  bool wasPedanticFailure(std::ostream& out) const;
-
- private:
-  /** Counts number of postprocessed proof nodes for each kind of proof rule */
-  IntegralHistogramStat<PfRule> d_ruleCount;
-  /** Total number of postprocessed rule applications */
-  IntStat d_totalRuleCount;
-  /** The minimum pedantic level of any rule encountered */
-  IntStat d_minPedanticLevel;
-  /** The total number of final proofs */
-  IntStat d_numFinalProofs;
-  /** Proof node manager (used for pedantic checking) */
-  ProofNodeManager* d_pnm;
-  /** Was there a pedantic failure? */
-  bool d_pedanticFailure;
-  /** The pedantic failure string for debugging */
-  std::stringstream d_pedanticFailureOut;
-};
-
 /**
  * The proof postprocessor module. This postprocesses the final proof
- * produced by an SmtEngine. Its main two tasks are to:
+ * produced by an SolverEngine. Its main two tasks are to:
  * (1) Connect proofs of preprocessing,
  * (2) Expand macro PfRule applications.
  */
 class ProofPostproccess
 {
  public:
-  ProofPostproccess(ProofNodeManager* pnm,
-                    SmtEngine* smte,
-                    ProofGenerator* pppg);
+  /**
+   * @param env The environment we are using
+   * @param pppg The proof generator for pre-processing proofs
+   * @param updateScopedAssumptions Whether we post-process assumptions in
+   * scope. Since doing so is sound and only problematic depending on who is
+   * consuming the proof, it's true by default.
+   */
+  ProofPostproccess(Env& env,
+                    ProofGenerator* pppg,
+                    rewriter::RewriteDb* rdb,
+                    bool updateScopedAssumptions = true);
   ~ProofPostproccess();
   /** post-process */
   void process(std::shared_ptr<ProofNode> pf);
@@ -284,8 +269,6 @@ class ProofPostproccess
   void setEliminateRule(PfRule rule);
 
  private:
-  /** The proof node manager */
-  ProofNodeManager* d_pnm;
   /** The post process callback */
   ProofPostprocessCallback d_cb;
   /**
@@ -294,7 +277,7 @@ class ProofPostproccess
    */
   ProofNodeUpdater d_updater;
   /** The post process callback for finalization */
-  ProofPostprocessFinalCallback d_finalCb;
+  ProofFinalCallback d_finalCb;
   /**
    * The finalizer, which is responsible for taking stats and checking for
    * (lazy) pedantic failures.
@@ -303,6 +286,6 @@ class ProofPostproccess
 };
 
 }  // namespace smt
-}  // namespace CVC4
+}  // namespace cvc5
 
 #endif

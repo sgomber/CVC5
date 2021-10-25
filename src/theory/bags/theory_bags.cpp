@@ -1,44 +1,41 @@
-/*********************                                                        */
-/*! \file theory_bags.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Mudathir Mohamed, Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Bags theory.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Mudathir Mohamed, Haniel Barbosa, Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Bags theory.
+ */
 
 #include "theory/bags/theory_bags.h"
 
+#include "proof/proof_checker.h"
 #include "smt/logic_exception.h"
 #include "theory/bags/normal_form.h"
 #include "theory/rewriter.h"
 #include "theory/theory_model.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace bags {
 
-TheoryBags::TheoryBags(context::Context* c,
-                       context::UserContext* u,
-                       OutputChannel& out,
-                       Valuation valuation,
-                       const LogicInfo& logicInfo,
-                       ProofNodeManager* pnm)
-    : Theory(THEORY_BAGS, c, u, out, valuation, logicInfo, pnm),
-      d_state(c, u, valuation),
-      d_im(*this, d_state, nullptr),
+TheoryBags::TheoryBags(Env& env, OutputChannel& out, Valuation valuation)
+    : Theory(THEORY_BAGS, env, out, valuation),
+      d_state(env, valuation),
+      d_im(env, *this, d_state),
       d_ig(&d_state, &d_im),
       d_notify(*this, d_im),
       d_statistics(),
       d_rewriter(&d_statistics.d_rewrites),
-      d_termReg(d_state, d_im),
+      d_termReg(env, d_state, d_im),
       d_solver(d_state, d_im, d_termReg)
 {
   // use the official theory state and inference manager objects
@@ -49,6 +46,8 @@ TheoryBags::TheoryBags(context::Context* c,
 TheoryBags::~TheoryBags() {}
 
 TheoryRewriter* TheoryBags::getTheoryRewriter() { return &d_rewriter; }
+
+ProofRuleChecker* TheoryBags::getProofChecker() { return nullptr; }
 
 bool TheoryBags::needsEqualityEngine(EeSetupInfo& esi)
 {
@@ -222,12 +221,6 @@ void TheoryBags::preRegisterTerm(TNode n)
   }
 }
 
-TrustNode TheoryBags::expandDefinition(Node n)
-{
-  // TODO(projects#224): add choose and is_singleton here
-  return TrustNode::null();
-}
-
 void TheoryBags::presolve() {}
 
 /**************************** eq::NotifyClass *****************************/
@@ -262,4 +255,4 @@ void TheoryBags::NotifyClass::eqNotifyDisequal(TNode n1, TNode n2, TNode reason)
 
 }  // namespace bags
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

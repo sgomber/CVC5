@@ -1,37 +1,42 @@
-/*********************                                                        */
-/*! \file inst_strategy.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Instantiation engine strategy base class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Instantiation engine strategy base class.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__QUANTIFIERS__INST_STRATEGY_H
-#define CVC4__THEORY__QUANTIFIERS__INST_STRATEGY_H
+#ifndef CVC5__THEORY__QUANTIFIERS__INST_STRATEGY_H
+#define CVC5__THEORY__QUANTIFIERS__INST_STRATEGY_H
 
 #include <vector>
+
 #include "expr/node.h"
 #include "options/quantifiers_options.h"
+#include "smt/env_obj.h"
 #include "theory/theory.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
-
-class QuantifiersEngine;
-
 namespace quantifiers {
+
+namespace inst {
+class TriggerDatabase;
+}
 
 class QuantifiersState;
 class QuantifiersInferenceManager;
 class QuantifiersRegistry;
+class TermRegistry;
 
 /** A status response to process */
 enum class InstStrategyStatus
@@ -45,13 +50,15 @@ enum class InstStrategyStatus
 /**
  * A base class for instantiation strategies within E-matching.
  */
-class InstStrategy
+class InstStrategy : protected EnvObj
 {
  public:
-  InstStrategy(QuantifiersEngine* qe,
+  InstStrategy(Env& env,
+               inst::TriggerDatabase& td,
                QuantifiersState& qs,
                QuantifiersInferenceManager& qim,
-               QuantifiersRegistry& qr);
+               QuantifiersRegistry& qr,
+               TermRegistry& tr);
   virtual ~InstStrategy();
   /** presolve */
   virtual void presolve();
@@ -68,18 +75,20 @@ class InstStrategy
    * maintained by the quantifiers state.
    */
   options::UserPatMode getInstUserPatMode() const;
-  /** reference to the instantiation engine */
-  QuantifiersEngine* d_quantEngine;
+  /** reference to the trigger database */
+  inst::TriggerDatabase& d_td;
   /** The quantifiers state object */
   QuantifiersState& d_qstate;
   /** The quantifiers inference manager object */
   QuantifiersInferenceManager& d_qim;
-  /** The quantifiers registry */
+  /** Reference to the quantifiers registry */
   QuantifiersRegistry& d_qreg;
+  /** Reference to the term registry */
+  TermRegistry& d_treg;
 }; /* class InstStrategy */
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__QUANTIFIERS__INSTANTIATION_ENGINE_H */
+#endif /* CVC5__THEORY__QUANTIFIERS__INSTANTIATION_ENGINE_H */

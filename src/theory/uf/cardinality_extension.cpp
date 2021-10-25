@@ -1,21 +1,24 @@
-/*********************                                                        */
-/*! \file cardinality_extension.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of theory of UF with cardinality.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of theory of UF with cardinality.
+ */
 
 #include "theory/uf/cardinality_extension.h"
 
 #include <sstream>
 
+#include "expr/cardinality_constraint.h"
+#include "expr/skolem_manager.h"
 #include "options/smt_options.h"
 #include "options/uf_options.h"
 #include "smt/logic_exception.h"
@@ -26,12 +29,13 @@
 #include "theory/theory_model.h"
 #include "theory/uf/equality_engine.h"
 #include "theory/uf/theory_uf.h"
+#include "util/rational.h"
 
 using namespace std;
-using namespace CVC4::kind;
-using namespace CVC4::context;
+using namespace cvc5::kind;
+using namespace cvc5::context;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace uf {
 
@@ -183,7 +187,7 @@ void Region::setDisequal( Node n1, Node n2, int type, bool valid ){
 void Region::setRep( Node n, bool valid ) {
   Assert(hasRep(n) != valid);
   if( valid && d_nodes.find( n )==d_nodes.end() ){
-    d_nodes[n] = new RegionNodeInfo(d_cf->d_state.getSatContext());
+    d_nodes[n] = new RegionNodeInfo(d_cf->d_thss->context());
   }
   d_nodes[n]->setValid(valid);
   d_reps_size = d_reps_size + ( valid ? 1 : -1 );
@@ -444,41 +448,42 @@ void Region::debugPrint( const char* c, bool incClique ) {
 }
 
 SortModel::CardinalityDecisionStrategy::CardinalityDecisionStrategy(
-    Node t, context::Context* satContext, Valuation valuation)
-    : DecisionStrategyFmf(satContext, valuation), d_cardinality_term(t)
+    Env& env, TypeNode type, Valuation valuation)
+    : DecisionStrategyFmf(env, valuation), d_type(type)
 {
 }
+
 Node SortModel::CardinalityDecisionStrategy::mkLiteral(unsigned i)
 {
   NodeManager* nm = NodeManager::currentNM();
-  return nm->mkNode(
-      CARDINALITY_CONSTRAINT, d_cardinality_term, nm->mkConst(Rational(i + 1)));
+  Node cco = nm->mkConst(CardinalityConstraint(d_type, Integer(i + 1)));
+  return nm->mkNode(CARDINALITY_CONSTRAINT, cco);
 }
+
 std::string SortModel::CardinalityDecisionStrategy::identify() const
 {
   return std::string("uf_card");
 }
 
-SortModel::SortModel(Node n,
+SortModel::SortModel(TypeNode tn,
                      TheoryState& state,
                      TheoryInferenceManager& im,
                      CardinalityExtension* thss)
-    : d_type(n.getType()),
+    : d_type(tn),
       d_state(state),
       d_im(im),
       d_thss(thss),
-      d_regions_index(d_state.getSatContext(), 0),
-      d_regions_map(d_state.getSatContext()),
-      d_split_score(d_state.getSatContext()),
-      d_disequalities_index(d_state.getSatContext(), 0),
-      d_reps(d_state.getSatContext(), 0),
-      d_cardinality(d_state.getSatContext(), 1),
-      d_hasCard(d_state.getSatContext(), false),
-      d_maxNegCard(d_state.getSatContext(), 0),
-      d_initialized(d_state.getUserContext(), false),
+      d_regions_index(thss->context(), 0),
+      d_regions_map(thss->context()),
+      d_split_score(thss->context()),
+      d_disequalities_index(thss->context(), 0),
+      d_reps(thss->context(), 0),
+      d_cardinality(thss->context(), 1),
+      d_hasCard(thss->context(), false),
+      d_maxNegCard(thss->context(), 0),
+      d_initialized(thss->userContext(), false),
       d_c_dec_strat(nullptr)
 {
-  d_cardinality_term = n;
 
   if (options::ufssMode() == options::UfssMode::FULL)
   {
@@ -486,7 +491,7 @@ SortModel::SortModel(Node n,
     // We are guaranteed that the decision manager is ready since we
     // construct this module during TheoryUF::finishInit.
     d_c_dec_strat.reset(new CardinalityDecisionStrategy(
-        n, d_state.getSatContext(), thss->getTheory()->getValuation()));
+        thss->d_env, d_type, thss->getTheory()->getValuation()));
   }
 }
 
@@ -507,8 +512,8 @@ void SortModel::initialize()
     d_initialized = true;
     // Strategy is user-context-dependent, since it is in sync with
     // user-context-dependent flag d_initialized.
-    d_thss->getTheory()->getDecisionManager()->registerStrategy(
-        DecisionManager::STRAT_UF_CARD, d_c_dec_strat.get());
+    d_im.getDecisionManager()->registerStrategy(DecisionManager::STRAT_UF_CARD,
+                                                d_c_dec_strat.get());
   }
 }
 
@@ -527,7 +532,7 @@ void SortModel::newEqClass( Node n ){
         d_regions[d_regions_index]->setValid(true);
         Assert(d_regions[d_regions_index]->getNumReps() == 0);
       }else{
-        d_regions.push_back(new Region(this, d_state.getSatContext()));
+        d_regions.push_back(new Region(this, d_thss->context()));
       }
       d_regions[d_regions_index]->addRep(n);
       d_regions_index = d_regions_index + 1;
@@ -1021,7 +1026,7 @@ int SortModel::addSplit(Region* r)
       }
       if (ss == b_t)
       {
-        CVC4Message() << "Bad split " << s << std::endl;
+        CVC5Message() << "Bad split " << s << std::endl;
         AlwaysAssert(false);
       }
     }
@@ -1126,6 +1131,8 @@ void SortModel::debugPrint( const char* c ){
 
 bool SortModel::checkLastCall()
 {
+  NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
   TheoryModel* m = d_state.getModel();
   if( Trace.isOn("uf-ss-warn") ){
     std::vector< Node > eqcs;
@@ -1163,7 +1170,7 @@ bool SortModel::checkLastCall()
       {
         std::stringstream ss;
         ss << "r_" << d_type << "_";
-        Node nn = NodeManager::currentNM()->mkSkolem(
+        Node nn = sm->mkDummySkolem(
             ss.str(), d_type, "enumeration to meet negative card constraint");
         d_fresh_aloc_reps.push_back( nn );
       }
@@ -1184,8 +1191,7 @@ bool SortModel::checkLastCall()
           }
         }
         Node cl = getCardinalityLiteral( d_maxNegCard );
-        Node lem = NodeManager::currentNM()->mkNode(
-            OR, cl, NodeManager::currentNM()->mkAnd(force_cl));
+        Node lem = nm->mkNode(OR, cl, nm->mkAnd(force_cl));
         Trace("uf-ss-lemma") << "*** Enforce negative cardinality constraint lemma : " << lem << std::endl;
         d_im.lemma(lem, InferenceId::UF_CARD_ENFORCE_NEGATIVE);
         return false;
@@ -1221,29 +1227,31 @@ Node SortModel::getCardinalityLiteral(uint32_t c)
   return lit;
 }
 
-CardinalityExtension::CardinalityExtension(TheoryState& state,
+CardinalityExtension::CardinalityExtension(Env& env,
+                                           TheoryState& state,
                                            TheoryInferenceManager& im,
                                            TheoryUF* th)
-    : d_state(state),
+    : EnvObj(env),
+      d_state(state),
       d_im(im),
       d_th(th),
       d_rep_model(),
-      d_min_pos_com_card(state.getSatContext(), 0),
-      d_min_pos_com_card_set(state.getSatContext(), false),
+      d_min_pos_com_card(context(), 0),
+      d_min_pos_com_card_set(context(), false),
       d_cc_dec_strat(nullptr),
-      d_initializedCombinedCardinality(state.getUserContext(), false),
-      d_card_assertions_eqv_lemma(state.getUserContext()),
-      d_min_pos_tn_master_card(state.getSatContext(), 0),
-      d_min_pos_tn_master_card_set(state.getSatContext(), false),
-      d_rel_eqc(state.getSatContext())
+      d_initializedCombinedCardinality(userContext(), false),
+      d_card_assertions_eqv_lemma(userContext()),
+      d_min_pos_tn_master_card(context(), 0),
+      d_min_pos_tn_master_card_set(context(), false),
+      d_rel_eqc(context())
 {
   if (options::ufssMode() == options::UfssMode::FULL && options::ufssFairness())
   {
     // Register the strategy with the decision manager of the theory.
     // We are guaranteed that the decision manager is ready since we
     // construct this module during TheoryUF::finishInit.
-    d_cc_dec_strat.reset(new CombinedCardinalityDecisionStrategy(
-        state.getSatContext(), th->getValuation()));
+    d_cc_dec_strat.reset(
+        new CombinedCardinalityDecisionStrategy(env, th->getValuation()));
   }
 }
 
@@ -1336,72 +1344,80 @@ void CardinalityExtension::assertNode(Node n, bool isDecision)
   if (options::ufssMode() == options::UfssMode::FULL)
   {
     if( lit.getKind()==CARDINALITY_CONSTRAINT ){
-      TypeNode tn = lit[0].getType();
+      const CardinalityConstraint& cc =
+          lit.getOperator().getConst<CardinalityConstraint>();
+      TypeNode tn = cc.getType();
       Assert(tn.isSort());
       Assert(d_rep_model[tn]);
-      uint32_t nCard =
-          lit[1].getConst<Rational>().getNumerator().getUnsignedInt();
-      Node ct = d_rep_model[tn]->getCardinalityTerm();
-      Trace("uf-ss-debug") << "...check cardinality terms : " << lit[0] << " " << ct << std::endl;
-      if( lit[0]==ct ){
-        if( options::ufssFairnessMonotone() ){
-          SortInference* si = d_state.getSortInference();
-          Trace("uf-ss-com-card-debug") << "...set master/slave" << std::endl;
-          if( tn!=d_tn_mono_master ){
-            std::map< TypeNode, bool >::iterator it = d_tn_mono_slave.find( tn );
-            if( it==d_tn_mono_slave.end() ){
-              bool isMonotonic;
-              if (si != nullptr)
+      uint32_t nCard = cc.getUpperBound().getUnsignedInt();
+      Trace("uf-ss-debug") << "...check cardinality constraint : " << tn
+                           << std::endl;
+      if (options::ufssFairnessMonotone())
+      {
+        SortInference* si = d_state.getSortInference();
+        Trace("uf-ss-com-card-debug") << "...set master/slave" << std::endl;
+        if (tn != d_tn_mono_master)
+        {
+          std::map<TypeNode, bool>::iterator it = d_tn_mono_slave.find(tn);
+          if (it == d_tn_mono_slave.end())
+          {
+            bool isMonotonic;
+            if (si != nullptr)
+            {
+              isMonotonic = si->isMonotonic(tn);
+            }
+            else
+            {
+              // if ground, everything is monotonic
+              isMonotonic = true;
+            }
+            if (isMonotonic)
+            {
+              if (d_tn_mono_master.isNull())
               {
-                isMonotonic = si->isMonotonic(tn);
-              }else{
-                //if ground, everything is monotonic
-                isMonotonic = true;
+                Trace("uf-ss-com-card-debug")
+                    << "uf-ss-fair-monotone: Set master : " << tn << std::endl;
+                d_tn_mono_master = tn;
               }
-              if( isMonotonic ){
-                if( d_tn_mono_master.isNull() ){
-                  Trace("uf-ss-com-card-debug") << "uf-ss-fair-monotone: Set master : " << tn << std::endl;
-                  d_tn_mono_master = tn;
-                }else{
-                  Trace("uf-ss-com-card-debug") << "uf-ss-fair-monotone: Set slave : " << tn << std::endl;
-                  d_tn_mono_slave[tn] = true;
-                }
-              }else{
-                Trace("uf-ss-com-card-debug") << "uf-ss-fair-monotone: Set non-monotonic : " << tn << std::endl;
-                d_tn_mono_slave[tn] = false;
+              else
+              {
+                Trace("uf-ss-com-card-debug")
+                    << "uf-ss-fair-monotone: Set slave : " << tn << std::endl;
+                d_tn_mono_slave[tn] = true;
               }
             }
-          }
-          //set the minimum positive cardinality for master if necessary
-          if( polarity && tn==d_tn_mono_master ){
-            Trace("uf-ss-com-card-debug") << "...set min positive cardinality" << std::endl;
-            if (!d_min_pos_tn_master_card_set.get()
-                || nCard < d_min_pos_tn_master_card.get())
+            else
             {
-              d_min_pos_tn_master_card_set.set(true);
-              d_min_pos_tn_master_card.set( nCard );
+              Trace("uf-ss-com-card-debug")
+                  << "uf-ss-fair-monotone: Set non-monotonic : " << tn
+                  << std::endl;
+              d_tn_mono_slave[tn] = false;
             }
           }
         }
-        Trace("uf-ss-com-card-debug") << "...assert cardinality" << std::endl;
-        d_rep_model[tn]->assertCardinality(nCard, polarity);
-        //check if combined cardinality is violated
-        checkCombinedCardinality();
-      }else{
-        //otherwise, make equal via lemma
-        if( d_card_assertions_eqv_lemma.find( lit )==d_card_assertions_eqv_lemma.end() ){
-          Node eqv_lit = NodeManager::currentNM()->mkNode( CARDINALITY_CONSTRAINT, ct, lit[1] );
-          eqv_lit = lit.eqNode( eqv_lit );
-          Trace("uf-ss-lemma") << "*** Cardinality equiv lemma : " << eqv_lit << std::endl;
-          d_im.lemma(eqv_lit, InferenceId::UF_CARD_EQUIV);
-          d_card_assertions_eqv_lemma[lit] = true;
+        // set the minimum positive cardinality for master if necessary
+        if (polarity && tn == d_tn_mono_master)
+        {
+          Trace("uf-ss-com-card-debug")
+              << "...set min positive cardinality" << std::endl;
+          if (!d_min_pos_tn_master_card_set.get()
+              || nCard < d_min_pos_tn_master_card.get())
+          {
+            d_min_pos_tn_master_card_set.set(true);
+            d_min_pos_tn_master_card.set(nCard);
+          }
         }
       }
+      Trace("uf-ss-com-card-debug") << "...assert cardinality" << std::endl;
+      d_rep_model[tn]->assertCardinality(nCard, polarity);
+      // check if combined cardinality is violated
+      checkCombinedCardinality();
     }else if( lit.getKind()==COMBINED_CARDINALITY_CONSTRAINT ){
       if( polarity ){
         //safe to assume int here
-        uint32_t nCard =
-            lit[0].getConst<Rational>().getNumerator().getUnsignedInt();
+        const CombinedCardinalityConstraint& cc =
+            lit.getOperator().getConst<CombinedCardinalityConstraint>();
+        uint32_t nCard = cc.getUpperBound().getUnsignedInt();
         if (!d_min_pos_com_card_set.get() || nCard < d_min_pos_com_card.get())
         {
           d_min_pos_com_card_set.set(true);
@@ -1417,7 +1433,7 @@ void CardinalityExtension::assertNode(Node n, bool isDecision)
           for( std::map< TypeNode, SortModel* >::iterator it = d_rep_model.begin(); it != d_rep_model.end(); ++it ){
             if( !it->second->hasCardinalityAsserted() ){
               Trace("uf-ss-warn") << "WARNING: Assert " << n << " as a decision before cardinality for " << it->first << "." << std::endl;
-              // CVC4Message() << "Error: constraint asserted before cardinality
+              // CVC5Message() << "Error: constraint asserted before cardinality
               // for " << it->first << std::endl; Unimplemented();
             }
           }
@@ -1430,7 +1446,7 @@ void CardinalityExtension::assertNode(Node n, bool isDecision)
     if( lit.getKind()==CARDINALITY_CONSTRAINT || lit.getKind()==COMBINED_CARDINALITY_CONSTRAINT ){
       // cardinality constraint from user input, set incomplete   
       Trace("uf-ss") << "Literal " << lit << " not handled when uf ss mode is not FULL, set incomplete." << std::endl;
-      d_im.setIncomplete();
+      d_im.setIncomplete(IncompleteId::UF_CARD_MODE);
     }
   }
   Trace("uf-ss") << "Assert: done " << n << " " << isDecision << std::endl;
@@ -1556,16 +1572,16 @@ void CardinalityExtension::presolve()
 }
 
 CardinalityExtension::CombinedCardinalityDecisionStrategy::
-    CombinedCardinalityDecisionStrategy(context::Context* satContext,
-                                        Valuation valuation)
-    : DecisionStrategyFmf(satContext, valuation)
+    CombinedCardinalityDecisionStrategy(Env& env, Valuation valuation)
+    : DecisionStrategyFmf(env, valuation)
 {
 }
 Node CardinalityExtension::CombinedCardinalityDecisionStrategy::mkLiteral(
     unsigned i)
 {
   NodeManager* nm = NodeManager::currentNM();
-  return nm->mkNode(COMBINED_CARDINALITY_CONSTRAINT, nm->mkConst(Rational(i)));
+  Node cco = nm->mkConst(CombinedCardinalityConstraint(Integer(i)));
+  return nm->mkNode(COMBINED_CARDINALITY_CONSTRAINT, cco);
 }
 
 std::string
@@ -1576,30 +1592,51 @@ CardinalityExtension::CombinedCardinalityDecisionStrategy::identify() const
 
 void CardinalityExtension::preRegisterTerm(TNode n)
 {
-  if (options::ufssMode() == options::UfssMode::FULL)
+  if (options::ufssMode() != options::UfssMode::FULL)
   {
-    //initialize combined cardinality
-    initializeCombinedCardinality();
+    return;
+  }
+  // initialize combined cardinality
+  initializeCombinedCardinality();
 
-    Trace("uf-ss-register") << "Preregister " << n << "." << std::endl;
-    //shouldn't have to preregister this type (it may be that there are no quantifiers over tn)
-    TypeNode tn = n.getType();
-    std::map< TypeNode, SortModel* >::iterator it = d_rep_model.find( tn );
-    if( it==d_rep_model.end() ){
-      SortModel* rm = NULL;
-      if( tn.isSort() ){
-        Trace("uf-ss-register") << "Create sort model " << tn << "." << std::endl;
-        rm = new SortModel(n, d_state, d_im, this);
-      }
-      if( rm ){
-        rm->initialize();
-        d_rep_model[tn] = rm;
-        //d_rep_model_init[tn] = true;
-      }
-    }else{
-      //ensure sort model is initialized
-      it->second->initialize();
+  Trace("uf-ss-register") << "Preregister " << n << "." << std::endl;
+  // shouldn't have to preregister this type (it may be that there are no
+  // quantifiers over tn)
+  TypeNode tn;
+  if (n.getKind() == CARDINALITY_CONSTRAINT)
+  {
+    const CardinalityConstraint& cc =
+        n.getOperator().getConst<CardinalityConstraint>();
+    tn = cc.getType();
+  }
+  else
+  {
+    tn = n.getType();
+  }
+  if (!tn.isSort())
+  {
+    return;
+  }
+  std::map<TypeNode, SortModel*>::iterator it = d_rep_model.find(tn);
+  if (it == d_rep_model.end())
+  {
+    SortModel* rm = nullptr;
+    if (tn.isSort())
+    {
+      Trace("uf-ss-register") << "Create sort model " << tn << "." << std::endl;
+      rm = new SortModel(tn, d_state, d_im, this);
     }
+    if (rm)
+    {
+      rm->initialize();
+      d_rep_model[tn] = rm;
+      // d_rep_model_init[tn] = true;
+    }
+  }
+  else
+  {
+    // ensure sort model is initialized
+    it->second->initialize();
   }
 }
 
@@ -1656,7 +1693,7 @@ void CardinalityExtension::initializeCombinedCardinality()
       && !d_initializedCombinedCardinality.get())
   {
     d_initializedCombinedCardinality = true;
-    d_th->getDecisionManager()->registerStrategy(
+    d_im.getDecisionManager()->registerStrategy(
         DecisionManager::STRAT_UF_COMBINED_CARD, d_cc_dec_strat.get());
   }
 }
@@ -1745,25 +1782,18 @@ void CardinalityExtension::checkCombinedCardinality()
 }
 
 CardinalityExtension::Statistics::Statistics()
-    : d_clique_conflicts("CardinalityExtension::Clique_Conflicts", 0),
-      d_clique_lemmas("CardinalityExtension::Clique_Lemmas", 0),
-      d_split_lemmas("CardinalityExtension::Split_Lemmas", 0),
-      d_max_model_size("CardinalityExtension::Max_Model_Size", 1)
+    : d_clique_conflicts(smtStatisticsRegistry().registerInt(
+        "CardinalityExtension::Clique_Conflicts")),
+      d_clique_lemmas(smtStatisticsRegistry().registerInt(
+          "CardinalityExtension::Clique_Lemmas")),
+      d_split_lemmas(smtStatisticsRegistry().registerInt(
+          "CardinalityExtension::Split_Lemmas")),
+      d_max_model_size(smtStatisticsRegistry().registerInt(
+          "CardinalityExtension::Max_Model_Size"))
 {
-  smtStatisticsRegistry()->registerStat(&d_clique_conflicts);
-  smtStatisticsRegistry()->registerStat(&d_clique_lemmas);
-  smtStatisticsRegistry()->registerStat(&d_split_lemmas);
-  smtStatisticsRegistry()->registerStat(&d_max_model_size);
+  d_max_model_size.maxAssign(1);
 }
 
-CardinalityExtension::Statistics::~Statistics()
-{
-  smtStatisticsRegistry()->unregisterStat(&d_clique_conflicts);
-  smtStatisticsRegistry()->unregisterStat(&d_clique_lemmas);
-  smtStatisticsRegistry()->unregisterStat(&d_split_lemmas);
-  smtStatisticsRegistry()->unregisterStat(&d_max_model_size);
-}
-
-}/* CVC4::theory namespace::uf */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace uf
+}  // namespace theory
+}  // namespace cvc5

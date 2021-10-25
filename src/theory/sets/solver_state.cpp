@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file solver_state.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mudathir Mohamed, Paul Meng
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of sets state object
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mudathir Mohamed, Paul Meng
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of sets state object.
+ */
 
 #include "theory/sets/solver_state.h"
 
@@ -19,17 +20,14 @@
 #include "theory/sets/theory_sets_private.h"
 
 using namespace std;
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace sets {
 
-SolverState::SolverState(context::Context* c,
-                         context::UserContext* u,
-                         Valuation val,
-                         SkolemCache& skc)
-    : TheoryState(c, u, val), d_skCache(skc), d_members(c)
+SolverState::SolverState(Env& env, Valuation val, SkolemCache& skc)
+    : TheoryState(env, val), d_skCache(skc), d_members(env.getContext())
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
@@ -595,4 +593,4 @@ bool SolverState::merge(TNode t1,
 
 }  // namespace sets
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

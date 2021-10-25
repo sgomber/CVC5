@@ -1,46 +1,42 @@
-/*********************                                                        */
-/*! \file sygus_repair_const.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Haniel Barbosa, Abdalrhman Mohamed
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of sygus_repair_const
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Haniel Barbosa, Abdalrhman Mohamed
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of sygus_repair_const.
+ */
 
 #include "theory/quantifiers/sygus/sygus_repair_const.h"
 
-#include "api/cvc4cpp.h"
 #include "expr/dtype_cons.h"
 #include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
 #include "options/base_options.h"
 #include "options/quantifiers_options.h"
 #include "printer/printer.h"
-#include "smt/smt_engine.h"
-#include "smt/smt_engine_scope.h"
-#include "smt/smt_statistics_registry.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
 #include "theory/logic_info.h"
 #include "theory/quantifiers/cegqi/ceg_instantiator.h"
 #include "theory/quantifiers/sygus/sygus_grammar_norm.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
-#include "theory/quantifiers_engine.h"
 #include "theory/smt_engine_subsolver.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-SygusRepairConst::SygusRepairConst(QuantifiersEngine* qe)
-    : d_qe(qe), d_allow_constant_grammar(false)
+SygusRepairConst::SygusRepairConst(Env& env, TermDbSygus* tds)
+    : EnvObj(env), d_tds(tds), d_allow_constant_grammar(false)
 {
-  d_tds = d_qe->getTermDatabaseSygus();
 }
 
 void SygusRepairConst::initialize(Node base_inst,
@@ -193,7 +189,7 @@ bool SygusRepairConst::repairSolution(Node sygusBody,
 
   // check whether it is not in the current logic, e.g. non-linear arithmetic.
   // if so, undo replacements until it is in the current logic.
-  LogicInfo logic = smt::currentSmtEngine()->getLogicInfo();
+  const LogicInfo& logic = logicInfo();
   if (logic.isTheoryEnabled(THEORY_ARITH) && logic.isLinear())
   {
     fo_body = fitToLogic(sygusBody,
@@ -219,7 +215,7 @@ bool SygusRepairConst::repairSolution(Node sygusBody,
   if (fo_body.getKind() == FORALL)
   {
     // must be a CBQI quantifier
-    CegHandledStatus hstatus = CegInstantiator::isCbqiQuant(fo_body, d_qe);
+    CegHandledStatus hstatus = CegInstantiator::isCbqiQuant(fo_body);
     if (hstatus < CEG_HANDLED)
     {
       // abort if less than fully handled
@@ -232,11 +228,14 @@ bool SygusRepairConst::repairSolution(Node sygusBody,
 
   Trace("sygus-engine") << "Repairing previous solution..." << std::endl;
   // make the satisfiability query
-  std::unique_ptr<SmtEngine> repcChecker;
+  std::unique_ptr<SolverEngine> repcChecker;
   // initialize the subsolver using the standard method
-  initializeSubsolver(repcChecker,
-                      options::sygusRepairConstTimeout.wasSetByUser(),
-                      options::sygusRepairConstTimeout());
+  initializeSubsolver(
+      repcChecker,
+      d_env.getOptions(),
+      d_env.getLogicInfo(),
+      Options::current().quantifiers.sygusRepairConstTimeoutWasSetByUser,
+      options::sygusRepairConstTimeout());
   // renable options disabled by sygus
   repcChecker->setOption("miniscope-quant", "true");
   repcChecker->setOption("miniscope-quant-fv", "true");
@@ -287,7 +286,7 @@ bool SygusRepairConst::repairSolution(Node sygusBody,
 
 bool SygusRepairConst::mustRepair(Node n)
 {
-  std::unordered_set<TNode, TNodeHashFunction> visited;
+  std::unordered_set<TNode> visited;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
@@ -366,8 +365,8 @@ Node SygusRepairConst::getSkeleton(Node n,
   }
   NodeManager* nm = NodeManager::currentNM();
   // get the most general candidate skeleton of n
-  std::unordered_map<TNode, Node, TNodeHashFunction> visited;
-  std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
+  std::unordered_map<TNode, Node> visited;
+  std::unordered_map<TNode, Node>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
@@ -436,6 +435,7 @@ Node SygusRepairConst::getFoQuery(Node body,
                                   const std::vector<Node>& sk_vars)
 {
   NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
   Trace("sygus-repair-const") << "  Substitute skeletons..." << std::endl;
   body = body.substitute(candidates.begin(),
                          candidates.end(),
@@ -444,7 +444,7 @@ Node SygusRepairConst::getFoQuery(Node body,
   Trace("sygus-repair-const-debug") << "  ...got : " << body << std::endl;
 
   Trace("sygus-repair-const") << "  Unfold the specification..." << std::endl;
-  body = d_tds->evaluateWithUnfolding(body);
+  body = d_tds->rewriteNode(body);
   Trace("sygus-repair-const-debug") << "  ...got : " << body << std::endl;
 
   Trace("sygus-repair-const") << "  Introduce first-order vars..." << std::endl;
@@ -454,7 +454,7 @@ Node SygusRepairConst::getFoQuery(Node body,
     if (itf == d_sk_to_fo.end())
     {
       TypeNode builtinType = d_tds->sygusToBuiltinType(v.getType());
-      Node sk_fov = nm->mkSkolem("k", builtinType);
+      Node sk_fov = sm->mkDummySkolem("k", builtinType);
       d_sk_to_fo[v] = sk_fov;
       d_fo_to_sk[sk_fov] = v;
       Trace("sygus-repair-const-debug")
@@ -464,8 +464,8 @@ Node SygusRepairConst::getFoQuery(Node body,
   // now, we must replace all terms of the form eval( z_i, t1...tn ) with
   // a fresh first-order variable w_i, where z_i is a variable introduced in
   // the skeleton inference step (z_i is a variable in sk_vars).
-  std::unordered_map<TNode, Node, TNodeHashFunction> visited;
-  std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
+  std::unordered_map<TNode, Node> visited;
+  std::unordered_map<TNode, Node>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(body);
@@ -529,7 +529,7 @@ Node SygusRepairConst::getFoQuery(Node body,
 }
 
 Node SygusRepairConst::fitToLogic(Node body,
-                                  LogicInfo& logic,
+                                  const LogicInfo& logic,
                                   Node n,
                                   const std::vector<Node>& candidates,
                                   std::vector<Node>& candidate_skeletons,
@@ -568,7 +568,7 @@ Node SygusRepairConst::fitToLogic(Node body,
   return Node::null();
 }
 
-bool SygusRepairConst::getFitToLogicExcludeVar(LogicInfo& logic,
+bool SygusRepairConst::getFitToLogicExcludeVar(const LogicInfo& logic,
                                                Node n,
                                                Node& exvar)
 {
@@ -577,8 +577,8 @@ bool SygusRepairConst::getFitToLogicExcludeVar(LogicInfo& logic,
   // should have at least one restriction
   Assert(restrictLA);
 
-  std::unordered_set<TNode, TNodeHashFunction> visited;
-  std::unordered_set<TNode, TNodeHashFunction>::iterator it;
+  std::unordered_set<TNode> visited;
+  std::unordered_set<TNode>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
@@ -622,6 +622,6 @@ bool SygusRepairConst::getFitToLogicExcludeVar(LogicInfo& logic,
   return true;
 }
 
-} /* CVC4::theory::quantifiers namespace */
-} /* CVC4::theory namespace */
-} /* CVC4 namespace */
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace cvc5

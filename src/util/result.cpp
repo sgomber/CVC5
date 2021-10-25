@@ -1,18 +1,17 @@
-/*********************                                                        */
-/*! \file result.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Aina Niemetz, Morgan Deters, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Encapsulation of the result of a query.
- **
- ** Encapsulation of the result of a query.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Aina Niemetz, Morgan Deters, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Encapsulation of the result of a query.
+ */
 #include "util/result.h"
 
 #include <algorithm>
@@ -26,7 +25,7 @@
 
 using namespace std;
 
-namespace CVC4 {
+namespace cvc5 {
 
 Result::Result()
     : d_sat(SAT_UNKNOWN),
@@ -355,14 +354,13 @@ void Result::toStreamTptp(std::ostream& out) const {
   out << " for " << getInputName();
 }
 
-void Result::toStream(std::ostream& out, OutputLanguage language) const {
+void Result::toStream(std::ostream& out, Language language) const
+{
   switch (language) {
-    case language::output::LANG_SYGUS_V2: toStreamSmt2(out); break;
-    case language::output::LANG_TPTP:
-      toStreamTptp(out);
-      break;
+    case Language::LANG_SYGUS_V2: toStreamSmt2(out); break;
+    case Language::LANG_TPTP: toStreamTptp(out); break;
     default:
-      if (language::isOutputLang_smt2(language))
+      if (language::isLangSmt2(language))
       {
         toStreamSmt2(out);
       }
@@ -374,4 +372,4 @@ void Result::toStream(std::ostream& out, OutputLanguage language) const {
   };
 }
 
-} /* CVC4 namespace */
+}  // namespace cvc5

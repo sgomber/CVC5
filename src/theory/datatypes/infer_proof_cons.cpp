@@ -1,28 +1,31 @@
-/*********************                                                        */
-/*! \file infer_proof_cons.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of inference to proof conversion  for datatypes
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of inference to proof conversion  for datatypes.
+ */
 
 #include "theory/datatypes/infer_proof_cons.h"
 
-#include "expr/proof.h"
-#include "expr/proof_checker.h"
+#include "proof/proof.h"
+#include "proof/proof_checker.h"
+#include "theory/builtin/proof_checker.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
 #include "theory/model_manager.h"
 #include "theory/rewriter.h"
+#include "util/rational.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace datatypes {
 
@@ -166,30 +169,37 @@ void InferProofCons::convert(InferenceId infer, TNode conc, TNode exp, CDProof* 
         Node concAtom = concPol ? conc : conc[0];
         concEq = concAtom.eqNode(nm->mkConst(concPol));
       }
-      Assert(concEq.getKind() == EQUAL
-             && concEq[0].getKind() == APPLY_SELECTOR_TOTAL);
-      Assert(exp[0].getType().isDatatype());
-      Node sop = concEq[0].getOperator();
-      Node sl = nm->mkNode(APPLY_SELECTOR_TOTAL, sop, exp[0]);
-      Node sr = nm->mkNode(APPLY_SELECTOR_TOTAL, sop, exp[1]);
-      // exp[0] = exp[1]
-      // --------------------- CONG        ----------------- DT_COLLAPSE
-      // s(exp[0]) = s(exp[1])             s(exp[1]) = r
-      // --------------------------------------------------- TRANS
-      // s(exp[0]) = r
-      Node asn = ProofRuleChecker::mkKindNode(APPLY_SELECTOR_TOTAL);
-      Node seq = sl.eqNode(sr);
-      cdp->addStep(seq, PfRule::CONG, {exp}, {asn, sop});
-      Node sceq = sr.eqNode(concEq[1]);
-      cdp->addStep(sceq, PfRule::DT_COLLAPSE, {}, {sr});
-      cdp->addStep(sl.eqNode(concEq[1]), PfRule::TRANS, {seq, sceq}, {});
-      if (conc.getKind() != EQUAL)
+      if (concEq[0].getKind() != APPLY_SELECTOR_TOTAL)
       {
-        PfRule eid =
-            conc.getKind() == NOT ? PfRule::FALSE_ELIM : PfRule::TRUE_ELIM;
-        cdp->addStep(conc, eid, {concEq}, {});
+        // can happen for Boolean term variables, which are not currently
+        // supported.
+        success = false;
       }
-      success = true;
+      else
+      {
+        Assert(exp[0].getType().isDatatype());
+        Node sop = concEq[0].getOperator();
+        Node sl = nm->mkNode(APPLY_SELECTOR_TOTAL, sop, exp[0]);
+        Node sr = nm->mkNode(APPLY_SELECTOR_TOTAL, sop, exp[1]);
+        // exp[0] = exp[1]
+        // --------------------- CONG        ----------------- DT_COLLAPSE
+        // s(exp[0]) = s(exp[1])             s(exp[1]) = r
+        // --------------------------------------------------- TRANS
+        // s(exp[0]) = r
+        Node asn = ProofRuleChecker::mkKindNode(APPLY_SELECTOR_TOTAL);
+        Node seq = sl.eqNode(sr);
+        cdp->addStep(seq, PfRule::CONG, {exp}, {asn, sop});
+        Node sceq = sr.eqNode(concEq[1]);
+        cdp->addStep(sceq, PfRule::DT_COLLAPSE, {}, {sr});
+        cdp->addStep(sl.eqNode(concEq[1]), PfRule::TRANS, {seq, sceq}, {});
+        if (conc.getKind() != EQUAL)
+        {
+          PfRule eid =
+              conc.getKind() == NOT ? PfRule::FALSE_ELIM : PfRule::TRUE_ELIM;
+          cdp->addStep(conc, eid, {concEq}, {});
+        }
+        success = true;
+      }
     }
     break;
     case InferenceId::DATATYPES_CLASH_CONFLICT:
@@ -221,6 +231,12 @@ void InferProofCons::convert(InferenceId infer, TNode conc, TNode exp, CDProof* 
       success = true;
     }
     break;
+    case InferenceId::DATATYPES_PURIFY:
+    {
+      cdp->addStep(conc, PfRule::MACRO_SR_PRED_INTRO, {}, {});
+      success = true;
+    }
+    break;
     // inferences currently not supported
     case InferenceId::DATATYPES_LABEL_EXH:
     case InferenceId::DATATYPES_BISIMILAR:
@@ -235,7 +251,8 @@ void InferProofCons::convert(InferenceId infer, TNode conc, TNode exp, CDProof* 
   {
     // failed to reconstruct, add trust
     Trace("dt-ipc") << "...failed " << infer << std::endl;
-    cdp->addStep(conc, PfRule::DT_TRUST, expv, {conc});
+    Node t = builtin::BuiltinProofRuleChecker::mkTheoryIdNode(THEORY_DATATYPES);
+    cdp->addStep(conc, PfRule::THEORY_INFERENCE, expv, {conc, t});
   }
   else
   {
@@ -275,4 +292,4 @@ std::string InferProofCons::identify() const
 
 }  // namespace datatypes
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

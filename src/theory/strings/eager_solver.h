@@ -1,29 +1,33 @@
-/*********************                                                        */
-/*! \file eager_solver.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Tianyi Liang, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The eager solver
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Tianyi Liang, Morgan Deters
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The eager solver.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__STRINGS__EAGER_SOLVER_H
-#define CVC4__THEORY__STRINGS__EAGER_SOLVER_H
+#ifndef CVC5__THEORY__STRINGS__EAGER_SOLVER_H
+#define CVC5__THEORY__STRINGS__EAGER_SOLVER_H
 
 #include <map>
 
 #include "expr/node.h"
+#include "smt/env_obj.h"
+#include "theory/strings/arith_entail.h"
 #include "theory/strings/eqc_info.h"
 #include "theory/strings/solver_state.h"
+#include "theory/strings/term_registry.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
@@ -31,10 +35,13 @@ namespace strings {
  * Eager solver, which is responsible for tracking of eager information and
  * reporting conflicts to the solver state.
  */
-class EagerSolver
+class EagerSolver : protected EnvObj
 {
  public:
-  EagerSolver(SolverState& state);
+  EagerSolver(Env& env,
+              SolverState& state,
+              TermRegistry& treg,
+              ArithEntail& aent);
   ~EagerSolver();
   /** called when a new equivalence class is created */
   void eqNotifyNewClass(TNode t);
@@ -57,12 +64,25 @@ class EagerSolver
    * for some eqc that is currently equal to z.
    */
   void addEndpointsToEqcInfo(Node t, Node concat, Node eqc);
+  /**
+   * Check for conflict when merging equivalence classes with the given info,
+   * return the node corresponding to the conflict if so.
+   */
+  Node checkForMergeConflict(Node a, Node b, EqcInfo* ea, EqcInfo* eb);
+  /** add arithmetic bound */
+  Node addArithmeticBound(EqcInfo* ea, Node t, bool isLower);
+  /** get bound for length term */
+  Node getBoundForLength(Node len, bool isLower);
   /** Reference to the solver state */
   SolverState& d_state;
+  /** Reference to the term registry */
+  TermRegistry& d_treg;
+  /** Arithmetic entailment */
+  ArithEntail& d_aent;
 };
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__STRINGS__EAGER_SOLVER_H */
+#endif /* CVC5__THEORY__STRINGS__EAGER_SOLVER_H */

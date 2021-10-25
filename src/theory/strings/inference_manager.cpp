@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file inference_manager.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer, Mudathir Mohamed
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of the inference manager for the theory of strings.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Mudathir Mohamed
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of the inference manager for the theory of strings.
+ */
 
 #include "theory/strings/inference_manager.h"
 
@@ -19,28 +20,35 @@
 #include "theory/rewriter.h"
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
+#include "util/rational.h"
 
 using namespace std;
-using namespace CVC4::context;
-using namespace CVC4::kind;
+using namespace cvc5::context;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
-InferenceManager::InferenceManager(Theory& t,
+InferenceManager::InferenceManager(Env& env,
+                                   Theory& t,
                                    SolverState& s,
                                    TermRegistry& tr,
                                    ExtTheory& e,
-                                   SequencesStatistics& statistics,
-                                   ProofNodeManager* pnm)
-    : InferenceManagerBuffered(t, s, pnm, "theory::strings", false),
+                                   SequencesStatistics& statistics)
+    : InferenceManagerBuffered(env, t, s, "theory::strings::", false),
       d_state(s),
       d_termReg(tr),
       d_extt(e),
       d_statistics(statistics),
-      d_ipc(pnm ? new InferProofCons(d_state.getSatContext(), pnm, d_statistics)
-                : nullptr)
+      d_ipc(isProofEnabled()
+                ? new InferProofCons(
+                      context(), env.getProofNodeManager(), d_statistics)
+                : nullptr),
+      d_ipcl(isProofEnabled()
+                 ? new InferProofCons(
+                       context(), env.getProofNodeManager(), d_statistics)
+                 : nullptr)
 {
   NodeManager* nm = NodeManager::currentNM();
   d_zero = nm->mkConst(Rational(0));
@@ -241,8 +249,6 @@ bool InferenceManager::sendSplit(Node a, Node b, InferenceId infer, bool preq)
   return true;
 }
 
-void InferenceManager::setIncomplete() { d_out.setIncomplete(); }
-
 void InferenceManager::addToExplanation(Node a,
                                         Node b,
                                         std::vector<Node>& exp) const
@@ -270,30 +276,21 @@ bool InferenceManager::hasProcessed() const
   return d_state.isInConflict() || hasPending();
 }
 
-void InferenceManager::markCongruent(Node a, Node b)
+void InferenceManager::markReduced(Node n, ExtReducedId id, bool contextDepend)
 {
-  Assert(a.getKind() == b.getKind());
-  if (d_extt.hasFunctionKind(a.getKind()))
-  {
-    d_extt.markCongruent(a, b);
-  }
-}
-
-void InferenceManager::markReduced(Node n, bool contextDepend)
-{
-  d_extt.markReduced(n, contextDepend);
+  d_extt.markReduced(n, id, contextDepend);
 }
 
 void InferenceManager::processConflict(const InferInfo& ii)
 {
   Assert(!d_state.isInConflict());
   // setup the fact to reproduce the proof in the call below
-  if (d_ipc != nullptr)
+  if (d_ipcl != nullptr)
   {
-    d_ipc->notifyFact(ii);
+    d_ipcl->notifyLemma(ii);
   }
   // make the trust node
-  TrustNode tconf = mkConflictExp(ii.d_premises, d_ipc.get());
+  TrustNode tconf = mkConflictExp(ii.d_premises, d_ipcl.get());
   Assert(tconf.getKind() == TrustNodeKind::CONFLICT);
   Trace("strings-assert") << "(assert (not " << tconf.getNode()
                           << ")) ; conflict " << ii.getId() << std::endl;
@@ -344,11 +341,11 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
   }
   // ensure that the proof generator is ready to explain the final conclusion
   // of the lemma (ii.d_conc).
-  if (d_ipc != nullptr)
+  if (d_ipcl != nullptr)
   {
-    d_ipc->notifyFact(ii);
+    d_ipcl->notifyLemma(ii);
   }
-  TrustNode tlem = mkLemmaExp(ii.d_conc, exp, noExplain, d_ipc.get());
+  TrustNode tlem = mkLemmaExp(ii.d_conc, exp, noExplain, d_ipcl.get());
   Trace("strings-pending") << "Process pending lemma : " << tlem.getNode()
                            << std::endl;
 
@@ -377,4 +374,4 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

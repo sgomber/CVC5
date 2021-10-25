@@ -1,51 +1,50 @@
-/*********************                                                        */
-/*! \file unconstrained_simplifier.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Clark Barrett, Andres Noetzli, Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Simplifications based on unconstrained variables
- **
- ** This module implements a preprocessing phase which replaces certain
- ** "unconstrained" expressions by variables.  Based on Roberto
- ** Bruttomesso's PhD thesis.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Clark Barrett, Andres Noetzli, Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Simplifications based on unconstrained variables.
+ *
+ * This module implements a preprocessing phase which replaces certain
+ * "unconstrained" expressions by variables.  Based on Roberto
+ * Bruttomesso's PhD thesis.
+ */
 
 #include "preprocessing/passes/unconstrained_simplifier.h"
 
 #include "expr/dtype.h"
+#include "expr/skolem_manager.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/preprocessing_pass_context.h"
 #include "smt/logic_exception.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/logic_info.h"
 #include "theory/rewriter.h"
+#include "util/bitvector.h"
+#include "util/rational.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
 using namespace std;
-using namespace CVC4::theory;
+using namespace cvc5::theory;
 
 UnconstrainedSimplifier::UnconstrainedSimplifier(
     PreprocessingPassContext* preprocContext)
     : PreprocessingPass(preprocContext, "unconstrained-simplifier"),
-      d_numUnconstrainedElim("preprocessor::number of unconstrained elims", 0),
-      d_context(preprocContext->getDecisionContext()),
-      d_substitutions(preprocContext->getDecisionContext())
+      d_numUnconstrainedElim(statisticsRegistry().registerInt(
+          "preprocessor::number of unconstrained elims")),
+      d_context(context()),
+      d_substitutions(context())
 {
-  smtStatisticsRegistry()->registerStat(&d_numUnconstrainedElim);
-}
-
-UnconstrainedSimplifier::~UnconstrainedSimplifier()
-{
-  smtStatisticsRegistry()->unregisterStat(&d_numUnconstrainedElim);
 }
 
 struct unc_preprocess_stack_element
@@ -126,7 +125,8 @@ void UnconstrainedSimplifier::visitAll(TNode assertion)
 
 Node UnconstrainedSimplifier::newUnconstrainedVar(TypeNode t, TNode var)
 {
-  Node n = NodeManager::currentNM()->mkSkolem(
+  SkolemManager* sm = NodeManager::currentNM()->getSkolemManager();
+  Node n = sm->mkDummySkolem(
       "unconstrained",
       t,
       "a new var introduced because of unconstrained variable "
@@ -231,7 +231,7 @@ void UnconstrainedSimplifier::processUnconstrained()
               // Special case: condition is unconstrained, then and else are
               // different, and total cardinality of the type is 2, then the
               // result is unconstrained
-              Node test = Rewriter::rewrite(parent[1].eqNode(parent[2]));
+              Node test = rewrite(parent[1].eqNode(parent[2]));
               if (test == nm->mkConst<bool>(false))
               {
                 ++d_numUnconstrainedElim;
@@ -278,7 +278,7 @@ void UnconstrainedSimplifier::processUnconstrained()
             checkParent = true;
             break;
           }
-          CVC4_FALLTHROUGH;
+          CVC5_FALLTHROUGH;
         case kind::BITVECTOR_COMP:
         case kind::LT:
         case kind::LEQ:
@@ -452,11 +452,11 @@ void UnconstrainedSimplifier::processUnconstrained()
           {
             break;
           }
-          CVC4_FALLTHROUGH;
+          CVC5_FALLTHROUGH;
         case kind::XOR:
         case kind::BITVECTOR_XOR:
         case kind::BITVECTOR_XNOR:
-        case kind::BITVECTOR_PLUS:
+        case kind::BITVECTOR_ADD:
         case kind::BITVECTOR_SUB: checkParent = true; break;
 
         // Multiplication/division: must be non-integer and other operand must
@@ -530,7 +530,7 @@ void UnconstrainedSimplifier::processUnconstrained()
             {
               // TODO(#2377): could build ITE here
               Node test = other.eqNode(nm->mkConst<Rational>(0));
-              if (Rewriter::rewrite(test) != nm->mkConst<bool>(false))
+              if (rewrite(test) != nm->mkConst<bool>(false))
               {
                 break;
               }
@@ -573,7 +573,7 @@ void UnconstrainedSimplifier::processUnconstrained()
               Node test = nm->mkNode(extractOp, children);
               BitVector one(1, unsigned(1));
               test = test.eqNode(nm->mkConst<BitVector>(one));
-              if (Rewriter::rewrite(test) != nm->mkConst<bool>(true))
+              if (rewrite(test) != nm->mkConst<bool>(true))
               {
                 done = true;
                 break;
@@ -591,7 +591,7 @@ void UnconstrainedSimplifier::processUnconstrained()
         // Uninterpreted function - if domain is infinite, no quantifiers are
         // used, and any child is unconstrained, result is unconstrained
         case kind::APPLY_UF:
-          if (d_preprocContext->getLogicInfo().isQuantified()
+          if (logicInfo().isQuantified()
               || !current.getType().getCardinality().isInfinite())
           {
             break;
@@ -753,8 +753,7 @@ void UnconstrainedSimplifier::processUnconstrained()
             }
             currentSub = newUnconstrainedVar(parent.getType(), currentSub);
             current = parent;
-            Node test =
-                Rewriter::rewrite(other.eqNode(nm->mkConst<BitVector>(bv)));
+            Node test = rewrite(other.eqNode(nm->mkConst<BitVector>(bv)));
             if (test == nm->mkConst<bool>(false))
             {
               break;
@@ -843,7 +842,7 @@ void UnconstrainedSimplifier::processUnconstrained()
 PreprocessingPassResult UnconstrainedSimplifier::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
-  d_preprocContext->spendResource(ResourceManager::Resource::PreprocessStep);
+  d_preprocContext->spendResource(Resource::PreprocessStep);
 
   const std::vector<Node>& assertions = assertionsToPreprocess->ref();
 
@@ -857,11 +856,11 @@ PreprocessingPassResult UnconstrainedSimplifier::applyInternal(
   if (!d_unconstrained.empty())
   {
     processUnconstrained();
-    //    d_substitutions.print(CVC4Message.getStream());
+    //    d_substitutions.print(CVC5Message.getStream());
     for (size_t i = 0, asize = assertions.size(); i < asize; ++i)
     {
       Node a = assertions[i];
-      Node as = Rewriter::rewrite(d_substitutions.apply(a));
+      Node as = rewrite(d_substitutions.apply(a));
       // replace the assertion
       assertionsToPreprocess->replace(i, as);
     }
@@ -880,4 +879,4 @@ PreprocessingPassResult UnconstrainedSimplifier::applyInternal(
 
 }  // namespace passes
 }  // namespace preprocessing
-}  // namespace CVC4
+}  // namespace cvc5

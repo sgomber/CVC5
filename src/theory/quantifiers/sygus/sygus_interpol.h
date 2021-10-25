@@ -1,29 +1,34 @@
-/*********************                                                        */
-/*! \file sygus_interpol.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Ying Sheng, Abdalrhman Mohamed
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Sygus interpolation utility, which transforms an input of axioms and
- ** conjecture into an interpolation problem, and solve it.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Ying Sheng, Abdalrhman Mohamed
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Sygus interpolation utility, which transforms an input of axioms and
+ * conjecture into an interpolation problem, and solve it.
+ */
 
-#ifndef CVC4__THEORY__QUANTIFIERS__SYGUS_INTERPOL_H
-#define CVC4__THEORY__QUANTIFIERS__SYGUS_INTERPOL_H
+#ifndef CVC5__THEORY__QUANTIFIERS__SYGUS_INTERPOL_H
+#define CVC5__THEORY__QUANTIFIERS__SYGUS_INTERPOL_H
 
 #include <string>
 #include <vector>
 
 #include "expr/node.h"
 #include "expr/type_node.h"
-#include "smt/smt_engine.h"
+#include "smt/env_obj.h"
 
-namespace CVC4 {
+namespace cvc5 {
+
+class Env;
+class SolverEngine;
+
 namespace theory {
 namespace quantifiers {
 /**
@@ -55,10 +60,10 @@ namespace quantifiers {
  * of the SMT engine can be further queried for information regarding further
  * solutions.
  */
-class SygusInterpol
+class SygusInterpol : protected EnvObj
 {
  public:
-  SygusInterpol();
+  SygusInterpol(Env& env);
 
   /**
    * Returns the sygus conjecture in interpol corresponding to the interpolation
@@ -121,10 +126,9 @@ class SygusInterpol
    * @param conj input argument
    * @param result the return value
    */
-  void getIncludeCons(
-      const std::vector<Node>& axioms,
-      const Node& conj,
-      std::map<TypeNode, std::unordered_set<Node, NodeHashFunction>>& result);
+  void getIncludeCons(const std::vector<Node>& axioms,
+                      const Node& conj,
+                      std::map<TypeNode, std::unordered_set<Node>>& result);
 
   /**
    * Set up the grammar for the interpol-to-synthesis.
@@ -170,8 +174,7 @@ class SygusInterpol
    * @param interpol the solution to the sygus conjecture.
    * @param itp the interpolation predicate.
    */
-  bool findInterpol(SmtEngine* subsolver, Node& interpol, Node itp);
-
+  bool findInterpol(SolverEngine* subsolver, Node& interpol, Node itp);
   /**
    * symbols from axioms and conjecture.
    */
@@ -179,7 +182,7 @@ class SygusInterpol
   /**
    * unordered set for shared symbols between axioms and conjecture.
    */
-  std::unordered_set<Node, NodeHashFunction> d_symSetShared;
+  std::unordered_set<Node> d_symSetShared;
   /**
    * free variables created from d_syms.
    */
@@ -213,6 +216,6 @@ class SygusInterpol
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__QUANTIFIERS__SYGUS_INTERPOL_H */
+#endif /* CVC5__THEORY__QUANTIFIERS__SYGUS_INTERPOL_H */

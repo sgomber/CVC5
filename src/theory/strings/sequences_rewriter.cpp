@@ -1,18 +1,17 @@
-/*********************                                                        */
-/*! \file sequences_rewriter.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Tianyi Liang
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of the theory of strings.
- **
- ** Implementation of the theory of strings.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Tianyi Liang
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of the theory of strings.
+ */
 
 #include "theory/strings/sequences_rewriter.h"
 
@@ -22,21 +21,33 @@
 #include "theory/rewriter.h"
 #include "theory/strings/arith_entail.h"
 #include "theory/strings/regexp_entail.h"
+#include "theory/strings/skolem_cache.h"
 #include "theory/strings/strings_rewriter.h"
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
+#include "util/rational.h"
+#include "util/regexp.h"
+#include "util/statistics_registry.h"
+#include "util/string.h"
 
 using namespace std;
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
-SequencesRewriter::SequencesRewriter(IntegralHistogramStat<Rewrite>* statistics)
-    : d_statistics(statistics), d_stringsEntail(*this)
+SequencesRewriter::SequencesRewriter(Rewriter* r,
+                                     HistogramStat<Rewrite>* statistics)
+    : d_statistics(statistics),
+      d_arithEntail(r),
+      d_stringsEntail(r, d_arithEntail, *this)
 {
 }
+
+ArithEntail& SequencesRewriter::getArithEntail() { return d_arithEntail; }
+
+StringsEntail& SequencesRewriter::getStringsEntail() { return d_stringsEntail; }
 
 Node SequencesRewriter::rewriteEquality(Node node)
 {
@@ -51,15 +62,60 @@ Node SequencesRewriter::rewriteEquality(Node node)
     Node ret = NodeManager::currentNM()->mkConst(false);
     return returnRewrite(node, ret, Rewrite::EQ_CONST_FALSE);
   }
+  // standard ordering
+  if (node[0] > node[1])
+  {
+    Node ret = NodeManager::currentNM()->mkNode(kind::EQUAL, node[1], node[0]);
+    return returnRewrite(node, ret, Rewrite::EQ_SYM);
+  }
+  return node;
+}
 
+Node SequencesRewriter::rewriteEqualityExt(Node node)
+{
+  Assert(node.getKind() == EQUAL);
+  TypeNode tn = node[0].getType();
+  if (tn.isInteger())
+  {
+    return rewriteArithEqualityExt(node);
+  }
+  if (tn.isStringLike())
+  {
+    return rewriteStrEqualityExt(node);
+  }
+  return node;
+}
+
+Node SequencesRewriter::rewriteStrEqualityExt(Node node)
+{
+  Assert(node.getKind() == EQUAL && node[0].getType().isStringLike());
+  TypeNode stype = node[0].getType();
+
+  bool hasStrTerm = false;
+  for (size_t r = 0; r < 2; r++)
+  {
+    if (!node[r].isConst()
+        && kindToTheoryId(node[r].getKind()) == THEORY_STRINGS)
+    {
+      hasStrTerm = true;
+      break;
+    }
+  }
+  if (!hasStrTerm)
+  {
+    // equality between variables and constants, no rewrites apply
+    return node;
+  }
+
+  NodeManager* nm = NodeManager::currentNM();
   // ( ~contains( s, t ) V ~contains( t, s ) ) => ( s == t ---> false )
   for (unsigned r = 0; r < 2; r++)
   {
     // must call rewrite contains directly to avoid infinite loop
-    // we do a fix point since we may rewrite contains terms to simpler
-    // contains terms.
-    Node ctn = d_stringsEntail.checkContains(node[r], node[1 - r], false);
-    if (!ctn.isNull())
+    Node ctn = nm->mkNode(STRING_CONTAINS, node[r], node[1 - r]);
+    ctn = rewriteContains(ctn);
+    Assert(!ctn.isNull());
+    if (ctn.isConst())
     {
       if (!ctn.getConst<bool>())
       {
@@ -122,41 +178,7 @@ Node SequencesRewriter::rewriteEquality(Node node)
     }
   }
 
-  // standard ordering
-  if (node[0] > node[1])
-  {
-    Node ret = NodeManager::currentNM()->mkNode(kind::EQUAL, node[1], node[0]);
-    return returnRewrite(node, ret, Rewrite::EQ_SYM);
-  }
-  return node;
-}
-
-Node SequencesRewriter::rewriteEqualityExt(Node node)
-{
-  Assert(node.getKind() == EQUAL);
-  if (node[0].getType().isInteger())
-  {
-    return rewriteArithEqualityExt(node);
-  }
-  if (node[0].getType().isStringLike())
-  {
-    return rewriteStrEqualityExt(node);
-  }
-  return node;
-}
-
-Node SequencesRewriter::rewriteStrEqualityExt(Node node)
-{
-  Assert(node.getKind() == EQUAL && node[0].getType().isStringLike());
-  TypeNode stype = node[0].getType();
-
-  NodeManager* nm = NodeManager::currentNM();
-  std::vector<Node> c[2];
   Node new_ret;
-  for (unsigned i = 0; i < 2; i++)
-  {
-    utils::getConcat(node[i], c[i]);
-  }
   // ------- equality unification
   bool changed = false;
   for (unsigned i = 0; i < 2; i++)
@@ -202,14 +224,22 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
     // e.g. x++y = x++z ---> y = z, "AB" ++ x = "A" ++ y --> "B" ++ x = y
     Node s1 = utils::mkConcat(c[0], stype);
     Node s2 = utils::mkConcat(c[1], stype);
-    new_ret = s1.eqNode(s2);
-    node = returnRewrite(node, new_ret, Rewrite::STR_EQ_UNIFY);
+    if (s1 != node[0] || s2 != node[1])
+    {
+      new_ret = s1.eqNode(s2);
+      // We generally don't apply the extended equality rewriter if the
+      // original node was an equality but we may be able to do additional
+      // rewriting here, e.g.,
+      // x++y = "" --> x = "" and y = ""
+      new_ret = returnRewrite(node, new_ret, Rewrite::STR_EQ_UNIFY);
+      return rewriteStrEqualityExt(new_ret);
+    }
   }
 
   // ------- homogeneous constants
   for (unsigned i = 0; i < 2; i++)
   {
-    Node cn = StringsEntail::checkHomogeneousString(node[i]);
+    Node cn = d_stringsEntail.checkHomogeneousString(node[i]);
     if (!cn.isNull() && !Word::isEmpty(cn))
     {
       Assert(cn.isConst());
@@ -276,8 +306,13 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
         // e.g.
         //  "AA" = y ++ x ---> "AA" = x ++ y if x < y
         //  "AAA" = y ++ "A" ++ z ---> "AA" = y ++ z
+        //
+        // We generally don't apply the extended equality rewriter if the
+        // original node was an equality but we may be able to do additional
+        // rewriting here.
         new_ret = lhs.eqNode(ss);
-        node = returnRewrite(node, new_ret, Rewrite::STR_EQ_HOMOG_CONST);
+        new_ret = returnRewrite(node, new_ret, Rewrite::STR_EQ_HOMOG_CONST);
+        return rewriteStrEqualityExt(new_ret);
       }
     }
   }
@@ -289,7 +324,7 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
     if (node[i] == empty)
     {
       Node ne = node[1 - i];
-      if (ne.getKind() == STRING_STRREPL)
+      if (ne.getKind() == STRING_REPLACE)
       {
         // (= "" (str.replace x y x)) ---> (= x "")
         if (ne[0] == ne[2])
@@ -299,7 +334,7 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
         }
 
         // (= "" (str.replace x y "A")) ---> (and (= x "") (not (= y "")))
-        if (StringsEntail::checkNonEmpty(ne[2]))
+        if (d_stringsEntail.checkNonEmpty(ne[2]))
         {
           Node ret =
               nm->mkNode(AND,
@@ -309,7 +344,7 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
         }
 
         // (= "" (str.replace x "A" "")) ---> (str.prefix x "A")
-        if (StringsEntail::checkLengthOne(ne[1], true) && ne[2] == empty)
+        if (d_stringsEntail.checkLengthOne(ne[1], true) && ne[2] == empty)
         {
           Node ret = nm->mkNode(STRING_PREFIX, ne[0], ne[1]);
           return returnRewrite(node, ret, Rewrite::STR_EMP_REPL_EMP);
@@ -319,7 +354,8 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
       {
         Node zero = nm->mkConst(Rational(0));
 
-        if (ArithEntail::check(ne[1], false) && ArithEntail::check(ne[2], true))
+        if (d_arithEntail.check(ne[1], false)
+            && d_arithEntail.check(ne[2], true))
         {
           // (= "" (str.substr x 0 m)) ---> (= "" x) if m > 0
           if (ne[1] == zero)
@@ -335,7 +371,7 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
         }
 
         // (= "" (str.substr "A" 0 z)) ---> (<= z 0)
-        if (StringsEntail::checkNonEmpty(ne[0]) && ne[1] == zero)
+        if (d_stringsEntail.checkNonEmpty(ne[0]) && ne[1] == zero)
         {
           Node ret = nm->mkNode(LEQ, ne[2], zero);
           return returnRewrite(node, ret, Rewrite::STR_EMP_SUBSTR_LEQ_Z);
@@ -347,16 +383,16 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
   // ------- rewrites for (= (str.replace _ _ _) _)
   for (size_t i = 0; i < 2; i++)
   {
-    if (node[i].getKind() == STRING_STRREPL)
+    if (node[i].getKind() == STRING_REPLACE)
     {
       Node repl = node[i];
       Node x = node[1 - i];
 
       // (= "A" (str.replace "" x y)) ---> (= "" (str.replace "A" y x))
-      if (StringsEntail::checkNonEmpty(x) && repl[0] == empty)
+      if (d_stringsEntail.checkNonEmpty(x) && repl[0] == empty)
       {
         Node ret = nm->mkNode(
-            EQUAL, empty, nm->mkNode(STRING_STRREPL, x, repl[2], repl[1]));
+            EQUAL, empty, nm->mkNode(STRING_REPLACE, x, repl[2], repl[1]));
         return returnRewrite(node, ret, Rewrite::STR_EQ_REPL_EMP);
       }
 
@@ -373,7 +409,7 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
         Node eq = Rewriter::rewrite(nm->mkNode(EQUAL, repl[1], repl[2]));
         if (eq.isConst() && !eq.getConst<bool>())
         {
-          Node ret = nm->mkNode(NOT, nm->mkNode(STRING_STRCTN, x, repl[1]));
+          Node ret = nm->mkNode(NOT, nm->mkNode(STRING_CONTAINS, x, repl[1]));
           return returnRewrite(node, ret, Rewrite::STR_EQ_REPL_NOT_CTN);
         }
       }
@@ -384,7 +420,7 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
       {
         Node lenY = nm->mkNode(STRING_LENGTH, repl[1]);
         Node lenZ = nm->mkNode(STRING_LENGTH, repl[2]);
-        if (ArithEntail::checkEq(lenY, lenZ))
+        if (d_arithEntail.checkEq(lenY, lenZ))
         {
           Node ret = nm->mkNode(OR,
                                 nm->mkNode(EQUAL, repl[0], repl[1]),
@@ -407,7 +443,7 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
   {
     if (node[1 - i].getKind() == STRING_CONCAT)
     {
-      new_ret = StringsEntail::inferEqsFromContains(node[i], node[1 - i]);
+      new_ret = d_stringsEntail.inferEqsFromContains(node[i], node[1 - i]);
       if (!new_ret.isNull())
       {
         return returnRewrite(node, new_ret, Rewrite::STR_EQ_CONJ_LEN_ENTAIL);
@@ -433,7 +469,7 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
     size_t startRhs = 0;
     for (size_t i = 0, size0 = v0.size(); i <= size0; i++)
     {
-      std::vector<Node> pfxv0(v0.begin(), v0.begin() + i);
+      const std::vector<Node> pfxv0(v0.begin(), v0.begin() + i);
       Node pfx0 = utils::mkConcat(pfxv0, stype);
       for (size_t j = startRhs, size1 = v1.size(); j <= size1; j++)
       {
@@ -444,7 +480,7 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
           Node lenPfx0 = nm->mkNode(STRING_LENGTH, pfx0);
           Node lenPfx1 = nm->mkNode(STRING_LENGTH, pfx1);
 
-          if (ArithEntail::checkEq(lenPfx0, lenPfx1))
+          if (d_arithEntail.checkEq(lenPfx0, lenPfx1))
           {
             std::vector<Node> sfxv0(v0.begin() + i, v0.end());
             std::vector<Node> sfxv1(v1.begin() + j, v1.end());
@@ -454,7 +490,7 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
                                       .eqNode(utils::mkConcat(sfxv1, stype)));
             return returnRewrite(node, ret, Rewrite::SPLIT_EQ);
           }
-          else if (ArithEntail::check(lenPfx1, lenPfx0, true))
+          else if (d_arithEntail.check(lenPfx1, lenPfx0, true))
           {
             // The prefix on the right-hand side is strictly longer than the
             // prefix on the left-hand side, so we try to strip the right-hand
@@ -464,16 +500,23 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
             // (= (str.++ "A" x y) (str.++ x "AB" z)) --->
             //   (and (= (str.++ "A" x) (str.++ x "A")) (= y (str.++ "B" z)))
             std::vector<Node> rpfxv1;
-            if (StringsEntail::stripSymbolicLength(
+            if (d_stringsEntail.stripSymbolicLength(
                     pfxv1, rpfxv1, 1, lenPfx0, true))
             {
-              std::vector<Node> sfxv0(v0.begin() + i, v0.end());
-              pfxv1.insert(pfxv1.end(), v1.begin() + j, v1.end());
-              Node ret = nm->mkNode(kind::AND,
-                                    pfx0.eqNode(utils::mkConcat(rpfxv1, stype)),
-                                    utils::mkConcat(sfxv0, stype)
-                                        .eqNode(utils::mkConcat(pfxv1, stype)));
-              return returnRewrite(node, ret, Rewrite::SPLIT_EQ_STRIP_R);
+              // The rewrite requires the full left-hand prefix length to be
+              // stripped (otherwise we would have to keep parts of the
+              // left-hand prefix).
+              if (lenPfx0.isConst() && lenPfx0.getConst<Rational>().isZero())
+              {
+                std::vector<Node> sfxv0(v0.begin() + i, v0.end());
+                pfxv1.insert(pfxv1.end(), v1.begin() + j, v1.end());
+                Node ret =
+                    nm->mkNode(kind::AND,
+                               pfx0.eqNode(utils::mkConcat(rpfxv1, stype)),
+                               utils::mkConcat(sfxv0, stype)
+                                   .eqNode(utils::mkConcat(pfxv1, stype)));
+                return returnRewrite(node, ret, Rewrite::SPLIT_EQ_STRIP_R);
+              }
             }
 
             // If the prefix of the right-hand side is (strictly) longer than
@@ -482,7 +525,7 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
             // in the inner loop)
             break;
           }
-          else if (ArithEntail::check(lenPfx0, lenPfx1, true))
+          else if (d_arithEntail.check(lenPfx0, lenPfx1, true))
           {
             // The prefix on the left-hand side is strictly longer than the
             // prefix on the right-hand side, so we try to strip the left-hand
@@ -491,17 +534,25 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
             // Example:
             // (= (str.++ x "AB" z) (str.++ "A" x y)) --->
             //   (and (= (str.++ x "A") (str.++ "A" x)) (= (str.++ "B" z) y))
+            std::vector<Node> sfxv0 = pfxv0;
             std::vector<Node> rpfxv0;
-            if (StringsEntail::stripSymbolicLength(
-                    pfxv0, rpfxv0, 1, lenPfx1, true))
+            if (d_stringsEntail.stripSymbolicLength(
+                    sfxv0, rpfxv0, 1, lenPfx1, true))
             {
-              pfxv0.insert(pfxv0.end(), v0.begin() + i, v0.end());
-              std::vector<Node> sfxv1(v1.begin() + j, v1.end());
-              Node ret = nm->mkNode(kind::AND,
-                                    utils::mkConcat(rpfxv0, stype).eqNode(pfx1),
-                                    utils::mkConcat(pfxv0, stype)
-                                        .eqNode(utils::mkConcat(sfxv1, stype)));
-              return returnRewrite(node, ret, Rewrite::SPLIT_EQ_STRIP_L);
+              // The rewrite requires the full right-hand prefix length to be
+              // stripped (otherwise we would have to keep parts of the
+              // right-hand prefix).
+              if (lenPfx1.isConst() && lenPfx1.getConst<Rational>().isZero())
+              {
+                sfxv0.insert(sfxv0.end(), v0.begin() + i, v0.end());
+                std::vector<Node> sfxv1(v1.begin() + j, v1.end());
+                Node ret =
+                    nm->mkNode(kind::AND,
+                               utils::mkConcat(rpfxv0, stype).eqNode(pfx1),
+                               utils::mkConcat(sfxv0, stype)
+                                   .eqNode(utils::mkConcat(sfxv1, stype)));
+                return returnRewrite(node, ret, Rewrite::SPLIT_EQ_STRIP_L);
+              }
             }
 
             // If the prefix of the left-hand side is (strictly) longer than
@@ -514,7 +565,6 @@ Node SequencesRewriter::rewriteStrEqualityExt(Node node)
       }
     }
   }
-
   return node;
 }
 
@@ -562,7 +612,7 @@ Node SequencesRewriter::rewriteLength(Node node)
       return returnRewrite(node, retNode, Rewrite::LEN_CONCAT);
     }
   }
-  else if (nk0 == STRING_STRREPL || nk0 == STRING_STRREPLALL)
+  else if (nk0 == STRING_REPLACE || nk0 == STRING_REPLACE_ALL)
   {
     Node len1 = Rewriter::rewrite(nm->mkNode(STRING_LENGTH, node[0][1]));
     Node len2 = Rewriter::rewrite(nm->mkNode(STRING_LENGTH, node[0][2]));
@@ -672,7 +722,7 @@ Node SequencesRewriter::rewriteConcat(Node node)
   Node lastX;
   for (size_t i = 0, nsize = node_vec.size(); i < nsize; i++)
   {
-    Node s = StringsEntail::getStringOrEmpty(node_vec[i]);
+    Node s = d_stringsEntail.getStringOrEmpty(node_vec[i]);
     bool nextX = false;
     if (s != lastX)
     {
@@ -742,8 +792,7 @@ Node SequencesRewriter::rewriteConcatRegExp(TNode node)
     else if (c.getKind() == REGEXP_EMPTY)
     {
       // re.++( ..., empty, ... ) ---> empty
-      std::vector<Node> nvec;
-      Node ret = nm->mkNode(REGEXP_EMPTY, nvec);
+      Node ret = nm->mkNode(REGEXP_EMPTY);
       return returnRewrite(node, ret, Rewrite::RE_CONCAT_EMPTY);
     }
     else
@@ -968,7 +1017,6 @@ Node SequencesRewriter::rewriteAndOrRegExp(TNode node)
     }
   }
   NodeManager* nm = NodeManager::currentNM();
-  std::vector<Node> emptyVec;
   // use inclusion tests
   for (const Node& negMem : polRegExp[1])
   {
@@ -984,11 +1032,11 @@ Node SequencesRewriter::rewriteAndOrRegExp(TNode node)
         Node retNode;
         if (nk == REGEXP_INTER)
         {
-          retNode = nm->mkNode(kind::REGEXP_EMPTY, emptyVec);
+          retNode = nm->mkNode(kind::REGEXP_EMPTY);
         }
         else
         {
-          retNode = nm->mkNode(REGEXP_STAR, nm->mkNode(REGEXP_SIGMA, emptyVec));
+          retNode = nm->mkNode(REGEXP_STAR, nm->mkNode(REGEXP_SIGMA));
         }
         return returnRewrite(node, retNode, Rewrite::RE_ANDOR_INC_CONFLICT);
       }
@@ -999,11 +1047,11 @@ Node SequencesRewriter::rewriteAndOrRegExp(TNode node)
   {
     if (nk == REGEXP_INTER)
     {
-      retNode = nm->mkNode(REGEXP_STAR, nm->mkNode(REGEXP_SIGMA, emptyVec));
+      retNode = nm->mkNode(REGEXP_STAR, nm->mkNode(REGEXP_SIGMA));
     }
     else
     {
-      retNode = nm->mkNode(kind::REGEXP_EMPTY, emptyVec);
+      retNode = nm->mkNode(kind::REGEXP_EMPTY);
     }
   }
   else
@@ -1028,7 +1076,7 @@ Node SequencesRewriter::rewriteLoopRegExp(TNode node)
     return returnRewrite(node, r, Rewrite::RE_LOOP_STAR);
   }
   NodeManager* nm = NodeManager::currentNM();
-  CVC4::Rational rMaxInt(String::maxSize());
+  cvc5::Rational rMaxInt(String::maxSize());
   uint32_t l = utils::getLoopMinOccurrences(node);
   std::vector<Node> vec_nodes;
   for (unsigned i = 0; i < l; i++)
@@ -1114,12 +1162,30 @@ Node SequencesRewriter::rewriteDifferenceRegExp(TNode node)
 Node SequencesRewriter::rewriteRangeRegExp(TNode node)
 {
   Assert(node.getKind() == REGEXP_RANGE);
+  unsigned ch[2];
+  for (size_t i = 0; i < 2; ++i)
+  {
+    if (!node[i].isConst() || node[i].getConst<String>().size() != 1)
+    {
+      // not applied to characters, it is not handled
+      return node;
+    }
+    ch[i] = node[i].getConst<String>().front();
+  }
+
+  NodeManager* nm = NodeManager::currentNM();
   if (node[0] == node[1])
   {
-    NodeManager* nm = NodeManager::currentNM();
     Node retNode = nm->mkNode(STRING_TO_REGEXP, node[0]);
     // re.range( "A", "A" ) ---> str.to_re( "A" )
     return returnRewrite(node, retNode, Rewrite::RE_RANGE_SINGLE);
+  }
+
+  if (ch[0] > ch[1])
+  {
+    // re.range( "B", "A" ) ---> re.none
+    Node retNode = nm->mkNode(REGEXP_EMPTY);
+    return returnRewrite(node, retNode, Rewrite::RE_RANGE_EMPTY);
   }
   return node;
 }
@@ -1141,7 +1207,7 @@ Node SequencesRewriter::rewriteMembership(TNode node)
   else if (x.isConst() && RegExpEntail::isConstRegExp(r))
   {
     // test whether x in node[1]
-    CVC4::String s = x.getConst<String>();
+    cvc5::String s = x.getConst<String>();
     bool test = RegExpEntail::testConstStringInRegExp(s, 0, r);
     Node retNode = NodeManager::currentNM()->mkConst(test);
     return returnRewrite(node, retNode, Rewrite::RE_IN_EVAL);
@@ -1184,7 +1250,7 @@ Node SequencesRewriter::rewriteMembership(TNode node)
         Node one = nm->mkConst(Rational(1));
         if (flr == one)
         {
-          NodeBuilder<> nb(AND);
+          NodeBuilder nb(AND);
           for (const Node& xc : x)
           {
             nb << nm->mkNode(STRING_IN_REGEXP, xc, r);
@@ -1253,7 +1319,7 @@ Node SequencesRewriter::rewriteMembership(TNode node)
                && constIdx != nchildren - 1)
       {
         // x in re.++(_*, "abc", _*) ---> str.contains(x, "abc")
-        Node retNode = nm->mkNode(STRING_STRCTN, x, constStr);
+        Node retNode = nm->mkNode(STRING_CONTAINS, x, constStr);
         return returnRewrite(node, retNode, Rewrite::RE_CONCAT_TO_CONTAINS);
       }
     }
@@ -1279,12 +1345,16 @@ Node SequencesRewriter::rewriteMembership(TNode node)
   else if (r.getKind() == REGEXP_RANGE)
   {
     // x in re.range( char_i, char_j ) ---> i <= str.code(x) <= j
-    Node xcode = nm->mkNode(STRING_TO_CODE, x);
-    Node retNode =
-        nm->mkNode(AND,
-                   nm->mkNode(LEQ, nm->mkNode(STRING_TO_CODE, r[0]), xcode),
-                   nm->mkNode(LEQ, xcode, nm->mkNode(STRING_TO_CODE, r[1])));
-    return returnRewrite(node, retNode, Rewrite::RE_IN_RANGE);
+    // we do not do this if the arguments are not constant
+    if (RegExpEntail::isConstRegExp(r))
+    {
+      Node xcode = nm->mkNode(STRING_TO_CODE, x);
+      Node retNode =
+          nm->mkNode(AND,
+                     nm->mkNode(LEQ, nm->mkNode(STRING_TO_CODE, r[0]), xcode),
+                     nm->mkNode(LEQ, xcode, nm->mkNode(STRING_TO_CODE, r[1])));
+      return returnRewrite(node, retNode, Rewrite::RE_IN_RANGE);
+    }
   }
   else if (r.getKind() == REGEXP_COMPLEMENT)
   {
@@ -1415,19 +1485,23 @@ RewriteResponse SequencesRewriter::postRewrite(TNode node)
   {
     retNode = rewriteUpdate(node);
   }
-  else if (nk == kind::STRING_STRCTN)
+  else if (nk == kind::STRING_CONTAINS)
   {
     retNode = rewriteContains(node);
   }
-  else if (nk == kind::STRING_STRIDOF)
+  else if (nk == kind::STRING_INDEXOF)
   {
     retNode = rewriteIndexof(node);
   }
-  else if (nk == kind::STRING_STRREPL)
+  else if (nk == kind::STRING_INDEXOF_RE)
+  {
+    retNode = rewriteIndexofRe(node);
+  }
+  else if (nk == kind::STRING_REPLACE)
   {
     retNode = rewriteReplace(node);
   }
-  else if (nk == kind::STRING_STRREPLALL)
+  else if (nk == kind::STRING_REPLACE_ALL)
   {
     retNode = rewriteReplaceAll(node);
   }
@@ -1501,6 +1575,9 @@ RewriteResponse SequencesRewriter::postRewrite(TNode node)
       << std::endl;
   if (node != retNode)
   {
+    // also post process the rewrite, which may apply extended rewriting to
+    // equalities, if we rewrite to an equality from a non-equality
+    retNode = postProcessRewrite(node, retNode);
     Trace("strings-rewrite-debug") << "Strings::SequencesRewriter::postRewrite "
                                    << node << " to " << retNode << std::endl;
     return RewriteResponse(REWRITE_AGAIN_FULL, retNode);
@@ -1514,6 +1591,30 @@ RewriteResponse SequencesRewriter::preRewrite(TNode node)
   return RewriteResponse(REWRITE_DONE, node);
 }
 
+TrustNode SequencesRewriter::expandDefinition(Node node)
+{
+  Trace("strings-exp-def") << "SequencesRewriter::expandDefinition : " << node
+                           << std::endl;
+
+  if (node.getKind() == kind::SEQ_NTH)
+  {
+    NodeManager* nm = NodeManager::currentNM();
+    Node s = node[0];
+    Node n = node[1];
+    // seq.nth(s, n) --> ite(0 <= n < len(s), seq.nth_total(s,n), Uf(s, n))
+    Node cond = nm->mkNode(AND,
+                           nm->mkNode(LEQ, nm->mkConst(Rational(0)), n),
+                           nm->mkNode(LT, n, nm->mkNode(STRING_LENGTH, s)));
+    Node ss = nm->mkNode(SEQ_NTH_TOTAL, s, n);
+    Node uf = SkolemCache::mkSkolemSeqNth(s.getType(), "Uf");
+    Node u = nm->mkNode(APPLY_UF, uf, s, n);
+    Node ret = nm->mkNode(ITE, cond, ss, u);
+    Trace("strings-exp-def") << "...return " << ret << std::endl;
+    return TrustNode::mkTrustRewrite(node, ret, nullptr);
+  }
+  return TrustNode::null();
+}
+
 Node SequencesRewriter::rewriteSeqNth(Node node)
 {
   Assert(node.getKind() == SEQ_NTH || node.getKind() == SEQ_NTH_TOTAL);
@@ -1522,14 +1623,17 @@ Node SequencesRewriter::rewriteSeqNth(Node node)
   if (s.isConst() && i.isConst())
   {
     size_t len = Word::getLength(s);
-    size_t pos = i.getConst<Rational>().getNumerator().toUnsignedInt();
-    if (pos < len)
+    if (i.getConst<Rational>().sgn() != -1)
     {
-      std::vector<Node> elements = s.getConst<Sequence>().getVec();
-      const Node& ret = elements[pos];
-      return returnRewrite(node, ret, Rewrite::SEQ_NTH_EVAL);
+      size_t pos = i.getConst<Rational>().getNumerator().toUnsignedInt();
+      if (pos < len)
+      {
+        std::vector<Node> elements = s.getConst<Sequence>().getVec();
+        const Node& ret = elements[pos];
+        return returnRewrite(node, ret, Rewrite::SEQ_NTH_EVAL);
+      }
     }
-    else if (node.getKind() == SEQ_NTH_TOTAL)
+    if (node.getKind() == SEQ_NTH_TOTAL)
     {
       // return arbitrary term
       Node ret = s.getType().getSequenceElementType().mkGroundValue();
@@ -1571,7 +1675,7 @@ Node SequencesRewriter::rewriteSubstr(Node node)
     if (node[1].isConst() && node[2].isConst())
     {
       Node s = node[0];
-      CVC4::Rational rMaxInt(String::maxSize());
+      cvc5::Rational rMaxInt(String::maxSize());
       uint32_t start;
       if (node[1].getConst<Rational>() > rMaxInt)
       {
@@ -1628,15 +1732,15 @@ Node SequencesRewriter::rewriteSubstr(Node node)
       }
     }
   }
-  Node zero = nm->mkConst(CVC4::Rational(0));
+  Node zero = nm->mkConst(cvc5::Rational(0));
 
   // if entailed non-positive length or negative start point
-  if (ArithEntail::check(zero, node[1], true))
+  if (d_arithEntail.check(zero, node[1], true))
   {
     Node ret = Word::mkEmptyWord(node.getType());
     return returnRewrite(node, ret, Rewrite::SS_START_NEG);
   }
-  else if (ArithEntail::check(zero, node[2]))
+  else if (d_arithEntail.check(zero, node[2]))
   {
     Node ret = Word::mkEmptyWord(node.getType());
     return returnRewrite(node, ret, Rewrite::SS_LEN_NON_POS);
@@ -1662,24 +1766,24 @@ Node SequencesRewriter::rewriteSubstr(Node node)
     // over-approximation of the length of (str.substr x a a), which
     // then allows us to reason that the result of the whole term must
     // be empty.
-    if (ArithEntail::check(node[1], node[0][2]))
+    if (d_arithEntail.check(node[1], node[0][2]))
     {
       Node ret = Word::mkEmptyWord(node.getType());
       return returnRewrite(node, ret, Rewrite::SS_START_GEQ_LEN);
     }
   }
-  else if (node[0].getKind() == STRING_STRREPL)
+  else if (node[0].getKind() == STRING_REPLACE)
   {
     // (str.substr (str.replace x y z) 0 n)
     // 	 ---> (str.replace (str.substr x 0 n) y z)
     // if (str.len y) = 1 and (str.len z) = 1
     if (node[1] == zero)
     {
-      if (StringsEntail::checkLengthOne(node[0][1], true)
-          && StringsEntail::checkLengthOne(node[0][2], true))
+      if (d_stringsEntail.checkLengthOne(node[0][1], true)
+          && d_stringsEntail.checkLengthOne(node[0][2], true))
       {
         Node ret = nm->mkNode(
-            kind::STRING_STRREPL,
+            kind::STRING_REPLACE,
             nm->mkNode(kind::STRING_SUBSTR, node[0][0], node[1], node[2]),
             node[0][1],
             node[0][2]);
@@ -1697,7 +1801,7 @@ Node SequencesRewriter::rewriteSubstr(Node node)
   {
     Node curr = node[2];
     std::vector<Node> childrenr;
-    if (StringsEntail::stripSymbolicLength(n1, childrenr, 1, curr))
+    if (d_stringsEntail.stripSymbolicLength(n1, childrenr, 1, curr))
     {
       if (curr != zero && !n1.empty())
       {
@@ -1725,11 +1829,12 @@ Node SequencesRewriter::rewriteSubstr(Node node)
     else if (r == 1)
     {
       Node tot_len =
-          Rewriter::rewrite(nm->mkNode(kind::STRING_LENGTH, node[0]));
-      Node end_pt = Rewriter::rewrite(nm->mkNode(kind::PLUS, node[1], node[2]));
+          d_arithEntail.rewrite(nm->mkNode(kind::STRING_LENGTH, node[0]));
+      Node end_pt =
+          d_arithEntail.rewrite(nm->mkNode(kind::PLUS, node[1], node[2]));
       if (node[2] != tot_len)
       {
-        if (ArithEntail::check(node[2], tot_len))
+        if (d_arithEntail.check(node[2], tot_len))
         {
           // end point beyond end point of string, map to tot_len
           Node ret = nm->mkNode(kind::STRING_SUBSTR, node[0], node[1], tot_len);
@@ -1738,14 +1843,16 @@ Node SequencesRewriter::rewriteSubstr(Node node)
         else
         {
           // strip up to ( str.len(node[0]) - end_pt ) off the end of the string
-          curr = Rewriter::rewrite(nm->mkNode(kind::MINUS, tot_len, end_pt));
+          curr =
+              d_arithEntail.rewrite(nm->mkNode(kind::MINUS, tot_len, end_pt));
         }
       }
 
       // (str.substr s x y) --> "" if x < len(s) |= 0 >= y
       Node n1_lt_tot_len =
-          Rewriter::rewrite(nm->mkNode(kind::LT, node[1], tot_len));
-      if (ArithEntail::checkWithAssumption(n1_lt_tot_len, zero, node[2], false))
+          d_arithEntail.rewrite(nm->mkNode(kind::LT, node[1], tot_len));
+      if (d_arithEntail.checkWithAssumption(
+              n1_lt_tot_len, zero, node[2], false))
       {
         Node ret = Word::mkEmptyWord(node.getType());
         return returnRewrite(node, ret, Rewrite::SS_START_ENTAILS_ZERO_LEN);
@@ -1753,8 +1860,8 @@ Node SequencesRewriter::rewriteSubstr(Node node)
 
       // (str.substr s x y) --> "" if 0 < y |= x >= str.len(s)
       Node non_zero_len =
-          Rewriter::rewrite(nm->mkNode(kind::LT, zero, node[2]));
-      if (ArithEntail::checkWithAssumption(
+          d_arithEntail.rewrite(nm->mkNode(kind::LT, zero, node[2]));
+      if (d_arithEntail.checkWithAssumption(
               non_zero_len, node[1], tot_len, false))
       {
         Node ret = Word::mkEmptyWord(node.getType());
@@ -1763,8 +1870,8 @@ Node SequencesRewriter::rewriteSubstr(Node node)
 
       // (str.substr s x y) --> "" if x >= 0 |= 0 >= str.len(s)
       Node geq_zero_start =
-          Rewriter::rewrite(nm->mkNode(kind::GEQ, node[1], zero));
-      if (ArithEntail::checkWithAssumption(
+          d_arithEntail.rewrite(nm->mkNode(kind::GEQ, node[1], zero));
+      if (d_arithEntail.checkWithAssumption(
               geq_zero_start, zero, tot_len, false))
       {
         Node ret = Word::mkEmptyWord(node.getType());
@@ -1773,7 +1880,7 @@ Node SequencesRewriter::rewriteSubstr(Node node)
       }
 
       // (str.substr s x x) ---> "" if (str.len s) <= 1
-      if (node[1] == node[2] && StringsEntail::checkLengthOne(node[0]))
+      if (node[1] == node[2] && d_stringsEntail.checkLengthOne(node[0]))
       {
         Node ret = Word::mkEmptyWord(node.getType());
         return returnRewrite(node, ret, Rewrite::SS_LEN_ONE_Z_Z);
@@ -1784,7 +1891,7 @@ Node SequencesRewriter::rewriteSubstr(Node node)
       // strip off components while quantity is entailed positive
       int dir = r == 0 ? 1 : -1;
       std::vector<Node> childrenr;
-      if (StringsEntail::stripSymbolicLength(n1, childrenr, dir, curr))
+      if (d_stringsEntail.stripSymbolicLength(n1, childrenr, dir, curr))
       {
         if (r == 0)
         {
@@ -1808,7 +1915,7 @@ Node SequencesRewriter::rewriteSubstr(Node node)
   {
     Node start_inner = node[0][1];
     Node start_outer = node[1];
-    if (ArithEntail::check(start_outer) && ArithEntail::check(start_inner))
+    if (d_arithEntail.check(start_outer) && d_arithEntail.check(start_inner))
     {
       // both are positive
       // thus, start point is definitely start_inner+start_outer.
@@ -1816,8 +1923,8 @@ Node SequencesRewriter::rewriteSubstr(Node node)
 
       // the length of a string from the inner substr subtracts the start point
       // of the outer substr
-      Node len_from_inner =
-          Rewriter::rewrite(nm->mkNode(kind::MINUS, node[0][2], start_outer));
+      Node len_from_inner = d_arithEntail.rewrite(
+          nm->mkNode(kind::MINUS, node[0][2], start_outer));
       Node len_from_outer = node[2];
       Node new_len;
       // take quantity that is for sure smaller than the other
@@ -1825,11 +1932,11 @@ Node SequencesRewriter::rewriteSubstr(Node node)
       {
         new_len = len_from_inner;
       }
-      else if (ArithEntail::check(len_from_inner, len_from_outer))
+      else if (d_arithEntail.check(len_from_inner, len_from_outer))
       {
         new_len = len_from_outer;
       }
-      else if (ArithEntail::check(len_from_outer, len_from_inner))
+      else if (d_arithEntail.check(len_from_outer, len_from_inner))
       {
         new_len = len_from_inner;
       }
@@ -1858,7 +1965,7 @@ Node SequencesRewriter::rewriteUpdate(Node node)
     // rewriting for constant arguments
     if (node[1].isConst())
     {
-      CVC4::Rational rMaxInt(String::maxSize());
+      cvc5::Rational rMaxInt(String::maxSize());
       if (node[1].getConst<Rational>() > rMaxInt)
       {
         // start beyond the maximum size of strings
@@ -1891,7 +1998,7 @@ Node SequencesRewriter::rewriteUpdate(Node node)
 
 Node SequencesRewriter::rewriteContains(Node node)
 {
-  Assert(node.getKind() == kind::STRING_STRCTN);
+  Assert(node.getKind() == kind::STRING_CONTAINS);
   NodeManager* nm = NodeManager::currentNM();
 
   if (node[0] == node[1])
@@ -1913,7 +2020,7 @@ Node SequencesRewriter::rewriteContains(Node node)
       {
         Node len1 =
             NodeManager::currentNM()->mkNode(kind::STRING_LENGTH, node[1]);
-        if (ArithEntail::check(len1, true))
+        if (d_arithEntail.check(len1, true))
         {
           // we handle the false case here since the rewrite for equality
           // uses this function, hence we want to conclude false if possible.
@@ -1922,11 +2029,11 @@ Node SequencesRewriter::rewriteContains(Node node)
           return returnRewrite(node, ret, Rewrite::CTN_LHS_EMPTYSTR);
         }
       }
-      else if (StringsEntail::checkLengthOne(t))
+      else if (d_stringsEntail.checkLengthOne(t))
       {
         std::vector<Node> vec = Word::getChars(node[0]);
         Node emp = Word::mkEmptyWord(t.getType());
-        NodeBuilder<> nb(OR);
+        NodeBuilder nb(OR);
         nb << emp.eqNode(t);
         for (const Node& c : vec)
         {
@@ -1943,7 +2050,7 @@ Node SequencesRewriter::rewriteContains(Node node)
       else if (node[1].getKind() == kind::STRING_CONCAT)
       {
         int firstc, lastc;
-        if (!StringsEntail::canConstantContainConcat(
+        if (!d_stringsEntail.canConstantContainConcat(
                 node[0], node[1], firstc, lastc))
         {
           Node ret = NodeManager::currentNM()->mkConst(false);
@@ -1970,26 +2077,26 @@ Node SequencesRewriter::rewriteContains(Node node)
       {
         std::vector<Node> nc1;
         utils::getConcat(node[0], nc1);
-        NodeBuilder<> nb(OR);
+        NodeBuilder nb(OR);
         for (const Node& ncc : nc1)
         {
-          nb << nm->mkNode(STRING_STRCTN, ncc, node[1]);
+          nb << nm->mkNode(STRING_CONTAINS, ncc, node[1]);
         }
         Node ret = nb.constructNode();
         // str.contains( x ++ y, "A" ) --->
         //   str.contains( x, "A" ) OR str.contains( y, "A" )
         return returnRewrite(node, ret, Rewrite::CTN_CONCAT_CHAR);
       }
-      else if (node[0].getKind() == STRING_STRREPL)
+      else if (node[0].getKind() == STRING_REPLACE)
       {
         Node rplDomain = d_stringsEntail.checkContains(node[0][1], node[1]);
         if (!rplDomain.isNull() && !rplDomain.getConst<bool>())
         {
-          Node d1 = nm->mkNode(STRING_STRCTN, node[0][0], node[1]);
+          Node d1 = nm->mkNode(STRING_CONTAINS, node[0][0], node[1]);
           Node d2 =
               nm->mkNode(AND,
-                         nm->mkNode(STRING_STRCTN, node[0][0], node[0][1]),
-                         nm->mkNode(STRING_STRCTN, node[0][2], node[1]));
+                         nm->mkNode(STRING_CONTAINS, node[0][0], node[0][1]),
+                         nm->mkNode(STRING_CONTAINS, node[0][2], node[1]));
           Node ret = nm->mkNode(OR, d1, d2);
           // If str.contains( y, "A" ) ---> false, then:
           // str.contains( str.replace( x, y, z ), "A" ) --->
@@ -2018,16 +2125,16 @@ Node SequencesRewriter::rewriteContains(Node node)
   // strip endpoints
   std::vector<Node> nb;
   std::vector<Node> ne;
-  if (StringsEntail::stripConstantEndpoints(nc1, nc2, nb, ne))
+  if (d_stringsEntail.stripConstantEndpoints(nc1, nc2, nb, ne))
   {
     Node ret = NodeManager::currentNM()->mkNode(
-        kind::STRING_STRCTN, utils::mkConcat(nc1, stype), node[1]);
+        kind::STRING_CONTAINS, utils::mkConcat(nc1, stype), node[1]);
     return returnRewrite(node, ret, Rewrite::CTN_STRIP_ENDPT);
   }
 
   for (const Node& n : nc2)
   {
-    if (n.getKind() == kind::STRING_STRREPL)
+    if (n.getKind() == kind::STRING_REPLACE)
     {
       // (str.contains x (str.replace y z w)) --> false
       // if (str.contains x y) = false and (str.contains x w) = false
@@ -2057,7 +2164,7 @@ Node SequencesRewriter::rewriteContains(Node node)
         if (nc2.size() > 1)
         {
           Node emp = Word::mkEmptyWord(stype);
-          NodeBuilder<> nb2(kind::AND);
+          NodeBuilder nb2(kind::AND);
           for (const Node& n2 : nc2)
           {
             if (n2 == n)
@@ -2083,7 +2190,7 @@ Node SequencesRewriter::rewriteContains(Node node)
   // length entailment
   Node len_n1 = NodeManager::currentNM()->mkNode(kind::STRING_LENGTH, node[0]);
   Node len_n2 = NodeManager::currentNM()->mkNode(kind::STRING_LENGTH, node[1]);
-  if (ArithEntail::check(len_n2, len_n1, true))
+  if (d_arithEntail.check(len_n2, len_n1, true))
   {
     // len( n2 ) > len( n1 ) => contains( n1, n2 ) ---> false
     Node ret = NodeManager::currentNM()->mkConst(false);
@@ -2094,13 +2201,13 @@ Node SequencesRewriter::rewriteContains(Node node)
   //   For example, contains( str.++( x, "b" ), str.++( "a", x ) ) ---> false
   //   since the number of a's in the second argument is greater than the number
   //   of a's in the first argument
-  if (StringsEntail::checkMultisetSubset(node[0], node[1]))
+  if (d_stringsEntail.checkMultisetSubset(node[0], node[1]))
   {
     Node ret = nm->mkConst(false);
     return returnRewrite(node, ret, Rewrite::CTN_MSET_NSS);
   }
 
-  if (ArithEntail::check(len_n2, len_n1, false))
+  if (d_arithEntail.check(len_n2, len_n1, false))
   {
     // len( n2 ) >= len( n1 ) => contains( n1, n2 ) ---> n1 = n2
     Node ret = node[0].eqNode(node[1]);
@@ -2135,10 +2242,10 @@ Node SequencesRewriter::rewriteContains(Node node)
             spl[1].insert(spl[1].end(), nc0.begin() + i + 1, nc0.end());
             Node ret = NodeManager::currentNM()->mkNode(
                 kind::OR,
-                NodeManager::currentNM()->mkNode(kind::STRING_STRCTN,
+                NodeManager::currentNM()->mkNode(kind::STRING_CONTAINS,
                                                  utils::mkConcat(spl[0], stype),
                                                  node[1]),
-                NodeManager::currentNM()->mkNode(kind::STRING_STRCTN,
+                NodeManager::currentNM()->mkNode(kind::STRING_CONTAINS,
                                                  utils::mkConcat(spl[1], stype),
                                                  node[1]));
             return returnRewrite(node, ret, Rewrite::CTN_SPLIT);
@@ -2159,7 +2266,7 @@ Node SequencesRewriter::rewriteContains(Node node)
       return returnRewrite(node, ret, Rewrite::CTN_SUBSTR);
     }
   }
-  else if (node[0].getKind() == kind::STRING_STRREPL)
+  else if (node[0].getKind() == kind::STRING_REPLACE)
   {
     if (node[1].isConst() && node[0][1].isConst() && node[0][2].isConst())
     {
@@ -2168,7 +2275,7 @@ Node SequencesRewriter::rewriteContains(Node node)
       {
         // (str.contains (str.replace x c1 c2) c3) ---> (str.contains x c3)
         // if there is no overlap between c1 and c3 and none between c2 and c3
-        Node ret = nm->mkNode(STRING_STRCTN, node[0][0], node[1]);
+        Node ret = nm->mkNode(STRING_CONTAINS, node[0][0], node[1]);
         return returnRewrite(node, ret, Rewrite::CTN_REPL_CNSTS_TO_CTN);
       }
     }
@@ -2178,15 +2285,15 @@ Node SequencesRewriter::rewriteContains(Node node)
       // (str.contains (str.replace x y x) y) ---> (str.contains x y)
       if (node[0][1] == node[1])
       {
-        Node ret = nm->mkNode(kind::STRING_STRCTN, node[0][0], node[1]);
+        Node ret = nm->mkNode(kind::STRING_CONTAINS, node[0][0], node[1]);
         return returnRewrite(node, ret, Rewrite::CTN_REPL_TO_CTN);
       }
 
       // (str.contains (str.replace x y x) z) ---> (str.contains x z)
       // if (str.len z) <= 1
-      if (StringsEntail::checkLengthOne(node[1]))
+      if (d_stringsEntail.checkLengthOne(node[1]))
       {
-        Node ret = nm->mkNode(kind::STRING_STRCTN, node[0][0], node[1]);
+        Node ret = nm->mkNode(kind::STRING_CONTAINS, node[0][0], node[1]);
         return returnRewrite(node, ret, Rewrite::CTN_REPL_LEN_ONE_TO_CTN);
       }
     }
@@ -2195,37 +2302,38 @@ Node SequencesRewriter::rewriteContains(Node node)
     //   (or (str.contains x y) (str.contains x z))
     if (node[0][2] == node[1])
     {
-      Node ret = nm->mkNode(OR,
-                            nm->mkNode(STRING_STRCTN, node[0][0], node[0][1]),
-                            nm->mkNode(STRING_STRCTN, node[0][0], node[0][2]));
+      Node ret =
+          nm->mkNode(OR,
+                     nm->mkNode(STRING_CONTAINS, node[0][0], node[0][1]),
+                     nm->mkNode(STRING_CONTAINS, node[0][0], node[0][2]));
       return returnRewrite(node, ret, Rewrite::CTN_REPL_TO_CTN_DISJ);
     }
 
     // (str.contains (str.replace x y z) w) --->
     //   (str.contains (str.replace x y "") w)
     // if (str.contains z w) ---> false and (str.len w) = 1
-    if (StringsEntail::checkLengthOne(node[1]))
+    if (d_stringsEntail.checkLengthOne(node[1]))
     {
       Node ctn = d_stringsEntail.checkContains(node[0][2], node[1]);
       if (!ctn.isNull() && !ctn.getConst<bool>())
       {
         Node empty = Word::mkEmptyWord(stype);
         Node ret = nm->mkNode(
-            kind::STRING_STRCTN,
-            nm->mkNode(kind::STRING_STRREPL, node[0][0], node[0][1], empty),
+            kind::STRING_CONTAINS,
+            nm->mkNode(kind::STRING_REPLACE, node[0][0], node[0][1], empty),
             node[1]);
         return returnRewrite(node, ret, Rewrite::CTN_REPL_SIMP_REPL);
       }
     }
   }
 
-  if (node[1].getKind() == kind::STRING_STRREPL)
+  if (node[1].getKind() == kind::STRING_REPLACE)
   {
     // (str.contains x (str.replace y x y)) --->
     //   (str.contains x y)
     if (node[0] == node[1][1] && node[1][0] == node[1][2])
     {
-      Node ret = nm->mkNode(kind::STRING_STRCTN, node[0], node[1][0]);
+      Node ret = nm->mkNode(kind::STRING_CONTAINS, node[0], node[1][0]);
       return returnRewrite(node, ret, Rewrite::CTN_REPL);
     }
 
@@ -2248,7 +2356,7 @@ Node SequencesRewriter::rewriteContains(Node node)
 
 Node SequencesRewriter::rewriteIndexof(Node node)
 {
-  Assert(node.getKind() == kind::STRING_STRIDOF);
+  Assert(node.getKind() == kind::STRING_INDEXOF);
   NodeManager* nm = NodeManager::currentNM();
 
   if (node[2].isConst() && node[2].getConst<Rational>().sgn() < 0)
@@ -2266,7 +2374,7 @@ Node SequencesRewriter::rewriteIndexof(Node node)
   utils::getConcat(node[0], children0);
   if (children0[0].isConst() && node[1].isConst() && node[2].isConst())
   {
-    CVC4::Rational rMaxInt(CVC4::String::maxSize());
+    cvc5::Rational rMaxInt(cvc5::String::maxSize());
     if (node[2].getConst<Rational>() > rMaxInt)
     {
       // We know that, due to limitations on the size of string constants
@@ -2304,7 +2412,7 @@ Node SequencesRewriter::rewriteIndexof(Node node)
         return returnRewrite(node, zero, Rewrite::IDOF_EQ_CST_START);
       }
     }
-    if (ArithEntail::check(node[2], true))
+    if (d_arithEntail.check(node[2], true))
     {
       // y>0  implies  indexof( x, x, y ) --> -1
       Node negone = nm->mkConst(Rational(-1));
@@ -2314,7 +2422,7 @@ Node SequencesRewriter::rewriteIndexof(Node node)
     if (node[0] != emp)
     {
       // indexof( x, x, z ) ---> indexof( "", "", z )
-      Node ret = nm->mkNode(STRING_STRIDOF, emp, emp, node[2]);
+      Node ret = nm->mkNode(STRING_INDEXOF, emp, emp, node[2]);
       return returnRewrite(node, ret, Rewrite::IDOF_EQ_NORM);
     }
   }
@@ -2327,7 +2435,7 @@ Node SequencesRewriter::rewriteIndexof(Node node)
   {
     if (Word::isEmpty(node[1]))
     {
-      if (ArithEntail::check(len0, node[2]) && ArithEntail::check(node[2]))
+      if (d_arithEntail.check(len0, node[2]) && d_arithEntail.check(node[2]))
       {
         // len(x)>=z ^ z >=0 implies indexof( x, "", z ) ---> z
         return returnRewrite(node, node[2], Rewrite::IDOF_EMP_IDOF);
@@ -2335,7 +2443,7 @@ Node SequencesRewriter::rewriteIndexof(Node node)
     }
   }
 
-  if (ArithEntail::check(len1, len0m2, true))
+  if (d_arithEntail.check(len1, len0m2, true))
   {
     // len(x)-z < len(y)  implies  indexof( x, y, z ) ----> -1
     Node negone = nm->mkConst(Rational(-1));
@@ -2371,12 +2479,12 @@ Node SequencesRewriter::rewriteIndexof(Node node)
           // For example:
           // str.indexof(str.++(x,y,z),y,0) ---> str.indexof(str.++(x,y),y,0)
           Node nn = utils::mkConcat(children0, stype);
-          Node ret = nm->mkNode(kind::STRING_STRIDOF, nn, node[1], node[2]);
+          Node ret = nm->mkNode(kind::STRING_INDEXOF, nn, node[1], node[2]);
           return returnRewrite(node, ret, Rewrite::IDOF_DEF_CTN);
         }
 
         // Strip components from the beginning that are guaranteed not to match
-        if (StringsEntail::stripConstantEndpoints(
+        if (d_stringsEntail.stripConstantEndpoints(
                 children0, children1, nb, ne, 1))
         {
           // str.indexof(str.++("AB", x, "C"), "C", 0) --->
@@ -2384,30 +2492,37 @@ Node SequencesRewriter::rewriteIndexof(Node node)
           Node ret = nm->mkNode(
               kind::PLUS,
               nm->mkNode(kind::STRING_LENGTH, utils::mkConcat(nb, stype)),
-              nm->mkNode(kind::STRING_STRIDOF,
+              nm->mkNode(kind::STRING_INDEXOF,
                          utils::mkConcat(children0, stype),
                          node[1],
                          node[2]));
           return returnRewrite(node, ret, Rewrite::IDOF_STRIP_CNST_ENDPTS);
         }
       }
-
-      // strip symbolic length
-      Node new_len = node[2];
-      std::vector<Node> nr;
-      if (StringsEntail::stripSymbolicLength(children0, nr, 1, new_len))
+      // To show that the first argument definitely contains the second, the
+      // index must be a valid index in the first argument. This ensures that
+      // (str.indexof t "" n) is not rewritten to something other than -1 when n
+      // is beyond the length of t. This is not required for the above rewrites,
+      // which only apply when n=0.
+      if (d_arithEntail.check(node[2]) && d_arithEntail.check(len0, node[2]))
       {
-        // For example:
-        // z>str.len( x1 ) and str.contains( x2, y )-->true
-        // implies
-        // str.indexof( str.++( x1, x2 ), y, z ) --->
-        // str.len( x1 ) + str.indexof( x2, y, z-str.len(x1) )
-        Node nn = utils::mkConcat(children0, stype);
-        Node ret =
-            nm->mkNode(kind::PLUS,
-                       nm->mkNode(kind::MINUS, node[2], new_len),
-                       nm->mkNode(kind::STRING_STRIDOF, nn, node[1], new_len));
-        return returnRewrite(node, ret, Rewrite::IDOF_STRIP_SYM_LEN);
+        // strip symbolic length
+        Node new_len = node[2];
+        std::vector<Node> nr;
+        if (d_stringsEntail.stripSymbolicLength(children0, nr, 1, new_len))
+        {
+          // For example:
+          // z>=0 and z>str.len( x1 ) and str.contains( x2, y )-->true
+          // implies
+          // str.indexof( str.++( x1, x2 ), y, z ) --->
+          // str.len( x1 ) + str.indexof( x2, y, z-str.len(x1) )
+          Node nn = utils::mkConcat(children0, stype);
+          Node ret =
+              nm->mkNode(PLUS,
+                         nm->mkNode(MINUS, node[2], new_len),
+                         nm->mkNode(STRING_INDEXOF, nn, node[1], new_len));
+          return returnRewrite(node, ret, Rewrite::IDOF_STRIP_SYM_LEN);
+        }
       }
     }
     else
@@ -2421,7 +2536,7 @@ Node SequencesRewriter::rewriteIndexof(Node node)
   {
     Node new_len = node[2];
     std::vector<Node> nr;
-    if (StringsEntail::stripSymbolicLength(children0, nr, 1, new_len))
+    if (d_stringsEntail.stripSymbolicLength(children0, nr, 1, new_len))
     {
       // Normalize the string before the start index.
       //
@@ -2437,7 +2552,7 @@ Node SequencesRewriter::rewriteIndexof(Node node)
         std::vector<Node> children(normNrChildren);
         children.insert(children.end(), children0.begin(), children0.end());
         Node nn = utils::mkConcat(children, stype);
-        Node res = nm->mkNode(kind::STRING_STRIDOF, nn, node[1], node[2]);
+        Node res = nm->mkNode(kind::STRING_INDEXOF, nn, node[1], node[2]);
         return returnRewrite(node, res, Rewrite::IDOF_NORM_PREFIX);
       }
     }
@@ -2447,10 +2562,11 @@ Node SequencesRewriter::rewriteIndexof(Node node)
   {
     std::vector<Node> cb;
     std::vector<Node> ce;
-    if (StringsEntail::stripConstantEndpoints(children0, children1, cb, ce, -1))
+    if (d_stringsEntail.stripConstantEndpoints(
+            children0, children1, cb, ce, -1))
     {
       Node ret = utils::mkConcat(children0, stype);
-      ret = nm->mkNode(STRING_STRIDOF, ret, node[1], node[2]);
+      ret = nm->mkNode(STRING_INDEXOF, ret, node[1], node[2]);
       // For example:
       // str.indexof( str.++( x, "A" ), "B", 0 ) ---> str.indexof( x, "B", 0 )
       return returnRewrite(node, ret, Rewrite::RPL_PULL_ENDPT);
@@ -2460,9 +2576,62 @@ Node SequencesRewriter::rewriteIndexof(Node node)
   return node;
 }
 
+Node SequencesRewriter::rewriteIndexofRe(Node node)
+{
+  Assert(node.getKind() == STRING_INDEXOF_RE);
+  NodeManager* nm = NodeManager::currentNM();
+  Node s = node[0];
+  Node r = node[1];
+  Node n = node[2];
+  Node zero = nm->mkConst(Rational(0));
+  Node slen = nm->mkNode(STRING_LENGTH, s);
+
+  if (d_arithEntail.check(zero, n, true) || d_arithEntail.check(n, slen, true))
+  {
+    Node ret = nm->mkConst(Rational(-1));
+    return returnRewrite(node, ret, Rewrite::INDEXOF_RE_INVALID_INDEX);
+  }
+
+  if (RegExpEntail::isConstRegExp(r))
+  {
+    if (s.isConst() && n.isConst())
+    {
+      Rational nrat = n.getConst<Rational>();
+      cvc5::Rational rMaxInt(cvc5::String::maxSize());
+      if (nrat > rMaxInt)
+      {
+        // We know that, due to limitations on the size of string constants
+        // in our implementation, that accessing a position greater than
+        // rMaxInt is guaranteed to be out of bounds.
+        Node negone = nm->mkConst(Rational(-1));
+        return returnRewrite(node, negone, Rewrite::INDEXOF_RE_MAX_INDEX);
+      }
+
+      uint32_t start = nrat.getNumerator().toUnsignedInt();
+      Node rem = nm->mkConst(s.getConst<String>().substr(start));
+      std::pair<size_t, size_t> match = firstMatch(rem, r);
+      Node ret = nm->mkConst(
+          Rational(match.first == string::npos
+                       ? -1
+                       : static_cast<int64_t>(start + match.first)));
+      return returnRewrite(node, ret, Rewrite::INDEXOF_RE_EVAL);
+    }
+
+    if (d_arithEntail.check(n, zero) && d_arithEntail.check(slen, n))
+    {
+      String emptyStr("");
+      if (RegExpEntail::testConstStringInRegExp(emptyStr, 0, r))
+      {
+        return returnRewrite(node, n, Rewrite::INDEXOF_RE_EMP_RE);
+      }
+    }
+  }
+  return node;
+}
+
 Node SequencesRewriter::rewriteReplace(Node node)
 {
-  Assert(node.getKind() == kind::STRING_STRREPL);
+  Assert(node.getKind() == kind::STRING_REPLACE);
   NodeManager* nm = NodeManager::currentNM();
 
   if (node[1].isConst() && Word::isEmpty(node[1]))
@@ -2521,14 +2690,14 @@ Node SequencesRewriter::rewriteReplace(Node node)
     // ( len( y )>=len(x) ) => str.replace( x, y, x ) ---> x
     Node l0 = NodeManager::currentNM()->mkNode(kind::STRING_LENGTH, node[0]);
     Node l1 = NodeManager::currentNM()->mkNode(kind::STRING_LENGTH, node[1]);
-    if (ArithEntail::check(l1, l0))
+    if (d_arithEntail.check(l1, l0))
     {
       return returnRewrite(node, node[0], Rewrite::RPL_RPL_LEN_ID);
     }
 
     // (str.replace x y x) ---> (str.replace x (str.++ y1 ... yn) x)
     // if 1 >= (str.len x) and (= y "") ---> (= y1 "") ... (= yn "")
-    if (StringsEntail::checkLengthOne(node[0]))
+    if (d_stringsEntail.checkLengthOne(node[0]))
     {
       Node empty = Word::mkEmptyWord(stype);
       Node rn1 = Rewriter::rewrite(
@@ -2544,7 +2713,7 @@ Node SequencesRewriter::rewriteReplace(Node node)
           Node nn1 = utils::mkConcat(emptyNodes, stype);
           if (node[1] != nn1)
           {
-            Node ret = nm->mkNode(STRING_STRREPL, node[0], nn1, node[2]);
+            Node ret = nm->mkNode(STRING_REPLACE, node[0], nn1, node[2]);
             return returnRewrite(node, ret, Rewrite::RPL_X_Y_X_SIMP);
           }
         }
@@ -2556,7 +2725,7 @@ Node SequencesRewriter::rewriteReplace(Node node)
   utils::getConcat(node[1], children1);
 
   // check if contains definitely does (or does not) hold
-  Node cmp_con = nm->mkNode(kind::STRING_STRCTN, node[0], node[1]);
+  Node cmp_con = nm->mkNode(kind::STRING_CONTAINS, node[0], node[1]);
   Node cmp_conr = Rewriter::rewrite(cmp_con);
   if (cmp_conr.isConst())
   {
@@ -2590,7 +2759,7 @@ Node SequencesRewriter::rewriteReplace(Node node)
           // this is independent of whether the second argument may be empty
           std::vector<Node> scc;
           scc.push_back(NodeManager::currentNM()->mkNode(
-              kind::STRING_STRREPL,
+              kind::STRING_REPLACE,
               utils::mkConcat(children0, stype),
               node[1],
               node[2]));
@@ -2646,14 +2815,14 @@ Node SequencesRewriter::rewriteReplace(Node node)
         Node nn1 = utils::mkConcat(emptyNodesList, stype);
         if (nn1 != node[1] || nn2 != node[2])
         {
-          Node res = nm->mkNode(kind::STRING_STRREPL, node[0], nn1, nn2);
+          Node res = nm->mkNode(kind::STRING_REPLACE, node[0], nn1, nn2);
           return returnRewrite(node, res, Rewrite::RPL_EMP_CNTS_SUBSTS);
         }
       }
 
       if (nn2 != node[2])
       {
-        Node res = nm->mkNode(kind::STRING_STRREPL, node[0], node[1], nn2);
+        Node res = nm->mkNode(kind::STRING_REPLACE, node[0], node[1], nn2);
         return returnRewrite(node, res, Rewrite::RPL_CNTS_SUBSTS);
       }
     }
@@ -2661,7 +2830,7 @@ Node SequencesRewriter::rewriteReplace(Node node)
 
   if (cmp_conr != cmp_con)
   {
-    if (StringsEntail::checkNonEmpty(node[1]))
+    if (d_stringsEntail.checkNonEmpty(node[1]))
     {
       // pull endpoints that can be stripped
       // for example,
@@ -2669,12 +2838,12 @@ Node SequencesRewriter::rewriteReplace(Node node)
       //   str.++( "b", str.replace( x, "a", y ), "b" )
       std::vector<Node> cb;
       std::vector<Node> ce;
-      if (StringsEntail::stripConstantEndpoints(children0, children1, cb, ce))
+      if (d_stringsEntail.stripConstantEndpoints(children0, children1, cb, ce))
       {
         std::vector<Node> cc;
         cc.insert(cc.end(), cb.begin(), cb.end());
         cc.push_back(
-            NodeManager::currentNM()->mkNode(kind::STRING_STRREPL,
+            NodeManager::currentNM()->mkNode(kind::STRING_REPLACE,
                                              utils::mkConcat(children0, stype),
                                              node[1],
                                              node[2]));
@@ -2710,7 +2879,7 @@ Node SequencesRewriter::rewriteReplace(Node node)
     Node len0 = nm->mkNode(kind::STRING_LENGTH, node[0]);
     Node len0_1 = nm->mkNode(kind::PLUS, len0, one);
     // Check len(t) + j > len(x) + 1
-    if (ArithEntail::check(maxLen1, len0_1, true))
+    if (d_arithEntail.check(maxLen1, len0_1, true))
     {
       children1.push_back(nm->mkNode(
           kind::STRING_SUBSTR,
@@ -2718,7 +2887,7 @@ Node SequencesRewriter::rewriteReplace(Node node)
           lastChild1[1],
           nm->mkNode(
               kind::PLUS, len0, one, nm->mkNode(kind::UMINUS, partLen1))));
-      Node res = nm->mkNode(kind::STRING_STRREPL,
+      Node res = nm->mkNode(kind::STRING_REPLACE,
                             node[0],
                             utils::mkConcat(children1, stype),
                             node[2]);
@@ -2726,7 +2895,7 @@ Node SequencesRewriter::rewriteReplace(Node node)
     }
   }
 
-  if (node[0].getKind() == STRING_STRREPL)
+  if (node[0].getKind() == STRING_REPLACE)
   {
     Node x = node[0];
     Node y = node[1];
@@ -2760,14 +2929,14 @@ Node SequencesRewriter::rewriteReplace(Node node)
       // (str.len w) >= (str.len z)
       Node wlen = nm->mkNode(kind::STRING_LENGTH, w);
       Node zlen = nm->mkNode(kind::STRING_LENGTH, z);
-      if (ArithEntail::check(wlen, zlen))
+      if (d_arithEntail.check(wlen, zlen))
       {
         // w != z
         Node wEqZ = Rewriter::rewrite(nm->mkNode(kind::EQUAL, w, z));
         if (wEqZ.isConst() && !wEqZ.getConst<bool>())
         {
-          Node ret = nm->mkNode(kind::STRING_STRREPL,
-                                nm->mkNode(kind::STRING_STRREPL, y, w, z),
+          Node ret = nm->mkNode(kind::STRING_REPLACE,
+                                nm->mkNode(kind::STRING_REPLACE, y, w, z),
                                 y,
                                 z);
           return returnRewrite(node, ret, Rewrite::REPL_REPL_SHORT_CIRCUIT);
@@ -2776,7 +2945,7 @@ Node SequencesRewriter::rewriteReplace(Node node)
     }
   }
 
-  if (node[1].getKind() == STRING_STRREPL)
+  if (node[1].getKind() == STRING_REPLACE)
   {
     if (node[1][0] == node[0])
     {
@@ -2814,7 +2983,7 @@ Node SequencesRewriter::rewriteReplace(Node node)
       if (dualReplIteSuccess)
       {
         Node res = nm->mkNode(ITE,
-                              nm->mkNode(STRING_STRCTN, node[0], node[1][1]),
+                              nm->mkNode(STRING_CONTAINS, node[0], node[1][1]),
                               node[0],
                               node[2]);
         return returnRewrite(node, res, Rewrite::REPL_DUAL_REPL_ITE);
@@ -2852,11 +3021,11 @@ Node SequencesRewriter::rewriteReplace(Node node)
     }
     if (invSuccess)
     {
-      Node res = nm->mkNode(kind::STRING_STRREPL, node[0], node[1][0], node[2]);
+      Node res = nm->mkNode(kind::STRING_REPLACE, node[0], node[1][0], node[2]);
       return returnRewrite(node, res, Rewrite::REPL_REPL2_INV);
     }
   }
-  if (node[2].getKind() == STRING_STRREPL)
+  if (node[2].getKind() == STRING_REPLACE)
   {
     if (node[2][1] == node[0])
     {
@@ -2866,7 +3035,7 @@ Node SequencesRewriter::rewriteReplace(Node node)
       if (!cmp_con2.isNull() && !cmp_con2.getConst<bool>())
       {
         Node res =
-            nm->mkNode(kind::STRING_STRREPL, node[0], node[1], node[2][0]);
+            nm->mkNode(kind::STRING_REPLACE, node[0], node[1], node[2][0]);
         return returnRewrite(node, res, Rewrite::REPL_REPL3_INV);
       }
     }
@@ -2896,7 +3065,7 @@ Node SequencesRewriter::rewriteReplace(Node node)
   //   str.replace( x ++ y ++ x ++ y, "A", z ) -->
   //   str.replace( x ++ y, "A", z ) ++ x ++ y
   // since if "A" occurs in x ++ y ++ x ++ y, then it must occur in x ++ y.
-  if (StringsEntail::checkLengthOne(node[1]))
+  if (d_stringsEntail.checkLengthOne(node[1]))
   {
     Node lastLhs;
     unsigned lastCheckIndex = 0;
@@ -2926,7 +3095,7 @@ Node SequencesRewriter::rewriteReplace(Node node)
       Node rem = utils::mkConcat(remc, stype);
       Node ret =
           nm->mkNode(STRING_CONCAT,
-                     nm->mkNode(STRING_STRREPL, lastLhs, node[1], node[2]),
+                     nm->mkNode(STRING_REPLACE, lastLhs, node[1], node[2]),
                      rem);
       // for example:
       //   str.replace( x ++ x, "A", y ) ---> str.replace( x, "A", y ) ++ x
@@ -2949,7 +3118,7 @@ Node SequencesRewriter::rewriteReplace(Node node)
 
 Node SequencesRewriter::rewriteReplaceAll(Node node)
 {
-  Assert(node.getKind() == STRING_STRREPLALL);
+  Assert(node.getKind() == STRING_REPLACE_ALL);
 
   TypeNode stype = node.getType();
 
@@ -3002,7 +3171,7 @@ Node SequencesRewriter::rewriteReplaceAll(Node node)
 Node SequencesRewriter::rewriteReplaceInternal(Node node)
 {
   Kind nk = node.getKind();
-  Assert(nk == STRING_STRREPL || nk == STRING_STRREPLALL);
+  Assert(nk == STRING_REPLACE || nk == STRING_REPLACE_ALL);
 
   if (node[1] == node[2])
   {
@@ -3012,7 +3181,7 @@ Node SequencesRewriter::rewriteReplaceInternal(Node node)
   if (node[0] == node[1])
   {
     // only holds for replaceall if non-empty
-    if (nk == STRING_STRREPL || StringsEntail::checkNonEmpty(node[1]))
+    if (nk == STRING_REPLACE || d_stringsEntail.checkNonEmpty(node[1]))
     {
       return returnRewrite(node, node[2], Rewrite::RPL_REPLACE);
     }
@@ -3081,7 +3250,7 @@ Node SequencesRewriter::rewriteReplaceReAll(Node node)
       std::vector<Node> res;
       String rem = x.getConst<String>();
       std::pair<size_t, size_t> match(0, 0);
-      while (rem.size() >= 0)
+      while (rem.size() != 0)
       {
         match = firstMatch(nm->mkConst(rem), yp);
         if (match.first == string::npos)
@@ -3107,8 +3276,7 @@ std::pair<size_t, size_t> SequencesRewriter::firstMatch(Node n, Node r)
   Assert(r.getType().isRegExp());
   NodeManager* nm = NodeManager::currentNM();
 
-  std::vector<Node> emptyVec;
-  Node sigmaStar = nm->mkNode(REGEXP_STAR, nm->mkNode(REGEXP_SIGMA, emptyVec));
+  Node sigmaStar = nm->mkNode(REGEXP_STAR, nm->mkNode(REGEXP_SIGMA));
   Node re = nm->mkNode(REGEXP_CONCAT, r, sigmaStar);
   String s = n.getConst<String>();
 
@@ -3221,7 +3389,7 @@ Node SequencesRewriter::rewritePrefixSuffix(Node n)
       // (str.prefix x "A") and (str.suffix x "A") are equivalent to
       // (str.contains "A" x )
       Node ret =
-          NodeManager::currentNM()->mkNode(kind::STRING_STRCTN, n[1], n[0]);
+          NodeManager::currentNM()->mkNode(kind::STRING_CONTAINS, n[1], n[0]);
       return returnRewrite(n, ret, Rewrite::SUF_PREFIX_CTN);
     }
   }
@@ -3230,7 +3398,7 @@ Node SequencesRewriter::rewritePrefixSuffix(Node n)
   Node val;
   if (isPrefix)
   {
-    val = NodeManager::currentNM()->mkConst(::CVC4::Rational(0));
+    val = NodeManager::currentNM()->mkConst(::cvc5::Rational(0));
   }
   else
   {
@@ -3239,7 +3407,7 @@ Node SequencesRewriter::rewritePrefixSuffix(Node n)
 
   // Check if we can turn the prefix/suffix into equalities by showing that the
   // prefix/suffix is at least as long as the string
-  Node eqs = StringsEntail::inferEqsFromContains(n[1], n[0]);
+  Node eqs = d_stringsEntail.inferEqsFromContains(n[1], n[0]);
   if (!eqs.isNull())
   {
     return returnRewrite(n, eqs, Rewrite::SUF_PREFIX_TO_EQS);
@@ -3283,7 +3451,7 @@ Node SequencesRewriter::canonicalStrForSymbolicLength(Node len, TypeNode stype)
   else if (len.getKind() == PLUS)
   {
     // x + y -> norm(x) + norm(y)
-    NodeBuilder<> concatBuilder(STRING_CONCAT);
+    NodeBuilder concatBuilder(STRING_CONCAT);
     for (const auto& n : len)
     {
       Node sn = canonicalStrForSymbolicLength(n, stype);
@@ -3312,7 +3480,7 @@ Node SequencesRewriter::canonicalStrForSymbolicLength(Node len, TypeNode stype)
     }
     std::vector<Node> nRepChildren;
     utils::getConcat(nRep, nRepChildren);
-    NodeBuilder<> concatBuilder(STRING_CONCAT);
+    NodeBuilder concatBuilder(STRING_CONCAT);
     for (size_t i = 0, reps = intReps.getUnsignedInt(); i < reps; i++)
     {
       concatBuilder.append(nRepChildren);
@@ -3345,14 +3513,16 @@ Node SequencesRewriter::returnRewrite(Node node, Node ret, Rewrite r)
 {
   Trace("strings-rewrite") << "Rewrite " << node << " to " << ret << " by " << r
                            << "." << std::endl;
-
-  NodeManager* nm = NodeManager::currentNM();
-
   if (d_statistics != nullptr)
   {
     (*d_statistics) << r;
   }
+  return ret;
+}
 
+Node SequencesRewriter::postProcessRewrite(Node node, Node ret)
+{
+  NodeManager* nm = NodeManager::currentNM();
   // standard post-processing
   // We rewrite (string) equalities immediately here. This allows us to forego
   // the standard invariant on equality rewrites (that s=t must rewrite to one
@@ -3396,4 +3566,4 @@ Node SequencesRewriter::returnRewrite(Node node, Node ret, Rewrite r)
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

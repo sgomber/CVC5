@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file inst_match_trie.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of inst match trie class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of inst match trie class.
+ */
 
 #include "theory/quantifiers/inst_match_trie.h"
 
@@ -18,14 +19,13 @@
 #include "theory/quantifiers/quant_util.h"
 #include "theory/quantifiers/quantifiers_state.h"
 #include "theory/quantifiers/term_database.h"
-#include "theory/quantifiers_engine.h"
 #include "theory/uf/equality_engine_iterator.h"
 
-using namespace CVC4::context;
+using namespace cvc5::context;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
-namespace inst {
+namespace quantifiers {
 
 bool InstMatchTrie::existsInstMatch(quantifiers::QuantifiersState& qs,
                                     Node q,
@@ -189,16 +189,18 @@ CDInstMatchTrie::~CDInstMatchTrie()
   d_data.clear();
 }
 
-bool CDInstMatchTrie::existsInstMatch(quantifiers::QuantifiersState& qs,
+bool CDInstMatchTrie::existsInstMatch(context::Context* context,
+                                      quantifiers::QuantifiersState& qs,
                                       Node q,
                                       const std::vector<Node>& m,
                                       bool modEq,
                                       unsigned index)
 {
-  return !addInstMatch(qs, q, m, modEq, index, true);
+  return !addInstMatch(context, qs, q, m, modEq, index, true);
 }
 
-bool CDInstMatchTrie::addInstMatch(quantifiers::QuantifiersState& qs,
+bool CDInstMatchTrie::addInstMatch(context::Context* context,
+                                   quantifiers::QuantifiersState& qs,
                                    Node f,
                                    const std::vector<Node>& m,
                                    bool modEq,
@@ -226,7 +228,8 @@ bool CDInstMatchTrie::addInstMatch(quantifiers::QuantifiersState& qs,
   std::map<Node, CDInstMatchTrie*>::iterator it = d_data.find(n);
   if (it != d_data.end())
   {
-    bool ret = it->second->addInstMatch(qs, f, m, modEq, index + 1, onlyExist);
+    bool ret =
+        it->second->addInstMatch(context, qs, f, m, modEq, index + 1, onlyExist);
     if (!onlyExist || !ret)
     {
       return reset || ret;
@@ -246,7 +249,8 @@ bool CDInstMatchTrie::addInstMatch(quantifiers::QuantifiersState& qs,
           std::map<Node, CDInstMatchTrie*>::iterator itc = d_data.find(en);
           if (itc != d_data.end())
           {
-            if (itc->second->addInstMatch(qs, f, m, modEq, index + 1, true))
+            if (itc->second->addInstMatch(
+                    context, qs, f, m, modEq, index + 1, true))
             {
               return false;
             }
@@ -259,10 +263,10 @@ bool CDInstMatchTrie::addInstMatch(quantifiers::QuantifiersState& qs,
 
   if (!onlyExist)
   {
-    CDInstMatchTrie* imt = new CDInstMatchTrie(qs.getUserContext());
+    CDInstMatchTrie* imt = new CDInstMatchTrie(context);
     Assert(d_data.find(n) == d_data.end());
     d_data[n] = imt;
-    imt->addInstMatch(qs, f, m, modEq, index + 1, false);
+    imt->addInstMatch(context, qs, f, m, modEq, index + 1, false);
   }
   return true;
 }
@@ -368,6 +372,6 @@ bool InstMatchTrieOrdered::existsInstMatch(quantifiers::QuantifiersState& qs,
   return d_imt.existsInstMatch(qs, q, m, modEq, d_imtio);
 }
 
-} /* CVC4::theory::inst namespace */
-} /* CVC4::theory namespace */
-} /* CVC4 namespace */
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace cvc5

@@ -1,30 +1,47 @@
-/*********************                                                        */
-/*! \file relevance_manager.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of relevance manager.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of relevance manager.
+ */
 
 #include "theory/relevance_manager.h"
 
 #include <sstream>
 
-using namespace CVC4::kind;
+#include "options/smt_options.h"
+#include "smt/env.h"
 
-namespace CVC4 {
+using namespace cvc5::kind;
+
+namespace cvc5 {
 namespace theory {
 
-RelevanceManager::RelevanceManager(context::UserContext* userContext,
-                                   Valuation val)
-    : d_val(val), d_input(userContext), d_computed(false), d_success(false)
+RelevanceManager::RelevanceManager(context::Context* lemContext, Valuation val)
+    : d_val(val),
+      d_input(lemContext),
+      d_computed(false),
+      d_success(false),
+      d_trackRSetExp(false),
+      d_miniscopeTopLevel(true)
 {
+  if (options::produceDifficulty())
+  {
+    d_dman.reset(new DifficultyManager(lemContext, val));
+    d_trackRSetExp = true;
+    // we cannot miniscope AND at the top level, since we need to
+    // preserve the exact form of preprocessed assertions so the dependencies
+    // are tracked.
+    d_miniscopeTopLevel = false;
+  }
 }
 
 void RelevanceManager::notifyPreprocessedAssertions(
@@ -34,7 +51,7 @@ void RelevanceManager::notifyPreprocessedAssertions(
   std::vector<Node> toProcess;
   for (const Node& a : assertions)
   {
-    if (a.getKind() == AND)
+    if (d_miniscopeTopLevel && a.getKind() == AND)
     {
       // split top-level AND
       for (const Node& ac : a)
@@ -63,8 +80,10 @@ void RelevanceManager::addAssertionsInternal(std::vector<Node>& toProcess)
   while (i < toProcess.size())
   {
     Node a = toProcess[i];
-    if (a.getKind() == AND)
+    if (d_miniscopeTopLevel && a.getKind() == AND)
     {
+      // difficulty tracking disables miniscoping of AND
+      Assert(d_dman == nullptr);
       // split AND
       for (const Node& ac : a)
       {
@@ -84,14 +103,15 @@ void RelevanceManager::addAssertionsInternal(std::vector<Node>& toProcess)
 void RelevanceManager::resetRound()
 {
   d_computed = false;
-  d_rset.clear();
 }
 
 void RelevanceManager::computeRelevance()
 {
   d_computed = true;
+  d_rset.clear();
+  d_rsetExp.clear();
   Trace("rel-manager") << "RelevanceManager::computeRelevance..." << std::endl;
-  std::unordered_map<TNode, int, TNodeHashFunction> cache;
+  std::unordered_map<TNode, int> cache;
   for (const Node& node: d_input)
   {
     TNode n = node;
@@ -104,6 +124,7 @@ void RelevanceManager::computeRelevance()
       Trace("rel-manager") << serr.str() << std::endl;
       Assert(false) << serr.str();
       d_success = false;
+      d_rset.clear();
       return;
     }
   }
@@ -121,7 +142,7 @@ bool RelevanceManager::isBooleanConnective(TNode cur)
 bool RelevanceManager::updateJustifyLastChild(
     TNode cur,
     std::vector<int>& childrenJustify,
-    std::unordered_map<TNode, int, TNodeHashFunction>& cache)
+    std::unordered_map<TNode, int>& cache)
 {
   // This method is run when we are informed that child index of cur
   // has justify status lastChildJustify. We return true if we would like to
@@ -224,13 +245,12 @@ bool RelevanceManager::updateJustifyLastChild(
   return false;
 }
 
-int RelevanceManager::justify(
-    TNode n, std::unordered_map<TNode, int, TNodeHashFunction>& cache)
+int RelevanceManager::justify(TNode n, std::unordered_map<TNode, int>& cache)
 {
   // the vector of values of children
-  std::unordered_map<TNode, std::vector<int>, TNodeHashFunction> childJustify;
-  std::unordered_map<TNode, int, TNodeHashFunction>::iterator it;
-  std::unordered_map<TNode, std::vector<int>, TNodeHashFunction>::iterator itc;
+  std::unordered_map<TNode, std::vector<int>> childJustify;
+  std::unordered_map<TNode, int>::iterator it;
+  std::unordered_map<TNode, std::vector<int>>::iterator itc;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
@@ -270,6 +290,10 @@ int RelevanceManager::justify(
         {
           ret = value ? 1 : -1;
           d_rset.insert(cur);
+          if (d_trackRSetExp)
+          {
+            d_rsetExp[cur] = n;
+          }
         }
         cache[cur] = ret;
       }
@@ -313,5 +337,43 @@ bool RelevanceManager::isRelevant(Node lit)
   return d_rset.find(lit) != d_rset.end();
 }
 
+const std::unordered_set<TNode>& RelevanceManager::getRelevantAssertions(
+    bool& success)
+{
+  if (!d_computed)
+  {
+    computeRelevance();
+  }
+  // update success flag
+  success = d_success;
+  return d_rset;
+}
+
+void RelevanceManager::notifyLemma(Node n)
+{
+  if (d_dman != nullptr)
+  {
+    // ensure we know which literals are relevant, and why
+    computeRelevance();
+    d_dman->notifyLemma(d_rsetExp, n);
+  }
+}
+
+void RelevanceManager::notifyCandidateModel(TheoryModel* m)
+{
+  if (d_dman != nullptr)
+  {
+    d_dman->notifyCandidateModel(d_input, m);
+  }
+}
+
+void RelevanceManager::getDifficultyMap(std::map<Node, Node>& dmap)
+{
+  if (d_dman != nullptr)
+  {
+    d_dman->getDifficultyMap(dmap);
+  }
+}
+
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

@@ -1,34 +1,36 @@
-/*********************                                                        */
-/*! \file solver_state.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Mudathir Mohamed
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Bags state object
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Mudathir Mohamed
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Bags state object.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__BAGS__THEORY_SOLVER_STATE_H
-#define CVC4__THEORY__BAGS__THEORY_SOLVER_STATE_H
+#ifndef CVC5__THEORY__BAGS__THEORY_SOLVER_STATE_H
+#define CVC5__THEORY__BAGS__THEORY_SOLVER_STATE_H
 
 #include <map>
 
 #include "theory/theory_state.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace bags {
 
 class SolverState : public TheoryState
 {
  public:
-  SolverState(context::Context* c, context::UserContext* u, Valuation val);
+  SolverState(Env& env,
+              Valuation val);
 
   /**
    * This function adds the bag representative n to the set d_bags if it is not
@@ -90,6 +92,6 @@ class SolverState : public TheoryState
 
 }  // namespace bags
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__BAGS__THEORY_SOLVER_STATE_H */
+#endif /* CVC5__THEORY__BAGS__THEORY_SOLVER_STATE_H */

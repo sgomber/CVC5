@@ -1,39 +1,42 @@
-/*********************                                                        */
-/*! \file base_solver.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Tianyi Liang
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Base solver for the theory of strings. This class implements term
- ** indexing and constant inference for the theory of strings.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Tianyi Liang
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Base solver for the theory of strings. This class implements term
+ * indexing and constant inference for the theory of strings.
+ */
 
 #include "theory/strings/base_solver.h"
 
 #include "expr/sequence.h"
+#include "options/quantifiers_options.h"
 #include "options/strings_options.h"
 #include "theory/rewriter.h"
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
+#include "util/rational.h"
 
 using namespace std;
-using namespace CVC4::context;
-using namespace CVC4::kind;
+using namespace cvc5::context;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
-BaseSolver::BaseSolver(SolverState& s, InferenceManager& im)
-    : d_state(s), d_im(im), d_congruent(s.getSatContext())
+BaseSolver::BaseSolver(Env& env, SolverState& s, InferenceManager& im)
+    : EnvObj(env), d_state(s), d_im(im), d_congruent(context())
 {
   d_false = NodeManager::currentNM()->mkConst(false);
-  d_cardSize = utils::getAlphabetCardinality();
+  d_cardSize = options().strings.stringsAlphaCard;
 }
 
 BaseSolver::~BaseSolver() {}
@@ -356,59 +359,53 @@ void BaseSolver::checkConstantEquivalenceClasses(TermIndex* ti,
         }
         Trace("strings-debug") << std::endl;
       }
-      size_t count = 0;
       size_t countc = 0;
       std::vector<Node> exp;
       // non-constant vector
       std::vector<Node> vecnc;
       size_t contentSize = 0;
-      while (count < n.getNumChildren())
+      for (size_t count = 0, nchild = n.getNumChildren(); count < nchild;
+           ++count)
       {
         // Add explanations for the empty children
         Node emps;
-        while (count < n.getNumChildren()
-               && d_state.isEqualEmptyWord(n[count], emps))
+        if (d_state.isEqualEmptyWord(n[count], emps))
         {
           d_im.addToExplanation(n[count], emps, exp);
-          count++;
+          continue;
         }
-        if (count < n.getNumChildren())
+        else if (vecc[countc].isNull())
         {
-          if (vecc[countc].isNull())
-          {
-            Assert(!isConst);
-            // no constant for this component, leave it as is
-            vecnc.push_back(n[count]);
-          }
-          else
-          {
-            if (!isConst)
-            {
-              // use the constant
-              vecnc.push_back(vecc[countc]);
-              Assert(vecc[countc].isConst());
-              contentSize += Word::getLength(vecc[countc]);
-            }
-            Trace("strings-debug") << "...explain " << n[count] << " "
-                                   << vecc[countc] << std::endl;
-            if (!d_state.areEqual(n[count], vecc[countc]))
-            {
-              Node nrr = d_state.getRepresentative(n[count]);
-              Assert(!d_eqcInfo[nrr].d_bestContent.isNull()
-                     && d_eqcInfo[nrr].d_bestContent.isConst());
-              // must flatten to avoid nested AND in explanations
-              utils::flattenOp(AND, d_eqcInfo[nrr].d_exp, exp);
-              // now explain equality to base
-              d_im.addToExplanation(n[count], d_eqcInfo[nrr].d_base, exp);
-            }
-            else
-            {
-              d_im.addToExplanation(n[count], vecc[countc], exp);
-            }
-            countc++;
-          }
-          count++;
+          Assert(!isConst);
+          // no constant for this component, leave it as is
+          vecnc.push_back(n[count]);
+          continue;
         }
+        // if we are not entirely a constant
+        if (!isConst)
+        {
+          // use the constant component
+          vecnc.push_back(vecc[countc]);
+          Assert(vecc[countc].isConst());
+          contentSize += Word::getLength(vecc[countc]);
+        }
+        Trace("strings-debug")
+            << "...explain " << n[count] << " " << vecc[countc] << std::endl;
+        if (!d_state.areEqual(n[count], vecc[countc]))
+        {
+          Node nrr = d_state.getRepresentative(n[count]);
+          Assert(!d_eqcInfo[nrr].d_bestContent.isNull()
+                 && d_eqcInfo[nrr].d_bestContent.isConst());
+          // must flatten to avoid nested AND in explanations
+          utils::flattenOp(AND, d_eqcInfo[nrr].d_exp, exp);
+          // now explain equality to base
+          d_im.addToExplanation(n[count], d_eqcInfo[nrr].d_base, exp);
+        }
+        else
+        {
+          d_im.addToExplanation(n[count], vecc[countc], exp);
+        }
+        countc++;
       }
       // exp contains an explanation of n==c
       Assert(!isConst || countc == vecc.size());
@@ -538,13 +535,46 @@ void BaseSolver::checkCardinalityType(TypeNode tn,
   {
     Assert(tn.isSequence());
     TypeNode etn = tn.getSequenceElementType();
-    if (etn.isInterpretedFinite())
+    if (!d_env.isFiniteType(etn))
     {
       // infinite cardinality, we are fine
       return;
     }
-    // TODO (cvc4-projects #23): how to handle sequence for finite types?
-    return;
+    // we check the cardinality class of the type, assuming that FMF is
+    // disabled.
+    if (isCardinalityClassFinite(etn.getCardinalityClass(), false))
+    {
+      Cardinality c = etn.getCardinality();
+      bool smallCardinality = false;
+      if (!c.isLargeFinite())
+      {
+        Integer ci = c.getFiniteCardinality();
+        if (ci.fitsUnsignedInt())
+        {
+          smallCardinality = true;
+          typeCardSize = ci.toUnsignedInt();
+        }
+      }
+      if (!smallCardinality)
+      {
+        // if it is large finite, then there is no way we could have
+        // constructed that many terms in memory, hence there is nothing
+        // to do.
+        return;
+      }
+    }
+    else
+    {
+      Assert(options().quantifiers.finiteModelFind);
+      // we are in a case where the cardinality of the type is infinite
+      // if not FMF, and finite given the Env's option value for FMF. In this
+      // case, FMF must be true, and the cardinality is finite and dynamic
+      // (i.e. it depends on the model's finite interpretation for uninterpreted
+      // sorts). We do not know how to handle this case, we set incomplete.
+      // TODO (cvc4-projects #23): how to handle sequence for finite types?
+      d_im.setIncomplete(IncompleteId::SEQ_FINITE_DYNAMIC_CARDINALITY);
+      return;
+    }
   }
   // for each collection
   for (unsigned i = 0, csize = cols.size(); i < csize; ++i)
@@ -760,4 +790,4 @@ Node BaseSolver::TermIndex::add(TNode n,
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

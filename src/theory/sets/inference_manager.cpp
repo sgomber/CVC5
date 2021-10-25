@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file inference_manager.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of the inference manager for the theory of sets
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of the inference manager for the theory of sets.
+ */
 
 #include "theory/sets/inference_manager.h"
 
@@ -18,16 +19,14 @@
 #include "theory/rewriter.h"
 
 using namespace std;
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace sets {
 
-InferenceManager::InferenceManager(Theory& t,
-                                   SolverState& s,
-                                   ProofNodeManager* pnm)
-    : InferenceManagerBuffered(t, s, pnm, "theory::sets"), d_state(s)
+InferenceManager::InferenceManager(Env& env, Theory& t, SolverState& s)
+    : InferenceManagerBuffered(env, t, s, "theory::sets::"), d_state(s)
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
@@ -91,7 +90,7 @@ bool InferenceManager::assertFactRec(Node fact, InferenceId id, Node exp, int in
       || (atom.getKind() == EQUAL && atom[0].getType().isSet()))
   {
     // send to equality engine
-    if (assertInternalFact(atom, polarity, id, exp))
+    if (assertSetsFact(atom, polarity, id, exp))
     {
       // return true if this wasn't redundant
       return true;
@@ -110,6 +109,17 @@ bool InferenceManager::assertFactRec(Node fact, InferenceId id, Node exp, int in
   }
   return false;
 }
+
+bool InferenceManager::assertSetsFact(Node atom,
+                                      bool polarity,
+                                      InferenceId id,
+                                      Node exp)
+{
+  Node conc = polarity ? atom : atom.notNode();
+  return assertInternalFact(
+      atom, polarity, id, PfRule::THEORY_INFERENCE, {exp}, {conc});
+}
+
 void InferenceManager::assertInference(Node fact,
                                        InferenceId id,
                                        Node exp,
@@ -177,4 +187,4 @@ void InferenceManager::split(Node n, InferenceId id, int reqPol)
 
 }  // namespace sets
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

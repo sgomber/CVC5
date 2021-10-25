@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file theory_arith_white.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Aina Niemetz, Tim King, Dejan Jovanovic
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Whitebox tests for theory Arithmetic.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Aina Niemetz, Tim King, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Whitebox tests for theory Arithmetic.
+ */
 
 #include <list>
 #include <vector>
@@ -24,7 +25,7 @@
 #include "theory/theory_engine.h"
 #include "util/rational.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 using namespace theory;
 using namespace theory::arith;
@@ -41,10 +42,10 @@ class TestTheoryWhiteArith : public TestSmtNoFinishInit
   void SetUp() override
   {
     TestSmtNoFinishInit::SetUp();
-    d_smtEngine->setOption("incremental", "false");
-    d_smtEngine->finishInit();
+    d_slvEngine->setOption("incremental", "false");
+    d_slvEngine->finishInit();
     d_arith = static_cast<TheoryArith*>(
-        d_smtEngine->getTheoryEngine()->d_theoryTable[THEORY_ARITH]);
+        d_slvEngine->getTheoryEngine()->d_theoryTable[THEORY_ARITH]);
 
     d_realType.reset(new TypeNode(d_nodeManager->realType()));
     d_intType.reset(new TypeNode(d_nodeManager->integerType()));
@@ -53,7 +54,7 @@ class TestTheoryWhiteArith : public TestSmtNoFinishInit
   void fakeTheoryEnginePreprocess(TNode input)
   {
     Assert(input == Rewriter::rewrite(input));
-    d_smtEngine->getTheoryEngine()->preRegister(input);
+    d_slvEngine->getTheoryEngine()->preRegister(input);
   }
 
   Theory::Effort d_level = Theory::EFFORT_FULL;
@@ -122,4 +123,4 @@ TEST_F(TestTheoryWhiteArith, int_normal_form)
   ASSERT_EQ(Rewriter::rewrite(Rewriter::rewrite(t)), Rewriter::rewrite(t));
 }
 }  // namespace test
-}  // namespace CVC4
+}  // namespace cvc5

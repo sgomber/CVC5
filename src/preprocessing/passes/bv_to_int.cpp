@@ -1,19 +1,20 @@
-/*********************                                                        */
-/*! \file bv_to_int.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Yoni Zohar, Mathias Preiner, Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The BVToInt preprocessing pass
- **
- ** Converts bit-vector operations into integer operations.
- **
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Yoni Zohar, Andrew Reynolds, Andres Noetzli
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The BVToInt preprocessing pass.
+ *
+ * Converts bit-vector operations into integer operations.
+ *
+ */
 
 #include "preprocessing/passes/bv_to_int.h"
 
@@ -25,6 +26,7 @@
 
 #include "expr/node.h"
 #include "expr/node_traversal.h"
+#include "expr/skolem_manager.h"
 #include "options/smt_options.h"
 #include "options/uf_options.h"
 #include "preprocessing/assertion_pipeline.h"
@@ -32,14 +34,17 @@
 #include "theory/bv/theory_bv_rewrite_rules_operator_elimination.h"
 #include "theory/bv/theory_bv_rewrite_rules_simplification.h"
 #include "theory/rewriter.h"
+#include "util/bitvector.h"
+#include "util/iand.h"
+#include "util/rational.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace preprocessing {
 namespace passes {
 
 using namespace std;
-using namespace CVC4::theory;
-using namespace CVC4::theory::bv;
+using namespace cvc5::theory;
+using namespace cvc5::theory::bv;
 
 namespace {
 
@@ -55,7 +60,7 @@ Node BVToInt::mkRangeConstraint(Node newVar, uint64_t k)
   Node lower = d_nm->mkNode(kind::LEQ, d_zero, newVar);
   Node upper = d_nm->mkNode(kind::LT, newVar, pow2(k));
   Node result = d_nm->mkNode(kind::AND, lower, upper);
-  return Rewriter::rewrite(result);
+  return rewrite(result);
 }
 
 Node BVToInt::maxInt(uint64_t k)
@@ -98,7 +103,7 @@ Node BVToInt::makeBinary(Node n)
      */
     kind::Kind_t k = current.getKind();
     if ((numChildren > 2)
-        && (k == kind::BITVECTOR_PLUS || k == kind::BITVECTOR_MULT
+        && (k == kind::BITVECTOR_ADD || k == kind::BITVECTOR_MULT
             || k == kind::BITVECTOR_AND || k == kind::BITVECTOR_OR
             || k == kind::BITVECTOR_XOR || k == kind::BITVECTOR_CONCAT))
     {
@@ -116,7 +121,7 @@ Node BVToInt::makeBinary(Node n)
     else if (numChildren > 0)
     {
       // current has children, but we do not binarize it
-      NodeBuilder<> builder(k);
+      NodeBuilder builder(k);
       if (current.getMetaKind() == kind::metakind::PARAMETERIZED)
       {
         builder << current.getOperator();
@@ -154,10 +159,10 @@ Node BVToInt::eliminationPass(Node n)
     current = toVisit.back();
     // assert that the node is binarized
     // The following variable is only used in assertions
-    CVC4_UNUSED kind::Kind_t k = current.getKind();
+    CVC5_UNUSED kind::Kind_t k = current.getKind();
     uint64_t numChildren = current.getNumChildren();
     Assert((numChildren == 2)
-           || !(k == kind::BITVECTOR_PLUS || k == kind::BITVECTOR_MULT
+           || !(k == kind::BITVECTOR_ADD || k == kind::BITVECTOR_MULT
                 || k == kind::BITVECTOR_AND || k == kind::BITVECTOR_OR
                 || k == kind::BITVECTOR_XOR || k == kind::BITVECTOR_CONCAT));
     toVisit.pop_back();
@@ -220,7 +225,7 @@ Node BVToInt::eliminationPass(Node n)
         {
           // The main operator is replaced, and the children
           // are replaced with their eliminated counterparts.
-          NodeBuilder<> builder(current.getKind());
+          NodeBuilder builder(current.getKind());
           if (current.getMetaKind() == kind::metakind::PARAMETERIZED)
           {
             builder << current.getOperator();
@@ -251,7 +256,7 @@ Node BVToInt::eliminationPass(Node n)
 Node BVToInt::bvToInt(Node n)
 {
   // make sure the node is re-written before processing it.
-  n = Rewriter::rewrite(n);
+  n = rewrite(n);
   n = makeBinary(n);
   n = eliminationPass(n);
   // binarize again, in case the elimination pass introduced
@@ -341,11 +346,11 @@ Node BVToInt::translateWithChildren(Node original,
   Assert(oldKind != kind::BITVECTOR_ULTBV);
   Assert(oldKind != kind::BITVECTOR_SLTBV);
   // The following variable will only be used in assertions.
-  CVC4_UNUSED uint64_t originalNumChildren = original.getNumChildren();
+  CVC5_UNUSED uint64_t originalNumChildren = original.getNumChildren();
   Node returnNode;
   switch (oldKind)
   {
-    case kind::BITVECTOR_PLUS:
+    case kind::BITVECTOR_ADD:
     {
       Assert(originalNumChildren == 2);
       uint64_t bvsize = original[0].getType().getBitVectorSize();
@@ -403,6 +408,14 @@ Node BVToInt::translateWithChildren(Node original,
       returnNode = translated_children[0];
       break;
     }
+    case kind::INT_TO_BITVECTOR:
+    {
+      // ((_ int2bv n) t) ---> (mod t 2^n)
+      size_t sz = original.getOperator().getConst<IntToBitVector>().d_size;
+      returnNode = d_nm->mkNode(
+          kind::INTS_MODULUS_TOTAL, translated_children[0], pow2(sz));
+    }
+    break;
     case kind::BITVECTOR_AND:
     {
       // We support three configurations:
@@ -411,13 +424,13 @@ Node BVToInt::translateWithChildren(Node original,
       // operators)
       // 3. translating into a sum
       uint64_t bvsize = original[0].getType().getBitVectorSize();
-      if (options::solveBVAsInt() == options::SolveBVAsIntMode::IAND)
+      if (options().smt.solveBVAsInt == options::SolveBVAsIntMode::IAND)
       {
         Node iAndOp = d_nm->mkConst(IntAnd(bvsize));
         returnNode = d_nm->mkNode(
             kind::IAND, iAndOp, translated_children[0], translated_children[1]);
       }
-      else if (options::solveBVAsInt() == options::SolveBVAsIntMode::BV)
+      else if (options().smt.solveBVAsInt == options::SolveBVAsIntMode::BV)
       {
         // translate the children back to BV
         Node intToBVOp = d_nm->mkConst<IntToBitVector>(IntToBitVector(bvsize));
@@ -432,14 +445,14 @@ Node BVToInt::translateWithChildren(Node original,
       }
       else
       {
-        Assert(options::solveBVAsInt() == options::SolveBVAsIntMode::SUM);
+        Assert(options().smt.solveBVAsInt == options::SolveBVAsIntMode::SUM);
         // Construct a sum of ites, based on granularity.
         Assert(translated_children.size() == 2);
         returnNode =
             d_iandUtils.createSumNode(translated_children[0],
                                       translated_children[1],
                                       bvsize,
-                                      options::BVAndIntegerGranularity());
+                                      options().smt.BVAndIntegerGranularity);
       }
       break;
     }
@@ -644,7 +657,7 @@ Node BVToInt::translateWithChildren(Node original,
        * of the bounds that were relevant for the original
        * bit-vectors.
        */
-      if (childrenTypesChanged(original) && options::ufHo())
+      if (childrenTypesChanged(original) && logicInfo().isHigherOrder())
       {
         throw TypeCheckingExceptionPrivate(
             original,
@@ -702,6 +715,7 @@ Node BVToInt::translateWithChildren(Node original,
 
 Node BVToInt::translateNoChildren(Node original)
 {
+  SkolemManager* sm = d_nm->getSkolemManager();
   Node translation;
   Assert(original.isVar() || original.isConst());
   if (original.isVar())
@@ -722,11 +736,11 @@ Node BVToInt::translateNoChildren(Node original)
         // New integer variables  that are not bound (symbolic constants)
         // are added together with range constraints induced by the 
         // bit-width of the original bit-vector variables.
-        Node newVar = d_nm->mkSkolem("__bvToInt_var",
-                                     d_nm->integerType(),
-                                     "Variable introduced in bvToInt "
-                                     "pass instead of original variable "
-                                         + original.toString());
+        Node newVar = sm->mkDummySkolem("__bvToInt_var",
+                                        d_nm->integerType(),
+                                        "Variable introduced in bvToInt "
+                                        "pass instead of original variable "
+                                            + original.toString());
         uint64_t bvsize = original.getType().getBitVectorSize();
         translation = newVar;
         d_rangeAssertions.insert(mkRangeConstraint(newVar, bvsize));
@@ -783,9 +797,10 @@ Node BVToInt::translateFunctionSymbol(Node bvUF)
   {
     intDomain.push_back(d.isBitVector() ? d_nm->integerType() : d);
   }
+  SkolemManager* sm = d_nm->getSkolemManager();
   ostringstream os;
   os << "__bvToInt_fun_" << bvUF << "_int";
-  intUF = d_nm->mkSkolem(
+  intUF = sm->mkDummySkolem(
       os.str(), d_nm->mkFunctionType(intDomain, intRange), "bv2int function");
   // introduce a `define-fun` in the smt-engine to keep
   // the correspondence between the original
@@ -836,8 +851,15 @@ void BVToInt::defineBVUFAsIntUF(Node bvUF, Node intUF)
   }
   // If the result is BV, it needs to be casted back.
   result = castToType(result, resultType);
-  // add the function definition to the smt engine.
-  d_preprocContext->getSmt()->defineFunction(bvUF, args, result, true);
+  // add the substitution to the preprocessing context, which ensures the
+  // model for bvUF is correct, as well as substituting it in the input
+  // assertions when necessary.
+  if (!args.empty())
+  {
+    result = d_nm->mkNode(
+        kind::LAMBDA, d_nm->mkNode(kind::BOUND_VAR_LIST, args), result);
+  }
+  d_preprocContext->addSubstitution(bvUF, result);
 }
 
 bool BVToInt::childrenTypesChanged(Node n)
@@ -886,7 +908,7 @@ Node BVToInt::reconstructNode(Node originalNode,
   // first, we adjust the children of the node as needed.
   // re-construct the term with the adjusted children.
   kind::Kind_t oldKind = originalNode.getKind();
-  NodeBuilder<> builder(oldKind);
+  NodeBuilder builder(oldKind);
   if (originalNode.getMetaKind() == kind::metakind::PARAMETERIZED)
   {
     builder << originalNode.getOperator();
@@ -906,11 +928,11 @@ Node BVToInt::reconstructNode(Node originalNode,
 
 BVToInt::BVToInt(PreprocessingPassContext* preprocContext)
     : PreprocessingPass(preprocContext, "bv-to-int"),
-      d_binarizeCache(preprocContext->getUserContext()),
-      d_eliminationCache(preprocContext->getUserContext()),
-      d_rebuildCache(preprocContext->getUserContext()),
-      d_bvToIntCache(preprocContext->getUserContext()),
-      d_rangeAssertions(preprocContext->getUserContext())
+      d_binarizeCache(userContext()),
+      d_eliminationCache(userContext()),
+      d_rebuildCache(userContext()),
+      d_bvToIntCache(userContext()),
+      d_rangeAssertions(userContext())
 {
   d_nm = NodeManager::currentNM();
   d_zero = d_nm->mkConst<Rational>(0);
@@ -924,7 +946,7 @@ PreprocessingPassResult BVToInt::applyInternal(
   {
     Node bvNode = (*assertionsToPreprocess)[i];
     Node intNode = bvToInt(bvNode);
-    Node rwNode = Rewriter::rewrite(intNode);
+    Node rwNode = rewrite(intNode);
     Trace("bv-to-int-debug") << "bv node: " << bvNode << std::endl;
     Trace("bv-to-int-debug") << "int node: " << intNode << std::endl;
     Trace("bv-to-int-debug") << "rw node: " << rwNode << std::endl;
@@ -944,7 +966,7 @@ void BVToInt::addFinalizeRangeAssertions(
   vec_range.assign(d_rangeAssertions.key_begin(), d_rangeAssertions.key_end());
   // conjoin all range assertions and add the conjunction
   // as a new assertion
-  Node rangeAssertions = Rewriter::rewrite(d_nm->mkAnd(vec_range));
+  Node rangeAssertions = rewrite(d_nm->mkAnd(vec_range));
   assertionsToPreprocess->push_back(rangeAssertions);
   Trace("bv-to-int-debug") << "range constraints: "
                            << rangeAssertions.toString() << std::endl;
@@ -1046,4 +1068,4 @@ Node BVToInt::createBVNotNode(Node n, uint64_t bvsize)
 
 }  // namespace passes
 }  // namespace preprocessing
-}  // namespace CVC4
+}  // namespace cvc5

@@ -1,48 +1,52 @@
-/*********************                                                        */
-/*! \file theory_proxy.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Haniel Barbosa, Dejan Jovanovic
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief [[ Add one-line brief description here ]]
- **
- ** [[ Add lengthier description here ]]
- ** \todo document this file
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Haniel Barbosa, Dejan Jovanovic
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * [[ Add one-line brief description here ]]
+ *
+ * [[ Add lengthier description here ]]
+ * \todo document this file
+ */
 #include "prop/theory_proxy.h"
 
 #include "context/context.h"
 #include "decision/decision_engine.h"
 #include "options/decision_options.h"
 #include "options/smt_options.h"
-#include "proof/cnf_proof.h"
 #include "prop/cnf_stream.h"
 #include "prop/prop_engine.h"
+#include "prop/skolem_def_manager.h"
+#include "smt/env.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/rewriter.h"
 #include "theory/theory_engine.h"
-#include "util/statistics_registry.h"
+#include "util/statistics_stats.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace prop {
 
 TheoryProxy::TheoryProxy(PropEngine* propEngine,
                          TheoryEngine* theoryEngine,
-                         DecisionEngine* decisionEngine,
-                         context::Context* context,
-                         context::UserContext* userContext,
-                         ProofNodeManager* pnm)
+                         decision::DecisionEngine* decisionEngine,
+                         SkolemDefManager* skdm,
+                         Env& env)
     : d_propEngine(propEngine),
       d_cnfStream(nullptr),
       d_decisionEngine(decisionEngine),
+      d_dmNeedsActiveDefs(d_decisionEngine->needsActiveSkolemDefs()),
       d_theoryEngine(theoryEngine),
-      d_queue(context),
-      d_tpp(*theoryEngine, userContext, pnm)
+      d_queue(env.getContext()),
+      d_tpp(env, *theoryEngine),
+      d_skdm(skdm),
+      d_env(env)
 {
 }
 
@@ -52,6 +56,25 @@ TheoryProxy::~TheoryProxy() {
 
 void TheoryProxy::finishInit(CnfStream* cnfStream) { d_cnfStream = cnfStream; }
 
+void TheoryProxy::presolve()
+{
+  d_decisionEngine->presolve();
+  d_theoryEngine->presolve();
+}
+
+void TheoryProxy::notifyAssertion(Node a, TNode skolem, bool isLemma)
+{
+  if (skolem.isNull())
+  {
+    d_decisionEngine->addAssertion(a, isLemma);
+  }
+  else
+  {
+    d_skdm->notifySkolemDefinition(skolem, a);
+    d_decisionEngine->addSkolemDefinition(a, skolem, isLemma);
+  }
+}
+
 void TheoryProxy::variableNotify(SatVariable var) {
   d_theoryEngine->preRegister(getNode(SatLiteral(var)));
 }
@@ -60,7 +83,21 @@ void TheoryProxy::theoryCheck(theory::Theory::Effort effort) {
   while (!d_queue.empty()) {
     TNode assertion = d_queue.front();
     d_queue.pop();
+    // now, assert to theory engine
     d_theoryEngine->assertFact(assertion);
+    if (d_dmNeedsActiveDefs)
+    {
+      Assert(d_skdm != nullptr);
+      Trace("sat-rlv-assert")
+          << "Assert to theory engine: " << assertion << std::endl;
+      // Assertion makes all skolems in assertion active,
+      // which triggers their definitions to becoming active.
+      std::vector<TNode> activeSkolemDefs;
+      d_skdm->notifyAsserted(assertion, activeSkolemDefs, true);
+      // notify the decision engine of the skolem definitions that have become
+      // active due to the assertion.
+      d_decisionEngine->notifyActiveSkolemDefs(activeSkolemDefs);
+    }
   }
   d_theoryEngine->check(effort);
 }
@@ -79,15 +116,13 @@ void TheoryProxy::explainPropagation(SatLiteral l, SatClause& explanation) {
   TNode lNode = d_cnfStream->getNode(l);
   Debug("prop-explain") << "explainPropagation(" << lNode << ")" << std::endl;
 
-  theory::TrustNode tte = d_theoryEngine->getExplanation(lNode);
+  TrustNode tte = d_theoryEngine->getExplanation(lNode);
   Node theoryExplanation = tte.getNode();
-  if (CVC4::options::produceProofs())
+  if (d_env.isSatProofProducing())
   {
+    Assert(options::unsatCoresMode() != options::UnsatCoresMode::FULL_PROOF
+           || tte.getGenerator());
     d_propEngine->getProofCnfStream()->convertPropagation(tte);
-  }
-  else if (options::unsatCores())
-  {
-    ProofManager::getCnfProof()->pushCurrentAssertion(theoryExplanation);
   }
   Debug("prop-explain") << "explainPropagation() => " << theoryExplanation
                         << std::endl;
@@ -135,7 +170,7 @@ SatLiteral TheoryProxy::getNextDecisionEngineRequest(bool &stopSearch) {
   if(stopSearch) {
     Trace("decision") << "  ***  Decision Engine stopped search *** " << std::endl;
   }
-  return options::decisionStopOnly() ? undefSatLiteral : ret;
+  return ret;
 }
 
 bool TheoryProxy::theoryNeedCheck() const {
@@ -147,11 +182,11 @@ TNode TheoryProxy::getNode(SatLiteral lit) {
 }
 
 void TheoryProxy::notifyRestart() {
-  d_propEngine->spendResource(ResourceManager::Resource::RestartStep);
+  d_propEngine->spendResource(Resource::RestartStep);
   d_theoryEngine->notifyRestart();
 }
 
-void TheoryProxy::spendResource(ResourceManager::Resource r)
+void TheoryProxy::spendResource(Resource r)
 {
   d_theoryEngine->spendResource(r);
 }
@@ -168,46 +203,39 @@ SatValue TheoryProxy::getDecisionPolarity(SatVariable var) {
 
 CnfStream* TheoryProxy::getCnfStream() { return d_cnfStream; }
 
-theory::TrustNode TheoryProxy::preprocessLemma(
-    theory::TrustNode trn,
-    std::vector<theory::TrustNode>& newLemmas,
-    std::vector<Node>& newSkolems)
+TrustNode TheoryProxy::preprocessLemma(
+    TrustNode trn, std::vector<theory::SkolemLemma>& newLemmas)
 {
-  return d_tpp.preprocessLemma(trn, newLemmas, newSkolems);
+  return d_tpp.preprocessLemma(trn, newLemmas);
 }
 
-theory::TrustNode TheoryProxy::preprocess(
-    TNode node,
-    std::vector<theory::TrustNode>& newLemmas,
-    std::vector<Node>& newSkolems)
+TrustNode TheoryProxy::preprocess(TNode node,
+                                  std::vector<theory::SkolemLemma>& newLemmas)
 {
-  return d_tpp.preprocess(node, newLemmas, newSkolems);
+  return d_tpp.preprocess(node, newLemmas);
 }
 
-theory::TrustNode TheoryProxy::removeItes(
-    TNode node,
-    std::vector<theory::TrustNode>& newLemmas,
-    std::vector<Node>& newSkolems)
+TrustNode TheoryProxy::removeItes(TNode node,
+                                  std::vector<theory::SkolemLemma>& newLemmas)
 {
   RemoveTermFormulas& rtf = d_tpp.getRemoveTermFormulas();
-  return rtf.run(node, newLemmas, newSkolems, true);
+  return rtf.run(node, newLemmas, true);
 }
 
 void TheoryProxy::getSkolems(TNode node,
-                             std::vector<theory::TrustNode>& skAsserts,
+                             std::vector<Node>& skAsserts,
                              std::vector<Node>& sks)
 {
-  RemoveTermFormulas& rtf = d_tpp.getRemoveTermFormulas();
-  std::unordered_set<Node, NodeHashFunction> skolems;
-  rtf.getSkolems(node, skolems);
+  std::unordered_set<Node> skolems;
+  d_skdm->getSkolems(node, skolems);
   for (const Node& k : skolems)
   {
     sks.push_back(k);
-    skAsserts.push_back(rtf.getLemmaForSkolem(k));
+    skAsserts.push_back(d_skdm->getDefinitionForSkolem(k));
   }
 }
 
 void TheoryProxy::preRegister(Node n) { d_theoryEngine->preRegister(n); }
 
-}/* CVC4::prop namespace */
-}/* CVC4 namespace */
+}  // namespace prop
+}  // namespace cvc5

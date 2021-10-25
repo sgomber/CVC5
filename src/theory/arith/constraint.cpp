@@ -1,19 +1,20 @@
-/*********************                                                        */
-/*! \file constraint.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Tim King, Alex Ozdemir, Haniel Barbosa
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief [[ Add one-line brief description here ]]
- **
- ** [[ Add lengthier description here ]]
- ** \todo document this file
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Tim King, Alex Ozdemir, Haniel Barbosa
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * [[ Add one-line brief description here ]]
+ *
+ * [[ Add lengthier description here ]]
+ * \todo document this file
+ */
 #include "theory/arith/constraint.h"
 
 #include <algorithm>
@@ -21,22 +22,55 @@
 #include <unordered_set>
 
 #include "base/output.h"
-#include "expr/proof_node_manager.h"
+#include "options/smt_options.h"
+#include "proof/eager_proof_generator.h"
+#include "proof/proof_node_manager.h"
+#include "smt/env.h"
 #include "smt/smt_statistics_registry.h"
-#include "theory/eager_proof_generator.h"
 #include "theory/arith/arith_utilities.h"
 #include "theory/arith/congruence_manager.h"
 #include "theory/arith/normal_form.h"
 #include "theory/arith/partial_model.h"
+#include "theory/builtin/proof_checker.h"
 #include "theory/rewriter.h"
 
-
 using namespace std;
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arith {
+
+ConstraintRule::ConstraintRule()
+    : d_constraint(NullConstraint),
+      d_proofType(NoAP),
+      d_antecedentEnd(AntecedentIdSentinel)
+{
+  d_farkasCoefficients = RationalVectorCPSentinel;
+}
+
+ConstraintRule::ConstraintRule(ConstraintP con, ArithProofType pt)
+    : d_constraint(con), d_proofType(pt), d_antecedentEnd(AntecedentIdSentinel)
+{
+  d_farkasCoefficients = RationalVectorCPSentinel;
+}
+ConstraintRule::ConstraintRule(ConstraintP con,
+                               ArithProofType pt,
+                               AntecedentId antecedentEnd)
+    : d_constraint(con), d_proofType(pt), d_antecedentEnd(antecedentEnd)
+{
+  d_farkasCoefficients = RationalVectorCPSentinel;
+}
+
+ConstraintRule::ConstraintRule(ConstraintP con,
+                               ArithProofType pt,
+                               AntecedentId antecedentEnd,
+                               RationalVectorCP coeffs)
+    : d_constraint(con), d_proofType(pt), d_antecedentEnd(antecedentEnd)
+{
+  Assert(con->isProofProducing() || coeffs == RationalVectorCPSentinel);
+  d_farkasCoefficients = coeffs;
+}
 
 /** Given a simplifiedKind this returns the corresponding ConstraintType. */
 //ConstraintType constraintTypeOfLiteral(Kind k);
@@ -71,19 +105,23 @@ ConstraintType Constraint::constraintTypeOfComparison(const Comparison& cmp){
   }
 }
 
-Constraint::Constraint(ArithVar x,  ConstraintType t, const DeltaRational& v)
-  : d_variable(x),
-    d_type(t),
-    d_value(v),
-    d_database(NULL),
-    d_literal(Node::null()),
-    d_negation(NullConstraint),
-    d_canBePropagated(false),
-    d_assertionOrder(AssertionOrderSentinel),
-    d_witness(TNode::null()),
-    d_crid(ConstraintRuleIdSentinel),
-    d_split(false),
-    d_variablePosition()
+Constraint::Constraint(ArithVar x,
+                       ConstraintType t,
+                       const DeltaRational& v,
+                       bool produceProofs)
+    : d_variable(x),
+      d_type(t),
+      d_value(v),
+      d_database(NULL),
+      d_literal(Node::null()),
+      d_negation(NullConstraint),
+      d_canBePropagated(false),
+      d_assertionOrder(AssertionOrderSentinel),
+      d_witness(TNode::null()),
+      d_crid(ConstraintRuleIdSentinel),
+      d_split(false),
+      d_variablePosition(),
+      d_produceProofs(produceProofs)
 {
   Assert(!initialized());
 }
@@ -184,7 +222,7 @@ std::ostream& operator<<(std::ostream& o, const ConstraintCPVec& v){
   return o;
 }
 
-void Constraint::debugPrint() const { CVC4Message() << *this << endl; }
+void Constraint::debugPrint() const { CVC5Message() << *this << endl; }
 
 ValueCollection::ValueCollection()
   : d_lowerBound(NullConstraint),
@@ -481,7 +519,7 @@ bool Constraint::isInternalAssumption() const {
 
 TrustNode Constraint::externalExplainByAssertions() const
 {
-  NodeBuilder<> nb(kind::AND);
+  NodeBuilder nb(kind::AND);
   auto pfFromAssumptions = externalExplain(nb, AssertionOrderSentinel);
   Node exp = safeConstructNary(nb);
   if (d_database->isProofEnabled())
@@ -541,7 +579,7 @@ bool Constraint::hasSimpleFarkasProof() const
     {
       Debug("constraints::hsfp") << "There is no simple Farkas proof b/c there "
                                     "is an antecdent w/ rule ";
-      a->getConstraintRule().print(Debug("constraints::hsfp"));
+      a->getConstraintRule().print(Debug("constraints::hsfp"), d_produceProofs);
       Debug("constraints::hsfp") << std::endl;
     }
 
@@ -575,7 +613,7 @@ bool Constraint::hasTrichotomyProof() const {
 
 void Constraint::printProofTree(std::ostream& out, size_t depth) const
 {
-  if (ARITH_PROOF_ON())
+  if (d_produceProofs)
   {
     const ConstraintRule& rule = getConstraintRule();
     out << std::string(2 * depth, ' ') << "* " << getVariable() << " [";
@@ -661,18 +699,16 @@ bool Constraint::sanityChecking(Node n) const {
   }
 }
 
-void ConstraintRule::debugPrint() const {
-  print(std::cerr);
-}
+void ConstraintRule::debugPrint() const { print(std::cerr, false); }
 
 ConstraintCP ConstraintDatabase::getAntecedent (AntecedentId p) const {
   Assert(p < d_antecedents.size());
   return d_antecedents[p];
 }
 
-
-void ConstraintRule::print(std::ostream& out) const {
-  RationalVectorCP coeffs = ARITH_NULLPROOF(d_farkasCoefficients);
+void ConstraintRule::print(std::ostream& out, bool produceProofs) const
+{
+  RationalVectorCP coeffs = produceProofs ? d_farkasCoefficients : nullptr;
   out << "{ConstraintRule, ";
   out << d_constraint << std::endl;
   out << "d_proofType= " << d_proofType << ", " << std::endl;
@@ -723,11 +759,11 @@ bool Constraint::wellFormedFarkasProof() const {
   ConstraintCP antecedent = d_database->d_antecedents[p];
   if(antecedent  == NullConstraint) { return false; }
 
-  if (!ARITH_PROOF_ON())
+  if (!d_produceProofs)
   {
     return cr.d_farkasCoefficients == RationalVectorCPSentinel;
   }
-  Assert(ARITH_PROOF_ON());
+  Assert(d_produceProofs);
 
   if(cr.d_farkasCoefficients == RationalVectorCPSentinel){ return false; }
   if(cr.d_farkasCoefficients->size() < 2){ return false; }
@@ -827,7 +863,11 @@ bool Constraint::wellFormedFarkasProof() const {
          && rhs.sgn() < 0;
 }
 
-ConstraintP Constraint::makeNegation(ArithVar v, ConstraintType t, const DeltaRational& r){
+ConstraintP Constraint::makeNegation(ArithVar v,
+                                     ConstraintType t,
+                                     const DeltaRational& r,
+                                     bool produceProofs)
+{
   switch(t){
   case LowerBound:
     {
@@ -836,12 +876,12 @@ ConstraintP Constraint::makeNegation(ArithVar v, ConstraintType t, const DeltaRa
         Assert(r.getInfinitesimalPart() == 1);
         // make (not (v > r)), which is (v <= r)
         DeltaRational dropInf(r.getNoninfinitesimalPart(), 0);
-        return new Constraint(v, UpperBound, dropInf);
+        return new Constraint(v, UpperBound, dropInf, produceProofs);
       }else{
         Assert(r.infinitesimalSgn() == 0);
         // make (not (v >= r)), which is (v < r)
         DeltaRational addInf(r.getNoninfinitesimalPart(), -1);
-        return new Constraint(v, UpperBound, addInf);
+        return new Constraint(v, UpperBound, addInf, produceProofs);
       }
     }
   case UpperBound:
@@ -851,40 +891,35 @@ ConstraintP Constraint::makeNegation(ArithVar v, ConstraintType t, const DeltaRa
         Assert(r.getInfinitesimalPart() == -1);
         // make (not (v < r)), which is (v >= r)
         DeltaRational dropInf(r.getNoninfinitesimalPart(), 0);
-        return new Constraint(v, LowerBound, dropInf);
+        return new Constraint(v, LowerBound, dropInf, produceProofs);
       }else{
         Assert(r.infinitesimalSgn() == 0);
         // make (not (v <= r)), which is (v > r)
         DeltaRational addInf(r.getNoninfinitesimalPart(), 1);
-        return new Constraint(v, LowerBound, addInf);
+        return new Constraint(v, LowerBound, addInf, produceProofs);
       }
     }
-  case Equality:
-    return new Constraint(v, Disequality, r);
-  case Disequality:
-    return new Constraint(v, Equality, r);
-  default:
-    Unreachable();
-    return NullConstraint;
+    case Equality: return new Constraint(v, Disequality, r, produceProofs);
+    case Disequality: return new Constraint(v, Equality, r, produceProofs);
+    default: Unreachable(); return NullConstraint;
   }
 }
 
-ConstraintDatabase::ConstraintDatabase(context::Context* satContext,
-                                       context::Context* userContext,
+ConstraintDatabase::ConstraintDatabase(Env& env,
                                        const ArithVariables& avars,
                                        ArithCongruenceManager& cm,
                                        RaiseConflict raiseConflict,
-                                       EagerProofGenerator* pfGen,
-                                       ProofNodeManager* pnm)
-    : d_varDatabases(),
-      d_toPropagate(satContext),
-      d_antecedents(satContext, false),
-      d_watches(new Watches(satContext, userContext)),
+                                       EagerProofGenerator* pfGen)
+    : EnvObj(env),
+      d_varDatabases(),
+      d_toPropagate(context()),
+      d_antecedents(context(), false),
+      d_watches(new Watches(context(), userContext())),
       d_avariables(avars),
       d_congruenceManager(cm),
-      d_satContext(satContext),
       d_pfGen(pfGen),
-      d_pnm(pnm),
+      d_pnm(d_env.isTheoryProofProducing() ? d_env.getProofNodeManager()
+                                           : nullptr),
       d_raiseConflict(raiseConflict),
       d_one(1),
       d_negOne(-1)
@@ -937,8 +972,9 @@ ConstraintP ConstraintDatabase::getConstraint(ArithVar v, ConstraintType t, cons
   if(vc.hasConstraintOfType(t)){
     return vc.getConstraintOfType(t);
   }else{
-    ConstraintP c = new Constraint(v, t, r);
-    ConstraintP negC = Constraint::makeNegation(v, t, r);
+    ConstraintP c = new Constraint(v, t, r, options().smt.produceProofs);
+    ConstraintP negC =
+        Constraint::makeNegation(v, t, r, options().smt.produceProofs);
 
     SortedConstraintMapIterator negPos;
     if(t == Equality || t == Disequality){
@@ -1002,18 +1038,12 @@ ConstraintDatabase::~ConstraintDatabase(){
   Assert(d_nodetoConstraintMap.empty());
 }
 
-ConstraintDatabase::Statistics::Statistics():
-  d_unatePropagateCalls("theory::arith::cd::unatePropagateCalls", 0),
-  d_unatePropagateImplications("theory::arith::cd::unatePropagateImplications", 0)
+ConstraintDatabase::Statistics::Statistics()
+    : d_unatePropagateCalls(smtStatisticsRegistry().registerInt(
+        "theory::arith::cd::unatePropagateCalls")),
+      d_unatePropagateImplications(smtStatisticsRegistry().registerInt(
+          "theory::arith::cd::unatePropagateImplications"))
 {
-  smtStatisticsRegistry()->registerStat(&d_unatePropagateCalls);
-  smtStatisticsRegistry()->registerStat(&d_unatePropagateImplications);
-
-}
-
-ConstraintDatabase::Statistics::~Statistics(){
-  smtStatisticsRegistry()->unregisterStat(&d_unatePropagateCalls);
-  smtStatisticsRegistry()->unregisterStat(&d_unatePropagateImplications);
 }
 
 void ConstraintDatabase::deleteConstraintAndNegation(ConstraintP c){
@@ -1078,12 +1108,12 @@ TrustNode Constraint::split()
   TNode lhs = eqNode[0];
   TNode rhs = eqNode[1];
 
-  Node leqNode = NodeBuilder<2>(kind::LEQ) << lhs << rhs;
-  Node ltNode = NodeBuilder<2>(kind::LT) << lhs << rhs;
-  Node gtNode = NodeBuilder<2>(kind::GT) << lhs << rhs;
-  Node geqNode = NodeBuilder<2>(kind::GEQ) << lhs << rhs;
+  Node leqNode = NodeBuilder(kind::LEQ) << lhs << rhs;
+  Node ltNode = NodeBuilder(kind::LT) << lhs << rhs;
+  Node gtNode = NodeBuilder(kind::GT) << lhs << rhs;
+  Node geqNode = NodeBuilder(kind::GEQ) << lhs << rhs;
 
-  Node lemma = NodeBuilder<3>(OR) << leqNode << geqNode;
+  Node lemma = NodeBuilder(OR) << leqNode << geqNode;
 
   TrustNode trustedLemma;
   if (d_database->isProofEnabled())
@@ -1097,7 +1127,7 @@ TrustNode Constraint::split()
     auto ltPf = d_database->d_pnm->mkNode(
         PfRule::MACRO_SR_PRED_TRANSFORM, {nGeqPf}, {ltNode});
     auto sumPf = d_database->d_pnm->mkNode(
-        PfRule::ARITH_SCALE_SUM_UPPER_BOUNDS,
+        PfRule::MACRO_ARITH_SCALE_SUM_UB,
         {gtPf, ltPf},
         {nm->mkConst<Rational>(-1), nm->mkConst<Rational>(1)});
     auto botPf = d_database->d_pnm->mkNode(
@@ -1144,7 +1174,8 @@ ConstraintP ConstraintDatabase::addLiteral(TNode literal){
 
   DeltaRational posDR = posCmp.normalizedDeltaRational();
 
-  ConstraintP posC = new Constraint(v, posType, posDR);
+  ConstraintP posC =
+      new Constraint(v, posType, posDR, options().smt.produceProofs);
 
   Debug("arith::constraint") << "addliteral( literal ->" << literal << ")" << endl;
   Debug("arith::constraint") << "addliteral( posC ->" << posC << ")" << endl;
@@ -1175,7 +1206,8 @@ ConstraintP ConstraintDatabase::addLiteral(TNode literal){
     ConstraintType negType = Constraint::constraintTypeOfComparison(negCmp);
     DeltaRational negDR = negCmp.normalizedDeltaRational();
 
-    ConstraintP negC = new Constraint(v, negType, negDR);
+    ConstraintP negC =
+        new Constraint(v, negType, negDR, options().smt.produceProofs);
 
     SortedConstraintMapIterator negI;
 
@@ -1275,7 +1307,7 @@ void Constraint::impliedByUnate(ConstraintCP imp, bool nowInConflict){
   AntecedentId antecedentEnd = d_database->d_antecedents.size() - 1;
 
   RationalVectorP coeffs;
-  if (ARITH_PROOF_ON())
+  if (d_produceProofs)
   {
     std::pair<int, int> sgns = unateFarkasSigns(getNegation(), imp);
 
@@ -1299,7 +1331,7 @@ void Constraint::impliedByUnate(ConstraintCP imp, bool nowInConflict){
   }
 
   if(Debug.isOn("constraints::wffp") && !wellFormedFarkasProof()){
-    getConstraintRule().print(Debug("constraints::wffp"));
+    getConstraintRule().print(Debug("constraints::wffp"), d_produceProofs);
   }
   Assert(wellFormedFarkasProof());
 }
@@ -1423,8 +1455,8 @@ void Constraint::impliedByFarkas(const ConstraintCPVec& a, RationalVectorCP coef
   Assert(negationHasProof() == nowInConflict);
   Assert(allHaveProof(a));
 
-  Assert(ARITH_PROOF_ON() == (coeffs != RationalVectorCPSentinel));
-  Assert(!ARITH_PROOF_ON() || coeffs->size() == a.size() + 1);
+  Assert(d_produceProofs == (coeffs != RationalVectorCPSentinel));
+  Assert(!d_produceProofs || coeffs->size() == a.size() + 1);
 
   Assert(a.size() >= 1);
 
@@ -1437,7 +1469,7 @@ void Constraint::impliedByFarkas(const ConstraintCPVec& a, RationalVectorCP coef
   AntecedentId antecedentEnd = d_database->d_antecedents.size() - 1;
 
   RationalVectorCP coeffsCopy;
-  if (ARITH_PROOF_ON())
+  if (d_produceProofs)
   {
     Assert(coeffs != RationalVectorCPSentinel);
     coeffsCopy = new RationalVector(*coeffs);
@@ -1453,7 +1485,7 @@ void Constraint::impliedByFarkas(const ConstraintCPVec& a, RationalVectorCP coef
     Debug("constraint::conflictCommit") << "inConflict@impliedByFarkas " << this << std::endl;
   }
   if(Debug.isOn("constraints::wffp") && !wellFormedFarkasProof()){
-    getConstraintRule().print(Debug("constraints::wffp"));
+    getConstraintRule().print(Debug("constraints::wffp"), d_produceProofs);
   }
   Assert(wellFormedFarkasProof());
 }
@@ -1517,7 +1549,7 @@ TrustNode Constraint::externalExplainForPropagation(TNode lit) const
   Assert(hasProof());
   Assert(!isAssumption());
   Assert(!isInternalAssumption());
-  NodeBuilder<> nb(Kind::AND);
+  NodeBuilder nb(Kind::AND);
   auto pfFromAssumptions = externalExplain(nb, d_assertionOrder);
   Node n = safeConstructNary(nb);
   if (d_database->isProofEnabled())
@@ -1553,7 +1585,7 @@ TrustNode Constraint::externalExplainConflict() const
 {
   Debug("pf::arith::explain") << this << std::endl;
   Assert(inConflict());
-  NodeBuilder<> nb(kind::AND);
+  NodeBuilder nb(kind::AND);
   auto pf1 = externalExplainByAssertions(nb);
   auto not2 = getNegation()->getProofLiteral().negate();
   auto pf2 = getNegation()->externalExplainByAssertions(nb);
@@ -1650,7 +1682,7 @@ void Constraint::assertionFringe(ConstraintCPVec& o, const ConstraintCPVec& i){
 }
 
 Node Constraint::externalExplain(const ConstraintCPVec& v, AssertionOrder order){
-  NodeBuilder<> nb(kind::AND);
+  NodeBuilder nb(kind::AND);
   ConstraintCPVec::const_iterator i, end;
   for(i = v.begin(), end = v.end(); i != end; ++i){
     ConstraintCP v_i = *i;
@@ -1660,13 +1692,13 @@ Node Constraint::externalExplain(const ConstraintCPVec& v, AssertionOrder order)
 }
 
 std::shared_ptr<ProofNode> Constraint::externalExplain(
-    NodeBuilder<>& nb, AssertionOrder order) const
+    NodeBuilder& nb, AssertionOrder order) const
 {
   if (Debug.isOn("pf::arith::explain"))
   {
     this->printProofTree(Debug("arith::pf::tree"));
     Debug("pf::arith::explain") << "Explaining: " << this << " with rule ";
-    getConstraintRule().print(Debug("pf::arith::explain"));
+    getConstraintRule().print(Debug("pf::arith::explain"), d_produceProofs);
     Debug("pf::arith::explain") << std::endl;
   }
   Assert(hasProof());
@@ -1784,10 +1816,8 @@ std::shared_ptr<ProofNode> Constraint::externalExplain(
           }
 
           // Apply the scaled-sum rule.
-          std::shared_ptr<ProofNode> sumPf =
-              pnm->mkNode(PfRule::ARITH_SCALE_SUM_UPPER_BOUNDS,
-                          farkasChildren,
-                          farkasCoeffs);
+          std::shared_ptr<ProofNode> sumPf = pnm->mkNode(
+              PfRule::MACRO_ARITH_SCALE_SUM_UB, farkasChildren, farkasCoeffs);
 
           // Provable rewrite the result
           auto botPf = pnm->mkNode(
@@ -1828,9 +1858,11 @@ std::shared_ptr<ProofNode> Constraint::externalExplain(
         }
         case ArithProofType::IntHoleAP:
         {
-          pf = pnm->mkNode(PfRule::INT_TRUST,
+          Node t =
+              builtin::BuiltinProofRuleChecker::mkTheoryIdNode(THEORY_ARITH);
+          pf = pnm->mkNode(PfRule::THEORY_INFERENCE,
                            children,
-                           {getProofLiteral()},
+                           {getProofLiteral(), t},
                            getProofLiteral());
           break;
         }
@@ -1857,14 +1889,14 @@ std::shared_ptr<ProofNode> Constraint::externalExplain(
 }
 
 Node Constraint::externalExplainByAssertions(ConstraintCP a, ConstraintCP b){
-  NodeBuilder<> nb(kind::AND);
+  NodeBuilder nb(kind::AND);
   a->externalExplainByAssertions(nb);
   b->externalExplainByAssertions(nb);
   return nb;
 }
 
 Node Constraint::externalExplainByAssertions(ConstraintCP a, ConstraintCP b, ConstraintCP c){
-  NodeBuilder<> nb(kind::AND);
+  NodeBuilder nb(kind::AND);
   a->externalExplainByAssertions(nb);
   b->externalExplainByAssertions(nb);
   c->externalExplainByAssertions(nb);
@@ -1982,7 +2014,7 @@ TrustNode ConstraintDatabase::eeExplain(const Constraint* const c) const
   return d_congruenceManager.explain(c->getLiteral());
 }
 
-void ConstraintDatabase::eeExplain(ConstraintCP c, NodeBuilder<>& nb) const
+void ConstraintDatabase::eeExplain(ConstraintCP c, NodeBuilder& nb) const
 {
   Assert(c->hasLiteral());
   // NOTE: this is not a recommended method since it ignores proofs
@@ -2086,7 +2118,7 @@ void ConstraintDatabase::proveOr(std::vector<TrustNode>& out,
     int sndSign = negateSecond ? -1 : 1;
     auto bot_pf =
         d_pnm->mkNode(PfRule::MACRO_SR_PRED_TRANSFORM,
-                      {d_pnm->mkNode(PfRule::ARITH_SCALE_SUM_UPPER_BOUNDS,
+                      {d_pnm->mkNode(PfRule::MACRO_ARITH_SCALE_SUM_UB,
                                      {pf_neg_la, pf_neg_lb},
                                      {nm->mkConst<Rational>(-1 * sndSign),
                                       nm->mkConst<Rational>(sndSign)})},
@@ -2426,6 +2458,6 @@ std::pair<int, int> Constraint::unateFarkasSigns(ConstraintCP ca, ConstraintCP c
   return make_pair(a_sgn, b_sgn);
 }
 
-}/* CVC4::theory::arith namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace arith
+}  // namespace theory
+}  // namespace cvc5

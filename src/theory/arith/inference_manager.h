@@ -1,28 +1,29 @@
-/*********************                                                        */
-/*! \file inference_manager.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Gereon Kremer, Makai Mann
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Customized inference manager for the theory of nonlinear arithmetic
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Gereon Kremer, Makai Mann
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Customized inference manager for the theory of nonlinear arithmetic.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__ARITH__INFERENCE_MANAGER_H
-#define CVC4__THEORY__ARITH__INFERENCE_MANAGER_H
+#ifndef CVC5__THEORY__ARITH__INFERENCE_MANAGER_H
+#define CVC5__THEORY__ARITH__INFERENCE_MANAGER_H
 
 #include <vector>
 
 #include "theory/inference_id.h"
 #include "theory/inference_manager_buffered.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arith {
 
@@ -42,10 +43,10 @@ class TheoryArith;
  */
 class InferenceManager : public InferenceManagerBuffered
 {
-  using NodeSet = context::CDHashSet<Node, NodeHashFunction>;
+  using NodeSet = context::CDHashSet<Node>;
 
  public:
-  InferenceManager(TheoryArith& ta, ArithState& astate, ProofNodeManager* pnm);
+  InferenceManager(Env& env, TheoryArith& ta, ArithState& astate);
 
   /**
    * Add a lemma as pending lemma to this inference manager.
@@ -96,6 +97,13 @@ class InferenceManager : public InferenceManagerBuffered
 
   /** Checks whether the given lemma is already present in the cache. */
   virtual bool hasCachedLemma(TNode lem, LemmaProperty p) override;
+  /** overrides propagateLit to track which literals have been propagated */
+  bool propagateLit(TNode lit) override;
+  /**
+   * Return true if we have propagated lit already. This call is only valid if
+   * d_trackPropLits is true.
+   */
+  bool hasPropagated(TNode lit) const;
 
  protected:
   /**
@@ -110,13 +118,16 @@ class InferenceManager : public InferenceManagerBuffered
    * conflict.
    */
   bool isEntailedFalse(const SimpleTheoryLemma& lem);
-
   /** The waiting lemmas. */
   std::vector<std::unique_ptr<SimpleTheoryLemma>> d_waitingLem;
+  /** Whether we are tracking the set of propagated literals */
+  bool d_trackPropLits;
+  /** The literals we have propagated */
+  NodeSet d_propLits;
 };
 
 }  // namespace arith
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
 #endif

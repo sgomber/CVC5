@@ -1,34 +1,37 @@
-/*********************                                                        */
-/*! \file term_registry.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Tianyi Liang
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Term registry for the theory of strings.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Tianyi Liang
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Term registry for the theory of strings.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__STRINGS__TERM_REGISTRY_H
-#define CVC4__THEORY__STRINGS__TERM_REGISTRY_H
+#ifndef CVC5__THEORY__STRINGS__TERM_REGISTRY_H
+#define CVC5__THEORY__STRINGS__TERM_REGISTRY_H
 
 #include "context/cdhashset.h"
 #include "context/cdlist.h"
-#include "expr/proof_node_manager.h"
-#include "theory/eager_proof_generator.h"
+#include "proof/eager_proof_generator.h"
+#include "proof/proof_node_manager.h"
+#include "smt/env_obj.h"
 #include "theory/output_channel.h"
+#include "theory/strings/arith_entail.h"
 #include "theory/strings/infer_info.h"
 #include "theory/strings/sequences_stats.h"
 #include "theory/strings/skolem_cache.h"
 #include "theory/strings/solver_state.h"
 #include "theory/uf/equality_engine.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
@@ -43,17 +46,20 @@ class InferenceManager;
  * (5) Maintaining a skolem cache. Notice that this skolem cache is the
  * official skolem cache that should be used by all modules in TheoryStrings.
  */
-class TermRegistry
+class TermRegistry : protected EnvObj
 {
-  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
-  typedef context::CDHashSet<TypeNode, TypeNodeHashFunction> TypeNodeSet;
-  typedef context::CDHashMap<Node, Node, NodeHashFunction> NodeNodeMap;
+  typedef context::CDHashSet<Node> NodeSet;
+  typedef context::CDHashSet<TypeNode, std::hash<TypeNode>> TypeNodeSet;
+  typedef context::CDHashMap<Node, Node> NodeNodeMap;
 
  public:
-  TermRegistry(SolverState& s,
+  TermRegistry(Env& env,
+               SolverState& s,
                SequencesStatistics& statistics,
                ProofNodeManager* pnm);
   ~TermRegistry();
+  /** get the cardinality of the alphabet used, based on the options */
+  uint32_t getAlphabetCardinality() const;
   /** Finish initialize, which sets the inference manager */
   void finishInit(InferenceManager* im);
   /** The eager reduce routine
@@ -65,9 +71,10 @@ class TermRegistry
    *
    * @param t The node to reduce,
    * @param sc The Skolem cache to use for new variables,
+   * @param alphaCard The cardinality of the alphabet we are assuming
    * @return The eager reduction for t.
    */
-  static Node eagerReduce(Node t, SkolemCache* sc);
+  static Node eagerReduce(Node t, SkolemCache* sc, uint32_t alphaCard);
   /**
    * Returns a lemma indicating that the length of a term t whose type is
    * string-like has positive length. The exact form of this lemma depends
@@ -146,9 +153,17 @@ class TermRegistry
    * Get the "input variables", corresponding to the set of leaf nodes of
    * string-like type that have been preregistered as terms to this object.
    */
-  const context::CDHashSet<Node, NodeHashFunction>& getInputVars() const;
+  const context::CDHashSet<Node>& getInputVars() const;
   /** Returns true if any str.code terms have been preregistered */
   bool hasStringCode() const;
+  /**
+   * @return true if any seq.nth or seq.update terms have been preregistered
+   */
+  bool hasSeqUpdate() const;
+  /** is handled update */
+  bool isHandledUpdate(Node n);
+  /** get base */
+  Node getUpdateBase(Node n);
   //---------------------------- end queries
   //---------------------------- proxy variables
   /** Get symbolic definition
@@ -204,7 +219,7 @@ class TermRegistry
   Node d_one;
   Node d_negOne;
   /** the cardinality of the alphabet */
-  uint32_t d_cardSize;
+  uint32_t d_alphaCard;
   /** Reference to the solver state of the theory of strings. */
   SolverState& d_state;
   /** Pointer to the inference manager of the theory of strings. */
@@ -213,8 +228,12 @@ class TermRegistry
   SequencesStatistics& d_statistics;
   /** have we asserted any str.code terms? */
   bool d_hasStrCode;
+  /** have we asserted any seq.update/seq.nth terms? */
+  bool d_hasSeqUpdate;
   /** The cache of all skolems, which is owned by this class. */
   SkolemCache d_skCache;
+  /** arithmetic entailment */
+  ArithEntail d_aent;
   /** All function terms that the theory has seen in the current SAT context */
   context::CDList<TNode> d_functionsTerms;
   /**
@@ -242,7 +261,7 @@ class TermRegistry
    * Map from proxy variables to their normalized length. In the above example,
    * we store "ABC" -> 3.
    */
-  std::map<Node, Node> d_proxyVarToLength;
+  NodeNodeMap d_proxyVarToLength;
   /** List of terms that we have register length for */
   NodeSet d_lengthLemmaTermsCache;
   /** Proof generator, manages proofs for lemmas generated by this class */
@@ -279,6 +298,6 @@ class TermRegistry
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__STRINGS__TERM_REGISTRY_H */
+#endif /* CVC5__THEORY__STRINGS__TERM_REGISTRY_H */

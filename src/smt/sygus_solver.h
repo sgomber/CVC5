@@ -1,35 +1,36 @@
-/*********************                                                        */
-/*! \file sygus_solver.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Haniel Barbosa, Abdalrhman Mohamed
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The solver for sygus queries
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Haniel Barbosa, Abdalrhman Mohamed
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The solver for SyGuS queries.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__SMT__SYGUS_SOLVER_H
-#define CVC4__SMT__SYGUS_SOLVER_H
+#ifndef CVC5__SMT__SYGUS_SOLVER_H
+#define CVC5__SMT__SYGUS_SOLVER_H
 
 #include "context/cdo.h"
 #include "expr/node.h"
 #include "expr/type_node.h"
 #include "smt/assertions.h"
+#include "smt/env_obj.h"
 #include "util/result.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 class OutputManager;
 
 namespace smt {
 
-class Preprocessor;
 class SmtSolver;
 
 /**
@@ -41,13 +42,10 @@ class SmtSolver;
  * It also maintains a reference to a preprocessor for implementing
  * checkSynthSolution.
  */
-class SygusSolver
+class SygusSolver : protected EnvObj
 {
  public:
-  SygusSolver(SmtSolver& sms,
-              Preprocessor& pp,
-              context::UserContext* u,
-              OutputManager& outMgr);
+  SygusSolver(Env& env, SmtSolver& sms);
   ~SygusSolver();
 
   /**
@@ -84,8 +82,8 @@ class SygusSolver
                        bool isInv,
                        const std::vector<Node>& vars);
 
-  /** Add a regular sygus constraint.*/
-  void assertSygusConstraint(Node constraint);
+  /** Add a regular sygus constraint or assumption.*/
+  void assertSygusConstraint(Node n, bool isAssume);
 
   /**
    * Add an invariant constraint.
@@ -136,11 +134,6 @@ class SygusSolver
    * is a valid formula.
    */
   bool getSynthSolutions(std::map<Node, Node>& sol_map);
-  /**
-   * Print solution for synthesis conjectures found by counter-example guided
-   * instantiation module.
-   */
-  void printSynthSolution(std::ostream& out);
 
  private:
   /**
@@ -165,10 +158,20 @@ class SygusSolver
    * previously not stale.
    */
   void setSygusConjectureStale();
+  /**
+   * Expand definitions in sygus datatype tn, which ensures that all
+   * sygus constructors that are used to build values of sygus datatype
+   * tn are associated with their expanded definition form.
+   *
+   * This method is required at this level since sygus grammars may include
+   * user-defined functions. Thus, we must use the preprocessor here to
+   * associate the use of those functions with their expanded form, since
+   * the internal sygus solver must reason about sygus operators after
+   * expansion.
+   */
+  void expandDefinitionsSygusDt(TypeNode tn) const;
   /** The SMT solver, which is used during checkSynth. */
   SmtSolver& d_smtSolver;
-  /** The preprocessor, used for checkSynthSolution. */
-  Preprocessor& d_pp;
   /**
    * sygus variables declared (from "declare-var" and "declare-fun" commands)
    *
@@ -178,17 +181,17 @@ class SygusSolver
   std::vector<Node> d_sygusVars;
   /** sygus constraints */
   std::vector<Node> d_sygusConstraints;
+  /** sygus assumptions */
+  std::vector<Node> d_sygusAssumps;
   /** functions-to-synthesize */
   std::vector<Node> d_sygusFunSymbols;
   /**
    * Whether we need to reconstruct the sygus conjecture.
    */
   context::CDO<bool> d_sygusConjectureStale;
-  /** Reference to the output manager of the smt engine */
-  OutputManager& d_outMgr;
 };
 
 }  // namespace smt
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__SMT__SYGUS_SOLVER_H */
+#endif /* CVC5__SMT__SYGUS_SOLVER_H */

@@ -1,18 +1,17 @@
-/*********************                                                        */
-/*! \file ast_printer.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Morgan Deters, Abdalrhman Mohamed, Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The pretty-printer interface for the AST output language
- **
- ** The pretty-printer interface for the AST output language.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Morgan Deters, Abdalrhman Mohamed, Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The pretty-printer interface for the AST output language.
+ */
 #include "printer/ast/ast_printer.h"
 
 #include <iostream>
@@ -29,7 +28,7 @@
 
 using namespace std;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace printer {
 namespace ast {
 
@@ -142,16 +141,16 @@ void AstPrinter::toStream(std::ostream& out, const smt::Model& m) const
 }
 
 void AstPrinter::toStreamModelSort(std::ostream& out,
-                                   const smt::Model& m,
-                                   TypeNode tn) const
+                                   TypeNode tn,
+                                   const std::vector<Node>& elements) const
 {
   // shouldn't be called; only the non-Command* version above should be
   Unreachable();
 }
 
 void AstPrinter::toStreamModelTerm(std::ostream& out,
-                                   const smt::Model& m,
-                                   Node n) const
+                                   const Node& n,
+                                   const Node& value) const
 {
   // shouldn't be called; only the non-Command* version above should be
   Unreachable();
@@ -183,17 +182,9 @@ void AstPrinter::toStreamCmdPop(std::ostream& out) const {
   out << "Pop()" << std::endl;
 }
 
-void AstPrinter::toStreamCmdCheckSat(std::ostream& out, Node n) const
+void AstPrinter::toStreamCmdCheckSat(std::ostream& out) const
 {
-  if (n.isNull())
-  {
-    out << "CheckSat()";
-  }
-  else
-  {
-    out << "CheckSat(" << n << ')';
-  }
-  out << std::endl;
+  out << "CheckSat()" << std::endl;
 }
 
 void AstPrinter::toStreamCmdCheckSatAssuming(
@@ -332,12 +323,6 @@ void AstPrinter::toStreamCmdGetUnsatCore(std::ostream& out) const
   out << "GetUnsatCore()" << std::endl;
 }
 
-void AstPrinter::toStreamCmdSetBenchmarkStatus(std::ostream& out,
-                                               Result::Sat status) const
-{
-  out << "SetBenchmarkStatus(" << status << ')' << std::endl;
-}
-
 void AstPrinter::toStreamCmdSetBenchmarkLogic(std::ostream& out,
                                               const std::string& logic) const
 {
@@ -379,12 +364,6 @@ void AstPrinter::toStreamCmdDatatypeDeclaration(
     out << t << ";" << endl;
   }
   out << "])" << std::endl;
-}
-
-void AstPrinter::toStreamCmdComment(std::ostream& out,
-                                    const std::string& comment) const
-{
-  out << "CommentCommand([" << comment << "])" << std::endl;
 }
 
 void AstPrinter::toStreamWithLetify(std::ostream& out,
@@ -473,6 +452,6 @@ static bool tryToStream(std::ostream& out, const CommandStatus* s)
   return false;
 }
 
-}/* CVC4::printer::ast namespace */
-}/* CVC4::printer namespace */
-}/* CVC4 namespace */
+}  // namespace ast
+}  // namespace printer
+}  // namespace cvc5

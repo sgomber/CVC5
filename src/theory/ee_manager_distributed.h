@@ -1,28 +1,30 @@
-/*********************                                                        */
-/*! \file ee_manager_distributed.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Management of a distributed approach for equality engines over
- ** all theories.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Management of a distributed approach for equality engines over
+ * all theories.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__EE_MANAGER_DISTRIBUTED__H
-#define CVC4__THEORY__EE_MANAGER_DISTRIBUTED__H
+#ifndef CVC5__THEORY__EE_MANAGER_DISTRIBUTED__H
+#define CVC5__THEORY__EE_MANAGER_DISTRIBUTED__H
 
 #include <memory>
 
 #include "theory/ee_manager.h"
+#include "theory/quantifiers/master_eq_notify.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 
 namespace eq {
@@ -47,7 +49,7 @@ class EqualityEngine;
 class EqEngineManagerDistributed : public EqEngineManager
 {
  public:
-  EqEngineManagerDistributed(TheoryEngine& te, SharedSolver& shs);
+  EqEngineManagerDistributed(Env& env, TheoryEngine& te, SharedSolver& shs);
   ~EqEngineManagerDistributed();
   /**
    * Initialize theories. This method allocates unique equality engines
@@ -58,38 +60,8 @@ class EqEngineManagerDistributed : public EqEngineManager
   void notifyModel(bool incomplete) override;
 
  private:
-  /** notify class for master equality engine */
-  class MasterNotifyClass : public theory::eq::EqualityEngineNotify
-  {
-   public:
-    MasterNotifyClass(QuantifiersEngine* qe) : d_quantEngine(qe) {}
-    /**
-     * Called when a new equivalence class is created in the master equality
-     * engine.
-     */
-    void eqNotifyNewClass(TNode t) override;
-
-    bool eqNotifyTriggerPredicate(TNode predicate, bool value) override
-    {
-      return true;
-    }
-    bool eqNotifyTriggerTermEquality(TheoryId tag,
-                                     TNode t1,
-                                     TNode t2,
-                                     bool value) override
-    {
-      return true;
-    }
-    void eqNotifyConstantTermMerge(TNode t1, TNode t2) override {}
-    void eqNotifyMerge(TNode t1, TNode t2) override {}
-    void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override {}
-
-   private:
-    /** Pointer to quantifiers engine */
-    QuantifiersEngine* d_quantEngine;
-  };
   /** The master equality engine notify class */
-  std::unique_ptr<MasterNotifyClass> d_masterEENotify;
+  std::unique_ptr<quantifiers::MasterNotifyClass> d_masterEENotify;
   /** The master equality engine. */
   std::unique_ptr<eq::EqualityEngine> d_masterEqualityEngine;
   /** The equality engine of the shared solver / shared terms database. */
@@ -97,6 +69,6 @@ class EqEngineManagerDistributed : public EqEngineManager
 };
 
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__EE_MANAGER_DISTRIBUTED__H */
+#endif /* CVC5__THEORY__EE_MANAGER_DISTRIBUTED__H */

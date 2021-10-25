@@ -1,23 +1,22 @@
-/*********************                                                        */
-/*! \file input.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Christopher L. Conway, Morgan Deters, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Base for parser inputs.
- **
- ** Base for parser inputs.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Christopher L. Conway, Morgan Deters, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Base for parser inputs.
+ */
 
-#include "cvc4parser_public.h"
+#include "cvc5parser_public.h"
 
-#ifndef CVC4__PARSER__INPUT_H
-#define CVC4__PARSER__INPUT_H
+#ifndef CVC5__PARSER__INPUT_H
+#define CVC5__PARSER__INPUT_H
 
 #include <stdio.h>
 
@@ -25,12 +24,12 @@
 #include <string>
 #include <vector>
 
-#include "api/cvc4cpp.h"
-#include "cvc4_export.h"
+#include "api/cpp/cvc5.h"
+#include "cvc5_export.h"
 #include "options/language.h"
 #include "parser/parser_exception.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 class Command;
 
@@ -79,7 +78,7 @@ class Parser;
  * for the given input language and attach it to an input source of the
  * appropriate type.
  */
-class CVC4_EXPORT Input
+class CVC5_EXPORT Input
 {
   friend class Parser; // for parseError, parseCommand, parseExpr
   friend class ParserBuilder;
@@ -101,7 +100,7 @@ class CVC4_EXPORT Input
     * @param filename the input filename
     * @param useMmap true if the parser should use memory-mapped I/O (default: false)
     */
-  static Input* newFileInput(InputLanguage lang,
+  static Input* newFileInput(const std::string& lang,
                              const std::string& filename,
                              bool useMmap = false);
 
@@ -114,10 +113,9 @@ class CVC4_EXPORT Input
    * (false, the default, means that the entire Input might be read
    * before being lexed and parsed)
    */
-  static Input* newStreamInput(InputLanguage lang,
+  static Input* newStreamInput(const std::string& lang,
                                std::istream& input,
-                               const std::string& name,
-                               bool lineBuffered = false);
+                               const std::string& name);
 
   /** Create an input for the given string
    *
@@ -125,7 +123,7 @@ class CVC4_EXPORT Input
    * @param input the input string
    * @param name the name of the stream, for use in error messages
    */
-  static Input* newStringInput(InputLanguage lang,
+  static Input* newStringInput(const std::string& lang,
                                const std::string& input,
                                const std::string& name);
 
@@ -176,7 +174,7 @@ class CVC4_EXPORT Input
 
 }; /* class Input */
 
-}/* CVC4::parser namespace */
-}/* CVC4 namespace */
+}  // namespace parser
+}  // namespace cvc5
 
-#endif /* CVC4__PARSER__ANTLR_INPUT_H */
+#endif /* CVC5__PARSER__ANTLR_INPUT_H */

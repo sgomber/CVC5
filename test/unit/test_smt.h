@@ -1,25 +1,28 @@
-/*********************                                                        */
-/*! \file test_smt.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Aina Niemetz, Andrew Reynolds, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Common header for unit tests that need an SmtEngine.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Aina Niemetz, Andrew Reynolds, Haniel Barbosa
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Common header for unit tests that need an SolverEngine.
+ */
 
-#ifndef CVC4__TEST__UNIT__TEST_SMT_H
-#define CVC4__TEST__UNIT__TEST_SMT_H
+#ifndef CVC5__TEST__UNIT__TEST_SMT_H
+#define CVC5__TEST__UNIT__TEST_SMT_H
 
 #include "expr/dtype_cons.h"
 #include "expr/node.h"
 #include "expr/node_manager.h"
-#include "smt/smt_engine.h"
-#include "smt/smt_engine_scope.h"
+#include "expr/skolem_manager.h"
+#include "proof/proof_checker.h"
+#include "smt/solver_engine.h"
+#include "smt/solver_engine_scope.h"
 #include "test.h"
 #include "theory/output_channel.h"
 #include "theory/rewriter.h"
@@ -29,7 +32,7 @@
 #include "util/resource_manager.h"
 #include "util/unsafe_interrupt_exception.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace test {
 
 /* -------------------------------------------------------------------------- */
@@ -41,15 +44,16 @@ class TestSmt : public TestInternal
  protected:
   void SetUp() override
   {
-    d_nodeManager.reset(new NodeManager());
-    d_nmScope.reset(new NodeManagerScope(d_nodeManager.get()));
-    d_smtEngine.reset(new SmtEngine(d_nodeManager.get()));
-    d_smtEngine->finishInit();
+    d_nodeManager = NodeManager::currentNM();
+    d_nodeManager->init();
+    d_skolemManager = d_nodeManager->getSkolemManager();
+    d_slvEngine.reset(new SolverEngine(d_nodeManager));
+    d_slvEngine->finishInit();
   }
 
-  std::unique_ptr<NodeManagerScope> d_nmScope;
-  std::unique_ptr<NodeManager> d_nodeManager;
-  std::unique_ptr<SmtEngine> d_smtEngine;
+  NodeManager* d_nodeManager;
+  SkolemManager* d_skolemManager;
+  std::unique_ptr<SolverEngine> d_slvEngine;
 };
 
 class TestSmtNoFinishInit : public TestInternal
@@ -57,14 +61,15 @@ class TestSmtNoFinishInit : public TestInternal
  protected:
   void SetUp() override
   {
-    d_nodeManager.reset(new NodeManager());
-    d_nmScope.reset(new NodeManagerScope(d_nodeManager.get()));
-    d_smtEngine.reset(new SmtEngine(d_nodeManager.get()));
+    d_nodeManager = NodeManager::currentNM();
+    d_nodeManager->init();
+    d_skolemManager = d_nodeManager->getSkolemManager();
+    d_slvEngine.reset(new SolverEngine(d_nodeManager));
   }
 
-  std::unique_ptr<NodeManagerScope> d_nmScope;
-  std::unique_ptr<NodeManager> d_nodeManager;
-  std::unique_ptr<SmtEngine> d_smtEngine;
+  NodeManager* d_nodeManager;
+  SkolemManager* d_skolemManager;
+  std::unique_ptr<SolverEngine> d_slvEngine;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -99,19 +104,16 @@ inline std::ostream& operator<<(std::ostream& out, OutputChannelCallType type)
   }
 }
 
-class DummyOutputChannel : public CVC4::theory::OutputChannel
+class DummyOutputChannel : public cvc5::theory::OutputChannel
 {
  public:
   DummyOutputChannel() {}
   ~DummyOutputChannel() override {}
 
-  void safePoint(ResourceManager::Resource r) override {}
+  void safePoint(Resource r) override {}
   void conflict(TNode n) override { push(CONFLICT, n); }
 
-  void trustedConflict(theory::TrustNode n) override
-  {
-    push(CONFLICT, n.getNode());
-  }
+  void trustedConflict(TrustNode n) override { push(CONFLICT, n.getNode()); }
 
   bool propagate(TNode n) override
   {
@@ -125,16 +127,13 @@ class DummyOutputChannel : public CVC4::theory::OutputChannel
     push(LEMMA, n);
   }
 
-  void trustedLemma(theory::TrustNode n, theory::LemmaProperty p) override
+  void trustedLemma(TrustNode n, theory::LemmaProperty p) override
   {
     push(LEMMA, n.getNode());
   }
 
   void requirePhase(TNode, bool) override {}
-  void setIncomplete() override {}
-  void handleUserAttribute(const char* attr, theory::Theory* t) override {}
-
-  void splitLemma(TNode n, bool removable = false) override { push(LEMMA, n); }
+  void setIncomplete(theory::IncompleteId id) override {}
 
   void clear() { d_callHistory.clear(); }
 
@@ -169,7 +168,7 @@ class DummyOutputChannel : public CVC4::theory::OutputChannel
 
 /* -------------------------------------------------------------------------- */
 
-class DymmyTheoryRewriter : public theory::TheoryRewriter
+class DummyTheoryRewriter : public theory::TheoryRewriter
 {
  public:
   theory::RewriteResponse preRewrite(TNode n) override
@@ -183,25 +182,37 @@ class DymmyTheoryRewriter : public theory::TheoryRewriter
   }
 };
 
+class DummyProofRuleChecker : public ProofRuleChecker
+{
+ public:
+  DummyProofRuleChecker() {}
+  ~DummyProofRuleChecker() {}
+  void registerTo(ProofChecker* pc) override {}
+
+ protected:
+  Node checkInternal(PfRule id,
+                     const std::vector<Node>& children,
+                     const std::vector<Node>& args) override
+  {
+    return Node::null();
+  }
+};
+
 /** Dummy Theory interface.  */
 template <theory::TheoryId theoryId>
 class DummyTheory : public theory::Theory
 {
  public:
-  DummyTheory(context::Context* ctxt,
-              context::UserContext* uctxt,
-              theory::OutputChannel& out,
-              theory::Valuation valuation,
-              const LogicInfo& logicInfo,
-              ProofNodeManager* pnm)
-      : Theory(theoryId, ctxt, uctxt, out, valuation, logicInfo, pnm),
-        d_state(ctxt, uctxt, valuation)
+  DummyTheory(Env& env, theory::OutputChannel& out, theory::Valuation valuation)
+      : Theory(theoryId, env, out, valuation),
+        d_state(env, valuation)
   {
     // use a default theory state object
     d_theoryState = &d_state;
   }
 
   theory::TheoryRewriter* getTheoryRewriter() override { return &d_rewriter; }
+  ProofRuleChecker* getProofChecker() override { return &d_checker; }
 
   void registerTerm(TNode n)
   {
@@ -226,10 +237,7 @@ class DummyTheory : public theory::Theory
     // do not assert to equality engine, since this theory does not use one
     return true;
   }
-  theory::TrustNode explain(TNode n) override
-  {
-    return theory::TrustNode::null();
-  }
+  TrustNode explain(TNode n) override { return TrustNode::null(); }
   Node getValue(TNode n) { return Node::null(); }
   std::string identify() const override { return "DummyTheory" + d_id; }
 
@@ -244,10 +252,12 @@ class DummyTheory : public theory::Theory
    */
   std::string d_id;
   /** The theory rewriter for this theory. */
-  DymmyTheoryRewriter d_rewriter;
+  DummyTheoryRewriter d_rewriter;
+  /** The proof checker for this theory. */
+  DummyProofRuleChecker d_checker;
 };
 
 /* -------------------------------------------------------------------------- */
 }  // namespace test
-}  // namespace CVC4
+}  // namespace cvc5
 #endif

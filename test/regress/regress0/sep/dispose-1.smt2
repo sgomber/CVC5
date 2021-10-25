@@ -1,4 +1,4 @@
-(set-logic QF_ALL_SUPPORTED)
+(set-logic QF_ALL)
 (set-info :status unsat)
 
 (declare-heap (Int Int))
@@ -13,7 +13,7 @@
 ;-----------------
 
 (assert (pto w (as sep.nil Int)))
-(assert (not (and (sep (and (_ emp Int Int) (= w2 (as sep.nil Int))) (pto w w1)) (sep (pto w w2) true))))
+(assert (not (and (sep (and sep.emp (= w2 (as sep.nil Int))) (pto w w1)) (sep (pto w w2) true))))
 
 (check-sat)
 ;(get-model)

@@ -1,25 +1,26 @@
-/*********************                                                        */
-/*! \file sygus_grammar_norm.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Haniel Barbosa, Andrew Reynolds, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief implementation of class for for simplifying SyGuS grammars after they
- ** are encoded into datatypes.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Haniel Barbosa, Andrew Reynolds, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of class for for simplifying SyGuS grammars after they
+ * are encoded into datatypes.
+ */
 
 #include "theory/quantifiers/sygus/sygus_grammar_norm.h"
+
+#include <sstream>
 
 #include "expr/dtype_cons.h"
 #include "expr/node_manager_attributes.h"  // for VarNameAttr
 #include "options/quantifiers_options.h"
-#include "smt/smt_engine.h"
-#include "smt/smt_engine_scope.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
 #include "theory/quantifiers/cegqi/ceg_instantiator.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
@@ -29,9 +30,9 @@
 
 #include <numeric>  // for std::iota
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
@@ -534,4 +535,4 @@ TypeNode SygusGrammarNorm::normalizeSygusType(TypeNode tn, Node sygus_vars)
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

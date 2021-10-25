@@ -1,35 +1,44 @@
-/*********************                                                        */
-/*! \file datatypes_rewriter.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mudathir Mohamed, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of rewriter for the theory of (co)inductive datatypes.
- **
- ** Implementation of rewriter for the theory of (co)inductive datatypes.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mudathir Mohamed, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of rewriter for the theory of (co)inductive datatypes.
+ */
 
 #include "theory/datatypes/datatypes_rewriter.h"
 
+#include "expr/ascription_type.h"
+#include "expr/codatatype_bound_variable.h"
 #include "expr/dtype.h"
 #include "expr/dtype_cons.h"
 #include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
 #include "expr/sygus_datatype.h"
 #include "options/datatypes_options.h"
 #include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/datatypes/theory_datatypes_utils.h"
+#include "theory/datatypes/tuple_project_op.h"
+#include "util/rational.h"
 
-using namespace CVC4;
-using namespace CVC4::kind;
+using namespace cvc5;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace datatypes {
+
+DatatypesRewriter::DatatypesRewriter(Evaluator* sygusEval)
+    : d_sygusEval(sygusEval)
+{
+}
 
 RewriteResponse DatatypesRewriter::postRewrite(TNode in)
 {
@@ -47,6 +56,10 @@ RewriteResponse DatatypesRewriter::postRewrite(TNode in)
   else if (kind == kind::APPLY_TESTER)
   {
     return rewriteTester(in);
+  }
+  else if (kind == APPLY_UPDATER)
+  {
+    return rewriteUpdater(in);
   }
   else if (kind == kind::DT_SIZE)
   {
@@ -129,7 +142,7 @@ RewriteResponse DatatypesRewriter::postRewrite(TNode in)
       {
         args.push_back(in[j]);
       }
-      Node ret = utils::sygusToBuiltinEval(ev, args);
+      Node ret = sygusToBuiltinEval(ev, args);
       Trace("dt-sygus-util") << "...got " << ret << "\n";
       Trace("dt-sygus-util") << "Type is " << ret.getType() << std::endl;
       Assert(in.getType().isComparableTo(ret.getType()));
@@ -191,8 +204,8 @@ RewriteResponse DatatypesRewriter::postRewrite(TNode in)
           for (size_t i = 0, vsize = c[0].getNumChildren(); i < vsize; i++)
           {
             vars.push_back(c[0][i]);
-            Node sc = nm->mkNode(
-                APPLY_SELECTOR_TOTAL, dt[cindex].getSelectorInternal(t, i), h);
+            Node sc =
+                nm->mkNode(APPLY_SELECTOR, dt[cindex][i].getSelector(), h);
             subs.push_back(sc);
           }
         }
@@ -473,6 +486,28 @@ RewriteResponse DatatypesRewriter::rewriteTester(TNode in)
   return RewriteResponse(REWRITE_DONE, in);
 }
 
+RewriteResponse DatatypesRewriter::rewriteUpdater(TNode in)
+{
+  Assert (in.getKind()==APPLY_UPDATER);
+  if (in[0].getKind() == APPLY_CONSTRUCTOR)
+  {
+    Node op = in.getOperator();
+    size_t cindex = utils::indexOf(in[0].getOperator());
+    size_t cuindex = utils::cindexOf(op);
+    if (cindex==cuindex)
+    {
+      NodeManager * nm = NodeManager::currentNM();
+      size_t updateIndex = utils::indexOf(op);
+      std::vector<Node> children(in[0].begin(), in[0].end());
+      children[updateIndex] = in[1];
+      children.insert(children.begin(),in[0].getOperator());
+      return RewriteResponse(REWRITE_DONE, nm->mkNode(APPLY_CONSTRUCTOR, children));
+    }
+    return RewriteResponse(REWRITE_DONE, in[0]);
+  }
+  return RewriteResponse(REWRITE_DONE, in);
+}
+
 Node DatatypesRewriter::normalizeCodatatypeConstant(Node n)
 {
   Trace("dt-nconst") << "Normalize " << n << std::endl;
@@ -694,7 +729,7 @@ Node DatatypesRewriter::collectRef(Node n,
       else
       {
         // a loop
-        const Integer& i = n.getConst<UninterpretedConstant>().getIndex();
+        const Integer& i = n.getConst<CodatatypeBoundVariable>().getIndex();
         uint32_t index = i.toUnsignedInt();
         if (index >= sk.size())
         {
@@ -736,7 +771,7 @@ Node DatatypesRewriter::normalizeCodatatypeConstantEqc(
     {
       int debruijn = depth - it->second - 1;
       return NodeManager::currentNM()->mkConst(
-          UninterpretedConstant(n.getType(), debruijn));
+          CodatatypeBoundVariable(n.getType(), debruijn));
     }
     std::vector<Node> children;
     bool childChanged = false;
@@ -763,10 +798,10 @@ Node DatatypesRewriter::replaceDebruijn(Node n,
                                         TypeNode orig_tn,
                                         unsigned depth)
 {
-  if (n.getKind() == kind::UNINTERPRETED_CONSTANT && n.getType() == orig_tn)
+  if (n.getKind() == kind::CODATATYPE_BOUND_VARIABLE && n.getType() == orig_tn)
   {
     unsigned index =
-        n.getConst<UninterpretedConstant>().getIndex().toUnsignedInt();
+        n.getConst<CodatatypeBoundVariable>().getIndex().toUnsignedInt();
     if (index == depth)
     {
       return orig;
@@ -794,6 +829,222 @@ Node DatatypesRewriter::replaceDebruijn(Node n,
   return n;
 }
 
-} /* CVC4::theory::datatypes namespace */
-} /* CVC4::theory namespace */
-} /* CVC4 namespace */
+Node DatatypesRewriter::expandApplySelector(Node n)
+{
+  Assert(n.getKind() == APPLY_SELECTOR);
+  Node selector = n.getOperator();
+  // APPLY_SELECTOR always applies to an external selector, cindexOf is
+  // legal here
+  size_t cindex = utils::cindexOf(selector);
+  const DType& dt = utils::datatypeOf(selector);
+  const DTypeConstructor& c = dt[cindex];
+  Node selector_use;
+  TypeNode ndt = n[0].getType();
+  if (options::dtSharedSelectors())
+  {
+    size_t selectorIndex = utils::indexOf(selector);
+    Trace("dt-expand") << "...selector index = " << selectorIndex << std::endl;
+    Assert(selectorIndex < c.getNumArgs());
+    selector_use = c.getSelectorInternal(ndt, selectorIndex);
+  }
+  else
+  {
+    selector_use = selector;
+  }
+  NodeManager* nm = NodeManager::currentNM();
+  Node sel = nm->mkNode(kind::APPLY_SELECTOR_TOTAL, selector_use, n[0]);
+  if (options::dtRewriteErrorSel())
+  {
+    return sel;
+  }
+  Node tester = c.getTester();
+  Node tst = nm->mkNode(APPLY_TESTER, tester, n[0]);
+  SkolemManager* sm = nm->getSkolemManager();
+  TypeNode tnw = nm->mkFunctionType(ndt, n.getType());
+  Node f = sm->mkSkolemFunction(SkolemFunId::SELECTOR_WRONG, tnw, selector);
+  Node sk = nm->mkNode(kind::APPLY_UF, f, n[0]);
+  Node ret = nm->mkNode(kind::ITE, tst, sel, sk);
+  Trace("dt-expand") << "Expand def : " << n << " to " << ret << std::endl;
+  return ret;
+}
+
+TrustNode DatatypesRewriter::expandDefinition(Node n)
+{
+  NodeManager* nm = NodeManager::currentNM();
+  TypeNode tn = n.getType();
+  Node ret;
+  switch (n.getKind())
+  {
+    case kind::APPLY_SELECTOR:
+    {
+      ret = expandApplySelector(n);
+    }
+    break;
+    case APPLY_UPDATER:
+    {
+      Assert(tn.isDatatype());
+      const DType& dt = tn.getDType();
+      Node op = n.getOperator();
+      size_t updateIndex = utils::indexOf(op);
+      size_t cindex = utils::cindexOf(op);
+      const DTypeConstructor& dc = dt[cindex];
+      NodeBuilder b(APPLY_CONSTRUCTOR);
+      b << dc.getConstructor();
+      Trace("dt-expand") << "Expand updater " << n << std::endl;
+      Trace("dt-expand") << "expr is " << n << std::endl;
+      Trace("dt-expand") << "updateIndex is " << updateIndex << std::endl;
+      Trace("dt-expand") << "t is " << tn << std::endl;
+      for (size_t i = 0, size = dc.getNumArgs(); i < size; ++i)
+      {
+        if (i == updateIndex)
+        {
+          b << n[1];
+        }
+        else
+        {
+          b << nm->mkNode(
+              APPLY_SELECTOR_TOTAL, dc.getSelectorInternal(tn, i), n[0]);
+        }
+      }
+      ret = b;
+      if (dt.getNumConstructors() > 1)
+      {
+        // must be the right constructor to update
+        Node tester = nm->mkNode(APPLY_TESTER, dc.getTester(), n[0]);
+        ret = nm->mkNode(ITE, tester, ret, n[0]);
+      }
+      Trace("dt-expand") << "return " << ret << std::endl;
+    }
+    break;
+    default: break;
+  }
+  if (!ret.isNull() && n != ret)
+  {
+    return TrustNode::mkTrustRewrite(n, ret, nullptr);
+  }
+  return TrustNode::null();
+}
+
+Node DatatypesRewriter::sygusToBuiltinEval(Node n,
+                                           const std::vector<Node>& args)
+{
+  Assert(d_sygusEval != nullptr);
+  NodeManager* nm = NodeManager::currentNM();
+  // constant arguments?
+  bool constArgs = true;
+  for (const Node& a : args)
+  {
+    if (!a.isConst())
+    {
+      constArgs = false;
+      break;
+    }
+  }
+  std::vector<Node> eargs;
+  bool svarsInit = false;
+  std::vector<Node> svars;
+  std::unordered_map<TNode, Node> visited;
+  std::unordered_map<TNode, Node>::iterator it;
+  std::vector<TNode> visit;
+  TNode cur;
+  unsigned index;
+  visit.push_back(n);
+  do
+  {
+    cur = visit.back();
+    visit.pop_back();
+    it = visited.find(cur);
+    if (it == visited.end())
+    {
+      TypeNode tn = cur.getType();
+      if (!tn.isDatatype() || !tn.getDType().isSygus())
+      {
+        visited[cur] = cur;
+      }
+      else if (cur.isConst())
+      {
+        // convert to builtin term
+        Node bt = utils::sygusToBuiltin(cur);
+        // run the evaluator if possible
+        if (!svarsInit)
+        {
+          svarsInit = true;
+          TypeNode type = cur.getType();
+          Node varList = type.getDType().getSygusVarList();
+          for (const Node& v : varList)
+          {
+            svars.push_back(v);
+          }
+        }
+        Assert(args.size() == svars.size());
+        // try evaluation if we have constant arguments
+        Node ret =
+            constArgs ? d_sygusEval->eval(bt, svars, args) : Node::null();
+        if (ret.isNull())
+        {
+          // if evaluation was not available, use a substitution
+          ret = bt.substitute(
+              svars.begin(), svars.end(), args.begin(), args.end());
+        }
+        visited[cur] = ret;
+      }
+      else
+      {
+        if (cur.getKind() == APPLY_CONSTRUCTOR)
+        {
+          visited[cur] = Node::null();
+          visit.push_back(cur);
+          for (const Node& cn : cur)
+          {
+            visit.push_back(cn);
+          }
+        }
+        else
+        {
+          // it is the evaluation of this term on the arguments
+          if (eargs.empty())
+          {
+            eargs.push_back(cur);
+            eargs.insert(eargs.end(), args.begin(), args.end());
+          }
+          else
+          {
+            eargs[0] = cur;
+          }
+          visited[cur] = nm->mkNode(DT_SYGUS_EVAL, eargs);
+        }
+      }
+    }
+    else if (it->second.isNull())
+    {
+      Node ret = cur;
+      Assert(cur.getKind() == APPLY_CONSTRUCTOR);
+      const DType& dt = cur.getType().getDType();
+      // non sygus-datatype terms are also themselves
+      if (dt.isSygus())
+      {
+        std::vector<Node> children;
+        for (const Node& cn : cur)
+        {
+          it = visited.find(cn);
+          Assert(it != visited.end());
+          Assert(!it->second.isNull());
+          children.push_back(it->second);
+        }
+        index = utils::indexOf(cur.getOperator());
+        // apply to children, which constructs the builtin term
+        ret = utils::mkSygusTerm(dt, index, children);
+        // now apply it to arguments in args
+        ret = utils::applySygusArgs(dt, dt[index].getSygusOp(), ret, args);
+      }
+      visited[cur] = ret;
+    }
+  } while (!visit.empty());
+  Assert(visited.find(n) != visited.end());
+  Assert(!visited.find(n)->second.isNull());
+  return visited[n];
+}
+
+}  // namespace datatypes
+}  // namespace theory
+}  // namespace cvc5

@@ -1,17 +1,18 @@
-/*********************                                                        */
-/*! \file term_registration_visitor.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Dejan Jovanovic, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** [[ Add lengthier description here ]]
- ** \todo document this file
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Dejan Jovanovic, Morgan Deters
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * [[ Add lengthier description here ]]
+ * \todo document this file
+ */
 
 #include "theory/term_registration_visitor.h"
 
@@ -20,9 +21,9 @@
 #include "smt/logic_exception.h"
 #include "theory/theory_engine.h"
 
-using namespace CVC4::theory;
+using namespace cvc5::theory;
 
-namespace CVC4 {
+namespace cvc5 {
 
 std::string PreRegisterVisitor::toString() const {
   std::stringstream ss;
@@ -40,7 +41,10 @@ std::string PreRegisterVisitor::toString() const {
  * current. This method is used by PreRegisterVisitor and SharedTermsVisitor
  * below.
  */
-bool isAlreadyVisited(TheoryIdSet visitedTheories, TNode current, TNode parent)
+bool isAlreadyVisited(Env& env,
+                      TheoryIdSet visitedTheories,
+                      TNode current,
+                      TNode parent)
 {
   TheoryId currentTheoryId = Theory::theoryOf(current);
   if (!TheoryIdSetUtil::setContains(currentTheoryId, visitedTheories))
@@ -66,13 +70,18 @@ bool isAlreadyVisited(TheoryIdSet visitedTheories, TNode current, TNode parent)
 
   // do we need to consider the type?
   TypeNode type = current.getType();
-  if (currentTheoryId == parentTheoryId && !type.isInterpretedFinite())
+  if (currentTheoryId == parentTheoryId && !env.isFiniteType(type))
   {
     // current and parent are the same theory, and we are infinite, return true
     return true;
   }
   TheoryId typeTheoryId = Theory::theoryOf(type);
   return TheoryIdSetUtil::setContains(typeTheoryId, visitedTheories);
+}
+
+PreRegisterVisitor::PreRegisterVisitor(Env& env, TheoryEngine* engine)
+    : EnvObj(env), d_engine(engine), d_visited(context())
+{
 }
 
 bool PreRegisterVisitor::alreadyVisited(TNode current, TNode parent) {
@@ -83,7 +92,6 @@ bool PreRegisterVisitor::alreadyVisited(TNode current, TNode parent) {
        || parent.getKind() == kind::SEP_STAR
        || parent.getKind() == kind::SEP_WAND
        || (parent.getKind() == kind::SEP_LABEL && current.getType().isBoolean())
-       // parent.getKind() == kind::CARDINALITY_CONSTRAINT
        )
       && current != parent)
   {
@@ -99,7 +107,7 @@ bool PreRegisterVisitor::alreadyVisited(TNode current, TNode parent) {
   }
 
   TheoryIdSet visitedTheories = (*find).second;
-  return isAlreadyVisited(visitedTheories, current, parent);
+  return isAlreadyVisited(d_env, visitedTheories, current, parent);
 }
 
 void PreRegisterVisitor::visit(TNode current, TNode parent) {
@@ -115,7 +123,8 @@ void PreRegisterVisitor::visit(TNode current, TNode parent) {
   // call the preregistration on current, parent or type theories and update
   // visitedTheories. The set of preregistering theories coincides with
   // visitedTheories here.
-  preRegister(d_engine, visitedTheories, current, parent, visitedTheories);
+  preRegister(
+      d_env, d_engine, visitedTheories, current, parent, visitedTheories);
 
   Debug("register::internal")
       << "PreRegisterVisitor::visit(" << current << "," << parent
@@ -127,7 +136,8 @@ void PreRegisterVisitor::visit(TNode current, TNode parent) {
   Assert(alreadyVisited(current, parent));
 }
 
-void PreRegisterVisitor::preRegister(TheoryEngine* te,
+void PreRegisterVisitor::preRegister(Env& env,
+                                     TheoryEngine* te,
                                      TheoryIdSet& visitedTheories,
                                      TNode current,
                                      TNode parent,
@@ -148,7 +158,7 @@ void PreRegisterVisitor::preRegister(TheoryEngine* te,
     // Note that if enclosed by different theories it's shared, for example,
     // in read(a, f(a)), f(a) should be shared with integers.
     TypeNode type = current.getType();
-    if (currentTheoryId != parentTheoryId || type.isInterpretedFinite())
+    if (currentTheoryId != parentTheoryId || env.isFiniteType(type))
     {
       // preregister with the type's theory, if necessary
       TheoryId typeTheoryId = Theory::theoryOf(type);
@@ -182,25 +192,19 @@ void PreRegisterVisitor::preRegisterWithTheory(TheoryEngine* te,
         << "): adding " << id << std::endl;
     // This should never throw an exception, since theories should be
     // guaranteed to be initialized.
-    // These checks don't work with finite model finding, because it
-    // uses Rational constants to represent cardinality constraints,
-    // even though arithmetic isn't actually involved.
-    if (!options::finiteModelFind())
+    if (!te->isTheoryEnabled(id))
     {
-      if (!te->isTheoryEnabled(id))
-      {
-        const LogicInfo& l = te->getLogicInfo();
-        LogicInfo newLogicInfo = l.getUnlockedCopy();
-        newLogicInfo.enableTheory(id);
-        newLogicInfo.lock();
-        std::stringstream ss;
-        ss << "The logic was specified as " << l.getLogicString()
-           << ", which doesn't include " << id
-           << ", but found a term in that theory." << std::endl
-           << "You might want to extend your logic to "
-           << newLogicInfo.getLogicString() << std::endl;
-        throw LogicException(ss.str());
-      }
+      const LogicInfo& l = te->getLogicInfo();
+      LogicInfo newLogicInfo = l.getUnlockedCopy();
+      newLogicInfo.enableTheory(id);
+      newLogicInfo.lock();
+      std::stringstream ss;
+      ss << "The logic was specified as " << l.getLogicString()
+         << ", which doesn't include " << id
+         << ", but found a term in that theory." << std::endl
+         << "You might want to extend your logic to "
+         << newLogicInfo.getLogicString() << std::endl;
+      throw LogicException(ss.str());
     }
   }
   // call the theory's preRegisterTerm method
@@ -209,6 +213,16 @@ void PreRegisterVisitor::preRegisterWithTheory(TheoryEngine* te,
 }
 
 void PreRegisterVisitor::start(TNode node) {}
+
+SharedTermsVisitor::SharedTermsVisitor(Env& env,
+                                       TheoryEngine* te,
+                                       SharedTermsDatabase& sharedTerms)
+    : EnvObj(env),
+      d_engine(te),
+      d_sharedTerms(sharedTerms),
+      d_preregistered(context())
+{
+}
 
 std::string SharedTermsVisitor::toString() const {
   std::stringstream ss;
@@ -228,7 +242,6 @@ bool SharedTermsVisitor::alreadyVisited(TNode current, TNode parent) const {
        || parent.getKind() == kind::SEP_STAR
        || parent.getKind() == kind::SEP_WAND
        || (parent.getKind() == kind::SEP_LABEL && current.getType().isBoolean())
-       // parent.getKind() == kind::CARDINALITY_CONSTRAINT
        )
       && current != parent)
   {
@@ -243,7 +256,7 @@ bool SharedTermsVisitor::alreadyVisited(TNode current, TNode parent) const {
   }
 
   TheoryIdSet visitedTheories = (*find).second;
-  return isAlreadyVisited(visitedTheories, current, parent);
+  return isAlreadyVisited(d_env, visitedTheories, current, parent);
 }
 
 void SharedTermsVisitor::visit(TNode current, TNode parent) {
@@ -257,7 +270,7 @@ void SharedTermsVisitor::visit(TNode current, TNode parent) {
 
   // preregister the term with the current, parent or type theories, as needed
   PreRegisterVisitor::preRegister(
-      d_engine, visitedTheories, current, parent, preregTheories);
+      d_env, d_engine, visitedTheories, current, parent, preregTheories);
 
   // Record the new theories that we visited
   d_visited[current] = visitedTheories;
@@ -292,4 +305,4 @@ void SharedTermsVisitor::clear() {
   d_visited.clear();
 }
 
-}  // namespace CVC4
+}  // namespace cvc5

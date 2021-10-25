@@ -1,22 +1,23 @@
-/*********************                                                        */
-/*! \file proof_checker.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Haniel Barbosa, Andrew Reynolds, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of equality proof checker
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Haniel Barbosa, Andrew Reynolds, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of equality proof checker.
+ */
 
 #include "theory/booleans/proof_checker.h"
 #include "expr/skolem_manager.h"
 #include "theory/rewriter.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace booleans {
 
@@ -25,6 +26,7 @@ void BoolProofRuleChecker::registerTo(ProofChecker* pc)
   pc->registerChecker(PfRule::SPLIT, this);
   pc->registerChecker(PfRule::RESOLUTION, this);
   pc->registerChecker(PfRule::CHAIN_RESOLUTION, this);
+  pc->registerTrustedChecker(PfRule::MACRO_RESOLUTION_TRUST, this, 3);
   pc->registerChecker(PfRule::MACRO_RESOLUTION, this);
   pc->registerChecker(PfRule::FACTORING, this);
   pc->registerChecker(PfRule::REORDERING, this);
@@ -72,6 +74,7 @@ void BoolProofRuleChecker::registerTo(ProofChecker* pc)
   pc->registerChecker(PfRule::CNF_ITE_NEG1, this);
   pc->registerChecker(PfRule::CNF_ITE_NEG2, this);
   pc->registerChecker(PfRule::CNF_ITE_NEG3, this);
+  pc->registerTrustedChecker(PfRule::SAT_REFUTATION, this, 1);
 }
 
 Node BoolProofRuleChecker::checkInternal(PfRule id,
@@ -137,7 +140,7 @@ Node BoolProofRuleChecker::checkInternal(PfRule id,
       return Node::null();
     }
     // remove duplicates while keeping the order of children
-    std::unordered_set<TNode, TNodeHashFunction> clauseSet;
+    std::unordered_set<TNode> clauseSet;
     std::vector<Node> disjuncts;
     unsigned size = children[0].getNumChildren();
     for (unsigned i = 0; i < size; ++i)
@@ -154,16 +157,13 @@ Node BoolProofRuleChecker::checkInternal(PfRule id,
       return Node::null();
     }
     NodeManager* nm = NodeManager::currentNM();
-    return disjuncts.empty()
-               ? nm->mkConst<bool>(false)
-               : disjuncts.size() == 1 ? disjuncts[0]
-                                       : nm->mkNode(kind::OR, disjuncts);
+    return nm->mkOr(disjuncts);
   }
   if (id == PfRule::REORDERING)
   {
     Assert(children.size() == 1);
     Assert(args.size() == 1);
-    std::unordered_set<Node, NodeHashFunction> clauseSet1, clauseSet2;
+    std::unordered_set<Node> clauseSet1, clauseSet2;
     if (children[0].getKind() == kind::OR)
     {
       clauseSet1.insert(children[0].begin(), children[0].end());
@@ -197,55 +197,32 @@ Node BoolProofRuleChecker::checkInternal(PfRule id,
     Node trueNode = nm->mkConst(true);
     Node falseNode = nm->mkConst(false);
     std::vector<Node> clauseNodes;
-    // literals to be removed from the virtual lhs clause of the resolution
-    std::unordered_map<Node, unsigned, NodeHashFunction> lhsElim;
-    for (std::size_t i = 0, argsSize = args.size(); i < argsSize; i = i + 2)
-    {
-      // whether pivot should occur as is or negated depends on the polarity of
-      // each step in the chain
-      if (args[i] == trueNode)
-      {
-        lhsElim[args[i + 1]]++;
-      }
-      else
-      {
-        Assert(args[i] == falseNode);
-        lhsElim[args[i + 1].notNode()]++;
-      }
-    }
-    if (Trace.isOn("bool-pfcheck"))
-    {
-      Trace("bool-pfcheck")
-          << "Original elimination multiset for lhs clause:\n";
-      for (const auto& pair : lhsElim)
-      {
-        Trace("bool-pfcheck")
-            << "\t- " << pair.first << " {" << pair.second << "}\n";
-      }
-    }
     for (std::size_t i = 0, childrenSize = children.size(); i < childrenSize;
          ++i)
     {
-      // literal to be removed from rhs clause. They will be negated
+      // Literals to be removed from the current clause, according to this
+      // clause being in the lhs or the rhs of a resolution. The first clause
+      // has no rhsElim and the last clause has no lhsElim. The literal to be
+      // eliminated depends ond the pivot and the polarity stored in the
+      // arguments.
+      Node lhsElim = Node::null();
       Node rhsElim = Node::null();
-      if (Trace.isOn("bool-pfcheck"))
+      if (i < childrenSize - 1)
       {
-        Trace("bool-pfcheck") << i << ": current lhsElim:\n";
-        for (const auto& pair : lhsElim)
-        {
-          Trace("bool-pfcheck")
-              << "\t- " << pair.first << " {" << pair.second << "}\n";
-        }
+        std::size_t index = 2 * i;
+        lhsElim = args[index] == trueNode ? args[index + 1]
+                                          : args[index + 1].notNode();
+        Trace("bool-pfcheck") << i << ": lhsElim: " << lhsElim << "\n";
       }
       if (i > 0)
       {
         std::size_t index = 2 * (i - 1);
         rhsElim = args[index] == trueNode ? args[index + 1].notNode()
                                           : args[index + 1];
-        Trace("bool-pfcheck") << i << ": rhs elim: " << rhsElim << "\n";
+        Trace("bool-pfcheck") << i << ": rhsElim: " << rhsElim << "\n";
       }
-      // Only add to conclusion nodes that are not in elimination set. First get
-      // the nodes.
+      // The current set of literals is what we had before plus those in the
+      // current child.
       //
       // Since a Node cannot hold an OR with a single child we need to
       // disambiguate singleton clauses that are OR nodes from non-singleton
@@ -254,10 +231,10 @@ Node BoolProofRuleChecker::checkInternal(PfRule id,
       // If the child is not an OR, it is a singleton clause and we take the
       // child itself as the clause. Otherwise the child can only be a singleton
       // clause if the child itself is used as a resolution literal, i.e. if the
-      // child is in lhsElim or is equal to rhsElim (which means that the
+      // child equal to the lhsElim or to the rhsElim (which means that the
       // negation of the child is in lhsElim).
-      std::vector<Node> lits;
-      if (children[i].getKind() == kind::OR && lhsElim.count(children[i]) == 0
+      std::vector<Node> lits{clauseNodes};
+      if (children[i].getKind() == kind::OR && children[i] != lhsElim
           && children[i] != rhsElim)
       {
         lits.insert(lits.end(), children[i].begin(), children[i].end());
@@ -267,37 +244,37 @@ Node BoolProofRuleChecker::checkInternal(PfRule id,
         lits.push_back(children[i]);
       }
       Trace("bool-pfcheck") << i << ": clause lits: " << lits << "\n";
-      std::vector<Node> added;
+      // We now compute the set of literals minus those to be eliminated in this
+      // step
+      std::vector<Node> curr;
       for (std::size_t j = 0, size = lits.size(); j < size; ++j)
       {
+        if (lits[j] == lhsElim)
+        {
+          lhsElim = Node::null();
+          Trace("bool-pfcheck") << "\t removed lit: " << lits[j] << "\n";
+          continue;
+        }
         if (lits[j] == rhsElim)
         {
           rhsElim = Node::null();
+          Trace("bool-pfcheck") << "\t removed lit: " << lits[j] << "\n";
           continue;
         }
-        auto it = lhsElim.find(lits[j]);
-        if (it == lhsElim.end())
-        {
-          clauseNodes.push_back(lits[j]);
-          added.push_back(lits[j]);
-        }
-        else
-        {
-          // remove occurrence
-          it->second--;
-          if (it->second == 0)
-          {
-            lhsElim.erase(it);
-          }
-        }
+        curr.push_back(lits[j]);
       }
-      Trace("bool-pfcheck") << i << ": added lits: " << added << "\n\n";
+      Trace("bool-pfcheck") << "\n";
+      clauseNodes.clear();
+      clauseNodes.insert(clauseNodes.end(), curr.begin(), curr.end());
     }
     Trace("bool-pfcheck") << "clause: " << clauseNodes << "\n" << pop;
-    return clauseNodes.empty()
-               ? nm->mkConst(false)
-               : clauseNodes.size() == 1 ? clauseNodes[0]
-                                         : nm->mkNode(kind::OR, clauseNodes);
+    return nm->mkOr(clauseNodes);
+  }
+  if (id == PfRule::MACRO_RESOLUTION_TRUST)
+  {
+    Assert(children.size() > 1);
+    Assert(args.size() == 2 * (children.size() - 1) + 1);
+    return args[0];
   }
   if (id == PfRule::MACRO_RESOLUTION)
   {
@@ -311,7 +288,7 @@ Node BoolProofRuleChecker::checkInternal(PfRule id,
     for (std::size_t i = 0, childrenSize = children.size(); i < childrenSize;
          ++i)
     {
-      std::unordered_set<Node, NodeHashFunction> elim;
+      std::unordered_set<Node> elim;
       // literals to be removed from "first" clause
       if (i < childrenSize - 1)
       {
@@ -378,8 +355,8 @@ Node BoolProofRuleChecker::checkInternal(PfRule id,
     }
     Trace("bool-pfcheck") << "clause: " << clauseNodes << "\n";
     // check that set representation is the same as of the given conclusion
-    std::unordered_set<Node, NodeHashFunction> clauseComputed{
-        clauseNodes.begin(), clauseNodes.end()};
+    std::unordered_set<Node> clauseComputed{clauseNodes.begin(),
+                                            clauseNodes.end()};
     Trace("bool-pfcheck") << "clauseSet: " << clauseComputed << "\n" << pop;
     if (clauseComputed.empty())
     {
@@ -406,8 +383,7 @@ Node BoolProofRuleChecker::checkInternal(PfRule id,
     {
       return Node::null();
     }
-    std::unordered_set<Node, NodeHashFunction> clauseGiven{args[0].begin(),
-                                                           args[0].end()};
+    std::unordered_set<Node> clauseGiven{args[0].begin(), args[0].end()};
     return clauseComputed == clauseGiven ? args[0] : Node::null();
   }
   if (id == PfRule::SPLIT)
@@ -942,10 +918,15 @@ Node BoolProofRuleChecker::checkInternal(PfRule id,
         args[0], args[0][1].notNode(), args[0][2].notNode()};
     return NodeManager::currentNM()->mkNode(kind::OR, disjuncts);
   }
+  if (id == PfRule::SAT_REFUTATION)
+  {
+    Assert(args.empty());
+    return NodeManager::currentNM()->mkConst(false);
+  }
   // no rule
   return Node::null();
 }
 
 }  // namespace booleans
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

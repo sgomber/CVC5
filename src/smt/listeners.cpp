@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file listeners.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Abdalrhman Mohamed
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implements listener classes for SMT engine.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Abdalrhman Mohamed
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implements listener classes for SMT engine.
+ */
 
 #include "smt/listeners.h"
 
@@ -22,19 +23,19 @@
 #include "smt/dump.h"
 #include "smt/dump_manager.h"
 #include "smt/node_command.h"
-#include "smt/smt_engine.h"
-#include "smt/smt_engine_scope.h"
+#include "smt/solver_engine.h"
+#include "smt/solver_engine_scope.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace smt {
 
-ResourceOutListener::ResourceOutListener(SmtEngine& smt) : d_smt(smt) {}
+ResourceOutListener::ResourceOutListener(SolverEngine& slv) : d_slv(slv) {}
 
 void ResourceOutListener::notify()
 {
-  SmtScope scope(&d_smt);
-  Assert(smt::smtEngineInScope());
-  d_smt.interrupt();
+  SolverEngineScope scope(&d_slv);
+  Assert(smt::solverEngineInScope());
+  d_slv.interrupt();
 }
 
 SmtNodeManagerListener::SmtNodeManagerListener(DumpManager& dm,
@@ -71,7 +72,7 @@ void SmtNodeManagerListener::nmNotifyNewDatatypes(
   {
     if (Configuration::isAssertionBuild())
     {
-      for (CVC4_UNUSED const TypeNode& dt : dtts)
+      for (CVC5_UNUSED const TypeNode& dt : dtts)
       {
         Assert(dt.isDatatype());
       }
@@ -96,11 +97,11 @@ void SmtNodeManagerListener::nmNotifyNewSkolem(TNode n,
   DeclareFunctionNodeCommand c(id, n, n.getType());
   if (Dump.isOn("skolems") && comment != "")
   {
-    d_outMgr.getPrinter().toStreamCmdComment(d_outMgr.getDumpOut(),
-                                             id + " is " + comment);
+    d_outMgr.getPrinter().toStreamCmdSetInfo(
+        d_outMgr.getDumpOut(), "notes", id + " is " + comment);
   }
   d_dm.addToDump(c, "skolems");
 }
 
 }  // namespace smt
-}  // namespace CVC4
+}  // namespace cvc5

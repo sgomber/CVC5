@@ -1,24 +1,25 @@
-/*********************                                                        */
-/*! \file infer_bounds.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Tim King, Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief [[ Add one-line brief description here ]]
- **
- ** [[ Add lengthier description here ]]
- ** \todo document this file
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Tim King, Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * [[ Add one-line brief description here ]]
+ *
+ * [[ Add lengthier description here ]]
+ * \todo document this file
+ */
 
 #include "theory/arith/infer_bounds.h"
 #include "theory/rewriter.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arith {
 
@@ -34,19 +35,20 @@ InferBoundAlgorithm::InferBoundAlgorithm(Algorithms a)
   Assert(a != Simplex);
 }
 
-InferBoundAlgorithm::InferBoundAlgorithm(const Maybe<int>& simplexRounds)
-  : d_alg(Simplex)
+InferBoundAlgorithm::InferBoundAlgorithm(
+    const std::optional<int>& simplexRounds)
+    : d_alg(Simplex)
 {}
 
 Algorithms InferBoundAlgorithm::getAlgorithm() const{
   return d_alg;
 }
 
-const Maybe<int>& InferBoundAlgorithm::getSimplexRounds() const{
+const std::optional<int>& InferBoundAlgorithm::getSimplexRounds() const
+{
   Assert(getAlgorithm() == Simplex);
   return d_simplexRounds;
 }
-
 
 InferBoundAlgorithm InferBoundAlgorithm::mkLookup(){
   return InferBoundAlgorithm(Lookup);
@@ -56,7 +58,9 @@ InferBoundAlgorithm InferBoundAlgorithm::mkRowSum(){
   return InferBoundAlgorithm(RowSum);
 }
 
-InferBoundAlgorithm InferBoundAlgorithm::mkSimplex(const Maybe<int>& rounds){
+InferBoundAlgorithm InferBoundAlgorithm::mkSimplex(
+    const std::optional<int>& rounds)
+{
   return InferBoundAlgorithm(rounds);
 }
 
@@ -264,4 +268,4 @@ std::ostream& operator<<(std::ostream& os,  const Algorithms a){
 
 } /* namespace arith */
 } /* namespace theory */
-} /* namespace CVC4 */
+}  // namespace cvc5

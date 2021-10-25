@@ -1,29 +1,31 @@
-/*********************                                                        */
-/*! \file cardinality_extension.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Theory of UF with cardinality.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Theory of UF with cardinality.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY_UF_STRONG_SOLVER_H
-#define CVC4__THEORY_UF_STRONG_SOLVER_H
+#ifndef CVC5__THEORY_UF_STRONG_SOLVER_H
+#define CVC5__THEORY_UF_STRONG_SOLVER_H
 
 #include "context/cdhashmap.h"
 #include "context/context.h"
+#include "smt/env_obj.h"
 #include "theory/decision_strategy.h"
 #include "theory/theory.h"
-#include "util/statistics_registry.h"
+#include "util/statistics_stats.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace uf {
 
@@ -35,11 +37,11 @@ class TheoryUF;
  * CAV 2013, or Reynolds dissertation "Finite Model Finding in Satisfiability
  * Modulo Theories".
  */
-class CardinalityExtension
+class CardinalityExtension : protected EnvObj
 {
  protected:
-  typedef context::CDHashMap<Node, bool, NodeHashFunction> NodeBoolMap;
-  typedef context::CDHashMap<Node, int, NodeHashFunction> NodeIntMap;
+  typedef context::CDHashMap<Node, bool> NodeBoolMap;
+  typedef context::CDHashMap<Node, int> NodeIntMap;
 
  public:
   /**
@@ -263,8 +265,6 @@ class CardinalityExtension
     void addCliqueLemma(std::vector<Node>& clique);
     /** cardinality */
     context::CDO<uint32_t> d_cardinality;
-    /** cardinality lemma term */
-    Node d_cardinality_term;
     /** cardinality literals */
     std::map<uint32_t, Node> d_cardinality_literal;
     /** whether a positive cardinality constraint has been asserted */
@@ -281,7 +281,7 @@ class CardinalityExtension
     void simpleCheckCardinality();
 
    public:
-    SortModel(Node n,
+    SortModel(TypeNode tn,
               TheoryState& state,
               TheoryInferenceManager& im,
               CardinalityExtension* thss);
@@ -307,7 +307,7 @@ class CardinalityExtension
     /** has cardinality */
     bool hasCardinalityAsserted() const { return d_hasCard; }
     /** get cardinality term */
-    Node getCardinalityTerm() const { return d_cardinality_term; }
+    TypeNode getType() const { return d_type; }
     /** get cardinality literal */
     Node getCardinalityLiteral(uint32_t c);
     /** get maximum negative cardinality */
@@ -339,24 +339,22 @@ class CardinalityExtension
     class CardinalityDecisionStrategy : public DecisionStrategyFmf
     {
      public:
-      CardinalityDecisionStrategy(Node t,
-                                  context::Context* satContext,
-                                  Valuation valuation);
+      CardinalityDecisionStrategy(Env& env, TypeNode type, Valuation valuation);
       /** make literal (the i^th combined cardinality literal) */
       Node mkLiteral(unsigned i) override;
       /** identify */
       std::string identify() const override;
-
      private:
-      /** the cardinality term */
-      Node d_cardinality_term;
+      /** The type we are considering cardinality constraints for */
+      TypeNode d_type;
     };
     /** cardinality decision strategy */
     std::unique_ptr<CardinalityDecisionStrategy> d_c_dec_strat;
   }; /** class SortModel */
 
  public:
-  CardinalityExtension(TheoryState& state,
+  CardinalityExtension(Env& env,
+                       TheoryState& state,
                        TheoryInferenceManager& im,
                        TheoryUF* th);
   ~CardinalityExtension();
@@ -396,7 +394,6 @@ class CardinalityExtension
     IntStat d_split_lemmas;
     IntStat d_max_model_size;
     Statistics();
-    ~Statistics();
   };
   /** statistics class */
   Statistics d_statistics;
@@ -436,8 +433,7 @@ class CardinalityExtension
   class CombinedCardinalityDecisionStrategy : public DecisionStrategyFmf
   {
    public:
-    CombinedCardinalityDecisionStrategy(context::Context* satContext,
-                                        Valuation valuation);
+    CombinedCardinalityDecisionStrategy(Env& env, Valuation valuation);
     /** make literal (the i^th combined cardinality literal) */
     Node mkLiteral(unsigned i) override;
     /** identify */
@@ -461,8 +457,8 @@ class CardinalityExtension
   NodeBoolMap d_rel_eqc;
 }; /* class CardinalityExtension */
 
-}/* CVC4::theory namespace::uf */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace uf
+}  // namespace theory
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY_UF_STRONG_SOLVER_H */
+#endif /* CVC5__THEORY_UF_STRONG_SOLVER_H */

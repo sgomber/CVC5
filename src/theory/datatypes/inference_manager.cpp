@@ -1,45 +1,45 @@
-/*********************                                                        */
-/*! \file inference_manager.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Datatypes inference manager
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Datatypes inference manager.
+ */
 
 #include "theory/datatypes/inference_manager.h"
 
 #include "expr/dtype.h"
 #include "options/datatypes_options.h"
+#include "proof/eager_proof_generator.h"
 #include "smt/smt_statistics_registry.h"
-#include "theory/eager_proof_generator.h"
 #include "theory/rewriter.h"
 #include "theory/theory.h"
 #include "theory/theory_state.h"
 #include "theory/trust_substitutions.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace datatypes {
 
-InferenceManager::InferenceManager(Theory& t,
-                                   TheoryState& state,
-                                   ProofNodeManager* pnm)
-    : InferenceManagerBuffered(t, state, pnm, "theory::datatypes"),
-      d_pnm(pnm),
-      d_ipc(pnm == nullptr ? nullptr
-                           : new InferProofCons(state.getSatContext(), pnm)),
-      d_lemPg(pnm == nullptr
-                  ? nullptr
-                  : new EagerProofGenerator(
-                      pnm, state.getUserContext(), "datatypes::lemPg"))
+InferenceManager::InferenceManager(Env& env, Theory& t, TheoryState& state)
+    : InferenceManagerBuffered(env, t, state, "theory::datatypes::"),
+      d_ipc(isProofEnabled()
+                ? new InferProofCons(context(), env.getProofNodeManager())
+                : nullptr),
+      d_lemPg(isProofEnabled()
+                  ? new EagerProofGenerator(env.getProofNodeManager(),
+                                            userContext(),
+                                            "datatypes::lemPg")
+                  : nullptr)
 {
   d_false = NodeManager::currentNM()->mkConst(false);
 }
@@ -68,6 +68,13 @@ void InferenceManager::addPendingInference(Node conc,
 
 void InferenceManager::process()
 {
+  // if we are in conflict, immediately reset and clear pending
+  if (d_theoryState.isInConflict())
+  {
+    reset();
+    clearPending();
+    return;
+  }
   // process pending lemmas, used infrequently, only for definitional lemmas
   doPendingLemmas();
   // now process the pending facts
@@ -96,15 +103,14 @@ void InferenceManager::sendDtConflict(const std::vector<Node>& conf, InferenceId
   conflictExp(id, conf, d_ipc.get());
 }
 
-bool InferenceManager::isProofEnabled() const { return d_ipc != nullptr; }
-
 TrustNode InferenceManager::processDtLemma(Node conc, Node exp, InferenceId id)
 {
   // set up a proof constructor
   std::shared_ptr<InferProofCons> ipcl;
   if (isProofEnabled())
   {
-    ipcl = std::make_shared<InferProofCons>(nullptr, d_pnm);
+    ipcl =
+        std::make_shared<InferProofCons>(nullptr, d_env.getProofNodeManager());
   }
   conc = prepareDtInference(conc, exp, id, ipcl.get());
   // send it as a lemma
@@ -126,7 +132,7 @@ TrustNode InferenceManager::processDtLemma(Node conc, Node exp, InferenceId id)
     {
       std::vector<Node> expv;
       expv.push_back(exp);
-      pn = d_pnm->mkScope(pbody, expv);
+      pn = d_env.getProofNodeManager()->mkScope(pbody, expv);
     }
     d_lemPg->setProofFor(lem, pn);
   }
@@ -152,7 +158,7 @@ Node InferenceManager::prepareDtInference(Node conc,
   if (conc.getKind() == EQUAL && conc[0].getType().isBoolean())
   {
     // must turn (= conc false) into (not conc)
-    conc = Rewriter::rewrite(conc);
+    conc = rewrite(conc);
   }
   if (isProofEnabled())
   {
@@ -171,4 +177,4 @@ Node InferenceManager::prepareDtInference(Node conc,
 
 }  // namespace datatypes
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

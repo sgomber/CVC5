@@ -1,24 +1,27 @@
-/*********************                                                        */
-/*! \file normal_form.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Mudathir Mohamed
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Normal form for bag constants.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Mudathir Mohamed, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Normal form for bag constants.
+ */
 #include "normal_form.h"
 
+#include "expr/emptybag.h"
 #include "theory/sets/normal_form.h"
 #include "theory/type_enumerator.h"
+#include "util/rational.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace bags {
 
@@ -106,6 +109,7 @@ Node NormalForm::evaluate(TNode n)
     case BAG_IS_SINGLETON: return evaluateIsSingleton(n);
     case BAG_FROM_SET: return evaluateFromSet(n);
     case BAG_TO_SET: return evaluateToSet(n);
+    case BAG_MAP: return evaluateBagMap(n);
     default: break;
   }
   Unhandled() << "Unexpected bag kind '" << n.getKind() << "' in node " << n
@@ -672,6 +676,35 @@ Node NormalForm::evaluateToSet(TNode n)
   return set;
 }
 
+
+Node NormalForm::evaluateBagMap(TNode n)
+{
+  Assert(n.getKind() == BAG_MAP);
+
+  // Examples
+  // --------
+  // - (bag.map ((lambda ((x String)) "z")
+  //            (union_disjoint (bag "a" 2) (bag "b" 3)) =
+  //     (union_disjoint
+  //       (bag ((lambda ((x String)) "z") "a") 2)
+  //       (bag ((lambda ((x String)) "z") "b") 3)) =
+  //     (bag "z" 5)
+
+  std::map<Node, Rational> elements = NormalForm::getBagElements(n[1]);
+  std::map<Node, Rational> mappedElements;
+  std::map<Node, Rational>::iterator it = elements.begin();
+  NodeManager* nm = NodeManager::currentNM();
+  while (it != elements.end())
+  {
+    Node mappedElement = nm->mkNode(APPLY_UF, n[0], it->first);
+    mappedElements[mappedElement] = it->second;
+    ++it;
+  }
+  TypeNode t = nm->mkBagType(n[0].getType().getRangeType());
+  Node ret = NormalForm::constructConstantBagFromElements(t, mappedElements);
+  return ret;
+}
+
 }  // namespace bags
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

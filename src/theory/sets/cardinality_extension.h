@@ -1,31 +1,33 @@
-/*********************                                                        */
-/*! \file cardinality_extension.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mudathir Mohamed
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief An extension of the theory sets for handling cardinality constraints
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mudathir Mohamed
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * An extension of the theory sets for handling cardinality constraints.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__SETS__CARDINALITY_EXTENSION_H
-#define CVC4__THEORY__SETS__CARDINALITY_EXTENSION_H
+#ifndef CVC5__THEORY__SETS__CARDINALITY_EXTENSION_H
+#define CVC5__THEORY__SETS__CARDINALITY_EXTENSION_H
 
 #include "context/cdhashset.h"
 #include "context/context.h"
+#include "smt/env_obj.h"
 #include "theory/sets/inference_manager.h"
 #include "theory/sets/solver_state.h"
 #include "theory/sets/term_registry.h"
 #include "theory/type_set.h"
 #include "theory/uf/equality_engine.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace sets {
 
@@ -59,16 +61,17 @@ namespace sets {
  * normal forms, where the normal form for Set terms is a set of (equivalence
  * class representatives of) Venn regions that do not contain the empty set.
  */
-class CardinalityExtension
+class CardinalityExtension : protected EnvObj
 {
-  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+  typedef context::CDHashSet<Node> NodeSet;
 
  public:
   /**
    * Constructs a new instance of the cardinality solver w.r.t. the provided
    * contexts.
    */
-  CardinalityExtension(SolverState& s,
+  CardinalityExtension(Env& env,
+                       SolverState& s,
                        InferenceManager& im,
                        TermRegistry& treg);
 
@@ -356,9 +359,12 @@ class CardinalityExtension
   std::vector<Node> d_oSetEqc;
   /**
    * This maps set terms to the set of representatives of their "parent" sets,
-   * see checkCardCycles.
+   * see checkCardCycles. Parents are stored as a pair of the form
+   *   (r, t)
+   * where t is the parent term and r is the representative of equivalence
+   * class of t.
    */
-  std::map<Node, std::vector<Node> > d_card_parent;
+  std::map<Node, std::vector<std::pair<Node, Node>>> d_cardParent;
   /**
    * Maps equivalence classes + set terms in that equivalence class to their
    * "flat form" (see checkNormalForms).
@@ -412,6 +418,6 @@ class CardinalityExtension
 
 }  // namespace sets
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
 #endif

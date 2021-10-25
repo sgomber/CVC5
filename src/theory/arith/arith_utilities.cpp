@@ -1,24 +1,25 @@
-/*********************                                                        */
-/*! \file arith_utilities.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Alex Ozdemir, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of common functions for dealing with nodes.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Alex Ozdemir, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of common functions for dealing with nodes.
+ */
 
 #include "arith_utilities.h"
 
 #include <cmath>
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arith {
 
@@ -202,31 +203,26 @@ void printRationalApprox(const char* c, Node cr, unsigned prec)
   }
 }
 
-Node arithSubstitute(Node n, std::vector<Node>& vars, std::vector<Node>& subs)
+Node arithSubstitute(Node n, const Subs& sub)
 {
-  Assert(vars.size() == subs.size());
   NodeManager* nm = NodeManager::currentNM();
-  std::unordered_map<TNode, Node, TNodeHashFunction> visited;
-  std::unordered_map<TNode, Node, TNodeHashFunction>::iterator it;
-  std::vector<Node>::iterator itv;
+  std::unordered_map<TNode, Node> visited;
   std::vector<TNode> visit;
-  TNode cur;
-  Kind ck;
   visit.push_back(n);
   do
   {
-    cur = visit.back();
+    TNode cur = visit.back();
     visit.pop_back();
-    it = visited.find(cur);
+    auto it = visited.find(cur);
 
     if (it == visited.end())
     {
       visited[cur] = Node::null();
-      ck = cur.getKind();
-      itv = std::find(vars.begin(), vars.end(), cur);
-      if (itv != vars.end())
+      Kind ck = cur.getKind();
+      auto s = sub.find(cur);
+      if (s)
       {
-        visited[cur] = subs[std::distance(vars.begin(), itv)];
+        visited[cur] = *s;
       }
       else if (cur.getNumChildren() == 0)
       {
@@ -325,4 +321,4 @@ Node negateProofLiteral(TNode n)
 
 }  // namespace arith
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

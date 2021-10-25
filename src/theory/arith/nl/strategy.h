@@ -1,24 +1,27 @@
-/*********************                                                        */
-/*! \file strategy.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Strategies for the nonlinear extension
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Strategies for the nonlinear extension.
+ */
 
-#ifndef CVC4__THEORY__ARITH__NL__STRATEGY_H
-#define CVC4__THEORY__ARITH__NL__STRATEGY_H
+#ifndef CVC5__THEORY__ARITH__NL__STRATEGY_H
+#define CVC5__THEORY__ARITH__NL__STRATEGY_H
 
 #include <iosfwd>
 #include <vector>
 
-namespace CVC4 {
+#include "options/options.h"
+
+namespace cvc5 {
 namespace theory {
 namespace arith {
 namespace nl {
@@ -43,7 +46,15 @@ enum class InferStep
   /** An initial IAND check */
   IAND_INITIAL,
 
+  /** Initialize the POW2 solver */
+  POW2_INIT,
+  /** A full POW2 check */
+  POW2_FULL,
+  /** An initial POW2 check */
+  POW2_INITIAL,
+
   /** An ICP check */
+
   ICP,
 
   /** Initialize the NL solver */
@@ -161,7 +172,7 @@ class Strategy
   /** Is this strategy initialized? */
   bool isStrategyInit() const;
   /** Initialize this strategy */
-  void initializeStrategy();
+  void initializeStrategy(const Options& options);
   /** Retrieve the strategy for the given effort e */
   StepGenerator getStrategy();
 
@@ -173,6 +184,6 @@ class Strategy
 }  // namespace nl
 }  // namespace arith
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__ARITH__NL__STRATEGY_H */
+#endif /* CVC5__THEORY__ARITH__NL__STRATEGY_H */

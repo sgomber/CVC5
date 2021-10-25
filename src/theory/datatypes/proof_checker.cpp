@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file proof_checker.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of datatypes proof checker
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of datatypes proof checker.
+ */
 
 #include "theory/datatypes/proof_checker.h"
 
@@ -18,7 +19,7 @@
 #include "theory/datatypes/theory_datatypes_utils.h"
 #include "theory/rewriter.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace datatypes {
 
@@ -29,8 +30,6 @@ void DatatypesProofRuleChecker::registerTo(ProofChecker* pc)
   pc->registerChecker(PfRule::DT_COLLAPSE, this);
   pc->registerChecker(PfRule::DT_SPLIT, this);
   pc->registerChecker(PfRule::DT_CLASH, this);
-  // trusted rules
-  pc->registerTrustedChecker(PfRule::DT_TRUST, this, 2);
 }
 
 Node DatatypesProofRuleChecker::checkInternal(PfRule id,
@@ -75,7 +74,7 @@ Node DatatypesProofRuleChecker::checkInternal(PfRule id,
       return Node::null();
     }
     Node tester = utils::mkTester(t, i, dt);
-    Node ticons = Rewriter::rewrite(utils::getInstCons(t, dt, i));
+    Node ticons = utils::getInstCons(t, dt, i);
     return tester.eqNode(t.eqNode(ticons));
   }
   else if (id == PfRule::DT_COLLAPSE)
@@ -121,16 +120,10 @@ Node DatatypesProofRuleChecker::checkInternal(PfRule id,
     }
     return nm->mkConst(false);
   }
-  else if (id == PfRule::DT_TRUST)
-  {
-    Assert(!args.empty());
-    Assert(args[0].getType().isBoolean());
-    return args[0];
-  }
   // no rule
   return Node::null();
 }
 
 }  // namespace datatypes
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

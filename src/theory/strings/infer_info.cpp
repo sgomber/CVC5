@@ -1,23 +1,25 @@
-/*********************                                                        */
-/*! \file infer_info.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mudathir Mohamed, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of inference information utility.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mudathir Mohamed, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of inference information utility.
+ */
 
 #include "theory/strings/infer_info.h"
 
 #include "theory/strings/inference_manager.h"
 #include "theory/strings/theory_strings_utils.h"
+#include "theory/theory.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
@@ -59,8 +61,8 @@ bool InferInfo::isFact() const
   // we could process inferences with conjunctive conclusions as facts, where
   // the explanation is copied. However, for simplicity, we always send these
   // as lemmas. This case happens very infrequently.
-  return !atom.isConst() && atom.getKind() != kind::OR
-         && atom.getKind() != kind::AND && d_noExplain.empty();
+  return !atom.isConst() && Theory::theoryOf(atom) == THEORY_STRINGS
+         && d_noExplain.empty();
 }
 
 Node InferInfo::getPremises() const
@@ -90,4 +92,4 @@ std::ostream& operator<<(std::ostream& out, const InferInfo& ii)
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

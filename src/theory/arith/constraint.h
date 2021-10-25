@@ -1,82 +1,83 @@
-/*********************                                                        */
-/*! \file constraint.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Tim King, Alex Ozdemir, Haniel Barbosa
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Defines Constraint and ConstraintDatabase which is the internal
- ** representation of variables in arithmetic
- **
- ** This file defines Constraint and ConstraintDatabase.
- ** A Constraint is the internal representation of literals in TheoryArithmetic.
- ** Constraints are fundamentally a triple:
- **  - ArithVar associated with the constraint,
- **  - a DeltaRational value,
- **  - and a ConstraintType.
- **
- ** Literals:
- **   The constraint may also keep track of a node corresponding to the
- **   Constraint.
- **   This can be accessed by getLiteral() in O(1) if it has been set.
- **   This node must be in normal form and may be used for communication with
- **   the TheoryEngine.
- **
- ** In addition, Constraints keep track of the following:
- **  - A Constraint that is the negation of the Constraint.
- **  - An iterator into a set of Constraints for the ArithVar sorted by
- **    DeltaRational value.
- **  - A context dependent internal proof of the node that can be used for
- **    explanations.
- **  - Whether an equality/disequality has been split in the user context via a
- **    lemma.
- **  - Whether a constraint, be be used in explanations sent to the context
- **
- ** Looking up constraints:
- **  - All of the Constraints with associated nodes in the ConstraintDatabase
- **    can be accessed via a single hashtable lookup until the Constraint is
- **    removed.
- **  - Nodes that have not been associated to a constraints can be
- **    inserted/associated to existing nodes in O(log n) time.
- **
- ** Implications:
- **  - A Constraint can be used to find unate implications.
- **  - A unate implication is an implication based purely on the ArithVar
- **    matching  and the DeltaRational value.
- **    (implies (<= x c) (<= x d)) given c <= d
- **  - This is done using the iterator into the sorted set of constraints.
- **  - Given a tight constraint and previous tightest constraint, this will
- **    efficiently propagate internally.
- **
- ** Additing and Removing Constraints
- **  - Adding Constraints takes O(log n) time where n is the number of
- **    constraints associated with the ArithVar.
- **  - Removing Constraints takes O(1) time.
- **
- ** Internals:
- **  - Constraints are pointers to ConstraintValues.
- **  - Undefined Constraints are NullConstraint.
- **
- ** Assumption vs. Assertion:
- ** - An assertion is anything on the theory d_fact queue.
- **   This includes any thing propagated and returned to the fact queue.
- **   These can be used in external conflicts and propagations of earlier
- **   proofs.
- ** - An assumption is anything on the theory d_fact queue that has no further
- **   explanation i.e. this theory did not propagate it.
- ** - To set something an assumption, first set it as being as assertion.
- ** - Internal assumptions have no explanations and must be regressed out of the
- **   proof.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Tim King, Alex Ozdemir, Haniel Barbosa
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Defines Constraint and ConstraintDatabase which is the internal
+ * representation of variables in arithmetic
+ *
+ * This file defines Constraint and ConstraintDatabase.
+ * A Constraint is the internal representation of literals in TheoryArithmetic.
+ * Constraints are fundamentally a triple:
+ *  - ArithVar associated with the constraint,
+ *  - a DeltaRational value,
+ *  - and a ConstraintType.
+ *
+ * Literals:
+ *   The constraint may also keep track of a node corresponding to the
+ *   Constraint.
+ *   This can be accessed by getLiteral() in O(1) if it has been set.
+ *   This node must be in normal form and may be used for communication with
+ *   the TheoryEngine.
+ *
+ * In addition, Constraints keep track of the following:
+ *  - A Constraint that is the negation of the Constraint.
+ *  - An iterator into a set of Constraints for the ArithVar sorted by
+ *    DeltaRational value.
+ *  - A context dependent internal proof of the node that can be used for
+ *    explanations.
+ *  - Whether an equality/disequality has been split in the user context via a
+ *    lemma.
+ *  - Whether a constraint, be be used in explanations sent to the context
+ *
+ * Looking up constraints:
+ *  - All of the Constraints with associated nodes in the ConstraintDatabase
+ *    can be accessed via a single hashtable lookup until the Constraint is
+ *    removed.
+ *  - Nodes that have not been associated to a constraints can be
+ *    inserted/associated to existing nodes in O(log n) time.
+ *
+ * Implications:
+ *  - A Constraint can be used to find unate implications.
+ *  - A unate implication is an implication based purely on the ArithVar
+ *    matching  and the DeltaRational value.
+ *    (implies (<= x c) (<= x d)) given c <= d
+ *  - This is done using the iterator into the sorted set of constraints.
+ *  - Given a tight constraint and previous tightest constraint, this will
+ *    efficiently propagate internally.
+ *
+ * Additing and Removing Constraints
+ *  - Adding Constraints takes O(log n) time where n is the number of
+ *    constraints associated with the ArithVar.
+ *  - Removing Constraints takes O(1) time.
+ *
+ * Internals:
+ *  - Constraints are pointers to ConstraintValues.
+ *  - Undefined Constraints are NullConstraint.
+ *
+ * Assumption vs. Assertion:
+ * - An assertion is anything on the theory d_fact queue.
+ *   This includes any thing propagated and returned to the fact queue.
+ *   These can be used in external conflicts and propagations of earlier
+ *   proofs.
+ * - An assumption is anything on the theory d_fact queue that has no further
+ *   explanation i.e. this theory did not propagate it.
+ * - To set something an assumption, first set it as being as assertion.
+ * - Internal assumptions have no explanations and must be regressed out of the
+ *   proof.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__ARITH__CONSTRAINT_H
-#define CVC4__THEORY__ARITH__CONSTRAINT_H
+#ifndef CVC5__THEORY__ARITH__CONSTRAINT_H
+#define CVC5__THEORY__ARITH__CONSTRAINT_H
 
 #include <unordered_map>
 #include <vector>
@@ -85,24 +86,23 @@
 #include "context/cdlist.h"
 #include "context/cdqueue.h"
 #include "expr/node.h"
+#include "proof/trust_node.h"
+#include "smt/env_obj.h"
 #include "theory/arith/arithvar.h"
 #include "theory/arith/callbacks.h"
 #include "theory/arith/constraint_forward.h"
 #include "theory/arith/delta_rational.h"
-#include "theory/arith/proof_macros.h"
-#include "theory/trust_node.h"
-#include "util/statistics_registry.h"
+#include "util/statistics_stats.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 class ProofNodeManager;
+class EagerProofGenerator;
 
 namespace context {
 class Context;
 }
 namespace theory {
-
-class EagerProofGenerator;
 
 namespace arith {
 
@@ -155,7 +155,7 @@ enum ConstraintType {LowerBound, Equality, UpperBound, Disequality};
 
 typedef context::CDList<ConstraintCP> CDConstraintList;
 
-typedef std::unordered_map<Node, ConstraintP, NodeHashFunction> NodetoConstraintMap;
+typedef std::unordered_map<Node, ConstraintP> NodetoConstraintMap;
 
 typedef size_t ConstraintRuleID;
 static const ConstraintRuleID ConstraintRuleIdSentinel = std::numeric_limits<ConstraintRuleID>::max();
@@ -310,39 +310,18 @@ struct ConstraintRule {
    * coefficients.
    */
   RationalVectorCP d_farkasCoefficients;
-  ConstraintRule()
-    : d_constraint(NullConstraint)
-    , d_proofType(NoAP)
-    , d_antecedentEnd(AntecedentIdSentinel)
-  {
-    d_farkasCoefficients = RationalVectorCPSentinel;
-  }
 
-  ConstraintRule(ConstraintP con, ArithProofType pt)
-    : d_constraint(con)
-    , d_proofType(pt)
-    , d_antecedentEnd(AntecedentIdSentinel)
-  {
-    d_farkasCoefficients = RationalVectorCPSentinel;
-  }
-  ConstraintRule(ConstraintP con, ArithProofType pt, AntecedentId antecedentEnd)
-    : d_constraint(con)
-    , d_proofType(pt)
-    , d_antecedentEnd(antecedentEnd)
-  {
-    d_farkasCoefficients = RationalVectorCPSentinel;
-  }
+  ConstraintRule();
+  ConstraintRule(ConstraintP con, ArithProofType pt);
+  ConstraintRule(ConstraintP con,
+                 ArithProofType pt,
+                 AntecedentId antecedentEnd);
+  ConstraintRule(ConstraintP con,
+                 ArithProofType pt,
+                 AntecedentId antecedentEnd,
+                 RationalVectorCP coeffs);
 
-  ConstraintRule(ConstraintP con, ArithProofType pt, AntecedentId antecedentEnd, RationalVectorCP coeffs)
-    : d_constraint(con)
-    , d_proofType(pt)
-    , d_antecedentEnd(antecedentEnd)
-  {
-    Assert(ARITH_PROOF_ON() || coeffs == RationalVectorCPSentinel);
-    d_farkasCoefficients = coeffs;
-  }
-
-  void print(std::ostream& out) const;
+  void print(std::ostream& out, bool produceProofs) const;
   void debugPrint() const;
 }; /* class ConstraintRule */
 
@@ -359,7 +338,10 @@ class Constraint {
    * Because of circular dependencies a Constraint is not fully valid until
    * initialize has been called on it.
    */
-  Constraint(ArithVar x,  ConstraintType t, const DeltaRational& v);
+  Constraint(ArithVar x,
+             ConstraintType t,
+             const DeltaRational& v,
+             bool produceProofs);
 
   /**
    * Destructor for a constraint.
@@ -492,6 +474,9 @@ class Constraint {
   /** Returns true if the node is an assumption.*/
   bool isAssumption() const;
 
+  /** Whether we produce proofs */
+  bool isProofProducing() const { return d_produceProofs; }
+
   /** Set the constraint to have an EqualityEngine proof. */
   void setEqualityEngineProof();
   bool hasEqualityEngineProof() const;
@@ -571,8 +556,7 @@ class Constraint {
    * This is not appropriate for propagation!
    * Use explainForPropagation() instead.
    */
-  std::shared_ptr<ProofNode> externalExplainByAssertions(
-      NodeBuilder<>& nb) const
+  std::shared_ptr<ProofNode> externalExplainByAssertions(NodeBuilder& nb) const
   {
     return externalExplain(nb, AssertionOrderSentinel);
   }
@@ -663,7 +647,10 @@ class Constraint {
    */
   ConstraintP getFloor();
 
-  static ConstraintP makeNegation(ArithVar v, ConstraintType t, const DeltaRational& r);
+  static ConstraintP makeNegation(ArithVar v,
+                                  ConstraintType t,
+                                  const DeltaRational& r,
+                                  bool produceProofs);
 
   const ValueCollection& getValueCollection() const;
 
@@ -800,12 +787,13 @@ class Constraint {
       ConstraintP constraint = crp->d_constraint;
       Assert(constraint->d_crid != ConstraintRuleIdSentinel);
       constraint->d_crid = ConstraintRuleIdSentinel;
-      ARITH_PROOF({
+      if (constraint->isProofProducing())
+      {
         if (crp->d_farkasCoefficients != RationalVectorCPSentinel)
         {
           delete crp->d_farkasCoefficients;
         }
-      });
+      }
     }
   };
 
@@ -876,7 +864,7 @@ class Constraint {
    * This is the minimum fringe of the implication tree
    * s.t. every constraint is assertedBefore(order) or hasEqualityEngineProof().
    */
-  std::shared_ptr<ProofNode> externalExplain(NodeBuilder<>& nb,
+  std::shared_ptr<ProofNode> externalExplain(NodeBuilder& nb,
                                              AssertionOrder order) const;
 
   static Node externalExplain(const ConstraintCPVec& b, AssertionOrder order);
@@ -891,7 +879,7 @@ class Constraint {
 
   inline RationalVectorCP getFarkasCoefficients() const
   {
-    return ARITH_NULLPROOF(getConstraintRule().d_farkasCoefficients);
+    return d_produceProofs ? getConstraintRule().d_farkasCoefficients : nullptr;
   }
 
   void debugPrint() const;
@@ -994,6 +982,9 @@ class Constraint {
    */
   SortedConstraintMapIterator d_variablePosition;
 
+  /** Whether to produce proofs, */
+  bool d_produceProofs;
+
 }; /* class ConstraintValue */
 
 std::ostream& operator<<(std::ostream& o, const Constraint& c);
@@ -1004,9 +995,9 @@ std::ostream& operator<<(std::ostream& o, const ValueCollection& c);
 std::ostream& operator<<(std::ostream& o, const ConstraintCPVec& v);
 std::ostream& operator<<(std::ostream& o, const ArithProofType);
 
-
-class ConstraintDatabase {
-private:
+class ConstraintDatabase : protected EnvObj
+{
+ private:
   /**
    * The map from ArithVars to their unique databases.
    * When the vector changes size, we cannot allow the maps to move so this
@@ -1106,7 +1097,6 @@ private:
 
   ArithCongruenceManager& d_congruenceManager;
 
-  const context::Context * const d_satContext;
   /** Owned by the TheoryArithPrivate, used here. */
   EagerProofGenerator* d_pfGen;
   /** Owned by the TheoryArithPrivate, used here. */
@@ -1121,13 +1111,11 @@ private:
   friend class Constraint;
 
  public:
-  ConstraintDatabase(context::Context* satContext,
-                     context::Context* userContext,
+  ConstraintDatabase(Env& env,
                      const ArithVariables& variables,
                      ArithCongruenceManager& dm,
                      RaiseConflict conflictCallBack,
-                     EagerProofGenerator* pfGen,
-                     ProofNodeManager* pnm);
+                     EagerProofGenerator* pfGen);
 
   ~ConstraintDatabase();
 
@@ -1168,7 +1156,7 @@ private:
    */
   TrustNode eeExplain(ConstraintCP c) const;
   /** Get an explanation for this constraint from the equality engine */
-  void eeExplain(ConstraintCP c, NodeBuilder<>& nb) const;
+  void eeExplain(ConstraintCP c, NodeBuilder& nb) const;
 
   /**
    * Returns a constraint with the variable v, the constraint type t, and a value
@@ -1270,14 +1258,12 @@ private:
     IntStat d_unatePropagateImplications;
 
     Statistics();
-    ~Statistics();
   } d_statistics;
 
 }; /* ConstraintDatabase */
 
+}  // namespace arith
+}  // namespace theory
+}  // namespace cvc5
 
-}/* CVC4::theory::arith namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
-
-#endif /* CVC4__THEORY__ARITH__CONSTRAINT_H */
+#endif /* CVC5__THEORY__ARITH__CONSTRAINT_H */

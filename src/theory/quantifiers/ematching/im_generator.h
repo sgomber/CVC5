@@ -1,57 +1,56 @@
-/*********************                                                        */
-/*! \file inst_match_generator.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief inst match generator base class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Clark Barrett
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Inst match generator base class.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__QUANTIFIERS__IM_GENERATOR_H
-#define CVC4__THEORY__QUANTIFIERS__IM_GENERATOR_H
+#ifndef CVC5__THEORY__QUANTIFIERS__IM_GENERATOR_H
+#define CVC5__THEORY__QUANTIFIERS__IM_GENERATOR_H
 
 #include <map>
 #include "expr/node.h"
 #include "theory/inference_id.h"
 #include "theory/quantifiers/inst_match.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
-
-class QuantifiersEngine;
-
 namespace quantifiers {
+
 class QuantifiersState;
-}  // namespace quantifiers
+class TermRegistry;
 
 namespace inst {
 
 class Trigger;
 
 /** IMGenerator class
-*
-* Virtual base class for generating InstMatch objects, which correspond to
-* quantifier instantiations. The main use of this class is as a backend utility
-* to Trigger (see theory/quantifiers/ematching/trigger.h).
-*
-* Some functions below take as argument a pointer to the current quantifiers
-* engine, which is used for making various queries about what terms and
-* equalities exist in the current context.
-*
-* Some functions below take a pointer to a parent Trigger object, which is used
-* to post-process and finalize the instantiations through
-* sendInstantiation(...), where the parent trigger will make calls to
-* qe->getInstantiate()->addInstantiation(...). The latter function is the entry
-* point in which instantiate lemmas are enqueued to be sent on the output
-* channel.
-*/
+ *
+ * Virtual base class for generating InstMatch objects, which correspond to
+ * quantifier instantiations. The main use of this class is as a backend utility
+ * to Trigger (see theory/quantifiers/ematching/trigger.h).
+ *
+ * Some functions below take as argument a pointer to the current quantifiers
+ * engine, which is used for making various queries about what terms and
+ * equalities exist in the current context.
+ *
+ * Some functions below take a pointer to a parent Trigger object, which is used
+ * to post-process and finalize the instantiations through
+ * sendInstantiation(...), where the parent trigger will make calls to
+ * Instantiate::addInstantiation(...). The latter function is the entry
+ * point in which instantiate lemmas are enqueued to be sent on the output
+ * channel.
+ */
 class IMGenerator {
 public:
  IMGenerator(Trigger* tparent);
@@ -110,14 +109,15 @@ protected:
  bool sendInstantiation(InstMatch& m, InferenceId id);
  /** The parent trigger that owns this */
  Trigger* d_tparent;
- /** The state of the quantifiers engine */
- quantifiers::QuantifiersState& d_qstate;
- // !!!!!!!!! temporarily available (project #15)
- QuantifiersEngine* getQuantifiersEngine();
+ /** Reference to the state of the quantifiers engine */
+ QuantifiersState& d_qstate;
+ /** Reference to the term registry */
+ TermRegistry& d_treg;
 };/* class IMGenerator */
 
+}  // namespace inst
 }
 }
-}
+}  // namespace cvc5
 
 #endif

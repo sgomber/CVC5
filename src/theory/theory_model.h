@@ -1,33 +1,38 @@
-/*********************                                                        */
-/*! \file theory_model.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Clark Barrett, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Model class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Clark Barrett, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Model class.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__THEORY_MODEL_H
-#define CVC4__THEORY__THEORY_MODEL_H
+#ifndef CVC5__THEORY__THEORY_MODEL_H
+#define CVC5__THEORY__THEORY_MODEL_H
 
 #include <unordered_map>
 #include <unordered_set>
 
+#include "smt/env_obj.h"
 #include "theory/ee_setup_info.h"
 #include "theory/rep_set.h"
-#include "theory/substitutions.h"
 #include "theory/type_enumerator.h"
 #include "theory/type_set.h"
 #include "theory/uf/equality_engine.h"
+#include "util/cardinality.h"
 
-namespace CVC4 {
+namespace cvc5 {
+
+class Env;
+
 namespace theory {
 
 /** Theory Model class.
@@ -37,16 +42,16 @@ namespace theory {
  * (1) d_equalityEngine : an equality engine object, which stores
  *     an equivalence relation over all terms that exist in
  *     the current set of assertions.
- * (2) d_substitutions : a substitution map storing cases of
- *     explicitly solved terms, for instance during preprocessing.
- * (3) d_reps : a map from equivalence class representatives of
+ * (2) d_reps : a map from equivalence class representatives of
  *     the equality engine to the (constant) representatives
  *     assigned to that equivalence class.
- * (4) d_uf_models : a map from uninterpreted functions to their
+ * (3) d_uf_models : a map from uninterpreted functions to their
  *     lambda representation.
- * (5) d_rep_set : a data structure that allows interpretations
+ * (4) d_rep_set : a data structure that allows interpretations
  *     for types to be represented as terms. This is useful for
  *     finite model finding.
+ * Additionally, models are dependent on top-level substitutions stored in the
+ * d_env class.
  *
  * These data structures are built after a full effort check with
  * no lemmas sent, within a call to:
@@ -75,11 +80,12 @@ namespace theory {
  * above functions such as getRepresentative() when assigning total
  * interpretations for uninterpreted functions.
  */
-class TheoryModel
+class TheoryModel : protected EnvObj
 {
   friend class TheoryEngineModelBuilder;
-public:
-  TheoryModel(context::Context* c, std::string name, bool enableFuncModels);
+
+ public:
+  TheoryModel(Env& env, std::string name, bool enableFuncModels);
   virtual ~TheoryModel();
   /**
    * Finish init, where ee is the equality engine the model should use.
@@ -89,8 +95,6 @@ public:
   /** reset the model */
   virtual void reset();
   //---------------------------- for building the model
-  /** Adds a substitution from x to t. */
-  void addSubstitution(TNode x, TNode t, bool invalidateCache = true);
   /** assert equality holds in the model
    *
    * This method returns true if and only if the equality engine of this model
@@ -293,8 +297,6 @@ public:
    * has called buildModel(...) on this model.
    */
   Node getValue(TNode n) const;
-  /** get comments */
-  void getComments(std::ostream& out) const;
 
   //---------------------------- separation logic
   /** set the heap and value sep.nil is equal to */
@@ -315,6 +317,8 @@ public:
   RepSet* getRepSetPtr() { return &d_rep_set; }
 
   //---------------------------- model cores
+  /** True if a model core has been computed for this model. */
+  bool isUsingModelCore() const;
   /** set using model core */
   void setUsingModelCore();
   /** record model core symbol */
@@ -327,10 +331,10 @@ public:
   Cardinality getCardinality(TypeNode t) const;
 
   //---------------------------- function values
-  /** a map from functions f to a list of all APPLY_UF terms with operator f */
-  std::map< Node, std::vector< Node > > d_uf_terms;
-  /** a map from functions f to a list of all HO_APPLY terms with first argument f */
-  std::map< Node, std::vector< Node > > d_ho_uf_terms;
+  /** Does this model have terms for the given uninterpreted function? */
+  bool hasUfTerms(Node f) const;
+  /** Get the terms for uninterpreted function f */
+  const std::vector<Node>& getUfTerms(Node f) const;
   /** are function values enabled? */
   bool areFunctionValuesEnabled() const;
   /** assign function value f to definition f_def */
@@ -356,8 +360,6 @@ public:
  protected:
   /** Unique name of this model */
   std::string d_name;
-  /** substitution map for this model */
-  SubstitutionMap d_substitutions;
   /** equality engine containing all known equalities/disequalities */
   eq::EqualityEngine* d_equalityEngine;
   /** approximations (see recordApproximation) */
@@ -391,12 +393,10 @@ public:
   /** true/false nodes */
   Node d_true;
   Node d_false;
-  /** comment stream to include in printing */
-  std::stringstream d_comment_str;
   /** are we using model cores? */
   bool d_using_model_core;
   /** symbols that are in the model core */
-  std::unordered_set<Node, NodeHashFunction> d_model_core;
+  std::unordered_set<Node> d_model_core;
   /** Get model value function.
    *
    * This function is a helper function for getValue.
@@ -412,7 +412,7 @@ public:
   virtual void addTermInternal(TNode n);
  private:
   /** cache for getModelValue */
-  mutable std::unordered_map<Node, Node, NodeHashFunction> d_modelCache;
+  mutable std::unordered_map<Node, Node> d_modelCache;
 
   //---------------------------- separation logic
   /** the value of the heap */
@@ -422,6 +422,11 @@ public:
   //---------------------------- end separation logic
 
   //---------------------------- function values
+  /** a map from functions f to a list of all APPLY_UF terms with operator f */
+  std::map<Node, std::vector<Node> > d_uf_terms;
+  /** a map from functions f to a list of all HO_APPLY terms with first argument
+   * f */
+  std::map<Node, std::vector<Node> > d_ho_uf_terms;
   /** whether function models are enabled */
   bool d_enableFuncModels;
   /** map from function terms to the (lambda) definitions
@@ -432,7 +437,7 @@ public:
   //---------------------------- end function values
 };/* class TheoryModel */
 
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace theory
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__THEORY_MODEL_H */
+#endif /* CVC5__THEORY__THEORY_MODEL_H */

@@ -1,39 +1,43 @@
-/*********************                                                        */
-/*! \file sequences_rewriter.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Yoni Zohar
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Rewriter for the theory of strings and sequences
- **
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Yoni Zohar
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Rewriter for the theory of strings and sequences.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__STRINGS__SEQUENCES_REWRITER_H
-#define CVC4__THEORY__STRINGS__SEQUENCES_REWRITER_H
+#ifndef CVC5__THEORY__STRINGS__SEQUENCES_REWRITER_H
+#define CVC5__THEORY__STRINGS__SEQUENCES_REWRITER_H
 
 #include <vector>
 
 #include "expr/node.h"
+#include "theory/strings/arith_entail.h"
 #include "theory/strings/rewrites.h"
 #include "theory/strings/sequences_stats.h"
 #include "theory/strings/strings_entail.h"
 #include "theory/theory_rewriter.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
 class SequencesRewriter : public TheoryRewriter
 {
  public:
-  SequencesRewriter(IntegralHistogramStat<Rewrite>* statistics);
+  SequencesRewriter(Rewriter* r, HistogramStat<Rewrite>* statistics);
+  /** The underlying entailment utilities */
+  ArithEntail& getArithEntail();
+  StringsEntail& getStringsEntail();
 
  protected:
   /** rewrite regular expression concatenation
@@ -116,17 +120,14 @@ class SequencesRewriter : public TheoryRewriter
    *
    * The rewrite r indicates the justification for the rewrite, which is printed
    * by this function for debugging.
-   *
-   * If node is not an equality and ret is an equality, this method applies
-   * an additional rewrite step (rewriteEqualityExt) that performs
-   * additional rewrites on ret, after which we return the result of this call.
-   * Otherwise, this method simply returns ret.
    */
   Node returnRewrite(Node node, Node ret, Rewrite r);
 
  public:
   RewriteResponse postRewrite(TNode node) override;
   RewriteResponse preRewrite(TNode node) override;
+  /** Expand definition */
+  TrustNode expandDefinition(Node n) override;
 
   /** rewrite equality
    *
@@ -192,6 +193,12 @@ class SequencesRewriter : public TheoryRewriter
    * Returns the rewritten form of node.
    */
   Node rewriteIndexof(Node node);
+  /** rewrite indexof regular expression match
+   * This is the entry point for post-rewriting terms n of the form
+   *   str.indexof_re( s, r, n )
+   * Returns the rewritten form of node.
+   */
+  Node rewriteIndexofRe(Node node);
   /** rewrite replace
    * This is the entry point for post-rewriting terms n of the form
    *   str.replace( s, t, r )
@@ -287,15 +294,25 @@ class SequencesRewriter : public TheoryRewriter
    */
   static Node canonicalStrForSymbolicLength(Node n, TypeNode stype);
 
+  /**
+   * post-process rewrite
+   *
+   * If node is not an equality and ret is an equality,
+   * this method applies an additional rewrite step (rewriteEqualityExt) that
+   * performs additional rewrites on ret, after which we return the result of
+   * this call. Otherwise, this method simply returns ret.
+   */
+  Node postProcessRewrite(Node node, Node ret);
   /** Reference to the rewriter statistics. */
-  IntegralHistogramStat<Rewrite>* d_statistics;
-
+  HistogramStat<Rewrite>* d_statistics;
+  /** The arithmetic entailment module */
+  ArithEntail d_arithEntail;
   /** Instance of the entailment checker for strings. */
   StringsEntail d_stringsEntail;
 }; /* class SequencesRewriter */
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__STRINGS__SEQUENCES_REWRITER_H */
+#endif /* CVC5__THEORY__STRINGS__SEQUENCES_REWRITER_H */

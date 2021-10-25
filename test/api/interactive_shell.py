@@ -1,73 +1,64 @@
 #!/usr/bin/env python3
-#####################
-## interactive_shell.py
-## Top contributors (to current version):
-##   Andrew V. Jones
-## This file is part of the CVC4 project.
-## Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
-## in the top-level source directory and their institutional affiliations.
-## All rights reserved.  See the file COPYING in the top-level source
-## directory for licensing information.
+###############################################################################
+# Top contributors (to current version):
+#   Andrew V. Jones
+#
+# This file is part of the cvc5 project.
+#
+# Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+# in the top-level source directory and their institutional affiliations.
+# All rights reserved.  See the file COPYING in the top-level source
+# directory for licensing information.
+# #############################################################################
+#
+# A simple test file to interact with cvc5 with line editing
 ##
-
-#####################
-#! \file interactive_shell.py
-## \verbatim
-## Top contributors (to current version):
-##   Andrew V. Jones
-## This file is part of the CVC4 project.
-## Copyright (c) 2020 by the authors listed in the file AUTHORS
-## in the top-level source directory) and their institutional affiliations.
-## All rights reserved.  See the file COPYING in the top-level source
-## directory for licensing information.\endverbatim
-##
-## \brief A simple test file to interact with CVC4 with line editing
-#####################
 
 import sys
 import pexpect
 
 def check_iteractive_shell():
     """
-    Interacts with CVC4's interactive shell and checks that things such a tab
+    Interacts with cvc5's interactive shell and checks that things such a tab
     completion and "pressing up" works.
     """
 
-    # Open CVC4
-    child = pexpect.spawnu("bin/cvc4", timeout=1)
+    # Open cvc5
+    child = pexpect.spawnu("bin/cvc5", timeout=1)
 
-    # We expect to see the CVC4 prompt
-    child.expect("CVC4>")
+    # We expect to see the cvc5 prompt
+    child.expect("cvc5>")
 
     # If we send a line with just 'BOOLE' ...
-    child.sendline("BOOLE")
+    child.sendline("(set-log")
 
     # ... then we get an error
-    child.expect("Parse Error: <shell>:...: Unexpected token: 'BOOLE'")
+    child.expect("Parse Error: <shell>:1.7: expected SMT-LIBv2 command, got `set-log\'")
 
     # Start sending 'BOOL' (without an E)
-    child.send("BOOL")
+    child.send("(declare-data")
 
     # Send tab twice
     child.sendcontrol("i")
     child.sendcontrol("i")
 
     # We expect to see the completion
-    child.expect("BOOL.*BOOLEAN.*BOOLEXTRACT")
+    child.expect("declare-datatype.*declare-datatypes")
 
-    # NOTE: the double tab has completed our 'BOOL' to 'BOOLE'!
+    # NOTE: the double tab has completed our '(declare-data' to '(declare-datatype'!
 
-    # Now send enter (which submits 'BOOLE')
+    # Now send enter (which submits '(declare-datatype')
+    child.send(")")
     child.sendcontrol("m")
 
     # So we expect to see an error for 'BOOLE'
-    child.expect("Parse Error: <shell>:...: Unexpected token: 'BOOLE'")
+    child.expect("Parse Error: <shell>:1.17: Unexpected token: '\)'.")
 
     # Send enter
     child.sendcontrol("m")
 
-    # We expect to see the CVC4 prompt
-    child.expect("CVC4>")
+    # We expect to see the cvc5 prompt
+    child.expect("cvc5>")
 
     # Now send an up key
     child.send("\033[A")
@@ -75,8 +66,8 @@ def check_iteractive_shell():
     # Send enter
     child.sendcontrol("m")
 
-    # We expect to see an error on 'BOOLE' again
-    child.expect("Parse Error: <shell>:...: Unexpected token: 'BOOLE'")
+    # We expect to see the previous error again
+    child.expect("Parse Error: <shell>:1.17: Unexpected token: '\)'.")
 
     return 0
 

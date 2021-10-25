@@ -1,55 +1,53 @@
-/*********************                                                        */
-/*! \file ce_guided_single_inv.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief utility for processing single invocation synthesis conjectures
- **
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Abdalrhman Mohamed, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Utility for processing single invocation synthesis conjectures.
+ */
 #include "theory/quantifiers/sygus/ce_guided_single_inv.h"
 
+#include "expr/skolem_manager.h"
 #include "options/quantifiers_options.h"
 #include "smt/logic_exception.h"
-#include "smt/smt_engine.h"
-#include "smt/smt_engine_scope.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/quantifiers_rewriter.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
+#include "theory/quantifiers/sygus/sygus_reconstruct.h"
 #include "theory/quantifiers/sygus/sygus_utils.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/quantifiers/term_enumeration.h"
+#include "theory/quantifiers/term_registry.h"
 #include "theory/quantifiers/term_util.h"
-#include "theory/quantifiers_engine.h"
-#include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-CegSingleInv::CegSingleInv(QuantifiersEngine* qe)
-    : d_qe(qe),
-      d_sip(new SingleInvocationPartition),
-      d_sol(new CegSingleInvSol(qe)),
+CegSingleInv::CegSingleInv(Env& env, TermRegistry& tr, SygusStatistics& s)
+    : EnvObj(env),
       d_isSolved(false),
-      d_single_invocation(false)
+      d_sip(new SingleInvocationPartition),
+      d_srcons(new SygusReconstruct(env, tr.getTermDatabaseSygus(), s)),
+      d_single_invocation(false),
+      d_treg(tr)
 {
-
 }
 
 CegSingleInv::~CegSingleInv()
 {
-  delete d_sol;  // (new CegSingleInvSol(qe)),
   delete d_sip;  // d_sip(new SingleInvocationPartition),
 }
 
@@ -112,7 +110,8 @@ void CegSingleInv::initialize(Node q)
   {
     // We are fully single invocation, set single invocation if we haven't
     // disabled single invocation techniques.
-    if (options::cegqiSingleInvMode() != options::CegqiSingleInvMode::NONE)
+    if (options().quantifiers.cegqiSingleInvMode
+        != options::CegqiSingleInvMode::NONE)
     {
       d_single_invocation = true;
     }
@@ -124,7 +123,8 @@ void CegSingleInv::finishInit(bool syntaxRestricted)
   Trace("sygus-si-debug") << "Single invocation: finish init" << std::endl;
   // do not do single invocation if grammar is restricted and
   // options::CegqiSingleInvMode::ALL is not enabled
-  if (options::cegqiSingleInvMode() == options::CegqiSingleInvMode::USE
+  if (options().quantifiers.cegqiSingleInvMode
+          == options::CegqiSingleInvMode::USE
       && d_single_invocation && syntaxRestricted)
   {
     d_single_invocation = false;
@@ -136,7 +136,7 @@ void CegSingleInv::finishInit(bool syntaxRestricted)
   {
     d_single_inv = Node::null();
     Trace("sygus-si") << "Formula is not single invocation." << std::endl;
-    if (options::cegqiSingleInvAbort())
+    if (options().quantifiers.cegqiSingleInvAbort)
     {
       std::stringstream ss;
       ss << "Property is not handled by single invocation." << std::endl;
@@ -145,6 +145,7 @@ void CegSingleInv::finishInit(bool syntaxRestricted)
     return;
   }
   NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
   d_single_inv = d_sip->getSingleInvocation();
   d_single_inv = TermUtil::simpleNegate(d_single_inv);
   std::vector<Node> func_vars;
@@ -160,8 +161,8 @@ void CegSingleInv::finishInit(bool syntaxRestricted)
   d_sip->getSingleInvocationVariables(sivars);
   for (unsigned i = 0, size = sivars.size(); i < size; i++)
   {
-    Node v = NodeManager::currentNM()->mkSkolem(
-        "a", sivars[i].getType(), "single invocation arg");
+    Node v =
+        sm->mkDummySkolem("a", sivars[i].getType(), "single invocation arg");
     d_single_inv_arg_sk.push_back(v);
   }
   d_single_inv = d_single_inv.substitute(sivars.begin(),
@@ -210,15 +211,16 @@ bool CegSingleInv::solve()
   }
   Trace("sygus-si") << "Solve using single invocation..." << std::endl;
   NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
   // Mark the quantified formula with the quantifier elimination attribute to
   // ensure its structure is preserved in the query below.
   Node siq = d_single_inv;
   if (siq.getKind() == FORALL)
   {
-    Node n_attr =
-        nm->mkSkolem("qe_si",
-                     nm->booleanType(),
-                     "Auxiliary variable for qe attr for single invocation.");
+    Node n_attr = sm->mkDummySkolem(
+        "qe_si",
+        nm->booleanType(),
+        "Auxiliary variable for qe attr for single invocation.");
     QuantElimAttribute qea;
     n_attr.setAttribute(qea, true);
     n_attr = nm->mkNode(INST_ATTRIBUTE, n_attr);
@@ -226,13 +228,21 @@ bool CegSingleInv::solve()
     siq = nm->mkNode(FORALL, siq[0], siq[1], n_attr);
   }
   // solve the single invocation conjecture using a fresh copy of SMT engine
-  std::unique_ptr<SmtEngine> siSmt;
-  initializeSubsolver(siSmt);
+  std::unique_ptr<SolverEngine> siSmt;
+  initializeSubsolver(siSmt, d_env);
+  // do not use shared selectors in subsolver, since this leads to solutions
+  // with non-user symbols
+  siSmt->setOption("dt-share-sel", "false");
   siSmt->assertFormula(siq);
   Result r = siSmt->checkSat();
   Trace("sygus-si") << "Result: " << r << std::endl;
-  if (r.asSatisfiabilityResult().isSat() != Result::UNSAT)
+  Result::Sat res = r.asSatisfiabilityResult().isSat();
+  if (res != Result::UNSAT)
   {
+    Warning() << "Warning : the single invocation solver determined the SyGuS "
+                 "conjecture"
+              << (res == Result::SAT ? " is" : " may be") << " infeasible"
+              << std::endl;
     // conjecture is infeasible or unknown
     return false;
   }
@@ -271,7 +281,7 @@ bool CegSingleInv::solve()
       Assert(inst.size() == vars.size());
       Node ilem =
           body.substitute(vars.begin(), vars.end(), inst.begin(), inst.end());
-      ilem = Rewriter::rewrite(ilem);
+      ilem = rewrite(ilem);
       d_instConds.push_back(ilem);
       Trace("sygus-si") << "  Instantiation Lemma: " << ilem << std::endl;
     }
@@ -296,7 +306,7 @@ struct sortSiInstanceIndices {
 
 Node CegSingleInv::getSolution(size_t sol_index,
                                TypeNode stn,
-                               int& reconstructed,
+                               int8_t& reconstructed,
                                bool rconsSygus)
 {
   Assert(sol_index < d_quant[0].getNumChildren());
@@ -316,21 +326,18 @@ Node CegSingleInv::getSolution(size_t sol_index,
   // must substitute to be proper variables
   const DType& dt = stn.getDType();
   Node varList = dt.getSygusVarList();
-  d_sol->d_varList.clear();
   Assert(d_single_inv_arg_sk.size() == varList.getNumChildren());
-  std::vector< Node > vars;
+  std::vector<Node> vars;
+  std::vector<Node> sygusVars;
   for (size_t i = 0, nvars = d_single_inv_arg_sk.size(); i < nvars; i++)
   {
     Trace("csi-sol") << d_single_inv_arg_sk[i] << " ";
     vars.push_back(d_single_inv_arg_sk[i]);
-    d_sol->d_varList.push_back(varList[i]);
+    sygusVars.push_back(varList[i]);
   }
   Trace("csi-sol") << std::endl;
-  Assert(vars.size() == d_sol->d_varList.size());
-  sol = sol.substitute(vars.begin(),
-                       vars.end(),
-                       d_sol->d_varList.begin(),
-                       d_sol->d_varList.end());
+  sol = sol.substitute(
+      vars.begin(), vars.end(), sygusVars.begin(), sygusVars.end());
   sol = reconstructToSyntax(sol, stn, reconstructed, rconsSygus);
   return s.getKind() == LAMBDA
              ? NodeManager::currentNM()->mkNode(LAMBDA, s[0], sol)
@@ -339,7 +346,6 @@ Node CegSingleInv::getSolution(size_t sol_index,
 
 Node CegSingleInv::getSolutionFromInst(size_t index)
 {
-  Assert(d_sol != NULL);
   Node prog = d_quant[0][index];
   Node s;
   // If it is unconstrained: either the variable does not appear in the
@@ -353,7 +359,7 @@ Node CegSingleInv::getSolutionFromInst(size_t index)
       ptn = ptn.getRangeType();
     }
     Trace("csi-sol") << "Get solution for (unconstrained) " << prog << std::endl;
-    s = d_qe->getTermEnumeration()->getEnumerateTerm(ptn, 0);
+    s = d_treg.getTermEnumeration()->getEnumerateTerm(ptn, 0);
   }
   else
   {
@@ -399,7 +405,7 @@ Node CegSingleInv::getSolutionFromInst(size_t index)
   }
   //simplify the solution using the extended rewriter
   Trace("csi-sol") << "Solution (pre-simplification): " << s << std::endl;
-  s = d_qe->getTermDatabaseSygus()->getExtRewriter()->extendedRewrite(s);
+  s = extendedRewrite(s);
   Trace("csi-sol") << "Solution (post-simplification): " << s << std::endl;
   // wrap into lambda, as needed
   return SygusUtils::wrapSolutionForSynthFun(prog, s);
@@ -431,40 +437,42 @@ void CegSingleInv::setSolution()
 
 Node CegSingleInv::reconstructToSyntax(Node s,
                                        TypeNode stn,
-                                       int& reconstructed,
+                                       int8_t& reconstructed,
                                        bool rconsSygus)
 {
   // extract the lambda body
   Node sol = s;
   const DType& dt = stn.getDType();
 
-  //reconstruct the solution into sygus if necessary
+  // reconstruct the solution into sygus if necessary
   reconstructed = 0;
-  if (options::cegqiSingleInvReconstruct()
+  if (options().quantifiers.cegqiSingleInvReconstruct
           != options::CegqiSingleInvRconsMode::NONE
       && !dt.getSygusAllowAll() && !stn.isNull() && rconsSygus)
   {
-    d_sol->preregisterConjecture( d_orig_conjecture );
-    int enumLimit = -1;
-    if (options::cegqiSingleInvReconstruct()
+    int64_t enumLimit = -1;
+    if (options().quantifiers.cegqiSingleInvReconstruct
         == options::CegqiSingleInvRconsMode::TRY)
     {
       enumLimit = 0;
     }
-    else if (options::cegqiSingleInvReconstruct()
+    else if (options().quantifiers.cegqiSingleInvReconstruct
              == options::CegqiSingleInvRconsMode::ALL_LIMIT)
     {
-      enumLimit = options::cegqiSingleInvReconstructLimit();
+      enumLimit = options().quantifiers.cegqiSingleInvReconstructLimit;
     }
-    sol = d_sol->reconstructSolution(s, stn, reconstructed, enumLimit);
-    if( reconstructed==1 ){
+    sol = d_srcons->reconstructSolution(s, stn, reconstructed, enumLimit);
+    if (reconstructed == 1)
+    {
       Trace("csi-sol") << "Solution (post-reconstruction into Sygus): " << sol
                        << std::endl;
     }
-  }else{
+  }
+  else
+  {
     Trace("csi-sol") << "Post-process solution..." << std::endl;
     Node prev = sol;
-    sol = d_qe->getTermDatabaseSygus()->getExtRewriter()->extendedRewrite(sol);
+    sol = extendedRewrite(sol);
     if (prev != sol)
     {
       Trace("csi-sol") << "Solution (after post process) : " << sol
@@ -500,7 +508,8 @@ bool CegSingleInv::solveTrivial(Node q)
 
     std::vector<Node> varsTmp;
     std::vector<Node> subsTmp;
-    QuantifiersRewriter::getVarElim(body, false, args, varsTmp, subsTmp);
+    QuantifiersRewriter qrew(options());
+    qrew.getVarElim(body, args, varsTmp, subsTmp);
     // if we eliminated a variable, update body and reprocess
     if (!varsTmp.empty())
     {
@@ -508,7 +517,7 @@ bool CegSingleInv::solveTrivial(Node q)
       // remake with eliminated nodes
       body = body.substitute(
           varsTmp.begin(), varsTmp.end(), subsTmp.begin(), subsTmp.end());
-      body = Rewriter::rewrite(body);
+      body = rewrite(body);
       // apply to subs
       // this ensures we behave correctly if we solve x before y in
       // x = y+1 ^ y = 2.
@@ -516,7 +525,7 @@ bool CegSingleInv::solveTrivial(Node q)
       {
         subs[i] = subs[i].substitute(
             varsTmp.begin(), varsTmp.end(), subsTmp.begin(), subsTmp.end());
-        subs[i] = Rewriter::rewrite(subs[i]);
+        subs[i] = rewrite(subs[i]);
       }
       vars.insert(vars.end(), varsTmp.begin(), varsTmp.end());
       subs.insert(subs.end(), subsTmp.begin(), subsTmp.end());
@@ -551,4 +560,4 @@ bool CegSingleInv::solveTrivial(Node q)
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

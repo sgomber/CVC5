@@ -1,22 +1,23 @@
-/*********************                                                        */
-/*! \file skolem_lemma.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The skolem lemma utility
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The skolem lemma utility.
+ */
 
 #include "theory/skolem_lemma.h"
 
 #include "expr/skolem_manager.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 
 SkolemLemma::SkolemLemma(TrustNode lem, Node k) : d_lemma(lem), d_skolem(k)
@@ -30,6 +31,8 @@ SkolemLemma::SkolemLemma(Node k, ProofGenerator* pg) : d_lemma(), d_skolem(k)
   d_lemma = TrustNode::mkTrustLemma(lem, pg);
 }
 
+Node SkolemLemma::getProven() const { return d_lemma.getProven(); }
+
 Node SkolemLemma::getSkolemLemmaFor(Node k)
 {
   Node w = SkolemManager::getWitnessForm(k);
@@ -40,4 +43,4 @@ Node SkolemLemma::getSkolemLemmaFor(Node k)
 }
 
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

@@ -1,35 +1,38 @@
-/*********************                                                        */
-/*! \file solver_state.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Tianyi Liang, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of the solver state of the theory of strings.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Tianyi Liang, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of the solver state of the theory of strings.
+ */
 
 #include "theory/strings/solver_state.h"
 
 #include "theory/rewriter.h"
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
+#include "util/rational.h"
 
 using namespace std;
-using namespace CVC4::context;
-using namespace CVC4::kind;
+using namespace cvc5::context;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
-SolverState::SolverState(context::Context* c,
-                         context::UserContext* u,
-                         Valuation& v)
-    : TheoryState(c, u, v), d_eeDisequalities(c), d_pendingConflictSet(c, false), d_pendingConflict(InferenceId::UNKNOWN)
+SolverState::SolverState(Env& env, Valuation& v)
+    : TheoryState(env, v),
+      d_eeDisequalities(env.getContext()),
+      d_pendingConflictSet(env.getContext(), false),
+      d_pendingConflict(InferenceId::UNKNOWN)
 {
   d_zero = NodeManager::currentNM()->mkConst(Rational(0));
   d_false = NodeManager::currentNM()->mkConst(false);
@@ -62,7 +65,7 @@ EqcInfo* SolverState::getOrMakeEqcInfo(Node eqc, bool doMake)
   }
   if (doMake)
   {
-    EqcInfo* ei = new EqcInfo(d_context);
+    EqcInfo* ei = new EqcInfo(d_env.getContext());
     d_eqcInfo[eqc] = ei;
     return ei;
   }
@@ -86,6 +89,10 @@ Node SolverState::getLengthExp(Node t, std::vector<Node>& exp, Node te)
   {
     // typically shouldnt be necessary
     lengthTerm = t;
+  }
+  else
+  {
+    lengthTerm = lengthTerm[0];
   }
   Debug("strings") << "SolverState::getLengthTerm " << t << " is " << lengthTerm
                    << std::endl;
@@ -132,13 +139,14 @@ bool SolverState::isEqualEmptyWord(Node s, Node& emps)
   return false;
 }
 
-void SolverState::setPendingPrefixConflictWhen(Node conf)
+void SolverState::setPendingMergeConflict(Node conf, InferenceId id)
 {
-  if (conf.isNull() || d_pendingConflictSet.get())
+  if (d_pendingConflictSet.get())
   {
+    // already set conflict
     return;
   }
-  InferInfo iiPrefixConf(InferenceId::STRINGS_PREFIX_CONFLICT);
+  InferInfo iiPrefixConf(id);
   iiPrefixConf.d_conc = d_false;
   utils::flattenOp(AND, conf, iiPrefixConf.d_premises);
   setPendingConflict(iiPrefixConf);
@@ -185,7 +193,6 @@ void SolverState::separateByLength(
   // not have an associated length in the mappings above, if the length of
   // an equivalence class is unknown.
   std::map<unsigned, std::vector<Node> > eqc_to_strings;
-  NodeManager* nm = NodeManager::currentNM();
   for (const Node& eqc : n)
   {
     Assert(d_ee->getRepresentative(eqc) == eqc);
@@ -194,7 +201,6 @@ void SolverState::separateByLength(
     Node lt = ei ? ei->d_lengthTerm : Node::null();
     if (!lt.isNull())
     {
-      lt = nm->mkNode(STRING_LENGTH, lt);
       Node r = d_ee->getRepresentative(lt);
       std::pair<Node, TypeNode> lkey(r, tnEqc);
       if (eqc_to_leqc.find(lkey) == eqc_to_leqc.end())
@@ -223,4 +229,4 @@ void SolverState::separateByLength(
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

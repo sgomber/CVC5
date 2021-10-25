@@ -1,21 +1,22 @@
-/*********************                                                        */
-/*! \file sygus_extension.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner, Dejan Jovanovic
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The sygus extension of the theory of datatypes.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mathias Preiner, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The sygus extension of the theory of datatypes.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__DATATYPES__SYGUS_EXTENSION_H
-#define CVC4__THEORY__DATATYPES__SYGUS_EXTENSION_H
+#ifndef CVC5__THEORY__DATATYPES__SYGUS_EXTENSION_H
+#define CVC5__THEORY__DATATYPES__SYGUS_EXTENSION_H
 
 #include <iostream>
 #include <map>
@@ -24,12 +25,13 @@
 #include "context/cdhashset.h"
 #include "context/context.h"
 #include "expr/node.h"
+#include "smt/env_obj.h"
 #include "theory/datatypes/sygus_simple_sym.h"
 #include "theory/decision_manager.h"
 #include "theory/quantifiers/sygus_sampler.h"
 #include "theory/quantifiers/term_database.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 class SynthConjecture;
@@ -61,19 +63,26 @@ class InferenceManager;
  * We prioritize decisions of form (1) before (2). Both kinds of decision are
  * critical for solution completeness, which is enforced by DecisionManager.
  */
-class SygusExtension
+class SygusExtension : protected EnvObj
 {
+<<<<<<< HEAD
   typedef context::CDHashMap< Node, int, NodeHashFunction > IntMap;
   typedef context::CDHashMap< Node, Node, NodeHashFunction > NodeMap;
   typedef context::CDHashMap< Node, bool, NodeHashFunction > BoolMap;
   typedef context::CDHashMap< Node, uint32_t, NodeHashFunction > UIntMap;
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+=======
+  typedef context::CDHashMap<Node, int> IntMap;
+  typedef context::CDHashMap<Node, Node> NodeMap;
+  typedef context::CDHashMap<Node, bool> BoolMap;
+  typedef context::CDHashSet<Node> NodeSet;
+>>>>>>> 6981e3ebde0e65ba772be5cf897611152d1b3ae7
 
  public:
-  SygusExtension(TheoryState& s,
+  SygusExtension(Env& env,
+                 TheoryState& s,
                  InferenceManager& im,
-                 quantifiers::TermDbSygus* tds,
-                 DecisionManager* dm);
+                 quantifiers::TermDbSygus* tds);
   ~SygusExtension();
   /**
    * Notify this class that tester for constructor tindex has been asserted for
@@ -114,8 +123,6 @@ class SygusExtension
   InferenceManager& d_im;
   /** Pointer to the sygus term database */
   quantifiers::TermDbSygus* d_tds;
-  /** Pointer to the decision manager */
-  DecisionManager* d_dm;
   /** the simple symmetry breaking utility */
   SygusSimpleSymBreak d_ssb;
   /**
@@ -152,7 +159,7 @@ class SygusExtension
    * Map from terms (selector chains) to their anchors. The anchor of a
    * selector chain S1( ... Sn( x ) ... ) is x.
    */
-  std::unordered_map<Node, Node, NodeHashFunction> d_term_to_anchor;
+  std::unordered_map<Node, Node> d_term_to_anchor;
   /**
    * Map from anchors to the conjecture they are associated with.
    */
@@ -164,7 +171,7 @@ class SygusExtension
    * where weight is the selector weight of Si
    * (see SygusTermDatabase::getSelectorWeight).
    */
-  std::unordered_map<Node, unsigned, NodeHashFunction> d_term_to_depth;
+  std::unordered_map<Node, unsigned> d_term_to_depth;
   /**
    * Map from terms (selector chains) to whether they are the topmost term
    * of their type. For example, if:
@@ -175,7 +182,7 @@ class SygusExtension
    * Then, x, S1( x ), and S4( S3( S2( S1( x ) ) ) ) are top-level terms,
    * whereas S2( S1( x ) ) and S3( S2( S1( x ) ) ) are not.
    */
-  std::unordered_map<Node, bool, NodeHashFunction> d_is_top_level;
+  std::unordered_map<Node, bool> d_is_top_level;
   /**
    * Returns true if the selector chain n is top-level based on the above
    * definition, when tn is the type of n.
@@ -201,13 +208,11 @@ private:
      * term. The range of this map can be updated if we later encounter a sygus
      * term that also rewrites to the builtin value but has a smaller term size.
      */
-    std::map<TypeNode, std::unordered_map<Node, Node, NodeHashFunction>>
-        d_search_val;
+    std::map<TypeNode, std::unordered_map<Node, Node>> d_search_val;
     /** the size of terms in the range of d_search val. */
-    std::map<TypeNode, std::unordered_map<Node, unsigned, NodeHashFunction>>
-        d_search_val_sz;
+    std::map<TypeNode, std::unordered_map<Node, unsigned>> d_search_val_sz;
     /** For each term, whether this cache has processed that term */
-    std::unordered_set<Node, NodeHashFunction> d_search_val_proc;
+    std::unordered_set<Node> d_search_val_proc;
   };
   /** An instance of the above cache, for each anchor */
   std::map< Node, SearchCache > d_cache;
@@ -292,7 +297,8 @@ private:
    * This is used for the sygusRewVerify() option to verify the correctness of
    * the rewriter.
    */
-  std::map<Node, std::map<TypeNode, quantifiers::SygusSampler>> d_sampler;
+  std::map<Node, std::map<TypeNode, std::unique_ptr<quantifiers::SygusSampler>>>
+      d_sampler;
   /** Assert tester internal
    *
    * This function is called when the tester with index tindex is asserted for
@@ -552,7 +558,10 @@ private:
   class SygusSizeDecisionStrategy : public DecisionStrategyFmf
   {
    public:
-    SygusSizeDecisionStrategy(InferenceManager& im, Node t, TheoryState& s);
+    SygusSizeDecisionStrategy(Env& env,
+                              InferenceManager& im,
+                              Node t,
+                              TheoryState& s);
     /** the measure term */
     Node d_this;
     /**
@@ -707,7 +716,7 @@ private:
 
 }
 }
-}
+}  // namespace cvc5
 
 #endif
 

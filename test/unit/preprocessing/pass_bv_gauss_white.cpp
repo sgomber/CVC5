@@ -1,18 +1,17 @@
-/*********************                                                        */
-/*! \file pass_bv_gauss_white.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Aina Niemetz, Mathias Preiner, Andres Noetzli
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Unit tests for Gaussian Elimination preprocessing pass.
- **
- ** Unit tests for Gaussian Elimination preprocessing pass.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Aina Niemetz, Mathias Preiner, Andres Noetzli
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Unit tests for Gaussian Elimination preprocessing pass.
+ */
 
 #include <iostream>
 #include <vector>
@@ -22,14 +21,15 @@
 #include "expr/node_manager.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/passes/bv_gauss.h"
-#include "smt/smt_engine.h"
-#include "smt/smt_engine_scope.h"
+#include "preprocessing/preprocessing_pass_context.h"
+#include "smt/solver_engine.h"
+#include "smt/solver_engine_scope.h"
 #include "test_smt.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/rewriter.h"
 #include "util/bitvector.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 using namespace preprocessing;
 using namespace preprocessing::passes;
@@ -44,6 +44,14 @@ class TestPPWhiteBVGauss : public TestSmt
   void SetUp() override
   {
     TestSmt::SetUp();
+
+    d_preprocContext.reset(new preprocessing::PreprocessingPassContext(
+        d_slvEngine->getEnv(),
+        d_slvEngine->getTheoryEngine(),
+        d_slvEngine->getPropEngine(),
+        nullptr));
+
+    d_bv_gauss.reset(new BVGauss(d_preprocContext.get()));
 
     d_zero = bv::utils::mkZero(16);
 
@@ -144,7 +152,7 @@ class TestPPWhiteBVGauss : public TestSmt
     std::cout << "Input: " << std::endl;
     print_matrix_dbg(rhs, lhs);
 
-    ret = BVGauss::gaussElim(prime, resrhs, reslhs);
+    ret = d_bv_gauss->gaussElim(prime, resrhs, reslhs);
 
     std::cout << "BVGauss::Result: "
               << (ret == BVGauss::Result::INVALID
@@ -194,6 +202,9 @@ class TestPPWhiteBVGauss : public TestSmt
       }
     }
   }
+
+  std::unique_ptr<PreprocessingPassContext> d_preprocContext;
+  std::unique_ptr<BVGauss> d_bv_gauss;
 
   Node d_p;
   Node d_x;
@@ -257,7 +268,7 @@ TEST_F(TestPPWhiteBVGauss, elim_mod)
          {Integer(2), Integer(3), Integer(5)},
          {Integer(4), Integer(0), Integer(5)}};
   std::cout << "matrix 0, modulo 0" << std::endl;  // throws
-  ASSERT_DEATH(BVGauss::gaussElim(Integer(0), rhs, lhs), "prime > 0");
+  ASSERT_DEATH(d_bv_gauss->gaussElim(Integer(0), rhs, lhs), "prime > 0");
   std::cout << "matrix 0, modulo 1" << std::endl;
   testGaussElimX(Integer(1), rhs, lhs, BVGauss::Result::UNIQUE);
   std::cout << "matrix 0, modulo 2" << std::endl;
@@ -896,9 +907,9 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_unique1)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(
-                  kind::BITVECTOR_PLUS, d_x_mul_one, d_y_mul_one),
+                  kind::BITVECTOR_ADD, d_x_mul_one, d_y_mul_one),
               d_z_mul_one),
           d_p),
       d_five);
@@ -908,9 +919,9 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_unique1)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(
-                  kind::BITVECTOR_PLUS, d_x_mul_two, d_y_mul_three),
+                  kind::BITVECTOR_ADD, d_x_mul_two, d_y_mul_three),
               d_z_mul_five),
           d_p),
       d_eight);
@@ -920,13 +931,13 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_unique1)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS, d_x_mul_four, d_z_mul_five),
+              kind::BITVECTOR_ADD, d_x_mul_four, d_z_mul_five),
           d_p),
       d_two);
 
   std::vector<Node> eqs = {eq1, eq2, eq3};
-  std::unordered_map<Node, Node, NodeHashFunction> res;
-  BVGauss::Result ret = BVGauss::gaussElimRewriteForUrem(eqs, res);
+  std::unordered_map<Node, Node> res;
+  BVGauss::Result ret = d_bv_gauss->gaussElimRewriteForUrem(eqs, res);
   ASSERT_EQ(ret, BVGauss::Result::UNIQUE);
   ASSERT_EQ(res.size(), 3);
   ASSERT_EQ(res[d_x], d_three32);
@@ -950,7 +961,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_unique2)
   Node p = d_nodeManager->mkNode(
       zextop6,
       bv::utils::mkConcat(bv::utils::mkZero(6),
-                          d_nodeManager->mkNode(kind::BITVECTOR_PLUS,
+                          d_nodeManager->mkNode(kind::BITVECTOR_ADD,
                                                 bv::utils::mkConst(20, 7),
                                                 bv::utils::mkConst(20, 4))));
 
@@ -981,7 +992,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_unique2)
       bv::utils::mkExtract(
           d_nodeManager->mkNode(
               zextop6,
-              d_nodeManager->mkNode(kind::BITVECTOR_PLUS, d_three, d_two)),
+              d_nodeManager->mkNode(kind::BITVECTOR_ADD, d_three, d_two)),
           31,
           0),
       d_z);
@@ -991,7 +1002,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_unique2)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UDIV,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(kind::BITVECTOR_MULT,
                                     bv::utils::mkConst(32, 4),
                                     bv::utils::mkConst(32, 5)),
@@ -1004,8 +1015,8 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_unique2)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
-              d_nodeManager->mkNode(kind::BITVECTOR_PLUS, x_mul_one, y_mul_one),
+              kind::BITVECTOR_ADD,
+              d_nodeManager->mkNode(kind::BITVECTOR_ADD, x_mul_one, y_mul_one),
               z_mul_one),
           p),
       d_five);
@@ -1015,9 +1026,9 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_unique2)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(
-                  kind::BITVECTOR_PLUS, x_mul_two, y_mul_three),
+                  kind::BITVECTOR_ADD, x_mul_two, y_mul_three),
               z_mul_five),
           p),
       d_eight);
@@ -1026,13 +1037,13 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_unique2)
       kind::EQUAL,
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
-          d_nodeManager->mkNode(kind::BITVECTOR_PLUS, x_mul_four, z_mul_five),
+          d_nodeManager->mkNode(kind::BITVECTOR_ADD, x_mul_four, z_mul_five),
           d_p),
       d_two);
 
   std::vector<Node> eqs = {eq1, eq2, eq3};
-  std::unordered_map<Node, Node, NodeHashFunction> res;
-  BVGauss::Result ret = BVGauss::gaussElimRewriteForUrem(eqs, res);
+  std::unordered_map<Node, Node> res;
+  BVGauss::Result ret = d_bv_gauss->gaussElimRewriteForUrem(eqs, res);
   ASSERT_EQ(ret, BVGauss::Result::UNIQUE);
   ASSERT_EQ(res.size(), 3);
   ASSERT_EQ(res[d_x], d_three32);
@@ -1042,7 +1053,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_unique2)
 
 TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial1a)
 {
-  std::unordered_map<Node, Node, NodeHashFunction> res;
+  std::unordered_map<Node, Node> res;
   BVGauss::Result ret;
 
   /* -------------------------------------------------------------------
@@ -1056,8 +1067,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial1a)
       kind::EQUAL,
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
-          d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS, d_x_mul_one, d_z_mul_nine),
+          d_nodeManager->mkNode(kind::BITVECTOR_ADD, d_x_mul_one, d_z_mul_nine),
           d_p),
       d_seven);
 
@@ -1066,26 +1076,26 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial1a)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS, d_y_mul_one, d_z_mul_three),
+              kind::BITVECTOR_ADD, d_y_mul_one, d_z_mul_three),
           d_p),
       d_nine);
 
   std::vector<Node> eqs = {eq1, eq2};
-  ret = BVGauss::gaussElimRewriteForUrem(eqs, res);
+  ret = d_bv_gauss->gaussElimRewriteForUrem(eqs, res);
   ASSERT_EQ(ret, BVGauss::Result::PARTIAL);
   ASSERT_EQ(res.size(), 2);
 
   Node x1 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_seven32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_z, d_two32)),
       d_p);
   Node y1 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_nine32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_z, d_eight32)),
       d_p);
@@ -1093,14 +1103,14 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial1a)
   Node x2 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_two32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_y, d_three32)),
       d_p);
   Node z2 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_three32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_y, d_seven32)),
       d_p);
@@ -1108,14 +1118,14 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial1a)
   Node y3 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_three32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_x, d_four32)),
       d_p);
   Node z3 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_two32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_x, d_six32)),
       d_p);
@@ -1168,7 +1178,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial1a)
 
 TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial1b)
 {
-  std::unordered_map<Node, Node, NodeHashFunction> res;
+  std::unordered_map<Node, Node> res;
   BVGauss::Result ret;
 
   /* -------------------------------------------------------------------
@@ -1182,7 +1192,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial1b)
       kind::EQUAL,
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
-          d_nodeManager->mkNode(kind::BITVECTOR_PLUS, d_x, d_z_mul_nine),
+          d_nodeManager->mkNode(kind::BITVECTOR_ADD, d_x, d_z_mul_nine),
           d_p),
       d_seven);
 
@@ -1190,26 +1200,26 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial1b)
       kind::EQUAL,
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
-          d_nodeManager->mkNode(kind::BITVECTOR_PLUS, d_y, d_z_mul_three),
+          d_nodeManager->mkNode(kind::BITVECTOR_ADD, d_y, d_z_mul_three),
           d_p),
       d_nine);
 
   std::vector<Node> eqs = {eq1, eq2};
-  ret = BVGauss::gaussElimRewriteForUrem(eqs, res);
+  ret = d_bv_gauss->gaussElimRewriteForUrem(eqs, res);
   ASSERT_EQ(ret, BVGauss::Result::PARTIAL);
   ASSERT_EQ(res.size(), 2);
 
   Node x1 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_seven32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_z, d_two32)),
       d_p);
   Node y1 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_nine32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_z, d_eight32)),
       d_p);
@@ -1217,14 +1227,14 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial1b)
   Node x2 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_two32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_y, d_three32)),
       d_p);
   Node z2 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_three32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_y, d_seven32)),
       d_p);
@@ -1232,14 +1242,14 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial1b)
   Node y3 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_three32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_x, d_four32)),
       d_p);
   Node z3 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_two32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_x, d_six32)),
       d_p);
@@ -1292,7 +1302,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial1b)
 
 TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial2)
 {
-  std::unordered_map<Node, Node, NodeHashFunction> res;
+  std::unordered_map<Node, Node> res;
   BVGauss::Result ret;
 
   /* -------------------------------------------------------------------
@@ -1307,7 +1317,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial2)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS, d_x_mul_one, d_y_mul_three),
+              kind::BITVECTOR_ADD, d_x_mul_one, d_y_mul_three),
           d_p),
       d_seven);
 
@@ -1317,21 +1327,21 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial2)
       d_nine);
 
   std::vector<Node> eqs = {eq1, eq2};
-  ret = BVGauss::gaussElimRewriteForUrem(eqs, res);
+  ret = d_bv_gauss->gaussElimRewriteForUrem(eqs, res);
   ASSERT_EQ(ret, BVGauss::Result::PARTIAL);
   ASSERT_EQ(res.size(), 2);
 
   Node x1 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_seven32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_y, d_eight32)),
       d_p);
   Node y2 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_six32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_x, d_seven32)),
       d_p);
@@ -1381,7 +1391,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial2)
 
 TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial3)
 {
-  std::unordered_map<Node, Node, NodeHashFunction> res;
+  std::unordered_map<Node, Node> res;
   BVGauss::Result ret;
 
   /* -------------------------------------------------------------------
@@ -1396,8 +1406,8 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial3)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
-              d_nodeManager->mkNode(kind::BITVECTOR_PLUS, d_x_mul_one, d_y),
+              kind::BITVECTOR_ADD,
+              d_nodeManager->mkNode(kind::BITVECTOR_ADD, d_x_mul_one, d_y),
               d_z_mul_one),
           d_p),
       d_five);
@@ -1407,57 +1417,57 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial3)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(
-                  kind::BITVECTOR_PLUS, d_x_mul_two, d_y_mul_three),
+                  kind::BITVECTOR_ADD, d_x_mul_two, d_y_mul_three),
               d_z_mul_five),
           d_p),
       d_eight);
 
   std::vector<Node> eqs = {eq1, eq2};
-  ret = BVGauss::gaussElimRewriteForUrem(eqs, res);
+  ret = d_bv_gauss->gaussElimRewriteForUrem(eqs, res);
   ASSERT_EQ(ret, BVGauss::Result::PARTIAL);
   ASSERT_EQ(res.size(), 2);
 
   Node x1 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_seven32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_z, d_two32)),
       d_p);
   Node y1 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_nine32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_z, d_eight32)),
       d_p);
   Node x2 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_two32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_y, d_three32)),
       d_p);
   Node z2 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_three32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_y, d_seven32)),
       d_p);
   Node y3 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_three32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_x, d_four32)),
       d_p);
   Node z3 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_two32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_x, d_six32)),
       d_p);
@@ -1510,7 +1520,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial3)
 
 TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial4)
 {
-  std::unordered_map<Node, Node, NodeHashFunction> res;
+  std::unordered_map<Node, Node> res;
   BVGauss::Result ret;
 
   /* -------------------------------------------------------------------
@@ -1526,9 +1536,9 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial4)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(
-                  kind::BITVECTOR_PLUS, d_x_mul_two, d_y_mul_four),
+                  kind::BITVECTOR_ADD, d_x_mul_two, d_y_mul_four),
               d_z_mul_six),
           d_p),
       d_eighteen);
@@ -1538,9 +1548,9 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial4)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(
-                  kind::BITVECTOR_PLUS, d_x_mul_four, d_y_mul_five),
+                  kind::BITVECTOR_ADD, d_x_mul_four, d_y_mul_five),
               d_z_mul_six),
           d_p),
       d_twentyfour);
@@ -1550,57 +1560,57 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial4)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(
-                  kind::BITVECTOR_PLUS, d_x_mul_two, d_y_mul_seven),
+                  kind::BITVECTOR_ADD, d_x_mul_two, d_y_mul_seven),
               d_z_mul_twelve),
           d_p),
       d_thirty);
 
   std::vector<Node> eqs = {eq1, eq2, eq3};
-  ret = BVGauss::gaussElimRewriteForUrem(eqs, res);
+  ret = d_bv_gauss->gaussElimRewriteForUrem(eqs, res);
   ASSERT_EQ(ret, BVGauss::Result::PARTIAL);
   ASSERT_EQ(res.size(), 2);
 
   Node x1 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_one32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_z, d_one32)),
       d_p);
   Node y1 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_four32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_z, d_nine32)),
       d_p);
   Node x2 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_three32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_y, d_five32)),
       d_p);
   Node z2 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_two32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_y, d_five32)),
       d_p);
   Node y3 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_six32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_x, d_nine32)),
       d_p);
   Node z3 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_ten32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_x, d_one32)),
       d_p);
@@ -1661,7 +1671,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial4)
 
 TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial5)
 {
-  std::unordered_map<Node, Node, NodeHashFunction> res;
+  std::unordered_map<Node, Node> res;
   BVGauss::Result ret;
 
   /* -------------------------------------------------------------------
@@ -1677,9 +1687,9 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial5)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(
-                  kind::BITVECTOR_PLUS, d_x_mul_two, d_y_mul_four),
+                  kind::BITVECTOR_ADD, d_x_mul_two, d_y_mul_four),
               d_z_mul_six),
           d_three),
       d_eighteen);
@@ -1689,9 +1699,9 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial5)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(
-                  kind::BITVECTOR_PLUS, d_x_mul_four, d_y_mul_five),
+                  kind::BITVECTOR_ADD, d_x_mul_four, d_y_mul_five),
               d_z_mul_six),
           d_three),
       d_twentyfour);
@@ -1701,15 +1711,15 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial5)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(
-                  kind::BITVECTOR_PLUS, d_x_mul_two, d_y_mul_seven),
+                  kind::BITVECTOR_ADD, d_x_mul_two, d_y_mul_seven),
               d_z_mul_twelve),
           d_three),
       d_thirty);
 
   std::vector<Node> eqs = {eq1, eq2, eq3};
-  ret = BVGauss::gaussElimRewriteForUrem(eqs, res);
+  ret = d_bv_gauss->gaussElimRewriteForUrem(eqs, res);
   ASSERT_EQ(ret, BVGauss::Result::PARTIAL);
   ASSERT_EQ(res.size(), 1);
 
@@ -1773,7 +1783,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial5)
 
 TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial6)
 {
-  std::unordered_map<Node, Node, NodeHashFunction> res;
+  std::unordered_map<Node, Node> res;
   BVGauss::Result ret;
 
   /* -------------------------------------------------------------------
@@ -1797,9 +1807,9 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial6)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(
-                  kind::BITVECTOR_PLUS, d_x_mul_one, y_mul_two),
+                  kind::BITVECTOR_ADD, d_x_mul_one, y_mul_two),
               w_mul_six),
           d_p),
       d_two);
@@ -1808,7 +1818,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial6)
       kind::EQUAL,
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
-          d_nodeManager->mkNode(kind::BITVECTOR_PLUS, z_mul_two, w_mul_two),
+          d_nodeManager->mkNode(kind::BITVECTOR_ADD, z_mul_two, w_mul_two),
           d_p),
       d_two);
 
@@ -1816,14 +1826,14 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial6)
       kind::EQUAL, d_nodeManager->mkNode(kind::BITVECTOR_UREM, w, d_p), d_two);
 
   std::vector<Node> eqs = {eq1, eq2, eq3};
-  ret = BVGauss::gaussElimRewriteForUrem(eqs, res);
+  ret = d_bv_gauss->gaussElimRewriteForUrem(eqs, res);
   ASSERT_EQ(ret, BVGauss::Result::PARTIAL);
   ASSERT_EQ(res.size(), 3);
 
   Node x1 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_one32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_y, d_nine32)),
       d_p);
@@ -1833,7 +1843,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial6)
   Node y2 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_six32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_x, d_five32)),
       d_p);
@@ -1861,7 +1871,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_partial6)
 
 TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_with_expr_partial)
 {
-  std::unordered_map<Node, Node, NodeHashFunction> res;
+  std::unordered_map<Node, Node> res;
   BVGauss::Result ret;
 
   /* -------------------------------------------------------------------
@@ -1898,7 +1908,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_with_expr_partial)
       kind::EQUAL,
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
-          d_nodeManager->mkNode(kind::BITVECTOR_PLUS, x_mul_one, nine_mul_z),
+          d_nodeManager->mkNode(kind::BITVECTOR_ADD, x_mul_one, nine_mul_z),
           d_p),
       d_seven);
 
@@ -1906,12 +1916,12 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_with_expr_partial)
       kind::EQUAL,
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
-          d_nodeManager->mkNode(kind::BITVECTOR_PLUS, one_mul_y, z_mul_three),
+          d_nodeManager->mkNode(kind::BITVECTOR_ADD, one_mul_y, z_mul_three),
           d_p),
       d_nine);
 
   std::vector<Node> eqs = {eq1, eq2};
-  ret = BVGauss::gaussElimRewriteForUrem(eqs, res);
+  ret = d_bv_gauss->gaussElimRewriteForUrem(eqs, res);
   ASSERT_EQ(ret, BVGauss::Result::PARTIAL);
   ASSERT_EQ(res.size(), 2);
 
@@ -1922,14 +1932,14 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_with_expr_partial)
   Node x1 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_seven32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, z, d_two32)),
       d_p);
   Node y1 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_nine32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, z, d_eight32)),
       d_p);
@@ -1937,14 +1947,14 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_with_expr_partial)
   Node x2 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_two32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, y, d_three32)),
       d_p);
   Node z2 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_three32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, y, d_seven32)),
       d_p);
@@ -1952,14 +1962,14 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_with_expr_partial)
   Node y3 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_three32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, x, d_four32)),
       d_p);
   Node z3 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_two32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, x, d_six32)),
       d_p);
@@ -2012,7 +2022,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_with_expr_partial)
 
 TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_nary_partial)
 {
-  std::unordered_map<Node, Node, NodeHashFunction> res;
+  std::unordered_map<Node, Node> res;
   BVGauss::Result ret;
 
   /* -------------------------------------------------------------------
@@ -2046,16 +2056,16 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_nary_partial)
           bv::utils::mkExtract(
               d_nodeManager->mkNode(kind::BITVECTOR_CONCAT, zero, zz), 7, 0)));
 
-  NodeBuilder<> nbx(d_nodeManager.get(), kind::BITVECTOR_MULT);
+  NodeBuilder nbx(d_nodeManager, kind::BITVECTOR_MULT);
   nbx << d_x << d_one << x;
   Node x_mul_one_mul_xx = nbx.constructNode();
-  NodeBuilder<> nby(d_nodeManager.get(), kind::BITVECTOR_MULT);
+  NodeBuilder nby(d_nodeManager, kind::BITVECTOR_MULT);
   nby << d_y << y << d_one;
   Node y_mul_yy_mul_one = nby.constructNode();
-  NodeBuilder<> nbz(d_nodeManager.get(), kind::BITVECTOR_MULT);
+  NodeBuilder nbz(d_nodeManager, kind::BITVECTOR_MULT);
   nbz << d_three << d_z << z;
   Node three_mul_z_mul_zz = nbz.constructNode();
-  NodeBuilder<> nbz2(d_nodeManager.get(), kind::BITVECTOR_MULT);
+  NodeBuilder nbz2(d_nodeManager, kind::BITVECTOR_MULT);
   nbz2 << d_z << d_nine << z;
   Node z_mul_nine_mul_zz = nbz2.constructNode();
 
@@ -2068,7 +2078,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_nary_partial)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS, x_mul_one_mul_xx, z_mul_nine_mul_zz),
+              kind::BITVECTOR_ADD, x_mul_one_mul_xx, z_mul_nine_mul_zz),
           d_p),
       d_seven);
 
@@ -2077,12 +2087,12 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_nary_partial)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS, y_mul_yy_mul_one, three_mul_z_mul_zz),
+              kind::BITVECTOR_ADD, y_mul_yy_mul_one, three_mul_z_mul_zz),
           d_p),
       d_nine);
 
   std::vector<Node> eqs = {eq1, eq2};
-  ret = BVGauss::gaussElimRewriteForUrem(eqs, res);
+  ret = d_bv_gauss->gaussElimRewriteForUrem(eqs, res);
   ASSERT_EQ(ret, BVGauss::Result::PARTIAL);
   ASSERT_EQ(res.size(), 2);
 
@@ -2093,14 +2103,14 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_nary_partial)
   Node x1 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_seven32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, z_mul_zz, d_two32)),
       d_p);
   Node y1 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_nine32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, z_mul_zz, d_eight32)),
       d_p);
@@ -2108,14 +2118,14 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_nary_partial)
   Node x2 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_two32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, y_mul_yy, d_three32)),
       d_p);
   Node z2 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_three32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, y_mul_yy, d_seven32)),
       d_p);
@@ -2123,14 +2133,14 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_nary_partial)
   Node y3 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_three32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, x_mul_xx, d_four32)),
       d_p);
   Node z3 = d_nodeManager->mkNode(
       kind::BITVECTOR_UREM,
       d_nodeManager->mkNode(
-          kind::BITVECTOR_PLUS,
+          kind::BITVECTOR_ADD,
           d_two32,
           d_nodeManager->mkNode(kind::BITVECTOR_MULT, x_mul_xx, d_six32)),
       d_p);
@@ -2183,7 +2193,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_nary_partial)
 
 TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_not_invalid1)
 {
-  std::unordered_map<Node, Node, NodeHashFunction> res;
+  std::unordered_map<Node, Node> res;
   BVGauss::Result ret;
 
   /* -------------------------------------------------------------------
@@ -2220,7 +2230,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_not_invalid1)
       d_five);
 
   std::vector<Node> eqs = {eq1, eq2, eq3};
-  ret = BVGauss::gaussElimRewriteForUrem(eqs, res);
+  ret = d_bv_gauss->gaussElimRewriteForUrem(eqs, res);
   ASSERT_EQ(ret, BVGauss::Result::UNIQUE);
   ASSERT_EQ(res.size(), 3);
 
@@ -2231,7 +2241,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_not_invalid1)
 
 TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_not_invalid2)
 {
-  std::unordered_map<Node, Node, NodeHashFunction> res;
+  std::unordered_map<Node, Node> res;
   BVGauss::Result ret;
 
   /* -------------------------------------------------------------------
@@ -2255,7 +2265,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_not_invalid2)
                             d_nodeManager->mkNode(kind::BITVECTOR_MULT, x, y),
                             z);
   Node n3 = d_nodeManager->mkNode(
-      kind::BITVECTOR_PLUS,
+      kind::BITVECTOR_ADD,
       d_nodeManager->mkNode(kind::BITVECTOR_MULT,
                             d_nodeManager->mkNode(kind::BITVECTOR_MULT, x, y),
                             bv::utils::mkConcat(d_zero, d_two)),
@@ -2281,7 +2291,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_not_invalid2)
       bv::utils::mkConcat(d_zero, d_nine));
 
   std::vector<Node> eqs = {eq1, eq2, eq3};
-  ret = BVGauss::gaussElimRewriteForUrem(eqs, res);
+  ret = d_bv_gauss->gaussElimRewriteForUrem(eqs, res);
   ASSERT_EQ(ret, BVGauss::Result::UNIQUE);
   ASSERT_EQ(res.size(), 3);
 
@@ -2302,7 +2312,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_not_invalid2)
 
 TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_invalid)
 {
-  std::unordered_map<Node, Node, NodeHashFunction> res;
+  std::unordered_map<Node, Node> res;
   BVGauss::Result ret;
 
   /* -------------------------------------------------------------------
@@ -2349,7 +2359,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_for_urem_invalid)
       bv::utils::mkConcat(d_zero, d_nine));
 
   std::vector<Node> eqs = {eq1, eq2, eq3};
-  ret = BVGauss::gaussElimRewriteForUrem(eqs, res);
+  ret = d_bv_gauss->gaussElimRewriteForUrem(eqs, res);
   ASSERT_EQ(ret, BVGauss::Result::INVALID);
 }
 
@@ -2368,9 +2378,9 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_unique1)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(
-                  kind::BITVECTOR_PLUS, d_x_mul_one, d_y_mul_one),
+                  kind::BITVECTOR_ADD, d_x_mul_one, d_y_mul_one),
               d_z_mul_one),
           d_p),
       d_five);
@@ -2380,9 +2390,9 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_unique1)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(
-                  kind::BITVECTOR_PLUS, d_x_mul_two, d_y_mul_three),
+                  kind::BITVECTOR_ADD, d_x_mul_two, d_y_mul_three),
               d_z_mul_five),
           d_p),
       d_eight);
@@ -2392,7 +2402,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_unique1)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS, d_x_mul_four, d_z_mul_five),
+              kind::BITVECTOR_ADD, d_x_mul_four, d_z_mul_five),
           d_p),
       d_two);
 
@@ -2401,8 +2411,8 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_unique1)
 
   AssertionPipeline apipe;
   apipe.push_back(a);
-  passes::BVGauss bgauss(nullptr, "bv-gauss-unit");
-  std::unordered_map<Node, Node, NodeHashFunction> res;
+  passes::BVGauss bgauss(d_preprocContext.get(), "bv-gauss-unit");
+  std::unordered_map<Node, Node> res;
   PreprocessingPassResult pres = bgauss.applyInternal(&apipe);
   ASSERT_EQ(pres, PreprocessingPassResult::NO_CONFLICT);
   Node resx = d_nodeManager->mkNode(
@@ -2437,9 +2447,9 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_unique2)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(
-                  kind::BITVECTOR_PLUS, d_x_mul_one, d_y_mul_one),
+                  kind::BITVECTOR_ADD, d_x_mul_one, d_y_mul_one),
               d_z_mul_one),
           d_p),
       d_five);
@@ -2449,9 +2459,9 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_unique2)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nodeManager->mkNode(
-                  kind::BITVECTOR_PLUS, d_x_mul_two, d_y_mul_three),
+                  kind::BITVECTOR_ADD, d_x_mul_two, d_y_mul_three),
               d_z_mul_five),
           d_p),
       d_eight);
@@ -2461,7 +2471,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_unique2)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS, d_x_mul_four, d_z_mul_five),
+              kind::BITVECTOR_ADD, d_x_mul_four, d_z_mul_five),
           d_p),
       d_two);
 
@@ -2471,7 +2481,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_unique2)
       kind::EQUAL,
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
-          d_nodeManager->mkNode(kind::BITVECTOR_PLUS, d_x_mul_two, y_mul_six),
+          d_nodeManager->mkNode(kind::BITVECTOR_ADD, d_x_mul_two, y_mul_six),
           d_seven),
       d_four);
 
@@ -2479,7 +2489,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_unique2)
       kind::EQUAL,
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
-          d_nodeManager->mkNode(kind::BITVECTOR_PLUS, d_x_mul_four, y_mul_six),
+          d_nodeManager->mkNode(kind::BITVECTOR_ADD, d_x_mul_four, y_mul_six),
           d_seven),
       d_three);
 
@@ -2490,8 +2500,8 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_unique2)
   apipe.push_back(a);
   apipe.push_back(eq4);
   apipe.push_back(eq5);
-  passes::BVGauss bgauss(nullptr, "bv-gauss-unit");
-  std::unordered_map<Node, Node, NodeHashFunction> res;
+  passes::BVGauss bgauss(d_preprocContext.get(), "bv-gauss-unit");
+  std::unordered_map<Node, Node> res;
   PreprocessingPassResult pres = bgauss.applyInternal(&apipe);
   ASSERT_EQ(pres, PreprocessingPassResult::NO_CONFLICT);
   Node resx1 = d_nodeManager->mkNode(
@@ -2525,8 +2535,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_partial)
       kind::EQUAL,
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
-          d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS, d_x_mul_one, d_z_mul_nine),
+          d_nodeManager->mkNode(kind::BITVECTOR_ADD, d_x_mul_one, d_z_mul_nine),
           d_p),
       d_seven);
 
@@ -2535,15 +2544,15 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_partial)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS, d_y_mul_one, d_z_mul_three),
+              kind::BITVECTOR_ADD, d_y_mul_one, d_z_mul_three),
           d_p),
       d_nine);
 
   AssertionPipeline apipe;
   apipe.push_back(eq1);
   apipe.push_back(eq2);
-  passes::BVGauss bgauss(nullptr, "bv-gauss-unit");
-  std::unordered_map<Node, Node, NodeHashFunction> res;
+  passes::BVGauss bgauss(d_preprocContext.get(), "bv-gauss-unit");
+  std::unordered_map<Node, Node> res;
   PreprocessingPassResult pres = bgauss.applyInternal(&apipe);
   ASSERT_EQ(pres, PreprocessingPassResult::NO_CONFLICT);
   ASSERT_EQ(apipe.size(), 4);
@@ -2554,7 +2563,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_partial)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_seven32,
               d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_z, d_two32)),
           d_p));
@@ -2564,7 +2573,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_partial)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_nine32,
               d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_z, d_eight32)),
           d_p));
@@ -2575,7 +2584,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_partial)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_two32,
               d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_y, d_three32)),
           d_p));
@@ -2585,7 +2594,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_partial)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_three32,
               d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_y, d_seven32)),
           d_p));
@@ -2596,7 +2605,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_partial)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_three32,
               d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_x, d_four32)),
           d_p));
@@ -2606,7 +2615,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_partial)
       d_nodeManager->mkNode(
           kind::BITVECTOR_UREM,
           d_nodeManager->mkNode(
-              kind::BITVECTOR_PLUS,
+              kind::BITVECTOR_ADD,
               d_two32,
               d_nodeManager->mkNode(kind::BITVECTOR_MULT, d_x, d_six32)),
           d_p));
@@ -2624,15 +2633,15 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_partial)
 
 TEST_F(TestPPWhiteBVGauss, get_min_bw1)
 {
-  ASSERT_EQ(BVGauss::getMinBwExpr(bv::utils::mkConst(32, 11)), 4);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(bv::utils::mkConst(32, 11)), 4);
 
-  ASSERT_EQ(BVGauss::getMinBwExpr(d_p), 4);
-  ASSERT_EQ(BVGauss::getMinBwExpr(d_x), 16);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(d_p), 4);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(d_x), 16);
 
   Node extp = bv::utils::mkExtract(d_p, 4, 0);
-  ASSERT_EQ(BVGauss::getMinBwExpr(extp), 4);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(extp), 4);
   Node extx = bv::utils::mkExtract(d_x, 4, 0);
-  ASSERT_EQ(BVGauss::getMinBwExpr(extx), 5);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(extx), 5);
 
   Node zextop8 =
       d_nodeManager->mkConst<BitVectorZeroExtend>(BitVectorZeroExtend(8));
@@ -2644,132 +2653,132 @@ TEST_F(TestPPWhiteBVGauss, get_min_bw1)
       d_nodeManager->mkConst<BitVectorZeroExtend>(BitVectorZeroExtend(40));
 
   Node zext40p = d_nodeManager->mkNode(zextop8, d_p);
-  ASSERT_EQ(BVGauss::getMinBwExpr(zext40p), 4);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(zext40p), 4);
   Node zext40x = d_nodeManager->mkNode(zextop8, d_x);
-  ASSERT_EQ(BVGauss::getMinBwExpr(zext40x), 16);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(zext40x), 16);
 
   Node zext48p = d_nodeManager->mkNode(zextop16, d_p);
-  ASSERT_EQ(BVGauss::getMinBwExpr(zext48p), 4);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(zext48p), 4);
   Node zext48x = d_nodeManager->mkNode(zextop16, d_x);
-  ASSERT_EQ(BVGauss::getMinBwExpr(zext48x), 16);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(zext48x), 16);
 
   Node p8 = d_nodeManager->mkConst<BitVector>(BitVector(8, 11u));
   Node x8 = d_nodeManager->mkVar("x8", d_nodeManager->mkBitVectorType(8));
 
   Node zext48p8 = d_nodeManager->mkNode(zextop40, p8);
-  ASSERT_EQ(BVGauss::getMinBwExpr(zext48p8), 4);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(zext48p8), 4);
   Node zext48x8 = d_nodeManager->mkNode(zextop40, x8);
-  ASSERT_EQ(BVGauss::getMinBwExpr(zext48x8), 8);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(zext48x8), 8);
 
   Node mult1p = d_nodeManager->mkNode(kind::BITVECTOR_MULT, extp, extp);
-  ASSERT_EQ(BVGauss::getMinBwExpr(mult1p), 5);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(mult1p), 5);
   Node mult1x = d_nodeManager->mkNode(kind::BITVECTOR_MULT, extx, extx);
-  ASSERT_EQ(BVGauss::getMinBwExpr(mult1x), 0);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(mult1x), 0);
 
   Node mult2p = d_nodeManager->mkNode(kind::BITVECTOR_MULT, zext40p, zext40p);
-  ASSERT_EQ(BVGauss::getMinBwExpr(mult2p), 7);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(mult2p), 7);
   Node mult2x = d_nodeManager->mkNode(kind::BITVECTOR_MULT, zext40x, zext40x);
-  ASSERT_EQ(BVGauss::getMinBwExpr(mult2x), 32);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(mult2x), 32);
 
-  NodeBuilder<> nbmult3p(kind::BITVECTOR_MULT);
+  NodeBuilder nbmult3p(kind::BITVECTOR_MULT);
   nbmult3p << zext48p << zext48p << zext48p;
   Node mult3p = nbmult3p;
-  ASSERT_EQ(BVGauss::getMinBwExpr(mult3p), 11);
-  NodeBuilder<> nbmult3x(kind::BITVECTOR_MULT);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(mult3p), 11);
+  NodeBuilder nbmult3x(kind::BITVECTOR_MULT);
   nbmult3x << zext48x << zext48x << zext48x;
   Node mult3x = nbmult3x;
-  ASSERT_EQ(BVGauss::getMinBwExpr(mult3x), 48);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(mult3x), 48);
 
-  NodeBuilder<> nbmult4p(kind::BITVECTOR_MULT);
+  NodeBuilder nbmult4p(kind::BITVECTOR_MULT);
   nbmult4p << zext48p << zext48p8 << zext48p;
   Node mult4p = nbmult4p;
-  ASSERT_EQ(BVGauss::getMinBwExpr(mult4p), 11);
-  NodeBuilder<> nbmult4x(kind::BITVECTOR_MULT);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(mult4p), 11);
+  NodeBuilder nbmult4x(kind::BITVECTOR_MULT);
   nbmult4x << zext48x << zext48x8 << zext48x;
   Node mult4x = nbmult4x;
-  ASSERT_EQ(BVGauss::getMinBwExpr(mult4x), 40);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(mult4x), 40);
 
   Node concat1p = bv::utils::mkConcat(d_p, zext48p);
-  ASSERT_EQ(BVGauss::getMinBwExpr(concat1p), 52);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(concat1p), 52);
   Node concat1x = bv::utils::mkConcat(d_x, zext48x);
-  ASSERT_EQ(BVGauss::getMinBwExpr(concat1x), 64);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(concat1x), 64);
 
   Node concat2p = bv::utils::mkConcat(bv::utils::mkZero(16), zext48p);
-  ASSERT_EQ(BVGauss::getMinBwExpr(concat2p), 4);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(concat2p), 4);
   Node concat2x = bv::utils::mkConcat(bv::utils::mkZero(16), zext48x);
-  ASSERT_EQ(BVGauss::getMinBwExpr(concat2x), 16);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(concat2x), 16);
 
   Node udiv1p = d_nodeManager->mkNode(kind::BITVECTOR_UDIV, zext48p, zext48p);
-  ASSERT_EQ(BVGauss::getMinBwExpr(udiv1p), 1);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(udiv1p), 1);
   Node udiv1x = d_nodeManager->mkNode(kind::BITVECTOR_UDIV, zext48x, zext48x);
-  ASSERT_EQ(BVGauss::getMinBwExpr(udiv1x), 48);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(udiv1x), 48);
 
   Node udiv2p = d_nodeManager->mkNode(kind::BITVECTOR_UDIV, zext48p, zext48p8);
-  ASSERT_EQ(BVGauss::getMinBwExpr(udiv2p), 1);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(udiv2p), 1);
   Node udiv2x = d_nodeManager->mkNode(kind::BITVECTOR_UDIV, zext48x, zext48x8);
-  ASSERT_EQ(BVGauss::getMinBwExpr(udiv2x), 48);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(udiv2x), 48);
 
   Node urem1p = d_nodeManager->mkNode(kind::BITVECTOR_UREM, zext48p, zext48p);
-  ASSERT_EQ(BVGauss::getMinBwExpr(urem1p), 1);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(urem1p), 1);
   Node urem1x = d_nodeManager->mkNode(kind::BITVECTOR_UREM, zext48x, zext48x);
-  ASSERT_EQ(BVGauss::getMinBwExpr(urem1x), 1);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(urem1x), 1);
 
   Node urem2p = d_nodeManager->mkNode(kind::BITVECTOR_UREM, zext48p, zext48p8);
-  ASSERT_EQ(BVGauss::getMinBwExpr(urem2p), 1);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(urem2p), 1);
   Node urem2x = d_nodeManager->mkNode(kind::BITVECTOR_UREM, zext48x, zext48x8);
-  ASSERT_EQ(BVGauss::getMinBwExpr(urem2x), 16);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(urem2x), 16);
 
   Node urem3p = d_nodeManager->mkNode(kind::BITVECTOR_UREM, zext48p8, zext48p);
-  ASSERT_EQ(BVGauss::getMinBwExpr(urem3p), 1);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(urem3p), 1);
   Node urem3x = d_nodeManager->mkNode(kind::BITVECTOR_UREM, zext48x8, zext48x);
-  ASSERT_EQ(BVGauss::getMinBwExpr(urem3x), 8);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(urem3x), 8);
 
-  Node add1p = d_nodeManager->mkNode(kind::BITVECTOR_PLUS, extp, extp);
-  ASSERT_EQ(BVGauss::getMinBwExpr(add1p), 5);
-  Node add1x = d_nodeManager->mkNode(kind::BITVECTOR_PLUS, extx, extx);
-  ASSERT_EQ(BVGauss::getMinBwExpr(add1x), 0);
+  Node add1p = d_nodeManager->mkNode(kind::BITVECTOR_ADD, extp, extp);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(add1p), 5);
+  Node add1x = d_nodeManager->mkNode(kind::BITVECTOR_ADD, extx, extx);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(add1x), 0);
 
-  Node add2p = d_nodeManager->mkNode(kind::BITVECTOR_PLUS, zext40p, zext40p);
-  ASSERT_EQ(BVGauss::getMinBwExpr(add2p), 5);
-  Node add2x = d_nodeManager->mkNode(kind::BITVECTOR_PLUS, zext40x, zext40x);
-  ASSERT_EQ(BVGauss::getMinBwExpr(add2x), 17);
+  Node add2p = d_nodeManager->mkNode(kind::BITVECTOR_ADD, zext40p, zext40p);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(add2p), 5);
+  Node add2x = d_nodeManager->mkNode(kind::BITVECTOR_ADD, zext40x, zext40x);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(add2x), 17);
 
-  Node add3p = d_nodeManager->mkNode(kind::BITVECTOR_PLUS, zext48p8, zext48p);
-  ASSERT_EQ(BVGauss::getMinBwExpr(add3p), 5);
-  Node add3x = d_nodeManager->mkNode(kind::BITVECTOR_PLUS, zext48x8, zext48x);
-  ASSERT_EQ(BVGauss::getMinBwExpr(add3x), 17);
+  Node add3p = d_nodeManager->mkNode(kind::BITVECTOR_ADD, zext48p8, zext48p);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(add3p), 5);
+  Node add3x = d_nodeManager->mkNode(kind::BITVECTOR_ADD, zext48x8, zext48x);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(add3x), 17);
 
-  NodeBuilder<> nbadd4p(kind::BITVECTOR_PLUS);
+  NodeBuilder nbadd4p(kind::BITVECTOR_ADD);
   nbadd4p << zext48p << zext48p << zext48p;
   Node add4p = nbadd4p;
-  ASSERT_EQ(BVGauss::getMinBwExpr(add4p), 6);
-  NodeBuilder<> nbadd4x(kind::BITVECTOR_PLUS);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(add4p), 6);
+  NodeBuilder nbadd4x(kind::BITVECTOR_ADD);
   nbadd4x << zext48x << zext48x << zext48x;
   Node add4x = nbadd4x;
-  ASSERT_EQ(BVGauss::getMinBwExpr(add4x), 18);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(add4x), 18);
 
-  NodeBuilder<> nbadd5p(kind::BITVECTOR_PLUS);
+  NodeBuilder nbadd5p(kind::BITVECTOR_ADD);
   nbadd5p << zext48p << zext48p8 << zext48p;
   Node add5p = nbadd5p;
-  ASSERT_EQ(BVGauss::getMinBwExpr(add5p), 6);
-  NodeBuilder<> nbadd5x(kind::BITVECTOR_PLUS);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(add5p), 6);
+  NodeBuilder nbadd5x(kind::BITVECTOR_ADD);
   nbadd5x << zext48x << zext48x8 << zext48x;
   Node add5x = nbadd5x;
-  ASSERT_EQ(BVGauss::getMinBwExpr(add5x), 18);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(add5x), 18);
 
-  NodeBuilder<> nbadd6p(kind::BITVECTOR_PLUS);
+  NodeBuilder nbadd6p(kind::BITVECTOR_ADD);
   nbadd6p << zext48p << zext48p << zext48p << zext48p;
   Node add6p = nbadd6p;
-  ASSERT_EQ(BVGauss::getMinBwExpr(add6p), 6);
-  NodeBuilder<> nbadd6x(kind::BITVECTOR_PLUS);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(add6p), 6);
+  NodeBuilder nbadd6x(kind::BITVECTOR_ADD);
   nbadd6x << zext48x << zext48x << zext48x << zext48x;
   Node add6x = nbadd6x;
-  ASSERT_EQ(BVGauss::getMinBwExpr(add6x), 18);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(add6x), 18);
 
   Node not1p = d_nodeManager->mkNode(kind::BITVECTOR_NOT, zext40p);
-  ASSERT_EQ(BVGauss::getMinBwExpr(not1p), 40);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(not1p), 40);
   Node not1x = d_nodeManager->mkNode(kind::BITVECTOR_NOT, zext40x);
-  ASSERT_EQ(BVGauss::getMinBwExpr(not1x), 40);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(not1x), 40);
 }
 
 TEST_F(TestPPWhiteBVGauss, get_min_bw2)
@@ -2783,7 +2792,7 @@ TEST_F(TestPPWhiteBVGauss, get_min_bw2)
   Node zext1 = d_nodeManager->mkNode(zextop15, d_p);
   Node ext = bv::utils::mkExtract(zext1, 7, 0);
   Node zext2 = d_nodeManager->mkNode(zextop5, ext);
-  ASSERT_EQ(BVGauss::getMinBwExpr(zext2), 4);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(zext2), 4);
 }
 
 TEST_F(TestPPWhiteBVGauss, get_min_bw3a)
@@ -2802,7 +2811,7 @@ TEST_F(TestPPWhiteBVGauss, get_min_bw3a)
   Node ext2 = bv::utils::mkExtract(z, 4, 0);
   Node udiv2 = d_nodeManager->mkNode(kind::BITVECTOR_UDIV, ext1, ext2);
   Node zext2 = bv::utils::mkConcat(bv::utils::mkZero(5), udiv2);
-  ASSERT_EQ(BVGauss::getMinBwExpr(zext2), 5);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(zext2), 5);
 }
 
 TEST_F(TestPPWhiteBVGauss, get_min_bw3b)
@@ -2818,7 +2827,7 @@ TEST_F(TestPPWhiteBVGauss, get_min_bw3b)
   Node ext2 = bv::utils::mkExtract(d_z, 4, 0);
   Node udiv2 = d_nodeManager->mkNode(kind::BITVECTOR_UDIV, ext1, ext2);
   Node zext2 = bv::utils::mkConcat(bv::utils::mkZero(5), udiv2);
-  ASSERT_EQ(BVGauss::getMinBwExpr(zext2), 5);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(zext2), 5);
 }
 
 TEST_F(TestPPWhiteBVGauss, get_min_bw4a)
@@ -2851,9 +2860,9 @@ TEST_F(TestPPWhiteBVGauss, get_min_bw4a)
   Node udiv2_2 = d_nodeManager->mkNode(kind::BITVECTOR_UDIV, ext1_2, ext2_2);
   Node zext2_2 = d_nodeManager->mkNode(zextop7, udiv2_2);
 
-  Node plus = d_nodeManager->mkNode(kind::BITVECTOR_PLUS, zext2_1, zext2_2);
+  Node plus = d_nodeManager->mkNode(kind::BITVECTOR_ADD, zext2_1, zext2_2);
 
-  ASSERT_EQ(BVGauss::getMinBwExpr(plus), 6);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(plus), 6);
 }
 
 TEST_F(TestPPWhiteBVGauss, get_min_bw4b)
@@ -2883,9 +2892,9 @@ TEST_F(TestPPWhiteBVGauss, get_min_bw4b)
   Node udiv2_2 = d_nodeManager->mkNode(kind::BITVECTOR_UDIV, ext1_2, ext2_2);
   Node zext2_2 = d_nodeManager->mkNode(zextop7, udiv2_2);
 
-  Node plus = d_nodeManager->mkNode(kind::BITVECTOR_PLUS, zext2_1, zext2_2);
+  Node plus = d_nodeManager->mkNode(kind::BITVECTOR_ADD, zext2_1, zext2_2);
 
-  ASSERT_EQ(BVGauss::getMinBwExpr(plus), 6);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(plus), 6);
 }
 
 TEST_F(TestPPWhiteBVGauss, get_min_bw5a)
@@ -2955,43 +2964,43 @@ TEST_F(TestPPWhiteBVGauss, get_min_bw5a)
   Node s15 = bv::utils::mkConcat(bv::utils::mkZero(5), ext15s);
 
   Node plus1 = d_nodeManager->mkNode(
-      kind::BITVECTOR_PLUS,
+      kind::BITVECTOR_ADD,
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(13, 86), xx),
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(13, 41), yy));
   Node plus2 = d_nodeManager->mkNode(
-      kind::BITVECTOR_PLUS,
+      kind::BITVECTOR_ADD,
       plus1,
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(13, 37), zz));
   Node plus3 = d_nodeManager->mkNode(
-      kind::BITVECTOR_PLUS,
+      kind::BITVECTOR_ADD,
       plus2,
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(13, 170), uu));
   Node plus4 = d_nodeManager->mkNode(
-      kind::BITVECTOR_PLUS,
+      kind::BITVECTOR_ADD,
       plus3,
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(13, 112), uu));
   Node plus5 = d_nodeManager->mkNode(
-      kind::BITVECTOR_PLUS,
+      kind::BITVECTOR_ADD,
       plus4,
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(13, 195), s15));
   Node plus6 = d_nodeManager->mkNode(
-      kind::BITVECTOR_PLUS,
+      kind::BITVECTOR_ADD,
       plus5,
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(13, 124), s7));
   Node plus7 = d_nodeManager->mkNode(
-      kind::BITVECTOR_PLUS,
+      kind::BITVECTOR_ADD,
       plus6,
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(13, 83), ww));
 
-  ASSERT_EQ(BVGauss::getMinBwExpr(plus7), 0);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(plus7), 0);
 }
 
 TEST_F(TestPPWhiteBVGauss, get_min_bw5b)
@@ -3059,44 +3068,44 @@ TEST_F(TestPPWhiteBVGauss, get_min_bw5b)
   Node s15 = bv::utils::mkConcat(bv::utils::mkZero(12), ext15s);
 
   Node plus1 = d_nodeManager->mkNode(
-      kind::BITVECTOR_PLUS,
+      kind::BITVECTOR_ADD,
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(20, 86), xx),
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(20, 41), yy));
   Node plus2 = d_nodeManager->mkNode(
-      kind::BITVECTOR_PLUS,
+      kind::BITVECTOR_ADD,
       plus1,
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(20, 37), zz));
   Node plus3 = d_nodeManager->mkNode(
-      kind::BITVECTOR_PLUS,
+      kind::BITVECTOR_ADD,
       plus2,
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(20, 170), uu));
   Node plus4 = d_nodeManager->mkNode(
-      kind::BITVECTOR_PLUS,
+      kind::BITVECTOR_ADD,
       plus3,
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(20, 112), uu));
   Node plus5 = d_nodeManager->mkNode(
-      kind::BITVECTOR_PLUS,
+      kind::BITVECTOR_ADD,
       plus4,
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(20, 195), s15));
   Node plus6 = d_nodeManager->mkNode(
-      kind::BITVECTOR_PLUS,
+      kind::BITVECTOR_ADD,
       plus5,
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(20, 124), s7));
   Node plus7 = d_nodeManager->mkNode(
-      kind::BITVECTOR_PLUS,
+      kind::BITVECTOR_ADD,
       plus6,
       d_nodeManager->mkNode(
           kind::BITVECTOR_MULT, bv::utils::mkConst(20, 83), ww));
 
-  ASSERT_EQ(BVGauss::getMinBwExpr(plus7), 19);
-  ASSERT_EQ(BVGauss::getMinBwExpr(Rewriter::rewrite(plus7)), 17);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(plus7), 19);
+  ASSERT_EQ(d_bv_gauss->getMinBwExpr(Rewriter::rewrite(plus7)), 17);
 }
 }  // namespace test
-}  // namespace CVC4
+}  // namespace cvc5

@@ -1,27 +1,27 @@
-/*********************                                                        */
-/*! \file theory_sets_private.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Kshitij Bansal, Mudathir Mohamed
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Sets theory implementation.
- **
- ** Sets theory implementation.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Kshitij Bansal, Mudathir Mohamed
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Sets theory implementation.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__SETS__THEORY_SETS_PRIVATE_H
-#define CVC4__THEORY__SETS__THEORY_SETS_PRIVATE_H
+#ifndef CVC5__THEORY__SETS__THEORY_SETS_PRIVATE_H
+#define CVC5__THEORY__SETS__THEORY_SETS_PRIVATE_H
 
 #include "context/cdhashset.h"
 #include "context/cdqueue.h"
 #include "expr/node_trie.h"
+#include "smt/env_obj.h"
 #include "theory/sets/cardinality_extension.h"
 #include "theory/sets/inference_manager.h"
 #include "theory/sets/solver_state.h"
@@ -31,16 +31,17 @@
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace sets {
 
 /** Internal classes, forward declared here */
 class TheorySets;
 
-class TheorySetsPrivate {
-  typedef context::CDHashMap< Node, bool, NodeHashFunction> NodeBoolMap;
-  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+class TheorySetsPrivate : protected EnvObj
+{
+  typedef context::CDHashMap<Node, bool> NodeBoolMap;
+  typedef context::CDHashSet<Node> NodeSet;
 
  public:
   void eqNotifyNewClass(TNode t);
@@ -122,7 +123,9 @@ class TheorySetsPrivate {
    * is incomplete for some reason (for instance, if we combine cardinality
    * with a relation or extended function kind).
    */
-  bool d_full_check_incomplete;
+  bool d_fullCheckIncomplete;
+  /** The reason we set the above flag to true */
+  IncompleteId d_fullCheckIncompleteId;
   std::map< Node, TypeNode > d_most_common_type;
   std::map< Node, Node > d_most_common_type_term;
 
@@ -132,10 +135,12 @@ class TheorySetsPrivate {
    * Constructs a new instance of TheorySetsPrivate w.r.t. the provided
    * contexts.
    */
-  TheorySetsPrivate(TheorySets& external,
+  TheorySetsPrivate(Env& env,
+                    TheorySets& external,
                     SolverState& state,
                     InferenceManager& im,
-                    SkolemCache& skc);
+                    SkolemCache& skc,
+                    ProofNodeManager* pnm);
 
   ~TheorySetsPrivate();
 
@@ -232,11 +237,10 @@ class TheorySetsPrivate {
   /** a map that maps each set to an existential quantifier generated for
    * operator is_singleton */
   std::map<Node, Node> d_isSingletonNodes;
-};/* class TheorySetsPrivate */
+}; /* class TheorySetsPrivate */
 
+}  // namespace sets
+}  // namespace theory
+}  // namespace cvc5
 
-}/* CVC4::theory::sets namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
-
-#endif /* CVC4__THEORY__SETS__THEORY_SETS_PRIVATE_H */
+#endif /* CVC5__THEORY__SETS__THEORY_SETS_PRIVATE_H */

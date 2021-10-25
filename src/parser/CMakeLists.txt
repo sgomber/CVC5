@@ -1,26 +1,27 @@
-#####################
-## CMakeLists.txt
-## Top contributors (to current version):
-##   Mathias Preiner, Aina Niemetz, Andrew Reynolds
-## This file is part of the CVC4 project.
-## Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
-## in the top-level source directory and their institutional affiliations.
-## All rights reserved.  See the file COPYING in the top-level source
-## directory for licensing information.
+###############################################################################
+# Top contributors (to current version):
+#   Mathias Preiner, Gereon Kremer, Aina Niemetz
+#
+# This file is part of the cvc5 project.
+#
+# Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+# in the top-level source directory and their institutional affiliations.
+# All rights reserved.  See the file COPYING in the top-level source
+# directory for licensing information.
+# #############################################################################
+#
+# The build system configuration.
 ##
-find_package(ANTLR REQUIRED)
 
-if(NOT HAVE_ANTLR3_FILE_STREAM_NEW)
-  add_definitions(-DCVC4_ANTLR3_OLD_INPUT_STREAM)
-endif()
+find_package(ANTLR3 3.4 REQUIRED)
 
 # Java runtime is required for ANTLR
 find_package(Java COMPONENTS Runtime REQUIRED)
 
 #-----------------------------------------------------------------------------#
-# libcvc4parser source files
+# libcvc5parser source files
 
-set(libcvc4parser_src_files
+set(libcvc5parser_src_files
   antlr_input.cpp
   antlr_input.h
   antlr_input_imports.cpp
@@ -31,10 +32,6 @@ set(libcvc4parser_src_files
   bounded_token_buffer.h
   bounded_token_factory.cpp
   bounded_token_factory.h
-  cvc/cvc.cpp
-  cvc/cvc.h
-  cvc/cvc_input.cpp
-  cvc/cvc_input.h
   input.cpp
   input.h
   line_buffer.cpp
@@ -65,7 +62,7 @@ set(libcvc4parser_src_files
 #-----------------------------------------------------------------------------#
 # Generate parsers for all supported languages
 
-foreach(lang Cvc Smt2 Tptp)
+foreach(lang Smt2 Tptp)
   string(TOLOWER ${lang} lang_dir)
   file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${lang_dir})
   add_custom_command(
@@ -76,7 +73,7 @@ foreach(lang Cvc Smt2 Tptp)
       ${CMAKE_CURRENT_BINARY_DIR}/${lang_dir}/${lang}Parser.h
       ${CMAKE_CURRENT_BINARY_DIR}/${lang_dir}/${lang}.tokens
     COMMAND
-      ${ANTLR_BINARY}
+      ${ANTLR3_COMMAND}
         ${CMAKE_CURRENT_SOURCE_DIR}/${lang_dir}/${lang}.g
         -fo ${CMAKE_CURRENT_BINARY_DIR}/${lang_dir}
     DEPENDS
@@ -95,27 +92,50 @@ foreach(lang Cvc Smt2 Tptp)
     ${gen_src_files} PROPERTIES COMPILE_FLAGS "-Wno-all -Wno-error")
 
   # Add generated source files to the parser source files
-  list(APPEND libcvc4parser_src_files ${gen_src_files})
+  list(APPEND libcvc5parser_src_files ${gen_src_files})
 endforeach()
 
 #-----------------------------------------------------------------------------#
-# libcvc4parser configuration
+# libcvc5parser configuration
 
-add_library(cvc4parser ${libcvc4parser_src_files})
-set_target_properties(cvc4parser PROPERTIES SOVERSION ${CVC4_SOVERSION})
-target_compile_definitions(cvc4parser PRIVATE -D__BUILDING_CVC4PARSERLIB)
-target_link_libraries(cvc4parser cvc4 ${ANTLR_LIBRARIES})
-target_include_directories(cvc4parser PRIVATE ${ANTLR_INCLUDE_DIR})
-install(TARGETS cvc4parser
-  EXPORT cvc4-targets
+add_library(cvc5parser-objs OBJECT ${libcvc5parser_src_files})
+set_target_properties(cvc5parser-objs PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_compile_definitions(cvc5parser-objs PUBLIC -D__BUILDING_CVC5PARSERLIB -Dcvc5_obj_EXPORTS)
+
+add_dependencies(cvc5parser-objs ANTLR3_SHARED)
+target_include_directories(cvc5parser-objs PRIVATE ${ANTLR3_INCLUDE_DIR})
+
+add_library(cvc5parser-shared SHARED $<TARGET_OBJECTS:cvc5parser-objs>)
+set_target_properties(cvc5parser-shared PROPERTIES SOVERSION ${CVC5_SOVERSION})
+set_target_properties(cvc5parser-shared PROPERTIES OUTPUT_NAME cvc5parser)
+target_link_libraries(cvc5parser-shared PRIVATE cvc5-shared)
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  target_link_libraries(cvc5parser-shared PRIVATE ANTLR3_STATIC)
+else()
+  target_link_libraries(cvc5parser-shared PRIVATE ANTLR3_SHARED)
+endif()
+
+install(TARGETS cvc5parser-shared
+  EXPORT cvc5-targets
   DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+if(ENABLE_STATIC_LIBRARY)
+  add_library(cvc5parser-static STATIC $<TARGET_OBJECTS:cvc5parser-objs>)
+  set_target_properties(cvc5parser-static PROPERTIES OUTPUT_NAME cvc5parser)
+  target_link_libraries(cvc5parser-static PRIVATE cvc5-static)
+  target_link_libraries(cvc5parser-static PRIVATE ANTLR3_STATIC)
+
+  install(TARGETS cvc5parser-objs cvc5parser-static
+    EXPORT cvc5-targets
+    DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif()
 
 # The generated lexer/parser files define some functions as
 # __declspec(dllexport) via the ANTLR3_API macro, which leads to lots of
-# unresolved symbols when linking against libcvc4parser.
+# unresolved symbols when linking against libcvc5parser.
 # -Wl,--export-all-symbols makes sure that all symbols are exported when
 # building a DLL.
-if(CVC4_WINDOWS_BUILD)
-  set_target_properties(cvc4parser
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  set_target_properties(cvc5parser-objs
     PROPERTIES LINK_FLAGS "-Wl,--export-all-symbols")
 endif()

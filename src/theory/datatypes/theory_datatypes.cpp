@@ -1,32 +1,33 @@
-/*********************                                                        */
-/*! \file theory_datatypes.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of the theory of datatypes
- **
- ** Implementation of the theory of datatypes.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of the theory of datatypes.
+ */
 #include "theory/datatypes/theory_datatypes.h"
 
 #include <map>
 #include <sstream>
 
 #include "base/check.h"
+#include "expr/codatatype_bound_variable.h"
 #include "expr/dtype.h"
 #include "expr/dtype_cons.h"
 #include "expr/kind.h"
-#include "expr/proof_node_manager.h"
+#include "expr/skolem_manager.h"
 #include "options/datatypes_options.h"
 #include "options/quantifiers_options.h"
 #include "options/smt_options.h"
 #include "options/theory_options.h"
+#include "proof/proof_node_manager.h"
 #include "smt/logic_exception.h"
 #include "theory/datatypes/datatypes_rewriter.h"
 #include "theory/datatypes/theory_datatypes_type_rules.h"
@@ -38,33 +39,31 @@
 #include "theory/theory_state.h"
 #include "theory/type_enumerator.h"
 #include "theory/valuation.h"
+#include "util/rational.h"
 
 using namespace std;
-using namespace CVC4::kind;
-using namespace CVC4::context;
+using namespace cvc5::kind;
+using namespace cvc5::context;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace datatypes {
 
-TheoryDatatypes::TheoryDatatypes(Context* c,
-                                 UserContext* u,
+TheoryDatatypes::TheoryDatatypes(Env& env,
                                  OutputChannel& out,
-                                 Valuation valuation,
-                                 const LogicInfo& logicInfo,
-                                 ProofNodeManager* pnm)
-    : Theory(THEORY_DATATYPES, c, u, out, valuation, logicInfo, pnm),
-      d_term_sk(u),
-      d_labels(c),
-      d_selector_apps(c),
-      d_collectTermsCache(c),
-      d_collectTermsCacheU(u),
-      d_functionTerms(c),
-      d_singleton_eq(u),
-      d_lemmas_produced_c(u),
+                                 Valuation valuation)
+    : Theory(THEORY_DATATYPES, env, out, valuation),
+      d_term_sk(userContext()),
+      d_labels(context()),
+      d_selector_apps(context()),
+      d_collectTermsCache(context()),
+      d_collectTermsCacheU(userContext()),
+      d_functionTerms(context()),
+      d_singleton_eq(userContext()),
       d_sygusExtension(nullptr),
-      d_state(c, u, valuation),
-      d_im(*this, d_state, pnm),
+      d_rewriter(env.getEvaluator()),
+      d_state(env, valuation),
+      d_im(env, *this, d_state),
       d_notify(d_im, *this)
 {
 
@@ -75,13 +74,6 @@ TheoryDatatypes::TheoryDatatypes(Context* c,
   // indicate we are using the default theory state object
   d_theoryState = &d_state;
   d_inferManager = &d_im;
-
-  ProofChecker* pc = pnm != nullptr ? pnm->getChecker() : nullptr;
-  if (pc != nullptr)
-  {
-    // add checkers
-    d_pchecker.registerTo(pc);
-  }
 }
 
 TheoryDatatypes::~TheoryDatatypes() {
@@ -95,10 +87,15 @@ TheoryDatatypes::~TheoryDatatypes() {
 
 TheoryRewriter* TheoryDatatypes::getTheoryRewriter() { return &d_rewriter; }
 
+ProofRuleChecker* TheoryDatatypes::getProofChecker() { return &d_checker; }
+
 bool TheoryDatatypes::needsEqualityEngine(EeSetupInfo& esi)
 {
   esi.d_notify = &d_notify;
   esi.d_name = "theory::datatypes::ee";
+  // need notifications on new constructors, merging datatype eqcs
+  esi.d_notifyNewClass = true;
+  esi.d_notifyMerge = true;
   return true;
 }
 
@@ -116,8 +113,7 @@ void TheoryDatatypes::finishInit()
   {
     quantifiers::TermDbSygus* tds =
         getQuantifiersEngine()->getTermDatabaseSygus();
-    d_sygusExtension.reset(
-        new SygusExtension(d_state, d_im, tds, getDecisionManager()));
+    d_sygusExtension.reset(new SygusExtension(d_env, d_state, d_im, tds));
     // do congruence on evaluation functions
     d_equalityEngine->addFunctionKind(kind::DT_SYGUS_EVAL);
   }
@@ -136,16 +132,16 @@ TheoryDatatypes::EqcInfo* TheoryDatatypes::getOrMakeEqcInfo( TNode n, bool doMak
       if( eqc_i != d_eqc_info.end() ){
         ei = eqc_i->second;
       }else{
-        ei = new EqcInfo( getSatContext() );
+        ei = new EqcInfo(context());
         d_eqc_info[n] = ei;
       }
       if( n.getKind()==APPLY_CONSTRUCTOR ){
         ei->d_constructor = n;
       }
-      
+
       //add to selectors
       d_selector_apps[n] = 0;
-      
+
       return ei;
     }else{
       return NULL;
@@ -171,13 +167,17 @@ TNode TheoryDatatypes::getEqcConstructor( TNode r ) {
 
 bool TheoryDatatypes::preCheck(Effort level)
 {
+  Trace("datatypes-check") << "TheoryDatatypes::preCheck: " << level
+                           << std::endl;
+  d_im.process();
   d_im.reset();
-  d_im.clearPending();
   return false;
 }
 
 void TheoryDatatypes::postCheck(Effort level)
 {
+  Trace("datatypes-check") << "TheoryDatatypes::postCheck: " << level
+                           << std::endl;
   // Apply any last pending inferences, which may occur if the last processed
   // fact was an internal one and triggered further internal inferences.
   d_im.process();
@@ -185,7 +185,6 @@ void TheoryDatatypes::postCheck(Effort level)
   {
     Assert(d_sygusExtension != nullptr);
     d_sygusExtension->check();
-    return;
   }
   else if (level == EFFORT_FULL && !d_state.isInConflict()
            && !d_im.hasSentLemma() && !d_valuation.needCheck())
@@ -224,7 +223,7 @@ void TheoryDatatypes::postCheck(Effort level)
             const DType& dt = tt.getDType();
             Trace("datatypes-debug")
                 << "Datatype " << dt.getName() << " is "
-                << dt.isInterpretedFinite(tt) << " "
+                << dt.getCardinalityClass(tt) << " "
                 << dt.isRecursiveSingleton(tt) << std::endl;
             bool continueProc = true;
             if( dt.isRecursiveSingleton( tt ) ){
@@ -279,14 +278,21 @@ void TheoryDatatypes::postCheck(Effort level)
               int consIndex = -1;
               int fconsIndex = -1;
               bool needSplit = true;
-              for( unsigned int j=0; j<pcons.size(); j++ ) {
+              for (size_t j = 0, psize = pcons.size(); j < psize; j++)
+              {
                 if( pcons[j] ) {
                   if( consIndex==-1 ){
                     consIndex = j;
                   }
                   Trace("datatypes-debug") << j << " compute finite..."
                                            << std::endl;
-                  bool ifin = dt[j].isInterpretedFinite(tt);
+                  // Notice that we split here on all datatypes except the
+                  // truly infinite ones. It is possible to also not split
+                  // on those that are interpreted-finite when finite model
+                  // finding is disabled, but as a heuristic we choose to split
+                  // on those too.
+                  bool ifin = dt[j].getCardinalityClass(tt)
+                              != CardinalityClass::INFINITE;
                   Trace("datatypes-debug") << "...returned " << ifin
                                            << std::endl;
                   if (!ifin)
@@ -322,8 +328,8 @@ void TheoryDatatypes::postCheck(Effort level)
                   if( options::dtBinarySplit() && consIndex!=-1 ){
                     Node test = utils::mkTester(n, consIndex, dt);
                     Trace("dt-split") << "*************Split for possible constructor " << dt[consIndex] << " for " << n << endl;
-                    test = Rewriter::rewrite( test );
-                    NodeBuilder<> nb(kind::OR);
+                    test = rewrite(test);
+                    NodeBuilder nb(kind::OR);
                     nb << test << test.notNode();
                     Node lemma = nb;
                     d_im.lemma(lemma, InferenceId::DATATYPES_BINARY_SPLIT);
@@ -481,125 +487,11 @@ void TheoryDatatypes::preRegisterTerm(TNode n)
   d_im.process();
 }
 
-TrustNode TheoryDatatypes::expandDefinition(Node n)
-{
-  NodeManager* nm = NodeManager::currentNM();
-  TypeNode tn = n.getType();
-  Node ret;
-  switch (n.getKind())
-  {
-    case kind::APPLY_SELECTOR:
-    {
-      Node selector = n.getOperator();
-      // APPLY_SELECTOR always applies to an external selector, cindexOf is
-      // legal here
-      size_t cindex = utils::cindexOf(selector);
-      const DType& dt = utils::datatypeOf(selector);
-      const DTypeConstructor& c = dt[cindex];
-      Node selector_use;
-      TypeNode ndt = n[0].getType();
-      if (options::dtSharedSelectors())
-      {
-        size_t selectorIndex = utils::indexOf(selector);
-        Trace("dt-expand") << "...selector index = " << selectorIndex
-                           << std::endl;
-        Assert(selectorIndex < c.getNumArgs());
-        selector_use = c.getSelectorInternal(ndt, selectorIndex);
-      }else{
-        selector_use = selector;
-      }
-      Node sel = nm->mkNode(kind::APPLY_SELECTOR_TOTAL, selector_use, n[0]);
-      if (options::dtRewriteErrorSel())
-      {
-        ret = sel;
-      }
-      else
-      {
-        Node tester = c.getTester();
-        Node tst = nm->mkNode(APPLY_TESTER, tester, n[0]);
-        tst = Rewriter::rewrite(tst);
-        if (tst == d_true)
-        {
-          ret = sel;
-        }else{
-          mkExpDefSkolem(selector, ndt, n.getType());
-          Node sk =
-              nm->mkNode(kind::APPLY_UF, d_exp_def_skolem[ndt][selector], n[0]);
-          if (tst == nm->mkConst(false))
-          {
-            ret = sk;
-          }
-          else
-          {
-            ret = nm->mkNode(kind::ITE, tst, sel, sk);
-          }
-        }
-        Trace("dt-expand") << "Expand def : " << n << " to " << ret
-                           << std::endl;
-      }
-    }
-    break;
-    case TUPLE_UPDATE:
-    case RECORD_UPDATE:
-    {
-      Assert(tn.isDatatype());
-      const DType& dt = tn.getDType();
-      NodeBuilder<> b(APPLY_CONSTRUCTOR);
-      b << dt[0].getConstructor();
-      size_t size, updateIndex;
-      if (n.getKind() == TUPLE_UPDATE)
-      {
-        Assert(tn.isTuple());
-        size = tn.getTupleLength();
-        updateIndex = n.getOperator().getConst<TupleUpdate>().getIndex();
-      }
-      else
-      {
-        Assert(tn.isRecord());
-        const DTypeConstructor& recCons = dt[0];
-        size = recCons.getNumArgs();
-        // get the index for the name
-        updateIndex = recCons.getSelectorIndexForName(
-            n.getOperator().getConst<RecordUpdate>().getField());
-      }
-      Debug("tuprec") << "expr is " << n << std::endl;
-      Debug("tuprec") << "updateIndex is " << updateIndex << std::endl;
-      Debug("tuprec") << "t is " << tn << std::endl;
-      Debug("tuprec") << "t has arity " << size << std::endl;
-      for (size_t i = 0; i < size; ++i)
-      {
-        if (i == updateIndex)
-        {
-          b << n[1];
-          Debug("tuprec") << "arg " << i << " gets updated to " << n[1]
-                          << std::endl;
-        }
-        else
-        {
-          b << nm->mkNode(
-              APPLY_SELECTOR_TOTAL, dt[0].getSelectorInternal(tn, i), n[0]);
-          Debug("tuprec") << "arg " << i << " copies "
-                          << b[b.getNumChildren() - 1] << std::endl;
-        }
-      }
-      ret = b;
-      Debug("tuprec") << "return " << ret << std::endl;
-    }
-    break;
-    default: break;
-  }
-  if (!ret.isNull() && n != ret)
-  {
-    return TrustNode::mkTrustRewrite(n, ret, nullptr);
-  }
-  return TrustNode::null();
-}
-
 TrustNode TheoryDatatypes::ppRewrite(TNode in, std::vector<SkolemLemma>& lems)
 {
   Debug("tuprec") << "TheoryDatatypes::ppRewrite(" << in << ")" << endl;
   // first, see if we need to expand definitions
-  TrustNode texp = expandDefinition(in);
+  TrustNode texp = d_rewriter.expandDefinition(in);
   if (!texp.isNull())
   {
     return texp;
@@ -642,134 +534,158 @@ void TheoryDatatypes::eqNotifyNewClass(TNode t){
 void TheoryDatatypes::eqNotifyMerge(TNode t1, TNode t2)
 {
   if( t1.getType().isDatatype() ){
-    Trace("datatypes-debug")
+    Trace("datatypes-merge")
         << "NotifyMerge : " << t1 << " " << t2 << std::endl;
-    merge(t1,t2);
+    merge(t1, t2);
   }
 }
 
 void TheoryDatatypes::merge( Node t1, Node t2 ){
-  if (!d_state.isInConflict())
+  if (d_state.isInConflict())
   {
-    TNode trep1 = t1;
-    TNode trep2 = t2;
-    Trace("datatypes-debug") << "Merge " << t1 << " " << t2 << std::endl;
-    EqcInfo* eqc2 = getOrMakeEqcInfo( t2 );
-    if( eqc2 ){
-      bool checkInst = false;
-      if( !eqc2->d_constructor.get().isNull() ){
-        trep2 = eqc2->d_constructor.get();
+    return;
+  }
+  Trace("datatypes-merge") << "Merge " << t1 << " " << t2 << std::endl;
+  Assert(areEqual(t1, t2));
+  TNode trep1 = t1;
+  TNode trep2 = t2;
+  EqcInfo* eqc2 = getOrMakeEqcInfo(t2);
+  if (eqc2 == nullptr)
+  {
+    return;
+  }
+  bool checkInst = false;
+  if (!eqc2->d_constructor.get().isNull())
+  {
+    trep2 = eqc2->d_constructor.get();
+  }
+  EqcInfo* eqc1 = getOrMakeEqcInfo(t1);
+  if (eqc1)
+  {
+    Trace("datatypes-debug")
+        << "  merge eqc info " << eqc2 << " into " << eqc1 << std::endl;
+    if (!eqc1->d_constructor.get().isNull())
+    {
+      trep1 = eqc1->d_constructor.get();
+    }
+    // check for clash
+    TNode cons1 = eqc1->d_constructor.get();
+    TNode cons2 = eqc2->d_constructor.get();
+    // if both have constructor, then either clash or unification
+    if (!cons1.isNull() && !cons2.isNull())
+    {
+      Trace("datatypes-debug")
+          << "  constructors : " << cons1 << " " << cons2 << std::endl;
+      Node unifEq = cons1.eqNode(cons2);
+      std::vector<Node> rew;
+      if (utils::checkClash(cons1, cons2, rew))
+      {
+        std::vector<Node> conf;
+        conf.push_back(unifEq);
+        Trace("dt-conflict")
+            << "CONFLICT: Clash conflict : " << conf << std::endl;
+        d_im.sendDtConflict(conf, InferenceId::DATATYPES_CLASH_CONFLICT);
+        return;
       }
-      EqcInfo* eqc1 = getOrMakeEqcInfo( t1 );
-      if( eqc1 ){
-        Trace("datatypes-debug") << "  merge eqc info " << eqc2 << " into " << eqc1 << std::endl;
-        if( !eqc1->d_constructor.get().isNull() ){
-          trep1 = eqc1->d_constructor.get();
-        }
-        //check for clash
-        TNode cons1 = eqc1->d_constructor.get();
-        TNode cons2 = eqc2->d_constructor.get();
-        //if both have constructor, then either clash or unification
-        if( !cons1.isNull() && !cons2.isNull() ){
-          Trace("datatypes-debug") << "  constructors : " << cons1 << " " << cons2 << std::endl;
-          Node unifEq = cons1.eqNode( cons2 );
-          std::vector< Node > rew;
-          if (utils::checkClash(cons1, cons2, rew))
-          {
-            std::vector<Node> conf;
-            conf.push_back(unifEq);
-            Trace("dt-conflict")
-                << "CONFLICT: Clash conflict : " << conf << std::endl;
-            d_im.sendDtConflict(conf, InferenceId::DATATYPES_CLASH_CONFLICT);
-            return;
-          }
-          else
-          {
-            //do unification
-            for( int i=0; i<(int)cons1.getNumChildren(); i++ ) {
-              if( !areEqual( cons1[i], cons2[i] ) ){
-                Node eq = cons1[i].eqNode( cons2[i] );
-                d_im.addPendingInference(
-                    eq, InferenceId::DATATYPES_UNIF, unifEq);
-                Trace("datatypes-infer") << "DtInfer : cons-inj : " << eq << " by " << unifEq << std::endl;
-              }
-            }
-          }
-        }
-        Trace("datatypes-debug") << "  instantiated : " << eqc1->d_inst << " " << eqc2->d_inst << std::endl;
-        eqc1->d_inst = eqc1->d_inst || eqc2->d_inst;
-        if( !cons2.isNull() ){
-          if( cons1.isNull() ){
-            Trace("datatypes-debug") << "  must check if it is okay to set the constructor." << std::endl;
-            checkInst = true;
-            addConstructor( eqc2->d_constructor.get(), eqc1, t1 );
-            if (d_state.isInConflict())
-            {
-              return;
-            }
-          }
-        }
-      }else{
-        Trace("datatypes-debug") << "  no eqc info for " << t1 << ", must create" << std::endl;
-        //just copy the equivalence class information
-        eqc1 = getOrMakeEqcInfo( t1, true );
-        eqc1->d_inst.set( eqc2->d_inst );
-        eqc1->d_constructor.set( eqc2->d_constructor );
-        eqc1->d_selectors.set( eqc2->d_selectors );
-      }
-
-
-      //merge labels
-      NodeUIntMap::iterator lbl_i = d_labels.find(t2);
-      if( lbl_i != d_labels.end() ){
-        Trace("datatypes-debug") << "  merge labels from " << eqc2 << " " << t2 << std::endl;
-        size_t n_label = (*lbl_i).second;
-        for (size_t i = 0; i < n_label; i++)
+      else
+      {
+        Assert(areEqual(cons1, cons2));
+        // do unification
+        for (size_t i = 0, nchild = cons1.getNumChildren(); i < nchild; i++)
         {
-          Assert(i < d_labels_data[t2].size());
-          Node t = d_labels_data[ t2 ][i];
-          Node t_arg = d_labels_args[t2][i];
-          unsigned tindex = d_labels_tindex[t2][i];
-          addTester( tindex, t, eqc1, t1, t_arg );
-          if (d_state.isInConflict())
+          if (!areEqual(cons1[i], cons2[i]))
           {
-            Trace("datatypes-debug") << "  conflict!" << std::endl;
-            return;
+            Node eq = cons1[i].eqNode(cons2[i]);
+            d_im.addPendingInference(eq, InferenceId::DATATYPES_UNIF, unifEq);
+            Trace("datatypes-infer") << "DtInfer : cons-inj : " << eq << " by "
+                                     << unifEq << std::endl;
           }
         }
-
       }
-      //merge selectors
-      if( !eqc1->d_selectors && eqc2->d_selectors ){
-        eqc1->d_selectors = true;
+    }
+    Trace("datatypes-debug") << "  instantiated : " << eqc1->d_inst << " "
+                             << eqc2->d_inst << std::endl;
+    eqc1->d_inst = eqc1->d_inst || eqc2->d_inst;
+    if (!cons2.isNull())
+    {
+      if (cons1.isNull())
+      {
+        Trace("datatypes-debug")
+            << "  must check if it is okay to set the constructor."
+            << std::endl;
         checkInst = true;
-      }
-      NodeUIntMap::iterator sel_i = d_selector_apps.find(t2);
-      if( sel_i != d_selector_apps.end() ){
-        Trace("datatypes-debug") << "  merge selectors from " << eqc2 << " " << t2 << std::endl;
-        size_t n_sel = (*sel_i).second;
-        for (size_t j = 0; j < n_sel; j++)
-        {
-          addSelector( d_selector_apps_data[t2][j], eqc1, t1, eqc2->d_constructor.get().isNull() );
-        }
-      }
-      if( checkInst ){
-        Trace("datatypes-debug") << "  checking instantiate" << std::endl;
-        instantiate( eqc1, t1 );
+        addConstructor(eqc2->d_constructor.get(), eqc1, t1);
         if (d_state.isInConflict())
         {
           return;
         }
       }
     }
-    Trace("datatypes-debug") << "Finished Merge " << t1 << " " << t2 << std::endl;
   }
+  else
+  {
+    Trace("datatypes-debug")
+        << "  no eqc info for " << t1 << ", must create" << std::endl;
+    // just copy the equivalence class information
+    eqc1 = getOrMakeEqcInfo(t1, true);
+    eqc1->d_inst.set(eqc2->d_inst);
+    eqc1->d_constructor.set(eqc2->d_constructor);
+    eqc1->d_selectors.set(eqc2->d_selectors);
+  }
+
+  // merge labels
+  NodeUIntMap::iterator lbl_i = d_labels.find(t2);
+  if (lbl_i != d_labels.end())
+  {
+    Trace("datatypes-debug")
+        << "  merge labels from " << eqc2 << " " << t2 << std::endl;
+    size_t n_label = (*lbl_i).second;
+    for (size_t i = 0; i < n_label; i++)
+    {
+      Assert(i < d_labels_data[t2].size());
+      Node t = d_labels_data[t2][i];
+      Node t_arg = d_labels_args[t2][i];
+      unsigned tindex = d_labels_tindex[t2][i];
+      addTester(tindex, t, eqc1, t1, t_arg);
+      if (d_state.isInConflict())
+      {
+        Trace("datatypes-debug") << "  conflict!" << std::endl;
+        return;
+      }
+    }
+  }
+  // merge selectors
+  if (!eqc1->d_selectors && eqc2->d_selectors)
+  {
+    eqc1->d_selectors = true;
+    checkInst = true;
+  }
+  NodeUIntMap::iterator sel_i = d_selector_apps.find(t2);
+  if (sel_i != d_selector_apps.end())
+  {
+    Trace("datatypes-debug")
+        << "  merge selectors from " << eqc2 << " " << t2 << std::endl;
+    size_t n_sel = (*sel_i).second;
+    for (size_t j = 0; j < n_sel; j++)
+    {
+      addSelector(d_selector_apps_data[t2][j],
+                  eqc1,
+                  t1,
+                  eqc2->d_constructor.get().isNull());
+    }
+  }
+  if (checkInst)
+  {
+    Trace("datatypes-debug") << "  checking instantiate" << std::endl;
+    instantiate(eqc1, t1);
+  }
+  Trace("datatypes-debug") << "Finished Merge " << t1 << " " << t2 << std::endl;
 }
 
-TheoryDatatypes::EqcInfo::EqcInfo( context::Context* c )
-    : d_inst( c, false )
-    , d_constructor( c, Node::null() )
-    , d_selectors( c, false )
+TheoryDatatypes::EqcInfo::EqcInfo(context::Context* c)
+    : d_inst(c, false),
+      d_constructor(c, Node::null()),
+      d_selectors(c, false)
 {}
 
 bool TheoryDatatypes::hasLabel( EqcInfo* eqc, Node n ){
@@ -834,21 +750,14 @@ void TheoryDatatypes::getPossibleCons( EqcInfo* eqc, Node n, std::vector< bool >
   }
 }
 
-void TheoryDatatypes::mkExpDefSkolem( Node sel, TypeNode dt, TypeNode rt ) {
-  if( d_exp_def_skolem[dt].find( sel )==d_exp_def_skolem[dt].end() ){
-    std::stringstream ss;
-    ss << sel << "_uf";
-    d_exp_def_skolem[dt][ sel ] = NodeManager::currentNM()->mkSkolem( ss.str().c_str(),
-                                  NodeManager::currentNM()->mkFunctionType( dt, rt ) );
-  }
-}
-
 Node TheoryDatatypes::getTermSkolemFor( Node n ) {
   if( n.getKind()==APPLY_CONSTRUCTOR ){
     NodeMap::const_iterator it = d_term_sk.find( n );
     if( it==d_term_sk.end() ){
+      NodeManager* nm = NodeManager::currentNM();
+      SkolemManager* sm = nm->getSkolemManager();
       //add purification unit lemma ( k = n )
-      Node k = NodeManager::currentNM()->mkSkolem( "k", n.getType(), "reference skolem for datatypes" );
+      Node k = sm->mkPurifySkolem(n, "kdt");
       d_term_sk[n] = k;
       Node eq = k.eqNode( n );
       Trace("datatypes-infer") << "DtInfer : ref : " << eq << std::endl;
@@ -938,7 +847,7 @@ void TheoryDatatypes::addTester(
       const DType& dt = t_arg.getType().getDType();
       Debug("datatypes-labels") << "Labels at " << n_lbl << " / " << dt.getNumConstructors() << std::endl;
       if( tpolarity ){
-        instantiate( eqc, n );
+        instantiate(eqc, n);
         // We could propagate is-C1(x) => not is-C2(x) here for all other
         // constructors, but empirically this hurts performance.
       }else{
@@ -958,7 +867,7 @@ void TheoryDatatypes::addTester(
           Assert(testerIndex != -1);
           //we must explain why each term in the set of testers for this equivalence class is equal
           std::vector< Node > eq_terms;
-          NodeBuilder<> nb(kind::AND);
+          NodeBuilder nb(kind::AND);
           for (unsigned i = 0; i < n_lbl; i++)
           {
             Node ti = d_labels_data[n][i];
@@ -1019,7 +928,7 @@ void TheoryDatatypes::addSelector( Node s, EqcInfo* eqc, Node n, bool assertFact
     }else{
       d_selector_apps_data[n].push_back( s );
     }
-  
+
     eqc->d_selectors = true;
   }
   if( assertFacts && !eqc->d_constructor.get().isNull() ){
@@ -1101,7 +1010,7 @@ void TheoryDatatypes::collapseSelector( Node s, Node c ) {
     }
     else
     {
-      rrs = Rewriter::rewrite(r);
+      rrs = rewrite(r);
     }
     if (s != rrs)
     {
@@ -1328,8 +1237,9 @@ bool TheoryDatatypes::collectModelValues(TheoryModel* m,
       for( unsigned r=0; r<2; r++ ){
         if( neqc.isNull() ){
           for( unsigned i=0; i<pcons.size(); i++ ){
-            //must try the infinite ones first
-            bool cfinite = dt[ i ].isInterpretedFinite( tt );
+            // must try the infinite ones first
+            bool cfinite =
+                d_env.isFiniteType(dt[i].getSpecializedConstructorType(tt));
             if( pcons[i] && (r==1)==cfinite ){
               neqc = utils::getInstCons(eqc, dt, i);
               break;
@@ -1380,10 +1290,10 @@ bool TheoryDatatypes::collectModelValues(TheoryModel* m,
 
 Node TheoryDatatypes::getCodatatypesValue( Node n, std::map< Node, Node >& eqc_cons, std::map< Node, int >& vmap, int depth ){
   std::map< Node, int >::iterator itv = vmap.find( n );
+  NodeManager* nm = NodeManager::currentNM();
   if( itv!=vmap.end() ){
     int debruijn = depth - 1 - itv->second;
-    return NodeManager::currentNM()->mkConst(
-        UninterpretedConstant(n.getType(), debruijn));
+    return nm->mkConst(CodatatypeBoundVariable(n.getType(), debruijn));
   }else if( n.getType().isDatatype() ){
     Node nc = eqc_cons[n];
     if( !nc.isNull() ){
@@ -1398,24 +1308,26 @@ Node TheoryDatatypes::getCodatatypesValue( Node n, std::map< Node, Node >& eqc_c
         children.push_back( rv );
       }
       vmap.erase( n );
-      return NodeManager::currentNM()->mkNode( APPLY_CONSTRUCTOR, children );
+      return nm->mkNode(APPLY_CONSTRUCTOR, children);
     }
   }
   return n;
 }
 
 Node TheoryDatatypes::getSingletonLemma( TypeNode tn, bool pol ) {
+  NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
   int index = pol ? 0 : 1;
   std::map< TypeNode, Node >::iterator it = d_singleton_lemma[index].find( tn );
   if( it==d_singleton_lemma[index].end() ){
     Node a;
     if( pol ){
-      Node v1 = NodeManager::currentNM()->mkBoundVar( tn );
-      Node v2 = NodeManager::currentNM()->mkBoundVar( tn );
-      a = NodeManager::currentNM()->mkNode( FORALL, NodeManager::currentNM()->mkNode( BOUND_VAR_LIST, v1, v2 ), v1.eqNode( v2 ) );
+      Node v1 = nm->mkBoundVar(tn);
+      Node v2 = nm->mkBoundVar(tn);
+      a = nm->mkNode(FORALL, nm->mkNode(BOUND_VAR_LIST, v1, v2), v1.eqNode(v2));
     }else{
-      Node v1 = NodeManager::currentNM()->mkSkolem( "k1", tn );
-      Node v2 = NodeManager::currentNM()->mkSkolem( "k2", tn );
+      Node v1 = sm->mkDummySkolem("k1", tn);
+      Node v2 = sm->mkDummySkolem("k2", tn);
       a = v1.eqNode( v2 ).negate();
       //send out immediately as lemma
       d_im.lemma(a, InferenceId::DATATYPES_REC_SINGLETON_FORCE_DEQ);
@@ -1513,7 +1425,7 @@ Node TheoryDatatypes::getInstantiateCons(Node n, const DType& dt, int index)
   //add constructor to equivalence class
   Node k = getTermSkolemFor( n );
   Node n_ic = utils::getInstCons(k, dt, index);
-  n_ic = Rewriter::rewrite( n_ic );
+  n_ic = rewrite(n_ic);
   // it may be a new term, so we collect terms and add it to the equality engine
   collectTerms( n_ic );
   d_equalityEngine->addTerm(n_ic);
@@ -1521,13 +1433,14 @@ Node TheoryDatatypes::getInstantiateCons(Node n, const DType& dt, int index)
   return n_ic;
 }
 
-void TheoryDatatypes::instantiate( EqcInfo* eqc, Node n ){
+bool TheoryDatatypes::instantiate(EqcInfo* eqc, Node n)
+{
   Trace("datatypes-debug") << "Instantiate: " << n << std::endl;
   //add constructor to equivalence class if not done so already
   int index = getLabelIndex( eqc, n );
   if (index == -1 || eqc->d_inst)
   {
-    return;
+    return false;
   }
   Node exp;
   Node tt;
@@ -1549,7 +1462,8 @@ void TheoryDatatypes::instantiate( EqcInfo* eqc, Node n ){
   Node eq;
   if (tt == tt_cons)
   {
-    return;
+    // not necessary
+    return false;
   }
   eq = tt.eqNode(tt_cons);
   // Determine if the equality must be sent out as a lemma. Notice that
@@ -1572,9 +1486,10 @@ void TheoryDatatypes::instantiate( EqcInfo* eqc, Node n ){
   }
   Trace("datatypes-infer-debug") << "DtInstantiate : " << eqc << " " << eq
                                  << " forceLemma = " << forceLemma << std::endl;
-  d_im.addPendingInference(eq, InferenceId::DATATYPES_INST, exp, forceLemma);
   Trace("datatypes-infer") << "DtInfer : instantiate : " << eq << " by " << exp
                            << std::endl;
+  d_im.addPendingInference(eq, InferenceId::DATATYPES_INST, exp, forceLemma);
+  return true;
 }
 
 void TheoryDatatypes::checkCycles() {
@@ -1966,38 +1881,16 @@ void TheoryDatatypes::computeRelevantTerms(std::set<Node>& termSet)
   Trace("dt-cmi") << "Have " << termSet.size() << " relevant terms..."
                   << std::endl;
 
-  //also include non-singleton equivalence classes  TODO : revisit this
+  //also include non-singleton dt equivalence classes  TODO : revisit this
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
   while( !eqcs_i.isFinished() ){
     TNode r = (*eqcs_i);
-    bool addedFirst = false;
-    Node first;
-    TypeNode rtn = r.getType();
-    if (!rtn.isBoolean())
+    if (r.getType().isDatatype())
     {
       eq::EqClassIterator eqc_i = eq::EqClassIterator(r, d_equalityEngine);
       while (!eqc_i.isFinished())
       {
-        TNode n = (*eqc_i);
-        if (first.isNull())
-        {
-          first = n;
-          // always include all datatypes
-          if (rtn.isDatatype())
-          {
-            addedFirst = true;
-            termSet.insert(n);
-          }
-        }
-        else
-        {
-          if (!addedFirst)
-          {
-            addedFirst = true;
-            termSet.insert(first);
-          }
-          termSet.insert(n);
-        }
+        termSet.insert(*eqc_i);
         ++eqc_i;
       }
     }
@@ -2040,6 +1933,6 @@ std::pair<bool, Node> TheoryDatatypes::entailmentCheck(TNode lit)
   return make_pair(false, Node::null());
 }
 
-} /* namepsace CVC4::theory::datatypes */
-} /* namepsace CVC4::theory */
-} /* namepsace CVC4 */
+}  // namespace datatypes
+}  // namespace theory
+}  // namespace cvc5

@@ -1,21 +1,22 @@
-/*********************                                                        */
-/*! \file term_database.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief term database class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Term database class.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__QUANTIFIERS__TERM_DATABASE_H
-#define CVC4__THEORY__QUANTIFIERS__TERM_DATABASE_H
+#ifndef CVC5__THEORY__QUANTIFIERS__TERM_DATABASE_H
+#define CVC5__THEORY__QUANTIFIERS__TERM_DATABASE_H
 
 #include <map>
 #include <unordered_map>
@@ -28,11 +29,8 @@
 #include "theory/theory.h"
 #include "theory/type_enumerator.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
-
-class QuantifiersEngine;
-
 namespace quantifiers {
 
 class QuantifiersState;
@@ -67,23 +65,20 @@ class DbList
  * lazily for performance reasons.
  */
 class TermDb : public QuantifiersUtil {
-  friend class ::CVC4::theory::QuantifiersEngine;
-  using NodeBoolMap = context::CDHashMap<Node, bool, NodeHashFunction>;
+  using NodeBoolMap = context::CDHashMap<Node, bool>;
   using NodeList = context::CDList<Node>;
-  using NodeSet = context::CDHashSet<Node, NodeHashFunction>;
-  using TypeNodeDbListMap = context::
-      CDHashMap<TypeNode, std::shared_ptr<DbList>, TypeNodeHashFunction>;
-  using NodeDbListMap =
-      context::CDHashMap<Node, std::shared_ptr<DbList>, NodeHashFunction>;
+  using NodeSet = context::CDHashSet<Node>;
+  using TypeNodeDbListMap =
+      context::CDHashMap<TypeNode, std::shared_ptr<DbList>>;
+  using NodeDbListMap = context::CDHashMap<Node, std::shared_ptr<DbList>>;
 
  public:
-  TermDb(QuantifiersState& qs,
-         QuantifiersRegistry& qr);
-  ~TermDb();
+  TermDb(Env& env, QuantifiersState& qs, QuantifiersRegistry& qr);
+  virtual ~TermDb();
   /** Finish init, which sets the inference manager */
   void finishInit(QuantifiersInferenceManager* qim);
   /** presolve (called once per user check-sat) */
-  void presolve();
+  void presolve() override;
   /** reset (calculate which terms are active) */
   bool reset(Theory::Effort effort) override;
   /** register quantified formula */
@@ -181,78 +176,6 @@ class TermDb : public QuantifiersUtil {
   *     equivalence class of r.
   */
   bool inRelevantDomain(TNode f, unsigned i, TNode r);
-  /** evaluate term
-   *
-   * Returns a term n' such that n = n' is entailed based on the equality
-   * information ee.  This function may generate new terms. In particular,
-   * we typically rewrite subterms of n of maximal size to terms that exist in
-   * the equality engine specified by ee.
-   *
-   * useEntailmentTests is whether to call the theory engine's entailmentTest
-   * on literals n for which this call fails to find a term n' that is
-   * equivalent to n, for increased precision. This is not frequently used.
-   *
-   * The vector exp stores the explanation for why n evaluates to that term,
-   * that is, if this call returns a non-null node n', then:
-   *   exp => n = n'
-   *
-   * If reqHasTerm, then we require that the returned term is a Boolean
-   * combination of terms that exist in the equality engine used by this call.
-   * If no such term is constructable, this call returns null. The motivation
-   * for setting this to true is to "fail fast" if we require the return value
-   * of this function to only involve existing terms. This is used e.g. in
-   * the "propagating instances" portion of conflict-based instantiation
-   * (quant_conflict_find.h).
-   */
-  Node evaluateTerm(TNode n,
-                    std::vector<Node>& exp,
-                    bool useEntailmentTests = false,
-                    bool reqHasTerm = false);
-  /** same as above, without exp */
-  Node evaluateTerm(TNode n,
-                    bool useEntailmentTests = false,
-                    bool reqHasTerm = false);
-  /** get entailed term
-   *
-   * If possible, returns a term n' such that:
-   * (1) n' exists in the current equality engine (as specified by the state),
-   * (2) n = n' is entailed in the current context.
-   * It returns null if no such term can be found.
-   * Wrt evaluateTerm, this version does not construct new terms, and
-   * thus is less aggressive.
-   */
-  TNode getEntailedTerm(TNode n);
-  /** get entailed term
-   *
-   * If possible, returns a term n' such that:
-   * (1) n' exists in the current equality engine (as specified by the state),
-   * (2) n * subs = n' is entailed in the current context, where * denotes
-   * substitution application.
-   * It returns null if no such term can be found.
-   * subsRep is whether the substitution maps to terms that are representatives
-   * according to the quantifiers state.
-   * Wrt evaluateTerm, this version does not construct new terms, and
-   * thus is less aggressive.
-   */
-  TNode getEntailedTerm(TNode n, std::map<TNode, TNode>& subs, bool subsRep);
-  /** is entailed
-   * Checks whether the current context entails n with polarity pol, based on
-   * the equality information in the quantifiers state. Returns true if the
-   * entailment can be successfully shown.
-   */
-  bool isEntailed(TNode n, bool pol);
-  /** is entailed
-   *
-   * Checks whether the current context entails ( n * subs ) with polarity pol,
-   * based on the equality information in the quantifiers state,
-   * where * denotes substitution application.
-   * subsRep is whether the substitution maps to terms that are representatives
-   * according to in the quantifiers state.
-   */
-  bool isEntailed(TNode n,
-                  std::map<TNode, TNode>& subs,
-                  bool subsRep,
-                  bool pol);
   /** is the term n active in the current context?
    *
   * By default, all terms are active. A term is inactive if:
@@ -283,16 +206,8 @@ class TermDb : public QuantifiersUtil {
   bool isTermEligibleForInstantiation(TNode n, TNode f);
   /** get eligible term in equivalence class of r */
   Node getEligibleTermInEqc(TNode r);
-  /** get higher-order type match predicate
-   *
-   * This predicate is used to force certain functions f of type tn to appear as
-   * first-class representatives in the quantifier-free UF solver. For a typical
-   * use case, we call getHoTypeMatchPredicate which returns a fresh predicate
-   * P of type (tn -> Bool). Then, we add P( f ) as a lemma.
-   */
-  Node getHoTypeMatchPredicate(TypeNode tn);
 
- private:
+ protected:
   /** The quantifiers state object */
   QuantifiersState& d_qstate;
   /** Pointer to the quantifiers inference manager */
@@ -319,7 +234,7 @@ class TermDb : public QuantifiersUtil {
   Node d_true;
   Node d_false;
   /** map from type nodes to a fresh variable we introduced */
-  std::unordered_map<TypeNode, Node, TypeNodeHashFunction> d_type_fv;
+  std::unordered_map<TypeNode, Node> d_type_fv;
   /** inactive map */
   NodeBoolMap d_inactive_map;
   /** count of the number of non-redundant ground terms per operator */
@@ -340,26 +255,34 @@ class TermDb : public QuantifiersUtil {
    * of equality engine (for higher-order).
    */
   std::map<TypeNode, Node> d_ho_type_match_pred;
+  //----------------------------- implementation-specific
+  /**
+   * Reset internal, called when reset(e) is called. Returning false will cause
+   * the overall reset to terminate early, returning false.
+   */
+  virtual bool resetInternal(Theory::Effort e);
+  /**
+   * Finish reset internal, called at the end of reset(e). Returning false will
+   * cause the overall reset to return false.
+   */
+  virtual bool finishResetInternal(Theory::Effort e);
+  /** Add term internal, called when addTerm(n) is called */
+  virtual void addTermInternal(Node n);
+  /** Get operators that we know are equivalent to f, typically only f itself */
+  virtual void getOperatorsFor(TNode f, std::vector<TNode>& ops);
+  /** get the chosen representative for operator op */
+  virtual Node getOperatorRepresentative(TNode op) const;
+  /**
+   * This method is called when terms a and b are indexed by the same operator,
+   * and have equivalent arguments. This method checks if we are in conflict,
+   * which is the case if a and b are disequal in the equality engine.
+   * If so, it adds the set of literals that are implied but do not hold, e.g.
+   * the equality (= a b).
+   */
+  virtual bool checkCongruentDisequal(TNode a, TNode b, std::vector<Node>& exp);
+  //----------------------------- end implementation-specific
   /** set has term */
   void setHasTerm( Node n );
-  /** helper for evaluate term */
-  Node evaluateTerm2(TNode n,
-                     std::map<TNode, Node>& visited,
-                     std::vector<Node>& exp,
-                     bool useEntailmentTests,
-                     bool computeExp,
-                     bool reqHasTerm);
-  /** helper for get entailed term */
-  TNode getEntailedTerm2(TNode n,
-                         std::map<TNode, TNode>& subs,
-                         bool subsRep,
-                         bool hasSubs);
-  /** helper for is entailed */
-  bool isEntailed2(TNode n,
-                   std::map<TNode, TNode>& subs,
-                   bool subsRep,
-                   bool hasSubs,
-                   bool pol);
   /** compute uf eqc terms :
   * Ensure entries for f are in d_func_map_eqc_trie for all equivalence classes
   */
@@ -372,60 +295,10 @@ class TermDb : public QuantifiersUtil {
   * Ensure that an entry for n is in d_arg_reps
   */
   void computeArgReps(TNode n);
-  //------------------------------higher-order term indexing
-  /**
-   * Map from non-variable function terms to the operator used to purify it in
-   * this database. For details, see addTermHo.
-   */
-  std::map<Node, Node> d_ho_fun_op_purify;
-  /**
-   * Map from terms to the term that they purified. For details, see addTermHo.
-   */
-  std::map<Node, Node> d_ho_purify_to_term;
-  /**
-   * Map from terms in the domain of the above map to an equality between that
-   * term and its range in the above map.
-   */
-  std::map<Node, Node> d_ho_purify_to_eq;
-  /** a map from matchable operators to their representative */
-  std::map< TNode, TNode > d_ho_op_rep;
-  /** for each representative matchable operator, the list of other matchable operators in their equivalence class */
-  std::map<TNode, std::vector<TNode> > d_ho_op_slaves;
-  /** add term higher-order
-   *
-   * This registers additional terms corresponding to (possibly multiple)
-   * purifications of a higher-order term n.
-   *
-   * Consider the example:
-   *    g : Int -> Int, f : Int x Int -> Int
-   *    constraints: (@ f 0) = g, (f 0 1) = (@ (@ f 0) 1) = 3
-   *    pattern: (g x)
-   * where @ is HO_APPLY.
-   * We have that (g x){ x -> 1 } is an E-match for (@ (@ f 0) 1).
-   * With the standard registration in addTerm, we construct term indices for
-   *   f, g, @ : Int x Int -> Int, @ : Int -> Int.
-   * However, to match (g x) with (@ (@ f 0) 1), we require that
-   *   [1] -> (@ (@ f 0) 1)
-   * is an entry in the term index of g. To do this, we maintain a term
-   * index for a fresh variable pfun, the purification variable for
-   * (@ f 0). Thus, we register the term (pfun 1) in the call to this function
-   * for (@ (@ f 0) 1). This ensures that, when processing the equality
-   * (@ f 0) = g, we merge the term indices of g and pfun. Hence, the entry
-   *   [1] -> (@ (@ f 0) 1)
-   * is added to the term index of g, assuming g is the representative of
-   * the equivalence class of g and pfun.
-   *
-   * Above, we set d_ho_fun_op_purify[(@ f 0)] = pfun, and
-   * d_ho_purify_to_term[(pfun 1)] = (@ (@ f 0) 1).
-   */
-  void addTermHo(Node n);
-  /** get operator representative */
-  Node getOperatorRepresentative( TNode op ) const;
-  //------------------------------end higher-order term indexing
 };/* class TermDb */
 
-}/* CVC4::theory::quantifiers namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__QUANTIFIERS__TERM_DATABASE_H */
+#endif /* CVC5__THEORY__QUANTIFIERS__TERM_DATABASE_H */

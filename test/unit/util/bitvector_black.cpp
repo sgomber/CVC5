@@ -1,25 +1,24 @@
-/*********************                                                        */
-/*! \file bitvector_black.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Aina Niemetz
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Black box testing of CVC4::BitVector
- **
- ** Black box testing of CVC4::BitVector.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Black box testing of cvc5::BitVector.
+ */
 
 #include <sstream>
 
 #include "test.h"
 #include "util/bitvector.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace test {
 
 class TestUtilBlackBitVector : public TestInternal
@@ -66,6 +65,11 @@ TEST_F(TestUtilBlackBitVector, string_constructor)
   ASSERT_EQ("000000011010", b4.toString());
   ASSERT_EQ("26", b4.toString(10));
   ASSERT_EQ("1a", b4.toString(16));
+
+  ASSERT_THROW(BitVector("-4", 10), IllegalArgumentException);
+  ASSERT_THROW(BitVector("-0010", 2), IllegalArgumentException);
+  ASSERT_THROW(BitVector("-3210", 4), IllegalArgumentException);
+  ASSERT_EQ(3, BitVector("4", 10).getSize());
 }
 
 TEST_F(TestUtilBlackBitVector, conversions)
@@ -203,4 +207,4 @@ TEST_F(TestUtilBlackBitVector, static_helpers)
   ASSERT_EQ(BitVector::mkMaxSigned(4).toSignedInteger(), Integer(7));
 }
 }  // namespace test
-}  // namespace CVC4
+}  // namespace cvc5

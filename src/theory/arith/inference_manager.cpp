@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file inference_manager.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Gereon Kremer, Makai Mann, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of the inference manager for the theory of strings.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Gereon Kremer, Makai Mann, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of the inference manager for the theory of strings.
+ */
 
 #include "theory/arith/inference_manager.h"
 
@@ -19,14 +20,17 @@
 #include "theory/arith/theory_arith.h"
 #include "theory/rewriter.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arith {
 
-InferenceManager::InferenceManager(TheoryArith& ta,
-                                   ArithState& astate,
-                                   ProofNodeManager* pnm)
-    : InferenceManagerBuffered(ta, astate, pnm, "theory::arith")
+InferenceManager::InferenceManager(Env& env,
+                                   TheoryArith& ta,
+                                   ArithState& astate)
+    : InferenceManagerBuffered(env, ta, astate, "theory::arith::"),
+      // currently must track propagated literals if using the equality solver
+      d_trackPropLits(options().arith.arithEqSolver),
+      d_propLits(context())
 {
 }
 
@@ -123,7 +127,7 @@ bool InferenceManager::cacheLemma(TNode lem, LemmaProperty p)
 
 bool InferenceManager::isEntailedFalse(const SimpleTheoryLemma& lem)
 {
-  if (options::nlExtEntailConflicts())
+  if (options().arith.nlExtEntailConflicts)
   {
     Node ch_lemma = lem.d_node.negate();
     ch_lemma = Rewriter::rewrite(ch_lemma);
@@ -145,6 +149,21 @@ bool InferenceManager::isEntailedFalse(const SimpleTheoryLemma& lem)
   return false;
 }
 
+bool InferenceManager::propagateLit(TNode lit)
+{
+  if (d_trackPropLits)
+  {
+    d_propLits.insert(lit);
+  }
+  return TheoryInferenceManager::propagateLit(lit);
+}
+
+bool InferenceManager::hasPropagated(TNode lit) const
+{
+  Assert(d_trackPropLits);
+  return d_propLits.find(lit) != d_propLits.end();
+}
+
 }  // namespace arith
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

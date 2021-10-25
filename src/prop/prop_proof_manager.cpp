@@ -1,25 +1,26 @@
-/*********************                                                        */
-/*! \file prop_proof_manager.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Haniel Barbosa
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of the proof manager for the PropPfManager
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Haniel Barbosa
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of the proof manager for the PropPfManager.
+ */
 
 #include "prop/prop_proof_manager.h"
 
-#include "expr/proof_ensure_closed.h"
-#include "expr/proof_node_algorithm.h"
+#include "proof/proof_ensure_closed.h"
+#include "proof/proof_node_algorithm.h"
 #include "prop/prop_proof_manager.h"
 #include "prop/sat_solver.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace prop {
 
 PropPfManager::PropPfManager(context::UserContext* userContext,
@@ -45,7 +46,7 @@ void PropPfManager::registerAssertion(Node assertion)
   d_assertions.push_back(assertion);
 }
 
-void PropPfManager::checkProof(context::CDList<Node>* assertions)
+void PropPfManager::checkProof(const context::CDList<Node>& assertions)
 {
   Trace("sat-proof") << "PropPfManager::checkProof: Checking if resolution "
                         "proof of false is closed\n";
@@ -54,7 +55,7 @@ void PropPfManager::checkProof(context::CDList<Node>* assertions)
   // connect it with CNF proof
   d_pfpp->process(conflictProof);
   // add given assertions d_assertions
-  for (const Node& assertion : *assertions)
+  for (const Node& assertion : assertions)
   {
     d_assertions.push_back(assertion);
   }
@@ -109,4 +110,4 @@ std::shared_ptr<ProofNode> PropPfManager::getProof()
 }
 
 }  // namespace prop
-}  // namespace CVC4
+}  // namespace cvc5

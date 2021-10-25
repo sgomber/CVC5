@@ -1,31 +1,35 @@
-/*********************                                                        */
-/*! \file relevance_manager.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Relevance manager.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Relevance manager.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__RELEVANCE_MANAGER__H
-#define CVC4__THEORY__RELEVANCE_MANAGER__H
+#ifndef CVC5__THEORY__RELEVANCE_MANAGER__H
+#define CVC5__THEORY__RELEVANCE_MANAGER__H
 
 #include <unordered_map>
 #include <unordered_set>
 
 #include "context/cdlist.h"
 #include "expr/node.h"
+#include "theory/difficulty_manager.h"
 #include "theory/valuation.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
+
+class TheoryModel;
 
 /**
  * This class manages queries related to relevance of asserted literals.
@@ -72,7 +76,11 @@ class RelevanceManager
   typedef context::CDList<Node> NodeList;
 
  public:
-  RelevanceManager(context::UserContext* userContext, Valuation val);
+  /**
+   * @param lemContext The context which lemmas live at
+   * @param val The valuation class, for computing what is relevant.
+   */
+  RelevanceManager(context::Context* lemContext, Valuation val);
   /**
    * Notify (preprocessed) assertions. This is called for input formulas or
    * lemmas that need justification that have been fully processed, just before
@@ -87,11 +95,32 @@ class RelevanceManager
    */
   void resetRound();
   /**
-   * Is lit part of the current relevant selection? This call is valid during
-   * full effort check in TheoryEngine. This means that theories can query this
-   * during FULL or LAST_CALL efforts, through the Valuation class.
+   * Is lit part of the current relevant selection? This computes the set of
+   * relevant assertions if not already done so. This call is valid during a
+   * full effort check in TheoryEngine, or after TheoryEngine has terminated
+   * with "sat". This means that theories can query this during FULL or
+   * LAST_CALL efforts, through the Valuation class.
    */
   bool isRelevant(Node lit);
+  /**
+   * Get the current relevant selection (see above). This computes this set
+   * if not already done so. This call is valid during a full effort check in
+   * TheoryEngine, or after TheoryEngine has terminated with "sat". This method
+   * sets the flag success to false if we failed to compute relevant
+   * assertions, which occurs if the values from the SAT solver do not satisfy
+   * the assertions we are notified of. This should never happen.
+   *
+   * The value of this return is only valid if success was not updated to false.
+   */
+  const std::unordered_set<TNode>& getRelevantAssertions(bool& success);
+  /** Notify lemma, for difficulty measurements */
+  void notifyLemma(Node n);
+  /** Notify that m is a (candidate) model, for difficulty measurements */
+  void notifyCandidateModel(TheoryModel* m);
+  /**
+   * Get difficulty map
+   */
+  void getDifficultyMap(std::map<Node, Node>& dmap);
 
  private:
   /**
@@ -110,8 +139,7 @@ class RelevanceManager
    * This method returns 1 if we justified n to be true, -1 means
    * justified n to be false, 0 means n could not be justified.
    */
-  int justify(TNode n,
-              std::unordered_map<TNode, int, TNodeHashFunction>& cache);
+  int justify(TNode n, std::unordered_map<TNode, int>& cache);
   /** Is the top symbol of cur a Boolean connective? */
   bool isBooleanConnective(TNode cur);
   /**
@@ -126,16 +154,15 @@ class RelevanceManager
    * @return True if we wish to visit the next child. If this is the case, then
    * the justify value of the current child is added to childrenJustify.
    */
-  bool updateJustifyLastChild(
-      TNode cur,
-      std::vector<int>& childrenJustify,
-      std::unordered_map<TNode, int, TNodeHashFunction>& cache);
+  bool updateJustifyLastChild(TNode cur,
+                              std::vector<int>& childrenJustify,
+                              std::unordered_map<TNode, int>& cache);
   /** The valuation object, used to query current value of theory literals */
   Valuation d_val;
   /** The input assertions */
   NodeList d_input;
   /** The current relevant selection. */
-  std::unordered_set<TNode, TNodeHashFunction> d_rset;
+  std::unordered_set<TNode> d_rset;
   /** Have we computed the relevant selection this round? */
   bool d_computed;
   /**
@@ -146,9 +173,25 @@ class RelevanceManager
    * aborts and indicates that all literals are relevant.
    */
   bool d_success;
+  /** Are we tracking the sources of why a literal is relevant */
+  bool d_trackRSetExp;
+  /**
+   * Whether we have miniscoped top-level AND of assertions, which is done
+   * as an optimization. This is disabled if e.g. we are computing difficulty,
+   * which requires preserving the original form of the preprocessed
+   * assertions.
+   */
+  bool d_miniscopeTopLevel;
+  /**
+   * Map from the domain of d_rset to the assertion in d_input that is the
+   * reason why that literal is currently relevant.
+   */
+  std::map<TNode, TNode> d_rsetExp;
+  /** Difficulty module */
+  std::unique_ptr<DifficultyManager> d_dman;
 };
 
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__RELEVANCE_MANAGER__H */
+#endif /* CVC5__THEORY__RELEVANCE_MANAGER__H */

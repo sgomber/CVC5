@@ -1,35 +1,36 @@
-/*********************                                                        */
-/*! \file theory_preprocessor.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The theory preprocessor.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The theory preprocessor.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__THEORY_PREPROCESSOR_H
-#define CVC4__THEORY__THEORY_PREPROCESSOR_H
+#ifndef CVC5__THEORY__THEORY_PREPROCESSOR_H
+#define CVC5__THEORY__THEORY_PREPROCESSOR_H
 
 #include <unordered_map>
 
 #include "context/cdhashmap.h"
 #include "context/context.h"
-#include "expr/lazy_proof.h"
 #include "expr/node.h"
-#include "expr/tconv_seq_proof_generator.h"
-#include "expr/term_conversion_proof_generator.h"
+#include "proof/conv_proof_generator.h"
+#include "proof/conv_seq_proof_generator.h"
+#include "proof/lazy_proof.h"
+#include "proof/trust_node.h"
 #include "smt/term_formula_removal.h"
 #include "theory/skolem_lemma.h"
-#include "theory/trust_node.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 class LogicInfo;
 class TheoryEngine;
@@ -69,15 +70,13 @@ namespace theory {
  * rewrite a theory atom into a formula, e.g. quantifiers miniscoping. This
  * impacts what the inner traversal is applied to.
  */
-class TheoryPreprocessor
+class TheoryPreprocessor : protected EnvObj
 {
-  typedef context::CDHashMap<Node, Node, NodeHashFunction> NodeMap;
+  typedef context::CDHashMap<Node, Node> NodeMap;
 
  public:
   /** Constructs a theory preprocessor */
-  TheoryPreprocessor(TheoryEngine& engine,
-                     context::UserContext* userContext,
-                     ProofNodeManager* pnm = nullptr);
+  TheoryPreprocessor(Env& env, TheoryEngine& engine);
   /** Destroys a theory preprocessor */
   ~TheoryPreprocessor();
   /**
@@ -94,9 +93,7 @@ class TheoryPreprocessor
    * @return The (REWRITE) trust node corresponding to rewritten node via
    * preprocessing.
    */
-  TrustNode preprocess(TNode node,
-                       std::vector<TrustNode>& newLemmas,
-                       std::vector<Node>& newSkolems);
+  TrustNode preprocess(TNode node, std::vector<SkolemLemma>& newLemmas);
   /**
    * Same as above, but transforms the proof of node into a proof of the
    * preprocessed node and returns the LEMMA trust node.
@@ -108,8 +105,7 @@ class TheoryPreprocessor
    * form of the proven field of node.
    */
   TrustNode preprocessLemma(TrustNode node,
-                            std::vector<TrustNode>& newLemmas,
-                            std::vector<Node>& newSkolems);
+                            std::vector<SkolemLemma>& newLemmas);
 
   /** Get the term formula removal utility */
   RemoveTermFormulas& getRemoveTermFormulas();
@@ -119,17 +115,14 @@ class TheoryPreprocessor
    * Runs theory specific preprocessing (Theory::ppRewrite) on the non-Boolean
    * parts of the node.
    */
-  TrustNode theoryPreprocess(TNode node,
-                             std::vector<TrustNode>& newLemmas,
-                             std::vector<Node>& newSkolems);
+  TrustNode theoryPreprocess(TNode node, std::vector<SkolemLemma>& newLemmas);
   /**
    * Internal helper for preprocess, which also optionally preprocesses the
    * new lemmas generated until a fixed point is reached based on argument
    * procLemmas.
    */
   TrustNode preprocessInternal(TNode node,
-                               std::vector<TrustNode>& newLemmas,
-                               std::vector<Node>& newSkolems,
+                               std::vector<SkolemLemma>& newLemmas,
                                bool procLemmas);
   /**
    * Internal helper for preprocessLemma, which also optionally preprocesses the
@@ -137,13 +130,10 @@ class TheoryPreprocessor
    * procLemmas.
    */
   TrustNode preprocessLemmaInternal(TrustNode node,
-                                    std::vector<TrustNode>& newLemmas,
-                                    std::vector<Node>& newSkolems,
+                                    std::vector<SkolemLemma>& newLemmas,
                                     bool procLemmas);
   /** Reference to owning theory engine */
   TheoryEngine& d_engine;
-  /** Logic info of theory engine */
-  const LogicInfo& d_logicInfo;
   /**
    * Cache for theory-preprocessing of theory atoms. The domain of this map
    * are terms that appear within theory atoms given to this class.
@@ -223,6 +213,6 @@ class TheoryPreprocessor
 };
 
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__THEORY_PREPROCESSOR_H */
+#endif /* CVC5__THEORY__THEORY_PREPROCESSOR_H */

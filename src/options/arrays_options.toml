@@ -1,6 +1,5 @@
 id     = "ARRAYS"
-name   = "Arrays theory"
-header = "options/arrays_options.h"
+name   = "Arrays Theory"
 
 [[option]]
   name       = "arraysOptimizeLinear"
@@ -19,14 +18,6 @@ header = "options/arrays_options.h"
   help       = "use algorithm from Christ/Hoenicke (SMT 2014)"
 
 [[option]]
-  name       = "arraysModelBased"
-  category   = "regular"
-  long       = "arrays-model-based"
-  type       = "bool"
-  default    = "false"
-  help       = "turn on model-based array solver"
-
-[[option]]
   name       = "arraysEagerIndexSplitting"
   category   = "regular"
   long       = "arrays-eager-index"
@@ -43,14 +34,6 @@ header = "options/arrays_options.h"
   help       = "turn on eager lemma generation for arrays"
 
 [[option]]
-  name       = "arraysConfig"
-  category   = "regular"
-  long       = "arrays-config=N"
-  type       = "int"
-  default    = "0"
-  help       = "set different array option configurations - for developers only"
-
-[[option]]
   name       = "arraysReduceSharing"
   category   = "regular"
   long       = "arrays-reduce-sharing"
@@ -62,13 +45,13 @@ header = "options/arrays_options.h"
   name       = "arraysPropagate"
   category   = "regular"
   long       = "arrays-prop=N"
-  type       = "int"
+  type       = "int64_t"
   default    = "2"
   help       = "propagation effort for arrays: 0 is none, 1 is some, 2 is full"
 
 [[option]]
   name       = "arraysExp"
-  category   = "experimental"
+  category   = "expert"
   long       = "arrays-exp"
   type       = "bool"
   default    = "false"

@@ -1,34 +1,44 @@
-/*********************                                                        */
-/*! \file proof_bitblaster.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Aina Niemetz, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief A bit-blaster wrapper around BBSimple for proof logging.
- **/
-#include "cvc4_private.h"
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Aina Niemetz, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * A bit-blaster wrapper around NodeBitblaster for proof logging.
+ */
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__BV__BITBLAST__PROOF_BITBLASTER_H
-#define CVC4__THEORY__BV__BITBLAST__PROOF_BITBLASTER_H
+#ifndef CVC5__THEORY__BV__BITBLAST__PROOF_BITBLASTER_H
+#define CVC5__THEORY__BV__BITBLAST__PROOF_BITBLASTER_H
 
-#include "theory/bv/bitblast/simple_bitblaster.h"
+#include "expr/term_context.h"
+#include "theory/bv/bitblast/node_bitblaster.h"
 
-namespace CVC4 {
+namespace cvc5 {
+
+class TConvProofGenerator;
+
 namespace theory {
 namespace bv {
 
-class BBProof
+class BitblastProofGenerator;
+
+class BBProof : protected EnvObj
 {
   using Bits = std::vector<Node>;
 
  public:
-  BBProof(TheoryState* state);
-  ~BBProof() = default;
+  BBProof(Env& env,
+          TheoryState* state,
+          ProofNodeManager* pnm,
+          bool fineGrained);
+  ~BBProof();
 
   /** Bit-blast atom 'node'. */
   void bbAtom(TNode node);
@@ -38,14 +48,38 @@ class BBProof
   bool hasBBTerm(TNode node) const;
   /** Get bit-blasted node stored for atom. */
   Node getStoredBBAtom(TNode node);
+  /** Get bit-blasted bits stored for node. */
+  void getBBTerm(TNode node, Bits& bits) const;
   /** Collect model values for all relevant terms given in 'relevantTerms'. */
   bool collectModelValues(TheoryModel* m, const std::set<Node>& relevantTerms);
 
+  BitblastProofGenerator* getProofGenerator();
+
  private:
-  std::unique_ptr<BBSimple> d_bb;
+  /** Return true if proofs are enabled. */
+  bool isProofsEnabled() const;
+
+  /** Helper to reconstruct term `t` based on `d_bbMap`. */
+  Node reconstruct(TNode t);
+
+  /** The associated simple bit-blaster. */
+  std::unique_ptr<NodeBitblaster> d_bb;
+  /** The associated proof node manager. */
+  ProofNodeManager* d_pnm;
+  /** Term context for d_tcpg to not rewrite below BV leafs. */
+  std::unique_ptr<TermContext> d_tcontext;
+  /** Term conversion proof generator for bit-blast steps. */
+  std::unique_ptr<TConvProofGenerator> d_tcpg;
+  /** Bitblast proof generator. */
+  std::unique_ptr<BitblastProofGenerator> d_bbpg;
+  /** Map bit-vector nodes to bit-blasted nodes. */
+  std::unordered_map<Node, Node> d_bbMap;
+  /** Flag to indicate whether fine-grained proofs should be recorded. */
+  bool d_recordFineGrainedProofs;
 };
+
 
 }  // namespace bv
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 #endif

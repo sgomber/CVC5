@@ -1,24 +1,22 @@
-/*********************                                                        */
-/*! \file theory_fp.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Martin Brain, Aina Niemetz
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief [[ Add one-line brief description here ]]
- **
- ** [[ Add lengthier description here ]]
- ** \todo document this file
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Martin Brain, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Theory of floating-point arithmetic.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__FP__THEORY_FP_H
-#define CVC4__THEORY__FP__THEORY_FP_H
+#ifndef CVC5__THEORY__FP__THEORY_FP_H
+#define CVC5__THEORY__FP__THEORY_FP_H
 
 #include <string>
 #include <utility>
@@ -31,26 +29,23 @@
 #include "theory/theory_state.h"
 #include "theory/uf/equality_engine.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace fp {
 
-class FpConverter;
+class FpWordBlaster;
 
 class TheoryFp : public Theory
 {
  public:
   /** Constructs a new instance of TheoryFp w.r.t. the provided contexts. */
-  TheoryFp(context::Context* c,
-           context::UserContext* u,
-           OutputChannel& out,
-           Valuation valuation,
-           const LogicInfo& logicInfo,
-           ProofNodeManager* pnm = nullptr);
+  TheoryFp(Env& env, OutputChannel& out, Valuation valuation);
 
   //--------------------------------- initialization
   /** Get the official theory rewriter of this theory. */
   TheoryRewriter* getTheoryRewriter() override;
+  /** get the proof checker of this theory */
+  ProofRuleChecker* getProofChecker() override;
   /**
    * Returns true if we need an equality engine. If so, we initialize the
    * information regarding how it should be setup. For details, see the
@@ -61,10 +56,7 @@ class TheoryFp : public Theory
   void finishInit() override;
   //--------------------------------- end initialization
 
-  TrustNode expandDefinition(Node node) override;
-
   void preRegisterTerm(TNode node) override;
-
   TrustNode ppRewrite(TNode node, std::vector<SkolemLemma>& lems) override;
 
   //--------------------------------- standard check
@@ -95,18 +87,8 @@ class TheoryFp : public Theory
   TrustNode explain(TNode n) override;
 
  protected:
-  using PairTypeNodeHashFunction = PairHashFunction<TypeNode,
-                                                    TypeNode,
-                                                    TypeNodeHashFunction,
-                                                    TypeNodeHashFunction>;
-  /** Uninterpreted functions for undefined cases of non-total operators. */
-  using ComparisonUFMap =
-      context::CDHashMap<TypeNode, Node, TypeNodeHashFunction>;
-  /** Uninterpreted functions for lazy handling of conversions. */
-  using ConversionUFMap = context::
-      CDHashMap<std::pair<TypeNode, TypeNode>, Node, PairTypeNodeHashFunction>;
-  using ConversionAbstractionMap = ComparisonUFMap;
-  using AbstractionMap = context::CDHashMap<Node, Node, NodeHashFunction>;
+  using ConversionAbstractionMap = context::CDHashMap<TypeNode, Node>;
+  using AbstractionMap = context::CDHashMap<Node, Node>;
 
   /** Equality engine. */
   class NotifyClass : public eq::EqualityEngineNotify {
@@ -127,23 +109,25 @@ class TheoryFp : public Theory
   };
   friend NotifyClass;
 
+  void notifySharedTerm(TNode n) override;
+
   NotifyClass d_notification;
 
   /** General utility. */
   void registerTerm(TNode node);
   bool isRegistered(TNode node);
 
-  context::CDHashSet<Node, NodeHashFunction> d_registeredTerms;
+  context::CDHashSet<Node> d_registeredTerms;
 
   /** The word-blaster. Translates FP -> BV. */
-  std::unique_ptr<FpConverter> d_conv;
+  std::unique_ptr<FpWordBlaster> d_wordBlaster;
 
   bool d_expansionRequested;
 
-  void convertAndEquateTerm(TNode node);
+  void wordBlastAndEquateTerm(TNode node);
 
   /** Interaction with the rest of the solver **/
-  void handleLemma(Node node, InferenceId id = InferenceId::UNKNOWN);
+  void handleLemma(Node node, InferenceId id);
   /**
    * Called when literal node is inferred by the equality engine. This
    * propagates node on the output channel.
@@ -157,38 +141,24 @@ class TheoryFp : public Theory
 
   bool refineAbstraction(TheoryModel* m, TNode abstract, TNode concrete);
 
-  Node minUF(Node);
-  Node maxUF(Node);
-
-  Node toUBVUF(Node);
-  Node toSBVUF(Node);
-
-  Node toRealUF(Node);
-
-  Node abstractRealToFloat(Node);
-  Node abstractFloatToReal(Node);
-
  private:
-
-  ComparisonUFMap d_minMap;
-  ComparisonUFMap d_maxMap;
-  ConversionUFMap d_toUBVMap;
-  ConversionUFMap d_toSBVMap;
-  ComparisonUFMap d_toRealMap;
-  ConversionAbstractionMap d_realToFloatMap;
-  ConversionAbstractionMap d_floatToRealMap;
   AbstractionMap d_abstractionMap;  // abstract -> original
 
   /** The theory rewriter for this theory. */
   TheoryFpRewriter d_rewriter;
-  /** A (default) theory state object */
+  /** A (default) theory state object. */
   TheoryState d_state;
-  /** A (default) inference manager */
+  /** A (default) inference manager. */
   TheoryInferenceManager d_im;
-}; /* class TheoryFp */
+  /** Cache of word-blasted facts. */
+  context::CDHashSet<Node> d_wbFactsCache;
+
+  /** True constant. */
+  Node d_true;
+};
 
 }  // namespace fp
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__FP__THEORY_FP_H */
+#endif /* CVC5__THEORY__FP__THEORY_FP_H */

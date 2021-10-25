@@ -1,22 +1,22 @@
-/*********************                                                        */
-/*! \file core_solver.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Tianyi Liang
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of the theory of strings.
- **
- ** Implementation of the theory of strings.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Tianyi Liang
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of the theory of strings.
+ */
 
 #include "theory/strings/core_solver.h"
 
 #include "base/configuration.h"
+#include "expr/sequence.h"
 #include "options/strings_options.h"
 #include "smt/logic_exception.h"
 #include "theory/rewriter.h"
@@ -24,26 +24,31 @@
 #include "theory/strings/strings_entail.h"
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
+#include "util/rational.h"
+#include "util/string.h"
 
 using namespace std;
-using namespace CVC4::context;
-using namespace CVC4::kind;
+using namespace cvc5::context;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
 CoreInferInfo::CoreInferInfo(InferenceId id) : d_infer(id), d_index(0), d_rev(false) {}
 
-CoreSolver::CoreSolver(SolverState& s,
+CoreSolver::CoreSolver(Env& env,
+                       SolverState& s,
                        InferenceManager& im,
                        TermRegistry& tr,
                        BaseSolver& bs)
-    : d_state(s),
+    : EnvObj(env),
+      d_state(s),
       d_im(im),
       d_termReg(tr),
       d_bsolver(bs),
-      d_nfPairs(s.getSatContext())
+      d_nfPairs(context()),
+      d_extDeq(userContext())
 {
   d_zero = NodeManager::currentNM()->mkConst( Rational( 0 ) );
   d_one = NodeManager::currentNM()->mkConst( Rational( 1 ) );
@@ -608,7 +613,7 @@ void CoreSolver::normalizeEquivalenceClass(Node eqc, TypeNode stype)
   Node emp = Word::mkEmptyWord(stype);
   if (d_state.areEqual(eqc, emp))
   {
-#ifdef CVC4_ASSERTIONS
+#ifdef CVC5_ASSERTIONS
     for( unsigned j=0; j<d_eqc[eqc].size(); j++ ){
       Node n = d_eqc[eqc][j];
       for( unsigned i=0; i<n.getNumChildren(); i++ ){
@@ -1079,7 +1084,7 @@ void CoreSolver::processNEqc(Node eqc,
   // the possible inferences
   std::vector<CoreInferInfo> pinfer;
   // compute normal forms that are effectively unique
-  std::unordered_map<Node, size_t, NodeHashFunction> nfCache;
+  std::unordered_map<Node, size_t> nfCache;
   std::vector<size_t> nfIndices;
   bool hasConstIndex = false;
   for (size_t i = 0, nnforms = normal_forms.size(); i < nnforms; i++)
@@ -1186,7 +1191,7 @@ void CoreSolver::processNEqc(Node eqc,
         continue;
       }
       Node eq = ni.first.eqNode(nj.first);
-      eq = Rewriter::rewrite(eq);
+      eq = rewrite(eq);
       if (eq == d_false)
       {
         std::vector<Node> exp;
@@ -1463,7 +1468,7 @@ void CoreSolver::processSimpleNEq(NormalForm& nfi,
           << "Non-simple Case 1 : string lengths neither equal nor disequal"
           << std::endl;
       Node lenEq = nm->mkNode(EQUAL, xLenTerm, yLenTerm);
-      lenEq = Rewriter::rewrite(lenEq);
+      lenEq = rewrite(lenEq);
       iinfo.d_conc = nm->mkNode(OR, lenEq, lenEq.negate());
       iinfo.setId(InferenceId::STRINGS_LEN_SPLIT);
       info.d_pendingPhase[lenEq] = true;
@@ -1529,7 +1534,7 @@ void CoreSolver::processSimpleNEq(NormalForm& nfi,
         //
         // E.g. "abc" ++ ... = nc ++ ... ---> (nc = "") v (nc != "")
         Node eq = nc.eqNode(emp);
-        eq = Rewriter::rewrite(eq);
+        eq = rewrite(eq);
         if (eq.isConst())
         {
           // If the equality rewrites to a constant, we must use the
@@ -1539,7 +1544,7 @@ void CoreSolver::processSimpleNEq(NormalForm& nfi,
           Node p = skc->mkSkolemCached(nc, SkolemCache::SK_PURIFY, "lsym");
           Node pEq = p.eqNode(emp);
           // should not be constant
-          Assert(!Rewriter::rewrite(pEq).isConst());
+          Assert(!rewrite(pEq).isConst());
           // infer the purification equality, and the (dis)equality
           // with the empty string in the direction that the rewriter
           // inferred
@@ -1642,7 +1647,7 @@ void CoreSolver::processSimpleNEq(NormalForm& nfi,
         {
           Node lt1 = e == 0 ? xLenTerm : yLenTerm;
           Node lt2 = e == 0 ? yLenTerm : xLenTerm;
-          Node entLit = Rewriter::rewrite(nm->mkNode(GT, lt1, lt2));
+          Node entLit = rewrite(nm->mkNode(GT, lt1, lt2));
           std::pair<bool, Node> et = d_state.entailmentCheck(
               options::TheoryOfMode::THEORY_OF_TYPE_BASED, entLit);
           if (et.first)
@@ -1772,22 +1777,26 @@ CoreSolver::ProcessLoopResult CoreSolver::processLoop(NormalForm& nfi,
                                                       int index,
                                                       CoreInferInfo& info)
 {
-  if (options::stringProcessLoopMode() == options::ProcessLoopMode::ABORT)
-  {
-    throw LogicException("Looping word equation encountered.");
-  }
-  else if (options::stringProcessLoopMode() == options::ProcessLoopMode::NONE)
-  {
-    d_im.setIncomplete();
-    return ProcessLoopResult::SKIPPED;
-  }
-
   NodeManager* nm = NodeManager::currentNM();
   Node conc;
   const std::vector<Node>& veci = nfi.d_nf;
   const std::vector<Node>& vecoi = nfj.d_nf;
 
   TypeNode stype = veci[loop_index].getType();
+
+  if (options::stringProcessLoopMode() == options::ProcessLoopMode::ABORT)
+  {
+    throw LogicException("Looping word equation encountered.");
+  }
+  else if (options::stringProcessLoopMode() == options::ProcessLoopMode::NONE
+           || stype.isSequence())
+  {
+    // note we cannot convert looping word equations into regular expressions if
+    // we are handling sequences, since there is no analog for regular
+    // expressions over sequences currently
+    d_im.setIncomplete(IncompleteId::STRINGS_LOOP_SKIP);
+    return ProcessLoopResult::SKIPPED;
+  }
 
   Trace("strings-loop") << "Detected possible loop for " << veci[loop_index]
                         << std::endl;
@@ -1839,7 +1848,7 @@ CoreSolver::ProcessLoopResult CoreSolver::processLoop(NormalForm& nfi,
   {
     Node t = i == 0 ? veci[loop_index] : t_yz;
     split_eq = t.eqNode(emp);
-    Node split_eqr = Rewriter::rewrite(split_eq);
+    Node split_eqr = rewrite(split_eq);
     // the equality could rewrite to false
     if (!split_eqr.isConst())
     {
@@ -1897,11 +1906,11 @@ CoreSolver::ProcessLoopResult CoreSolver::processLoop(NormalForm& nfi,
         v2.insert(v2.begin(), y);
         v2.insert(v2.begin(), z);
         restr = utils::mkNConcat(z, y);
-        cc = Rewriter::rewrite(s_zy.eqNode(utils::mkNConcat(v2, stype)));
+        cc = rewrite(s_zy.eqNode(utils::mkNConcat(v2, stype)));
       }
       else
       {
-        cc = Rewriter::rewrite(s_zy.eqNode(utils::mkNConcat(z, y)));
+        cc = rewrite(s_zy.eqNode(utils::mkNConcat(z, y)));
       }
       if (cc == d_false)
       {
@@ -1931,7 +1940,7 @@ CoreSolver::ProcessLoopResult CoreSolver::processLoop(NormalForm& nfi,
     else if (options::stringProcessLoopMode()
              == options::ProcessLoopMode::SIMPLE)
     {
-      d_im.setIncomplete();
+      d_im.setIncomplete(IncompleteId::STRINGS_LOOP_SKIP);
       return ProcessLoopResult::SKIPPED;
     }
 
@@ -2069,6 +2078,12 @@ void CoreSolver::processDeq(Node ni, Node nj)
   if (processReverseDeq(nfi, nfj, ni, nj))
   {
     Trace("strings-solve-debug") << "...processed reverse" << std::endl;
+    return;
+  }
+
+  if (options::stringsDeqExt())
+  {
+    processDeqExtensionality(ni, nj);
     return;
   }
 
@@ -2433,6 +2448,56 @@ bool CoreSolver::processSimpleDeq(std::vector<Node>& nfi,
   return false;
 }
 
+void CoreSolver::processDeqExtensionality(Node n1, Node n2)
+{
+  // hash based on equality
+  Node eq = n1 < n2 ? n1.eqNode(n2) : n2.eqNode(n1);
+  NodeSet::const_iterator it = d_extDeq.find(eq);
+  if (it != d_extDeq.end())
+  {
+    // already processed
+    return;
+  }
+  d_extDeq.insert(eq);
+
+  NodeManager* nm = NodeManager::currentNM();
+  SkolemCache* sc = d_termReg.getSkolemCache();
+  TypeNode intType = nm->integerType();
+  Node k = sc->mkTypedSkolemCached(
+      intType, n1, n2, SkolemCache::SK_DEQ_DIFF, "diff");
+  Node deq = eq.negate();
+  Node ss1, ss2;
+  if (n1.getType().isString())
+  {
+    // substring of length 1
+    ss1 = nm->mkNode(STRING_SUBSTR, n1, k, d_one);
+    ss2 = nm->mkNode(STRING_SUBSTR, n2, k, d_one);
+  }
+  else
+  {
+    // as an optimization, for sequences, use seq.nth
+    ss1 = nm->mkNode(SEQ_NTH, n1, k);
+    ss2 = nm->mkNode(SEQ_NTH, n2, k);
+  }
+  // disequality between nth/substr
+  Node conc1 = ss1.eqNode(ss2).negate();
+
+  // The skolem k is in the bounds of at least
+  // one string/sequence
+  Node len1 = nm->mkNode(STRING_LENGTH, n1);
+  Node len2 = nm->mkNode(STRING_LENGTH, n2);
+  Node conc2 = nm->mkNode(LEQ, d_zero, k);
+  Node conc3 = nm->mkNode(LT, k, len1);
+  Node lenDeq = nm->mkNode(EQUAL, len1, len2).negate();
+
+  std::vector<Node> concs = {conc1, conc2, conc3};
+  Node conc = nm->mkNode(OR, lenDeq, nm->mkAnd(concs));
+  // A != B => ( seq.len(A) != seq.len(B) or
+  //             ( seq.nth(A, d) != seq.nth(B, d) ^ 0 <= d < seq.len(A) ) )
+  d_im.sendInference(
+      {deq}, conc, InferenceId::STRINGS_DEQ_EXTENSIONALITY, false, true);
+}
+
 void CoreSolver::addNormalFormPair( Node n1, Node n2 ){
   if (n1>n2)
   {
@@ -2485,6 +2550,7 @@ void CoreSolver::checkNormalFormsDeq()
   
   const context::CDList<Node>& deqs = d_state.getDisequalityList();
 
+  NodeManager* nm = NodeManager::currentNM();
   //for each pair of disequal strings, must determine whether their lengths are equal or disequal
   for (const Node& eq : deqs)
   {
@@ -2499,9 +2565,8 @@ void CoreSolver::checkNormalFormsDeq()
         EqcInfo* ei = d_state.getOrMakeEqcInfo(n[i], false);
         lt[i] = ei ? ei->d_lengthTerm : Node::null();
         if( lt[i].isNull() ){
-          lt[i] = eq[i];
+          lt[i] = nm->mkNode(STRING_LENGTH, eq[i]);
         }
-        lt[i] = NodeManager::currentNM()->mkNode( kind::STRING_LENGTH, lt[i] );
       }
       if (!d_state.areEqual(lt[0], lt[1]) && !d_state.areDisequal(lt[0], lt[1]))
       {
@@ -2577,14 +2642,13 @@ void CoreSolver::checkLengthsEqc() {
         << "Process length constraints for " << d_strings_eqc[i] << std::endl;
     // check if there is a length term for this equivalence class
     EqcInfo* ei = d_state.getOrMakeEqcInfo(d_strings_eqc[i], false);
-    Node lt = ei ? ei->d_lengthTerm : Node::null();
-    if (lt.isNull())
+    Node llt = ei ? ei->d_lengthTerm : Node::null();
+    if (llt.isNull())
     {
       Trace("strings-process-debug")
           << "No length term for eqc " << d_strings_eqc[i] << std::endl;
       continue;
     }
-    Node llt = NodeManager::currentNM()->mkNode(kind::STRING_LENGTH, lt);
     // now, check if length normalization has occurred
     if (ei->d_normalizedLength.get().isNull())
     {
@@ -2604,9 +2668,9 @@ void CoreSolver::checkLengthsEqc() {
       // if not, add the lemma
       std::vector<Node> ant;
       ant.insert(ant.end(), nfi.d_exp.begin(), nfi.d_exp.end());
-      ant.push_back(lt.eqNode(nfi.d_base));
+      ant.push_back(llt[0].eqNode(nfi.d_base));
       Node lc = NodeManager::currentNM()->mkNode(kind::STRING_LENGTH, nf);
-      Node lcr = Rewriter::rewrite(lc);
+      Node lcr = rewrite(lc);
       Trace("strings-process-debug")
           << "Rewrote length " << lc << " to " << lcr << std::endl;
       if (!d_state.areEqual(llt, lcr))
@@ -2623,7 +2687,7 @@ bool CoreSolver::processInferInfo(CoreInferInfo& cii)
 {
   InferInfo& ii = cii.d_infer;
   // rewrite the conclusion, ensure non-trivial
-  Node concr = Rewriter::rewrite(ii.d_conc);
+  Node concr = rewrite(ii.d_conc);
 
   if (concr == d_true)
   {
@@ -2639,7 +2703,7 @@ bool CoreSolver::processInferInfo(CoreInferInfo& cii)
   // send phase requirements
   for (const std::pair<const Node, bool>& pp : cii.d_pendingPhase)
   {
-    Node ppr = Rewriter::rewrite(pp.first);
+    Node ppr = rewrite(pp.first);
     d_im.addPendingPhaseRequirement(ppr, pp.second);
   }
 
@@ -2649,6 +2713,6 @@ bool CoreSolver::processInferInfo(CoreInferInfo& cii)
   return true;
 }
 
-}/* CVC4::theory::strings namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace strings
+}  // namespace theory
+}  // namespace cvc5

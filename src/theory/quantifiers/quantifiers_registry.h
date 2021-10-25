@@ -1,28 +1,30 @@
-/*********************                                                        */
-/*! \file quantifiers_registry.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The quantifiers registry
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The quantifiers registry.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__QUANTIFIERS__QUANTIFIERS_REGISTRY_H
-#define CVC4__THEORY__QUANTIFIERS__QUANTIFIERS_REGISTRY_H
+#ifndef CVC5__THEORY__QUANTIFIERS__QUANTIFIERS_REGISTRY_H
+#define CVC5__THEORY__QUANTIFIERS__QUANTIFIERS_REGISTRY_H
 
 #include "expr/node.h"
 #include "theory/quantifiers/quant_bound_inference.h"
 #include "theory/quantifiers/quant_util.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
+#include "theory/quantifiers/quantifiers_preprocess.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 
 class QuantifiersModule;
@@ -41,7 +43,7 @@ class QuantifiersRegistry : public QuantifiersUtil
   friend class Instantiate;
 
  public:
-  QuantifiersRegistry();
+  QuantifiersRegistry(Env& env);
   ~QuantifiersRegistry() {}
   /**
    * Register quantifier, which allocates the instantiation constants for q.
@@ -82,14 +84,16 @@ class QuantifiersRegistry : public QuantifiersUtil
    */
   Node substituteInstConstantsToBoundVariables(Node n, Node q);
   /** substitute { variables of q -> terms } in n */
-  Node substituteBoundVariables(Node n, Node q, std::vector<Node>& terms);
+  Node substituteBoundVariables(Node n, Node q, const std::vector<Node>& terms);
   /** substitute { instantiation constants of q -> terms } in n */
-  Node substituteInstConstants(Node n, Node q, std::vector<Node>& terms);
+  Node substituteInstConstants(Node n, Node q, const std::vector<Node>& terms);
   //----------------------------- end instantiation constants
   /** Get quantifiers attributes utility class */
   QuantAttributes& getQuantAttributes();
   /** Get quantifiers bound inference utility */
   QuantifiersBoundInference& getQuantifiersBoundInference();
+  /** Get the preprocess utility */
+  QuantifiersPreprocess& getPreprocess();
   /**
    * Get quantifiers name, which returns a variable corresponding to the name of
    * quantified formula q if q has a name, or otherwise returns q itself.
@@ -125,10 +129,12 @@ class QuantifiersRegistry : public QuantifiersUtil
   QuantAttributes d_quantAttr;
   /** The quantifiers bound inference class */
   QuantifiersBoundInference d_quantBoundInf;
+  /** The quantifiers preprocessor utility */
+  QuantifiersPreprocess d_quantPreproc;
 };
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__QUANTIFIERS__QUANTIFIERS_REGISTRY_H */
+#endif /* CVC5__THEORY__QUANTIFIERS__QUANTIFIERS_REGISTRY_H */

@@ -1,21 +1,22 @@
-/*********************                                                        */
-/*! \file congruence_manager.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Alex Ozdemir, Tim King, Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief [[ Add one-line brief description here ]]
- **
- ** [[ Add lengthier description here ]]
- ** \todo document this file
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Alex Ozdemir, Tim King, Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * [[ Add one-line brief description here ]]
+ *
+ * [[ Add lengthier description here ]]
+ * \todo document this file
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
 #pragma once
 
@@ -23,18 +24,20 @@
 #include "context/cdlist.h"
 #include "context/cdmaybe.h"
 #include "context/cdtrail_queue.h"
-#include "theory/arith/arithvar.h"
+#include "proof/trust_node.h"
+#include "smt/env_obj.h"
 #include "theory/arith/arith_utilities.h"
+#include "theory/arith/arithvar.h"
 #include "theory/arith/callbacks.h"
 #include "theory/arith/constraint_forward.h"
-#include "theory/trust_node.h"
 #include "theory/uf/equality_engine_notify.h"
 #include "util/dense_map.h"
-#include "util/statistics_registry.h"
+#include "util/statistics_stats.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 class ProofNodeManager;
+class EagerProofGenerator;
 
 namespace context {
 class Context;
@@ -42,8 +45,6 @@ class UserContext;
 }
 
 namespace theory {
-
-class EagerProofGenerator;
 struct EeSetupInfo;
 
 namespace eq {
@@ -55,8 +56,9 @@ namespace arith {
 
 class ArithVariables;
 
-class ArithCongruenceManager {
-private:
+class ArithCongruenceManager : protected EnvObj
+{
+ private:
   context::CDRaised d_inConflict;
   RaiseEqualityEngineConflict d_raiseConflict;
 
@@ -100,7 +102,7 @@ private:
    * This is node is potentially both the propagation or
    * Rewriter::rewrite(propagation).
    */
-  typedef context::CDHashMap<Node, size_t, NodeHashFunction> ExplainMap;
+  typedef context::CDHashMap<Node, size_t> ExplainMap;
   ExplainMap d_explanationMap;
 
   ConstraintDatabase& d_constraintDatabase;
@@ -110,11 +112,8 @@ private:
 
   /** The equality engine being used by this class */
   eq::EqualityEngine* d_ee;
-  /** The sat context */
-  context::Context* d_satContext;
-  /** The user context */
-  context::UserContext* d_userContext;
-
+  /** The equality engine we allocated */
+  std::unique_ptr<eq::EqualityEngine> d_allocEe;
   /** proof manager */
   ProofNodeManager* d_pnm;
   /** A proof generator for storing proofs of facts that are asserted to the EQ
@@ -143,6 +142,8 @@ private:
 
   /** Pointer to the proof equality engine of TheoryArith */
   theory::eq::ProofEqEngine* d_pfee;
+  /** The proof equality engine we allocated */
+  std::unique_ptr<eq::ProofEqEngine> d_allocPfee;
 
   /** Raise a conflict node `conflict` to the theory of arithmetic.
    *
@@ -212,7 +213,7 @@ private:
   void enableSharedTerms();
   void dequeueLiterals();
 
-  void enqueueIntoNB(const std::set<TNode> all, NodeBuilder<>& nb);
+  void enqueueIntoNB(const std::set<TNode> all, NodeBuilder& nb);
 
   /**
    * Determine an explaination for `internal`. That is a conjunction of theory
@@ -223,13 +224,11 @@ private:
   TrustNode explainInternal(TNode internal);
 
  public:
-  ArithCongruenceManager(context::Context* satContext,
-                         context::UserContext* u,
+  ArithCongruenceManager(Env& env,
                          ConstraintDatabase&,
                          SetupLiteralCallBack,
                          const ArithVariables&,
-                         RaiseEqualityEngineConflict raiseConflict,
-                         ProofNodeManager* pnm);
+                         RaiseEqualityEngineConflict raiseConflict);
   ~ArithCongruenceManager();
 
   //--------------------------------- initialization
@@ -240,9 +239,9 @@ private:
   bool needsEqualityEngine(EeSetupInfo& esi);
   /**
    * Finish initialize. This class is instructed by TheoryArithPrivate to use
-   * the equality engine ee and proof equality engine pfee.
+   * the equality engine ee.
    */
-  void finishInit(eq::EqualityEngine* ee, eq::ProofEqEngine* pfee);
+  void finishInit(eq::EqualityEngine* ee);
   //--------------------------------- end initialization
 
   /**
@@ -251,7 +250,7 @@ private:
    */
   TrustNode explain(TNode literal);
 
-  void explain(TNode lit, NodeBuilder<>& out);
+  void explain(TNode lit, NodeBuilder& out);
 
   void addWatchedPair(ArithVar s, TNode x, TNode y);
 
@@ -290,13 +289,12 @@ private:
     IntStat d_conflicts;
 
     Statistics();
-    ~Statistics();
   } d_statistics;
 
-};/* class ArithCongruenceManager */
+}; /* class ArithCongruenceManager */
 
 std::vector<Node> andComponents(TNode an);
 
-}/* CVC4::theory::arith namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace arith
+}  // namespace theory
+}  // namespace cvc5

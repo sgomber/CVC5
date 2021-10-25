@@ -1,25 +1,28 @@
-/*********************                                                        */
-/*! \file core_solver.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Tianyi Liang
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Core solver for the theory of strings, responsible for reasoning
- ** string concatenation plus length constraints.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Tianyi Liang
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Core solver for the theory of strings, responsible for reasoning
+ * string concatenation plus length constraints.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__STRINGS__CORE_SOLVER_H
-#define CVC4__THEORY__STRINGS__CORE_SOLVER_H
+#ifndef CVC5__THEORY__STRINGS__CORE_SOLVER_H
+#define CVC5__THEORY__STRINGS__CORE_SOLVER_H
 
+#include "context/cdhashmap.h"
 #include "context/cdhashset.h"
 #include "context/cdlist.h"
+#include "smt/env_obj.h"
 #include "theory/strings/base_solver.h"
 #include "theory/strings/infer_info.h"
 #include "theory/strings/inference_manager.h"
@@ -27,7 +30,7 @@
 #include "theory/strings/solver_state.h"
 #include "theory/strings/term_registry.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace strings {
 
@@ -75,13 +78,15 @@ class CoreInferInfo
  * This implements techniques for handling (dis)equalities involving
  * string concatenation terms based on the procedure by Liang et al CAV 2014.
  */
-class CoreSolver
+class CoreSolver : protected EnvObj
 {
   friend class InferenceManager;
-  using NodeIntMap = context::CDHashMap<Node, int, NodeHashFunction>;
+  using NodeIntMap = context::CDHashMap<Node, int>;
+  using NodeSet = context::CDHashSet<Node>;
 
  public:
-  CoreSolver(SolverState& s,
+  CoreSolver(Env& env,
+             SolverState& s,
              InferenceManager& im,
              TermRegistry& tr,
              BaseSolver& bs);
@@ -466,6 +471,16 @@ class CoreSolver
                         Node nj,
                         size_t& index,
                         bool isRev);
+  /**
+   * Process disequality by extensionality. If necessary, this may result
+   * in inferences that follow from this disequality of the form:
+   *   (not (= n1 n2)) => (not (= k1 k2))
+   * where k1, k2 are either strings of length one or elements of a sequence.
+   *
+   * @param n1 The first string in the disequality
+   * @param n2 The second string in the disequality
+   */
+  void processDeqExtensionality(Node n1, Node n2);
   //--------------------------end for checkNormalFormsDeq
 
   /** The solver state object */
@@ -519,10 +534,12 @@ class CoreSolver
    * the argument number of the t1 ... tn they were generated from.
    */
   std::map<Node, std::vector<int> > d_flat_form_index;
+  /** Set of equalities for which we have applied extensionality. */
+  NodeSet d_extDeq;
 }; /* class CoreSolver */
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__STRINGS__CORE_SOLVER_H */
+#endif /* CVC5__THEORY__STRINGS__CORE_SOLVER_H */

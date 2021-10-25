@@ -1,53 +1,53 @@
-/*********************                                                        */
-/*! \file cdcac.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implements the CDCAC approach.
- **
- ** Implements the CDCAC approach as described in
- ** https://arxiv.org/pdf/2003.05633.pdf.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Gereon Kremer, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implements the CDCAC approach as described in
+ * https://arxiv.org/pdf/2003.05633.pdf.
+ */
 
 #include "theory/arith/nl/cad/cdcac.h"
 
-#ifdef CVC4_POLY_IMP
+#ifdef CVC5_POLY_IMP
 
 #include "options/arith_options.h"
+#include "theory/arith/nl/cad/lazard_evaluation.h"
 #include "theory/arith/nl/cad/projections.h"
 #include "theory/arith/nl/cad/variable_ordering.h"
 #include "theory/arith/nl/nl_model.h"
+#include "theory/rewriter.h"
 
 namespace std {
 /** Generic streaming operator for std::vector. */
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
 {
-  CVC4::container_to_stream(os, v);
+  cvc5::container_to_stream(os, v);
   return os;
 }
 }  // namespace std
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arith {
 namespace nl {
 namespace cad {
 
-CDCAC::CDCAC(context::Context* ctx,
-             ProofNodeManager* pnm,
-             const std::vector<poly::Variable>& ordering)
-    : d_variableOrdering(ordering)
+CDCAC::CDCAC(Env& env, const std::vector<poly::Variable>& ordering)
+    : EnvObj(env), d_variableOrdering(ordering)
 {
-  if (pnm != nullptr)
+  if (d_env.isTheoryProofProducing())
   {
-    d_proof.reset(new CADProofGenerator(ctx, pnm));
+    d_proof.reset(
+        new CADProofGenerator(userContext(), d_env.getProofNodeManager()));
   }
 }
 
@@ -55,6 +55,7 @@ void CDCAC::reset()
 {
   d_constraints.reset();
   d_assignment.clear();
+  d_nextIntervalId = 1;
 }
 
 void CDCAC::computeVariableOrdering()
@@ -76,7 +77,7 @@ void CDCAC::computeVariableOrdering()
 
 void CDCAC::retrieveInitialAssignment(NlModel& model, const Node& ran_variable)
 {
-  if (!options::nlCadUseInitial()) return;
+  if (!options().arith.nlCadUseInitial) return;
   d_initialAssignment.clear();
   Trace("cdcac") << "Retrieving initial assignment:" << std::endl;
   for (const auto& var : d_variableOrdering)
@@ -101,6 +102,17 @@ const std::vector<poly::Variable>& CDCAC::getVariableOrdering() const
 std::vector<CACInterval> CDCAC::getUnsatIntervals(std::size_t cur_variable)
 {
   std::vector<CACInterval> res;
+  LazardEvaluation le;
+  if (options().arith.nlCadLifting
+      == options::NlCadLiftingMode::LAZARD)
+  {
+    for (size_t vid = 0; vid < cur_variable; ++vid)
+    {
+      const auto& val = d_assignment.get(d_variableOrdering[vid]);
+      le.add(d_variableOrdering[vid], val);
+    }
+    le.addFreeVariable(d_variableOrdering[cur_variable]);
+  }
   for (const auto& c : d_constraints.getConstraints())
   {
     const poly::Polynomial& p = std::get<0>(c);
@@ -115,7 +127,22 @@ std::vector<CACInterval> CDCAC::getUnsatIntervals(std::size_t cur_variable)
 
     Trace("cdcac") << "Infeasible intervals for " << p << " " << sc
                    << " 0 over " << d_assignment << std::endl;
-    auto intervals = infeasible_regions(p, d_assignment, sc);
+    std::vector<poly::Interval> intervals;
+    if (options().arith.nlCadLifting
+        == options::NlCadLiftingMode::LAZARD)
+    {
+      intervals = le.infeasibleRegions(p, sc);
+      if (Trace.isOn("cdcac"))
+      {
+        auto reference = poly::infeasible_regions(p, d_assignment, sc);
+        Trace("cdcac") << "Lazard: " << intervals << std::endl;
+        Trace("cdcac") << "Regular: " << reference << std::endl;
+      }
+    }
+    else
+    {
+      intervals = poly::infeasible_regions(p, d_assignment, sc);
+    }
     for (const auto& i : intervals)
     {
       Trace("cdcac") << "-> " << i << std::endl;
@@ -124,7 +151,7 @@ std::vector<CACInterval> CDCAC::getUnsatIntervals(std::size_t cur_variable)
       m.pushDownPolys(d, d_variableOrdering[cur_variable]);
       if (!is_minus_infinity(get_lower(i))) l = m;
       if (!is_plus_infinity(get_upper(i))) u = m;
-      res.emplace_back(CACInterval{i, l, u, m, d, {n}});
+      res.emplace_back(CACInterval{d_nextIntervalId++, i, l, u, m, d, {n}});
       if (isProofEnabled())
       {
         d_proof->addDirect(
@@ -134,7 +161,8 @@ std::vector<CACInterval> CDCAC::getUnsatIntervals(std::size_t cur_variable)
             d_assignment,
             sc,
             i,
-            n);
+            n,
+            res.back().d_id);
       }
     }
   }
@@ -146,7 +174,8 @@ bool CDCAC::sampleOutsideWithInitial(const std::vector<CACInterval>& infeasible,
                                      poly::Value& sample,
                                      std::size_t cur_variable)
 {
-  if (options::nlCadUseInitial() && cur_variable < d_initialAssignment.size())
+  if (options().arith.nlCadUseInitial
+      && cur_variable < d_initialAssignment.size())
   {
     const poly::Value& suggested = d_initialAssignment[cur_variable];
     for (const auto& i : infeasible)
@@ -164,20 +193,137 @@ bool CDCAC::sampleOutsideWithInitial(const std::vector<CACInterval>& infeasible,
   return sampleOutside(infeasible, sample);
 }
 
-PolyVector CDCAC::requiredCoefficients(const poly::Polynomial& p) const
+namespace {
+
+/**
+ * This method follows the projection operator as detailed in algorithm 6 of
+ * 10.1016/j.jlamp.2020.100633, which mostly follows the projection operator due
+ * to McCallum. It uses all coefficients until one is either constant or does
+ * not vanish over the current assignment.
+ */
+PolyVector requiredCoefficientsOriginal(const poly::Polynomial& p,
+                                        const poly::Assignment& assignment)
 {
   PolyVector res;
   for (long deg = degree(p); deg >= 0; --deg)
   {
     auto coeff = coefficient(p, deg);
-    if (lp_polynomial_is_constant(coeff.get_internal())) break;
+    Assert(poly::is_constant(coeff)
+           == lp_polynomial_is_constant(coeff.get_internal()));
+    if (poly::is_constant(coeff)) break;
     res.add(coeff);
-    if (evaluate_constraint(coeff, d_assignment, poly::SignCondition::NE))
+    if (evaluate_constraint(coeff, assignment, poly::SignCondition::NE))
     {
       break;
     }
   }
   return res;
+}
+
+/**
+ * This method follows the original projection operator due to Lazard from
+ * section 3 of 10.1007/978-1-4612-2628-4_29. It uses the leading and trailing
+ * coefficient, and makes some limited efforts to avoid them in certain cases:
+ * We avoid the leading coefficient if it is constant. We avoid the trailing
+ * coefficient if the leading coefficient does not vanish over the current
+ * assignment and the trailing coefficient is not constant.
+ */
+PolyVector requiredCoefficientsLazard(const poly::Polynomial& p,
+                                      const poly::Assignment& assignment)
+{
+  PolyVector res;
+  auto lc = poly::leading_coefficient(p);
+  if (poly::is_constant(lc)) return res;
+  res.add(lc);
+  if (evaluate_constraint(lc, assignment, poly::SignCondition::NE)) return res;
+  auto tc = poly::coefficient(p, 0);
+  if (poly::is_constant(tc)) return res;
+  res.add(tc);
+  return res;
+}
+
+/**
+ * This method follows the enhancements from 10.1007/978-3-030-60026-6_8 for the
+ * projection operator due to Lazard, more specifically Section 3.3 and
+ * Definition 4. In essence, we can skip the trailing coefficient if we can show
+ * that p is not nullified by any n-1 dimensional point. The statement in the
+ * paper is slightly more general, but there is no simple way to have such a
+ * procedure T here. We simply try to show that T(f) = {} by using the extended
+ * rewriter to simplify (and (= f_i 0)) (f_i being the coefficients of f) to
+ * false.
+ */
+PolyVector requiredCoefficientsLazardModified(
+    const poly::Polynomial& p,
+    const poly::Assignment& assignment,
+    VariableMapper& vm)
+{
+  PolyVector res;
+  auto lc = poly::leading_coefficient(p);
+  // if leading coefficient is constant
+  if (poly::is_constant(lc)) return res;
+  // add leading coefficient
+  res.add(lc);
+  auto tc = poly::coefficient(p, 0);
+  // if trailing coefficient is constant
+  if (poly::is_constant(tc)) return res;
+  // if leading coefficient does not vanish over the current assignment
+  if (evaluate_constraint(lc, assignment, poly::SignCondition::NE)) return res;
+
+  // construct phi := (and (= p_i 0)) with p_i the coefficients of p
+  std::vector<Node> conditions;
+  auto zero = NodeManager::currentNM()->mkConst(Rational(0));
+  for (const auto& coeff : poly::coefficients(p))
+  {
+    conditions.emplace_back(NodeManager::currentNM()->mkNode(
+        Kind::EQUAL, nl::as_cvc_polynomial(coeff, vm), zero));
+  }
+  // if phi is false (i.e. p can not vanish)
+  Node rewritten = Rewriter::callExtendedRewrite(
+      NodeManager::currentNM()->mkAnd(conditions));
+  if (rewritten.isConst())
+  {
+    Assert(rewritten.getKind() == Kind::CONST_BOOLEAN);
+    Assert(!rewritten.getConst<bool>());
+    return res;
+  }
+  // otherwise add trailing coefficient as well
+  res.add(tc);
+  return res;
+}
+
+}  // namespace
+
+PolyVector CDCAC::requiredCoefficients(const poly::Polynomial& p)
+{
+  if (Trace.isOn("cdcac::projection"))
+  {
+    Trace("cdcac::projection")
+        << "Poly: " << p << " over " << d_assignment << std::endl;
+    Trace("cdcac::projection")
+        << "Lazard:   " << requiredCoefficientsLazard(p, d_assignment)
+        << std::endl;
+    Trace("cdcac::projection")
+        << "LMod: "
+        << requiredCoefficientsLazardModified(
+               p, d_assignment, d_constraints.varMapper())
+        << std::endl;
+    Trace("cdcac::projection")
+        << "Original: " << requiredCoefficientsOriginal(p, d_assignment)
+        << std::endl;
+  }
+  switch (options().arith.nlCadProjection)
+  {
+    case options::NlCadProjectionMode::MCCALLUM:
+      return requiredCoefficientsOriginal(p, d_assignment);
+    case options::NlCadProjectionMode::LAZARD:
+      return requiredCoefficientsLazard(p, d_assignment);
+    case options::NlCadProjectionMode::LAZARDMOD:
+      return requiredCoefficientsLazardModified(
+          p, d_assignment, d_constraints.varMapper());
+    default:
+      Assert(false);
+      return requiredCoefficientsOriginal(p, d_assignment);
+  }
 }
 
 PolyVector CDCAC::constructCharacterization(std::vector<CACInterval>& intervals)
@@ -205,15 +351,16 @@ PolyVector CDCAC::constructCharacterization(std::vector<CACInterval>& intervals)
     }
     for (const auto& p : i.d_mainPolys)
     {
-      Trace("cdcac") << "Discriminant of " << p << " -> " << discriminant(p)
-                     << std::endl;
+      Trace("cdcac::projection")
+          << "Discriminant of " << p << " -> " << discriminant(p) << std::endl;
       // Add all discriminants
       res.add(discriminant(p));
 
       for (const auto& q : requiredCoefficients(p))
       {
         // Add all required coefficients
-        Trace("cdcac") << "Coeff of " << p << " -> " << q << std::endl;
+        Trace("cdcac::projection")
+            << "Coeff of " << p << " -> " << q << std::endl;
         res.add(q);
       }
       for (const auto& q : i.d_lowerPolys)
@@ -221,8 +368,8 @@ PolyVector CDCAC::constructCharacterization(std::vector<CACInterval>& intervals)
         if (p == q) continue;
         // Check whether p(s \times a) = 0 for some a <= l
         if (!hasRootBelow(q, get_lower(i.d_interval))) continue;
-        Trace("cdcac") << "Resultant of " << p << " and " << q << " -> "
-                       << resultant(p, q) << std::endl;
+        Trace("cdcac::projection") << "Resultant of " << p << " and " << q
+                                   << " -> " << resultant(p, q) << std::endl;
         res.add(resultant(p, q));
       }
       for (const auto& q : i.d_upperPolys)
@@ -230,8 +377,8 @@ PolyVector CDCAC::constructCharacterization(std::vector<CACInterval>& intervals)
         if (p == q) continue;
         // Check whether p(s \times a) = 0 for some a >= u
         if (!hasRootAbove(q, get_upper(i.d_interval))) continue;
-        Trace("cdcac") << "Resultant of " << p << " and " << q << " -> "
-                       << resultant(p, q) << std::endl;
+        Trace("cdcac::projection") << "Resultant of " << p << " and " << q
+                                   << " -> " << resultant(p, q) << std::endl;
         res.add(resultant(p, q));
       }
     }
@@ -244,8 +391,8 @@ PolyVector CDCAC::constructCharacterization(std::vector<CACInterval>& intervals)
     {
       for (const auto& q : intervals[i + 1].d_lowerPolys)
       {
-        Trace("cdcac") << "Resultant of " << p << " and " << q << " -> "
-                       << resultant(p, q) << std::endl;
+        Trace("cdcac::projection") << "Resultant of " << p << " and " << q
+                                   << " -> " << resultant(p, q) << std::endl;
         res.add(resultant(p, q));
       }
     }
@@ -336,25 +483,31 @@ CACInterval CDCAC::intervalFromCharacterization(
   if (lower == upper)
   {
     // construct a point interval
-    return CACInterval{
-        poly::Interval(lower, false, upper, false), l, u, m, d, {}};
+    return CACInterval{d_nextIntervalId++,
+                       poly::Interval(lower, false, upper, false),
+                       l,
+                       u,
+                       m,
+                       d,
+                       {}};
   }
   else
   {
     // construct an open interval
     Assert(lower < upper);
-    return CACInterval{
-        poly::Interval(lower, true, upper, true), l, u, m, d, {}};
+    return CACInterval{d_nextIntervalId++,
+                       poly::Interval(lower, true, upper, true),
+                       l,
+                       u,
+                       m,
+                       d,
+                       {}};
   }
 }
 
-std::vector<CACInterval> CDCAC::getUnsatCover(std::size_t curVariable,
-                                              bool returnFirstInterval)
+std::vector<CACInterval> CDCAC::getUnsatCoverImpl(std::size_t curVariable,
+                                                  bool returnFirstInterval)
 {
-  if (isProofEnabled())
-  {
-    d_proof->startRecursive();
-  }
   Trace("cdcac") << "Looking for unsat cover for "
                  << d_variableOrdering[curVariable] << std::endl;
   std::vector<CACInterval> intervals = getUnsatIntervals(curVariable);
@@ -396,9 +549,10 @@ std::vector<CACInterval> CDCAC::getUnsatCover(std::size_t curVariable,
     if (isProofEnabled())
     {
       d_proof->startScope();
+      d_proof->startRecursive();
     }
     // Recurse to next variable
-    auto cov = getUnsatCover(curVariable + 1);
+    auto cov = getUnsatCoverImpl(curVariable + 1);
     if (cov.empty())
     {
       // Found SAT!
@@ -417,6 +571,7 @@ std::vector<CACInterval> CDCAC::getUnsatCover(std::size_t curVariable,
     intervals.emplace_back(newInterval);
     if (isProofEnabled())
     {
+      d_proof->endRecursive(newInterval.d_id);
       auto cell = d_proof->constructCell(
           d_constraints.varMapper()(d_variableOrdering[curVariable]),
           newInterval,
@@ -455,11 +610,21 @@ std::vector<CACInterval> CDCAC::getUnsatCover(std::size_t curVariable,
       Trace("cdcac") << "-> " << i.d_interval << std::endl;
     }
   }
+  return intervals;
+}
+
+std::vector<CACInterval> CDCAC::getUnsatCover(bool returnFirstInterval)
+{
   if (isProofEnabled())
   {
-    d_proof->endRecursive();
+    d_proof->startRecursive();
   }
-  return intervals;
+  auto res = getUnsatCoverImpl(0, returnFirstInterval);
+  if (isProofEnabled())
+  {
+    d_proof->endRecursive(0);
+  }
+  return res;
 }
 
 void CDCAC::startNewProof()
@@ -498,7 +663,8 @@ CACInterval CDCAC::buildIntegralityInterval(std::size_t cur_variable,
   poly::Integer below = poly::floor(value);
   poly::Integer above = poly::ceil(value);
   // construct var \in (below, above)
-  return CACInterval{poly::Interval(below, above),
+  return CACInterval{d_nextIntervalId++,
+                     poly::Interval(below, above),
                      {var - below},
                      {var - above},
                      {var - below, var - above},
@@ -528,10 +694,11 @@ void CDCAC::pruneRedundantIntervals(std::vector<CACInterval>& intervals)
 {
   if (isProofEnabled())
   {
-    std::vector<CACInterval> allIntervals = intervals;
     cleanIntervals(intervals);
-    d_proof->pruneChildren([&allIntervals, &intervals](std::size_t i) {
-      return std::find(intervals.begin(), intervals.end(), allIntervals[i])
+    d_proof->pruneChildren([&intervals](std::size_t id) {
+      return std::find_if(intervals.begin(),
+                          intervals.end(),
+                          [id](const CACInterval& i) { return i.d_id == id; })
              != intervals.end();
     });
   }
@@ -545,6 +712,6 @@ void CDCAC::pruneRedundantIntervals(std::vector<CACInterval>& intervals)
 }  // namespace nl
 }  // namespace arith
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
 
 #endif

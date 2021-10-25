@@ -1,35 +1,42 @@
-/*********************                                                        */
-/*! \file witness_form.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The module for managing witness form conversion in proofs
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The module for managing witness form conversion in proofs.
+ */
 
 #include "smt/witness_form.h"
 
 #include "expr/skolem_manager.h"
+#include "smt/env.h"
 #include "theory/rewriter.h"
 
-namespace CVC4 {
+namespace cvc5 {
 namespace smt {
 
-WitnessFormGenerator::WitnessFormGenerator(ProofNodeManager* pnm)
-    : d_tcpg(pnm,
+WitnessFormGenerator::WitnessFormGenerator(Env& env)
+    : d_rewriter(env.getRewriter()),
+      d_tcpg(env.getProofNodeManager(),
              nullptr,
              TConvPolicy::FIXPOINT,
              TConvCachePolicy::NEVER,
              "WfGenerator::TConvProofGenerator",
              nullptr,
              true),
-      d_wintroPf(pnm, nullptr, nullptr, "WfGenerator::LazyCDProof"),
-      d_pskPf(pnm, nullptr, "WfGenerator::PurifySkolemProof")
+      d_wintroPf(env.getProofNodeManager(),
+                 nullptr,
+                 nullptr,
+                 "WfGenerator::LazyCDProof"),
+      d_pskPf(
+          env.getProofNodeManager(), nullptr, "WfGenerator::PurifySkolemProof")
 {
 }
 
@@ -65,7 +72,7 @@ Node WitnessFormGenerator::convertToWitnessForm(Node t)
     // trivial case
     return tw;
   }
-  std::unordered_set<TNode, TNodeHashFunction>::iterator it;
+  std::unordered_set<TNode>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   TNode curw;
@@ -113,17 +120,16 @@ Node WitnessFormGenerator::convertToWitnessForm(Node t)
 
 bool WitnessFormGenerator::requiresWitnessFormTransform(Node t, Node s) const
 {
-  return theory::Rewriter::rewrite(t) != theory::Rewriter::rewrite(s);
+  return d_rewriter->rewrite(t) != d_rewriter->rewrite(s);
 }
 
 bool WitnessFormGenerator::requiresWitnessFormIntro(Node t) const
 {
-  Node tr = theory::Rewriter::rewrite(t);
+  Node tr = d_rewriter->rewrite(t);
   return !tr.isConst() || !tr.getConst<bool>();
 }
 
-const std::unordered_set<Node, NodeHashFunction>&
-WitnessFormGenerator::getWitnessFormEqs() const
+const std::unordered_set<Node>& WitnessFormGenerator::getWitnessFormEqs() const
 {
   return d_eqs;
 }
@@ -152,4 +158,4 @@ ProofGenerator* WitnessFormGenerator::convertExistsInternal(Node exists)
 }
 
 }  // namespace smt
-}  // namespace CVC4
+}  // namespace cvc5

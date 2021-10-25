@@ -1,18 +1,17 @@
-/*********************                                                        */
-/*! \file type_node_white.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Aina Niemetz, Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief White box testing of TypeNode
- **
- ** White box testing of TypeNode.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Aina Niemetz, Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * White box testing of TypeNode.
+ */
 
 #include <iostream>
 #include <sstream>
@@ -20,10 +19,11 @@
 
 #include "expr/node_manager.h"
 #include "expr/type_node.h"
-#include "smt/smt_engine.h"
+#include "smt/solver_engine.h"
 #include "test_node.h"
+#include "util/rational.h"
 
-namespace CVC4 {
+namespace cvc5 {
 
 using namespace kind;
 using namespace context;
@@ -36,9 +36,9 @@ class TestNodeWhiteTypeNode : public TestNode
   void SetUp() override
   {
     TestNode::SetUp();
-    d_smt.reset(new SmtEngine(d_nodeManager.get()));
+    d_slvEngine.reset(new SolverEngine(d_nodeManager));
   }
-  std::unique_ptr<SmtEngine> d_smt;
+  std::unique_ptr<SolverEngine> d_slvEngine;
 };
 
 TEST_F(TestNodeWhiteTypeNode, sub_types)
@@ -55,7 +55,7 @@ TEST_F(TestNodeWhiteTypeNode, sub_types)
   Node lambda = d_nodeManager->mkVar("lambda", funtype);
   std::vector<Node> formals;
   formals.push_back(x);
-  d_smt->defineFunction(lambda, formals, xPos);
+  d_slvEngine->defineFunction(lambda, formals, xPos);
 
   ASSERT_FALSE(realType.isComparableTo(booleanType));
   ASSERT_TRUE(realType.isComparableTo(integerType));
@@ -94,4 +94,4 @@ TEST_F(TestNodeWhiteTypeNode, sub_types)
   ASSERT_TRUE(bvType.getBaseType() == bvType);
 }
 }  // namespace test
-}  // namespace CVC4
+}  // namespace cvc5

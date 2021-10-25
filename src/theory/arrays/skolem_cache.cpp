@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file skolem_cache.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Arrays skolem cache
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Arrays skolem cache.
+ */
 
 #include "theory/arrays/skolem_cache.h"
 
@@ -19,9 +20,9 @@
 #include "expr/skolem_manager.h"
 #include "expr/type_node.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::kind;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arrays {
 
@@ -33,6 +34,14 @@ struct ExtIndexVarAttributeId
 {
 };
 typedef expr::Attribute<ExtIndexVarAttributeId, Node> ExtIndexVarAttribute;
+
+/**
+ * A bound variable corresponding to the index used in the eqrange expansion.
+ */
+struct EqRangeVarAttributeId
+{
+};
+typedef expr::Attribute<EqRangeVarAttributeId, Node> EqRangeVarAttribute;
 
 SkolemCache::SkolemCache() {}
 
@@ -65,6 +74,13 @@ Node SkolemCache::getExtIndexSkolem(Node deq)
       "an extensional lemma index variable from the theory of arrays");
 }
 
+Node SkolemCache::getEqRangeVar(TNode eqr)
+{
+  Assert(eqr.getKind() == kind::EQ_RANGE);
+  BoundVarManager* bvm = NodeManager::currentNM()->getBoundVarManager();
+  return bvm->mkBoundVar<EqRangeVarAttribute>(eqr, eqr[2].getType());
+}
+
 Node SkolemCache::getExtIndexVar(Node deq)
 {
   Node a = deq[0][0];
@@ -78,4 +94,4 @@ Node SkolemCache::getExtIndexVar(Node deq)
 
 }  // namespace arrays
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5

@@ -1,24 +1,25 @@
-/*********************                                                        */
-/*! \file normal_form.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Tim King, Morgan Deters, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief [[ Add one-line brief description here ]]
- **
- ** [[ Add lengthier description here ]]
- ** \todo document this file
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Tim King, Morgan Deters, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * [[ Add one-line brief description here ]]
+ *
+ * [[ Add lengthier description here ]]
+ * \todo document this file
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__ARITH__NORMAL_FORM_H
-#define CVC4__THEORY__ARITH__NORMAL_FORM_H
+#ifndef CVC5__THEORY__ARITH__NORMAL_FORM_H
+#define CVC5__THEORY__ARITH__NORMAL_FORM_H
 
 #include <algorithm>
 
@@ -28,8 +29,7 @@
 #include "theory/arith/delta_rational.h"
 #include "util/rational.h"
 
-
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace arith {
 
@@ -239,6 +239,7 @@ public:
      case kind::INTS_MODULUS_TOTAL:
      case kind::DIVISION_TOTAL: return isDivMember(n);
      case kind::IAND: return isIAndMember(n);
+     case kind::POW2: return isPow2Member(n);
      case kind::EXPONENTIAL:
      case kind::SINE:
      case kind::COSINE:
@@ -265,6 +266,7 @@ public:
 
   static bool isLeafMember(Node n);
   static bool isIAndMember(Node n);
+  static bool isPow2Member(Node n);
   static bool isDivMember(Node n);
   bool isDivLike() const{
     return isDivMember(getNode());
@@ -421,7 +423,7 @@ public:
 
 template <class GetNodeIterator>
 inline Node makeNode(Kind k, GetNodeIterator start, GetNodeIterator end) {
-  NodeBuilder<> nb(k);
+  NodeBuilder nb(k);
 
   while(start != end) {
     nb << (*start).getNode();
@@ -471,11 +473,30 @@ private:
 
 public:
 
-  class iterator : public std::iterator<std::input_iterator_tag, Variable> {
+  class iterator {
   private:
     internal_iterator d_iter;
 
   public:
+    /* The following types are required by trait std::iterator_traits */
+
+    /** Iterator tag */
+    using iterator_category = std::forward_iterator_tag;
+
+    /** The type of the item */
+    using value_type = Variable;
+
+    /** The pointer type of the item */
+    using pointer = Variable*;
+
+    /** The reference type of the item */
+    using reference = Variable&;
+
+    /** The type returned when two iterators are subtracted */
+    using difference_type = std::ptrdiff_t;
+
+    /* End of std::iterator_traits required types */
+
     explicit iterator(internal_iterator i) : d_iter(i) {}
 
     inline Variable operator*() {
@@ -798,11 +819,30 @@ private:
 public:
   static bool isMember(TNode n);
 
-  class iterator : public std::iterator<std::input_iterator_tag, Monomial> {
+  class iterator {
   private:
     internal_iterator d_iter;
 
   public:
+    /* The following types are required by trait std::iterator_traits */
+
+    /** Iterator tag */
+    using iterator_category = std::forward_iterator_tag;
+
+    /** The type of the item */
+    using value_type = Monomial;
+
+    /** The pointer type of the item */
+    using pointer = Monomial*;
+
+    /** The reference type of the item */
+    using reference = Monomial&;
+
+    /** The type returned when two iterators are subtracted */
+    using difference_type = std::ptrdiff_t;
+
+    /* End of std::iterator_traits required types */
+
     explicit iterator(internal_iterator i) : d_iter(i) {}
 
     inline Monomial operator*() {
@@ -1403,8 +1443,8 @@ public:
 
 };/* class Comparison */
 
-}/* CVC4::theory::arith namespace */
-}/* CVC4::theory namespace */
-}/* CVC4 namespace */
+}  // namespace arith
+}  // namespace theory
+}  // namespace cvc5
 
-#endif /* CVC4__THEORY__ARITH__NORMAL_FORM_H */
+#endif /* CVC5__THEORY__ARITH__NORMAL_FORM_H */

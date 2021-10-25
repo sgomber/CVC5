@@ -1,114 +1,72 @@
-/*********************                                                        */
-/*! \file theory_quantifiers.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of the theory of quantifiers
- **
- ** Implementation of the theory of quantifiers.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of the theory of quantifiers.
+ */
 
 #include "theory/quantifiers/theory_quantifiers.h"
 
-#include "expr/proof_node_manager.h"
 #include "options/quantifiers_options.h"
-#include "theory/quantifiers/first_order_model.h"
-#include "theory/quantifiers/fmf/first_order_model_fmc.h"
+#include "proof/proof_node_manager.h"
+#include "theory/quantifiers/quantifiers_macros.h"
 #include "theory/quantifiers/quantifiers_modules.h"
 #include "theory/quantifiers/quantifiers_rewriter.h"
+#include "theory/trust_substitutions.h"
 #include "theory/valuation.h"
 
-using namespace CVC4::kind;
-using namespace CVC4::context;
+using namespace cvc5::kind;
+using namespace cvc5::context;
 
-namespace CVC4 {
+namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-TheoryQuantifiers::TheoryQuantifiers(Context* c,
-                                     context::UserContext* u,
+TheoryQuantifiers::TheoryQuantifiers(Env& env,
                                      OutputChannel& out,
-                                     Valuation valuation,
-                                     const LogicInfo& logicInfo,
-                                     ProofNodeManager* pnm)
-    : Theory(THEORY_QUANTIFIERS, c, u, out, valuation, logicInfo, pnm),
-      d_qstate(c, u, valuation, logicInfo),
-      d_qreg(),
-      d_treg(d_qstate, d_qreg),
-      d_qim(*this, d_qstate, pnm)
+                                     Valuation valuation)
+    : Theory(THEORY_QUANTIFIERS, env, out, valuation),
+      d_rewriter(env.getOptions()),
+      d_qstate(env, valuation, logicInfo()),
+      d_qreg(env),
+      d_treg(env, d_qstate, d_qreg),
+      d_qim(env, *this, d_qstate, d_qreg, d_treg),
+      d_qengine(nullptr)
 {
-  // Finish initializing the term registry by hooking it up to the inference
-  // manager. This is required due to a cyclic dependency between the term
-  // database and the instantiate module. Term database needs inference manager
-  // since it sends out lemmas when term indexing is inconsistent, instantiate
-  // needs term database for entailment checks.
-  d_treg.finishInit(&d_qim);
+  // construct the quantifiers engine
+  d_qengine.reset(
+      new QuantifiersEngine(env, d_qstate, d_qreg, d_treg, d_qim, d_pnm));
 
-  out.handleUserAttribute( "fun-def", this );
-  out.handleUserAttribute("qid", this);
-  out.handleUserAttribute( "quant-inst-max-level", this );
-  out.handleUserAttribute( "quant-elim", this );
-  out.handleUserAttribute( "quant-elim-partial", this );
-
-  ProofChecker* pc = pnm != nullptr ? pnm->getChecker() : nullptr;
-  if (pc != nullptr)
-  {
-    // add the proof rules
-    d_qChecker.registerTo(pc);
-  }
   // indicate we are using the quantifiers theory state object
   d_theoryState = &d_qstate;
   // use the inference manager as the official inference manager
   d_inferManager = &d_qim;
-
-  Trace("quant-engine-debug") << "Initialize quantifiers engine." << std::endl;
-  Trace("quant-engine-debug")
-      << "Initialize model, mbqi : " << options::mbqiMode() << std::endl;
-  // Finite model finding requires specialized ways of building the model.
-  // We require constructing the model here, since it is required for
-  // initializing the CombinationEngine and the rest of quantifiers engine.
-  if (options::finiteModelFind() || options::fmfBound())
-  {
-    if (QuantifiersModules::useFmcModel())
-    {
-      d_qmodel.reset(new quantifiers::fmcheck::FirstOrderModelFmc(
-          d_qstate, d_qreg, d_treg, "FirstOrderModelFmc"));
-    }
-    else
-    {
-      d_qmodel.reset(new quantifiers::FirstOrderModel(
-          d_qstate, d_qreg, d_treg, "FirstOrderModel"));
-    }
-  }
-  else
-  {
-    d_qmodel.reset(new quantifiers::FirstOrderModel(
-        d_qstate, d_qreg, d_treg, "FirstOrderModel"));
-  }
-
-  // construct the quantifiers engine
-  d_qengine.reset(new QuantifiersEngine(
-      d_qstate, d_qreg, d_treg, d_qim, d_qmodel.get(), pnm));
-
-  //!!!!!!!!!!!!!! temporary (project #15)
-  d_qmodel->finishInit(d_qengine.get());
-
   // Set the pointer to the quantifiers engine, which this theory owns. This
   // pointer will be retreived by TheoryEngine and set to all theories
   // post-construction.
   d_quantEngine = d_qengine.get();
+
+  if (options::macrosQuant())
+  {
+    d_qmacros.reset(new QuantifiersMacros(d_qreg));
+  }
 }
 
 TheoryQuantifiers::~TheoryQuantifiers() {
 }
 
 TheoryRewriter* TheoryQuantifiers::getTheoryRewriter() { return &d_rewriter; }
+
+ProofRuleChecker* TheoryQuantifiers::getProofChecker() { return &d_checker; }
+
 void TheoryQuantifiers::finishInit()
 {
   // quantifiers are not evaluated in getModelValue
@@ -148,6 +106,26 @@ void TheoryQuantifiers::presolve() {
   }
 }
 
+Theory::PPAssertStatus TheoryQuantifiers::ppAssert(
+    TrustNode tin, TrustSubstitutionMap& outSubstitutions)
+{
+  if (d_qmacros != nullptr)
+  {
+    bool reqGround =
+        options::macrosQuantMode() != options::MacrosQuantMode::ALL;
+    Node eq = d_qmacros->solve(tin.getProven(), reqGround);
+    if (!eq.isNull())
+    {
+      // must be legal
+      if (isLegalElimination(eq[0], eq[1]))
+      {
+        outSubstitutions.addSubstitution(eq[0], eq[1]);
+        return Theory::PP_ASSERT_STATUS_SOLVED;
+      }
+    }
+  }
+  return Theory::PP_ASSERT_STATUS_UNSOLVED;
+}
 void TheoryQuantifiers::ppNotifyAssertions(
     const std::vector<Node>& assertions) {
   Trace("quantifiers-presolve")
@@ -205,10 +183,6 @@ bool TheoryQuantifiers::preNotifyFact(
   return true;
 }
 
-void TheoryQuantifiers::setUserAttribute(const std::string& attr, Node n, std::vector<Node> node_values, std::string str_value){
-  QuantAttributes::setUserAttribute( attr, n, node_values, str_value );
-}
-
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5
