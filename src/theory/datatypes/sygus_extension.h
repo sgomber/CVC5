@@ -68,7 +68,7 @@ class SygusExtension : protected EnvObj
   typedef context::CDHashMap<Node, int> IntMap;
   typedef context::CDHashMap<Node, Node> NodeMap;
   typedef context::CDHashMap<Node, bool> BoolMap;
-  typedef context::CDHashMap< Node, uint32_t > UIntMap;
+  typedef context::CDHashMap<Node, uint32_t> UIntMap;
   typedef context::CDHashSet<Node> NodeSet;
 
  public:
