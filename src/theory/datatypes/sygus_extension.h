@@ -65,18 +65,11 @@ class InferenceManager;
  */
 class SygusExtension : protected EnvObj
 {
-<<<<<<< HEAD
-  typedef context::CDHashMap< Node, int, NodeHashFunction > IntMap;
-  typedef context::CDHashMap< Node, Node, NodeHashFunction > NodeMap;
-  typedef context::CDHashMap< Node, bool, NodeHashFunction > BoolMap;
-  typedef context::CDHashMap< Node, uint32_t, NodeHashFunction > UIntMap;
-  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
-=======
   typedef context::CDHashMap<Node, int> IntMap;
   typedef context::CDHashMap<Node, Node> NodeMap;
   typedef context::CDHashMap<Node, bool> BoolMap;
+  typedef context::CDHashMap< Node, uint32_t > UIntMap;
   typedef context::CDHashSet<Node> NodeSet;
->>>>>>> 6981e3ebde0e65ba772be5cf897611152d1b3ae7
 
  public:
   SygusExtension(Env& env,
