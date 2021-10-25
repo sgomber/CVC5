@@ -225,6 +225,38 @@ void setExpandedDefinitionForm(Node op, Node eop);
  * otherwise.
  */
 Node getExpandedDefinitionForm(Node op);
+
+
+/**
+  * Get anchor fo selector chain n. The anchor of a
+  * selector chain S1( ... Sn( x ) ... ) is x.
+  */
+Node getAnchorFor(TNode n);
+
+/**
+  * Compute depth for selector chain n. The depth of a selector
+  * chain S1( ... Sn( x ) ... ) is:
+  *   weight( S1 ) + ... + weight( Sn ),
+  * where weight is the selector weight of Si
+  * (see SygusTermDatabase::getSelectorWeight).
+  */
+uint64_t getDepthFor(TNode n);
+
+/**
+   * Map from terms (selector chains) to whether they are the topmost term
+   * of their type. For example, if:
+   *   S1 : T1 -> T2
+   *   S2 : T2 -> T2
+   *   S3 : T2 -> T1
+   *   S4 : T1 -> T3
+   * Then, x, S1( x ), and S4( S3( S2( S1( x ) ) ) ) are top-level terms,
+   * whereas S2( S1( x ) ) and S3( S2( S1( x ) ) ) are not.
+   * 
+  * Returns true if the selector chain n is top-level based on the above
+  * definition, when tn is the type of n.
+  */
+bool isTypeTopLevel( TypeNode tn, TNode n );
+
 // ------------------------ end sygus utils
 
 }  // namespace utils

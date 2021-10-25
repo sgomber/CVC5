@@ -619,6 +619,22 @@ Node getExpandedDefinitionForm(Node op)
   return eop.isNull() ? op : eop;
 }
 
+
+Node getAnchorFor(TNode n)
+{
+  
+}
+
+uint64_t getDepthFor(TNode n)
+{
+  
+}
+
+bool isTypeTopLevel( TypeNode tn, TNode n )
+{
+  
+}
+
 }  // namespace utils
 }  // namespace datatypes
 }  // namespace theory
