@@ -1794,7 +1794,7 @@ TrustNode TheoryEngine::getExplanation(
         Trace("te-proof-exp") << "...via MACRO_SR_PRED_TRANSFORM" << std::endl;
         continue;
       }
-      if (tExp == tConc)
+      if (CDProof::isSame(tExp, tConc))
       {
         // trivial
         Trace("te-proof-exp") << "...trivial" << std::endl;
