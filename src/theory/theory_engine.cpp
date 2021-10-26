@@ -1750,7 +1750,8 @@ TrustNode TheoryEngine::getExplanation(
     // avoids cyclic proofs in the lazy proof we are building (lcp).
     for (size_t j = 0, tsize = texplains.size(); j < tsize; j++)
     {
-      addExplanationToProof(lcp.get(), tsize - 1 - j, exp, texplains, texpIndex);
+      addExplanationToProof(
+          lcp.get(), tsize - 1 - j, exp, texplains, texpIndex);
     }
     // store in the proof generator
     TrustNode trn = d_tepg->mkTrustExplain(conclusion, expNode, lcp);
