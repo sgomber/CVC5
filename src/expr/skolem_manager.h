@@ -115,7 +115,7 @@ class SkolemManager
  public:
   SkolemManager();
   ~SkolemManager() {}
-  
+
   /**
    * Optional flags used to control behavior of skolem creation.
    * They should be composed with a bitwise OR (e.g.,

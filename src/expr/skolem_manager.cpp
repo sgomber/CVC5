@@ -67,9 +67,7 @@ std::ostream& operator<<(std::ostream& out, SkolemFunId id)
   return out;
 }
 
-
-  SkolemManager::SkolemManager() :
-      d_skolemCounter(0){}
+SkolemManager::SkolemManager() : d_skolemCounter(0) {}
 
 Node SkolemManager::mkSkolem(Node v,
                              Node pred,
@@ -370,21 +368,28 @@ Node SkolemManager::mkSkolemInternal(Node w,
   return k;
 }
 
-Node SkolemManager::mkSkolemNode(const std::string& prefix, const TypeNode& type, const std::string& comment, int flags) {
+Node SkolemManager::mkSkolemNode(const std::string& prefix,
+                                 const TypeNode& type,
+                                 const std::string& comment,
+                                 int flags)
+{
   Node n;
   if (flags & NodeManager::SKOLEM_BOOL_TERM_VAR)
   {
-    Assert (type.isBoolean());
+    Assert(type.isBoolean());
     n = NodeBuilder(this, kind::BOOLEAN_TERM_VARIABLE);
   }
   else
   {
     n = NodeBuilder(this, kind::SKOLEM);
-    if((flags & SKOLEM_EXACT_NAME) == 0) {
+    if ((flags & SKOLEM_EXACT_NAME) == 0)
+    {
       std::stringstream name;
       name << prefix << '_' << ++d_skolemCounter;
       n.setAttribute(expr::VarNameAttr(), name.str());
-    } else {
+    }
+    else
+    {
       n.setAttribute(expr::VarNameAttr(), prefix);
     }
   }
