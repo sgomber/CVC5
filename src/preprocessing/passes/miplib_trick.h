@@ -45,7 +45,7 @@ class MipLibTrick : public PreprocessingPass
 
   size_t removeFromConjunction(
       Node& n, const std::unordered_set<unsigned long>& toRemove);
-  /** 
+  /**
    * Collect Boolean variables in the given pipeline, store them in d_boolVars.
    */
   void collectBooleanVariables(AssertionPipeline* assertionsToPreprocess);

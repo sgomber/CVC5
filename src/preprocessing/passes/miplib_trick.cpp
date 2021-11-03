@@ -158,7 +158,8 @@ size_t MipLibTrick::removeFromConjunction(
   return 0;
 }
 
-void MipLibTrick::collectBooleanVariables(AssertionPipeline* assertionsToPreprocess)
+void MipLibTrick::collectBooleanVariables(
+    AssertionPipeline* assertionsToPreprocess)
 {
   d_boolVars.clear();
   std::unordered_set<TNode> visited;
@@ -169,18 +170,20 @@ void MipLibTrick::collectBooleanVariables(AssertionPipeline* assertionsToPreproc
   {
     visit.push_back((*assertionsToPreprocess)[i]);
   }
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
     it = visited.find(cur);
 
-    if (it == visited.end()) {
+    if (it == visited.end())
+    {
       visited.insert(cur);
       if (cur.isVar() && cur.getType().isBoolean())
       {
         d_boolVars.push_back(cur);
       }
-      visit.insert(visit.end(),cur.begin(),cur.end());
+      visit.insert(visit.end(), cur.begin(), cur.end());
     }
   } while (!visit.empty());
 }
@@ -191,7 +194,7 @@ PreprocessingPassResult MipLibTrick::applyInternal(
   Assert(assertionsToPreprocess->getRealAssertionsEnd()
          == assertionsToPreprocess->size());
   Assert(!options().base.incrementalSolving);
-  
+
   // collect Boolean variables
   collectBooleanVariables(assertionsToPreprocess);
 
