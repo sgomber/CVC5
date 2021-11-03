@@ -119,8 +119,7 @@ Node FunctionConst::getLambdaForArrayRepresentation(TNode a, TNode bvl)
         << "...got lambda body " << body << std::endl;
     return NodeManager::currentNM()->mkNode(kind::LAMBDA, bvl, body);
   }
-  Trace("builtin-rewrite-debug")
-      << "...failed to get lambda body" << std::endl;
+  Trace("builtin-rewrite-debug") << "...failed to get lambda body" << std::endl;
   return Node::null();
 }
 

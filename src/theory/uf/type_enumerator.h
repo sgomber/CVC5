@@ -28,9 +28,9 @@ namespace theory {
 namespace uf {
 
 /** FunctionEnumerator
-* This enumerates function values, based on the enumerator for the
-* array type corresponding to the given function type.
-*/
+ * This enumerates function values, based on the enumerator for the
+ * array type corresponding to the given function type.
+ */
 class FunctionEnumerator : public TypeEnumeratorBase<FunctionEnumerator>
 {
  public:
@@ -41,13 +41,14 @@ class FunctionEnumerator : public TypeEnumeratorBase<FunctionEnumerator>
   FunctionEnumerator& operator++() override;
   /** is the enumerator finished? */
   bool isFinished() override { return d_arrayEnum.isFinished(); }
+
  private:
   /** Enumerates arrays, which we convert to functions. */
   TypeEnumerator d_arrayEnum;
   /** The bound variable list for the function type we are enumerating.
-  * All terms output by this enumerator are of the form (LAMBDA d_bvl t) for
-  * some term t.
-  */
+   * All terms output by this enumerator are of the form (LAMBDA d_bvl t) for
+   * some term t.
+   */
   Node d_bvl;
 }; /* class FunctionEnumerator */
 

@@ -78,7 +78,8 @@ class LambdaTypeRule
   static bool computeIsConst(NodeManager* nodeManager, TNode n);
 }; /* class LambdaTypeRule */
 
-class FunctionProperties {
+class FunctionProperties
+{
  public:
   static Cardinality computeCardinality(TypeNode type);
 
@@ -90,7 +91,7 @@ class FunctionProperties {
    * its range.
    */
   static Node mkGroundTerm(TypeNode type);
-};/* class FuctionProperties */
+}; /* class FuctionProperties */
 
 }  // namespace uf
 }  // namespace theory

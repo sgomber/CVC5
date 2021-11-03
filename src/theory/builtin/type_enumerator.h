@@ -42,9 +42,7 @@ class UninterpretedSortEnumerator : public TypeEnumeratorBase<UninterpretedSortE
   UninterpretedSortEnumerator& operator++() override;
 
   bool isFinished() override;
-
 };
-
 
 }  // namespace builtin
 }  // namespace theory

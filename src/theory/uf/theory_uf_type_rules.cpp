@@ -228,7 +228,7 @@ bool LambdaTypeRule::computeIsConst(NodeManager* nodeManager, TNode n)
 }
 
 Cardinality FunctionProperties::computeCardinality(TypeNode type)
-{  
+{
   // Don't assert this; allow other theories to use this cardinality
   // computation.
   //
@@ -248,8 +248,7 @@ Cardinality FunctionProperties::computeCardinality(TypeNode type)
 
 bool FunctionProperties::isWellFounded(TypeNode type)
 {
-  for (TypeNode::iterator i = type.begin(), i_end = type.end(); i != i_end;
-        ++i)
+  for (TypeNode::iterator i = type.begin(), i_end = type.end(); i != i_end; ++i)
   {
     if (!(*i).isWellFounded())
     {
