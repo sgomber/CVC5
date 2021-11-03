@@ -15,8 +15,8 @@
 
 #include "cvc5_private.h"
 
-#ifndef __CVC5__THEORY__UF__HO_EXTENSION_H
-#define __CVC5__THEORY__UF__HO_EXTENSION_H
+#ifndef CVC5__THEORY__UF__HO_EXTENSION_H
+#define CVC5__THEORY__UF__HO_EXTENSION_H
 
 #include "context/cdhashmap.h"
 #include "context/cdhashset.h"
@@ -196,10 +196,10 @@ class HoExtension : protected EnvObj
 
   /** map from non-standard operators to their skolems */
   NodeNodeMap d_uf_std_skolem;
-}; /* class TheoryUF */
+};
 
 }  // namespace uf
 }  // namespace theory
 }  // namespace cvc5
 
-#endif /* __CVC5__THEORY__UF__HO_EXTENSION_H */
+#endif

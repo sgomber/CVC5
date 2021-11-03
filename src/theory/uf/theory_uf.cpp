@@ -32,6 +32,7 @@
 #include "theory/uf/cardinality_extension.h"
 #include "theory/uf/ho_extension.h"
 #include "theory/uf/theory_uf_rewriter.h"
+#include "expr/skolem_manager.h"
 
 using namespace std;
 
@@ -231,17 +232,40 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
   }
   else if (k == kind::APPLY_UF)
   {
-    // check for higher-order
-    // logic exception if higher-order is not enabled
-    if (isHigherOrderType(node.getOperator().getType())
-        && !logicInfo().isHigherOrder())
+    if (logicInfo().isHigherOrder())
     {
-      std::stringstream ss;
-      ss << "UF received an application whose operator has higher-order type "
-         << node
-         << ", which is only supported with higher-order logic. Try adding the "
-            "logic prefix HO_.";
-      throw LogicException(ss.str());
+      if (options().uf.ufHoLazyLambdaLift)
+      {
+        // if an application of the lambda lifted function, do beta reduction
+        // immediately
+        Node op = node.getOperator();
+        if (op.getKind()==kind::LAMBDA_VARIABLE)
+        {
+          Node opl = SkolemManager::getOriginalForm(op);
+          Assert (oop.getKind()==kind::LAMBDA);
+          std::vector<Node> betaRed;
+          betaRed.push_back(opl);
+          betaRed.insert(betaRed.end(), node.begin(), node.end());
+          Node app = nm->mkNode(kind::APPLY_UF, betaRed);
+          app = rewrite(app);
+          Trace("uf-lazy-ll") << "Beta reduce: " << node << " -> " << app << std::endl;
+          return TrustNode::mkTrustRewrite(node, app, nullptr);
+        }
+      }
+    }
+    else
+    {
+      // check for higher-order
+      // logic exception if higher-order is not enabled
+      if (isHigherOrderType(node.getOperator().getType()))
+      {
+        std::stringstream ss;
+        ss << "UF received an application whose operator has higher-order type "
+          << node
+          << ", which is only supported with higher-order logic. Try adding the "
+              "logic prefix HO_.";
+        throw LogicException(ss.str());
+      }
     }
   }
   return TrustNode::null();
