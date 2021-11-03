@@ -24,15 +24,22 @@ namespace cvc5 {
 namespace theory {
 namespace uf {
 
-LambdaLift::LambdaLift(Env& env) : EnvObj(env) {}
+LambdaLift::LambdaLift(Env& env) : EnvObj(env), d_processed(userContext()) {}
 
-void LambdaLift::process(Node node)
+TrustNode LambdaLift::process(Node node)
 {
+  if (d_processed.find(node)!=d_processed.end())
+  {
+    return TrustNode::null();
+  }
+  d_processed.insert(node);
   Node assertion = getAssertionFor(node);
   if (assertion.isNull())
   {
-    return;
+    return TrustNode::null();
   }
+  // TODO: proofs
+  return TrustNode::mkTrustLemma(assertion);
 }
 
 Node LambdaLift::getAssertionFor(TNode node)

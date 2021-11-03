@@ -19,6 +19,8 @@
 #define CVC5__THEORY__UF__LAMBDA_LIFT_H
 
 #include "expr/node.h"
+#include "context/cdhashset.h"
+#include "proof/trust_node.h"
 #include "smt/env_obj.h"
 
 namespace cvc5 {
@@ -29,17 +31,20 @@ namespace uf {
  */
 class LambdaLift : protected EnvObj
 {
+  typedef context::CDHashSet<Node> NodeSet;
  public:
   LambdaLift(Env& env);
 
-  /** process */
-  void process(Node node);
+  /** process, return the trust node corresponding to the lemma */
+  TrustNode process(Node node);
 
  private:
   /** Get assertion for */
   static Node getAssertionFor(TNode node);
   /** Get skolem for */
   static Node getSkolemFor(TNode node);
+  /** The nodes we have already returned trust nodes for */
+  NodeSet d_processed;
 };
 
 }  // namespace uf
