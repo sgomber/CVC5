@@ -37,8 +37,10 @@ class LambdaLift : protected EnvObj
   LambdaLift(Env& env);
 
   /** process, return the trust node corresponding to the lemma */
-  TrustNode process(Node node);
+  TrustNode lift(Node node);
 
+  /** process, return the trust node corresponding to the rewrite */
+  TrustNode ppRewrite(Node node);
  private:
   /** Get assertion for */
   static Node getAssertionFor(TNode node);

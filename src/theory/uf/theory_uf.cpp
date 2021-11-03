@@ -47,6 +47,7 @@ TheoryUF::TheoryUF(Env& env,
                    std::string instanceName)
     : Theory(THEORY_UF, env, out, valuation, instanceName),
       d_thss(nullptr),
+      d_lambdaLift(new LambdaLift(env)),
       d_ho(nullptr),
       d_functionsTerms(context()),
       d_symb(userContext(), instanceName),
@@ -266,6 +267,12 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
             "the logic prefix HO_.";
       throw LogicException(ss.str());
     }
+  }
+  else if (k == kind::LAMBDA)
+  {
+    Trace("uf-lazy-ll") << "Preprocess lambda: " << node << std::endl;
+    TrustNode skTrn = d_lambdaLift->ppRewrite(node);
+    return skTrn;
   }
   return TrustNode::null();
 }

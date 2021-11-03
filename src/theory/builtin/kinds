@@ -262,7 +262,8 @@ parameterized SORT_TYPE SORT_TAG 0: "specifies types of user-declared 'uninterpr
 cardinality SORT_TYPE "Cardinality(Cardinality::INTEGERS)"
 well-founded SORT_TYPE \
     "::cvc5::theory::builtin::SortProperties::isWellFounded(%TYPE%)" \
-    "::cvc5::theory::builtin::SortProperties::mkGroundTerm(%TYPE%)"
+    "::cvc5::theory::builtin::SortProperties::mkGroundTerm(%TYPE%)" \
+    "theory/builtin/theory_builtin_type_rules.h"
 
 constant UNINTERPRETED_CONSTANT \
     class \

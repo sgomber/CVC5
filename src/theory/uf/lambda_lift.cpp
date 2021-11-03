@@ -26,7 +26,7 @@ namespace uf {
 
 LambdaLift::LambdaLift(Env& env) : EnvObj(env), d_processed(userContext()) {}
 
-TrustNode LambdaLift::process(Node node)
+TrustNode LambdaLift::lift(Node node)
 {
   if (d_processed.find(node) != d_processed.end())
   {
@@ -40,6 +40,17 @@ TrustNode LambdaLift::process(Node node)
   }
   // TODO: proofs
   return TrustNode::mkTrustLemma(assertion);
+}
+
+TrustNode LambdaLift::ppRewrite(Node node)
+{
+  TNode skolem = getSkolemFor(node);
+  if (skolem.isNull())
+  {
+    return TrustNode::null();
+  }
+  // TODO: proofs
+  return TrustNode::mkTrustRewrite(node, skolem);
 }
 
 Node LambdaLift::getAssertionFor(TNode node)
