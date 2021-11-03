@@ -21,7 +21,7 @@ cardinality FUNCTION_TYPE \
     "theory/uf/theory_uf_type_rules.h"
 well-founded FUNCTION_TYPE \
     "::cvc5::theory::uf::FunctionProperties::isWellFounded(%TYPE%)" \
-    "::cvc5::uf::uf::FunctionProperties::mkGroundTerm(%TYPE%)" \
+    "::cvc5::theory::uf::FunctionProperties::mkGroundTerm(%TYPE%)" \
     "theory/uf/theory_uf_type_rules.h"
 enumerator FUNCTION_TYPE \
     ::cvc5::theory::uf::FunctionEnumerator \

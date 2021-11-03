@@ -15,6 +15,9 @@
 
 #include "theory/uf/function_const.h"
 
+#include "theory/rewriter.h"
+#include "expr/array_store_all.h"
+
 namespace cvc5 {
 namespace theory {
 namespace uf {

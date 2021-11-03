@@ -18,6 +18,7 @@
 #include "expr/node_algorithm.h"
 #include "theory/rewriter.h"
 #include "theory/substitutions.h"
+#include "theory/uf/function_const.h"
 
 namespace cvc5 {
 namespace theory {

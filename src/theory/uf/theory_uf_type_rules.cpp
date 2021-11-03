@@ -20,6 +20,8 @@
 
 #include "expr/cardinality_constraint.h"
 #include "util/rational.h"
+#include "util/cardinality.h"
+#include "theory/uf/function_const.h"
 
 namespace cvc5 {
 namespace theory {
@@ -184,7 +186,7 @@ bool LambdaTypeRule::computeIsConst(NodeManager* nodeManager, TNode n)
 {
   Assert(n.getKind() == kind::LAMBDA);
   // get array representation of this function, if possible
-  Node na = TheoryBuiltinRewriter::getArrayRepresentationForLambda(n);
+  Node na = FunctionConst::getArrayRepresentationForLambda(n);
   if (!na.isNull())
   {
     Assert(na.getType().isArray());

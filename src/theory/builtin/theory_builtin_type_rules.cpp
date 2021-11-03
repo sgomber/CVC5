@@ -18,7 +18,6 @@
 #include "expr/attribute.h"
 #include "expr/skolem_manager.h"
 #include "expr/uninterpreted_constant.h"
-#include "util/cardinality.h"
 
 namespace cvc5 {
 namespace theory {

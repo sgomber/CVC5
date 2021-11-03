@@ -26,7 +26,7 @@ namespace theory {
 namespace uf {
 
 /** Conversion between lambda and array constants */
-class FunctionConstUtil
+class FunctionConst
 {
  public:
   /** Get function type for array type
