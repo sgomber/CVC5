@@ -436,7 +436,7 @@ unsigned HoExtension::check()
     }
   } while (num_facts > 0);
 
-  for (size_t i=0; i<2; i++)
+  for (size_t i = 0; i < 2; i++)
   {
     unsigned num_lemmas = 0;
     // apply the schema
@@ -449,8 +449,7 @@ unsigned HoExtension::check()
     // finish if we added lemmas
     if (num_lemmas > 0)
     {
-      Trace("uf-ho") << "...returned " << num_lemmas << " lemmas."
-                    << std::endl;
+      Trace("uf-ho") << "...returned " << num_lemmas << " lemmas." << std::endl;
       return num_lemmas;
     }
   }
