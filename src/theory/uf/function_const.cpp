@@ -40,8 +40,9 @@ TypeNode FunctionConst::getArrayTypeForFunctionType(TypeNode ftn)
 {
   Assert(ftn.isFunction());
   // construct the curried array type
+  size_t nchildren = ftn.getNumChildren();
   TypeNode ret = ftn[nchildren - 1];
-  for (size_t i=0, nchildren = ftn.getNumChildren(); i<nchildren-1; i++)
+  for (size_t i=0; i<nchildren-1; i++)
   {
     size_t ii = nchildren-i-2;
     ret = NodeManager::currentNM()->mkArrayType(ftn[ii], ret);

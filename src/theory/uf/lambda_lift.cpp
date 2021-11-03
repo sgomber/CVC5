@@ -25,15 +25,15 @@ namespace cvc5 {
 namespace theory {
 namespace uf {
 
-LambdaLift::LambdaLift(Env& env) : EnvObj(env), d_processed(userContext()) {}
+LambdaLift::LambdaLift(Env& env) : EnvObj(env), d_lifted(userContext()) {}
 
 TrustNode LambdaLift::lift(Node node)
 {
-  if (d_processed.find(node) != d_processed.end())
+  if (d_lifted.find(node) != d_lifted.end())
   {
     return TrustNode::null();
   }
-  d_processed.insert(node);
+  d_lifted.insert(node);
   Node assertion = getAssertionFor(node);
   if (assertion.isNull())
   {
@@ -121,8 +121,7 @@ Node LambdaLift::getSkolemFor(TNode node)
       skolem = sm->mkPurifySkolem(
           node,
           "lambdaF",
-          "a function introduced due to term-level lambda removal",
-          SkolemManager::SKOLEM_LAMBDA_VAR);
+          "a function introduced due to term-level lambda removal");
     }
   }
   else if (k == WITNESS)

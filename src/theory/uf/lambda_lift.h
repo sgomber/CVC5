@@ -49,7 +49,7 @@ class LambdaLift : protected EnvObj
   /** Get skolem for */
   static Node getSkolemFor(TNode node);
   /** The nodes we have already returned trust nodes for */
-  NodeSet d_processed;
+  NodeSet d_lifted;
 };
 
 }  // namespace uf

@@ -236,6 +236,7 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
   {
     if (logicInfo().isHigherOrder())
     {
+      /*
       if (options().uf.ufHoLazyLambdaLift)
       {
         // if an application of the lambda lifted function, do beta reduction
@@ -256,6 +257,7 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
           return TrustNode::mkTrustRewrite(node, app, nullptr);
         }
       }
+      */
     }
     else if (isHigherOrderType(node.getOperator().getType()))
     {
