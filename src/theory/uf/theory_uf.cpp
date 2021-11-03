@@ -236,17 +236,15 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
   {
     if (logicInfo().isHigherOrder())
     {
-      /*
       if (options().uf.ufHoLazyLambdaLift)
       {
         // if an application of the lambda lifted function, do beta reduction
         // immediately
         Node op = node.getOperator();
-        if (op.getKind() == kind::LAMBDA_VARIABLE)
+        Node opl = d_lambdaLift->getLambdaFor(op);
+        if (!opl.isNull())
         {
           NodeManager* nm = NodeManager::currentNM();
-          Node opl = SkolemManager::getOriginalForm(op);
-          Assert(oop.getKind() == kind::LAMBDA);
           std::vector<Node> betaRed;
           betaRed.push_back(opl);
           betaRed.insert(betaRed.end(), node.begin(), node.end());
@@ -257,7 +255,6 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
           return TrustNode::mkTrustRewrite(node, app, nullptr);
         }
       }
-      */
     }
     else if (isHigherOrderType(node.getOperator().getType()))
     {

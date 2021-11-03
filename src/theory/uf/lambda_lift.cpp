@@ -25,7 +25,7 @@ namespace cvc5 {
 namespace theory {
 namespace uf {
 
-LambdaLift::LambdaLift(Env& env) : EnvObj(env), d_lifted(userContext()) {}
+LambdaLift::LambdaLift(Env& env) : EnvObj(env), d_lifted(userContext()), d_lambdaMap(userContext()) {}
 
 TrustNode LambdaLift::lift(Node node)
 {
@@ -50,6 +50,7 @@ TrustNode LambdaLift::ppRewrite(Node node, std::vector<SkolemLemma>& lems)
   {
     return TrustNode::null();
   }
+  d_lambdaMap[skolem] = node;
   if (!options().uf.ufHoLazyLambdaLift)
   {
     TrustNode trn = lift(node);
@@ -57,6 +58,16 @@ TrustNode LambdaLift::ppRewrite(Node node, std::vector<SkolemLemma>& lems)
   }
   // TODO: proofs
   return TrustNode::mkTrustRewrite(node, skolem);
+}
+
+Node LambdaLift::getLambdaFor(TNode skolem) const
+{
+  NodeNodeMap::const_iterator it = d_lambdaMap.find(skolem);
+  if (it==d_lambdaMap.end())
+  {
+    return Node::null();
+  }
+  return it->second;
 }
 
 Node LambdaLift::getAssertionFor(TNode node)

@@ -19,6 +19,7 @@
 #define CVC5__THEORY__UF__LAMBDA_LIFT_H
 
 #include "context/cdhashset.h"
+#include "context/cdhashmap.h"
 #include "expr/node.h"
 #include "proof/trust_node.h"
 #include "smt/env_obj.h"
@@ -33,6 +34,7 @@ namespace uf {
 class LambdaLift : protected EnvObj
 {
   typedef context::CDHashSet<Node> NodeSet;
+  typedef context::CDHashMap<Node, Node> NodeNodeMap;
 
  public:
   LambdaLift(Env& env);
@@ -43,6 +45,8 @@ class LambdaLift : protected EnvObj
   /** process, return the trust node corresponding to the rewrite */
   TrustNode ppRewrite(Node node, std::vector<SkolemLemma>& lems);
 
+  /** Get lambda for */
+  Node getLambdaFor(TNode skolem) const;
  private:
   /** Get assertion for */
   static Node getAssertionFor(TNode node);
@@ -50,6 +54,8 @@ class LambdaLift : protected EnvObj
   static Node getSkolemFor(TNode node);
   /** The nodes we have already returned trust nodes for */
   NodeSet d_lifted;
+  /** Mapping skolems to their lambda */
+  NodeNodeMap d_lambdaMap;
 };
 
 }  // namespace uf
