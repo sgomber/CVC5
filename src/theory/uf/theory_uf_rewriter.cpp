@@ -143,7 +143,7 @@ RewriteResponse TheoryUfRewriter::postRewrite(TNode node)
   else if (node.getKind() == kind::LAMBDA)
   {
     Node ret = rewriteLambda(node);
-    return RewriteResponse(REWRITE_DONE, node);
+    return RewriteResponse(REWRITE_DONE, ret);
   }
   return RewriteResponse(REWRITE_DONE, node);
 }
