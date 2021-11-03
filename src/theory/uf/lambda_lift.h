@@ -41,6 +41,7 @@ class LambdaLift : protected EnvObj
 
   /** process, return the trust node corresponding to the rewrite */
   TrustNode ppRewrite(Node node);
+
  private:
   /** Get assertion for */
   static Node getAssertionFor(TNode node);

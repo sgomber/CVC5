@@ -19,9 +19,9 @@
 #include <sstream>
 
 #include "expr/cardinality_constraint.h"
-#include "util/rational.h"
-#include "util/cardinality.h"
 #include "theory/uf/function_const.h"
+#include "util/cardinality.h"
+#include "util/rational.h"
 
 namespace cvc5 {
 namespace theory {
