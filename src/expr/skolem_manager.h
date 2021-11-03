@@ -349,9 +349,9 @@ class SkolemManager
   size_t d_skolemCounter;
   /** Get or make skolem attribute for term w, which may be a witness term */
   Node mkSkolemInternal(Node w,
-                               const std::string& prefix,
-                               const std::string& comment,
-                               int flags);
+                        const std::string& prefix,
+                        const std::string& comment,
+                        int flags);
   /**
    * Skolemize the first variable of existentially quantified formula q.
    * For example, calling this method on:
@@ -378,9 +378,9 @@ class SkolemManager
    * proper way, or otherwise use SkolemManager::mkDummySkolem.
    */
   Node mkSkolemNode(const std::string& prefix,
-                const TypeNode& type,
-                const std::string& comment = "",
-                int flags = SKOLEM_DEFAULT);
+                    const TypeNode& type,
+                    const std::string& comment = "",
+                    int flags = SKOLEM_DEFAULT);
 };
 
 }  // namespace cvc5
