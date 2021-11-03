@@ -424,6 +424,8 @@ unsigned HoExtension::checkLazyLambdaLifting()
     return 0;
   }
   d_lambdaReps.clear();
+  eq::EqualityEngine* ee = d_state.getEqualityEngine();
+  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
   while (!eqcs_i.isFinished())
   {
     Node eqc = (*eqcs_i);

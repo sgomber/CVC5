@@ -103,7 +103,7 @@ void TheoryUF::finishInit() {
   if (isHo)
   {
     d_equalityEngine->addFunctionKind(kind::HO_APPLY);
-    d_ho.reset(new HoExtension(d_env, d_state, d_im));
+    d_ho.reset(new HoExtension(d_env, d_state, d_im, *d_lambdaLift.get()));
   }
 }
 
