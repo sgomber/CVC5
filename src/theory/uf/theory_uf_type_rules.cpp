@@ -227,6 +227,46 @@ bool LambdaTypeRule::computeIsConst(NodeManager* nodeManager, TNode n)
   return false;
 }
 
+Cardinality FunctionProperties::computeCardinality(TypeNode type)
+{  
+  // Don't assert this; allow other theories to use this cardinality
+  // computation.
+  //
+  // Assert(type.getKind() == kind::FUNCTION_TYPE);
+
+  Cardinality argsCard(1);
+  // get the largest cardinality of function arguments/return type
+  for (size_t i = 0, i_end = type.getNumChildren() - 1; i < i_end; ++i)
+  {
+    argsCard *= type[i].getCardinality();
+  }
+
+  Cardinality valueCard = type[type.getNumChildren() - 1].getCardinality();
+
+  return valueCard ^ argsCard;
+}
+
+bool FunctionProperties::isWellFounded(TypeNode type)
+{
+  for (TypeNode::iterator i = type.begin(), i_end = type.end(); i != i_end;
+        ++i)
+  {
+    if (!(*i).isWellFounded())
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+Node FunctionProperties::mkGroundTerm(TypeNode type)
+{
+  NodeManager* nm = NodeManager::currentNM();
+  Node bvl = nm->getBoundVarListForFunctionType(type);
+  Node ret = type.getRangeType().mkGroundTerm();
+  return nm->mkNode(kind::LAMBDA, bvl, ret);
+}
+
 }  // namespace uf
 }  // namespace theory
 }  // namespace cvc5

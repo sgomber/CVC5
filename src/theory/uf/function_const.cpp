@@ -119,12 +119,9 @@ Node FunctionConst::getLambdaForArrayRepresentation(TNode a, TNode bvl)
         << "...got lambda body " << body << std::endl;
     return NodeManager::currentNM()->mkNode(kind::LAMBDA, bvl, body);
   }
-  else
-  {
-    Trace("builtin-rewrite-debug")
-        << "...failed to get lambda body" << std::endl;
-    return Node::null();
-  }
+  Trace("builtin-rewrite-debug")
+      << "...failed to get lambda body" << std::endl;
+  return Node::null();
 }
 
 Node FunctionConst::getArrayRepresentationForLambdaRec(TNode n,
@@ -389,13 +386,10 @@ Node FunctionConst::getArrayRepresentationForLambdaRec(TNode n,
         << "...got array " << curr << " for " << n << std::endl;
     return curr;
   }
-  else
-  {
-    Trace("builtin-rewrite-debug")
-        << "...failed to get array (cannot get constant default value)"
-        << std::endl;
-    return Node::null();
-  }
+  Trace("builtin-rewrite-debug")
+      << "...failed to get array (cannot get constant default value)"
+      << std::endl;
+  return Node::null();
 }
 
 Node FunctionConst::getArrayRepresentationForLambda(TNode n)

@@ -309,17 +309,6 @@ constant TYPE_CONSTANT \
     ::cvc5::TypeConstantHashFunction \
     "expr/kind.h" \
     "a representation for basic types"
-operator FUNCTION_TYPE 2: "a function type"
-cardinality FUNCTION_TYPE \
-    "::cvc5::theory::builtin::FunctionProperties::computeCardinality(%TYPE%)" \
-    "theory/builtin/theory_builtin_type_rules.h"
-well-founded FUNCTION_TYPE \
-    "::cvc5::theory::builtin::FunctionProperties::isWellFounded(%TYPE%)" \
-    "::cvc5::theory::builtin::FunctionProperties::mkGroundTerm(%TYPE%)" \
-    "theory/builtin/theory_builtin_type_rules.h"
-enumerator FUNCTION_TYPE \
-    ::cvc5::theory::builtin::FunctionEnumerator \
-    "theory/builtin/type_enumerator.h"
 sort SEXPR_TYPE \
     Cardinality::INTEGERS \
     not-well-founded \

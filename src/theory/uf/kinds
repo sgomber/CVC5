@@ -15,13 +15,25 @@ parameterized APPLY_UF VARIABLE 1: "application of an uninterpreted function; fi
 
 typerule APPLY_UF ::cvc5::theory::uf::UfTypeRule
 
-variable BOOLEAN_TERM_VARIABLE "Boolean term variable"
-
-variable LAMBDA_VARIABLE "Lambda variable, used for lazy lambda lifting"
+operator FUNCTION_TYPE 2: "a function type"
+cardinality FUNCTION_TYPE \
+    "::cvc5::theory::uf::FunctionProperties::computeCardinality(%TYPE%)" \
+    "theory/uf/theory_uf_type_rules.h"
+well-founded FUNCTION_TYPE \
+    "::cvc5::theory::uf::FunctionProperties::isWellFounded(%TYPE%)" \
+    "::cvc5::uf::uf::FunctionProperties::mkGroundTerm(%TYPE%)" \
+    "theory/uf/theory_uf_type_rules.h"
+enumerator FUNCTION_TYPE \
+    ::cvc5::theory::uf::FunctionEnumerator \
+    "theory/uf/type_enumerator.h"
 
 operator LAMBDA 2 "a lambda expression; first parameter is a BOUND_VAR_LIST, second is lambda body"
 
 typerule LAMBDA ::cvc5::theory::uf::LambdaTypeRule
+
+variable BOOLEAN_TERM_VARIABLE "Boolean term variable"
+
+variable LAMBDA_VARIABLE "Lambda variable, used for lazy lambda lifting"
 
 # lambda expressions that are isomorphic to array constants can be considered constants
 construle LAMBDA ::cvc5::theory::uf::LambdaTypeRule

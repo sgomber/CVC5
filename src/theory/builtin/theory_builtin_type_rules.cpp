@@ -56,25 +56,6 @@ Node SortProperties::mkGroundTerm(TypeNode type)
   return k;
 }
 
-Cardinality FunctionProperties::computeCardinality(TypeNode type)
-{
-  // Don't assert this; allow other theories to use this cardinality
-  // computation.
-  //
-  // Assert(type.getKind() == kind::FUNCTION_TYPE);
-
-  Cardinality argsCard(1);
-  // get the largest cardinality of function arguments/return type
-  for (size_t i = 0, i_end = type.getNumChildren() - 1; i < i_end; ++i)
-  {
-    argsCard *= type[i].getCardinality();
-  }
-
-  Cardinality valueCard = type[type.getNumChildren() - 1].getCardinality();
-
-  return valueCard ^ argsCard;
-}
-
 }  // namespace builtin
 }  // namespace theory
 }  // namespace cvc5
