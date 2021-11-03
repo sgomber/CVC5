@@ -42,9 +42,9 @@ TypeNode FunctionConst::getArrayTypeForFunctionType(TypeNode ftn)
   // construct the curried array type
   size_t nchildren = ftn.getNumChildren();
   TypeNode ret = ftn[nchildren - 1];
-  for (size_t i=0; i<nchildren-1; i++)
+  for (size_t i = 0; i < nchildren - 1; i++)
   {
-    size_t ii = nchildren-i-2;
+    size_t ii = nchildren - i - 2;
     ret = NodeManager::currentNM()->mkArrayType(ftn[ii], ret);
   }
   return ret;
@@ -94,8 +94,7 @@ Node FunctionConst::getLambdaForArrayRepresentationRec(
       Node sa = storeAll.getValue();
       // convert the default value recursively (bounded by the number of
       // arguments in bvl)
-      ret =
-          getLambdaForArrayRepresentationRec(sa, bvl, bvlIndex + 1, visited);
+      ret = getLambdaForArrayRepresentationRec(sa, bvl, bvlIndex + 1, visited);
     }
   }
   else
