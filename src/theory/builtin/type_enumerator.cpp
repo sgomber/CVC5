@@ -22,7 +22,7 @@ namespace theory {
 namespace builtin {
 
 UninterpretedSortEnumerator::UninterpretedSortEnumerator(
-    TypeNode type, TypeEnumeratorProperties* tep = nullptr)
+    TypeNode type, TypeEnumeratorProperties* tep)
     : TypeEnumeratorBase<UninterpretedSortEnumerator>(type), d_count(0)
 {
   Assert(type.getKind() == kind::SORT_TYPE);
