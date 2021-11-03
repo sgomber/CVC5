@@ -72,8 +72,6 @@ class NodeManagerListener {
   {
   }
   virtual void nmNotifyNewVar(TNode n) {}
-  virtual void nmNotifyNewSkolem(TNode n, const std::string& comment,
-                                 uint32_t flags) {}
   /**
    * Notify a listener of a Node that's being GCed.  If this function stores a
    * reference

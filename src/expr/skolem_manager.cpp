@@ -210,7 +210,7 @@ Node SkolemManager::mkSkolemFunction(SkolemFunId id,
     NodeManager* nm = NodeManager::currentNM();
     std::stringstream ss;
     ss << "SKOLEM_FUN_" << id;
-    Node k = nm->mkSkolem(ss.str(), tn, "an internal skolem function", flags);
+    Node k = mkSkolemNode(ss.str(), tn, "an internal skolem function", flags);
     d_skolemFuns[key] = k;
     d_skolemFunMap[k] = key;
     return k;
