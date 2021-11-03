@@ -34,6 +34,7 @@ class LambdaLift : protected EnvObj
 
   /** process */
   void process(Node node);
+
  private:
   /** Get assertion for */
   static Node getAssertionFor(TNode node);

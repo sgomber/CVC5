@@ -261,8 +261,8 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
       // logic exception if higher-order is not enabled
       std::stringstream ss;
       ss << "UF received an application whose operator has higher-order type "
-          << node
-          << ", which is only supported with higher-order logic. Try adding "
+         << node
+         << ", which is only supported with higher-order logic. Try adding "
             "the logic prefix HO_.";
       throw LogicException(ss.str());
     }

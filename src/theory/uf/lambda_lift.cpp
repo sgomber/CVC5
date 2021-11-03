@@ -15,8 +15,8 @@
 
 #include "theory/uf/lambda_lift.h"
 
-#include "expr/skolem_manager.h"
 #include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
 
 using namespace cvc5::kind;
 
@@ -25,7 +25,6 @@ namespace theory {
 namespace uf {
 
 LambdaLift::LambdaLift(Env& env) : EnvObj(env) {}
-
 
 void LambdaLift::process(Node node)
 {
@@ -47,7 +46,7 @@ Node LambdaLift::getAssertionFor(TNode node)
   Node assertion;
   if (k == LAMBDA)
   {
-          NodeManager * nm = NodeManager::currentNM();
+    NodeManager* nm = NodeManager::currentNM();
     // The new assertion
     std::vector<Node> children;
     // bound variable list
@@ -81,7 +80,6 @@ Node LambdaLift::getAssertionFor(TNode node)
   return assertion;
 }
 
-
 Node LambdaLift::getSkolemFor(TNode node)
 {
   Node skolem;
@@ -94,7 +92,7 @@ Node LambdaLift::getSkolemFor(TNode node)
       Trace("rtf-proof-debug")
           << "RemoveTermFormulas::run: make LAMBDA skolem" << std::endl;
       // Make the skolem to represent the lambda
-          NodeManager * nm = NodeManager::currentNM();
+      NodeManager* nm = NodeManager::currentNM();
       SkolemManager* sm = nm->getSkolemManager();
       skolem = sm->mkPurifySkolem(
           node,
@@ -102,21 +100,21 @@ Node LambdaLift::getSkolemFor(TNode node)
           "a function introduced due to term-level lambda removal");
     }
   }
-  else if (k== WITNESS)
+  else if (k == WITNESS)
   {
     // If a witness choice
     //   For details on this operator, see
     //   http://planetmath.org/hilbertsvarepsilonoperator.
     if (!expr::hasFreeVar(node))
     {
-        // Make the skolem to witness the choice, which notice is handled
-        // as a special case within SkolemManager::mkPurifySkolem.
-          NodeManager * nm = NodeManager::currentNM();
-        SkolemManager* sm = nm->getSkolemManager();
-        skolem = sm->mkPurifySkolem(
-            node,
-            "witnessK",
-            "a skolem introduced due to term-level witness removal");
+      // Make the skolem to witness the choice, which notice is handled
+      // as a special case within SkolemManager::mkPurifySkolem.
+      NodeManager* nm = NodeManager::currentNM();
+      SkolemManager* sm = nm->getSkolemManager();
+      skolem = sm->mkPurifySkolem(
+          node,
+          "witnessK",
+          "a skolem introduced due to term-level witness removal");
     }
   }
   return skolem;
