@@ -40,11 +40,11 @@ TypeNode FunctionConst::getArrayTypeForFunctionType(TypeNode ftn)
 {
   Assert(ftn.isFunction());
   // construct the curried array type
-  unsigned nchildren = ftn.getNumChildren();
   TypeNode ret = ftn[nchildren - 1];
-  for (int i = (static_cast<int>(nchildren) - 2); i >= 0; i--)
+  for (size_t i=0, nchildren = ftn.getNumChildren(); i<nchildren-1; i++)
   {
-    ret = NodeManager::currentNM()->mkArrayType(ftn[i], ret);
+    size_t ii = nchildren-i-2;
+    ret = NodeManager::currentNM()->mkArrayType(ftn[ii], ret);
   }
   return ret;
 }
@@ -56,56 +56,53 @@ Node FunctionConst::getLambdaForArrayRepresentationRec(
     std::unordered_map<TNode, Node>& visited)
 {
   std::unordered_map<TNode, Node>::iterator it = visited.find(a);
-  if (it == visited.end())
-  {
-    Node ret;
-    if (bvlIndex < bvl.getNumChildren())
-    {
-      Assert(a.getType().isArray());
-      if (a.getKind() == kind::STORE)
-      {
-        // convert the array recursively
-        Node body =
-            getLambdaForArrayRepresentationRec(a[0], bvl, bvlIndex, visited);
-        if (!body.isNull())
-        {
-          // convert the value recursively (bounded by the number of arguments
-          // in bvl)
-          Node val = getLambdaForArrayRepresentationRec(
-              a[2], bvl, bvlIndex + 1, visited);
-          if (!val.isNull())
-          {
-            Assert(!TypeNode::leastCommonTypeNode(a[1].getType(),
-                                                  bvl[bvlIndex].getType())
-                        .isNull());
-            Assert(!TypeNode::leastCommonTypeNode(val.getType(), body.getType())
-                        .isNull());
-            Node cond = bvl[bvlIndex].eqNode(a[1]);
-            ret = NodeManager::currentNM()->mkNode(kind::ITE, cond, val, body);
-          }
-        }
-      }
-      else if (a.getKind() == kind::STORE_ALL)
-      {
-        ArrayStoreAll storeAll = a.getConst<ArrayStoreAll>();
-        Node sa = storeAll.getValue();
-        // convert the default value recursively (bounded by the number of
-        // arguments in bvl)
-        ret =
-            getLambdaForArrayRepresentationRec(sa, bvl, bvlIndex + 1, visited);
-      }
-    }
-    else
-    {
-      ret = a;
-    }
-    visited[a] = ret;
-    return ret;
-  }
-  else
+  if (it != visited.end())
   {
     return it->second;
   }
+  Node ret;
+  if (bvlIndex < bvl.getNumChildren())
+  {
+    Assert(a.getType().isArray());
+    if (a.getKind() == kind::STORE)
+    {
+      // convert the array recursively
+      Node body =
+          getLambdaForArrayRepresentationRec(a[0], bvl, bvlIndex, visited);
+      if (!body.isNull())
+      {
+        // convert the value recursively (bounded by the number of arguments
+        // in bvl)
+        Node val = getLambdaForArrayRepresentationRec(
+            a[2], bvl, bvlIndex + 1, visited);
+        if (!val.isNull())
+        {
+          Assert(!TypeNode::leastCommonTypeNode(a[1].getType(),
+                                                bvl[bvlIndex].getType())
+                      .isNull());
+          Assert(!TypeNode::leastCommonTypeNode(val.getType(), body.getType())
+                      .isNull());
+          Node cond = bvl[bvlIndex].eqNode(a[1]);
+          ret = NodeManager::currentNM()->mkNode(kind::ITE, cond, val, body);
+        }
+      }
+    }
+    else if (a.getKind() == kind::STORE_ALL)
+    {
+      ArrayStoreAll storeAll = a.getConst<ArrayStoreAll>();
+      Node sa = storeAll.getValue();
+      // convert the default value recursively (bounded by the number of
+      // arguments in bvl)
+      ret =
+          getLambdaForArrayRepresentationRec(sa, bvl, bvlIndex + 1, visited);
+    }
+  }
+  else
+  {
+    ret = a;
+  }
+  visited[a] = ret;
+  return ret;
 }
 
 Node FunctionConst::getLambdaForArrayRepresentation(TNode a, TNode bvl)

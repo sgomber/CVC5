@@ -269,12 +269,14 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
       throw LogicException(ss.str());
     }
   }
+  /*
   else if (k == kind::LAMBDA)
   {
     Trace("uf-lazy-ll") << "Preprocess lambda: " << node << std::endl;
     TrustNode skTrn = d_lambdaLift->ppRewrite(node, lems);
     return skTrn;
   }
+  */
   return TrustNode::null();
 }
 
