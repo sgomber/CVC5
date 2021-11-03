@@ -16,6 +16,7 @@
 #include "theory/uf/lambda_lift.h"
 
 #include "expr/skolem_manager.h"
+#include "expr/node_algorithm.h"
 
 using namespace cvc5::kind;
 
@@ -24,6 +25,102 @@ namespace theory {
 namespace uf {
 
 LambdaLift::LambdaLift(Env& env) : EnvObj(env) {}
+
+
+void LambdaLift::process(Node node)
+{
+  Node assertion = getAssertionFor(node);
+  if (assertion.isNull())
+  {
+    return;
+  }
+}
+
+Node LambdaLift::getAssertionFor(TNode node)
+{
+  TNode skolem = getSkolemFor(node);
+  if (skolem.isNull())
+  {
+    return Node::null();
+  }
+  Kind k = node.getKind();
+  Node assertion;
+  if (k == LAMBDA)
+  {
+          NodeManager * nm = NodeManager::currentNM();
+    // The new assertion
+    std::vector<Node> children;
+    // bound variable list
+    children.push_back(node[0]);
+    // body
+    std::vector<Node> skolem_app_c;
+    skolem_app_c.push_back(skolem);
+    skolem_app_c.insert(skolem_app_c.end(), node[0].begin(), node[0].end());
+    Node skolem_app = nm->mkNode(APPLY_UF, skolem_app_c);
+    children.push_back(skolem_app.eqNode(node[1]));
+    // axiom defining skolem
+    assertion = nm->mkNode(FORALL, children);
+
+    // Lambda lifting is trivial to justify, hence we don't set a proof
+    // generator here. In particular, replacing the skolem introduced
+    // here with its original lambda ensures the new assertion rewrites
+    // to true.
+    // For example, if (lambda y. t[y]) has skolem k, then this lemma is:
+    //   forall x. k(x)=t[x]
+    // whose witness form rewrites
+    //   forall x. (lambda y. t[y])(x)=t[x] --> forall x. t[x]=t[x] --> true
+  }
+  else if (k == WITNESS)
+  {
+    Assert(node[0].getNumChildren() == 1);
+
+    // The new assertion is the assumption that the body
+    // of the witness operator holds for the Skolem
+    assertion = node[1].substitute(node[0][0], skolem);
+  }
+  return assertion;
+}
+
+
+Node LambdaLift::getSkolemFor(TNode node)
+{
+  Node skolem;
+  Kind k = node.getKind();
+  if (k == LAMBDA)
+  {
+    // if a lambda, do lambda-lifting
+    if (!expr::hasFreeVar(node))
+    {
+      Trace("rtf-proof-debug")
+          << "RemoveTermFormulas::run: make LAMBDA skolem" << std::endl;
+      // Make the skolem to represent the lambda
+          NodeManager * nm = NodeManager::currentNM();
+      SkolemManager* sm = nm->getSkolemManager();
+      skolem = sm->mkPurifySkolem(
+          node,
+          "lambdaF",
+          "a function introduced due to term-level lambda removal");
+    }
+  }
+  else if (k== WITNESS)
+  {
+    // If a witness choice
+    //   For details on this operator, see
+    //   http://planetmath.org/hilbertsvarepsilonoperator.
+    if (!expr::hasFreeVar(node))
+    {
+        // Make the skolem to witness the choice, which notice is handled
+        // as a special case within SkolemManager::mkPurifySkolem.
+          NodeManager * nm = NodeManager::currentNM();
+        SkolemManager* sm = nm->getSkolemManager();
+        skolem = sm->mkPurifySkolem(
+            node,
+            "witnessK",
+            "a skolem introduced due to term-level witness removal");
+    }
+  }
+  return skolem;
+}
 
 }  // namespace uf
 }  // namespace theory

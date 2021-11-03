@@ -18,9 +18,6 @@
 #ifndef CVC5__THEORY__UF__LAMBDA_LIFT_H
 #define CVC5__THEORY__UF__LAMBDA_LIFT_H
 
-#include "context/cdhashmap.h"
-#include "context/cdhashset.h"
-#include "context/cdo.h"
 #include "expr/node.h"
 #include "smt/env_obj.h"
 
@@ -32,13 +29,16 @@ namespace uf {
  */
 class LambdaLift : protected EnvObj
 {
-  typedef context::CDHashSet<Node> NodeSet;
-  typedef context::CDHashMap<Node, Node> NodeNodeMap;
-
  public:
   LambdaLift(Env& env);
 
+  /** process */
+  void process(Node node);
  private:
+  /** Get assertion for */
+  static Node getAssertionFor(TNode node);
+  /** Get skolem for */
+  static Node getSkolemFor(TNode node);
 };
 
 }  // namespace uf
