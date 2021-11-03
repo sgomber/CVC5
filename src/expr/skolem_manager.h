@@ -348,7 +348,7 @@ class SkolemManager
    */
   size_t d_skolemCounter;
   /** Get or make skolem attribute for term w, which may be a witness term */
-  static Node mkSkolemInternal(Node w,
+  Node mkSkolemInternal(Node w,
                                const std::string& prefix,
                                const std::string& comment,
                                int flags);
@@ -371,14 +371,13 @@ class SkolemManager
                  const std::string& comment = "",
                  int flags = SKOLEM_DEFAULT);
   /**
-   * Create a skolem constant with the given name, type, and comment. For
-   * details, see SkolemManager::mkDummySkolem, which calls this method.
+   * Create a skolem constant with the given name, type, and comment.
    *
    * This method is intentionally private. To create skolems, one should
-   * call a method from SkolemManager for allocating a skolem in a standard
-   * way, or otherwise use SkolemManager::mkDummySkolem.
+   * call a public method from SkolemManager for allocating a skolem in a
+   * proper way, or otherwise use SkolemManager::mkDummySkolem.
    */
-  Node mkSkolem(const std::string& prefix,
+  Node mkSkolemNode(const std::string& prefix,
                 const TypeNode& type,
                 const std::string& comment = "",
                 int flags = SKOLEM_DEFAULT);

@@ -20,6 +20,7 @@
 #include "expr/attribute.h"
 #include "expr/bound_var_manager.h"
 #include "expr/node_algorithm.h"
+#include "expr/node_manager_attributes.h"
 
 using namespace cvc5::kind;
 
@@ -207,7 +208,6 @@ Node SkolemManager::mkSkolemFunction(SkolemFunId id,
       d_skolemFuns.find(key);
   if (it == d_skolemFuns.end())
   {
-    NodeManager* nm = NodeManager::currentNM();
     std::stringstream ss;
     ss << "SKOLEM_FUN_" << id;
     Node k = mkSkolemNode(ss.str(), tn, "an internal skolem function", flags);
@@ -248,7 +248,7 @@ Node SkolemManager::mkDummySkolem(const std::string& prefix,
                                   const std::string& comment,
                                   int flags)
 {
-  return NodeManager::currentNM()->mkSkolem(prefix, type, comment, flags);
+  return mkSkolemNode(prefix, type, comment, flags);
 }
 
 ProofGenerator* SkolemManager::getProofGenerator(Node t) const
@@ -351,7 +351,6 @@ Node SkolemManager::mkSkolemInternal(Node w,
                                      int flags)
 {
   // note that witness, original forms are independent, but share skolems
-  NodeManager* nm = NodeManager::currentNM();
   // w is not necessarily a witness term
   SkolemFormAttribute sfa;
   // could already have a skolem if we used w already
@@ -373,15 +372,16 @@ Node SkolemManager::mkSkolemNode(const std::string& prefix,
                                  const std::string& comment,
                                  int flags)
 {
+  NodeManager* nm = NodeManager::currentNM();
   Node n;
-  if (flags & NodeManager::SKOLEM_BOOL_TERM_VAR)
+  if (flags & SKOLEM_BOOL_TERM_VAR)
   {
     Assert(type.isBoolean());
-    n = NodeBuilder(this, kind::BOOLEAN_TERM_VARIABLE);
+    n = NodeBuilder(nm, BOOLEAN_TERM_VARIABLE);
   }
   else
   {
-    n = NodeBuilder(this, kind::SKOLEM);
+    n = NodeBuilder(nm, SKOLEM);
     if ((flags & SKOLEM_EXACT_NAME) == 0)
     {
       std::stringstream name;
@@ -393,8 +393,8 @@ Node SkolemManager::mkSkolemNode(const std::string& prefix,
       n.setAttribute(expr::VarNameAttr(), prefix);
     }
   }
-  n.setAttribute(TypeAttr(), type);
-  n.setAttribute(TypeCheckedAttr(), true);
+  n.setAttribute(expr::TypeAttr(), type);
+  n.setAttribute(expr::TypeCheckedAttr(), true);
   return n;
 }
 
