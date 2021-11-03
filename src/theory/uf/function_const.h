@@ -90,7 +90,8 @@ class FunctionConstUtil
    * to n, this method returns null.
    */
   static Node getArrayRepresentationForLambda(TNode n);
-private:
+
+ private:
   /** recursive helper for getLambdaForArrayRepresentation */
   static Node getLambdaForArrayRepresentationRec(
       TNode a,
