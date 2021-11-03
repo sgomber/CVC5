@@ -50,9 +50,7 @@ Node FpExpandDefs::minUF(Node node)
     args[0] = t;
     args[1] = t;
     fun = sm->mkDummySkolem("floatingpoint_min_zero_case",
-                            nm->mkFunctionType(args,
-                                               nm->mkBitVectorType(1U)
-                                                   ),
+                            nm->mkFunctionType(args, nm->mkBitVectorType(1U)),
                             "floatingpoint_min_zero_case");
     d_minMap.insert(t, fun);
   }
@@ -83,9 +81,7 @@ Node FpExpandDefs::maxUF(Node node)
     args[0] = t;
     args[1] = t;
     fun = sm->mkDummySkolem("floatingpoint_max_zero_case",
-                            nm->mkFunctionType(args,
-                                               nm->mkBitVectorType(1U)
-                                                   ),
+                            nm->mkFunctionType(args, nm->mkBitVectorType(1U)),
                             "floatingpoint_max_zero_case");
     d_maxMap.insert(t, fun);
   }
