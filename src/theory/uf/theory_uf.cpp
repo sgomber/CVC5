@@ -241,6 +241,7 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
         Node op = node.getOperator();
         if (op.getKind() == kind::LAMBDA_VARIABLE)
         {
+          NodeManager* nm = NodeManager::currentNM();
           Node opl = SkolemManager::getOriginalForm(op);
           Assert(oop.getKind() == kind::LAMBDA);
           std::vector<Node> betaRed;
@@ -254,20 +255,16 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
         }
       }
     }
-    else
+    else if (isHigherOrderType(node.getOperator().getType()))
     {
       // check for higher-order
       // logic exception if higher-order is not enabled
-      if (isHigherOrderType(node.getOperator().getType()))
-      {
-        std::stringstream ss;
-        ss << "UF received an application whose operator has higher-order type "
-           << node
-           << ", which is only supported with higher-order logic. Try adding "
-              "the "
-              "logic prefix HO_.";
-        throw LogicException(ss.str());
-      }
+      std::stringstream ss;
+      ss << "UF received an application whose operator has higher-order type "
+          << node
+          << ", which is only supported with higher-order logic. Try adding "
+            "the logic prefix HO_.";
+      throw LogicException(ss.str());
     }
   }
   return TrustNode::null();
