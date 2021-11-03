@@ -17,6 +17,7 @@
 
 #include "expr/node_algorithm.h"
 #include "expr/skolem_manager.h"
+#include "options/uf_options.h"
 
 using namespace cvc5::kind;
 
@@ -42,12 +43,17 @@ TrustNode LambdaLift::lift(Node node)
   return TrustNode::mkTrustLemma(assertion);
 }
 
-TrustNode LambdaLift::ppRewrite(Node node)
+TrustNode LambdaLift::ppRewrite(Node node, std::vector<SkolemLemma>& lems)
 {
   TNode skolem = getSkolemFor(node);
   if (skolem.isNull())
   {
     return TrustNode::null();
+  }
+  if (!options().uf.ufHoLazyLambdaLift)
+  {
+    TrustNode trn = lift(node);
+    lems.push_back(SkolemLemma(trn, skolem));
   }
   // TODO: proofs
   return TrustNode::mkTrustRewrite(node, skolem);
@@ -115,7 +121,8 @@ Node LambdaLift::getSkolemFor(TNode node)
       skolem = sm->mkPurifySkolem(
           node,
           "lambdaF",
-          "a function introduced due to term-level lambda removal");
+          "a function introduced due to term-level lambda removal",
+          SkolemManager::SKOLEM_LAMBDA_VAR);
     }
   }
   else if (k == WITNESS)

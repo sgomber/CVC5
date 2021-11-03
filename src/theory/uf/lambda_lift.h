@@ -22,6 +22,7 @@
 #include "expr/node.h"
 #include "proof/trust_node.h"
 #include "smt/env_obj.h"
+#include "theory/skolem_lemma.h"
 
 namespace cvc5 {
 namespace theory {
@@ -40,7 +41,7 @@ class LambdaLift : protected EnvObj
   TrustNode lift(Node node);
 
   /** process, return the trust node corresponding to the rewrite */
-  TrustNode ppRewrite(Node node);
+  TrustNode ppRewrite(Node node, std::vector<SkolemLemma>& lems);
 
  private:
   /** Get assertion for */

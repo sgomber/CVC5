@@ -173,6 +173,10 @@ class HoExtension : protected EnvObj
    * pair of terms in the equality engine.
    */
   unsigned checkAppCompletion();
+  /**
+   * Check lazy lambda lifting.
+   */
+  unsigned checkLazyLambdaLifting();
   /** collect model info for higher-order term
    *
    * This adds required constraints to m for term n. In particular, if n is

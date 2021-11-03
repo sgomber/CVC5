@@ -414,6 +414,12 @@ unsigned HoExtension::checkAppCompletion()
   return 0;
 }
 
+unsigned HoExtension::checkLazyLambdaLifting()
+{
+  // TODO
+  return 0;
+}
+
 unsigned HoExtension::check()
 {
   Trace("uf-ho") << "HoExtension::checkHigherOrder..." << std::endl;
@@ -430,14 +436,23 @@ unsigned HoExtension::check()
     }
   } while (num_facts > 0);
 
-  unsigned num_lemmas = 0;
-
-  num_lemmas = checkExtensionality();
-  if (num_lemmas > 0)
+  for (size_t i=0; i<2; i++)
   {
-    Trace("uf-ho") << "...extensionality returned " << num_lemmas << " lemmas."
-                   << std::endl;
-    return num_lemmas;
+    unsigned num_lemmas = 0;
+    // apply the schema
+    switch (i)
+    {
+      case 0: num_lemmas = checkExtensionality(); break;
+      case 1: num_lemmas = checkLazyLambdaLifting(); break;
+      default: break;
+    }
+    // finish if we added lemmas
+    if (num_lemmas > 0)
+    {
+      Trace("uf-ho") << "...returned " << num_lemmas << " lemmas."
+                    << std::endl;
+      return num_lemmas;
+    }
   }
 
   Trace("uf-ho") << "...finished check higher order." << std::endl;

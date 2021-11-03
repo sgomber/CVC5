@@ -33,6 +33,7 @@
 #include "theory/uf/cardinality_extension.h"
 #include "theory/uf/ho_extension.h"
 #include "theory/uf/theory_uf_rewriter.h"
+#include "theory/uf/lambda_lift.h"
 
 using namespace std;
 
@@ -271,7 +272,7 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
   else if (k == kind::LAMBDA)
   {
     Trace("uf-lazy-ll") << "Preprocess lambda: " << node << std::endl;
-    TrustNode skTrn = d_lambdaLift->ppRewrite(node);
+    TrustNode skTrn = d_lambdaLift->ppRewrite(node, lems);
     return skTrn;
   }
   return TrustNode::null();
