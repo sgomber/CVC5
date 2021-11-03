@@ -28,7 +28,7 @@ LambdaLift::LambdaLift(Env& env) : EnvObj(env), d_processed(userContext()) {}
 
 TrustNode LambdaLift::process(Node node)
 {
-  if (d_processed.find(node)!=d_processed.end())
+  if (d_processed.find(node) != d_processed.end())
   {
     return TrustNode::null();
   }

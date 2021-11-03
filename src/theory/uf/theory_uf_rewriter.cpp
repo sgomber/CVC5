@@ -139,7 +139,8 @@ RewriteResponse TheoryUfRewriter::postRewrite(TNode node)
       return RewriteResponse(REWRITE_AGAIN_FULL, new_body);
     }
   }
-  else if( node.getKind()==kind::LAMBDA ){
+  else if (node.getKind() == kind::LAMBDA)
+  {
     Node ret = rewriteLambda(node);
     return RewriteResponse(REWRITE_DONE, node);
   }
@@ -218,7 +219,7 @@ Node TheoryUfRewriter::rewriteLambda(Node node)
   // normalization on array constants, and then converting the array constant
   // back to a lambda.
   Trace("builtin-rewrite") << "Rewriting lambda " << node << "..." << std::endl;
-  Node anode = FunctionConst::getArrayRepresentationForLambda( node );
+  Node anode = FunctionConst::getArrayRepresentationForLambda(node);
   // Only rewrite constant array nodes, since these are the only cases
   // where we require canonicalization of lambdas. Moreover, applying the
   // below code is not correct if the arguments to the lambda occur
@@ -228,14 +229,21 @@ Node TheoryUfRewriter::rewriteLambda(Node node)
   if (!anode.isNull() && anode.isConst())
   {
     Assert(anode.getType().isArray());
-    //must get the standard bound variable list
-    Node varList = NodeManager::currentNM()->getBoundVarListForFunctionType( node.getType() );
-    Node retNode = FunctionConst::getLambdaForArrayRepresentation( anode, varList );
-    if( !retNode.isNull() && retNode!=node ){
+    // must get the standard bound variable list
+    Node varList = NodeManager::currentNM()->getBoundVarListForFunctionType(
+        node.getType());
+    Node retNode =
+        FunctionConst::getLambdaForArrayRepresentation(anode, varList);
+    if (!retNode.isNull() && retNode != node)
+    {
       Trace("builtin-rewrite") << "Rewrote lambda : " << std::endl;
       Trace("builtin-rewrite") << "     input  : " << node << std::endl;
-      Trace("builtin-rewrite") << "     output : " << retNode << ", constant = " << retNode.isConst() << std::endl;
-      Trace("builtin-rewrite") << "  array rep : " << anode << ", constant = " << anode.isConst() << std::endl;
+      Trace("builtin-rewrite")
+          << "     output : " << retNode << ", constant = " << retNode.isConst()
+          << std::endl;
+      Trace("builtin-rewrite")
+          << "  array rep : " << anode << ", constant = " << anode.isConst()
+          << std::endl;
       Assert(anode.isConst() == retNode.isConst());
       Assert(retNode.getType() == node.getType());
       Assert(expr::hasFreeVar(node) == expr::hasFreeVar(retNode));
@@ -244,7 +252,8 @@ Node TheoryUfRewriter::rewriteLambda(Node node)
   }
   else
   {
-    Trace("builtin-rewrite-debug") << "...failed to get array representation." << std::endl;
+    Trace("builtin-rewrite-debug")
+        << "...failed to get array representation." << std::endl;
   }
   return node;
 }

@@ -18,8 +18,8 @@
 #ifndef CVC5__THEORY__UF__LAMBDA_LIFT_H
 #define CVC5__THEORY__UF__LAMBDA_LIFT_H
 
-#include "expr/node.h"
 #include "context/cdhashset.h"
+#include "expr/node.h"
 #include "proof/trust_node.h"
 #include "smt/env_obj.h"
 
@@ -32,6 +32,7 @@ namespace uf {
 class LambdaLift : protected EnvObj
 {
   typedef context::CDHashSet<Node> NodeSet;
+
  public:
   LambdaLift(Env& env);
 
