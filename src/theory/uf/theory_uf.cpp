@@ -21,6 +21,7 @@
 #include <sstream>
 
 #include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
 #include "options/quantifiers_options.h"
 #include "options/smt_options.h"
 #include "options/theory_options.h"
@@ -32,7 +33,6 @@
 #include "theory/uf/cardinality_extension.h"
 #include "theory/uf/ho_extension.h"
 #include "theory/uf/theory_uf_rewriter.h"
-#include "expr/skolem_manager.h"
 
 using namespace std;
 
@@ -239,16 +239,17 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
         // if an application of the lambda lifted function, do beta reduction
         // immediately
         Node op = node.getOperator();
-        if (op.getKind()==kind::LAMBDA_VARIABLE)
+        if (op.getKind() == kind::LAMBDA_VARIABLE)
         {
           Node opl = SkolemManager::getOriginalForm(op);
-          Assert (oop.getKind()==kind::LAMBDA);
+          Assert(oop.getKind() == kind::LAMBDA);
           std::vector<Node> betaRed;
           betaRed.push_back(opl);
           betaRed.insert(betaRed.end(), node.begin(), node.end());
           Node app = nm->mkNode(kind::APPLY_UF, betaRed);
           app = rewrite(app);
-          Trace("uf-lazy-ll") << "Beta reduce: " << node << " -> " << app << std::endl;
+          Trace("uf-lazy-ll")
+              << "Beta reduce: " << node << " -> " << app << std::endl;
           return TrustNode::mkTrustRewrite(node, app, nullptr);
         }
       }
@@ -261,8 +262,9 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
       {
         std::stringstream ss;
         ss << "UF received an application whose operator has higher-order type "
-          << node
-          << ", which is only supported with higher-order logic. Try adding the "
+           << node
+           << ", which is only supported with higher-order logic. Try adding "
+              "the "
               "logic prefix HO_.";
         throw LogicException(ss.str());
       }

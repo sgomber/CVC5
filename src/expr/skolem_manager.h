@@ -127,7 +127,7 @@ class SkolemManager
     SKOLEM_DEFAULT = 0,    /**< default behavior */
     SKOLEM_EXACT_NAME = 1, /**< do not make the name unique by adding the id */
     SKOLEM_BOOL_TERM_VAR = 2, /**< vars requiring kind BOOLEAN_TERM_VARIABLE */
-    SKOLEM_LAMBDA_VAR = 4 /**< vars requiring kind LAMBDA_VARIABLE */
+    SKOLEM_LAMBDA_VAR = 4     /**< vars requiring kind LAMBDA_VARIABLE */
   };
   /**
    * This makes a skolem of same type as bound variable v, (say its type is T),

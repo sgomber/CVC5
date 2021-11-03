@@ -23,10 +23,7 @@ namespace cvc5 {
 namespace theory {
 namespace uf {
 
-LambdaLift::LambdaLift(Env& env)
-    : EnvObj(env)
-{
-}
+LambdaLift::LambdaLift(Env& env) : EnvObj(env) {}
 
 }  // namespace uf
 }  // namespace theory
