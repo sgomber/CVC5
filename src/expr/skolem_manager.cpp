@@ -67,6 +67,10 @@ std::ostream& operator<<(std::ostream& out, SkolemFunId id)
   return out;
 }
 
+
+  SkolemManager::SkolemManager() :
+      d_skolemCounter(0){}
+
 Node SkolemManager::mkSkolem(Node v,
                              Node pred,
                              const std::string& prefix,
@@ -352,27 +356,41 @@ Node SkolemManager::mkSkolemInternal(Node w,
   NodeManager* nm = NodeManager::currentNM();
   // w is not necessarily a witness term
   SkolemFormAttribute sfa;
-  Node k;
   // could already have a skolem if we used w already
   if (w.hasAttribute(sfa))
   {
     return w.getAttribute(sfa);
   }
   // make the new skolem
-  if (flags & NodeManager::SKOLEM_BOOL_TERM_VAR)
-  {
-    Assert (w.getType().isBoolean());
-    k = nm->mkBooleanTermVariable();
-  }
-  else
-  {
-    k = nm->mkSkolem(prefix, w.getType(), comment, flags);
-  }
+  Node k = mkSkolemNode(prefix, w.getType(), comment, flags);
   // set skolem form attribute for w
   w.setAttribute(sfa, k);
   Trace("sk-manager") << "SkolemManager::mkSkolem: " << k << " : " << w
                       << std::endl;
   return k;
+}
+
+Node SkolemManager::mkSkolemNode(const std::string& prefix, const TypeNode& type, const std::string& comment, int flags) {
+  Node n;
+  if (flags & NodeManager::SKOLEM_BOOL_TERM_VAR)
+  {
+    Assert (type.isBoolean());
+    n = NodeBuilder(this, kind::BOOLEAN_TERM_VARIABLE);
+  }
+  else
+  {
+    n = NodeBuilder(this, kind::SKOLEM);
+    if((flags & SKOLEM_EXACT_NAME) == 0) {
+      std::stringstream name;
+      name << prefix << '_' << ++d_skolemCounter;
+      n.setAttribute(expr::VarNameAttr(), name.str());
+    } else {
+      n.setAttribute(expr::VarNameAttr(), prefix);
+    }
+  }
+  n.setAttribute(TypeAttr(), type);
+  n.setAttribute(TypeCheckedAttr(), true);
+  return n;
 }
 
 }  // namespace cvc5
