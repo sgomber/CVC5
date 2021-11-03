@@ -20,6 +20,7 @@
 #include "options/uf_options.h"
 #include "theory/theory_model.h"
 #include "theory/uf/theory_uf_rewriter.h"
+#include "theory/uf/lambda_lift.h"
 
 using namespace std;
 using namespace cvc5::kind;
@@ -30,10 +31,11 @@ namespace uf {
 
 HoExtension::HoExtension(Env& env,
                          TheoryState& state,
-                         TheoryInferenceManager& im)
+                         TheoryInferenceManager& im, LambdaLift& ll)
     : EnvObj(env),
       d_state(state),
       d_im(im),
+      d_ll(ll),
       d_extensionality(userContext()),
       d_uf_std_skolem(userContext())
 {
@@ -416,14 +418,37 @@ unsigned HoExtension::checkAppCompletion()
 
 unsigned HoExtension::checkLazyLambdaLifting()
 {
-  // TODO
+  if (!options().uf.ufHoLazyLambdaLift)
+  {
+    return 0;
+  }
+  d_lambdaReps.clear();
+  while (!eqcs_i.isFinished())
+  {
+    Node eqc = (*eqcs_i);
+    if (!eqc.getType().isFunction())
+    {
+      continue;
+    }
+    eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
+    while (!eqc_i.isFinished())
+    {
+      Node n = *eqc_i;
+      Node lam = d_ll.getLambdaFor(n);
+      if (lam.isNull())
+      {
+        continue;
+      }
+      // TODO
+    }
+  }
   return 0;
 }
 
 unsigned HoExtension::check()
 {
   Trace("uf-ho") << "HoExtension::checkHigherOrder..." << std::endl;
-
+  
   // infer new facts based on apply completion until fixed point
   unsigned num_facts;
   do
