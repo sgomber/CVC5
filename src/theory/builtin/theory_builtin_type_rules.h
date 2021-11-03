@@ -107,54 +107,6 @@ class AbstractValueTypeRule {
   }
 };/* class AbstractValueTypeRule */
 
-class LambdaTypeRule {
- public:
-  inline static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check) {
-    if( n[0].getType(check) != nodeManager->boundVarListType() ) {
-      std::stringstream ss;
-      ss << "expected a bound var list for LAMBDA expression, got `"
-         << n[0].getType().toString() << "'";
-      throw TypeCheckingExceptionPrivate(n, ss.str());
-    }
-    std::vector<TypeNode> argTypes;
-    for(TNode::iterator i = n[0].begin(); i != n[0].end(); ++i) {
-      argTypes.push_back((*i).getType());
-    }
-    TypeNode rangeType = n[1].getType(check);
-    return nodeManager->mkFunctionType(argTypes, rangeType);
-  }
-  // computes whether a lambda is a constant value, via conversion to array representation
-  inline static bool computeIsConst(NodeManager* nodeManager, TNode n)
-  {
-    Assert(n.getKind() == kind::LAMBDA);
-    //get array representation of this function, if possible
-    Node na = TheoryBuiltinRewriter::getArrayRepresentationForLambda(n);
-    if( !na.isNull() ){
-      Assert(na.getType().isArray());
-      Trace("lambda-const") << "Array representation for " << n << " is " << na << " " << na.getType() << std::endl;
-      // must have the standard bound variable list
-      Node bvl = NodeManager::currentNM()->getBoundVarListForFunctionType( n.getType() );
-      if( bvl==n[0] ){
-        //array must be constant
-        if( na.isConst() ){
-          Trace("lambda-const") << "*** Constant lambda : " << n;
-          Trace("lambda-const") << " since its array representation : " << na << " is constant." << std::endl;
-          return true;
-        }else{
-          Trace("lambda-const") << "Non-constant lambda : " << n << " since array is not constant." << std::endl;
-        } 
-      }else{
-        Trace("lambda-const") << "Non-constant lambda : " << n << " since its varlist is not standard." << std::endl;
-        Trace("lambda-const") << "  standard : " << bvl << std::endl;
-        Trace("lambda-const") << "   current : " << n[0] << std::endl;
-      } 
-    }else{
-      Trace("lambda-const") << "Non-constant lambda : " << n << " since it has no array representation." << std::endl;
-    } 
-    return false;
-  }
-};/* class LambdaTypeRule */
-
 class WitnessTypeRule
 {
  public:

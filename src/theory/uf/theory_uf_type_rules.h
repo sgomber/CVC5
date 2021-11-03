@@ -69,6 +69,13 @@ class HoApplyTypeRule
   static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
 };
 
+class LambdaTypeRule {
+ public:
+  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  // computes whether a lambda is a constant value, via conversion to array representation
+  static bool computeIsConst(NodeManager* nodeManager, TNode n);
+};/* class LambdaTypeRule */
+
 }  // namespace uf
 }  // namespace theory
 }  // namespace cvc5

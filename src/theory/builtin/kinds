@@ -301,8 +301,6 @@ variable BOUND_VARIABLE "a bound variable (permitted in bindings and the associa
 variable SKOLEM "a Skolem variable (internal only)"
 operator SEXPR 0: "a symbolic expression (any arity)"
 
-operator LAMBDA 2 "a lambda expression; first parameter is a BOUND_VAR_LIST, second is lambda body"
-
 operator WITNESS 2 "a witness expression; first parameter is a BOUND_VAR_LIST, second is the witness body"
 
 constant TYPE_CONSTANT \
@@ -330,10 +328,6 @@ sort SEXPR_TYPE \
 typerule EQUAL ::cvc5::theory::builtin::EqualityTypeRule
 typerule DISTINCT ::cvc5::theory::builtin::DistinctTypeRule
 typerule SEXPR ::cvc5::theory::builtin::SExprTypeRule
-typerule LAMBDA ::cvc5::theory::builtin::LambdaTypeRule
 typerule WITNESS ::cvc5::theory::builtin::WitnessTypeRule
-
-# lambda expressions that are isomorphic to array constants can be considered constants
-construle LAMBDA ::cvc5::theory::builtin::LambdaTypeRule
 
 endtheory
