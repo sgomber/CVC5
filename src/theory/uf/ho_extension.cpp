@@ -19,8 +19,8 @@
 #include "expr/skolem_manager.h"
 #include "options/uf_options.h"
 #include "theory/theory_model.h"
-#include "theory/uf/theory_uf_rewriter.h"
 #include "theory/uf/lambda_lift.h"
+#include "theory/uf/theory_uf_rewriter.h"
 
 using namespace std;
 using namespace cvc5::kind;
@@ -31,7 +31,8 @@ namespace uf {
 
 HoExtension::HoExtension(Env& env,
                          TheoryState& state,
-                         TheoryInferenceManager& im, LambdaLift& ll)
+                         TheoryInferenceManager& im,
+                         LambdaLift& ll)
     : EnvObj(env),
       d_state(state),
       d_im(im),
@@ -448,7 +449,7 @@ unsigned HoExtension::checkLazyLambdaLifting()
 unsigned HoExtension::check()
 {
   Trace("uf-ho") << "HoExtension::checkHigherOrder..." << std::endl;
-  
+
   // infer new facts based on apply completion until fixed point
   unsigned num_facts;
   do

@@ -30,7 +30,7 @@
 namespace cvc5 {
 namespace theory {
 namespace uf {
-  
+
 class LambdaLift;
 
 /** The higher-order extension of the theory of uninterpreted functions
@@ -54,7 +54,10 @@ class HoExtension : protected EnvObj
   typedef context::CDHashMap<Node, Node> NodeNodeMap;
 
  public:
-  HoExtension(Env& env, TheoryState& state, TheoryInferenceManager& im, LambdaLift& ll);
+  HoExtension(Env& env,
+              TheoryState& state,
+              TheoryInferenceManager& im,
+              LambdaLift& ll);
 
   /** ppRewrite
    *
@@ -196,7 +199,7 @@ class HoExtension : protected EnvObj
   LambdaLift& d_ll;
   /** extensionality has been applied to these disequalities */
   NodeSet d_extensionality;
-  /** 
+  /**
    * Mapping equivalence classes to the (single) lambda in that equivalence
    * class. This map is computed at each full effort and valid during
    * collectModelInfoHo.

@@ -25,7 +25,10 @@ namespace cvc5 {
 namespace theory {
 namespace uf {
 
-LambdaLift::LambdaLift(Env& env) : EnvObj(env), d_lifted(userContext()), d_lambdaMap(userContext()) {}
+LambdaLift::LambdaLift(Env& env)
+    : EnvObj(env), d_lifted(userContext()), d_lambdaMap(userContext())
+{
+}
 
 TrustNode LambdaLift::lift(Node node)
 {
@@ -63,7 +66,7 @@ TrustNode LambdaLift::ppRewrite(Node node, std::vector<SkolemLemma>& lems)
 Node LambdaLift::getLambdaFor(TNode skolem) const
 {
   NodeNodeMap::const_iterator it = d_lambdaMap.find(skolem);
-  if (it==d_lambdaMap.end())
+  if (it == d_lambdaMap.end())
   {
     return Node::null();
   }
