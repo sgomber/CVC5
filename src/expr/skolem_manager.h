@@ -119,17 +119,15 @@ class SkolemManager
   /**
    * Optional flags used to control behavior of skolem creation.
    * They should be composed with a bitwise OR (e.g.,
-   * "SKOLEM_NO_NOTIFY | SKOLEM_EXACT_NAME").  Of course, SKOLEM_DEFAULT
+   * "SKOLEM_BOOL_TERM_VAR | SKOLEM_EXACT_NAME").  Of course, SKOLEM_DEFAULT
    * cannot be composed in such a manner.
    */
   enum SkolemFlags
   {
     SKOLEM_DEFAULT = 0,    /**< default behavior */
-    SKOLEM_NO_NOTIFY = 1,  /**< do not notify subscribers */
-    SKOLEM_EXACT_NAME = 2, /**< do not make the name unique by adding the id */
-    SKOLEM_IS_GLOBAL = 4,  /**< global vars appear in models even after a pop */
-    SKOLEM_BOOL_TERM_VAR = 8 /**< vars requiring kind BOOLEAN_TERM_VARIABLE */
-  };                         /* enum SkolemFlags */
+    SKOLEM_EXACT_NAME = 1, /**< do not make the name unique by adding the id */
+    SKOLEM_BOOL_TERM_VAR = 2 /**< vars requiring kind BOOLEAN_TERM_VARIABLE */
+  };
   /**
    * This makes a skolem of same type as bound variable v, (say its type is T),
    * whose definition is (witness ((v T)) pred). This definition is maintained

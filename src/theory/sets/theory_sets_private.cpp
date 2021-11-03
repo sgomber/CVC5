@@ -1408,7 +1408,7 @@ Node TheorySetsPrivate::getChooseFunction(const TypeNode& setType)
   stream << "chooseUf" << setType.getId();
   string name = stream.str();
   Node chooseSkolem = sm->mkDummySkolem(
-      name, chooseUf, "choose function", NodeManager::SKOLEM_EXACT_NAME);
+      name, chooseUf, "choose function");
   d_chooseFunctions[setType] = chooseSkolem;
   return chooseSkolem;
 }

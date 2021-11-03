@@ -529,8 +529,7 @@ PreprocessingPassResult MipLibTrick::applyInternal(
               Node newVar = sm->mkDummySkolem(
                   ss.str(),
                   nm->integerType(),
-                  "a variable introduced due to scrubbing a miplib encoding",
-                  NodeManager::SKOLEM_EXACT_NAME);
+                  "a variable introduced due to scrubbing a miplib encoding");
               Node geq = rewrite(nm->mkNode(kind::GEQ, newVar, zero));
               Node leq = rewrite(nm->mkNode(kind::LEQ, newVar, one));
               TrustNode tgeq = TrustNode::mkTrustLemma(geq, nullptr);

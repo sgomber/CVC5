@@ -53,7 +53,7 @@ void DTypeConstructor::addArg(std::string selectorName, TypeNode selectorType)
       "unresolved_" + selectorName,
       selectorType,
       "is an unresolved selector type placeholder",
-      NodeManager::SKOLEM_EXACT_NAME | NodeManager::SKOLEM_NO_NOTIFY);
+      SkolemManager::SKOLEM_EXACT_NAME);
   // can use null updater for now
   Node nullNode;
   Trace("datatypes") << "DTypeConstructor::addArg: " << sel << std::endl;
@@ -566,13 +566,13 @@ bool DTypeConstructor::resolve(
         argName,
         nm->mkSelectorType(self, range),
         "is a selector",
-        NodeManager::SKOLEM_EXACT_NAME | NodeManager::SKOLEM_NO_NOTIFY);
+        SkolemManager::SKOLEM_EXACT_NAME);
     std::string updateName("update_" + argName);
     arg->d_updater = sm->mkDummySkolem(
         updateName,
         nm->mkDatatypeUpdateType(self, range),
         "is a selector",
-        NodeManager::SKOLEM_EXACT_NAME | NodeManager::SKOLEM_NO_NOTIFY);
+        SkolemManager::SKOLEM_EXACT_NAME);
     // must set indices to ensure datatypes::utils::indexOf works
     arg->d_selector.setAttribute(DTypeConsIndexAttr(), cindex);
     arg->d_selector.setAttribute(DTypeIndexAttr(), index);
@@ -604,12 +604,12 @@ bool DTypeConstructor::resolve(
       testerName,
       nm->mkTesterType(self),
       "is a tester",
-      NodeManager::SKOLEM_EXACT_NAME | NodeManager::SKOLEM_NO_NOTIFY);
+      SkolemManager::SKOLEM_EXACT_NAME);
   d_constructor = sm->mkDummySkolem(
       getName(),
       nm->mkConstructorType(argTypes, self),
       "is a constructor",
-      NodeManager::SKOLEM_EXACT_NAME | NodeManager::SKOLEM_NO_NOTIFY);
+      SkolemManager::SKOLEM_EXACT_NAME);
   Assert(d_constructor.getType().isConstructor());
   // associate constructor with all selectors
   for (std::shared_ptr<DTypeSelector> sel : d_args)
