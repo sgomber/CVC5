@@ -314,6 +314,10 @@ command [std::unique_ptr<cvc5::Command>* cmd]
       }
 
       t = PARSER_STATE->mkFlatFunctionType(sorts, t, flattenVars);
+      if (t.isFunction())
+      {
+        t = t.getFunctionCodomainSort();
+      }
       if (sortedVarNames.size() > 0)
       {
         PARSER_STATE->pushScope();
@@ -332,13 +336,7 @@ command [std::unique_ptr<cvc5::Command>* cmd]
       {
         PARSER_STATE->popScope();
       }
-      // declare the name down here (while parsing term, signature
-      // must not be extended with the name itself; no recursion
-      // permitted)
-      // we allow overloading for function definitions
-      api::Term func = PARSER_STATE->bindVar(name, t, false, true);
-      cmd->reset(new DefineFunctionCommand(
-          name, func, terms, expr, SYM_MAN->getGlobalDeclarations()));
+      cmd->reset(new DefineFunctionCommand(name, terms, t, expr));
     }
   | DECLARE_DATATYPE_TOK datatypeDefCommand[false, cmd]
   | DECLARE_DATATYPES_TOK datatypesDefCommand[false, cmd]
@@ -834,8 +832,7 @@ smt25Command[std::unique_ptr<cvc5::Command>* cmd]
       if( !flattenVars.empty() ){
         expr = PARSER_STATE->mkHoApply( expr, flattenVars );
       }
-      cmd->reset(new DefineFunctionRecCommand(
-          func, bvs, expr, SYM_MAN->getGlobalDeclarations()));
+      cmd->reset(new DefineFunctionRecCommand(func, bvs, expr));
     }
   | DEFINE_FUNS_REC_TOK
     { PARSER_STATE->checkThatLogicIsSet();}
@@ -898,8 +895,7 @@ smt25Command[std::unique_ptr<cvc5::Command>* cmd]
             "Number of functions defined does not match number listed in "
             "define-funs-rec"));
       }
-      cmd->reset(new DefineFunctionRecCommand(
-          funcs, formals, func_defs, SYM_MAN->getGlobalDeclarations()));
+      cmd->reset(new DefineFunctionRecCommand(funcs, formals, func_defs));
     }
   ;
 
@@ -988,48 +984,6 @@ extendedCommand[std::unique_ptr<cvc5::Command>* cmd]
     )+
     RPAREN_TOK
     { cmd->reset(seq.release()); }
-
-  | DEFINE_TOK { PARSER_STATE->checkThatLogicIsSet(); }
-    ( // (define f t)
-      symbol[name,CHECK_UNDECLARED,SYM_VARIABLE]
-      { PARSER_STATE->checkUserSymbol(name); }
-      term[e,e2]
-      {
-        api::Term func = PARSER_STATE->bindVar(name, e.getSort());
-        cmd->reset(new DefineFunctionCommand(
-            name, func, e, SYM_MAN->getGlobalDeclarations()));
-      }
-    | // (define (f (v U) ...) t)
-      LPAREN_TOK
-      symbol[name,CHECK_UNDECLARED,SYM_VARIABLE]
-      { PARSER_STATE->checkUserSymbol(name); }
-      sortedVarList[sortedVarNames] RPAREN_TOK
-      { /* add variables to parser state before parsing term */
-        Debug("parser") << "define fun: '" << name << "'" << std::endl;
-        PARSER_STATE->pushScope();
-        terms = PARSER_STATE->bindBoundVars(sortedVarNames);
-      }
-      term[e,e2]
-      {
-        PARSER_STATE->popScope();
-        // declare the name down here (while parsing term, signature
-        // must not be extended with the name itself; no recursion
-        // permitted)
-        api::Sort tt = e.getSort();
-        if( sortedVarNames.size() > 0 ) {
-          sorts.reserve(sortedVarNames.size());
-          for(std::vector<std::pair<std::string, api::Sort> >::const_iterator
-                i = sortedVarNames.begin(), iend = sortedVarNames.end();
-              i != iend; ++i) {
-            sorts.push_back((*i).second);
-          }
-          tt = SOLVER->mkFunctionSort(sorts, tt);
-        }
-        api::Term func = PARSER_STATE->bindVar(name, tt);
-        cmd->reset(new DefineFunctionCommand(
-            name, func, terms, e, SYM_MAN->getGlobalDeclarations()));
-      }
-    )
   | // (define-const x U t)
     DEFINE_CONST_TOK { PARSER_STATE->checkThatLogicIsSet(); }
     symbol[name,CHECK_UNDECLARED,SYM_VARIABLE]
@@ -1040,9 +994,7 @@ extendedCommand[std::unique_ptr<cvc5::Command>* cmd]
       // declare the name down here (while parsing term, signature
       // must not be extended with the name itself; no recursion
       // permitted)
-      api::Term func = PARSER_STATE->bindVar(name, t);
-      cmd->reset(new DefineFunctionCommand(
-          name, func, terms, e, SYM_MAN->getGlobalDeclarations()));
+      cmd->reset(new DefineFunctionCommand(name, t, e));
     }
 
   | SIMPLIFY_TOK { PARSER_STATE->checkThatLogicIsSet(); }
@@ -1790,8 +1742,7 @@ identifier[cvc5::ParseOp& p]
  */
 termAtomic[cvc5::api::Term& atomTerm]
 @init {
-  cvc5::api::Sort type;
-  cvc5::api::Sort type2;
+  cvc5::api::Sort t;
   std::string s;
   std::vector<uint64_t> numerals;
 }
@@ -1815,6 +1766,11 @@ termAtomic[cvc5::api::Term& atomTerm]
       {
         std::string hexStr = AntlrInput::tokenTextSubstr($HEX_LITERAL, 2);
         atomTerm = PARSER_STATE->mkCharConstant(hexStr);
+      }
+    | FMF_CARD_TOK sortSymbol[t,CHECK_DECLARED] INTEGER_LITERAL
+      {
+        uint32_t ubound = AntlrInput::tokenToUnsigned($INTEGER_LITERAL);
+        atomTerm = SOLVER->mkCardinalityConstraint(t, ubound);
       }
     | sym=SIMPLE_SYMBOL nonemptyNumeralList[numerals]
       {
@@ -1902,6 +1858,8 @@ attribute[cvc5::api::Term& expr, cvc5::api::Term& retExpr]
   | ATTRIBUTE_NAMED_TOK symbol[s,CHECK_UNDECLARED,SYM_VARIABLE]
     {
       // notify that expression was given a name
+      PARSER_STATE->preemptCommand(
+          new DefineFunctionCommand(s, expr.getSort(), expr));
       PARSER_STATE->notifyNamedExpression(expr, s);
     }
   ;
@@ -2329,7 +2287,6 @@ ECHO_TOK : 'echo';
 DECLARE_SORTS_TOK : 'declare-sorts';
 DECLARE_FUNS_TOK : 'declare-funs';
 DECLARE_PREDS_TOK : 'declare-preds';
-DEFINE_TOK : 'define';
 DECLARE_CONST_TOK : 'declare-const';
 DEFINE_CONST_TOK : 'define-const';
 SIMPLIFY_TOK : 'simplify';
@@ -2373,6 +2330,7 @@ FORALL_TOK        : 'forall';
 CHAR_TOK : { PARSER_STATE->isTheoryEnabled(theory::THEORY_STRINGS) }? 'char';
 TUPLE_CONST_TOK: { PARSER_STATE->isTheoryEnabled(theory::THEORY_DATATYPES) }? 'tuple';
 TUPLE_PROJECT_TOK: { PARSER_STATE->isTheoryEnabled(theory::THEORY_DATATYPES) }? 'tuple_project';
+FMF_CARD_TOK: { !PARSER_STATE->strictModeEnabled() && PARSER_STATE->hasCardinalityConstraints() }? 'fmf.card';
 
 HO_ARROW_TOK : { PARSER_STATE->isHoEnabled() }? '->';
 HO_LAMBDA_TOK : { PARSER_STATE->isHoEnabled() }? 'lambda';
