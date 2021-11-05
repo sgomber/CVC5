@@ -424,6 +424,7 @@ unsigned HoExtension::checkLazyLambdaLifting()
     // no lambdas are lazily lifted
     return 0;
   }
+  unsigned numLemmas = 0;
   d_lambdaReps.clear();
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
@@ -437,36 +438,44 @@ unsigned HoExtension::checkLazyLambdaLifting()
     }
     eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
     bool liftAll = false;
-    Node lazyLambdaFun;
+    Node lrep;
     while (!eqc_i.isFinished())
     {
       Node n = *eqc_i;
       ++eqc_i;
       if (d_ll.needsLift(n))
       {
-        if (liftAll)
+        if (lrep.isNull())
         {
-          d_ll.lift(n);
-        }
-        else if (lazyLambdaFun.isNull())
-        {
-          lazyLambdaFun = n;
+          lrep = n;
         }
         else
         {
-          liftAll = true;
-          d_ll.lift(lazyLambdaFun);
-          d_ll.lift(n);
-          lazyLambdaFun = Node::null();
+          NodeManager * nm = NodeManager::currentNM();
+          Node f = lrep<n ? lrep : n;
+          Node g = lrep<n ? n : lrep;
+          Node flam = d_ll.getLambdaFor(f);
+          Assert (!flam.isNull() && flam.getKind()==LAMBDA);
+          Node lhs = flam[1];
+          Node glam = d_ll.getLambdaFor(g);
+          std::vector<Node> args(flam[0].begin(), flam[0].end());
+          Node rhs = d_ll.betaReduce(glam, args);
+          Node univ = nm->mkNode(FORALL, flam[0], lhs.eqNode(rhs));
+          // f != g OR forall x. reduce(f(x)) = reduce(g(x))
+          Node lem = nm->mkNode(OR, f.eqNode(g).notNode(), univ);
+          if (d_im.lemma(lem, InferenceId::HO_LAMBDA_UNIV_EQ))
+          {
+            numLemmas++;
+          }
         }
       }
     }
-    if (!lazyLambdaFun.isNull())
+    if (!lrep.isNull())
     {
-      d_lambdaReps.insert(lazyLambdaFun);
+      d_lambdaReps.insert(lrep);
     }
   }
-  return 0;
+  return numLemmas;
 }
 
 unsigned HoExtension::check()

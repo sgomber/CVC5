@@ -169,6 +169,42 @@ Node LambdaLift::getSkolemFor(TNode node)
   return skolem;
 }
 
+TrustNode LambdaLift::betaReduce(TNode node) const
+{
+  Kind k = node.getKind();
+  if (k==APPLY_UF)
+  {
+    Node op = node.getOperator();
+    Node opl = getLambdaFor(op);
+    if (!opl.isNull())
+    {
+      std::vector<Node> args(node.begin(), node.end());
+      Node app = betaReduce(opl, args);
+      Trace("uf-lazy-ll")
+          << "Beta reduce: " << node << " -> " << app << std::endl;
+      return TrustNode::mkTrustRewrite(node, app, nullptr);
+    }
+  }
+  else if (k == HO_APPLY)
+  {
+    // partial reduction???
+  }
+  // otherwise, unchanged
+  return TrustNode::null();
+}
+
+Node LambdaLift::betaReduce(TNode lam, const std::vector<Node>& args) const
+{
+  Assert (lam.getKind()==LAMBDA);
+  NodeManager* nm = NodeManager::currentNM();
+  std::vector<Node> betaRed;
+  betaRed.push_back(lam);
+  betaRed.insert(betaRed.end(), args.begin(), args.end());
+  Node app = nm->mkNode(APPLY_UF, betaRed);
+  app = rewrite(app);
+  return app;
+}
+
 }  // namespace uf
 }  // namespace theory
 }  // namespace cvc5

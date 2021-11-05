@@ -51,6 +51,10 @@ class LambdaLift : protected EnvObj
   /** Get lambda for skolem */
   Node getLambdaFor(TNode skolem) const;
 
+  /** Beta-reduce */
+  TrustNode betaReduce(TNode node) const;
+  /** Beta-reduce */
+  Node betaReduce(TNode lam, const std::vector<Node>& args) const;
  private:
   /** Get assertion for */
   static Node getAssertionFor(TNode node);
