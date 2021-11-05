@@ -424,6 +424,8 @@ unsigned HoExtension::checkLazyLambdaLifting()
     // no lambdas are lazily lifted
     return 0;
   }
+  // a "lambda function" is a variable k that was introduced by the lambda
+  // lifting utility, and has a corresponding lambda definition.
   unsigned numLemmas = 0;
   d_lambdaReps.clear();
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
@@ -438,22 +440,23 @@ unsigned HoExtension::checkLazyLambdaLifting()
     }
     eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
     bool liftAll = false;
-    Node lrep;
+    Node lamRep;
     while (!eqc_i.isFinished())
     {
       Node n = *eqc_i;
       ++eqc_i;
       if (d_ll.needsLift(n))
       {
-        if (lrep.isNull())
+        if (lamRep.isNull())
         {
-          lrep = n;
+          lamRep = n;
         }
         else
         {
+          // two lambda functions are in same equivalence class
           NodeManager * nm = NodeManager::currentNM();
-          Node f = lrep<n ? lrep : n;
-          Node g = lrep<n ? n : lrep;
+          Node f = lamRep<n ? lamRep : n;
+          Node g = lamRep<n ? n : lamRep;
           Node flam = d_ll.getLambdaFor(f);
           Assert (!flam.isNull() && flam.getKind()==LAMBDA);
           Node lhs = flam[1];
@@ -461,18 +464,29 @@ unsigned HoExtension::checkLazyLambdaLifting()
           std::vector<Node> args(flam[0].begin(), flam[0].end());
           Node rhs = d_ll.betaReduce(glam, args);
           Node univ = nm->mkNode(FORALL, flam[0], lhs.eqNode(rhs));
-          // f != g OR forall x. reduce(f(x)) = reduce(g(x))
-          Node lem = nm->mkNode(OR, f.eqNode(g).notNode(), univ);
+          // f = g => forall x. reduce(lambda(f)(x)) = reduce(lambda(g)(x))
+          //
+          // For example, if f -> lambda z. z+1, g -> lambda y. y+3, this
+          // will infer: f = g => forall x. x+1 = x+3, which simplifies to
+          // f != g.
+          Node lem = nm->mkNode(IMPLIES, f.eqNode(g), univ);
           if (d_im.lemma(lem, InferenceId::HO_LAMBDA_UNIV_EQ))
           {
             numLemmas++;
           }
         }
       }
+      else if (lamRep.isNull())
+      {
+        // a normal function g equal to a lambda, say f --> lambda(f)
+        // need to infer f = g => g(t) = f(t) for all terms g(t)
+        // that occur in the equality engine.
+        // TODO
+      }
     }
-    if (!lrep.isNull())
+    if (!lamRep.isNull())
     {
-      d_lambdaReps.insert(lrep);
+      d_lambdaReps.insert(lamRep);
     }
   }
   return numLemmas;

@@ -231,9 +231,17 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
                           << " to " << ret << std::endl;
       return TrustNode::mkTrustRewrite(node, ret, nullptr);
     }
+    // f ---> (lambda ((x Int) (y Int)) s[x, y]) then (@ f t) is preprocessed
+    // to (lambda ((y Int)) s[t, y]).
+    // TODO
   }
   else if (k == kind::APPLY_UF)
   {
+    // Say (lambda ((x Int)) t[x]) occurs in the input. We replace this
+    // by k during ppRewrite. In the following, if we see (k s), we replace
+    // it by t[s]. This maintains the invariant that the *only* occurence
+    // of k is as arguments to other functions; k is *not* itself applied
+    // in any preprocessed constraints.
     if (logicInfo().isHigherOrder())
     {
       if (options().uf.ufHoLazyLambdaLift)
@@ -270,6 +278,7 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
   }
   else if (k == kind::LAMBDA)
   {
+    Assert (logicInfo().isHigherOrder());
     Trace("uf-lazy-ll") << "Preprocess lambda: " << node << std::endl;
     TrustNode skTrn = d_lambdaLift->ppRewrite(node, lems);
     Trace("uf-lazy-ll") << "...return " << skTrn.getNode() << std::endl;
