@@ -397,11 +397,6 @@ Node SkolemManager::mkSkolemNode(const std::string& prefix,
     Assert(type.isBoolean());
     n = NodeBuilder(nm, BOOLEAN_TERM_VARIABLE);
   }
-  else if (flags & SKOLEM_LAMBDA_VAR)
-  {
-    Assert(type.isFunction());
-    n = NodeBuilder(nm, LAMBDA_VARIABLE);
-  }
   else
   {
     n = NodeBuilder(nm, SKOLEM);
