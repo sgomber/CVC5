@@ -201,10 +201,15 @@ class HoExtension : protected EnvObj
   /** extensionality has been applied to these disequalities */
   NodeSet d_extensionality;
   /**
-   * Equivalence classes that have lambda functions in them. This set is
-   * computed at each full effort and valid only during collectModelInfoHo.
+   * In the following, we say that a "lambda function" is a variable k that was
+   * introduced by the lambda lifting utility, and has a corresponding lambda
+   * definition.
+   *
+   * This maps equivalence class representatives that have lambda functions in
+   * them to one such lambda function. This map is computed at each full effort
+   * and valid only during collectModelInfoHo.
    */
-  std::unordered_set<Node> d_lambdaEqc;
+  std::unordered_map<Node, Node> d_lambdaEqc;
   /**
    * Lambda functions whose lambdas we will use as representatives for model
    * construction. This map is computed at each full effort and valid only

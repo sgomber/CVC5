@@ -79,8 +79,8 @@ TrustNode HoExtension::ppRewrite(Node node, std::vector<SkolemLemma>& lems)
   {
     // Say (lambda ((x Int)) t[x]) occurs in the input. We replace this
     // by k during ppRewrite. In the following, if we see (k s), we replace
-    // it by t[s]. This maintains the invariant that the *only* occurence
-    // of k is as arguments to other functions; k is *not* itself applied
+    // it by t[s]. This maintains the invariant that the *only* occurences
+    // of k are as arguments to other functions; k is not applied
     // in any preprocessed constraints.
     if (options().uf.ufHoLazyLambdaLift)
     {
@@ -472,13 +472,15 @@ unsigned HoExtension::checkLazyLambdaLifting()
     // no lambdas are lazily lifted
     return 0;
   }
-  // a "lambda function" is a variable k that was introduced by the lambda
-  // lifting utility, and has a corresponding lambda definition.
+  NodeManager* nm = NodeManager::currentNM();
   unsigned numLemmas = 0;
   d_lambdaEqc.clear();
   d_lambdaReps.clear();
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
+  // normal functions equated to lambda functions
+  std::unordered_set<Node> normalEqFuns;
+  // mapping from functions to terms
   while (!eqcs_i.isFinished())
   {
     Node eqc = (*eqcs_i);
@@ -488,55 +490,118 @@ unsigned HoExtension::checkLazyLambdaLifting()
       continue;
     }
     eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
-    bool liftAll = false;
     Node lamRep;
+    Node lamRepLam;
+    std::unordered_set<Node> normalEqFunWait;
     while (!eqc_i.isFinished())
     {
       Node n = *eqc_i;
       ++eqc_i;
-      if (d_ll.needsLift(n))
+      Node lam = d_ll.getLambdaFor(n);
+      if (lam.isNull())
       {
-        if (lamRep.isNull())
+        if (!lamRep.isNull())
         {
-          lamRep = n;
+          normalEqFuns.insert(n);
         }
         else
         {
-          // two lambda functions are in same equivalence class
-          NodeManager* nm = NodeManager::currentNM();
-          Node f = lamRep < n ? lamRep : n;
-          Node g = lamRep < n ? n : lamRep;
-          Node flam = d_ll.getLambdaFor(f);
-          Assert(!flam.isNull() && flam.getKind() == LAMBDA);
-          Node lhs = flam[1];
-          Node glam = d_ll.getLambdaFor(g);
-          std::vector<Node> args(flam[0].begin(), flam[0].end());
-          Node rhs = d_ll.betaReduce(glam, args);
-          Node univ = nm->mkNode(FORALL, flam[0], lhs.eqNode(rhs));
-          // f = g => forall x. reduce(lambda(f)(x)) = reduce(lambda(g)(x))
-          //
-          // For example, if f -> lambda z. z+1, g -> lambda y. y+3, this
-          // will infer: f = g => forall x. x+1 = x+3, which simplifies to
-          // f != g.
-          Node lem = nm->mkNode(IMPLIES, f.eqNode(g), univ);
-          if (d_im.lemma(lem, InferenceId::HO_LAMBDA_UNIV_EQ))
-          {
-            numLemmas++;
-          }
+          normalEqFunWait.insert(n);
         }
       }
       else if (lamRep.isNull())
       {
-        // a normal function g equal to a lambda, say f --> lambda(f)
-        // need to infer f = g => g(t) = f(t) for all terms g(t)
-        // that occur in the equality engine.
-        // TODO
+        lamRep = n;
+        lamRepLam = lam;
+        normalEqFuns.insert(normalEqFunWait.begin(), normalEqFunWait.end());
+        normalEqFunWait.clear();
+      }
+      else
+      {
+        // two lambda functions are in same equivalence class
+        Node f = lamRep < n ? lamRep : n;
+        Node g = lamRep < n ? n : lamRep;
+        Node flam = lamRep < n ? lamRepLam : lam;
+        Assert(!flam.isNull() && flam.getKind() == LAMBDA);
+        Node lhs = flam[1];
+        Node glam = lamRep < n ? lam : lamRepLam;
+        std::vector<Node> args(flam[0].begin(), flam[0].end());
+        Node rhs = d_ll.betaReduce(glam, args);
+        Node univ = nm->mkNode(FORALL, flam[0], lhs.eqNode(rhs));
+        // f = g => forall x. reduce(lambda(f)(x)) = reduce(lambda(g)(x))
+        //
+        // For example, if f -> lambda z. z+1, g -> lambda y. y+3, this
+        // will infer: f = g => forall x. x+1 = x+3, which simplifies to
+        // f != g.
+        Node lem = nm->mkNode(IMPLIES, f.eqNode(g), univ);
+        if (d_im.lemma(lem, InferenceId::UF_HO_LAMBDA_UNIV_EQ))
+        {
+          numLemmas++;
+        }
       }
     }
     if (!lamRep.isNull())
     {
-      d_lambdaEqc.insert(eqc);
+      d_lambdaEqc[eqc] = lamRep;
       d_lambdaReps.insert(lamRep);
+    }
+  }
+  if (!normalEqFuns.empty())
+  {
+    return numLemmas;
+  }
+  // if we have normal functions that are equal to lambda functions, go back
+  // and ensure they are mapped properly
+  // mapping from functions to terms
+  while (!eqcs_i.isFinished())
+  {
+    Node eqc = (*eqcs_i);
+    ++eqcs_i;
+    if (!eqc.getType().isFunction())
+    {
+      continue;
+    }
+    eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
+    while (!eqc_i.isFinished())
+    {
+      Node n = *eqc_i;
+      ++eqc_i;
+      Node op;
+      Kind k = n.getKind();
+      std::vector<Node> args;
+      if (k==APPLY_UF)
+      {
+        op = n.getOperator();
+        args.insert(args.end(), n.begin(), n.end());
+      }
+      else if (k==HO_APPLY)
+      {
+        op = n[0];
+        args.push_back(n[1]);
+      }
+      else
+      {
+        continue;
+      }
+      Assert (ee->hasTerm(op));
+      Node r = ee->getRepresentative(op);
+      Assert (d_lambdaEqc.find(r)!=d_lambdaEqc.end());
+      Node lf = d_lambdaEqc[r];
+      Node lam = d_ll.getLambdaFor(lf);
+      Assert(!lam.isNull() && lam.getKind() == LAMBDA);
+      // a normal function g equal to a lambda, say f --> lambda(f)
+      // need to infer f = g => g(t) = f(t) for all terms g(t)
+      // that occur in the equality engine.
+      Node premise = op.eqNode(lf);
+      args.insert(args.begin(), lam);
+      Node rhs = nm->mkNode(n.getKind(), args);
+      rhs = rewrite(rhs);
+      Node conc = n.eqNode(rhs);
+      Node lem = nm->mkNode(IMPLIES, premise, conc);
+      if (d_im.lemma(lem, InferenceId::UF_HO_LAMBDA_APP_REDUCE))
+      {
+        numLemmas++;
+      }
     }
   }
   return numLemmas;

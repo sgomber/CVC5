@@ -841,7 +841,9 @@ enum class InferenceId
   //   (not (= (f sk1 .. skn) (g sk1 .. skn))
   UF_HO_MODEL_EXTENSIONALITY,
   // equivalence of lambdas
-  HO_LAMBDA_UNIV_EQ,
+  UF_HO_LAMBDA_UNIV_EQ,
+  // 
+  UF_HO_LAMBDA_APP_REDUCE,
   //-------------------- end model-construction specific part
   //-------------------- end HO extension to UF
   //-------------------------------------- end uf theory
