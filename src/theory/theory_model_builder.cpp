@@ -984,11 +984,25 @@ bool TheoryEngineModelBuilder::buildModel(TheoryModel* tm)
           }
           else
           {
-            Trace("model-builder-debug")
-                << "Get first value from finite type..." << std::endl;
-            // Otherwise, we get the first value from the type enumerator.
-            TypeEnumerator te(t);
-            n = *te;
+            if (t.isFunction())
+            {
+              std::map<Node, Node>::iterator ita = assertedReps.find(*i2);
+              if (ita!=assertedReps.end())
+              {
+                Assert (ita->second.getKind()==kind::LAMBDA);
+                n = ita->second;
+                Trace("model-builder-debug")
+                    << "Use lambda " << n << std::endl;
+              }
+            }
+            if (n.isNull())
+            {
+              Trace("model-builder-debug")
+                  << "Get first value from finite type..." << std::endl;
+              // Otherwise, we get the first value from the type enumerator.
+              TypeEnumerator te(t);
+              n = *te;
+            }
           }
           Trace("model-builder-debug") << "...got " << n << std::endl;
           assignConstantRep(tm, *i2, n);

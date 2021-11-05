@@ -210,12 +210,6 @@ class HoExtension : protected EnvObj
    * and valid only during collectModelInfoHo.
    */
   std::unordered_map<Node, Node> d_lambdaEqc;
-  /**
-   * Lambda functions whose lambdas we will use as representatives for model
-   * construction. This map is computed at each full effort and valid only
-   * during collectModelInfoHo.
-   */
-  std::unordered_set<Node> d_lambdaReps;
 
   /** cache of getExtensionalityDeq below */
   std::map<Node, Node> d_extensionality_deq;

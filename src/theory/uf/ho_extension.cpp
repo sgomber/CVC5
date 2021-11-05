@@ -475,7 +475,6 @@ unsigned HoExtension::checkLazyLambdaLifting()
   NodeManager* nm = NodeManager::currentNM();
   unsigned numLemmas = 0;
   d_lambdaEqc.clear();
-  d_lambdaReps.clear();
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
   // normal functions equated to lambda functions
@@ -543,7 +542,6 @@ unsigned HoExtension::checkLazyLambdaLifting()
     if (!lamRep.isNull())
     {
       d_lambdaEqc[eqc] = lamRep;
-      d_lambdaReps.insert(lamRep);
     }
   }
   if (!normalEqFuns.empty())
@@ -667,12 +665,14 @@ bool HoExtension::collectModelInfoHo(TheoryModel* m,
   // values to assign unique values.
   int addedLemmas = checkExtensionality(m);
   // for equivalence classes that we know to assign a lambda directly
-  for (const Node& eqc : d_lambdaReps)
+  for (const std::pair<const Node, Node>& p : d_lambdaEqc)
   {
-    Node lam = d_ll.getLambdaFor(eqc);
+    Node lam = d_ll.getLambdaFor(p.second);
     Assert(!lam.isNull());
-    m->assertEquality(eqc, lam, true);
+    m->assertEquality(p.second, lam, true);
     m->assertSkeleton(lam);
+    // assign it as the function definition for all variables in this class
+    m->assignFunctionDefinition(p.second, lam);
   }
   return addedLemmas == 0;
 }

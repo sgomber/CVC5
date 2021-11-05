@@ -741,6 +741,10 @@ std::vector< Node > TheoryModel::getFunctionsToAssign() {
       {
         // if in higher-order mode, assign function definitions modulo equality
         Node r = getRepresentative( n );
+        if (r.getKind()==LAMBDA)
+        {
+          continue;
+        }
         std::map< Node, Node >::iterator itf = func_to_rep.find( r );
         if( itf==func_to_rep.end() ){
           func_to_rep[r] = n;
