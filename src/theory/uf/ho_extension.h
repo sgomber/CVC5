@@ -204,7 +204,7 @@ class HoExtension : protected EnvObj
    * class. This map is computed at each full effort and valid during
    * collectModelInfoHo.
    */
-  std::map<Node, Node> d_lambdaReps;
+  std::unordered_set<Node> d_lambdaReps;
 
   /** cache of getExtensionalityDeq below */
   std::map<Node, Node> d_extensionality_deq;

@@ -45,6 +45,9 @@ class LambdaLift : protected EnvObj
   /** process, return the trust node corresponding to the rewrite */
   TrustNode ppRewrite(Node node, std::vector<SkolemLemma>& lems);
 
+  /** needs lifting */
+  bool needsLift(TNode skolem) const;
+  
   /** Get lambda for skolem */
   Node getLambdaFor(TNode skolem) const;
 

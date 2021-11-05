@@ -220,7 +220,7 @@ unsigned HoExtension::checkExtensionality(TheoryModel* m)
   {
     Node eqc = (*eqcs_i);
     TypeNode tn = eqc.getType();
-    if (tn.isFunction())
+    if (tn.isFunction() && d_lambdaReps.find(eqc)==d_lambdaReps.end())
     {
       hasFunctions = true;
       // if during collect model, must have an infinite type
@@ -421,6 +421,7 @@ unsigned HoExtension::checkLazyLambdaLifting()
 {
   if (!options().uf.ufHoLazyLambdaLift)
   {
+    // no lambdas are lazily lifted
     return 0;
   }
   d_lambdaReps.clear();
@@ -434,15 +435,33 @@ unsigned HoExtension::checkLazyLambdaLifting()
       continue;
     }
     eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
+    bool liftAll = false;
+    Node lazyLambdaFun;
     while (!eqc_i.isFinished())
     {
       Node n = *eqc_i;
-      Node lam = d_ll.getLambdaFor(n);
-      if (lam.isNull())
+      if (d_ll.needsLift(n))
       {
-        continue;
+        if (liftAll)
+        {
+          d_ll.lift(n);
+        }
+        else if (lazyLambdaFun.isNull())
+        {
+          lazyLambdaFun = n;
+        }
+        else
+        {
+          liftAll = true;
+          d_ll.lift(lazyLambdaFun);
+          d_ll.lift(n);
+          lazyLambdaFun = Node::null();
+        }
       }
-      // TODO
+    }
+    if (!lazyLambdaFun.isNull())
+    {
+      d_lambdaReps.insert(lazyLambdaFun);
     }
   }
   return 0;
@@ -507,6 +526,14 @@ bool HoExtension::collectModelInfoHo(TheoryModel* m,
   // non-standard alternative to using a type enumerator over function
   // values to assign unique values.
   int addedLemmas = checkExtensionality(m);
+  // for equivalence classes that we know to assign a lambda directly
+  for (const Node& eqc : d_lambdaReps)
+  {
+    Node lam = d_ll.getLambdaFor(eqc);
+    Assert (!lam.isNull());
+    m->assertEquality(eqc, lam, true);
+    m->assertSkeleton(lam);
+  }
   return addedLemmas == 0;
 }
 
