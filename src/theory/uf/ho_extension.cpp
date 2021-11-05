@@ -75,7 +75,7 @@ TrustNode HoExtension::ppRewrite(Node node, std::vector<SkolemLemma>& lems)
       }
     }
   }
-  else if (k==APPLY_UF)
+  else if (k == APPLY_UF)
   {
     // Say (lambda ((x Int)) t[x]) occurs in the input. We replace this
     // by k during ppRewrite. In the following, if we see (k s), we replace
@@ -90,7 +90,7 @@ TrustNode HoExtension::ppRewrite(Node node, std::vector<SkolemLemma>& lems)
       Node opl = d_ll.getLambdaFor(op);
       if (!opl.isNull())
       {
-        Assert (opl.getKind()==LAMBDA);
+        Assert(opl.getKind() == LAMBDA);
         std::vector<Node> args(node.begin(), node.end());
         Node app = d_ll.betaReduce(opl, args);
         Trace("uf-lazy-ll")

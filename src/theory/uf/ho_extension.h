@@ -23,10 +23,10 @@
 #include "context/cdo.h"
 #include "expr/node.h"
 #include "smt/env_obj.h"
+#include "theory/skolem_lemma.h"
 #include "theory/theory_inference_manager.h"
 #include "theory/theory_model.h"
 #include "theory/theory_state.h"
-#include "theory/skolem_lemma.h"
 
 namespace cvc5 {
 namespace theory {
