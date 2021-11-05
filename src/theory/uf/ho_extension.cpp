@@ -454,11 +454,11 @@ unsigned HoExtension::checkLazyLambdaLifting()
         else
         {
           // two lambda functions are in same equivalence class
-          NodeManager * nm = NodeManager::currentNM();
-          Node f = lamRep<n ? lamRep : n;
-          Node g = lamRep<n ? n : lamRep;
+          NodeManager* nm = NodeManager::currentNM();
+          Node f = lamRep < n ? lamRep : n;
+          Node g = lamRep < n ? n : lamRep;
           Node flam = d_ll.getLambdaFor(f);
-          Assert (!flam.isNull() && flam.getKind()==LAMBDA);
+          Assert(!flam.isNull() && flam.getKind() == LAMBDA);
           Node lhs = flam[1];
           Node glam = d_ll.getLambdaFor(g);
           std::vector<Node> args(flam[0].begin(), flam[0].end());

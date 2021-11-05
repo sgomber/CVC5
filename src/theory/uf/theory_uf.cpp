@@ -278,7 +278,7 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
   }
   else if (k == kind::LAMBDA)
   {
-    Assert (logicInfo().isHigherOrder());
+    Assert(logicInfo().isHigherOrder());
     Trace("uf-lazy-ll") << "Preprocess lambda: " << node << std::endl;
     TrustNode skTrn = d_lambdaLift->ppRewrite(node, lems);
     Trace("uf-lazy-ll") << "...return " << skTrn.getNode() << std::endl;

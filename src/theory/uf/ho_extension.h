@@ -199,7 +199,7 @@ class HoExtension : protected EnvObj
   LambdaLift& d_ll;
   /** extensionality has been applied to these disequalities */
   NodeSet d_extensionality;
-  /** 
+  /**
    * Equivalence classes that have lambda functions in them. This set is
    * computed at each full effort and valid only during collectModelInfoHo.
    */

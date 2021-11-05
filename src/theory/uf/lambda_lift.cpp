@@ -172,7 +172,7 @@ Node LambdaLift::getSkolemFor(TNode node)
 TrustNode LambdaLift::betaReduce(TNode node) const
 {
   Kind k = node.getKind();
-  if (k==APPLY_UF)
+  if (k == APPLY_UF)
   {
     Node op = node.getOperator();
     Node opl = getLambdaFor(op);
@@ -180,8 +180,8 @@ TrustNode LambdaLift::betaReduce(TNode node) const
     {
       std::vector<Node> args(node.begin(), node.end());
       Node app = betaReduce(opl, args);
-      Trace("uf-lazy-ll")
-          << "Beta reduce: " << node << " -> " << app << std::endl;
+      Trace("uf-lazy-ll") << "Beta reduce: " << node << " -> " << app
+                          << std::endl;
       return TrustNode::mkTrustRewrite(node, app, nullptr);
     }
   }
@@ -195,7 +195,7 @@ TrustNode LambdaLift::betaReduce(TNode node) const
 
 Node LambdaLift::betaReduce(TNode lam, const std::vector<Node>& args) const
 {
-  Assert (lam.getKind()==LAMBDA);
+  Assert(lam.getKind() == LAMBDA);
   NodeManager* nm = NodeManager::currentNM();
   std::vector<Node> betaRed;
   betaRed.push_back(lam);
