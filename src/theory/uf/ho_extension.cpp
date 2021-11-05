@@ -220,7 +220,7 @@ unsigned HoExtension::checkExtensionality(TheoryModel* m)
   {
     Node eqc = (*eqcs_i);
     TypeNode tn = eqc.getType();
-    if (tn.isFunction() && d_lambdaReps.find(eqc) == d_lambdaReps.end())
+    if (tn.isFunction() && d_lambdaEqc.find(eqc) == d_lambdaEqc.end())
     {
       hasFunctions = true;
       // if during collect model, must have an infinite type
@@ -426,6 +426,7 @@ unsigned HoExtension::checkLazyLambdaLifting()
   // a "lambda function" is a variable k that was introduced by the lambda
   // lifting utility, and has a corresponding lambda definition.
   unsigned numLemmas = 0;
+  d_lambdaEqc.clear();
   d_lambdaReps.clear();
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
@@ -485,6 +486,7 @@ unsigned HoExtension::checkLazyLambdaLifting()
     }
     if (!lamRep.isNull())
     {
+      d_lambdaEqc.insert(eqc);
       d_lambdaReps.insert(lamRep);
     }
   }

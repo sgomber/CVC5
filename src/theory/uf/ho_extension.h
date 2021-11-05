@@ -199,10 +199,15 @@ class HoExtension : protected EnvObj
   LambdaLift& d_ll;
   /** extensionality has been applied to these disequalities */
   NodeSet d_extensionality;
+  /** 
+   * Equivalence classes that have lambda functions in them. This set is
+   * computed at each full effort and valid only during collectModelInfoHo.
+   */
+  std::unordered_set<Node> d_lambdaEqc;
   /**
-   * Mapping equivalence classes to the (single) lambda in that equivalence
-   * class. This map is computed at each full effort and valid during
-   * collectModelInfoHo.
+   * Lambda functions whose lambdas we will use as representatives for model
+   * construction. This map is computed at each full effort and valid only
+   * during collectModelInfoHo.
    */
   std::unordered_set<Node> d_lambdaReps;
 
