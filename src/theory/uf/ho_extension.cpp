@@ -220,7 +220,7 @@ unsigned HoExtension::checkExtensionality(TheoryModel* m)
   {
     Node eqc = (*eqcs_i);
     TypeNode tn = eqc.getType();
-    if (tn.isFunction() && d_lambdaReps.find(eqc)==d_lambdaReps.end())
+    if (tn.isFunction() && d_lambdaReps.find(eqc) == d_lambdaReps.end())
     {
       hasFunctions = true;
       // if during collect model, must have an infinite type
@@ -530,7 +530,7 @@ bool HoExtension::collectModelInfoHo(TheoryModel* m,
   for (const Node& eqc : d_lambdaReps)
   {
     Node lam = d_ll.getLambdaFor(eqc);
-    Assert (!lam.isNull());
+    Assert(!lam.isNull());
     m->assertEquality(eqc, lam, true);
     m->assertSkeleton(lam);
   }

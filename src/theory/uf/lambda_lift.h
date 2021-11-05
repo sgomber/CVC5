@@ -47,7 +47,7 @@ class LambdaLift : protected EnvObj
 
   /** needs lifting */
   bool needsLift(TNode skolem) const;
-  
+
   /** Get lambda for skolem */
   Node getLambdaFor(TNode skolem) const;
 

@@ -71,7 +71,7 @@ bool LambdaLift::needsLift(TNode skolem) const
   {
     return false;
   }
-  return d_lifted.find(skolem)==d_lifted.end();
+  return d_lifted.find(skolem) == d_lifted.end();
 }
 
 Node LambdaLift::getLambdaFor(TNode skolem) const
