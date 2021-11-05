@@ -430,6 +430,7 @@ unsigned HoExtension::checkLazyLambdaLifting()
   while (!eqcs_i.isFinished())
   {
     Node eqc = (*eqcs_i);
+    ++eqcs_i;
     if (!eqc.getType().isFunction())
     {
       continue;
@@ -440,6 +441,7 @@ unsigned HoExtension::checkLazyLambdaLifting()
     while (!eqc_i.isFinished())
     {
       Node n = *eqc_i;
+      ++eqc_i;
       if (d_ll.needsLift(n))
       {
         if (liftAll)

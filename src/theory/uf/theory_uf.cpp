@@ -272,6 +272,7 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
   {
     Trace("uf-lazy-ll") << "Preprocess lambda: " << node << std::endl;
     TrustNode skTrn = d_lambdaLift->ppRewrite(node, lems);
+    Trace("uf-lazy-ll") << "...return " << skTrn.getNode() << std::endl;
     return skTrn;
   }
   return TrustNode::null();
