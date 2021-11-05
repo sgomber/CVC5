@@ -569,12 +569,12 @@ unsigned HoExtension::checkLazyLambdaLifting()
       Node op;
       Kind k = n.getKind();
       std::vector<Node> args;
-      if (k==APPLY_UF)
+      if (k == APPLY_UF)
       {
         op = n.getOperator();
         args.insert(args.end(), n.begin(), n.end());
       }
-      else if (k==HO_APPLY)
+      else if (k == HO_APPLY)
       {
         op = n[0];
         args.push_back(n[1]);
@@ -583,9 +583,9 @@ unsigned HoExtension::checkLazyLambdaLifting()
       {
         continue;
       }
-      Assert (ee->hasTerm(op));
+      Assert(ee->hasTerm(op));
       Node r = ee->getRepresentative(op);
-      Assert (d_lambdaEqc.find(r)!=d_lambdaEqc.end());
+      Assert(d_lambdaEqc.find(r) != d_lambdaEqc.end());
       Node lf = d_lambdaEqc[r];
       Node lam = d_ll.getLambdaFor(lf);
       Assert(!lam.isNull() && lam.getKind() == LAMBDA);

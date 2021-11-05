@@ -842,7 +842,7 @@ enum class InferenceId
   UF_HO_MODEL_EXTENSIONALITY,
   // equivalence of lambdas
   UF_HO_LAMBDA_UNIV_EQ,
-  // 
+  //
   UF_HO_LAMBDA_APP_REDUCE,
   //-------------------- end model-construction specific part
   //-------------------- end HO extension to UF
