@@ -987,12 +987,11 @@ bool TheoryEngineModelBuilder::buildModel(TheoryModel* tm)
             if (t.isFunction())
             {
               std::map<Node, Node>::iterator ita = assertedReps.find(*i2);
-              if (ita!=assertedReps.end())
+              if (ita != assertedReps.end())
               {
-                Assert (ita->second.getKind()==kind::LAMBDA);
+                Assert(ita->second.getKind() == kind::LAMBDA);
                 n = ita->second;
-                Trace("model-builder-debug")
-                    << "Use lambda " << n << std::endl;
+                Trace("model-builder-debug") << "Use lambda " << n << std::endl;
               }
             }
             if (n.isNull())

@@ -741,7 +741,7 @@ std::vector< Node > TheoryModel::getFunctionsToAssign() {
       {
         // if in higher-order mode, assign function definitions modulo equality
         Node r = getRepresentative( n );
-        if (r.getKind()==LAMBDA)
+        if (r.getKind() == LAMBDA)
         {
           continue;
         }
