@@ -26,6 +26,7 @@
 #include "theory/theory_inference_manager.h"
 #include "theory/theory_model.h"
 #include "theory/theory_state.h"
+#include "theory/skolem_lemma.h"
 
 namespace cvc5 {
 namespace theory {
@@ -68,7 +69,7 @@ class HoExtension : protected EnvObj
    * function variables for function heads that are not variables via the
    * getApplyUfForHoApply method below.
    */
-  Node ppRewrite(Node node);
+  TrustNode ppRewrite(Node node, std::vector<SkolemLemma>& lems);
 
   /** check higher order
    *

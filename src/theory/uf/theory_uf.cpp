@@ -215,56 +215,20 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
   Trace("uf-exp-def") << "TheoryUF::ppRewrite: expanding definition : " << node
                       << std::endl;
   Kind k = node.getKind();
+  bool isHol = logicInfo().isHigherOrder();
   if (k == kind::HO_APPLY || (node.isVar() && node.getType().isFunction()))
   {
-    if (!logicInfo().isHigherOrder())
+    if (!isHol)
     {
       std::stringstream ss;
       ss << "Partial function applications are only supported with "
             "higher-order logic. Try adding the logic prefix HO_.";
       throw LogicException(ss.str());
     }
-    Node ret = d_ho->ppRewrite(node);
-    if (ret != node)
-    {
-      Trace("uf-exp-def") << "TheoryUF::ppRewrite: higher-order: " << node
-                          << " to " << ret << std::endl;
-      return TrustNode::mkTrustRewrite(node, ret, nullptr);
-    }
-    // f ---> (lambda ((x Int) (y Int)) s[x, y]) then (@ f t) is preprocessed
-    // to (lambda ((y Int)) s[t, y]).
-    // TODO
   }
   else if (k == kind::APPLY_UF)
   {
-    // Say (lambda ((x Int)) t[x]) occurs in the input. We replace this
-    // by k during ppRewrite. In the following, if we see (k s), we replace
-    // it by t[s]. This maintains the invariant that the *only* occurence
-    // of k is as arguments to other functions; k is *not* itself applied
-    // in any preprocessed constraints.
-    if (logicInfo().isHigherOrder())
-    {
-      if (options().uf.ufHoLazyLambdaLift)
-      {
-        // if an application of the lambda lifted function, do beta reduction
-        // immediately
-        Node op = node.getOperator();
-        Node opl = d_lambdaLift->getLambdaFor(op);
-        if (!opl.isNull())
-        {
-          NodeManager* nm = NodeManager::currentNM();
-          std::vector<Node> betaRed;
-          betaRed.push_back(opl);
-          betaRed.insert(betaRed.end(), node.begin(), node.end());
-          Node app = nm->mkNode(kind::APPLY_UF, betaRed);
-          app = rewrite(app);
-          Trace("uf-lazy-ll")
-              << "Beta reduce: " << node << " -> " << app << std::endl;
-          return TrustNode::mkTrustRewrite(node, app, nullptr);
-        }
-      }
-    }
-    else if (isHigherOrderType(node.getOperator().getType()))
+    if (!isHol && isHigherOrderType(node.getOperator().getType()))
     {
       // check for higher-order
       // logic exception if higher-order is not enabled
@@ -276,13 +240,15 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
       throw LogicException(ss.str());
     }
   }
-  else if (k == kind::LAMBDA)
+  if (isHol)
   {
-    Assert(logicInfo().isHigherOrder());
-    Trace("uf-lazy-ll") << "Preprocess lambda: " << node << std::endl;
-    TrustNode skTrn = d_lambdaLift->ppRewrite(node, lems);
-    Trace("uf-lazy-ll") << "...return " << skTrn.getNode() << std::endl;
-    return skTrn;
+    TrustNode ret = d_ho->ppRewrite(node, lems);
+    if (!ret.isNull())
+    {
+      Trace("uf-exp-def") << "TheoryUF::ppRewrite: higher-order: " << node
+                          << " to " << ret.getNode() << std::endl;
+      return ret;
+    }
   }
   return TrustNode::null();
 }

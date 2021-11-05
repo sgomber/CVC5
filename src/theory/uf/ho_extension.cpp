@@ -43,21 +43,70 @@ HoExtension::HoExtension(Env& env,
   d_true = NodeManager::currentNM()->mkConst(true);
 }
 
-Node HoExtension::ppRewrite(Node node)
+TrustNode HoExtension::ppRewrite(Node node, std::vector<SkolemLemma>& lems)
 {
-  // convert HO_APPLY to APPLY_UF if fully applied
-  if (node.getKind() == HO_APPLY)
+  Kind k = node.getKind();
+  if (k == HO_APPLY)
   {
+    // convert HO_APPLY to APPLY_UF if fully applied
     if (node[0].getType().getNumChildren() == 2)
     {
       Trace("uf-ho") << "uf-ho : expanding definition : " << node << std::endl;
       Node ret = getApplyUfForHoApply(node);
       Trace("uf-ho") << "uf-ho : ppRewrite : " << node << " to " << ret
                      << std::endl;
-      return ret;
+      return TrustNode::mkTrustRewrite(node, ret);
+    }
+    // partial beta reduction
+    // f ---> (lambda ((x Int) (y Int)) s[x, y]) then (@ f t) is preprocessed
+    // to (lambda ((y Int)) s[t, y]).
+    if (options().uf.ufHoLazyLambdaLift)
+    {
+      Node op = node[0];
+      Node opl = d_ll.getLambdaFor(op);
+      if (!opl.isNull())
+      {
+        NodeManager* nm = NodeManager::currentNM();
+        Node app = nm->mkNode(HO_APPLY, opl, node[1]);
+        app = rewrite(app);
+        Trace("uf-lazy-ll")
+            << "Partial beta reduce: " << node << " -> " << app << std::endl;
+        return TrustNode::mkTrustRewrite(node, app, nullptr);
+      }
     }
   }
-  return node;
+  else if (k==APPLY_UF)
+  {
+    // Say (lambda ((x Int)) t[x]) occurs in the input. We replace this
+    // by k during ppRewrite. In the following, if we see (k s), we replace
+    // it by t[s]. This maintains the invariant that the *only* occurence
+    // of k is as arguments to other functions; k is *not* itself applied
+    // in any preprocessed constraints.
+    if (options().uf.ufHoLazyLambdaLift)
+    {
+      // if an application of the lambda lifted function, do beta reduction
+      // immediately
+      Node op = node.getOperator();
+      Node opl = d_ll.getLambdaFor(op);
+      if (!opl.isNull())
+      {
+        Assert (opl.getKind()==LAMBDA);
+        std::vector<Node> args(node.begin(), node.end());
+        Node app = d_ll.betaReduce(opl, args);
+        Trace("uf-lazy-ll")
+            << "Beta reduce: " << node << " -> " << app << std::endl;
+        return TrustNode::mkTrustRewrite(node, app, nullptr);
+      }
+    }
+  }
+  else if (k == kind::LAMBDA)
+  {
+    Trace("uf-lazy-ll") << "Preprocess lambda: " << node << std::endl;
+    TrustNode skTrn = d_ll.ppRewrite(node, lems);
+    Trace("uf-lazy-ll") << "...return " << skTrn.getNode() << std::endl;
+    return skTrn;
+  }
+  return TrustNode::null();
 }
 
 Node HoExtension::getExtensionalityDeq(TNode deq, bool isCached)
