@@ -64,11 +64,12 @@ void CandidateGeneratorQE::resetForOperator(Node eqc, Node op)
   d_eqc = eqc;
   d_op = op;
   d_termIterList = d_treg.getTermDatabase()->getGroundTermList(d_op);
-  if (d_termIterList==nullptr)
+  if (d_termIterList == nullptr)
   {
     d_mode = cand_term_none;
   }
-  else if( eqc.isNull() ){
+  else if (eqc.isNull())
+  {
     d_mode = cand_term_db;
   }else{
     if( isExcludedEqc( eqc ) ){
@@ -108,10 +109,11 @@ Node CandidateGeneratorQE::getNextCandidate(){
 Node CandidateGeneratorQE::getNextCandidateInternal()
 {
   if( d_mode==cand_term_db ){
-    Assert (d_termIterList!=nullptr);
+    Assert(d_termIterList != nullptr);
     Debug("cand-gen-qe") << "...get next candidate in tbd" << std::endl;
     //get next candidate term in the uf term database
-    while( d_termIter<d_termIterList->d_list.size() ){
+    while (d_termIter < d_termIterList->d_list.size())
+    {
       Node n = d_termIterList->d_list[d_termIter];
       d_termIter++;
       if( isLegalCandidate( n ) ){
