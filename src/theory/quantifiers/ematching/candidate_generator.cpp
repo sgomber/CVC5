@@ -254,7 +254,7 @@ void CandidateGeneratorConsExpand::reset(Node eqc)
   if (eqc.isNull())
   {
     d_termIterList = d_treg.getTermDatabase()->getGroundTermList(d_op);
-    d_mode = d_termIterList==nullptr ? cand_term_none : cand_term_db;
+    d_mode = d_termIterList == nullptr ? cand_term_none : cand_term_db;
   }
   else
   {

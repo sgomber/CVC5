@@ -646,10 +646,7 @@ void QuantifiersEngine::assertQuantifier( Node f, bool pol ){
   d_treg.addTerm(d_qreg.getInstConstantBody(f), true);
 }
 
-void QuantifiersEngine::assertFact(TNode literal)
-{
-  
-}
+void QuantifiersEngine::assertFact(TNode literal) {}
 
 void QuantifiersEngine::eqNotifyNewClass(TNode t) { d_treg.addTerm(t); }
 
