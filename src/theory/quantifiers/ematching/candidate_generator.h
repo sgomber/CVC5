@@ -27,6 +27,7 @@ namespace quantifiers {
 
 class QuantifiersState;
 class TermRegistry;
+class DbList;
 
 namespace inst {
 
