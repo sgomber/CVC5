@@ -960,6 +960,10 @@ void TheoryEngine::assertFact(TNode literal)
   bool polarity = literal.getKind() != kind::NOT;
   TNode atom = polarity ? literal : literal[0];
 
+  if (d_logicInfo.isQuantified())
+  {
+    d_quantEngine->assertFact(literal);
+  }
   if (d_logicInfo.isSharingEnabled()) {
     // If any shared terms, it's time to do sharing work
     d_sharedSolver->preNotifySharedFact(atom);
