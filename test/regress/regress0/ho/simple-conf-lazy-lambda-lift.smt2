@@ -1,3 +1,5 @@
+; COMMAND-LINE: --uf-lazy-ll
+; EXPECT: unsat
 (set-logic HO_ALL)
 (set-info :status unsat)
 (define-fun f ((x Int)) Int (+ x 1))
