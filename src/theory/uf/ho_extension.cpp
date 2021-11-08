@@ -714,7 +714,6 @@ bool HoExtension::collectModelInfoHoTerm(Node n, TheoryModel* m)
   return true;
 }
 
-
 bool HoExtension::cacheLemma(TNode lem)
 {
   Node rewritten = rewrite(lem);

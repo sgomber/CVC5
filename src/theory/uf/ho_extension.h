@@ -210,7 +210,7 @@ class HoExtension : protected EnvObj
   LambdaLift& d_ll;
   /** extensionality has been applied to these disequalities */
   NodeSet d_extensionality;
-  /** 
+  /**
    * The lemmas we have sent. This is required since the UF inference manager
    * does not cache lemmas.
    */
