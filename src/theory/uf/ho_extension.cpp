@@ -502,12 +502,14 @@ unsigned HoExtension::checkLazyLambda()
       {
         if (!lamRep.isNull())
         {
-          // if we are equal to a lambda function, we must beta-reduce applications of this
+          // if we are equal to a lambda function, we must beta-reduce
+          // applications of this
           normalEqFuns.insert(n);
         }
         else
         {
-          // waiting to see if there is a lambda function in this equivalence class
+          // waiting to see if there is a lambda function in this equivalence
+          // class
           normalEqFunWait.insert(n);
         }
       }
@@ -525,8 +527,8 @@ unsigned HoExtension::checkLazyLambda()
         // two lambda functions are in same equivalence class
         Node f = lamRep < n ? lamRep : n;
         Node g = lamRep < n ? n : lamRep;
-        Trace("uf-ho-debug") << "  found equivalent lambda functions " << f << " and " << g
-                            << std::endl;
+        Trace("uf-ho-debug") << "  found equivalent lambda functions " << f
+                             << " and " << g << std::endl;
         Node flam = lamRep < n ? lamRepLam : lam;
         Assert(!flam.isNull() && flam.getKind() == LAMBDA);
         Node lhs = flam[1];
@@ -551,8 +553,9 @@ unsigned HoExtension::checkLazyLambda()
       d_lambdaEqc[eqc] = lamRep;
     }
   }
-    Trace("uf-ho-debug") << "  found " << normalEqFuns.size() << " ordinary functions that are equal to lambda functions"
-                         << std::endl;
+  Trace("uf-ho-debug")
+      << "  found " << normalEqFuns.size()
+      << " ordinary functions that are equal to lambda functions" << std::endl;
   if (normalEqFuns.empty())
   {
     return numLemmas;
@@ -589,12 +592,12 @@ unsigned HoExtension::checkLazyLambda()
       {
         continue;
       }
-      if (normalEqFuns.find(op)==normalEqFuns.end())
+      if (normalEqFuns.find(op) == normalEqFuns.end())
       {
         continue;
       }
       Trace("uf-ho-debug") << "  found relevant ordinary application " << n
-                          << std::endl;
+                           << std::endl;
       Assert(ee->hasTerm(op));
       Node r = ee->getRepresentative(op);
       Assert(d_lambdaEqc.find(r) != d_lambdaEqc.end());

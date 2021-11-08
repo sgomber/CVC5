@@ -185,7 +185,7 @@ class HoExtension : protected EnvObj
    * This assumes that lambdas are not eagerly lifted to quantified formulas.
    * It processes two lemma schemas, UF_HO_LAMBDA_UNIV_EQ and
    * UF_HO_LAMBDA_APP_REDUCE. For details on these, see inference_id.h.
-   * 
+   *
    * Returns the number of lemmas added on this call.
    */
   unsigned checkLazyLambda();
