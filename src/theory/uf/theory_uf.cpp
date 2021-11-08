@@ -314,6 +314,14 @@ void TheoryUF::preRegisterTerm(TNode node)
     d_equalityEngine->addTerm(node);
     break;
   }
+  
+  if (logicInfo().isHigherOrder())
+  {
+    if (d_lambdaLift->isLambdaFunction(node))
+    {
+      addSharedTerm(node);
+    }
+  }
 }
 
 void TheoryUF::explain(TNode literal, Node& exp)
@@ -528,6 +536,10 @@ bool TheoryUF::areCareDisequal(TNode x, TNode y)
         d_equalityEngine->getTriggerTermRepresentative(y, THEORY_UF);
     EqualityStatus eqStatus = d_valuation.getEqualityStatus(x_shared, y_shared);
     if( eqStatus==EQUALITY_FALSE_AND_PROPAGATED || eqStatus==EQUALITY_FALSE || eqStatus==EQUALITY_FALSE_IN_MODEL ){
+      if (x.getType().isFunction())
+      {
+        return false;
+      }
       return true;
     }
   }
