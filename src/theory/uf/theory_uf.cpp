@@ -314,7 +314,7 @@ void TheoryUF::preRegisterTerm(TNode node)
     d_equalityEngine->addTerm(node);
     break;
   }
-  
+
   if (logicInfo().isHigherOrder())
   {
     if (d_lambdaLift->isLambdaFunction(node))
