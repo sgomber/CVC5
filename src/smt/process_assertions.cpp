@@ -309,7 +309,7 @@ bool ProcessAssertions::apply(Assertions& as)
   dumpAssertions("assertions::post-repeat-simplify", as);
   Trace("assertions::post-repeat-simplify") << std::endl;
 
-  if (logicInfo().isHigherOrder() && options().quantifiers.hoElim)
+  if (logicInfo().isHigherOrder())
   {
     applyPass("ho-elim", as);
   }

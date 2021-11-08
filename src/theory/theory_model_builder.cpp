@@ -991,26 +991,11 @@ bool TheoryEngineModelBuilder::buildModel(TheoryModel* tm)
           }
           else
           {
-            // Otherwise, first, check if we are a function and have an
-            // explicit lambda. If so, use it.
-            if (t.isFunction())
-            {
-              std::map<Node, Node>::iterator ita = assertedReps.find(*i2);
-              if (ita != assertedReps.end())
-              {
-                Assert(ita->second.getKind() == kind::LAMBDA);
-                n = ita->second;
-                Trace("model-builder-debug") << "Use lambda " << n << std::endl;
-              }
-            }
             // Otherwise, we get the first value from the type enumerator.
-            if (n.isNull())
-            {
-              Trace("model-builder-debug")
-                  << "Get first value from finite type..." << std::endl;
-              TypeEnumerator te(t);
-              n = *te;
-            }
+            Trace("model-builder-debug")
+                << "Get first value from finite type..." << std::endl;
+            TypeEnumerator te(t);
+            n = *te;
           }
           Trace("model-builder-debug") << "...got " << n << std::endl;
           assignConstantRep(tm, *i2, n);
@@ -1143,7 +1128,6 @@ void TheoryEngineModelBuilder::debugCheckModel(TheoryModel* tm)
           << "Representative " << rep << " of " << n
           << " violates type constraints (" << rep.getType() << " and "
           << n.getType() << ")";
-      // non-linear mult is not necessarily accurate wrt getValue
       Node val = tm->getValue(*eqc_i);
       if (val != rep)
       {
@@ -1159,6 +1143,8 @@ void TheoryEngineModelBuilder::debugCheckModel(TheoryModel* tm)
         }
         else
         {
+          // if it does not evaluate, it is just a warning, which may be the
+          // case for non-constant values, e.g. lambdas.
           warning() << err.str();
         }
       }
