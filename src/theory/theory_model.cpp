@@ -690,7 +690,7 @@ void TheoryModel::assignFunctionDefinition( Node f, Node f_def ) {
 
   if (logicInfo().isHigherOrder())
   {
-    //we must rewrite the function value since the definition needs to be a
+    // we must rewrite the function value since the definition needs to be a
     // constant value. This does not need to be the case if we are assigning a
     // lambda to the equivalence class in isolation, so we do not assert that
     // f_def is constant here.
@@ -727,7 +727,10 @@ void TheoryModel::assignFunctionDefinition( Node f, Node f_def ) {
   }
 }
 
-bool TheoryModel::hasAssignedFunctionDefinition( Node f ) const { return d_uf_models.find( f )!=d_uf_models.end(); }
+bool TheoryModel::hasAssignedFunctionDefinition(Node f) const
+{
+  return d_uf_models.find(f) != d_uf_models.end();
+}
 
 std::vector< Node > TheoryModel::getFunctionsToAssign() {
   std::vector< Node > funcs_to_assign;
