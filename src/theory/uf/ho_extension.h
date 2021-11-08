@@ -198,6 +198,8 @@ class HoExtension : protected EnvObj
   bool collectModelInfoHoTerm(Node n, TheoryModel* m);
 
  private:
+  /** Cache lemma lem, return true if it does not already exist */
+  bool cacheLemma(TNode lem);
   /** common constants */
   Node d_true;
   /** Reference to the state object */
@@ -208,6 +210,11 @@ class HoExtension : protected EnvObj
   LambdaLift& d_ll;
   /** extensionality has been applied to these disequalities */
   NodeSet d_extensionality;
+  /** 
+   * The lemmas we have sent. This is required since the UF inference manager
+   * does not cache lemmas.
+   */
+  NodeSet d_cachedLemmas;
   /**
    * In the following, we say that a "lambda function" is a variable k that was
    * introduced by the lambda lifting utility, and has a corresponding lambda

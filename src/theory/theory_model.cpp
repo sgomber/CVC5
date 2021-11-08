@@ -717,7 +717,7 @@ void TheoryModel::assignFunctionDefinition( Node f, Node f_def ) {
     while( !eqc_i.isFinished() ) {
       Node n = *eqc_i;
       // if an unassigned variable function
-      if( n.isVar() && d_uf_terms.find( n )!=d_uf_terms.end() && !hasAssignedFunctionDefinition( n ) ){
+      if( n.isVar() && !hasAssignedFunctionDefinition( n ) ){
         d_uf_models[n] = f_def;
         Trace("model-builder") << "  Assigning function (" << n << ") to function definition of " << f << std::endl;
       }

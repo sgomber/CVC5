@@ -38,6 +38,7 @@ HoExtension::HoExtension(Env& env,
       d_im(im),
       d_ll(ll),
       d_extensionality(userContext()),
+      d_cachedLemmas(userContext()),
       d_uf_std_skolem(userContext())
 {
   d_true = NodeManager::currentNM()->mkConst(true);
@@ -542,8 +543,9 @@ unsigned HoExtension::checkLazyLambda()
         // will infer: f = g => forall x. x+1 = x+3, which simplifies to
         // f != g.
         Node lem = nm->mkNode(IMPLIES, f.eqNode(g), univ);
-        if (d_im.lemma(lem, InferenceId::UF_HO_LAMBDA_UNIV_EQ))
+        if (cacheLemma(lem))
         {
+          d_im.lemma(lem, InferenceId::UF_HO_LAMBDA_UNIV_EQ);
           numLemmas++;
         }
       }
@@ -613,8 +615,9 @@ unsigned HoExtension::checkLazyLambda()
       rhs = rewrite(rhs);
       Node conc = n.eqNode(rhs);
       Node lem = nm->mkNode(IMPLIES, premise, conc);
-      if (d_im.lemma(lem, InferenceId::UF_HO_LAMBDA_APP_REDUCE))
+      if (cacheLemma(lem))
       {
+        d_im.lemma(lem, InferenceId::UF_HO_LAMBDA_APP_REDUCE);
         numLemmas++;
       }
     }
@@ -708,6 +711,18 @@ bool HoExtension::collectModelInfoHoTerm(Node n, TheoryModel* m)
       return false;
     }
   }
+  return true;
+}
+
+
+bool HoExtension::cacheLemma(TNode lem)
+{
+  Node rewritten = rewrite(lem);
+  if (d_cachedLemmas.find(rewritten) != d_cachedLemmas.end())
+  {
+    return false;
+  }
+  d_cachedLemmas.insert(rewritten);
   return true;
 }
 
