@@ -465,13 +465,14 @@ unsigned HoExtension::checkAppCompletion()
   return 0;
 }
 
-unsigned HoExtension::checkLazyLambdaLifting()
+unsigned HoExtension::checkLazyLambda()
 {
   if (!options().uf.ufHoLazyLambdaLift)
   {
     // no lambdas are lazily lifted
     return 0;
   }
+  Trace("uf-ho") << "HoExtension::checkLazyLambda..." << std::endl;
   NodeManager* nm = NodeManager::currentNM();
   unsigned numLemmas = 0;
   d_lambdaEqc.clear();
@@ -501,17 +502,21 @@ unsigned HoExtension::checkLazyLambdaLifting()
       {
         if (!lamRep.isNull())
         {
+          // if we are equal to a lambda function, we must beta-reduce applications of this
           normalEqFuns.insert(n);
         }
         else
         {
+          // waiting to see if there is a lambda function in this equivalence class
           normalEqFunWait.insert(n);
         }
       }
       else if (lamRep.isNull())
       {
+        // there is a lambda function in this equivalence class
         lamRep = n;
         lamRepLam = lam;
+        // must consider all normal functions we've seen so far
         normalEqFuns.insert(normalEqFunWait.begin(), normalEqFunWait.end());
         normalEqFunWait.clear();
       }
@@ -520,6 +525,8 @@ unsigned HoExtension::checkLazyLambdaLifting()
         // two lambda functions are in same equivalence class
         Node f = lamRep < n ? lamRep : n;
         Node g = lamRep < n ? n : lamRep;
+        Trace("uf-ho-debug") << "  found equivalent lambda functions " << f << " and " << g
+                            << std::endl;
         Node flam = lamRep < n ? lamRepLam : lam;
         Assert(!flam.isNull() && flam.getKind() == LAMBDA);
         Node lhs = flam[1];
@@ -544,26 +551,27 @@ unsigned HoExtension::checkLazyLambdaLifting()
       d_lambdaEqc[eqc] = lamRep;
     }
   }
-  if (!normalEqFuns.empty())
+    Trace("uf-ho-debug") << "  found " << normalEqFuns.size() << " ordinary functions that are equal to lambda functions"
+                         << std::endl;
+  if (normalEqFuns.empty())
   {
     return numLemmas;
   }
   // if we have normal functions that are equal to lambda functions, go back
   // and ensure they are mapped properly
   // mapping from functions to terms
-  while (!eqcs_i.isFinished())
+  eq::EqClassesIterator eqcs_i2 = eq::EqClassesIterator(ee);
+  while (!eqcs_i2.isFinished())
   {
-    Node eqc = (*eqcs_i);
-    ++eqcs_i;
-    if (!eqc.getType().isFunction())
-    {
-      continue;
-    }
+    Node eqc = (*eqcs_i2);
+    ++eqcs_i2;
+    Trace("uf-ho-debug") << "Check equivalence class " << eqc << std::endl;
     eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
     while (!eqc_i.isFinished())
     {
       Node n = *eqc_i;
       ++eqc_i;
+      Trace("uf-ho-debug") << "Check term " << n << std::endl;
       Node op;
       Kind k = n.getKind();
       std::vector<Node> args;
@@ -581,6 +589,12 @@ unsigned HoExtension::checkLazyLambdaLifting()
       {
         continue;
       }
+      if (normalEqFuns.find(op)==normalEqFuns.end())
+      {
+        continue;
+      }
+      Trace("uf-ho-debug") << "  found relevant ordinary application " << n
+                          << std::endl;
       Assert(ee->hasTerm(op));
       Node r = ee->getRepresentative(op);
       Assert(d_lambdaEqc.find(r) != d_lambdaEqc.end());
@@ -628,7 +642,7 @@ unsigned HoExtension::check()
     switch (i)
     {
       case 0: num_lemmas = checkExtensionality(); break;
-      case 1: num_lemmas = checkLazyLambdaLifting(); break;
+      case 1: num_lemmas = checkLazyLambda(); break;
       default: break;
     }
     // finish if we added lemmas

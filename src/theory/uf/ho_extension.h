@@ -175,12 +175,20 @@ class HoExtension : protected EnvObj
 
   /** check whether app-completion should be applied for any
    * pair of terms in the equality engine.
+   *
+   * Returns the number of lemmas added on this call.
    */
   unsigned checkAppCompletion();
   /**
-   * Check lazy lambda lifting.
+   * Check lazy lambda.
+   *
+   * This assumes that lambdas are not eagerly lifted to quantified formulas.
+   * It processes two lemma schemas, UF_HO_LAMBDA_UNIV_EQ and
+   * UF_HO_LAMBDA_APP_REDUCE. For details on these, see inference_id.h.
+   * 
+   * Returns the number of lemmas added on this call.
    */
-  unsigned checkLazyLambdaLifting();
+  unsigned checkLazyLambda();
   /** collect model info for higher-order term
    *
    * This adds required constraints to m for term n. In particular, if n is
