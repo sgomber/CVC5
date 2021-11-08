@@ -545,8 +545,10 @@ bool FullModelChecker::processBuildModel(TheoryModel* m){
 
   //make function values
   for( std::map<Node, Def * >::iterator it = fm->d_models.begin(); it != fm->d_models.end(); ++it ){
-    // for lazy lambda lifting, a function may already have been assigned
-    // for 
+    // For lazy lambda lifting, a function may already have been assigned
+    // during uf::HoExtension's collectModelValues method. In this case,
+    // the Def in it->second was not used, as all such functions are eagerly
+    // eliminated.
     if (!m->hasAssignedFunctionDefinition(it->first))
     {
       Node f_def = getFunctionValue( fm, it->first, "$x" );
