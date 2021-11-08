@@ -31,6 +31,10 @@ namespace theory {
 namespace uf {
 
 /**
+ * Module for doing various operations on lambdas, including lambda lifting.
+ *
+ * In the following, we say a "lambda function" is a skolem variable that
+ * was introduced as a purification skolem for a lambda term.
  */
 class LambdaLift : protected EnvObj
 {
@@ -40,27 +44,43 @@ class LambdaLift : protected EnvObj
  public:
   LambdaLift(Env& env);
 
-  /** process, return the trust node corresponding to the lemma */
+  /**
+   * process, return the trust node corresponding to the lemma for the lambda
+   * lifting of (lambda) term node, or null if it is not a lambda or if
+   * the lambda lifting lemma has already been generated in this context.
+   */
   TrustNode lift(Node node);
 
-  /** process, return the trust node corresponding to the rewrite */
+  /**
+   * This method has the same contract as Theory::ppRewrite.
+   * Preprocess, return the trust node corresponding to the rewrite. A null
+   * trust node indicates no rewrite.
+   */
   TrustNode ppRewrite(Node node, std::vector<SkolemLemma>& lems);
 
-  /** needs lifting */
-  bool needsLift(TNode skolem) const;
-
-  /** Get lambda for skolem */
+  /** Get the lambda term for skolem, if skolem is a lambda function. */
   Node getLambdaFor(TNode skolem) const;
 
-  /** Beta-reduce */
+  /**
+   * Beta-reduce node. If node is APPLY_UF and its operator is a lambda
+   * function known by this class, then this method returns the beta
+   * reduced version of node. We only beta-reduce the top-most application
+   * in node.
+   *
+   * This method returns the trust node corresponding to the rewrite of node to
+   * the return value. It returns the null trust node if no beta reduction is
+   * possible for node.
+   */
   TrustNode betaReduce(TNode node) const;
-  /** Beta-reduce */
+  /** Beta-reduce the given lambda on the given arguments. */
   Node betaReduce(TNode lam, const std::vector<Node>& args) const;
 
  private:
-  /** Get assertion for */
+  /**
+   * Get assertion for node, which is the axiom defining
+   */
   static Node getAssertionFor(TNode node);
-  /** Get skolem for */
+  /** Get skolem for lambda term node, returns its purification skolem */
   static Node getSkolemFor(TNode node);
   /** The nodes we have already returned trust nodes for */
   NodeSet d_lifted;

@@ -80,17 +80,6 @@ TrustNode LambdaLift::ppRewrite(Node node, std::vector<SkolemLemma>& lems)
       node, skolem, PfRule::MACRO_SR_PRED_INTRO, {eq});
 }
 
-bool LambdaLift::needsLift(TNode skolem) const
-{
-  // must have a lambda, and have not have been lifted already
-  Node l = getLambdaFor(skolem);
-  if (l.isNull())
-  {
-    return false;
-  }
-  return d_lifted.find(skolem) == d_lifted.end();
-}
-
 Node LambdaLift::getLambdaFor(TNode skolem) const
 {
   NodeNodeMap::const_iterator it = d_lambdaMap.find(skolem);
@@ -152,7 +141,9 @@ Node LambdaLift::getSkolemFor(TNode node)
   Kind k = node.getKind();
   if (k == LAMBDA)
   {
-    // if a lambda, do lambda-lifting
+    // if a lambda, return the purification variable for the node. We ignore
+    // lambdas with free variables, which can occur beneath quantifiers
+    // during preprocessing.
     if (!expr::hasFreeVar(node))
     {
       Trace("rtf-proof-debug")
@@ -199,12 +190,13 @@ TrustNode LambdaLift::betaReduce(TNode node) const
       Node app = betaReduce(opl, args);
       Trace("uf-lazy-ll") << "Beta reduce: " << node << " -> " << app
                           << std::endl;
-      return TrustNode::mkTrustRewrite(node, app, nullptr);
+      if (d_epg == nullptr)
+      {
+        return TrustNode::mkTrustRewrite(node, app);
+      }
+      return d_epg->mkTrustedRewrite(
+          node, app, PfRule::MACRO_SR_PRED_INTRO, {node.eqNode(app)});
     }
-  }
-  else if (k == HO_APPLY)
-  {
-    // partial reduction???
   }
   // otherwise, unchanged
   return TrustNode::null();
