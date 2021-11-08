@@ -984,6 +984,8 @@ bool TheoryEngineModelBuilder::buildModel(TheoryModel* tm)
           }
           else
           {
+            // Otherwise, first, check if we are a function and have an
+            // explicit lambda. If so, use it.
             if (t.isFunction())
             {
               std::map<Node, Node>::iterator ita = assertedReps.find(*i2);
@@ -994,11 +996,11 @@ bool TheoryEngineModelBuilder::buildModel(TheoryModel* tm)
                 Trace("model-builder-debug") << "Use lambda " << n << std::endl;
               }
             }
+            // Otherwise, we get the first value from the type enumerator.
             if (n.isNull())
             {
               Trace("model-builder-debug")
                   << "Get first value from finite type..." << std::endl;
-              // Otherwise, we get the first value from the type enumerator.
               TypeEnumerator te(t);
               n = *te;
             }
