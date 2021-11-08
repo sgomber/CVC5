@@ -126,7 +126,7 @@ class TheoryEngineModelBuilder : protected EnvObj
    * state of the model m.
    */
   Node evaluateEqc(TheoryModel* m, TNode r);
-  /** 
+  /**
    * Is the node n a "value"? This is true if n is constant, or if n is a
    * lambda.
    */

@@ -127,7 +127,7 @@ bool TheoryEngineModelBuilder::isAssignerActive(TheoryModel* tm, Assigner& a)
 
 bool TheoryEngineModelBuilder::isValue(TNode n)
 {
-  return n.getKind()==kind::LAMBDA || n.isConst();
+  return n.getKind() == kind::LAMBDA || n.isConst();
 }
 
 bool TheoryEngineModelBuilder::isAssignable(TNode n)
@@ -1162,7 +1162,6 @@ void TheoryEngineModelBuilder::debugCheckModel(TheoryModel* tm)
           warning() << err.str();
         }
       }
-      
     }
   }
 
