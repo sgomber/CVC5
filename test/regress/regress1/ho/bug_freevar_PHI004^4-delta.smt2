@@ -1,4 +1,4 @@
-; COMMAND-LINE: --finite-model-find --decision=justification-old --uf-lazy-ll --no-check-models
+; COMMAND-LINE: --finite-model-find --decision=justification-old --uf-lazy-ll -q
 ; EXPECT: sat
 
 (set-logic HO_ALL)
