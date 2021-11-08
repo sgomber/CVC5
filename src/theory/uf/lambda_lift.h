@@ -24,6 +24,7 @@
 #include "proof/trust_node.h"
 #include "smt/env_obj.h"
 #include "theory/skolem_lemma.h"
+#include "proof/eager_proof_generator.h"
 
 namespace cvc5 {
 namespace theory {
@@ -65,6 +66,8 @@ class LambdaLift : protected EnvObj
   NodeSet d_lifted;
   /** Mapping skolems to their lambda */
   NodeNodeMap d_lambdaMap;
+  /** An eager proof generator */
+  std::unique_ptr<EagerProofGenerator> d_epg;
 };
 
 }  // namespace uf

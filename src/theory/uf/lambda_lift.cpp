@@ -15,6 +15,7 @@
 
 #include "theory/uf/lambda_lift.h"
 
+#include "smt/env.h"
 #include "expr/node_algorithm.h"
 #include "expr/skolem_manager.h"
 #include "options/uf_options.h"
@@ -26,7 +27,7 @@ namespace theory {
 namespace uf {
 
 LambdaLift::LambdaLift(Env& env)
-    : EnvObj(env), d_lifted(userContext()), d_lambdaMap(userContext())
+    : EnvObj(env), d_lifted(userContext()), d_lambdaMap(userContext()), d_epg(env.isTheoryProofProducing() ? new EagerProofGenerator(env.getProofNodeManager(), userContext(), "LambdaLift::epg") : nullptr)
 {
 }
 
@@ -42,8 +43,12 @@ TrustNode LambdaLift::lift(Node node)
   {
     return TrustNode::null();
   }
-  // TODO: proofs
-  return TrustNode::mkTrustLemma(assertion);
+  // if no proofs, return lemma with no generator
+  if (d_epg==nullptr)
+  {
+    return TrustNode::mkTrustLemma(assertion);
+  }
+  return d_epg->mkTrustNode(assertion,PfRule::MACRO_SR_PRED_INTRO, {}, {assertion});
 }
 
 TrustNode LambdaLift::ppRewrite(Node node, std::vector<SkolemLemma>& lems)
@@ -59,8 +64,13 @@ TrustNode LambdaLift::ppRewrite(Node node, std::vector<SkolemLemma>& lems)
     TrustNode trn = lift(node);
     lems.push_back(SkolemLemma(trn, skolem));
   }
-  // TODO: proofs
-  return TrustNode::mkTrustRewrite(node, skolem);
+  // if no proofs, return lemma with no generator
+  if (d_epg==nullptr)
+  {
+    return TrustNode::mkTrustRewrite(node, skolem);
+  }
+  Node eq = node.eqNode(skolem);
+  return d_epg->mkTrustedRewrite(node, skolem,PfRule::MACRO_SR_PRED_INTRO, {eq});
 }
 
 bool LambdaLift::needsLift(TNode skolem) const
