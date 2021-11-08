@@ -21,10 +21,10 @@
 #include "context/cdhashmap.h"
 #include "context/cdhashset.h"
 #include "expr/node.h"
+#include "proof/eager_proof_generator.h"
 #include "proof/trust_node.h"
 #include "smt/env_obj.h"
 #include "theory/skolem_lemma.h"
-#include "proof/eager_proof_generator.h"
 
 namespace cvc5 {
 namespace theory {

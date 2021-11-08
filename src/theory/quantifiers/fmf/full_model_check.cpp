@@ -398,7 +398,7 @@ bool FullModelChecker::processBuildModel(TheoryModel* m){
     Node op = fmm.first;
     //reset the model
     d_fm->d_models[op]->reset();
-    
+
     // if we've already assigned the function, ignore
     if (m->hasAssignedFunctionDefinition(op))
     {
@@ -551,8 +551,8 @@ bool FullModelChecker::processBuildModel(TheoryModel* m){
     // eliminated.
     if (!m->hasAssignedFunctionDefinition(it->first))
     {
-      Node f_def = getFunctionValue( fm, it->first, "$x" );
-      m->assignFunctionDefinition( it->first, f_def );
+      Node f_def = getFunctionValue(fm, it->first, "$x");
+      m->assignFunctionDefinition(it->first, f_def);
     }
   }
   return TheoryEngineModelBuilder::processBuildModel( m );

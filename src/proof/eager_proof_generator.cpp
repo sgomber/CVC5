@@ -135,9 +135,9 @@ TrustNode EagerProofGenerator::mkTrustedRewrite(Node a,
 }
 
 TrustNode EagerProofGenerator::mkTrustedRewrite(Node a,
-                      Node b,
-                      PfRule id,
-                      const std::vector<Node>& args)
+                                                Node b,
+                                                PfRule id,
+                                                const std::vector<Node>& args)
 {
   Node eq = a.eqNode(b);
   CDProof cdp(d_pnm);
