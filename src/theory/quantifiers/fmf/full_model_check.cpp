@@ -398,6 +398,12 @@ bool FullModelChecker::processBuildModel(TheoryModel* m){
     Node op = fmm.first;
     //reset the model
     d_fm->d_models[op]->reset();
+    
+    // if we've already assigned the function, ignore
+    if (m->hasAssignedFunctionDefinition(op))
+    {
+      continue;
+    }
 
     std::vector< Node > add_conds;
     std::vector< Node > add_values;      
@@ -539,8 +545,13 @@ bool FullModelChecker::processBuildModel(TheoryModel* m){
 
   //make function values
   for( std::map<Node, Def * >::iterator it = fm->d_models.begin(); it != fm->d_models.end(); ++it ){
-    Node f_def = getFunctionValue( fm, it->first, "$x" );
-    m->assignFunctionDefinition( it->first, f_def );
+    // for lazy lambda lifting, a function may already have been assigned
+    // for 
+    if (!m->hasAssignedFunctionDefinition(it->first))
+    {
+      Node f_def = getFunctionValue( fm, it->first, "$x" );
+      m->assignFunctionDefinition( it->first, f_def );
+    }
   }
   return TheoryEngineModelBuilder::processBuildModel( m );
 }
