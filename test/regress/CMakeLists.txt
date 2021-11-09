@@ -1730,6 +1730,7 @@ set(regress_1_tests
   regress1/fmf/with-ind-104-core.smt2
   regress1/gensys_brn001.smt2
   regress1/ho/bug_freeVar_BDD_General_data_270.p
+  regress1/ho/bug_freevar_PHI004^4-delta.smt2
   regress1/ho/bound_var_bug.p
   regress1/ho/fta0328.lfho.p
   regress1/ho/ho-fun-sharing-dd.smt2
