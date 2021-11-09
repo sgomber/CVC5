@@ -548,7 +548,7 @@ bool TheoryUF::areCareDisequal(TNode x, TNode y)
       // As a special case: if x or y is a lambda function, and the equality
       // status indicates they are neither equal nor disequal, then we must
       // consider the pair.
-      if (d_lambdaLift.isLambdaFunction(x) || d_lambdaLift.isLambdaFunction(y))
+      if (d_lambdaLift->isLambdaFunction(x) || d_lambdaLift->isLambdaFunction(y))
       {
         return false;
       }
