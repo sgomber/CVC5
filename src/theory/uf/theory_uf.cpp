@@ -315,6 +315,8 @@ void TheoryUF::preRegisterTerm(TNode node)
     break;
   }
 
+  // Lambda functions must be marked as shared terms to ensure we split
+  // on their equality when they would occur as care pairs.
   if (logicInfo().isHigherOrder())
   {
     if (d_lambdaLift->isLambdaFunction(node))
@@ -366,8 +368,7 @@ void TheoryUF::presolve() {
   // TimerStat::CodeTimer codeTimer(d_presolveTimer);
 
   Debug("uf") << "uf: begin presolve()" << endl;
-  if (options().uf.ufSymmetryBreaker)
-  {
+  if(options().uf.ufSymmetryBreaker) {
     vector<Node> newClauses;
     d_symb.apply(newClauses);
     for(vector<Node>::const_iterator i = newClauses.begin();
@@ -501,8 +502,7 @@ void TheoryUF::ppStaticLearn(TNode n, NodeBuilder& learned)
     }
   }
 
-  if (options().uf.ufSymmetryBreaker)
-  {
+  if(options().uf.ufSymmetryBreaker) {
     d_symb.assertFormula(n);
   }
 } /* TheoryUF::ppStaticLearn() */
@@ -537,8 +537,15 @@ bool TheoryUF::areCareDisequal(TNode x, TNode y)
     TNode y_shared =
         d_equalityEngine->getTriggerTermRepresentative(y, THEORY_UF);
     EqualityStatus eqStatus = d_valuation.getEqualityStatus(x_shared, y_shared);
-    if( eqStatus==EQUALITY_FALSE_AND_PROPAGATED || eqStatus==EQUALITY_FALSE || eqStatus==EQUALITY_FALSE_IN_MODEL ){
-      if (x.getType().isFunction())
+    if (eqStatus==EQUALITY_FALSE || eqStatus==EQUALITY_FALSE_AND_PROPAGATED)
+    {
+      return true;
+    }
+    else if( eqStatus==EQUALITY_FALSE_IN_MODEL ){
+      // As a special case: if x or y is a lambda function, and the equality
+      // status indicates they are neither equal nor disequal, then we must
+      // consider the pair.
+      if (d_lambdaLift.isLambdaFunction(x) || d_lambdaLift.isLambdaFunction(y))
       {
         return false;
       }
