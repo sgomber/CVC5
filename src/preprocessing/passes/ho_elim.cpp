@@ -329,8 +329,7 @@ PreprocessingPassResult HoElim::applyInternal(
       }
     }
     // do lambda lifting on new lambda definitions
-    // this will do fixed point to eliminate lambdas within lambda lifting
-    // axioms.
+    // this will do fixed point to eliminate lambdas within lambda lifting axioms.
     while (!newLambda.empty())
     {
       std::map<Node, Node> lproc = newLambda;
