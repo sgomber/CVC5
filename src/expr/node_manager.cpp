@@ -1109,4 +1109,14 @@ Node NodeManager::mkNode(TNode opNode, std::initializer_list<TNode> children)
   return nb.constructNode();
 }
 
+Node NodeManager::mkConstReal(const Rational& r)
+{
+  return mkConst<Rational>(r);
+}
+
+Node NodeManager::mkConstInt(const Rational& r)
+{
+  return mkConst<Rational>(r);
+}
+
 }  // namespace cvc5

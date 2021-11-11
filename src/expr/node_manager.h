@@ -527,6 +527,12 @@ class NodeManager
 
   template <class NodeClass, class T>
   NodeClass mkConstInternal(const T&);
+  
+  /** Make constant real */
+  Node mkConstReal(const Rational& r);
+  
+  /** Make constant integer */
+  Node mkConstInt(const Rational& r);
 
   /** Create a node with children. */
   TypeNode mkTypeNode(Kind kind, TypeNode child1);
