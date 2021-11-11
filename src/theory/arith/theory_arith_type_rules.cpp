@@ -25,6 +25,21 @@ TypeNode ArithConstantTypeRule::computeType(NodeManager* nodeManager,
                                             TNode n,
                                             bool check)
 {
+#if 0
+  if (n.getKind() == kind::CONST_RATIONAL)
+  {
+    return nodeManager->realType();
+  }
+  Assert(n.getKind() == kind::CONST_INTEGER);
+  if (check)
+  {
+    if (!n.getConst<Rational>().isIntegral())
+    {
+      throw TypeCheckingExceptionPrivate(n, "making an integer constant from a non-integer rational");
+    }
+  }
+  return nodeManager->integerType();
+#else
   Assert(n.getKind() == kind::CONST_RATIONAL);
   if (n.getConst<Rational>().isIntegral())
   {
@@ -34,6 +49,7 @@ TypeNode ArithConstantTypeRule::computeType(NodeManager* nodeManager,
   {
     return nodeManager->realType();
   }
+#endif
 }
 
 TypeNode ArithOperatorTypeRule::computeType(NodeManager* nodeManager,
