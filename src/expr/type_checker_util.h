@@ -101,13 +101,13 @@ struct AInteger
   constexpr static const char* typeName = "integer";
 };
 
-/** Argument is a real */
+/** Argument is an arithmetic type (real or integer) */
 struct AReal
 {
   static bool checkArg(TNode n, size_t arg)
   {
     TypeNode t = n[arg].getType(true);
-    return t.isReal();
+    return t.isArithmetic();
   }
   constexpr static const char* typeName = "real";
 };
