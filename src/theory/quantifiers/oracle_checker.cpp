@@ -18,6 +18,7 @@
 #include "expr/node_algorithm.h"
 #include "smt/env.h"
 #include "theory/rewriter.h"
+#include "options/base_options.h"
 
 namespace cvc5 {
 namespace theory {
@@ -63,7 +64,7 @@ Node OracleChecker::evaluateApp(Node app)
     // prints the result of the oracle, if it was computed in the call above.
     // this prints the original application, its result, and the exit code
     // of the binary.
-    d_env.getOutput(options::OutputTag::ORACLES)
+    d_env.output(options::OutputTag::ORACLES)
         << "(oracle-call " << app << " " << ret << " " << runResult << ")"
         << std::endl;
   }
