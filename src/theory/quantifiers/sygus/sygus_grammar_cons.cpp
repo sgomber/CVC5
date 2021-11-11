@@ -83,7 +83,8 @@ void CegGrammarConstructor::collectTerms(
       if( cur.isConst() ){
         TypeNode tn = cur.getType();
         Node c = cur;
-        if( tn.isArithmetic() ){
+        if (tn.isArithmetic())
+        {
           c = nm->mkConst( c.getConst<Rational>().abs() );
         }
         consts[tn].insert(c);

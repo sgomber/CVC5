@@ -3044,12 +3044,17 @@ bool TheoryArithPrivate::hasFreshArithLiteral(Node n) const{
   case kind::LT:
     return !isSatLiteral(n);
   case kind::EQUAL:
-    if(n[0].getType().isArithmetic()){
+    if (n[0].getType().isArithmetic())
+    {
       return !isSatLiteral(n);
-    }else if(n[0].getType().isBoolean()){
+    }
+    else if (n[0].getType().isBoolean())
+    {
       return hasFreshArithLiteral(n[0]) ||
         hasFreshArithLiteral(n[1]);
-    }else{
+    }
+    else
+    {
       return false;
     }
   case kind::IMPLIES:

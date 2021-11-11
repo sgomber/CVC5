@@ -1455,7 +1455,8 @@ TheoryFpRewriter::TheoryFpRewriter(context::UserContext* u) : d_fpExpDef(u)
                     || res.d_node.getKind() == kind::FLOATINGPOINT_TO_SBV_TOTAL
                     || res.d_node.getKind()
                            == kind::FLOATINGPOINT_TO_REAL_TOTAL)
-                   && ((*i).getType().isBitVector() || (*i).getType().isArithmetic())
+                   && ((*i).getType().isBitVector()
+                       || (*i).getType().isArithmetic())
                    && !apartFromPartiallyDefinedArgument)
           {
             apartFromPartiallyDefinedArgument = true;
