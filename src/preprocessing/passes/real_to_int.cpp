@@ -53,7 +53,7 @@ Node RealToInt::realToIntInternal(TNode n, NodeMap& cache, std::vector<Node>& va
     Node ret = n;
     if (n.getNumChildren() > 0)
     {
-      if ((n.getKind() == kind::EQUAL && n[0].getType().isReal())
+      if ((n.getKind() == kind::EQUAL && n[0].getType().isArithmetic())
           || n.getKind() == kind::GEQ || n.getKind() == kind::LT
           || n.getKind() == kind::GT || n.getKind() == kind::LEQ)
       {
@@ -172,7 +172,7 @@ Node RealToInt::realToIntInternal(TNode n, NodeMap& cache, std::vector<Node>& va
     else
     {
       TypeNode tn = n.getType();
-      if (tn.isReal() && !tn.isInteger())
+      if (tn.isReal())
       {
         if (n.getKind() == kind::BOUND_VARIABLE)
         {

@@ -25,7 +25,7 @@ TypeNode ArithConstantTypeRule::computeType(NodeManager* nodeManager,
                                             TNode n,
                                             bool check)
 {
-#if 0
+#if 0 //no-subtypes
   if (n.getKind() == kind::CONST_RATIONAL)
   {
     return nodeManager->realType();
@@ -35,7 +35,7 @@ TypeNode ArithConstantTypeRule::computeType(NodeManager* nodeManager,
   {
     if (!n.getConst<Rational>().isIntegral())
     {
-      throw TypeCheckingExceptionPrivate(n, "making an integer constant from a non-integer rational");
+      throw TypeCheckingExceptionPrivate(n, "making an integer constant from a non-integral rational");
     }
   }
   return nodeManager->integerType();
@@ -75,7 +75,7 @@ TypeNode ArithOperatorTypeRule::computeType(NodeManager* nodeManager,
     }
     if (check)
     {
-      if (!childType.isReal())
+      if (!childType.isArithmetic())
       {
         throw TypeCheckingExceptionPrivate(n,
                                            "expecting an arithmetic subterm");
@@ -181,7 +181,7 @@ TypeNode IndexedRootPredicateTypeRule::computeType(NodeManager* nodeManager,
           n, "expecting boolean term as first argument");
     }
     TypeNode t2 = n[1].getType(check);
-    if (!t2.isReal())
+    if (!t2.isArithmetic())
     {
       throw TypeCheckingExceptionPrivate(
           n, "expecting polynomial as second argument");

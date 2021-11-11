@@ -96,7 +96,7 @@ CardinalityClass TypeNode::getCardinalityClass()
   {
     ret = CardinalityClass::FINITE;
   }
-  else if (isString() || isRegExp() || isSequence() || isReal() || isBag())
+  else if (isString() || isRegExp() || isSequence() || isArithmetic() || isBag())
   {
     ret = CardinalityClass::INFINITE;
   }
@@ -276,10 +276,15 @@ Node TypeNode::mkGroundValue() const
 
 bool TypeNode::isStringLike() const { return isString() || isSequence(); }
 
+bool TypeNode::isArithmetic() const { return isReal() || isInteger(); }
+
 bool TypeNode::isSubtypeOf(TypeNode t) const {
   if(*this == t) {
     return true;
   }
+#if 0 //no-subtypes
+  return false;
+#endif
   if(getKind() == kind::TYPE_CONSTANT) {
     switch(getConst<TypeConstant>()) {
     case INTEGER_TYPE:
@@ -306,6 +311,9 @@ bool TypeNode::isComparableTo(TypeNode t) const {
   if(*this == t) {
     return true;
   }
+#if 0 //no-subtypes
+  return false;
+#endif
   if(isSubtypeOf(NodeManager::currentNM()->realType())) {
     return t.isSubtypeOf(NodeManager::currentNM()->realType());
   }
@@ -472,6 +480,9 @@ TypeNode TypeNode::commonTypeNode(TypeNode t0, TypeNode t1, bool isLeast) {
   if(__builtin_expect( (t0 == t1), true )) {
     return t0;
   }
+#if 0 //no-subtypes
+  return TypeNode();
+#endif
 
   // t0 != t1 &&
   if(t0.getKind() == kind::TYPE_CONSTANT) {
