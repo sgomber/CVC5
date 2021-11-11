@@ -60,12 +60,12 @@ SynthConjecture::SynthConjecture(Env& env,
       d_tds(tr.getTermDatabaseSygus()),
       d_oman(options::oracles() ? new OracleManager(*tr.getOracleChecker())
                                 : nullptr),
-      d_verify(options(), logicInfo(), d_tds),
+      d_verify(env, d_tds),
       d_hasSolution(false),
       d_ceg_si(new CegSingleInv(env, tr, s)),
-      d_templInfer(new SygusTemplateInfer),
+      d_templInfer(new SygusTemplateInfer(env)),
       d_ceg_proc(new SynthConjectureProcess),
-      d_ceg_gc(new CegGrammarConstructor(d_tds, this)),
+      d_ceg_gc(new CegGrammarConstructor(env, d_tds, this)),
       d_sygus_rconst(new SygusRepairConst(env, d_tds)),
       d_exampleInfer(new ExampleInfer(d_tds)),
       d_ceg_pbe(new SygusPbe(env, qs, qim, d_tds, this)),
@@ -288,7 +288,7 @@ bool SynthConjecture::needsCheck()
     if (!value)
     {
       Trace("sygus-engine-debug") << "Conjecture is infeasible." << std::endl;
-      Warning() << "Warning : the SyGuS conjecture may be infeasible"
+      warning() << "Warning : the SyGuS conjecture may be infeasible"
                 << std::endl;
       return false;
     }
@@ -375,7 +375,7 @@ bool SynthConjecture::doCheck()
     }
   }
 
-  bool printDebug = d_env.isOutputOn(options::OutputTag::SYGUS);
+  bool printDebug = isOutputOn(OutputTag::SYGUS);
   if (!constructed_cand)
   {
     // get the model value of the relevant terms from the master module
@@ -440,9 +440,9 @@ bool SynthConjecture::doCheck()
           }
         }
         Trace("sygus-engine") << std::endl;
-        if (d_env.isOutputOn(options::OutputTag::SYGUS))
+        if (d_env.isOutputOn(OutputTag::SYGUS))
         {
-          d_env.getOutput(options::OutputTag::SYGUS)
+          d_env.output(OutputTag::SYGUS)
               << "(sygus-enum" << sygusEnumOut.str() << ")" << std::endl;
         }
       }
@@ -521,16 +521,15 @@ bool SynthConjecture::doCheck()
   // print the candidate solution for debugging
   if (constructed_cand && printDebug)
   {
-    const Options& sopts = options();
-    std::ostream& out = *sopts.base.out;
+    std::ostream& out = output(OutputTag::SYGUS);
     out << "(sygus-candidate ";
     Assert(d_quant[0].getNumChildren() == candidate_values.size());
     for (size_t i = 0, ncands = candidate_values.size(); i < ncands; i++)
     {
       Node v = candidate_values[i];
-      std::stringstream ss;
-      TermDbSygus::toStreamSygus(ss, v);
-      out << "(" << d_quant[0][i] << " " << ss.str() << ")";
+      out << "(" << d_quant[0][i] << " ";
+      TermDbSygus::toStreamSygus(out, v);
+      out << ")";
     }
     out << ")" << std::endl;
   }

@@ -56,7 +56,7 @@ TermDbSygus::TermDbSygus(Env& env, QuantifiersState& qs, OracleChecker* oc)
       d_qstate(qs),
       d_syexp(new SygusExplain(this)),
       d_funDefEval(new FunDefEvaluator(env)),
-      d_eval_unfold(new SygusEvalUnfold(this)),
+      d_eval_unfold(new SygusEvalUnfold(env, this)),
       d_ochecker(oc)
 {
   d_true = NodeManager::currentNM()->mkConst( true );
@@ -459,7 +459,8 @@ void TermDbSygus::registerEnumerator(Node e,
 
   // determine if we are actively-generated
   bool isActiveGen = false;
-  if (options::sygusActiveGenMode() != options::SygusActiveGenMode::NONE)
+  if (options().quantifiers.sygusActiveGenMode
+      != options::SygusActiveGenMode::NONE)
   {
     if (erole == ROLE_ENUM_MULTI_SOLUTION || erole == ROLE_ENUM_CONSTRAINED)
     {
@@ -487,7 +488,8 @@ void TermDbSygus::registerEnumerator(Node e,
     {
       // If the enumerator is the single function-to-synthesize, if auto is
       // enabled, we infer whether it is better to enable active generation.
-      if (options::sygusActiveGenMode() == options::SygusActiveGenMode::AUTO)
+      if (options().quantifiers.sygusActiveGenMode
+          == options::SygusActiveGenMode::AUTO)
       {
         // We use active generation if the grammar of the enumerator does not
         // have ITE and does not have Boolean connectives. Experimentally, it
@@ -498,7 +500,7 @@ void TermDbSygus::registerEnumerator(Node e,
         // sygus stream are to find many solutions to an easy problem, where
         // the bottleneck often becomes the large number of "exclude the current
         // solution" clauses.
-        if (options::sygusStream()
+        if (options().quantifiers.sygusStream
             || (!eti.hasIte() && !eti.hasBoolConnective()))
         {
           isActiveGen = true;
@@ -519,7 +521,7 @@ void TermDbSygus::registerEnumerator(Node e,
   // Currently, actively-generated enumerators are either basic or variable
   // agnostic.
   bool isVarAgnostic = isActiveGen
-                       && options::sygusActiveGenMode()
+                       && options().quantifiers.sygusActiveGenMode
                               == options::SygusActiveGenMode::VAR_AGNOSTIC;
   d_enum_var_agnostic[e] = isVarAgnostic;
   if (isVarAgnostic)
@@ -755,7 +757,7 @@ Node TermDbSygus::rewriteNode(Node n) const
     // constant, we are done
     return res;
   }
-  if (options::sygusRecFun())
+  if (options().quantifiers.sygusRecFun)
   {
     if (d_funDefEval->hasDefinitions())
     {
@@ -864,7 +866,7 @@ bool TermDbSygus::canConstructKind(TypeNode tn,
     }
     return true;
   }
-  if (!options::sygusSymBreakAgg())
+  if (!options().datatypes.sygusSymBreakAgg)
   {
     return false;
   }
@@ -990,7 +992,7 @@ Node TermDbSygus::evaluateBuiltin(TypeNode tn,
 {
   if (args.empty())
   {
-    return Rewriter::rewrite( bn );
+    return rewrite(bn);
   }
   Assert(isRegistered(tn));
   SygusTypeInfo& ti = getTypeInfo(tn);
@@ -998,7 +1000,7 @@ Node TermDbSygus::evaluateBuiltin(TypeNode tn,
   Assert(varlist.size() == args.size());
 
   Node res;
-  if (tryEval && options::sygusEvalOpt())
+  if (tryEval && options().quantifiers.sygusEvalOpt)
   {
     // Try evaluating, which is much faster than substitution+rewriting.
     // This may fail if there is a subterm of bn under the
