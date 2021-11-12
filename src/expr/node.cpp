@@ -109,16 +109,6 @@ bool NodeTemplate<ref_count>::isConst() const {
 template bool NodeTemplate<true>::isConst() const;
 template bool NodeTemplate<false>::isConst() const;
 
-const Rational& NodeTemplate<true>::getConstRational() const
-{
-  return getConst<Rational>();
-}
-
-const Rational& NodeTemplate<false>::getConstRational() const
-{
-  return getConst<Rational>();
-}
-
 }  // namespace cvc5
 
 namespace std {
