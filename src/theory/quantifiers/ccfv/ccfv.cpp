@@ -113,14 +113,40 @@ void CongruenceClosureFv::eqNotifyDisequal(TNode t1, TNode t2, TNode reason)
 
 }
 
+void CongruenceClosureFv::check()
+{
+  do
+  {
+    TNode v = getNextVariable();
+    if (!v.isNull())
+    {
+      decideVar(v);
+    }
+    // otherwise increment current
+  }
+  while (!d_stack.empty());
+}
+
+TNode CongruenceClosureFv::getNextVariable()
+{
+  
+}
+
 void CongruenceClosureFv::decideVar(TNode v)
 {
   // compute the equivalence classes we should assign
   std::vector<TNode> eqcToAssign;
+  // TODO: based on top-down matching?
   
   // decrement the # assigned variables in each term that contains it, which
   // also computes which terms are newly fully assigned
   std::vector<TNode> fullAssignedPats;
+  
+  const FreeVarInfo& fvi = getFreeVarInfo(v);
+  for (TNode pat : fvi.d_useList)
+  {
+    
+  }
   
   //
   for (TNode g : eqcToAssign)
