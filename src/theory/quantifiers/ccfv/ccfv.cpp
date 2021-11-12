@@ -145,24 +145,37 @@ void CongruenceClosureFv::decideVar(TNode v)
   const FreeVarInfo& fvi = getFreeVarInfo(v);
   for (TNode pat : fvi.d_useList)
   {
-    
+    const PatTermInto& pti = getPatternTermInfo(p);
   }
   
   //
-  for (TNode g : eqcToAssign)
-  {
-    assignVar(v, q);
+
     // for each fully assigned pattern, mark dead
     for (TNode p : fullAssignedPats)
     {
       notifyPatternEqGround(p, d_null);
     }
     
-  }
+  
 }
 
-void CongruenceClosureFv::assignVar(TNode v, TNode eqc)
+void CongruenceClosureFv::assignVar(TNode v, TNode eqc, std::vector<TNode>& fullyAssignedPats)
 {
   Node eq = v.eqNode(eqc);
   d_ee->assertEquality(eq);
+  // may be finished
+  if (d_state.isFinished())
+  {
+    return;
+  }
+  // for each fully assigned pattern, mark dead
+  for (TNode p : fullAssignedPats)
+  {
+    notifyPatternEqGround(p, d_null);
+    // if all quantified formulas are inactive, finish
+    if (d_state.isFinished())
+    {
+      break;
+    }
+  }
 }
