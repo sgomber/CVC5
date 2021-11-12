@@ -34,8 +34,8 @@
 #include "theory/sets/singleton_op.h"
 #include "util/abstract_value.h"
 #include "util/bitvector.h"
-#include "util/resource_manager.h"
 #include "util/rational.h"
+#include "util/resource_manager.h"
 
 using namespace std;
 using namespace cvc5::expr;
@@ -1115,6 +1115,9 @@ Node NodeManager::mkConstReal(const Rational& r)
   return mkConst(kind::CONST_RATIONAL, r);
 }
 
-Node NodeManager::mkConstInt(const Rational& r) { return mkConst(kind::CONST_RATIONAL, r); }
+Node NodeManager::mkConstInt(const Rational& r)
+{
+  return mkConst(kind::CONST_RATIONAL, r);
+}
 
 }  // namespace cvc5
