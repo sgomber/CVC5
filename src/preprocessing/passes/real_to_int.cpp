@@ -27,6 +27,7 @@
 #include "theory/theory_model.h"
 #include "util/rational.h"
 
+using namespace cvc5::kind;
 using namespace cvc5::theory;
 
 namespace cvc5 {
@@ -53,7 +54,7 @@ Node RealToInt::realToIntInternal(TNode n, NodeMap& cache, std::vector<Node>& va
     Node ret = n;
     if (n.getNumChildren() > 0)
     {
-      if ((n.getKind() == kind::EQUAL && n[0].getType().isArithmetic())
+      if ((n.getKind() == kind::EQUAL && n[0].getType().isReal())
           || n.getKind() == kind::GEQ || n.getKind() == kind::LT
           || n.getKind() == kind::GT || n.getKind() == kind::LEQ)
       {
@@ -78,6 +79,7 @@ Node RealToInt::realToIntInternal(TNode n, NodeMap& cache, std::vector<Node>& va
               {
                 Assert(c.isConst());
                 coeffs.push_back(NodeManager::currentNM()->mkConst(
+                    CONST_RATIONAL,
                     Rational(c.getConst<Rational>().getDenominator())));
               }
             }
@@ -97,7 +99,8 @@ Node RealToInt::realToIntInternal(TNode n, NodeMap& cache, std::vector<Node>& va
               Node s;
               if (c.isNull())
               {
-                c = cc.isNull() ? NodeManager::currentNM()->mkConst(Rational(1))
+                c = cc.isNull() ? NodeManager::currentNM()->mkConst(
+                        CONST_RATIONAL, Rational(1))
                                 : cc;
               }
               else
@@ -131,14 +134,15 @@ Node RealToInt::realToIntInternal(TNode n, NodeMap& cache, std::vector<Node>& va
             }
             Node sumt =
                 sum.empty()
-                    ? NodeManager::currentNM()->mkConst(Rational(0))
+                    ? NodeManager::currentNM()->mkConst(CONST_RATIONAL,
+                                                        Rational(0))
                     : (sum.size() == 1
                            ? sum[0]
                            : NodeManager::currentNM()->mkNode(kind::PLUS, sum));
             ret = NodeManager::currentNM()->mkNode(
                 ret_lit.getKind(),
                 sumt,
-                NodeManager::currentNM()->mkConst(Rational(0)));
+                NodeManager::currentNM()->mkConst(CONST_RATIONAL, Rational(0)));
             if (!ret_pol)
             {
               ret = ret.negate();
@@ -172,7 +176,6 @@ Node RealToInt::realToIntInternal(TNode n, NodeMap& cache, std::vector<Node>& va
     else
     {
       TypeNode tn = n.getType();
-      // TODO will switch to just isReal
       if (tn.isReal() && !tn.isInteger())
       {
         if (n.getKind() == kind::BOUND_VARIABLE)
