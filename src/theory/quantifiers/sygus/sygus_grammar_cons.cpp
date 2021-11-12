@@ -83,9 +83,8 @@ void CegGrammarConstructor::collectTerms(
       if( cur.isConst() ){
         TypeNode tn = cur.getType();
         Node c = cur;
-        if (tn.isArithmetic())
-        {
-          c = nm->mkConst( c.getConst<Rational>().abs() );
+        if( tn.isArithmetic() ){
+          c = nm->mkConst(CONST_RATIONAL, c.getConst<Rational>().abs());
         }
         consts[tn].insert(c);
         if (tn.isInteger())
@@ -410,8 +409,8 @@ void CegGrammarConstructor::mkSygusConstantsForType(TypeNode type,
   NodeManager* nm = NodeManager::currentNM();
   if (type.isArithmetic())
   {
-    ops.push_back(nm->mkConst(Rational(0)));
-    ops.push_back(nm->mkConst(Rational(1)));
+    ops.push_back(nm->mkConst(CONST_RATIONAL, Rational(0)));
+    ops.push_back(nm->mkConst(CONST_RATIONAL, Rational(1)));
   }
   else if (type.isBitVector())
   {
@@ -556,7 +555,7 @@ Node CegGrammarConstructor::createLambdaWithZeroArg(
   Assert(bArgType.isArithmetic() || bArgType.isBitVector());
   if (bArgType.isArithmetic())
   {
-    zarg = nm->mkConst(Rational(0));
+    zarg = nm->mkConst(CONST_RATIONAL, Rational(0));
   }
   else
   {
@@ -799,7 +798,8 @@ void CegGrammarConstructor::mkSygusDefaultGrammar(
         /* Add operator 1 */
         Trace("sygus-grammar-def") << "\t...add for 1 to Pos_Int\n";
         std::vector<TypeNode> cargsEmpty;
-        sdts.back().addConstructor(nm->mkConst(Rational(1)), "1", cargsEmpty);
+        sdts.back().addConstructor(
+            nm->mkConst(CONST_RATIONAL, Rational(1)), "1", cargsEmpty);
         /* Add operator PLUS */
         Kind kind = PLUS;
         Trace("sygus-grammar-def") << "\t...add for PLUS to Pos_Int\n";
