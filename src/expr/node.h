@@ -44,6 +44,7 @@ namespace cvc5 {
 
 class TypeNode;
 class NodeManager;
+class Rational;
 
 template <bool ref_count>
 class NodeTemplate;
@@ -550,6 +551,11 @@ public:
   template <class T>
   inline const T& getConst() const;
 
+  /**
+   * If this is a CONST_RATIONAL or CONST_INTEGER Node, extract the Rational from it.
+   */
+  const Rational& getConstRational() const;
+  
   /**
    * Returns the reference count of this node.
    * @return the refcount
