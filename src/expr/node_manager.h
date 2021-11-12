@@ -46,6 +46,7 @@ class SkolemManager;
 class BoundVarManager;
 
 class DType;
+class Rational;
 
 namespace expr {
   namespace attr {

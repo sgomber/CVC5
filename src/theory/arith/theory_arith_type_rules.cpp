@@ -99,6 +99,25 @@ TypeNode ArithOperatorTypeRule::computeType(NodeManager* nodeManager,
   }
 }
 
+TypeNode ArithRelationTypeRule::computeType(NodeManager* nodeManager, TNode n, bool check)
+{
+  if (check)
+  {
+    Assert (n.getNumChildren()==2);
+    TypeNode t1 = n[0].getType(check);
+    if (!t1.isArithmetic())
+    {
+      throw TypeCheckingExceptionPrivate(n, "expecting an arithmetic term for arithmetic relation");
+    }
+    TypeNode t2 = n[1].getType(check);
+    if (t1.isComparableTo(t2))
+    {
+      throw TypeCheckingExceptionPrivate(n, "expecting arithmetic terms of comparable type");
+    }
+  }
+  return nodeManager->booleanType();
+}
+
 TypeNode RealNullaryOperatorTypeRule::computeType(NodeManager* nodeManager,
                                                   TNode n,
                                                   bool check)
