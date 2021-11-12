@@ -119,7 +119,6 @@ const Rational& NodeTemplate<false>::getConstRational() const
   return getConst<Rational>();
 }
 
-
 }  // namespace cvc5
 
 namespace std {
