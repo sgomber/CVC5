@@ -113,7 +113,7 @@ TypeNode ArithRelationTypeRule::computeType(NodeManager* nodeManager,
           n, "expecting an arithmetic term for arithmetic relation");
     }
     TypeNode t2 = n[1].getType(check);
-    if (t1.isComparableTo(t2))
+    if (!t1.isComparableTo(t2))
     {
       throw TypeCheckingExceptionPrivate(
           n, "expecting arithmetic terms of comparable type");

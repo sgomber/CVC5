@@ -121,10 +121,10 @@ typerule POW ::cvc5::theory::arith::ArithOperatorTypeRule
 typerule CONST_RATIONAL ::cvc5::theory::arith::ArithConstantTypeRule
 #typerule CONST_INTEGER ::cvc5::theory::arith::ArithConstantTypeRule
 
-typerule LT "SimpleTypeRule<RBool, AReal, AReal>"
-typerule LEQ "SimpleTypeRule<RBool, AReal, AReal>"
-typerule GT "SimpleTypeRule<RBool, AReal, AReal>"
-typerule GEQ "SimpleTypeRule<RBool, AReal, AReal>"
+typerule LT ::cvc5::theory::arith::ArithRelationTypeRule
+typerule LEQ ::cvc5::theory::arith::ArithRelationTypeRule
+typerule GT ::cvc5::theory::arith::ArithRelationTypeRule
+typerule GEQ ::cvc5::theory::arith::ArithRelationTypeRule
 
 typerule INDEXED_ROOT_PREDICATE_OP "SimpleTypeRule<RBuiltinOperator>"
 typerule INDEXED_ROOT_PREDICATE ::cvc5::theory::arith::IndexedRootPredicateTypeRule

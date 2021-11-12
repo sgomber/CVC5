@@ -112,17 +112,6 @@ struct AReal
   constexpr static const char* typeName = "real";
 };
 
-/** Argument is an arithmetic type (real or integer) */
-struct AArith
-{
-  static bool checkArg(TNode n, size_t arg)
-  {
-    TypeNode t = n[arg].getType(true);
-    return t.isArithmetic();
-  }
-  constexpr static const char* typeName = "real or integer";
-};
-
 /** Argument is a regexp */
 struct ARegExp
 {
