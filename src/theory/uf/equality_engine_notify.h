@@ -39,6 +39,7 @@ class EqualityEngineNotify
    *
    * @param predicate the trigger predicate that became true or false
    * @param value the value of the predicate
+   * @return false if we are in conflict, true otherwise
    */
   virtual bool eqNotifyTriggerPredicate(TNode predicate, bool value) = 0;
 
@@ -49,6 +50,7 @@ class EqualityEngineNotify
    * @param t1 a term marked as trigger
    * @param t2 a term marked as trigger
    * @param value true if equal, false if dis-equal
+   * @return false if we are in conflict, true otherwise
    */
   virtual bool eqNotifyTriggerTermEquality(TheoryId tag,
                                            TNode t1,

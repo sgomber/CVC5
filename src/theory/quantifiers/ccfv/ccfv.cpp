@@ -3,7 +3,8 @@
 
 bool CongruenceClosureFv::eqNotifyTriggerPredicate(TNode predicate, bool value)
 {
-
+  // use this?
+  return true;
 }
 
 bool CongruenceClosureFv::eqNotifyTriggerTermEquality(TheoryId tag,
@@ -12,6 +13,8 @@ bool CongruenceClosureFv::eqNotifyTriggerTermEquality(TheoryId tag,
                                   bool value)
 {
 
+  // use this?
+  return true;
 }
 
 void CongruenceClosureFv::eqNotifyConstantTermMerge(TNode t1, TNode t2)
@@ -97,7 +100,8 @@ void CongruenceClosureFv::notifyPatternEqGround(TNode p, TNode g)
         // parent could be a quantified formula
         if (n.getKind()==FORALL)
         {
-          // notify
+          // notify dead
+          
         }
         else
         {
@@ -108,13 +112,30 @@ void CongruenceClosureFv::notifyPatternEqGround(TNode p, TNode g)
   }
 }
 
+void CongruenceClosureFv::notifyQuantMatch(TNode q, bool success)
+{
+  QuantInfo& qi = getQuantInfo(q);
+  if (!qi.d_isActive)
+  {
+    return;
+  }
+  if (!success)
+  {
+    qi.d_isActive = false;
+    return;
+  }
+  // update watched matcher?
+}
+
 void CongruenceClosureFv::eqNotifyDisequal(TNode t1, TNode t2, TNode reason)
 {
-
+  // should never happen
+  Assert(false);
 }
 
 void CongruenceClosureFv::check()
 {
+  // TODO
   do
   {
     TNode v = getNextVariable();
@@ -127,36 +148,54 @@ void CongruenceClosureFv::check()
   while (!d_stack.empty());
 }
 
+bool CongruenceClosureFv::isFinished() const
+{
+  return false;
+}
+
 TNode CongruenceClosureFv::getNextVariable()
 {
   
 }
 
-void CongruenceClosureFv::decideVar(TNode v)
+void CongruenceClosureFv::pushVar(TNode v)
 {
-  // compute the equivalence classes we should assign
-  std::vector<TNode> eqcToAssign;
-  // TODO: based on top-down matching?
-  
-  // decrement the # assigned variables in each term that contains it, which
-  // also computes which terms are newly fully assigned
-  std::vector<TNode> fullAssignedPats;
+  // push a context
+  //context().push();
+  d_varStack.push_back(v);
   
   const FreeVarInfo& fvi = getFreeVarInfo(v);
+  fvi.resetDomain();
+  
+  // compute the equivalence classes we should assign
+  // compute d_eqcDomain
+  // TODO: based on top-down matching?
+  
+  
+  
+  // decrement the # assigned variables in each term that contains it, which
+  // also computes which terms are newly fully assigned. These are stored in
+  // d_fullyAssignedPat.
   for (TNode pat : fvi.d_useList)
   {
     const PatTermInto& pti = getPatternTermInfo(p);
-  }
-  
-  //
-
-    // for each fully assigned pattern, mark dead
-    for (TNode p : fullAssignedPats)
+    Assert (pti.d_numUnassignVar>0);
+    pti.d_numUnassignVar = pti.d_numUnassignVar-1;
+    if (pti.d_numUnassignVar==0)
     {
-      notifyPatternEqGround(p, d_null);
+      fvi.d_fullyAssignedPat.push_back(pat);
     }
-    
+  }
+}
+
+void CongruenceClosureFv::popVar()
+{
+  Assert (!d_varStack.empty());
   
+  TNode v = d_varStack.back();
+  
+  
+  d_varStack.pop_back();
 }
 
 void CongruenceClosureFv::assignVar(TNode v, TNode eqc, std::vector<TNode>& fullyAssignedPats)
@@ -164,16 +203,18 @@ void CongruenceClosureFv::assignVar(TNode v, TNode eqc, std::vector<TNode>& full
   Node eq = v.eqNode(eqc);
   d_ee->assertEquality(eq);
   // may be finished
-  if (d_state.isFinished())
+  if (isFinished())
   {
     return;
   }
-  // for each fully assigned pattern, mark dead
-  for (TNode p : fullAssignedPats)
+  const FreeVarInfo& fvi = getFreeVarInfo(v);
+  // for each fully assigned pattern, if they are not fully assigned, we mark
+  // them as dead
+  for (TNode p : fvi.d_fullAssignedPats)
   {
     notifyPatternEqGround(p, d_null);
     // if all quantified formulas are inactive, finish
-    if (d_state.isFinished())
+    if (isFinished())
     {
       break;
     }

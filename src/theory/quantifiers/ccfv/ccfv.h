@@ -1,8 +1,4 @@
 
-
-
-
-
 /**
 
 Q1: x : T1, y : T2
@@ -24,17 +20,23 @@ x -> b
   y -> f
 
 */
-
 class CongruenceClosureFv : protected EnvObj
 {
 public:
   CongruenceClosureFv(Env& env);
-  
   void check();
 private:
+  /** are we finished? */
+  bool isFinished() const;
   TNode getNextVariable();
-  void decideVar(TNode v);
+  /** 
+   * Push variable v to the stack.
+   */
+  void pushVar(TNode v);
+  void popVar();
+  
   void assignVar(TNode v, TNode eqc);
+
 
   bool eqNotifyTriggerPredicate(TNode predicate, bool value);
   bool eqNotifyTriggerTermEquality(TheoryId tag,
@@ -56,19 +58,19 @@ private:
   * ground equivalence class in this context.
   */
   void notifyPatternEqGround(TNode p, TNode g);
+  /**
+   * Called when the current watched match term was 
+   */
+  void notifyQuantMatch(TNode q, bool success);
 
-  /** the list of quantified formulas */
-  std::vector<TNode> d_quants;
-  /** The index of the quantified formula we are assigning the variables of */
-  size_t d_qindex;
-  
   /** the set of ground equivalence classes */
   NodeSet d_groundEqc;
-  /** total number of alive quantified formulas */
-  context::CDO<size_t> d_numAlive;
   
   /** The current stack of quantified variables */
-  std::vector<Domain> d_stack;
+  std::vector<TNode> d_varStack;
+  
+  /** The set of quantified formulas */
+  QuantifiersSet d_qset;
   
   /** Map quantified formulas to their info */
   std::map<Node, QuantInfo> d_quantInfo;
@@ -79,4 +81,11 @@ private:
   /** Equivalence class info */
   std::map<Node, EqcInfo > d_eqcInfo;
 };
+
+
+}  // namespace quantifiers
+}  // namespace theory
+}  // namespace cvc5
+
+#endif
 
