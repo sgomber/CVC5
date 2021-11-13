@@ -699,6 +699,8 @@ libcvc5_add_sources(
   theory/quantifiers/candidate_rewrite_database.h
   theory/quantifiers/candidate_rewrite_filter.cpp
   theory/quantifiers/candidate_rewrite_filter.h
+  theory/quantifiers/ccfv/quant_info.cpp
+  theory/quantifiers/ccfv/quant_info.h
   theory/quantifiers/cegqi/ceg_arith_instantiator.cpp
   theory/quantifiers/cegqi/ceg_arith_instantiator.h
   theory/quantifiers/cegqi/ceg_bv_instantiator.cpp

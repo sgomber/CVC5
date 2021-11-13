@@ -43,11 +43,17 @@ class QuantInfo
   /** Matchers */
   TNode getNextMatcher();
   /** Get match constraints */
-  const std::map<TNode, Node>& getMatchConstraints(bool isEq) const;
+  const std::map<TNode, std::vector<Node>>& getMatchConstraints(bool isEq) const;
  private:
+   /** compute matching requirements */
+   void computeMatchingRequirements();
+   void addMatchLit(TNode lit, bool pol, bool hasPol);
+   void addMatchTermEq(TNode t, Node eqc, bool isEq);
+   /** Same as above, with requirement */
+   void addMatchTerm(TNode t);
   //------------------- static
   /** The quantified formula */
-  TNode d_quant;
+  Node d_quant;
   /** Canonical form of body */
   Node d_canonBody;
   /** 
@@ -55,16 +61,15 @@ class QuantInfo
    */
   std::vector<TNode> d_canonVars;
   /** The match terms + their requirements */
-  std::map<TNode, Node> d_matcherEqReq;
-  std::map<TNode, Node> d_matcherDeqReq;
-  //------------------- per round
-  /**
-   * Watched matchers, which is a list of 
-   */
-  std::vector<TNode> d_watchedMatchers;
+  std::map<TNode, std::vector<Node>> d_matcherEqReq;
+  std::map<TNode, std::vector<Node>> d_matcherDeqReq;
+  /** List of all match terms */
+  std::vector<TNode> d_matchers;
   //------------------- within search
   /** is alive, false if we know it is not possible to construct a propagating instance for this quantified formula  */
   context::CDO<bool> d_isActive;
+  /** index in matchers */
+  context::CDO<size_t> d_watchMatcherIndex;
 };
 
 }  // namespace quantifiers

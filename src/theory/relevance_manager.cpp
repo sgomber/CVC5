@@ -19,6 +19,7 @@
 
 #include "options/smt_options.h"
 #include "smt/env.h"
+#include "expr/node_algorithm.h"
 
 using namespace cvc5::kind;
 
@@ -132,13 +133,6 @@ void RelevanceManager::computeRelevance()
   d_success = true;
 }
 
-bool RelevanceManager::isBooleanConnective(TNode cur)
-{
-  Kind k = cur.getKind();
-  return k == NOT || k == IMPLIES || k == AND || k == OR || k == ITE || k == XOR
-         || (k == EQUAL && cur[0].getType().isBoolean());
-}
-
 bool RelevanceManager::updateJustifyLastChild(
     TNode cur,
     std::vector<int>& childrenJustify,
@@ -149,7 +143,7 @@ bool RelevanceManager::updateJustifyLastChild(
   // compute the next child, in this case we push the status of the current
   // child to childrenJustify.
   size_t nchildren = cur.getNumChildren();
-  Assert(isBooleanConnective(cur));
+  Assert(expr::isBooleanConnective(cur));
   size_t index = childrenJustify.size();
   Assert(index < nchildren);
   Assert(cache.find(cur[index]) != cache.end());
@@ -271,7 +265,7 @@ int RelevanceManager::justify(TNode n, std::unordered_map<TNode, int>& cache)
     if (itc == childJustify.end())
     {
       // are we not a Boolean connective (including NOT)?
-      if (isBooleanConnective(cur))
+      if (expr::isBooleanConnective(cur))
       {
         // initialize its children justify vector as empty
         childJustify[cur].clear();

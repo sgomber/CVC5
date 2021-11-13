@@ -140,8 +140,6 @@ class RelevanceManager
    * justified n to be false, 0 means n could not be justified.
    */
   int justify(TNode n, std::unordered_map<TNode, int>& cache);
-  /** Is the top symbol of cur a Boolean connective? */
-  bool isBooleanConnective(TNode cur);
   /**
    * Update justify last child. This method is a helper function for justify,
    * which is called at the moment that Boolean connective formula cur
