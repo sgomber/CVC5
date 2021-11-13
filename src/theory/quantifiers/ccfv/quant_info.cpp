@@ -116,6 +116,8 @@ void QuantInfo::processMatchRequirement(TNode cur, std::vector<TNode>& visit)
            || expr::isBooleanConnective(cur))
   {
     // Matchable predicate, or Boolean connective.
+    // Note that Boolean connectives are simply marked as matching constraints
+    // here, the main algorithm will determine how to process them.
     // Flip polarity since we want to falsify.
     Node eqc = NodeManager::currentNM()->mkConst(!pol);
     addMatchTermReq(cur, eqc, true);

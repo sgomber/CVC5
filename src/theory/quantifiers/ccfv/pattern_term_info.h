@@ -34,28 +34,17 @@ namespace quantifiers {
 class PatTermInfo
 {
  public:
-  PatTermInfo(context::Context* c);
+  PatTermInfo(context::Context* c, size_t numVars);
   /**
    * is active, false if it has merged to a ground equivalence class, or if
    * its variables have been fully assigned.
    */
-  context::CDO<bool> d_isActive;
-  /** the ground term we are equal to? */
-
+  bool isActive() const;
+  /** the ground term we are equal to, if any */
+  context::CDO<TNode> d_eq;
   /** The number of unassigned variables */
   context::CDO<size_t> d_numUnassignVar;
 
-  /** Add equality constraint */
-  void addEqConstraint(TNode eqc, TNode parent) {}
-  /** Add disequality constraint */
-  void addDeqConstraint(TNode eqc, TNode parent) {}
-  /** get constraints */
-  const std::map<TNode, std::vector<TNode> >& getConstraints(bool isEq) const
-  {
-    return isEq ? d_gEqReq : d_gDeqReq;
-  }
-
- private:
   /**
    * Map from equivalence classes to pattern terms that require
    * this pattern to be in the equivalence class of that term. If the pattern
@@ -63,16 +52,17 @@ class PatTermInfo
    * the quantified formula has no propagating substitution in the context, and
    * hence it is marked dead.
    */
-  std::map<TNode, std::vector<TNode> > d_gEqReq;
+  //std::map<TNode, std::vector<TNode> > d_gEqReq;
   /** Same as above, for disequality requirements */
-  std::map<TNode, std::vector<TNode> > d_gDeqReq;
+  //std::map<TNode, std::vector<TNode> > d_gDeqReq;
+  
   /**
    * The list of pattern terms that are the parent of this. For pattern p,
    * this is either:
-   * (1) A term of the form f( ... p ... )
-   * (2) A quantified formula Q that is a Boolean connective with p as an atom.
+   * (1) A term of the form f( ... p ... ), where f may be a Boolean connective.
+   * (2) A quantified formula Q whose body has p as a disjunct.
    */
-  // std::vector<TNode> d_parents;
+  std::vector<TNode> d_parentNotify;
 };
 
 }  // namespace quantifiers

@@ -45,11 +45,19 @@ x -> b
 class InstDriver : public QuantifiersModule
 {
  public:
-  CongruenceClosureFv(Env& env,
+  InstDriver(Env& env,
                       QuantifiersState& qs,
                       QuantifiersInferenceManager& qim,
                       QuantifiersRegistry& qr,
                       TermRegistry& tr);
+  /** Get quantifiers info */
+  QuantInfo& getQuantInfo(TNode q);
+  /** Get free variable info */
+  FreeVarInfo& getFreeVarInfo(TNode v);
+  /** Get pattern term info */
+  PatTermInfo& getPatTermInfo(TNode p);
+  /** Get equivalence class info */
+  EqcInfo& getEqcInfo(TNode r);
 
  private:
   /** are we finished? */
@@ -95,13 +103,12 @@ class InstDriver : public QuantifiersModule
 
   /** The set of quantified formulas */
   QuantifiersSet d_qset;
-
   /** Map quantified formulas to their info */
   std::map<Node, QuantInfo> d_quantInfo;
   /** Free variable info */
   std::map<Node, FreeVarInfo> d_fvInfo;
   /** Pattern term info */
-  std::map<Node, PatTermInto> d_pInfo;
+  std::map<Node, PatTermInfo> d_pInfo;
   /** Equivalence class info */
   std::map<Node, EqcInfo> d_eqcInfo;
 };

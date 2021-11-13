@@ -23,6 +23,7 @@
 
 #include "theory/quantifiers/ccfv/inst_driver.h"
 #include "theory/quantifiers/quant_module.h"
+#include "expr/term_canonize.h"
 
 namespace cvc5 {
 namespace theory {
@@ -60,6 +61,8 @@ class CongruenceClosureFv : public QuantifiersModule
  private:
   /** Instantiation driver */
   InstDriver d_driver;
+  /** Term canonizer */
+  expr::TermCanonizer d_tcanon;
 };
 
 }  // namespace quantifiers
