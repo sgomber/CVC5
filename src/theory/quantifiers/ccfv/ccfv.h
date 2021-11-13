@@ -21,9 +21,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "expr/term_canonize.h"
 #include "theory/quantifiers/ccfv/inst_driver.h"
 #include "theory/quantifiers/quant_module.h"
-#include "expr/term_canonize.h"
 
 namespace cvc5 {
 namespace theory {

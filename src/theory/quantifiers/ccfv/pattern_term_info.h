@@ -52,10 +52,10 @@ class PatTermInfo
    * the quantified formula has no propagating substitution in the context, and
    * hence it is marked dead.
    */
-  //std::map<TNode, std::vector<TNode> > d_gEqReq;
+  // std::map<TNode, std::vector<TNode> > d_gEqReq;
   /** Same as above, for disequality requirements */
-  //std::map<TNode, std::vector<TNode> > d_gDeqReq;
-  
+  // std::map<TNode, std::vector<TNode> > d_gDeqReq;
+
   /**
    * The list of pattern terms that are the parent of this. For pattern p,
    * this is either:

@@ -33,11 +33,7 @@ void CongruenceClosureFv::reset_round(Theory::Effort e) {}
 
 void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e) {}
 
-void CongruenceClosureFv::registerQuantifier(Node q)
-{
-  
-}
-
+void CongruenceClosureFv::registerQuantifier(Node q) {}
 
 void CongruenceClosureFv::preRegisterQuantifier(Node q) {}
 

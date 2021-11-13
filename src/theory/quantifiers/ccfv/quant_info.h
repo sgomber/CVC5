@@ -45,9 +45,9 @@ class QuantInfo
    * we are considering.
    */
   TNode getNextMatcher();
-  /** 
+  /**
    * Get match constraints.
-   * 
+   *
    */
   const std::map<TNode, std::vector<Node>>& getMatchConstraints(
       bool isEq) const;

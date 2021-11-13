@@ -20,41 +20,41 @@ namespace theory {
 namespace quantifiers {
 
 InstDriver::InstDriver(Env& env,
-                    QuantifiersState& qs,
-                    QuantifiersInferenceManager& qim,
-                    QuantifiersRegistry& qr,
-                    TermRegistry& tr)
+                       QuantifiersState& qs,
+                       QuantifiersInferenceManager& qim,
+                       QuantifiersRegistry& qr,
+                       TermRegistry& tr)
 {
 }
 
 QuantInfo& InstDriver::getQuantInfo(TNode q)
 {
   std::map<Node, QuantInfo>::iterator it = d_quantInfo.find(q);
-  Assert (it!=d_quantInfo.end());
+  Assert(it != d_quantInfo.end());
   return it->second;
 }
 
 FreeVarInfo& InstDriver::getFreeVarInfo(TNode v)
 {
   std::map<Node, FreeVarInfo>::iterator it = d_fvInfo.find(v);
-  Assert (it!=d_fvInfo.end());
+  Assert(it != d_fvInfo.end());
   return it->second;
 }
 
 PatTermInfo& InstDriver::getPatTermInfo(TNode p)
 {
   std::map<Node, PatTermInfo>::iterator it = d_pInfo.find(p);
-  Assert (it!=d_pInfo.end());
+  Assert(it != d_pInfo.end());
   return it->second;
 }
 
 EqcInfo& InstDriver::getEqcInfo(TNode r)
 {
   std::map<Node, EqcInfo>::iterator it = d_eqcInfo.find(r);
-  Assert (it!=d_eqcInfo.end());
+  Assert(it != d_eqcInfo.end());
   return it->second;
 }
-  
+
 bool InstDriver::eqNotifyTriggerPredicate(TNode predicate, bool value)
 {
   // use this?

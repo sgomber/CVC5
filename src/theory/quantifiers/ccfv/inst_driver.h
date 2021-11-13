@@ -46,10 +46,10 @@ class InstDriver : public QuantifiersModule
 {
  public:
   InstDriver(Env& env,
-                      QuantifiersState& qs,
-                      QuantifiersInferenceManager& qim,
-                      QuantifiersRegistry& qr,
-                      TermRegistry& tr);
+             QuantifiersState& qs,
+             QuantifiersInferenceManager& qim,
+             QuantifiersRegistry& qr,
+             TermRegistry& tr);
   /** Get quantifiers info */
   QuantInfo& getQuantInfo(TNode q);
   /** Get free variable info */
