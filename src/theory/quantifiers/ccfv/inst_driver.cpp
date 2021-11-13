@@ -19,7 +19,6 @@ namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-
 bool InstDriver::eqNotifyTriggerPredicate(TNode predicate, bool value)
 {
   // use this?
@@ -27,11 +26,10 @@ bool InstDriver::eqNotifyTriggerPredicate(TNode predicate, bool value)
 }
 
 bool InstDriver::eqNotifyTriggerTermEquality(TheoryId tag,
-                                  TNode t1,
-                                  TNode t2,
-                                  bool value)
+                                             TNode t1,
+                                             TNode t2,
+                                             bool value)
 {
-
   // use this?
   return true;
 }
@@ -49,14 +47,14 @@ void InstDriver::eqNotifyNewClass(TNode t)
 
 void InstDriver::eqNotifyMerge(TNode t1, TNode t2)
 {
-  if (d_groundEqc.find(t1)!=d_groundEqc.end())
+  if (d_groundEqc.find(t1) != d_groundEqc.end())
   {
     // should never merge ground equivalence classes
-    Assert (d_groundEqc.find(t2)==d_groundEqc.end());
+    Assert(d_groundEqc.find(t2) == d_groundEqc.end());
     // swap
     std::swap(t1, t2);
   }
-  else if (d_groundEqc.find(t2)!=d_groundEqc.end())
+  else if (d_groundEqc.find(t2) != d_groundEqc.end())
   {
     // update the list of ground equivalence classes, which is overapproximated
     // i.e. we do not remove t2
@@ -65,10 +63,10 @@ void InstDriver::eqNotifyMerge(TNode t1, TNode t2)
   else
   {
     // two patterns merging, track the list
-    EqcInfo * eq2 = getOrMkEqcInfo(t2);
-    EqcInfo * eq1 = getOrMkEqcInfo(t1, true);
+    EqcInfo* eq2 = getOrMkEqcInfo(t2);
+    EqcInfo* eq1 = getOrMkEqcInfo(t1, true);
     eq1->d_eqPats.insert(t2);
-    if (eq2!=nullptr)
+    if (eq2 != nullptr)
     {
       eq1->d_eqPats.insert(eq2->d_eqPats.begin(), eq2->d_eqPats.end());
     }
@@ -79,8 +77,8 @@ void InstDriver::eqNotifyMerge(TNode t1, TNode t2)
   // notify the pattern for the representative
   notifyPatternEqGround(t1, t2);
   // if there are patterns equal to this one, notify them too
-  EqcInfo * eq = getOrMkEqcInfo(t1);
-  if (eq!=nullptr)
+  EqcInfo* eq = getOrMkEqcInfo(t1);
+  if (eq != nullptr)
   {
     for (TNode t : d_state.d_eqPats)
     {
@@ -98,16 +96,18 @@ void InstDriver::notifyPatternEqGround(TNode p, TNode g)
     return;
   }
   pti.d_isActive = false;
-  for (size_t i=0; i<2; i++)
+  for (size_t i = 0; i < 2; i++)
   {
-    const std::map<const TNode, std::vector<TNode> >& req = i==0 ? pti.d_gEqReq : pti.d_gDeqReq;
-    bool processEq = (i==0);
+    const std::map<const TNode, std::vector<TNode> >& req =
+        i == 0 ? pti.d_gEqReq : pti.d_gDeqReq;
+    bool processEq = (i == 0);
     for (const std::pair<const TNode, std::vector<TNode> >& r : req)
     {
-      Assert (r.first.isNull() || d_equalityEngine.hasTerm(r.first));
+      Assert(r.first.isNull() || d_equalityEngine.hasTerm(r.first));
       if (!g.isNull())
       {
-        if (!r.first.isNull() || (d_equalityEngine.getRepresentative(r.first)==g) == processEq)
+        if (!r.first.isNull()
+            || (d_equalityEngine.getRepresentative(r.first) == g) == processEq)
         {
           // the required constraint was satisfied, do not mark dead
           continue;
@@ -117,10 +117,9 @@ void InstDriver::notifyPatternEqGround(TNode p, TNode g)
       for (TNode n : r.second)
       {
         // parent could be a quantified formula
-        if (n.getKind()==FORALL)
+        if (n.getKind() == FORALL)
         {
           // notify dead
-          
         }
         else
         {
@@ -163,44 +162,35 @@ void InstDriver::check()
       decideVar(v);
     }
     // otherwise increment current
-  }
-  while (!d_stack.empty());
+  } while (!d_stack.empty());
 }
 
-bool InstDriver::isFinished() const
-{
-  return false;
-}
+bool InstDriver::isFinished() const { return false; }
 
-TNode InstDriver::getNextVariable()
-{
-  
-}
+TNode InstDriver::getNextVariable() {}
 
 void InstDriver::pushVar(TNode v)
 {
   // push a context
-  //context().push();
+  // context().push();
   d_varStack.push_back(v);
-  
+
   const FreeVarInfo& fvi = getFreeVarInfo(v);
   fvi.resetDomain();
-  
+
   // compute the equivalence classes we should assign
   // compute d_eqcDomain
   // TODO: based on top-down matching?
-  
-  
-  
+
   // decrement the # assigned variables in each term that contains it, which
   // also computes which terms are newly fully assigned. These are stored in
   // d_fullyAssignedPat.
   for (TNode pat : fvi.d_useList)
   {
     const PatTermInto& pti = getPatternTermInfo(p);
-    Assert (pti.d_numUnassignVar>0);
-    pti.d_numUnassignVar = pti.d_numUnassignVar-1;
-    if (pti.d_numUnassignVar==0)
+    Assert(pti.d_numUnassignVar > 0);
+    pti.d_numUnassignVar = pti.d_numUnassignVar - 1;
+    if (pti.d_numUnassignVar == 0)
     {
       fvi.d_fullyAssignedPat.push_back(pat);
     }
@@ -209,15 +199,16 @@ void InstDriver::pushVar(TNode v)
 
 void InstDriver::popVar()
 {
-  Assert (!d_varStack.empty());
-  
+  Assert(!d_varStack.empty());
+
   TNode v = d_varStack.back();
-  
-  
+
   d_varStack.pop_back();
 }
 
-void InstDriver::assignVar(TNode v, TNode eqc, std::vector<TNode>& fullyAssignedPats)
+void InstDriver::assignVar(TNode v,
+                           TNode eqc,
+                           std::vector<TNode>& fullyAssignedPats)
 {
   Node eq = v.eqNode(eqc);
   d_ee->assertEquality(eq);
@@ -239,7 +230,6 @@ void InstDriver::assignVar(TNode v, TNode eqc, std::vector<TNode>& fullyAssigned
     }
   }
 }
-
 
 }  // namespace quantifiers
 }  // namespace theory

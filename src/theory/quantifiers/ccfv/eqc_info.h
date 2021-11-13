@@ -20,31 +20,31 @@
 
 #include <map>
 
-#include "expr/node.h"
 #include "context/cdlist.h"
+#include "expr/node.h"
 
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-/** 
+/**
  * For each equivalence class, required information.
- * 
+ *
  * For pattern term equivalence classes, it may be the case that two pattern
  * terms merge. Examples are:
- * 
+ *
  * P(x, y) and P(x, z), when y = a, z = a
  * P(x, a) and  P(x, b), when a = b
  */
 class EqcInfo
 {
   typedef context::CDList<Node> NodeList;
-public:
-  EqcInfo(context::Context * c);
+
+ public:
+  EqcInfo(context::Context* c);
   /** List of terms in this equivalence class that are not the representative */
   NodeList d_eqPats;
 };
-
 
 }  // namespace quantifiers
 }  // namespace theory

@@ -29,8 +29,8 @@ namespace quantifiers {
 
 class QuantifiersSet
 {
-public:
-  QuantifiersSet(context::Context * c);
+ public:
+  QuantifiersSet(context::Context* c);
   /** the list of quantified formulas */
   std::vector<TNode> d_quants;
   /** The index of the quantified formula we are assigning the variables of */
@@ -39,10 +39,8 @@ public:
   context::CDO<size_t> d_numAlive;
 };
 
-
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5
 
 #endif
-

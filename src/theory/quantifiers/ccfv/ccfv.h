@@ -21,24 +21,24 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "theory/quantifiers/quant_module.h"
 #include "theory/quantifiers/ccfv/inst_driver.h"
+#include "theory/quantifiers/quant_module.h"
 
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
-  
+
 /**
 
 */
 class CongruenceClosureFv : public QuantifiersModule
 {
-public:
+ public:
   CongruenceClosureFv(Env& env,
-            QuantifiersState& qs,
-            QuantifiersInferenceManager& qim,
-            QuantifiersRegistry& qr,
-            TermRegistry& tr);
+                      QuantifiersState& qs,
+                      QuantifiersInferenceManager& qim,
+                      QuantifiersRegistry& qr,
+                      TermRegistry& tr);
 
   bool needsCheck(Theory::Effort e) override;
 
@@ -56,15 +56,14 @@ public:
   void preRegisterQuantifier(Node q) override;
 
   std::string identify() const override;
-private:
+
+ private:
   /** Instantiation driver */
   InstDriver d_driver;
 };
-
 
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5
 
 #endif
-

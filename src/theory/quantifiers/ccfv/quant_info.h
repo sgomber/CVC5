@@ -27,11 +27,11 @@
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
-  
+
 class QuantInfo
 {
  public:
-   QuantInfo(context::Context * c);
+  QuantInfo(context::Context* c);
   /**
    * Initialize, called once.
    */
@@ -40,29 +40,31 @@ class QuantInfo
    * Reset round, called once per full effort check
    */
   void resetRound();
-  /** 
+  /**
    * Get next matcher from the list, increment the index for which matcher
    * we are considering.
    */
   TNode getNextMatcher();
   /** Get match constraints */
-  const std::map<TNode, std::vector<Node>>& getMatchConstraints(bool isEq) const;
+  const std::map<TNode, std::vector<Node>>& getMatchConstraints(
+      bool isEq) const;
+
  private:
-   /** 
-    * Process matching requirement for subterm cur which is a disjunct in the
-    * quantified formula of this class.
-    */
-   void processMatchRequirement(TNode cur, std::vector<TNode>& visit);
-   /** Add match term that must be (dis)equal from eqc */
-   void addMatchTermReq(TNode t, Node eqc, bool isEq);
-   /** Same as above, with requirement */
-   void addMatchTerm(TNode t);
+  /**
+   * Process matching requirement for subterm cur which is a disjunct in the
+   * quantified formula of this class.
+   */
+  void processMatchRequirement(TNode cur, std::vector<TNode>& visit);
+  /** Add match term that must be (dis)equal from eqc */
+  void addMatchTermReq(TNode t, Node eqc, bool isEq);
+  /** Same as above, with requirement */
+  void addMatchTerm(TNode t);
   //------------------- static
   /** The quantified formula */
   Node d_quant;
   /** Canonical form of body */
   Node d_canonBody;
-  /** 
+  /**
    * List of canonical variables corresponding to each bound variable.
    */
   std::vector<TNode> d_canonVars;
@@ -72,7 +74,8 @@ class QuantInfo
   /** List of all match terms */
   std::vector<TNode> d_matchers;
   //------------------- within search
-  /** is alive, false if we know it is not possible to construct a propagating instance for this quantified formula  */
+  /** is alive, false if we know it is not possible to construct a propagating
+   * instance for this quantified formula  */
   context::CDO<bool> d_isActive;
   /** index in matchers */
   context::CDO<size_t> d_watchMatcherIndex;

@@ -23,47 +23,50 @@ using namespace cvc5::kind;
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
-  
-QuantInfo::QuantInfo(context::Context * c) : d_isActive(c), d_watchMatcherIndex(c)
+
+QuantInfo::QuantInfo(context::Context* c)
+    : d_isActive(c), d_watchMatcherIndex(c)
 {
 }
 
 void QuantInfo::initialize(TNode q, expr::TermCanonize& tc)
 {
-  Assert (q.getKind()==FORALL);
+  Assert(q.getKind() == FORALL);
   d_quant = q;
-  
+
   // canonize the body of the quantified formula
   std::map<TNode, Node> visited;
   d_canonBody = tc.getCanonicalTerm(q[1], visited);
-  
+
   // compute the variable correspondence
   std::map<TNode, Node>::iterator it;
   for (const Node& v : q[0])
   {
     it = visited.find(v);
-    if (it!=visited.end())
+    if (it != visited.end())
     {
       d_canonVars.push_back(it->second);
     }
     else
     {
-      Assert (false);
+      Assert(false);
       d_canonVars.push_back(v);
     }
   }
-  
+
   // now compute matching requirements
   std::unordered_set<TNode> processed;
   std::unordered_set<TNode>::iterator itp;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(d_canonBody);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
     itp = processed.find(cur);
-    if (itp == processed.end()) {
+    if (itp == processed.end())
+    {
       processed.insert(cur);
       // process the match requirement for (disjunct) cur
       processMatchRequirement(cur, visit);
@@ -73,43 +76,44 @@ void QuantInfo::initialize(TNode q, expr::TermCanonize& tc)
 
 void QuantInfo::processMatchRequirement(TNode cur, std::vector<TNode>& visit)
 {
-  Assert (cur.getType().isBoolean());
+  Assert(cur.getType().isBoolean());
   bool pol = true;
   Kind k = cur.getKind();
-  Assert (k != IMPLIES);
-  if (k==OR)
+  Assert(k != IMPLIES);
+  if (k == OR)
   {
     // decompose OR
-    visit.insert(visit.end(),cur.begin(),cur.end());
+    visit.insert(visit.end(), cur.begin(), cur.end());
     return;
   }
-  else if (k==NOT)
+  else if (k == NOT)
   {
     pol = false;
     cur = cur[0];
     k = cur.getKind();
-    Assert (k!=NOT);
+    Assert(k != NOT);
   }
-  if (k==FORALL)
+  if (k == FORALL)
   {
     // do nothing, unhandled
     return;
   }
-  else if (k==EQUAL)
+  else if (k == EQUAL)
   {
     // maybe pattern equals ground?
-    for (size_t i=0; i<2; i++)
+    for (size_t i = 0; i < 2; i++)
     {
       if (!expr::hasFreeVar(cur[i]))
       {
         // Equality involving a ground term.
         // Flip polarity since we want to falsify.
-        addMatchTermReq(cur[1-i], cur[i], !pol);
+        addMatchTermReq(cur[1 - i], cur[i], !pol);
         return;
       }
     }
   }
-  else if (inst::TriggerTermInfo::isAtomicTriggerKind(k) || expr::isBooleanConnective(cur))
+  else if (inst::TriggerTermInfo::isAtomicTriggerKind(k)
+           || expr::isBooleanConnective(cur))
   {
     // Matchable predicate, or Boolean connective.
     // Flip polarity since we want to falsify.
@@ -128,11 +132,11 @@ void QuantInfo::processMatchRequirement(TNode cur, std::vector<TNode>& visit)
 void QuantInfo::addMatchTermReq(TNode t, Node eqc, bool isEq)
 {
   std::vector<Node>& reqs = isEq ? d_matcherEqReq[t] : d_matcherDeqReq[t];
-  if (std::find(reqs.begin(), reqs.end(), eqc)==reqs.end())
+  if (std::find(reqs.begin(), reqs.end(), eqc) == reqs.end())
   {
     reqs.push_back(eqc);
   }
-  if (std::find(d_matchers.begin(), d_matchers.end(), t)==d_matchers.end())
+  if (std::find(d_matchers.begin(), d_matchers.end(), t) == d_matchers.end())
   {
     d_matchers.push_back(t);
   }
@@ -149,7 +153,7 @@ void QuantInfo::resetRound()
   // TODO: compute order of matchers in d_matchers heuristically?
   d_isActive = true;
   d_watchMatcherIndex = 0;
-  Assert (!d_matchers.empty());
+  Assert(!d_matchers.empty());
 }
 
 TNode QuantInfo::getNextMatcher()
@@ -158,13 +162,14 @@ TNode QuantInfo::getNextMatcher()
   {
     return TNode::null();
   }
-  Assert (d_watchMatcherIndex.get()<d_matchers.size());
+  Assert(d_watchMatcherIndex.get() < d_matchers.size());
   TNode next = d_matchers[d_watchMatcherIndex.get()];
-  d_watchMatcherIndex = d_watchMatcherIndex.get()+1;
+  d_watchMatcherIndex = d_watchMatcherIndex.get() + 1;
   return next;
 }
 
-const std::map<TNode, std::vector<Node>>& QuantInfo::getMatchConstraints(bool isEq) const
+const std::map<TNode, std::vector<Node>>& QuantInfo::getMatchConstraints(
+    bool isEq) const
 {
   return isEq ? d_matcherEqReq : d_matcherDeqReq;
 }
@@ -172,4 +177,3 @@ const std::map<TNode, std::vector<Node>>& QuantInfo::getMatchConstraints(bool is
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5
-

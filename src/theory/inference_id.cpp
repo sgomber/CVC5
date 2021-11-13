@@ -113,7 +113,8 @@ const char* toString(InferenceId i)
     case InferenceId::BAGS_UNION_DISJOINT: return "BAGS_UNION_DISJOINT";
     case InferenceId::BAGS_UNION_MAX: return "BAGS_UNION_MAX";
     case InferenceId::BAGS_INTERSECTION_MIN: return "BAGS_INTERSECTION_MIN";
-    case InferenceId::BAGS_DIFFERENCE_SUBTRACT: return "BAGS_DIFFERENCE_SUBTRACT";
+    case InferenceId::BAGS_DIFFERENCE_SUBTRACT:
+      return "BAGS_DIFFERENCE_SUBTRACT";
     case InferenceId::BAGS_DIFFERENCE_REMOVE: return "BAGS_DIFFERENCE_REMOVE";
     case InferenceId::BAGS_DUPLICATE_REMOVAL: return "BAGS_DUPLICATE_REMOVAL";
     case InferenceId::BAGS_MAP: return "BAGS_MAP";

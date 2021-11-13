@@ -17,9 +17,9 @@
 
 #include <sstream>
 
+#include "expr/node_algorithm.h"
 #include "options/smt_options.h"
 #include "smt/env.h"
-#include "expr/node_algorithm.h"
 
 using namespace cvc5::kind;
 

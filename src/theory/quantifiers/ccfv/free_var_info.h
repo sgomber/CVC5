@@ -28,17 +28,17 @@ namespace quantifiers {
 
 class FreeVarInfo
 {
-public:
+ public:
   /** term list, all pattern terms that contain this variable */
   std::vector<TNode> d_useList;
-  
+
   /** The list of ground equivalence classes */
   std::vector<TNode> d_eqcDomain;
   /** The current index in the domain we are searching */
   size_t d_eqcIndex;
   /** The list of terms that have become fully assigned after we assign this */
   std::vector<TNode> d_fullyAssignedPat;
-  
+
   void resetDomain()
   {
     d_eqcDomain.clear();
@@ -46,7 +46,6 @@ public:
     d_fullyAssignedPat.clear();
   }
 };
-
 
 }  // namespace quantifiers
 }  // namespace theory

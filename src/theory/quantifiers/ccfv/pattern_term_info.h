@@ -20,8 +20,8 @@
 
 #include <map>
 
-#include "expr/node.h"
 #include "context/cdo.h"
+#include "expr/node.h"
 
 namespace cvc5 {
 namespace theory {
@@ -33,53 +33,47 @@ namespace quantifiers {
  */
 class PatTermInfo
 {
-public:
-   PatTermInfo(context::Context * c);
+ public:
+  PatTermInfo(context::Context* c);
   /**
    * is active, false if it has merged to a ground equivalence class, or if
    * its variables have been fully assigned.
    */
   context::CDO<bool> d_isActive;
   /** the ground term we are equal to? */
-  
+
   /** The number of unassigned variables */
   context::CDO<size_t> d_numUnassignVar;
-  
+
   /** Add equality constraint */
-  void addEqConstraint(TNode eqc, TNode parent)
-  {
-    
-  }
+  void addEqConstraint(TNode eqc, TNode parent) {}
   /** Add disequality constraint */
-  void addDeqConstraint(TNode eqc, TNode parent)
-  {
-    
-  }
+  void addDeqConstraint(TNode eqc, TNode parent) {}
   /** get constraints */
   const std::map<TNode, std::vector<TNode> >& getConstraints(bool isEq) const
   {
     return isEq ? d_gEqReq : d_gDeqReq;
   }
-private:
+
+ private:
   /**
    * Map from equivalence classes to pattern terms that require
-   * this pattern to be in the equivalence class of that term. If the pattern term
-   * merges into a equivalence class that is not that equivalence class,
-   * the quantified formula has no propagating substitution in the context, and hence it is marked dead.
-  */
+   * this pattern to be in the equivalence class of that term. If the pattern
+   * term merges into a equivalence class that is not that equivalence class,
+   * the quantified formula has no propagating substitution in the context, and
+   * hence it is marked dead.
+   */
   std::map<TNode, std::vector<TNode> > d_gEqReq;
   /** Same as above, for disequality requirements */
-  std::map<TNode, std::vector<TNode> > d_gDeqReq; 
+  std::map<TNode, std::vector<TNode> > d_gDeqReq;
   /**
    * The list of pattern terms that are the parent of this. For pattern p,
    * this is either:
    * (1) A term of the form f( ... p ... )
    * (2) A quantified formula Q that is a Boolean connective with p as an atom.
    */
-  //std::vector<TNode> d_parents;
+  // std::vector<TNode> d_parents;
 };
-
-
 
 }  // namespace quantifiers
 }  // namespace theory

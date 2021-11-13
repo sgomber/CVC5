@@ -20,10 +20,10 @@ namespace theory {
 namespace quantifiers {
 
 CongruenceClosureFv::CongruenceClosureFv(Env& env,
-          QuantifiersState& qs,
-          QuantifiersInferenceManager& qim,
-          QuantifiersRegistry& qr,
-          TermRegistry& tr);
+                                         QuantifiersState& qs,
+                                         QuantifiersInferenceManager& qim,
+                                         QuantifiersRegistry& qr,
+                                         TermRegistry& tr);
 
 bool CongruenceClosureFv::needsCheck(Theory::Effort e) {}
 
@@ -37,7 +37,10 @@ void CongruenceClosureFv::registerQuantifier(Node q) {}
 
 void CongruenceClosureFv::preRegisterQuantifier(Node q) {}
 
-std::string CongruenceClosureFv::identify() const { return "CongruenceClosureFv"; }
+std::string CongruenceClosureFv::identify() const
+{
+  return "CongruenceClosureFv";
+}
 
 }  // namespace quantifiers
 }  // namespace theory
