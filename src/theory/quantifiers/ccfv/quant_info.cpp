@@ -16,6 +16,9 @@
 #include "theory/quantifiers/ccfv/quant_info.h"
 
 #include "expr/node_algorithm.h"
+#include "theory/quantifiers/ematching/trigger_term_info.h"
+
+using namespace cvc5::kind;
 
 namespace cvc5 {
 namespace theory {
@@ -29,8 +32,12 @@ void QuantInfo::initialize(TNode q, expr::TermCanonize& tc)
 {
   Assert (q.getKind()==FORALL);
   d_quant = q;
+  
+  // canonize the body of the quantified formula
   std::map<TNode, Node> visited;
   d_canonBody = tc.getCanonicalTerm(q[1], visited);
+  
+  // compute the variable correspondence
   std::map<TNode, Node>::iterator it;
   for (const Node& v : q[0])
   {
@@ -45,93 +52,76 @@ void QuantInfo::initialize(TNode q, expr::TermCanonize& tc)
       d_canonVars.push_back(v);
     }
   }
+  
   // now compute matching requirements
-  computeMatchingRequirements();
-}
-
-void QuantInfo::computeMatchingRequirements()
-{
-  std::unordered_set<std::pair<TNode, int32_t>> visited;
-  std::unordered_set<std::pair<TNode, int32_t>>::iterator it;
-  std::vector<std::pair<TNode, int32_t>> visit;
-  std::pair<TNode, int32_t> cur;
-  visit.push_back(std::pair<TNode, int32_t>(n, -1));
+  std::unordered_set<TNode> processed;
+  std::unordered_set<TNode>::iterator itp;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(d_canonBody);
   do {
     cur = visit.back();
     visit.pop_back();
-    it = visited.find(cur);
-    if (it == visited.end()) {
-      visited.insert(cur);
-      // is it a Boolean connective?
-      Assert (cur.first.getType().isBoolean());
-      Kind k = cur.first.getKind();
-      if (expr::isBooleanConnective(cur.first))
-      {
-        int32_t childIndex;
-        switch (k)
-        {
-          case SEP_STAR:
-          case AND:
-          case OR:
-            childIndex = (pol==(k==OR)) ? 0 : cur.second;
-            break;
-          case NOT:
-            childIndex = -cur.second;
-            break;
-          case ITE:
-          case EQUAL:
-            childIndex = 0;
-            break;
-          default:
-            Unhandled() << "Unhandled Boolean connective " << k;
-            break;
-        }
-        for (TNode tc : cur.first)
-        {
-          visit.push_back(std::pair<TNode, int32_t>(tc, childIndex));
-        }
-      }
-      else
-      {
-        bool pol = cur.second>=0;
-        bool hasPol = cur.second!=0;
-        addMatchRequirement(cur.first, pol, hasPol);
-      }
+    itp = processed.find(cur);
+    if (itp == processed.end()) {
+      processed.insert(cur);
+      // process the match requirement for (disjunct) cur
+      processMatchRequirement(cur, visit);
     }
   } while (!visit.empty());
 }
 
-void QuantInfo::addMatchRequirement(TNode lit, bool pol, bool hasPol)
+void QuantInfo::processMatchRequirement(TNode cur, std::vector<TNode>& visit)
 {
-  Assert (lit.getType().isBoolean());
-  Kind k = lit.getKind();
+  Assert (cur.getType().isBoolean());
+  bool pol = true;
+  Kind k = cur.getKind();
+  Assert (k != IMPLIES);
+  if (k==OR)
+  {
+    // decompose OR
+    visit.insert(visit.end(),cur.begin(),cur.end());
+    return;
+  }
+  else if (k==NOT)
+  {
+    pol = false;
+    cur = cur[0];
+    k = cur.getKind();
+    Assert (k!=NOT);
+  }
   if (k==FORALL)
   {
     // do nothing, unhandled
+    return;
   }
   else if (k==EQUAL)
   {
-    // maybe ground
+    // maybe pattern equals ground?
     for (size_t i=0; i<2; i++)
     {
-      if (!expr::hasFreeVar(lit[i]))
+      if (!expr::hasFreeVar(cur[i]))
       {
-        
+        // Equality involving a ground term.
+        // Flip polarity since we want to falsify.
+        addMatchTermReq(cur[1-i], cur[i], !pol);
+        return;
       }
     }
   }
-  else if (inst::TriggerTermInfo::isAtomicTriggerKind(k))
+  else if (inst::TriggerTermInfo::isAtomicTriggerKind(k) || expr::isBooleanConnective(cur))
   {
-    // matchable predicate
+    // Matchable predicate, or Boolean connective.
+    // Flip polarity since we want to falsify.
+    Node eqc = NodeManager::currentNM()->mkConst(!pol);
+    addMatchTermReq(cur, eqc, true);
+    return;
   }
-  else
+  // Unmatchable predicate, or equality between patterns.
+  // Add all of its children without polarity.
+  for (TNode lc : cur)
   {
-    // unmatchable predicate, add all of its children without polarity, for
-    // each that contain free variables
-    for (TNode lc : lit)
-    {
-      addMatchTerm(lc);
-    }
+    addMatchTerm(lc);
   }
 }
 
@@ -141,6 +131,10 @@ void QuantInfo::addMatchTermReq(TNode t, Node eqc, bool isEq)
   if (std::find(reqs.begin(), reqs.end(), eqc)==reqs.end())
   {
     reqs.push_back(eqc);
+  }
+  if (std::find(d_matchers.begin(), d_matchers.end(), t)==d_matchers.end())
+  {
+    d_matchers.push_back(t);
   }
 }
 
@@ -152,7 +146,10 @@ void QuantInfo::addMatchTerm(TNode t)
 
 void QuantInfo::resetRound()
 {
-  // TODO: compute order of matchers in d_matchers?
+  // TODO: compute order of matchers in d_matchers heuristically?
+  d_isActive = true;
+  d_watchMatcherIndex = 0;
+  Assert (!d_matchers.empty());
 }
 
 TNode QuantInfo::getNextMatcher()
@@ -161,13 +158,13 @@ TNode QuantInfo::getNextMatcher()
   {
     return TNode::null();
   }
-  // TODO: when to increment watch matcher?
   Assert (d_watchMatcherIndex.get()<d_matchers.size());
-
-  return d_matchers[d_watchMatcherIndex.get()];
+  TNode next = d_matchers[d_watchMatcherIndex.get()];
+  d_watchMatcherIndex = d_watchMatcherIndex.get()+1;
+  return next;
 }
 
-const std::map<TNode, Node>& QuantInfo::getMatchConstraints(bool isEq) const
+const std::map<TNode, std::vector<Node>>& QuantInfo::getMatchConstraints(bool isEq) const
 {
   return isEq ? d_matcherEqReq : d_matcherDeqReq;
 }

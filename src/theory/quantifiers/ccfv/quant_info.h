@@ -40,15 +40,21 @@ class QuantInfo
    * Reset round, called once per full effort check
    */
   void resetRound();
-  /** Matchers */
+  /** 
+   * Get next matcher from the list, increment the index for which matcher
+   * we are considering.
+   */
   TNode getNextMatcher();
   /** Get match constraints */
   const std::map<TNode, std::vector<Node>>& getMatchConstraints(bool isEq) const;
  private:
-   /** compute matching requirements */
-   void computeMatchingRequirements();
-   void addMatchLit(TNode lit, bool pol, bool hasPol);
-   void addMatchTermEq(TNode t, Node eqc, bool isEq);
+   /** 
+    * Process matching requirement for subterm cur which is a disjunct in the
+    * quantified formula of this class.
+    */
+   void processMatchRequirement(TNode cur, std::vector<TNode>& visit);
+   /** Add match term that must be (dis)equal from eqc */
+   void addMatchTermReq(TNode t, Node eqc, bool isEq);
    /** Same as above, with requirement */
    void addMatchTerm(TNode t);
   //------------------- static
