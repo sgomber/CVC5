@@ -10,97 +10,44 @@
  * directory for licensing information.
  * ****************************************************************************
  *
+ * State for congruence closure with free variables
  */
 
 #include "cvc5_private.h"
 
-#ifndef CVC5__THEORY__QUANTIFIERS__CCFV__INST_DRIVER_H
-#define CVC5__THEORY__QUANTIFIERS__CCFV__INST_DRIVER_H
+#ifndef CVC5__THEORY__QUANTIFIERS__CCFV__STATE_H
+#define CVC5__THEORY__QUANTIFIERS__CCFV__STATE_H
+
+#include "smt/env_obj.h"
+#include "theory/quantifiers/ccfv/quant_info.h"
+#include "theory/quantifiers/ccfv/free_var_info.h"
+#include "theory/quantifiers/ccfv/pattern_term_info.h"
+#include "theory/quantifiers/ccfv/eqc_info.h"
 
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
+namespace ccfv {
 
-/**
-
-Q1: x : T1, y : T2
-Q2: y : T2, w : T2
-
---- Q1
-x -> a
-  --- Q2
-  y -> b
-    w -> c
-    w -> d
-  y -> c
-    w -> d
-  y -> d
-  y -> e
-x -> b
-  y -> b
-  y -> e
-  y -> f
-
-*/
-class InstDriver : public QuantifiersModule
+class CongruenceClosureFv;
+  
+class State : protected EnvObj
 {
+  friend class CongruenceClosureFv;
  public:
-  InstDriver(Env& env,
-                      QuantifiersState& qs,
-                      QuantifiersInferenceManager& qim,
-                      QuantifiersRegistry& qr,
-                      TermRegistry& tr);
+  State(Env& env);
   /** Get quantifiers info */
-  QuantInfo& getQuantInfo(TNode q);
+  QuantInfo& getOrMkQuantInfo(TNode q);
+  const QuantInfo& getQuantInfo(TNode q) const;
   /** Get free variable info */
-  FreeVarInfo& getFreeVarInfo(TNode v);
+  FreeVarInfo& getOrMkFreeVarInfo(TNode v);
+  const FreeVarInfo& getFreeVarInfo(TNode v) const;
   /** Get pattern term info */
-  PatTermInfo& getPatTermInfo(TNode p);
+  PatTermInfo& getOrMkPatTermInfo(TNode p);
+  const PatTermInfo& getPatTermInfo(TNode p) const;
   /** Get equivalence class info */
-  EqcInfo& getEqcInfo(TNode r);
-
+  EqcInfo& getOrMkEqcInfo(TNode r);
  private:
-  /** are we finished? */
-  bool isFinished() const;
-  TNode getNextVariable();
-  /**
-   * Push variable v to the stack.
-   */
-  void pushVar(TNode v);
-  void popVar();
-
-  void assignVar(TNode v, TNode eqc);
-
-  bool eqNotifyTriggerPredicate(TNode predicate, bool value);
-  bool eqNotifyTriggerTermEquality(TheoryId tag,
-                                   TNode t1,
-                                   TNode t2,
-                                   bool value);
-
-  void eqNotifyConstantTermMerge(TNode t1, TNode t2);
-  void eqNotifyNewClass(TNode t);
-  void eqNotifyMerge(TNode t1, TNode t2);
-  void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
-
-  /**
-   * Called when it is determined what pattern p is equal to.
-   *
-   * If g is non-null, then g is the (ground) equivalence class that pattern p
-   * is equal to. If g is null, then we have determined that p will *never*
-   * merge into a ground equivalence class in this context.
-   */
-  void notifyPatternEqGround(TNode p, TNode g);
-  /**
-   * Called when the current watched match term was
-   */
-  void notifyQuantMatch(TNode q, bool success);
-
-  /** the set of ground equivalence classes */
-  NodeSet d_groundEqc;
-
-  /** The current stack of quantified variables */
-  std::vector<TNode> d_varStack;
-
   /** The set of quantified formulas */
   QuantifiersSet d_qset;
   /** Map quantified formulas to their info */
@@ -113,6 +60,7 @@ class InstDriver : public QuantifiersModule
   std::map<Node, EqcInfo> d_eqcInfo;
 };
 
+}  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

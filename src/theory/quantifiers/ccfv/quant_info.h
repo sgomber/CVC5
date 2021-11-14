@@ -27,6 +27,7 @@
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
+namespace ccfv {
 
 class QuantInfo
 {
@@ -84,6 +85,7 @@ class QuantInfo
   context::CDO<size_t> d_watchMatcherIndex;
 };
 
+}
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

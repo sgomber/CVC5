@@ -25,6 +25,7 @@
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
+namespace ccfv {
 
 class FreeVarInfo
 {
@@ -47,6 +48,7 @@ class FreeVarInfo
   }
 };
 
+}
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

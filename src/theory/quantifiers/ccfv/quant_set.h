@@ -26,6 +26,7 @@
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
+namespace ccfv {
 
 class QuantifiersSet
 {
@@ -39,6 +40,7 @@ class QuantifiersSet
   context::CDO<size_t> d_numAlive;
 };
 
+}
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

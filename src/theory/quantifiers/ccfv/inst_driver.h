@@ -20,6 +20,7 @@
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
+namespace ccfv {
 
 /**
 
@@ -111,8 +112,11 @@ class InstDriver : public QuantifiersModule
   std::map<Node, PatTermInfo> d_pInfo;
   /** Equivalence class info */
   std::map<Node, EqcInfo> d_eqcInfo;
+  /** */
+  Node d_sink;
 };
 
+}
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

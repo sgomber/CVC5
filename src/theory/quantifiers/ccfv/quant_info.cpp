@@ -23,7 +23,8 @@ using namespace cvc5::kind;
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
-
+namespace ccfv {
+  
 QuantInfo::QuantInfo(context::Context* c)
     : d_isActive(c), d_watchMatcherIndex(c)
 {
@@ -176,6 +177,7 @@ const std::map<TNode, std::vector<Node>>& QuantInfo::getMatchConstraints(
   return isEq ? d_matcherEqReq : d_matcherDeqReq;
 }
 
+}
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

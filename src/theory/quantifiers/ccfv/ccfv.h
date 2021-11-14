@@ -22,6 +22,7 @@
 #include <unordered_set>
 
 #include "expr/term_canonize.h"
+#include "theory/quantifiers/ccfv/state.h"
 #include "theory/quantifiers/ccfv/inst_driver.h"
 #include "theory/quantifiers/quant_module.h"
 
@@ -59,8 +60,10 @@ class CongruenceClosureFv : public QuantifiersModule
   std::string identify() const override;
 
  private:
+  /** State */
+  ccfv::State d_state;
   /** Instantiation driver */
-  InstDriver d_driver;
+  ccfv::InstDriver d_driver;
   /** Term canonizer */
   expr::TermCanonizer d_tcanon;
 };

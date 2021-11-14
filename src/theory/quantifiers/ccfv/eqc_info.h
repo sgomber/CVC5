@@ -26,6 +26,7 @@
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
+namespace ccfv {
 
 /**
  * For each equivalence class, required information.
@@ -46,6 +47,7 @@ class EqcInfo
   NodeList d_eqPats;
 };
 
+}
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

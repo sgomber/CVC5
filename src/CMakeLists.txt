@@ -705,6 +705,8 @@ libcvc5_add_sources(
   theory/quantifiers/ccfv/pattern_term_info.h
   theory/quantifiers/ccfv/quant_info.cpp
   theory/quantifiers/ccfv/quant_info.h
+  theory/quantifiers/ccfv/state.cpp
+  theory/quantifiers/ccfv/state.h
   theory/quantifiers/cegqi/ceg_arith_instantiator.cpp
   theory/quantifiers/cegqi/ceg_arith_instantiator.h
   theory/quantifiers/cegqi/ceg_bv_instantiator.cpp

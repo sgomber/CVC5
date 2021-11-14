@@ -26,6 +26,7 @@
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
+namespace ccfv {
 
 /**
  * A quantified formula is a pattern term whose parent is
@@ -40,6 +41,8 @@ class PatTermInfo
    * its variables have been fully assigned.
    */
   bool isActive() const;
+  /** Notify */
+  void notify(TNode child, TNode val);
   /** the ground term we are equal to, if any */
   context::CDO<TNode> d_eq;
   /** The number of unassigned variables */
@@ -52,9 +55,9 @@ class PatTermInfo
    * the quantified formula has no propagating substitution in the context, and
    * hence it is marked dead.
    */
-  // std::map<TNode, std::vector<TNode> > d_gEqReq;
+  std::map<TNode, std::vector<TNode> > d_gEqReq;
   /** Same as above, for disequality requirements */
-  // std::map<TNode, std::vector<TNode> > d_gDeqReq;
+  std::map<TNode, std::vector<TNode> > d_gDeqReq;
 
   /**
    * The list of pattern terms that are the parent of this. For pattern p,
@@ -65,6 +68,7 @@ class PatTermInfo
   std::vector<TNode> d_parentNotify;
 };
 
+}
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5
