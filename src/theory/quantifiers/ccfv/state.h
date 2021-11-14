@@ -64,7 +64,6 @@ class State : protected EnvObj
   /** Get equivalence class info */
   EqcInfo* getOrMkEqcInfo(TNode r, bool doMk = false);
 
-  
   bool eqNotifyTriggerPredicate(TNode predicate, bool value);
   bool eqNotifyTriggerTermEquality(TheoryId tag,
                                    TNode t1,
@@ -90,7 +89,7 @@ class State : protected EnvObj
   Node getSink() const;
   /** Is sink */
   bool isSink(TNode n) const;
-  /** 
+  /**
    * Get value for pattern or ordinary term p. This is either a ground
    * represenative, or the sink, or the null node if p is active.
    */
@@ -117,7 +116,7 @@ class State : protected EnvObj
   /** The sink node */
   Node d_sink;
   /** the set of ground equivalence classes */
-  //NodeSet d_groundEqc;
+  // NodeSet d_groundEqc;
   /** total number of alive quantified formulas */
   context::CDO<size_t> d_numActiveQuant;
   /** ground equivalence classes */

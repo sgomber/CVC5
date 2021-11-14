@@ -30,7 +30,7 @@ namespace ccfv {
 State::State(Env& env, QuantifiersState& qs)
     : EnvObj(env),
       d_qstate(qs),
-      //d_groundEqc(context()),
+      // d_groundEqc(context()),
       d_numActiveQuant(context(), 0)
 {
   NodeManager* nm = NodeManager::currentNM();
@@ -105,7 +105,7 @@ PatTermInfo& State::getPatTermInfo(TNode p)
   return it->second;
 }
 
-EqcInfo* State::getOrMkEqcInfo(TNode r, bool doMk )
+EqcInfo* State::getOrMkEqcInfo(TNode r, bool doMk)
 {
   std::map<Node, EqcInfo>::iterator it = d_eqcInfo.find(r);
   if (it == d_eqcInfo.end())
@@ -120,7 +120,6 @@ EqcInfo* State::getOrMkEqcInfo(TNode r, bool doMk )
   return &it->second;
 }
 
-
 bool State::eqNotifyTriggerPredicate(TNode predicate, bool value)
 {
   // use this?
@@ -128,9 +127,9 @@ bool State::eqNotifyTriggerPredicate(TNode predicate, bool value)
 }
 
 bool State::eqNotifyTriggerTermEquality(TheoryId tag,
-                                             TNode t1,
-                                             TNode t2,
-                                             bool value)
+                                        TNode t1,
+                                        TNode t2,
+                                        bool value)
 {
   // use this?
   return true;
