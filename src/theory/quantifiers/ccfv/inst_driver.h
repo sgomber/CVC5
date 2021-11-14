@@ -70,7 +70,7 @@ class InstDriver : public QuantifiersModule
 
   void assignVar(TNode v, TNode eqc);
 
-  /** The state */
+  /** The state of matching for quantifiers and pattern terms */
   State& d_state;
 
   /** The current stack of quantified variables */

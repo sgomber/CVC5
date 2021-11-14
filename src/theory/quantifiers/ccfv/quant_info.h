@@ -22,6 +22,7 @@
 
 #include "context/cdo.h"
 #include "expr/node.h"
+#include "theory/uf/equality_engine.h"
 
 namespace cvc5 {
 
@@ -35,12 +36,25 @@ namespace ccfv {
 
 class QuantInfo
 {
+  using NodeBoolPairHashFunction = PairHashFunction<Node, bool, std::hash<Node>>;
  public:
   QuantInfo(context::Context* c);
   /**
    * Initialize, called once.
    */
-  void initialize(TNode q, expr::TermCanonize& tc);
+  void initialize(TNode q, eq::EqualityEngine* ee, expr::TermCanonize& tc);
+  //-------------------------- static information
+  /**
+   * Get the constraints, which maps pattern terms to node corresponding to
+   * their constraints for making the quantified formula have a propagating
+   * instance. For details on the range of constraints, see d_req.
+   */
+  const std::map<TNode, std::vector<Node>>& getConstraints() const;
+  /** Get congruence terms, the terms to add to the equality engine */
+  const std::vector<TNode>& getCongruenceTerms() const;
+  /** Get matchers */
+  const std::vector<TNode>& getTopLevelMatchers() const;
+  //-------------------------- per round
   /**
    * Reset round, called once per full effort check
    */
@@ -50,32 +64,20 @@ class QuantInfo
    * we are considering.
    */
   TNode getNextMatcher();
-  /**
-   * Get match constraints.
-   *
-   */
-  const std::map<TNode, std::vector<Node>>& getMatchConstraints() const;
-  /** Get matchers */
-  const std::vector<TNode>& getMatchers() const;
-  /** Add congruence term */
-  void addCongruenceTerm(TNode cong);
-  /** Get congruence terms, the terms to add to the equality engine */
-  const std::vector<TNode>& getCongruenceTerms() const;
   /** Is alive? */
   bool isActive() const;
   /** set dead */
   void setActive(bool val);
-
  private:
   /**
    * Process matching requirement for subterm cur which is a disjunct in the
    * quantified formula of this class.
    */
-  void processMatchRequirement(TNode cur, std::vector<TNode>& visit);
+  void computeMatchReq(TNode cur, eq::EqualityEngine* ee, std::vector<TNode>& visit);
   /** Add match term that must be (dis)equal from eqc */
   void addMatchTermReq(TNode t, Node eqc, bool isEq);
-  /** Same as above, with requirement */
-  void addMatchTerm(TNode t);
+  /** Process match requirement terms */
+  void processMatchReqTerms(eq::EqualityEngine* ee);
   //------------------- static
   /** The quantified formula */
   Node d_quant;
@@ -86,16 +88,30 @@ class QuantInfo
    */
   std::vector<TNode> d_canonVars;
   /**
-   * The match terms + their requirements. A requirement for p can either be:
-   * (1) Node::null(), saying that the term must be equal to some ground term
+   * The match terms maped to their requirements. A requirement for p can be:
+   * (1) Node::null(), saying that the term must be equal to any ground term
    * (2) (not (= p g)), saying that pattern must be disequal from g
    * (3) g, saying that the pattern must be equal to g
    */
-  std::map<TNode, std::vector<Node>> d_matcherReq;
-  /** List of all match terms, the domain of the above map */
-  std::vector<TNode> d_matchers;
-  /** List of all congruence terms */
+  std::map<TNode, std::vector<Node>> d_req;
+  /** The domain of d_req */
+  std::vector<TNode> d_reqTerms;
+  /** 
+   * List of all "congruence terms". This is the set of all subterms of the
+   * domain of d_req whose kind we are doing congruence over in the equality
+   * engine that this class was initialized for.
+   */
   std::vector<TNode> d_congTerms;
+  /** 
+   * List of all top-level congruence terms, i.e. ones that occur as subterms in
+   * the domain of d_req in positions that are not nested under other congruence
+   * terms. These terms determine what to invoke matching on.
+   */
+  std::vector<TNode> d_topLevelMatchers;
+  /**
+   * Subterms of d_req that we don't handle.
+   */
+  std::unordered_set<TNode> d_unknownTerms;
   //------------------- within search
   /** is alive, false if we know it is not possible to construct a propagating
    * instance for this quantified formula  */

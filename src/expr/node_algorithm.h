@@ -260,6 +260,9 @@ bool match(Node n1, Node n2, std::unordered_map<Node, Node>& subs);
 /** Is the top symbol of cur a Boolean connective? */
 bool isBooleanConnective(TNode cur);
 
+/** Is the top symbol of Boolean term cur a Boolean connective? */
+bool isPredicateBooleanConnective(TNode cur);
+
 }  // namespace expr
 }  // namespace cvc5
 

@@ -40,16 +40,16 @@ void CongruenceClosureFv::registerQuantifier(Node q) {}
 void CongruenceClosureFv::assertNode(Node q)
 {
   Assert(q.getKind() == FORALL);
-  QuantInfo& qi = d_state.getOrMkQuantInfo(q, d_tcanon);
+  QuantInfo& qi = d_state.getOrMkQuantInfo(q, d_qstate.getEqualityEngine(), d_tcanon);
   // its pattern terms are registered
-  const std::vector<TNode>& ms = qi.getMatchers();
+  const std::map<TNode, std::vector<Node>>& ms = qi.getConstraints();
   for (TNode p : ms)
   {
-    registerMatchTerm(p, q, qi);
+    registerMatchTerm(p, q);
   }
 }
 
-void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
+void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q)
 {
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
 
@@ -58,8 +58,8 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
   pi.d_parentNotify.push_back(q);
 
   // Now, traverse p. This sets up the pattern info for subterms of p.
-  std::unordered_map<TNode, bool> visited;
-  std::unordered_map<TNode, bool>::iterator it;
+  std::unordered_set<TNode> visited;
+  std::unordered_set<TNode>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
@@ -73,31 +73,25 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
     it = visited.find(cur);
     if (it == visited.end())
     {
+      visited.insert(cur);
       if (!expr::hasFreeVar(cur))
       {
-        visited[cur] = true;
         continue;
       }
       Kind k = cur.getKind();
       if (k == BOUND_VARIABLE)
       {
-        visited[cur] = true;
-        qi.addCongruenceTerm(cur);
         freeVars.push_back(cur);
         continue;
       }
       Assert(cur.getNumChildren() > 0);
       // compute if Boolean connective
-      bool isBoolConnective =
-          k == ITE ? cur.getType().isBoolean() : expr::isBooleanConnective(cur);
+      bool isBoolConnective = expr::isBooleanConnective(cur);
       if (!isBoolConnective && !ee->isFunctionKind(k))
       {
         // not handled as Boolean connective or congruence kind
-        visited[cur] = true;
         continue;
       }
-      // Boolean connective don't need post-visit
-      visited[cur] = isBoolConnective;
       for (TNode cc : cur)
       {
         if (!expr::hasFreeVar(cc))
@@ -119,14 +113,6 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
         }
         visit.push_back(cc);
       }
-    }
-    else if (!it->second)
-    {
-      visited[cur] = true;
-      // we will add this term to the equality engine. We add at post-order
-      // traversal to that the order of terms is correct, i.e. we add subterms
-      // first.
-      qi.addCongruenceTerm(cur);
     }
   } while (!visit.empty());
 

@@ -56,7 +56,7 @@ void State::resetRound()
   // TODO: activate the quantified formulas
 }
 
-QuantInfo& State::getOrMkQuantInfo(TNode q, expr::TermCanonize& tc)
+QuantInfo& State::getOrMkQuantInfo(TNode q, eq::EqualityEngine* ee, expr::TermCanonize& tc)
 {
   std::map<Node, QuantInfo>::iterator it = d_quantInfo.find(q);
   if (it == d_quantInfo.end())
@@ -64,7 +64,7 @@ QuantInfo& State::getOrMkQuantInfo(TNode q, expr::TermCanonize& tc)
     d_quantInfo.emplace(q, context());
     it = d_quantInfo.find(q);
     // initialize
-    it->second.initialize(q, tc);
+    it->second.initialize(q, ee, tc);
   }
   return it->second;
 }
@@ -402,7 +402,7 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
   }
   else
   {
-    const std::map<TNode, std::vector<Node>>& cs = qi.getMatchConstraints();
+    const std::map<TNode, std::vector<Node>>& cs = qi.getConstraints();
     std::map<TNode, std::vector<Node>>::const_iterator itm = cs.find(val);
     if (itm != cs.end())
     {

@@ -858,6 +858,15 @@ bool match(Node x, Node y, std::unordered_map<Node, Node>& subs)
 
 bool isBooleanConnective(TNode cur)
 {
+  if (cur.getType().isBoolean())
+  {
+    return isPredicateBooleanConnective(cur);
+  }
+  return false;
+}
+
+bool isPredicateBooleanConnective(TNode cur)
+{
   Assert(cur.getType().isBoolean());
   Kind k = cur.getKind();
   return k == kind::NOT || k == kind::IMPLIES || k == kind::AND || k == kind::OR

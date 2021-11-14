@@ -31,7 +31,7 @@ QuantInfo::QuantInfo(context::Context* c)
 {
 }
 
-void QuantInfo::initialize(TNode q, expr::TermCanonize& tc)
+void QuantInfo::initialize(TNode q, eq::EqualityEngine* ee, expr::TermCanonize& tc)
 {
   Assert(q.getKind() == FORALL);
   d_quant = q;
@@ -56,7 +56,7 @@ void QuantInfo::initialize(TNode q, expr::TermCanonize& tc)
     }
   }
 
-  // now compute matching requirements
+  // compute matching requirements
   std::unordered_set<TNode> processed;
   std::unordered_set<TNode>::iterator itp;
   std::vector<TNode> visit;
@@ -71,12 +71,15 @@ void QuantInfo::initialize(TNode q, expr::TermCanonize& tc)
     {
       processed.insert(cur);
       // process the match requirement for (disjunct) cur
-      processMatchRequirement(cur, visit);
+      computeMatchReq(cur, ee, visit);
     }
   } while (!visit.empty());
+  
+  // now we go back and process terms in the match requirements
+  processMatchReqTerms(ee);
 }
 
-void QuantInfo::processMatchRequirement(TNode cur, std::vector<TNode>& visit)
+void QuantInfo::computeMatchReq(TNode cur, eq::EqualityEngine* ee, std::vector<TNode>& visit)
 {
   Assert(cur.getType().isBoolean());
   bool pol = true;
@@ -95,11 +98,6 @@ void QuantInfo::processMatchRequirement(TNode cur, std::vector<TNode>& visit)
     k = cur.getKind();
     Assert(k != NOT);
   }
-  if (k == FORALL)
-  {
-    // do nothing, unhandled
-    return;
-  }
   // NOTE: could sanitize the term, remove any nested quantifiers here?
   // This is probably not necessary, the equality engine will treat the term
   // as a leaf.
@@ -117,7 +115,7 @@ void QuantInfo::processMatchRequirement(TNode cur, std::vector<TNode>& visit)
       }
     }
   }
-  else if (inst::TriggerTermInfo::isAtomicTriggerKind(k)
+  else if (ee->isFunctionKind(k)
            || expr::isBooleanConnective(cur))
   {
     // Matchable predicate, or Boolean connective.
@@ -132,40 +130,129 @@ void QuantInfo::processMatchRequirement(TNode cur, std::vector<TNode>& visit)
   // Add all of its children without polarity.
   for (TNode lc : cur)
   {
-    addMatchTerm(lc);
+    // to be propagating, it must be equal to something
+    addMatchTermReq(lc, Node::null(), true);
   }
 }
 
 void QuantInfo::addMatchTermReq(TNode t, Node eqc, bool isEq)
 {
+  // if not equal, make (not (= t eqc))
   if (!isEq)
   {
     Assert(!eqc.isNull());
     eqc = t.eqNode(eqc).notNode();
   }
-  std::vector<Node>& reqs = d_matcherReq[t];
+  std::vector<Node>& reqs = d_req[t];
   if (std::find(reqs.begin(), reqs.end(), eqc) == reqs.end())
   {
     reqs.push_back(eqc);
   }
-  if (std::find(d_matchers.begin(), d_matchers.end(), t) == d_matchers.end())
-  {
-    d_matchers.push_back(t);
-  }
 }
 
-void QuantInfo::addMatchTerm(TNode t)
+void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
 {
-  // to be propagating, it must be disequal from nothing
-  addMatchTermReq(t, Node::null(), true);
+  // Now, traverse each of the terms in match requirements. This sets up:
+  // (1) d_congTerms, the set of terms we are doing congruence over
+  // (2) d_topLevelMatchers, the set of terms that we may do matching with,
+  // which is the set of terms in the body of ee that do not occur beneath
+  // a congruence term.
+  // (3) d_unknownTerms, the set of subterms we don't handle
+  
+  // We track pairs (t, b) where t is the term we are traversing, and b is
+  // whether we have traversed inside a congruence term.
+  std::unordered_map<std::pair<TNode, bool>, bool, NodeBoolPairHashFunction> visited;
+  std::unordered_map<std::pair<TNode, bool>, bool, NodeBoolPairHashFunction>::iterator it;
+  std::vector<std::pair<TNode, bool>> visit;
+  std::pair<TNode, bool> cur;
+  // set d_reqTerms and add them all for traversal
+  for (const std::pair<const TNode, std::vector<Node>>& r : d_req)
+  {
+    d_reqTerms.push_back(r.first);
+    visit.push_back(std::pair<TNode, bool>(r.first, false));
+  }
+  // traverse
+  while (!visit.empty())
+  {
+    cur = visit.back();
+    it = visited.find(cur);
+    if (it == visited.end())
+    {
+      // don't care about terms without free variables
+      if (!expr::hasFreeVar(cur.first))
+      {
+        visit.pop_back();
+        visited[cur] = true;
+        continue;
+      }
+      Kind k = cur.first.getKind();
+      bool inCongTerm = cur.second;
+      // if we are a variable, or do congruence over this kind
+      if (k == BOUND_VARIABLE || ee->isFunctionKind(k))
+      {
+        if (!inCongTerm)
+        {
+          // record top level term
+          d_topLevelMatchers.push_back(cur.first);
+          // we are now within a congruence term
+          visit.pop_back();
+          visited[cur] = true;
+          // Mark to visit self as non-top level. This ensures we only add each
+          // term to d_congTerms once.
+          visit.push_back(std::pair<TNode, bool>(cur.first, true));
+          continue;
+        }
+        else
+        {
+          // will add to congruence terms at post-traversal
+          visited[cur] = false;
+        }
+      }
+      else if (!inCongTerm && expr::isBooleanConnective(cur.first))
+      {
+        // if we are not in a congruence term, and we are Boolean connective, recurse
+        visit.pop_back();
+        visited[cur] = true;
+      }
+      else
+      {
+        // not handled as Boolean connective or congruence kind, do nothing
+        // we remember the term as an unknown term.
+        d_unknownTerms.insert(cur.first);
+        visit.pop_back();
+        visited[cur] = true;
+        continue;
+      }
+      // recurse to children
+      if (cur.first.getNumChildren()>0)
+      {
+        for (TNode cc : cur.first)
+        {
+          visit.push_back(std::pair<TNode, bool>(cc, inCongTerm));
+        }
+      }
+    }
+    else
+    {
+      visit.pop_back();
+      if (!it->second)
+      {
+        visited[cur] = true;
+        // we will add this term to the equality engine. We add at post-order
+        // traversal to that the order of terms is correct, i.e. we add subterms
+        // first.
+        d_congTerms.push_back(cur.first);
+      }
+    }
+  }
 }
 
 void QuantInfo::resetRound()
 {
-  // TODO: compute order of matchers in d_matchers heuristically?
+  // TODO: compute order of matchers in d_topLevelMatchers heuristically?
   d_isActive = true;
   d_watchMatcherIndex = 0;
-  Assert(!d_matchers.empty());
+  Assert(!d_topLevelMatchers.empty());
 }
 
 TNode QuantInfo::getNextMatcher()
@@ -174,24 +261,23 @@ TNode QuantInfo::getNextMatcher()
   {
     return TNode::null();
   }
-  Assert(d_watchMatcherIndex.get() < d_matchers.size());
-  TNode next = d_matchers[d_watchMatcherIndex.get()];
+  Assert(d_watchMatcherIndex.get() < d_topLevelMatchers.size());
+  TNode next = d_topLevelMatchers[d_watchMatcherIndex.get()];
   d_watchMatcherIndex = d_watchMatcherIndex.get() + 1;
   return next;
 }
 
-const std::map<TNode, std::vector<Node>>& QuantInfo::getMatchConstraints() const
+const std::map<TNode, std::vector<Node>>& QuantInfo::getConstraints() const
 {
-  return d_matcherReq;
+  return d_req;
 }
 
-const std::vector<TNode>& QuantInfo::getMatchers() const { return d_matchers; }
-
-void QuantInfo::addCongruenceTerm(TNode t) { d_congTerms.push_back(t); }
 const std::vector<TNode>& QuantInfo::getCongruenceTerms() const
 {
   return d_congTerms;
 }
+
+const std::vector<TNode>& QuantInfo::getTopLevelMatchers() const { return d_topLevelMatchers; }
 
 bool QuantInfo::isActive() const { return d_isActive.get(); }
 
