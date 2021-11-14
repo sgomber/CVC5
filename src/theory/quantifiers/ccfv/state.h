@@ -53,7 +53,9 @@ class State : protected EnvObj
   void resetRound();
 
   /** Get quantifiers info */
-  QuantInfo& getOrMkQuantInfo(TNode q, eq::EqualityEngine* ee, expr::TermCanonize& tc);
+  QuantInfo& getOrMkQuantInfo(TNode q,
+                              eq::EqualityEngine* ee,
+                              expr::TermCanonize& tc);
   QuantInfo& getQuantInfo(TNode q);
   /** Get free variable info */
   FreeVarInfo& getOrMkFreeVarInfo(TNode v);

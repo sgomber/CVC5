@@ -56,7 +56,9 @@ void State::resetRound()
   // TODO: activate the quantified formulas
 }
 
-QuantInfo& State::getOrMkQuantInfo(TNode q, eq::EqualityEngine* ee, expr::TermCanonize& tc)
+QuantInfo& State::getOrMkQuantInfo(TNode q,
+                                   eq::EqualityEngine* ee,
+                                   expr::TermCanonize& tc)
 {
   std::map<Node, QuantInfo>::iterator it = d_quantInfo.find(q);
   if (it == d_quantInfo.end())

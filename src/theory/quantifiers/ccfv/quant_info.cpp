@@ -31,7 +31,9 @@ QuantInfo::QuantInfo(context::Context* c)
 {
 }
 
-void QuantInfo::initialize(TNode q, eq::EqualityEngine* ee, expr::TermCanonize& tc)
+void QuantInfo::initialize(TNode q,
+                           eq::EqualityEngine* ee,
+                           expr::TermCanonize& tc)
 {
   Assert(q.getKind() == FORALL);
   d_quant = q;
@@ -74,12 +76,14 @@ void QuantInfo::initialize(TNode q, eq::EqualityEngine* ee, expr::TermCanonize& 
       computeMatchReq(cur, ee, visit);
     }
   } while (!visit.empty());
-  
+
   // now we go back and process terms in the match requirements
   processMatchReqTerms(ee);
 }
 
-void QuantInfo::computeMatchReq(TNode cur, eq::EqualityEngine* ee, std::vector<TNode>& visit)
+void QuantInfo::computeMatchReq(TNode cur,
+                                eq::EqualityEngine* ee,
+                                std::vector<TNode>& visit)
 {
   Assert(cur.getType().isBoolean());
   bool pol = true;
@@ -115,8 +119,7 @@ void QuantInfo::computeMatchReq(TNode cur, eq::EqualityEngine* ee, std::vector<T
       }
     }
   }
-  else if (ee->isFunctionKind(k)
-           || expr::isBooleanConnective(cur))
+  else if (ee->isFunctionKind(k) || expr::isBooleanConnective(cur))
   {
     // Matchable predicate, or Boolean connective.
     // Note that Boolean connectives are simply marked as matching constraints
@@ -158,11 +161,13 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
   // which is the set of terms in the body of ee that do not occur beneath
   // a congruence term.
   // (3) d_unknownTerms, the set of subterms we don't handle
-  
+
   // We track pairs (t, b) where t is the term we are traversing, and b is
   // whether we have traversed inside a congruence term.
-  std::unordered_map<std::pair<TNode, bool>, bool, NodeBoolPairHashFunction> visited;
-  std::unordered_map<std::pair<TNode, bool>, bool, NodeBoolPairHashFunction>::iterator it;
+  std::unordered_map<std::pair<TNode, bool>, bool, NodeBoolPairHashFunction>
+      visited;
+  std::unordered_map<std::pair<TNode, bool>, bool, NodeBoolPairHashFunction>::
+      iterator it;
   std::vector<std::pair<TNode, bool>> visit;
   std::pair<TNode, bool> cur;
   // set d_reqTerms and add them all for traversal
@@ -210,7 +215,8 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
       }
       else if (!inCongTerm && expr::isBooleanConnective(cur.first))
       {
-        // if we are not in a congruence term, and we are Boolean connective, recurse
+        // if we are not in a congruence term, and we are Boolean connective,
+        // recurse
         visit.pop_back();
         visited[cur] = true;
       }
@@ -224,7 +230,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
         continue;
       }
       // recurse to children
-      if (cur.first.getNumChildren()>0)
+      if (cur.first.getNumChildren() > 0)
       {
         for (TNode cc : cur.first)
         {
@@ -277,7 +283,10 @@ const std::vector<TNode>& QuantInfo::getCongruenceTerms() const
   return d_congTerms;
 }
 
-const std::vector<TNode>& QuantInfo::getTopLevelMatchers() const { return d_topLevelMatchers; }
+const std::vector<TNode>& QuantInfo::getTopLevelMatchers() const
+{
+  return d_topLevelMatchers;
+}
 
 bool QuantInfo::isActive() const { return d_isActive.get(); }
 

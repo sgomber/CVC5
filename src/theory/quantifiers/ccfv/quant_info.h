@@ -36,7 +36,9 @@ namespace ccfv {
 
 class QuantInfo
 {
-  using NodeBoolPairHashFunction = PairHashFunction<Node, bool, std::hash<Node>>;
+  using NodeBoolPairHashFunction =
+      PairHashFunction<Node, bool, std::hash<Node>>;
+
  public:
   QuantInfo(context::Context* c);
   /**
@@ -68,12 +70,15 @@ class QuantInfo
   bool isActive() const;
   /** set dead */
   void setActive(bool val);
+
  private:
   /**
    * Process matching requirement for subterm cur which is a disjunct in the
    * quantified formula of this class.
    */
-  void computeMatchReq(TNode cur, eq::EqualityEngine* ee, std::vector<TNode>& visit);
+  void computeMatchReq(TNode cur,
+                       eq::EqualityEngine* ee,
+                       std::vector<TNode>& visit);
   /** Add match term that must be (dis)equal from eqc */
   void addMatchTermReq(TNode t, Node eqc, bool isEq);
   /** Process match requirement terms */
@@ -96,13 +101,13 @@ class QuantInfo
   std::map<TNode, std::vector<Node>> d_req;
   /** The domain of d_req */
   std::vector<TNode> d_reqTerms;
-  /** 
+  /**
    * List of all "congruence terms". This is the set of all subterms of the
    * domain of d_req whose kind we are doing congruence over in the equality
    * engine that this class was initialized for.
    */
   std::vector<TNode> d_congTerms;
-  /** 
+  /**
    * List of all top-level congruence terms, i.e. ones that occur as subterms in
    * the domain of d_req in positions that are not nested under other congruence
    * terms. These terms determine what to invoke matching on.

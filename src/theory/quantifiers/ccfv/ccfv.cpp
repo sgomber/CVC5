@@ -40,7 +40,8 @@ void CongruenceClosureFv::registerQuantifier(Node q) {}
 void CongruenceClosureFv::assertNode(Node q)
 {
   Assert(q.getKind() == FORALL);
-  QuantInfo& qi = d_state.getOrMkQuantInfo(q, d_qstate.getEqualityEngine(), d_tcanon);
+  QuantInfo& qi =
+      d_state.getOrMkQuantInfo(q, d_qstate.getEqualityEngine(), d_tcanon);
   // its pattern terms are registered
   const std::map<TNode, std::vector<Node>>& ms = qi.getConstraints();
   for (TNode p : ms)
@@ -65,7 +66,7 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q)
   visit.push_back(n);
   std::vector<TNode> freeVars;
   // parents list
-  std::map<TNode, std::vector<TNode> > parentList;
+  std::map<TNode, std::vector<TNode>> parentList;
   do
   {
     cur = visit.back();
@@ -117,7 +118,7 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q)
   } while (!visit.empty());
 
   // go back and set the use list of the free variables
-  std::map<TNode, std::vector<TNode> >::iterator itpl;
+  std::map<TNode, std::vector<TNode>>::iterator itpl;
   std::unordered_set<TNode>::iterator it;
   for (TNode v : freeVars)
   {
