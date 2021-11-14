@@ -54,8 +54,7 @@ class QuantInfo
    * Get match constraints.
    *
    */
-  const std::map<TNode, std::vector<Node>>& getMatchConstraints(
-      bool isEq) const;
+  const std::map<TNode, std::vector<Node>>& getMatchConstraints() const;
   /** Get matchers */
   const std::vector<TNode>& getMatchers() const;
   /** Add congruence term */
@@ -86,10 +85,14 @@ class QuantInfo
    * List of canonical variables corresponding to each bound variable.
    */
   std::vector<TNode> d_canonVars;
-  /** The match terms + their requirements */
-  std::map<TNode, std::vector<Node>> d_matcherEqReq;
-  std::map<TNode, std::vector<Node>> d_matcherDeqReq;
-  /** List of all match terms */
+  /**
+   * The match terms + their requirements. A requirement for p can either be:
+   * (1) Node::null(), saying that the term must be equal to some ground term
+   * (2) (not (= p g)), saying that pattern must be disequal from g
+   * (3) g, saying that the pattern must be equal to g
+   */
+  std::map<TNode, std::vector<Node>> d_matcherReq;
+  /** List of all match terms, the domain of the above map */
   std::vector<TNode> d_matchers;
   /** List of all congruence terms */
   std::vector<TNode> d_congTerms;

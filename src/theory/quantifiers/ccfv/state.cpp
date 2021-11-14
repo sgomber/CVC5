@@ -249,17 +249,20 @@ void State::notifyPatternEqGround(TNode p, TNode g)
     ++tnIndex;
     p = it->second.d_pattern;
     g = it->second.d_eq;
-    // notify the parents always, notify the congruence parents if sink
+    // notify the ordinary parents always, notify the congruence parents if sink
     size_t maxIter = isSink(g) ? 2 : 1;
     for (size_t i = 0; i < maxIter; i++)
     {
-      std::vector<TNode>& notifyList =
+      context::CDList<Node>& notifyList =
           i == 0 ? it->second.d_parentNotify : it->second.d_parentCongNotify;
       for (TNode pp : notifyList)
       {
         if (pp.getKind() == FORALL)
         {
-          // if we have a quantified formula as a parent, notify
+          // quantified formulas are ordinary parents
+          Assert (i==0);
+          // if we have a quantified formula as a parent, notify is a special
+          // method, which will test the constraints
           notifyQuant(pp, p, g);
           if (isFinished())
           {
@@ -298,19 +301,27 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
   }
   else
   {
-    std::map<TNode, std::vector<Node>>::const_iterator itm;
-    for (size_t i = 0; i < 2; i++)
+    const std::map<TNode, std::vector<Node>>& cs = qi.getMatchConstraints();
+    std::map<TNode, std::vector<Node>>::const_iterator itm = cs.find(val);
+    if (itm != cs.end())
     {
-      bool isEq = (i == 0);
-      const std::map<TNode, std::vector<Node>>& cs =
-          qi.getMatchConstraints(isEq);
-      itm = cs.find(val);
-      if (itm == cs.end())
-      {
-        continue;
-      }
       for (TNode c : itm->second)
       {
+        if (c.isNull())
+        {
+          // the constraint said you must be disequal to sink, i.e. we must be
+          // equal to something. we are ok
+          continue;
+        }
+        // if a disequality constraint
+        bool isEq = true;
+        if (c.getKind()==NOT)
+        {
+          Assert (c[0].getKind()==EQUAL);
+          isEq = false;
+          c = c[0][1];
+        }
+        // otherwise check the constraint
         TNode r = d_qstate.getRepresentative(c);
         if (isEq != (val == r))
         {
@@ -318,12 +329,9 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
           break;
         }
       }
-      if (setInactive)
-      {
-        break;
-      }
     }
   }
+  // if we should set inactive, update qi and decrement d_numActiveQuant
   if (setInactive)
   {
     qi.setActive(false);

@@ -15,6 +15,8 @@
 
 #include "theory/quantifiers/ccfv/ccfv.h"
 
+using namespace cvc5::kind;
+
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
@@ -33,8 +35,11 @@ void CongruenceClosureFv::reset_round(Theory::Effort e) {}
 
 void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e) {}
 
-void CongruenceClosureFv::registerQuantifier(Node q)
+void CongruenceClosureFv::registerQuantifier(Node q) {}
+
+void CongruenceClosureFv::assertNode(Node q)
 {
+  Assert (q.getKind()==FORALL);
   QuantInfo& qi = d_state.getOrMkQuantInfo(q, d_tcanon);
   // its pattern terms are registered
   const std::vector<TNode>& ms = qi.getMatchers();
@@ -81,14 +86,15 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
         freeVars.push_back(cur);
         continue;
       }
-      else if (!ee->isFunctionKind(k))
+      Assert(cur.getNumChildren() > 0);
+      // compute if Boolean connective
+      bool isBoolConnective = k==ITE ? cur.getType().isBoolean() : expr::isBooleanConnective(cur);
+      if (!isBoolConnective && !ee->isFunctionKind(k))
       {
-        // not handled as congruence kind
+        // not handled as Boolean connective or congruence kind
         visited[cur] = true;
         continue;
       }
-      Assert(cur.getNumChildren() > 0);
-      bool isBoolConnective = expr::isBooleanConnective(cur);
       // Boolean connective don't need post-visit
       visited[cur] = isBoolConnective;
       for (TNode cc : cur)

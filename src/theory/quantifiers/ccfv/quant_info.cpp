@@ -100,8 +100,9 @@ void QuantInfo::processMatchRequirement(TNode cur, std::vector<TNode>& visit)
     // do nothing, unhandled
     return;
   }
-  // TODO: sanitize the term, remove any nested quantifiers here
-
+  // NOTE: could sanitize the term, remove any nested quantifiers here?
+  // This is probably not necessary, the equality engine will treat the term
+  // as a leaf.
   if (k == EQUAL)
   {
     // maybe pattern equals ground?
@@ -137,7 +138,12 @@ void QuantInfo::processMatchRequirement(TNode cur, std::vector<TNode>& visit)
 
 void QuantInfo::addMatchTermReq(TNode t, Node eqc, bool isEq)
 {
-  std::vector<Node>& reqs = isEq ? d_matcherEqReq[t] : d_matcherDeqReq[t];
+  if (!isEq)
+  {
+    Assert (!eqc.isNull());
+    eqc = t.eqNode(eqc).notNode();
+  }
+  std::vector<Node>& reqs = d_matcherReq[t];
   if (std::find(reqs.begin(), reqs.end(), eqc) == reqs.end())
   {
     reqs.push_back(eqc);
@@ -151,7 +157,7 @@ void QuantInfo::addMatchTermReq(TNode t, Node eqc, bool isEq)
 void QuantInfo::addMatchTerm(TNode t)
 {
   // to be propagating, it must be disequal from nothing
-  addMatchTermReq(t, Node::null(), false);
+  addMatchTermReq(t, Node::null(), true);
 }
 
 void QuantInfo::resetRound()
@@ -174,10 +180,9 @@ TNode QuantInfo::getNextMatcher()
   return next;
 }
 
-const std::map<TNode, std::vector<Node>>& QuantInfo::getMatchConstraints(
-    bool isEq) const
+const std::map<TNode, std::vector<Node>>& QuantInfo::getMatchConstraints() const
 {
-  return isEq ? d_matcherEqReq : d_matcherDeqReq;
+  return d_matcherReq;
 }
 
 const std::vector<TNode>& QuantInfo::getMatchers() const { return d_matchers; }

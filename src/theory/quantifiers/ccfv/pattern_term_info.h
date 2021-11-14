@@ -21,6 +21,7 @@
 #include <map>
 
 #include "context/cdo.h"
+#include "context/cdlist.h"
 #include "expr/node.h"
 
 namespace cvc5 {
@@ -34,6 +35,7 @@ namespace ccfv {
  */
 class PatTermInfo
 {
+  typedef context::CDList<Node> NodeList;
  public:
   PatTermInfo(context::Context* c);
   /** initialize */
@@ -45,40 +47,30 @@ class PatTermInfo
   bool isActive() const;
   /** Notify that child was assigned value val, set eq if possible. */
   bool notify(TNode child, TNode val, bool isSink);
-  /**
-   * This pattern term.
-   */
+  /** This pattern term. */
   Node d_pattern;
-  /** the ground term we are equal to, if any */
+  /** 
+   * The ground term we are currently equal to, if any. This may also be
+   * the sink node.
+   */
   context::CDO<TNode> d_eq;
   /**
-   * The number of unassigned free variables if a congruence term.
-   * Or the number of unassigned children otherwise.
+   * The number of unassigned free variables if a congruence term,
+   * or the number of unassigned children otherwise.
    */
   context::CDO<size_t> d_numUnassigned;
-
-  /**
-   * Map from equivalence classes to pattern terms that require
-   * this pattern to be in the equivalence class of that term. If the pattern
-   * term merges into a equivalence class that is not that equivalence class,
-   * the quantified formula has no propagating substitution in the context, and
-   * hence it is marked dead.
-   */
-  // std::map<TNode, std::vector<TNode> > d_gEqReq;
-  /** Same as above, for disequality requirements */
-  // std::map<TNode, std::vector<TNode> > d_gDeqReq;
-
   /**
    * The list of pattern terms that are the parent of this. For pattern p,
    * this is either:
    * (1) A term of the form f( ... p ... ), where f may be a Boolean connective.
    * (2) A quantified formula Q whose body has p as a disjunct.
    */
-  std::vector<TNode> d_parentNotify;
+  NodeList d_parentNotify;
   /**
-   * The list of pattern terms to notify if sink.
+   * The list of pattern terms f( ... p ... ) where we are doing congruence
+   * over f. We notify these parents of our value only if become equal to sink.
    */
-  std::vector<TNode> d_parentCongNotify;
+  NodeList d_parentCongNotify;
   /** is Boolean connective */
   bool d_isBooleanConnective;
 };
