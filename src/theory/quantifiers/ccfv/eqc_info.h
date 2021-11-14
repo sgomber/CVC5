@@ -47,7 +47,7 @@ class EqcInfo
   NodeList d_eqPats;
 };
 
-}
+}  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

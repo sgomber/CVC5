@@ -22,8 +22,8 @@
 #include <unordered_set>
 
 #include "expr/term_canonize.h"
-#include "theory/quantifiers/ccfv/state.h"
 #include "theory/quantifiers/ccfv/inst_driver.h"
+#include "theory/quantifiers/ccfv/state.h"
 #include "theory/quantifiers/quant_module.h"
 
 namespace cvc5 {

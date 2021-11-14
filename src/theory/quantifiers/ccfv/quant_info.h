@@ -24,10 +24,9 @@
 #include "expr/node.h"
 
 namespace cvc5 {
-  
-namespace expr
-{
-  class TermCanonize;
+
+namespace expr {
+class TermCanonize;
 }
 
 namespace theory {
@@ -67,6 +66,7 @@ class QuantInfo
   bool isActive() const;
   /** set dead */
   void setActive(bool val);
+
  private:
   /**
    * Process matching requirement for subterm cur which is a disjunct in the
@@ -101,7 +101,7 @@ class QuantInfo
   context::CDO<size_t> d_watchMatcherIndex;
 };
 
-}
+}  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

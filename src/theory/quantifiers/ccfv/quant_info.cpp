@@ -16,8 +16,8 @@
 #include "theory/quantifiers/ccfv/quant_info.h"
 
 #include "expr/node_algorithm.h"
-#include "theory/quantifiers/ematching/trigger_term_info.h"
 #include "expr/term_canonize.h"
+#include "theory/quantifiers/ematching/trigger_term_info.h"
 
 using namespace cvc5::kind;
 
@@ -25,7 +25,7 @@ namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 namespace ccfv {
-  
+
 QuantInfo::QuantInfo(context::Context* c)
     : d_isActive(c), d_watchMatcherIndex(c)
 {
@@ -101,8 +101,7 @@ void QuantInfo::processMatchRequirement(TNode cur, std::vector<TNode>& visit)
     return;
   }
   // TODO: sanitize the term, remove any nested quantifiers here
-  
-  
+
   if (k == EQUAL)
   {
     // maybe pattern equals ground?
@@ -181,25 +180,19 @@ const std::map<TNode, std::vector<Node>>& QuantInfo::getMatchConstraints(
   return isEq ? d_matcherEqReq : d_matcherDeqReq;
 }
 
-const std::vector<TNode>& QuantInfo::getMatchers() const
-{
-  return d_matchers;
-}
+const std::vector<TNode>& QuantInfo::getMatchers() const { return d_matchers; }
 
 void QuantInfo::addCongruenceTerm(TNode t) { d_congTerms.push_back(t); }
-const std::vector<TNode>& QuantInfo::getCongruenceTerms() const { return d_congTerms; }
-
-bool QuantInfo::isActive() const
+const std::vector<TNode>& QuantInfo::getCongruenceTerms() const
 {
-  return d_isActive.get();
+  return d_congTerms;
 }
 
-void QuantInfo::setActive(bool val)
-{
-  d_isActive = val;
-}
+bool QuantInfo::isActive() const { return d_isActive.get(); }
 
-}
+void QuantInfo::setActive(bool val) { d_isActive = val; }
+
+}  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

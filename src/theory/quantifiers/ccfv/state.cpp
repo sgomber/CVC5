@@ -26,18 +26,21 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-State::State(Env& env,
-                      QuantifiersState& qs) : EnvObj(env), d_qstate(qs), d_groundEqc(context()), d_numActiveQuant(context(),0)
+State::State(Env& env, QuantifiersState& qs)
+    : EnvObj(env),
+      d_qstate(qs),
+      d_groundEqc(context()),
+      d_numActiveQuant(context(), 0)
 {
-  NodeManager * nm = NodeManager::currentNM();
-  SkolemManager * sm = nm->getSkolemManager();
+  NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
   d_sink = sm->mkDummySkolem("sink", nm->booleanType());
 }
 
 QuantInfo& State::getOrMkQuantInfo(TNode q, expr::TermCanonize& tc)
 {
   std::map<Node, QuantInfo>::iterator it = d_quantInfo.find(q);
-  if(it == d_quantInfo.end())
+  if (it == d_quantInfo.end())
   {
     d_quantInfo.emplace(q, context());
     it = d_quantInfo.find(q);
@@ -54,10 +57,7 @@ QuantInfo& State::getQuantInfo(TNode q)
   return it->second;
 }
 
-FreeVarInfo& State::getOrMkFreeVarInfo(TNode v)
-{
-  return d_fvInfo[v];
-}
+FreeVarInfo& State::getOrMkFreeVarInfo(TNode v) { return d_fvInfo[v]; }
 
 const FreeVarInfo& State::getFreeVarInfo(TNode v) const
 {
@@ -69,7 +69,7 @@ const FreeVarInfo& State::getFreeVarInfo(TNode v) const
 PatTermInfo& State::getOrMkPatTermInfo(TNode p)
 {
   std::map<Node, PatTermInfo>::iterator it = d_pInfo.find(p);
-  if(it == d_pInfo.end())
+  if (it == d_pInfo.end())
   {
     d_pInfo.emplace(p, context());
     it = d_pInfo.find(p);
@@ -89,7 +89,7 @@ PatTermInfo& State::getPatTermInfo(TNode p)
 EqcInfo& State::getOrMkEqcInfo(TNode r)
 {
   std::map<Node, EqcInfo>::iterator it = d_eqcInfo.find(r);
-  if(it == d_eqcInfo.end())
+  if (it == d_eqcInfo.end())
   {
     d_eqcInfo.emplace(r, context());
     it = d_eqcInfo.find(r);
@@ -109,21 +109,21 @@ bool State::notify(PatTermInfo& pi, TNode child, TNode val)
   {
     if (!isSink(val))
     {
-      Assert (val.getKind()==CONST_BOOLEAN);
+      Assert(val.getKind() == CONST_BOOLEAN);
       bool pol = val.getConst<bool>();
       Kind k = pi.d_pattern.getKind();
-      Assert (k!=IMPLIES && k!=XOR);
-      if ((k==AND && !pol) || (k==OR && pol))
+      Assert(k != IMPLIES && k != XOR);
+      if ((k == AND && !pol) || (k == OR && pol))
       {
         // the value determines the value of this
         pi.d_eq = val;
         return true;
       }
-      if (k==ITE)
+      if (k == ITE)
       {
         // if the condition is being set, and the branch already has a value,
         // then this has the value of the branch.
-        if (pi.d_pattern[0]==child)
+        if (pi.d_pattern[0] == child)
         {
           Node vbranch = getValue(pi.d_pattern[pol ? 1 : 2]);
           if (!vbranch.isNull())
@@ -132,14 +132,14 @@ bool State::notify(PatTermInfo& pi, TNode child, TNode val)
             return true;
           }
         }
-        else 
+        else
         {
           // if the branch is being set, the condition is determined, and it is
           // the relevant branch, then this value is val.
           Node vcond = getValue(pi.d_pattern[0]);
           if (!vcond.isNull() && vcond.isConst())
           {
-            if (child==pi.d_pattern[vcond.getConst<bool>() ? 1 : 2])
+            if (child == pi.d_pattern[vcond.getConst<bool>() ? 1 : 2])
             {
               pi.d_eq = val;
               return true;
@@ -158,19 +158,19 @@ bool State::notify(PatTermInfo& pi, TNode child, TNode val)
       return true;
     }
   }
-  Assert (pi.d_numUnassignChildren.get()>0);
-  pi.d_numUnassignChildren = pi.d_numUnassignChildren.get()-1;
-  if (pi.d_numUnassignChildren==0)
+  Assert(pi.d_numUnassignChildren.get() > 0);
+  pi.d_numUnassignChildren = pi.d_numUnassignChildren.get() - 1;
+  if (pi.d_numUnassignChildren == 0)
   {
-    // set to unknown, handle cases 
+    // set to unknown, handle cases
     pi.d_eq = d_sink;
     // if a Boolean connective, we can possibly evaluate
     if (pi.d_isBooleanConnective)
     {
-      NodeManager * nm = NodeManager::currentNM();
+      NodeManager* nm = NodeManager::currentNM();
       Kind k = pi.d_pattern.getKind();
-      Assert (k!=IMPLIES && k!=XOR);
-      if (k==AND || k==OR)
+      Assert(k != IMPLIES && k != XOR);
+      if (k == AND || k == OR)
       {
         for (TNode pc : pi.d_pattern)
         {
@@ -181,20 +181,20 @@ bool State::notify(PatTermInfo& pi, TNode child, TNode val)
             return true;
           }
         }
-        pi.d_eq = nm->mkConst(k==AND);
+        pi.d_eq = nm->mkConst(k == AND);
       }
       else
       {
         TNode cval1 = getValue(pi.d_pattern[0]);
-        Assert (cval1.isConst() || isSink(cval1));
-        if (k==NOT)
+        Assert(cval1.isConst() || isSink(cval1));
+        if (k == NOT)
         {
           if (cval1.isConst())
           {
             pi.d_eq = nm->mkConst(!cval1.getConst<bool>());
           }
         }
-        else if (k==ITE)
+        else if (k == ITE)
         {
           if (cval1.isConst())
           {
@@ -205,7 +205,7 @@ bool State::notify(PatTermInfo& pi, TNode child, TNode val)
           {
             // otherwise, we only are known if the branches are equal
             TNode cval2 = getValue(pi.d_pattern[1]);
-            if (cval2.isConst() && cval2==getValue(pi.d_pattern[2]))
+            if (cval2.isConst() && cval2 == getValue(pi.d_pattern[2]))
             {
               pi.d_eq = cval2;
             }
@@ -213,14 +213,14 @@ bool State::notify(PatTermInfo& pi, TNode child, TNode val)
         }
         else
         {
-          Assert (k!=EQUAL);
+          Assert(k != EQUAL);
           if (cval1.isConst())
           {
             TNode cval2 = getValue(pi.d_pattern[0]);
             if (cval2.isConst())
             {
               // if both side evaluate, we evaluate
-              pi.d_eq = nm->mkConst(cval1==cval2);
+              pi.d_eq = nm->mkConst(cval1 == cval2);
             }
           }
         }
@@ -235,22 +235,19 @@ bool State::notify(PatTermInfo& pi, TNode child, TNode val)
   return false;
 }
 
-
 void State::notifyPatternEqGround(TNode p, TNode g)
 {
   PatTermInfo& pti = getPatTermInfo(p);
-  Assert (pti.isActive());
+  Assert(pti.isActive());
   pti.d_eq = g;
 
   /*
   for (TNode pp : pti.d_parentNotify)
   {
-    
+
   }
   */
-  
-  
-  
+
   /*
   const PatTermInto& pti = getPatTermInfo(p);
   // if still active
@@ -296,14 +293,14 @@ void State::notifyPatternEqGround(TNode p, TNode g)
 
 void State::notifyQuant(TNode q, TNode p, TNode val)
 {
-  Assert (q.getKind()==FORALL);
+  Assert(q.getKind() == FORALL);
   QuantInfo& qi = getQuantInfo(q);
   if (!qi.isActive())
   {
     // quantified formula is already inactive
     return;
   }
-  Assert (d_numActiveQuant.get()>0);
+  Assert(d_numActiveQuant.get() > 0);
   // check whether we should set inactive
   bool setInactive = false;
   if (isSink(val))
@@ -315,9 +312,10 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
     std::map<TNode, std::vector<Node>>::const_iterator itm;
     for (size_t i = 0; i < 2; i++)
     {
-      const std::map<TNode, std::vector<Node>>& cs = qi.getMatchConstraints(i==0);
+      const std::map<TNode, std::vector<Node>>& cs =
+          qi.getMatchConstraints(i == 0);
       itm = cs.find(val);
-      if (itm==cs.end())
+      if (itm == cs.end())
       {
         continue;
       }
@@ -334,38 +332,32 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
   if (setInactive)
   {
     qi.setActive(false);
-    d_numActiveQuant = d_numActiveQuant-1;
+    d_numActiveQuant = d_numActiveQuant - 1;
   }
 }
 
-Node State::getSink() const
-{
-  return d_sink;
-}
+Node State::getSink() const { return d_sink; }
 
-bool State::isSink(TNode n) const
-{
-  return n==d_sink;
-}
+bool State::isSink(TNode n) const { return n == d_sink; }
 
 TNode State::getValue(TNode p) const
 {
   std::map<Node, PatTermInfo>::const_iterator it = d_pInfo.find(p);
-  if(it != d_pInfo.end())
+  if (it != d_pInfo.end())
   {
     return it->second.d_eq;
   }
-  Assert (!expr::hasFreeVar(p));
+  Assert(!expr::hasFreeVar(p));
   // use equality engine, go to sink if not a part of equivalence classes
   TNode r = d_qstate.getRepresentative(p);
-  if (d_groundEqc.find(r)!=d_groundEqc.end())
+  if (d_groundEqc.find(r) != d_groundEqc.end())
   {
     return r;
   }
   return d_sink;
 }
 
-}  // namespace quantifiers
+}  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

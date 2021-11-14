@@ -33,7 +33,7 @@ void CongruenceClosureFv::reset_round(Theory::Effort e) {}
 
 void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e) {}
 
-void CongruenceClosureFv::registerQuantifier(Node q) 
+void CongruenceClosureFv::registerQuantifier(Node q)
 {
   QuantInfo& qi = d_state.getOrMkQuantInfo(q, d_tcanon);
   // its pattern terms are registered
@@ -51,12 +51,14 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
     it = visited.find(cur);
 
-    if (it == visited.end()) {
+    if (it == visited.end())
+    {
       visited.insert(cur);
       if (expr::isBooleanConnective(cur))
       {
@@ -77,9 +79,9 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
         // we will add this term to the equality engine
         qi.addCongruenceTerm(cur);
         // traverse to its children
-        if (cur.getNumChildren()>0)
+        if (cur.getNumChildren() > 0)
         {
-          visit.insert(visit.end(),cur.begin(),cur.end());
+          visit.insert(visit.end(), cur.begin(), cur.end());
         }
       }
     }

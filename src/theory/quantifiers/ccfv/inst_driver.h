@@ -48,10 +48,7 @@ x -> b
 class InstDriver : public QuantifiersModule
 {
  public:
-  InstDriver(Env& env,
-             State& state,
-             QuantifiersState& qs,
-             TermRegistry& tr);
+  InstDriver(Env& env, State& state, QuantifiersState& qs, TermRegistry& tr);
   /** Get quantifiers info */
   QuantInfo& getQuantInfo(TNode q);
   /** Get free variable info */
@@ -98,7 +95,7 @@ class InstDriver : public QuantifiersModule
   QuantifiersSet d_qset;
 };
 
-}
+}  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

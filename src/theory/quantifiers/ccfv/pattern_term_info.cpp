@@ -22,25 +22,28 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-PatTermInfo::PatTermInfo(context::Context* c) : d_eq(c), d_numUnassignChildren(c, 0) {}
+PatTermInfo::PatTermInfo(context::Context* c)
+    : d_eq(c), d_numUnassignChildren(c, 0)
+{
+}
 
 void PatTermInfo::initialize(TNode pattern)
 {
-  Assert (expr::hasFreeVar(pattern));
+  Assert(expr::hasFreeVar(pattern));
   d_pattern = pattern;
   for (TNode pc : pattern)
   {
     if (expr::hasFreeVar(pc))
     {
-      d_numUnassignChildren = d_numUnassignChildren+1;
+      d_numUnassignChildren = d_numUnassignChildren + 1;
     }
   }
-  Assert (d_eq.isNull());
+  Assert(d_eq.isNull());
 }
 
 bool PatTermInfo::isActive() const { return d_eq.get().isNull(); }
 
-}
+}  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

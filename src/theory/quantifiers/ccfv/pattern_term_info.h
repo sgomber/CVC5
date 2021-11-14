@@ -45,7 +45,7 @@ class PatTermInfo
   bool isActive() const;
   /** Notify that child was assigned value val, set eq if possible. */
   bool notify(TNode child, TNode val, bool isSink);
-  /** 
+  /**
    * This pattern term.
    */
   Node d_pattern;
@@ -61,9 +61,9 @@ class PatTermInfo
    * the quantified formula has no propagating substitution in the context, and
    * hence it is marked dead.
    */
-  //std::map<TNode, std::vector<TNode> > d_gEqReq;
+  // std::map<TNode, std::vector<TNode> > d_gEqReq;
   /** Same as above, for disequality requirements */
-  //std::map<TNode, std::vector<TNode> > d_gDeqReq;
+  // std::map<TNode, std::vector<TNode> > d_gDeqReq;
 
   /**
    * The list of pattern terms that are the parent of this. For pattern p,
@@ -72,11 +72,11 @@ class PatTermInfo
    * (2) A quantified formula Q whose body has p as a disjunct.
    */
   std::vector<TNode> d_parentNotify;
-   /** is Boolean connective */
-   bool d_isBooleanConnective;
+  /** is Boolean connective */
+  bool d_isBooleanConnective;
 };
 
-}
+}  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

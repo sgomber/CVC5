@@ -40,7 +40,7 @@ class QuantifiersSet
   context::CDO<size_t> d_numAlive;
 };
 
-}
+}  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

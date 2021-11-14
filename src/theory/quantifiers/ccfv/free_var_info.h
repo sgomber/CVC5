@@ -49,7 +49,7 @@ class FreeVarInfo
   }
 };
 
-}
+}  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

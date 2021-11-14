@@ -20,9 +20,9 @@ namespace theory {
 namespace quantifiers {
 
 InstDriver::InstDriver(Env& env,
-                        State& state,
-                QuantifiersState& qs,
-                TermRegistry& tr)
+                       State& state,
+                       QuantifiersState& qs,
+                       TermRegistry& tr)
 {
 }
 

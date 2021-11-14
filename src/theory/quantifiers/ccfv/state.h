@@ -18,36 +18,35 @@
 #ifndef CVC5__THEORY__QUANTIFIERS__CCFV__STATE_H
 #define CVC5__THEORY__QUANTIFIERS__CCFV__STATE_H
 
-#include "smt/env_obj.h"
 #include "context/cdhashset.h"
-#include "theory/quantifiers/ccfv/quant_info.h"
+#include "smt/env_obj.h"
+#include "theory/quantifiers/ccfv/eqc_info.h"
 #include "theory/quantifiers/ccfv/free_var_info.h"
 #include "theory/quantifiers/ccfv/pattern_term_info.h"
-#include "theory/quantifiers/ccfv/eqc_info.h"
+#include "theory/quantifiers/ccfv/quant_info.h"
 
 namespace cvc5 {
-  
-namespace expr
-{
-  class TermCanonize;
+
+namespace expr {
+class TermCanonize;
 }
 
 namespace theory {
 namespace quantifiers {
-  
+
 class QuantifiersState;
 
 namespace ccfv {
 
 class CongruenceClosureFv;
-  
+
 class State : protected EnvObj
 {
   typedef context::CDHashSet<Node> NodeSet;
   friend class CongruenceClosureFv;
+
  public:
-  State(Env& env,
-                      QuantifiersState& qs);
+  State(Env& env, QuantifiersState& qs);
   /** Get quantifiers info */
   QuantInfo& getOrMkQuantInfo(TNode q, expr::TermCanonize& tc);
   QuantInfo& getQuantInfo(TNode q);
@@ -68,16 +67,16 @@ class State : protected EnvObj
    * merge into a ground equivalence class in this context.
    */
   void notifyPatternEqGround(TNode p, TNode g);
-  
-  
+
   /** Get sink node */
   Node getSink() const;
   /** Is sink */
   bool isSink(TNode n) const;
   /** Get value */
   TNode getValue(TNode p) const;
+
  private:
-  /** 
+  /**
    * Notify that child was assigned value val, set eq if possible.
    * Return true if we set eq during this call.
    */
