@@ -251,9 +251,10 @@ void State::notifyPatternEqGround(TNode p, TNode g)
     g = it->second.d_eq;
     // notify the parents always, notify the congruence parents if sink
     size_t maxIter = isSink(g) ? 2 : 1;
-    for (size_t i=0; i<maxIter; i++)
+    for (size_t i = 0; i < maxIter; i++)
     {
-      std::vector<TNode>& notifyList = i==0 ? it->second.d_parentNotify : it->second.d_parentCongNotify;
+      std::vector<TNode>& notifyList =
+          i == 0 ? it->second.d_parentNotify : it->second.d_parentCongNotify;
       for (TNode pp : notifyList)
       {
         if (pp.getKind() == FORALL)

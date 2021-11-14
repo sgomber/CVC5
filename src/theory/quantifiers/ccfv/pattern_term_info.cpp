@@ -22,8 +22,7 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-PatTermInfo::PatTermInfo(context::Context* c)
-    : d_eq(c), d_numUnassigned(c, 0)
+PatTermInfo::PatTermInfo(context::Context* c) : d_eq(c), d_numUnassigned(c, 0)
 {
 }
 

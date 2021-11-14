@@ -46,8 +46,8 @@ void CongruenceClosureFv::registerQuantifier(Node q)
 
 void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
 {
-  eq::EqualityEngine * ee = d_qstate.getEqualityEngine();
-  
+  eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
+
   // we will notify the quantified formula when the pattern becomes set
   PatternTerm& pi = d_state.getOrMkPatTermInfo(p);
   pi.d_parentNotify.push_back(q);
@@ -132,22 +132,24 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
     std::unordered_set<TNode> containing;
     TNode cur;
     visit.push_back(v);
-    do {
+    do
+    {
       cur = visit.back();
       visit.pop_back();
       it = containing.find(cur);
-      if (it == containing.end()) {
+      if (it == containing.end())
+      {
         containing.insert(cur);
-        if (fi.d_useList.find(cur)==fi.d_useList.end())
+        if (fi.d_useList.find(cur) == fi.d_useList.end())
         {
           fi.d_useList.push_back(cur);
           PatternTerm& pi = d_state.getOrMkPatTermInfo(cur);
           pi.d_numUnassigned = pi.d_numUnassigned + 1;
         }
         itpl = parentList.find(cur);
-        if (itpl!=parentList.end())
+        if (itpl != parentList.end())
         {
-          visit.insert(visit.end(),itpl->second.begin(),itpl->second.end());
+          visit.insert(visit.end(), itpl->second.begin(), itpl->second.end());
         }
       }
     } while (!containing.empty());
