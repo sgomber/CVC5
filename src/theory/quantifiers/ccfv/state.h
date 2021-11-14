@@ -50,9 +50,8 @@ class State : protected EnvObj
   /** Is finished */
   bool isFinished() const;
   /** Activate quantified formula */
-  //void activateQuant(TNode q);
-  
-  
+  // void activateQuant(TNode q);
+
   /** Get quantifiers info */
   QuantInfo& getOrMkQuantInfo(TNode q, expr::TermCanonize& tc);
   QuantInfo& getQuantInfo(TNode q);

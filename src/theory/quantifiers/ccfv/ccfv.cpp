@@ -49,7 +49,7 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
   // we will notify the quantified formula when the pattern becomes set
   PatternTerm& pi = d_state.getOrMkPatTermInfo(p);
   pi.d_parentNotify.push_back(q);
-  
+
   // Now, traverse p. This sets up the pattern info for subterms of p.
   std::unordered_map<TNode, bool> visited;
   std::unordered_map<TNode, bool>::iterator it;
@@ -71,7 +71,7 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
         visited[cur] = true;
         continue;
       }
-      if (cur.getKind()==BOUND_VARIABLE)
+      if (cur.getKind() == BOUND_VARIABLE)
       {
         visited[cur] = true;
         qi.addCongruenceTerm(cur);
@@ -79,7 +79,7 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
         continue;
       }
       visited[cur] = false;
-      Assert (cur.getNumChildren() > 0);
+      Assert(cur.getNumChildren() > 0);
       bool isBoolConnective = expr::isBooleanConnective(cur);
       for (TNode cc : cur)
       {
@@ -110,12 +110,11 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
       qi.addCongruenceTerm(cur);
     }
   } while (!visit.empty());
-  
+
   // go back and set the use list of the free variables
   std::map<TNode, std::vector<TNode> >::iterator itpl;
   for (TNode v : freeVars)
   {
-    
   }
 }
 

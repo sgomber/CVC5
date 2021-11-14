@@ -37,10 +37,7 @@ State::State(Env& env, QuantifiersState& qs)
   d_sink = sm->mkDummySkolem("sink", nm->booleanType());
 }
 
-bool State::isFinished() const
-{
-  return d_numActiveQuant == 0;
-}
+bool State::isFinished() const { return d_numActiveQuant == 0; }
 
 QuantInfo& State::getOrMkQuantInfo(TNode q, expr::TermCanonize& tc)
 {
@@ -243,14 +240,14 @@ bool State::notify(PatTermInfo& pi, TNode child, TNode val)
 void State::notifyPatternEqGround(TNode p, TNode g)
 {
   std::map<Node, PatTermInfo>::iterator it = d_pInfo.find(p);
-  Assert (it!=d_pInfo.end());
+  Assert(it != d_pInfo.end());
   Assert(it->second.isActive());
   it->second.d_eq = g;
-  // run notifications until fixed point 
+  // run notifications until fixed point
   size_t tnIndex = 0;
   std::vector<std::map<Node, PatTermInfo>::iterator> toNotify;
   toNotify.push_back(it);
-  while (tnIndex<toNotify.size())
+  while (tnIndex < toNotify.size())
   {
     it = toNotify[tnIndex];
     ++tnIndex;
@@ -258,7 +255,7 @@ void State::notifyPatternEqGround(TNode p, TNode g)
     g = it->second.d_eq;
     for (TNode pp : it->second.d_parentNotify)
     {
-      if (pp.getKind()==FORALL)
+      if (pp.getKind() == FORALL)
       {
         // if we have a quantified formula as a parent, notify
         notifyQuant(pp, p, g);
@@ -271,7 +268,7 @@ void State::notifyPatternEqGround(TNode p, TNode g)
       }
       // otherwise, notify the parent
       it = d_pInfo.find(pp);
-      Assert (it!=d_pInfo.end());
+      Assert(it != d_pInfo.end());
       if (notify(it->second, p, g))
       {
         toNotify.push_back(it);
@@ -301,7 +298,7 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
     std::map<TNode, std::vector<Node>>::const_iterator itm;
     for (size_t i = 0; i < 2; i++)
     {
-      bool isEq = (i==0);
+      bool isEq = (i == 0);
       const std::map<TNode, std::vector<Node>>& cs =
           qi.getMatchConstraints(isEq);
       itm = cs.find(val);
@@ -312,7 +309,7 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
       for (TNode c : itm->second)
       {
         TNode r = d_qstate.getRepresentative(c);
-        if (isEq != (val==r))
+        if (isEq != (val == r))
         {
           setInactive = true;
           break;
