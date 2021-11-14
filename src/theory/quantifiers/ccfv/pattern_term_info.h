@@ -20,8 +20,8 @@
 
 #include <map>
 
-#include "context/cdo.h"
 #include "context/cdlist.h"
+#include "context/cdo.h"
 #include "expr/node.h"
 
 namespace cvc5 {
@@ -36,6 +36,7 @@ namespace ccfv {
 class PatTermInfo
 {
   typedef context::CDList<Node> NodeList;
+
  public:
   PatTermInfo(context::Context* c);
   /** initialize */
@@ -49,7 +50,7 @@ class PatTermInfo
   bool notify(TNode child, TNode val, bool isSink);
   /** This pattern term. */
   Node d_pattern;
-  /** 
+  /**
    * The ground term we are currently equal to, if any. This may also be
    * the sink node.
    */

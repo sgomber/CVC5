@@ -56,7 +56,7 @@ class CongruenceClosureFv : public QuantifiersModule
 
   /* Called once for every quantifier 'q' per context. */
   void preRegisterQuantifier(Node q) override;
-  
+
   /** assert quantifier */
   void assertNode(Node q) override;
 

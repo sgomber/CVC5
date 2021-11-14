@@ -39,7 +39,7 @@ void CongruenceClosureFv::registerQuantifier(Node q) {}
 
 void CongruenceClosureFv::assertNode(Node q)
 {
-  Assert (q.getKind()==FORALL);
+  Assert(q.getKind() == FORALL);
   QuantInfo& qi = d_state.getOrMkQuantInfo(q, d_tcanon);
   // its pattern terms are registered
   const std::vector<TNode>& ms = qi.getMatchers();
@@ -88,7 +88,8 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
       }
       Assert(cur.getNumChildren() > 0);
       // compute if Boolean connective
-      bool isBoolConnective = k==ITE ? cur.getType().isBoolean() : expr::isBooleanConnective(cur);
+      bool isBoolConnective =
+          k == ITE ? cur.getType().isBoolean() : expr::isBooleanConnective(cur);
       if (!isBoolConnective && !ee->isFunctionKind(k))
       {
         // not handled as Boolean connective or congruence kind

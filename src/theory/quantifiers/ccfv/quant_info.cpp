@@ -140,7 +140,7 @@ void QuantInfo::addMatchTermReq(TNode t, Node eqc, bool isEq)
 {
   if (!isEq)
   {
-    Assert (!eqc.isNull());
+    Assert(!eqc.isNull());
     eqc = t.eqNode(eqc).notNode();
   }
   std::vector<Node>& reqs = d_matcherReq[t];

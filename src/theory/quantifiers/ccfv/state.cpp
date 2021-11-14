@@ -260,7 +260,7 @@ void State::notifyPatternEqGround(TNode p, TNode g)
         if (pp.getKind() == FORALL)
         {
           // quantified formulas are ordinary parents
-          Assert (i==0);
+          Assert(i == 0);
           // if we have a quantified formula as a parent, notify is a special
           // method, which will test the constraints
           notifyQuant(pp, p, g);
@@ -315,9 +315,9 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
         }
         // if a disequality constraint
         bool isEq = true;
-        if (c.getKind()==NOT)
+        if (c.getKind() == NOT)
         {
-          Assert (c[0].getKind()==EQUAL);
+          Assert(c[0].getKind() == EQUAL);
           isEq = false;
           c = c[0][1];
         }
