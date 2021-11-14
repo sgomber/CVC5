@@ -37,6 +37,11 @@ State::State(Env& env, QuantifiersState& qs)
   d_sink = sm->mkDummySkolem("sink", nm->booleanType());
 }
 
+bool State::isFinished() const
+{
+  d_numActiveQuant = 0;
+}
+
 QuantInfo& State::getOrMkQuantInfo(TNode q, expr::TermCanonize& tc)
 {
   std::map<Node, QuantInfo>::iterator it = d_quantInfo.find(q);
@@ -237,58 +242,42 @@ bool State::notify(PatTermInfo& pi, TNode child, TNode val)
 
 void State::notifyPatternEqGround(TNode p, TNode g)
 {
-  PatTermInfo& pti = getPatTermInfo(p);
-  Assert(pti.isActive());
-  pti.d_eq = g;
-
-  /*
-  for (TNode pp : pti.d_parentNotify)
+  std::map<Node, PatTermInfo>::iterator it = d_pInfo.find(p);
+  Assert (it!=d_pInfo.end());
+  Assert(it->second.isActive());
+  it->second.d_eq = g;
+  // run notifications until fixed point 
+  size_t tnIndex = 0;
+  std::vector<std::map<Node, PatTermInfo>::iterator> toNotify;
+  toNotify.push_back(it);
+  while (tnIndex<toNotify.size())
   {
-
-  }
-  */
-
-  /*
-  const PatTermInto& pti = getPatTermInfo(p);
-  // if still active
-  if (!pti.d_isActive)
-  {
-    return;
-  }
-  pti.d_isActive = false;
-  for (size_t i = 0; i < 2; i++)
-  {
-    const std::map<const TNode, std::vector<TNode> >& req =
-        i == 0 ? pti.d_gEqReq : pti.d_gDeqReq;
-    bool processEq = (i == 0);
-    for (const std::pair<const TNode, std::vector<TNode> >& r : req)
+    it = toNotify[tnIndex];
+    ++tnIndex;
+    p = it->second.d_pattern;
+    g = it->second.d_eq;
+    for (TNode pp : it->second.d_parentNotify)
     {
-      Assert(r.first.isNull() || d_equalityEngine.hasTerm(r.first));
-      if (!g.isNull())
+      if (pp.getKind()==FORALL)
       {
-        if (!r.first.isNull()
-            || (d_equalityEngine.getRepresentative(r.first) == g) == processEq)
+        // if we have a quantified formula as a parent, notify
+        notifyQuant(pp, p, g);
+        if (isFinished())
         {
-          // the required constraint was satisfied, do not mark dead
-          continue;
+          // could be finished now
+          break;
         }
+        continue;
       }
-      // mark all as dead
-      for (TNode n : r.second)
+      // otherwise, notify the parent
+      it = d_pInfo.find(pp);
+      Assert (it!=d_pInfo.end());
+      if (notify(it->second, p, g))
       {
-        // parent could be a quantified formula
-        if (n.getKind() == FORALL)
-        {
-          // notify dead
-        }
-        else
-        {
-          eqNotifyPatternEqGround(n, Node::null());
-        }
+        toNotify.push_back(it);
       }
     }
   }
-  */
 }
 
 void State::notifyQuant(TNode q, TNode p, TNode val)

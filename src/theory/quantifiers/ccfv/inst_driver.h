@@ -81,10 +81,6 @@ class InstDriver : public QuantifiersModule
   void eqNotifyMerge(TNode t1, TNode t2);
   void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
 
-  /**
-   * Called when the current watched match term was
-   */
-  void notifyQuantMatch(TNode q, bool success);
   /** The state */
   State& d_state;
 

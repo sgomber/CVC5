@@ -82,31 +82,16 @@ void InstDriver::eqNotifyMerge(TNode t1, TNode t2)
   // we are in a situation where a ground equivalence class t2 has merged
   // with a pattern equivalence class.
   // notify the pattern for the representative
-  notifyPatternEqGround(t1, t2);
+  d_state.notifyPatternEqGround(t1, t2);
   // if there are patterns equal to this one, notify them too
   EqcInfo* eq = getOrMkEqcInfo(t1);
   if (eq != nullptr)
   {
     for (TNode t : eq->d_eqPats)
     {
-      notifyPatternEqGround(t, t2);
+      d_state.notifyPatternEqGround(t, t2);
     }
   }
-}
-
-void InstDriver::notifyQuantMatch(TNode q, bool success)
-{
-  QuantInfo& qi = getQuantInfo(q);
-  if (!qi.d_isActive)
-  {
-    return;
-  }
-  if (!success)
-  {
-    qi.d_isActive = false;
-    return;
-  }
-  // update watched matcher?
 }
 
 void InstDriver::eqNotifyDisequal(TNode t1, TNode t2, TNode reason)

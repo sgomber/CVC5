@@ -47,6 +47,12 @@ class State : protected EnvObj
 
  public:
   State(Env& env, QuantifiersState& qs);
+  /** Is finished */
+  bool isFinished() const;
+  /** Activate quantified formula */
+  //void activateQuant(TNode q);
+  
+  
   /** Get quantifiers info */
   QuantInfo& getOrMkQuantInfo(TNode q, expr::TermCanonize& tc);
   QuantInfo& getQuantInfo(TNode q);
