@@ -46,6 +46,8 @@ void CongruenceClosureFv::registerQuantifier(Node q)
 
 void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
 {
+  eq::EqualityEngine * ee = d_qstate.getEqualityEngine();
+  
   // we will notify the quantified formula when the pattern becomes set
   PatternTerm& pi = d_state.getOrMkPatTermInfo(p);
   pi.d_parentNotify.push_back(q);
@@ -71,32 +73,42 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
         visited[cur] = true;
         continue;
       }
-      if (cur.getKind() == BOUND_VARIABLE)
+      Kind k = cur.getKind();
+      if (k == BOUND_VARIABLE)
       {
         visited[cur] = true;
         qi.addCongruenceTerm(cur);
         freeVars.push_back(cur);
         continue;
       }
-      visited[cur] = false;
+      else if (!ee->isFunctionKind(k))
+      {
+        // not handled as congruence kind
+        visited[cur] = true;
+        continue;
+      }
       Assert(cur.getNumChildren() > 0);
       bool isBoolConnective = expr::isBooleanConnective(cur);
+      // Boolean connective don't need post-visit
+      visited[cur] = isBoolConnective;
       for (TNode cc : cur)
       {
         if (!expr::hasFreeVar(cc))
         {
           continue;
         }
+        PatternTerm& pi = d_state.getOrMkPatTermInfo(cc);
         if (isBoolConnective)
         {
           // Boolean connectives require notifications to parent
-          PatternTerm& pi = d_state.getOrMkPatTermInfo(cc);
           pi.d_parentNotify.push_back(cur);
         }
         else
         {
           // Other terms will track # total unassigned free variables
           parentList[cc].push_back(cur);
+          // Boolean connectives require notifications to parent
+          pi.d_parentCongNotify.push_back(cur);
         }
         visit.push_back(cc);
       }
@@ -113,8 +125,32 @@ void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
 
   // go back and set the use list of the free variables
   std::map<TNode, std::vector<TNode> >::iterator itpl;
+  std::unordered_set<TNode>::iterator it;
   for (TNode v : freeVars)
   {
+    FreeVarInfo& fi = d_state.getOrMkFreeVarInfo(v);
+    std::unordered_set<TNode> containing;
+    TNode cur;
+    visit.push_back(v);
+    do {
+      cur = visit.back();
+      visit.pop_back();
+      it = containing.find(cur);
+      if (it == containing.end()) {
+        containing.insert(cur);
+        if (fi.d_useList.find(cur)==fi.d_useList.end())
+        {
+          fi.d_useList.push_back(cur);
+          PatternTerm& pi = d_state.getOrMkPatTermInfo(cur);
+          pi.d_numUnassigned = pi.d_numUnassigned + 1;
+        }
+        itpl = parentList.find(cur);
+        if (itpl!=parentList.end())
+        {
+          visit.insert(visit.end(),itpl->second.begin(),itpl->second.end());
+        }
+      }
+    } while (!containing.empty());
   }
 }
 

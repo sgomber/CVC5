@@ -18,7 +18,7 @@
 #ifndef CVC5__THEORY__QUANTIFIERS__CCFV__FREE_VAR_INFO_H
 #define CVC5__THEORY__QUANTIFIERS__CCFV__FREE_VAR_INFO_H
 
-#include <map>
+#include <unordered_set>
 
 #include "expr/node.h"
 
@@ -31,7 +31,7 @@ class FreeVarInfo
 {
  public:
   /** term list, all pattern terms that contain this variable */
-  std::vector<TNode> d_useList;
+  std::unordered_set<TNode> d_useList;
 
   //--------------------- in search
   /** The list of ground equivalence classes we are considering */

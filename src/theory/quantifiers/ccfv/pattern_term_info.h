@@ -51,8 +51,11 @@ class PatTermInfo
   Node d_pattern;
   /** the ground term we are equal to, if any */
   context::CDO<TNode> d_eq;
-  /** The number of unassigned children */
-  context::CDO<size_t> d_numUnassignChildren;
+  /** 
+   * The number of unassigned free variables if a congruence term.
+   * Or the number of unassigned children otherwise.
+   */
+  context::CDO<size_t> d_numUnassigned;
 
   /**
    * Map from equivalence classes to pattern terms that require
@@ -72,6 +75,10 @@ class PatTermInfo
    * (2) A quantified formula Q whose body has p as a disjunct.
    */
   std::vector<TNode> d_parentNotify;
+  /** 
+   * The list of pattern terms to notify if sink.
+   */
+  std::vector<TNode> d_parentCongNotify;
   /** is Boolean connective */
   bool d_isBooleanConnective;
 };

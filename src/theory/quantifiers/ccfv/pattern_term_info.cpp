@@ -23,7 +23,7 @@ namespace quantifiers {
 namespace ccfv {
 
 PatTermInfo::PatTermInfo(context::Context* c)
-    : d_eq(c), d_numUnassignChildren(c, 0)
+    : d_eq(c), d_numUnassigned(c, 0)
 {
 }
 
@@ -31,11 +31,15 @@ void PatTermInfo::initialize(TNode pattern)
 {
   Assert(expr::hasFreeVar(pattern));
   d_pattern = pattern;
-  for (TNode pc : pattern)
+  d_isBooleanConnective = expr::isBooleanConnective(pattern);
+  if (d_isBooleanConnective)
   {
-    if (expr::hasFreeVar(pc))
+    for (TNode pc : pattern)
     {
-      d_numUnassignChildren = d_numUnassignChildren + 1;
+      if (expr::hasFreeVar(pc))
+      {
+        d_numUnassigned = d_numUnassigned + 1;
+      }
     }
   }
   Assert(d_eq.isNull());

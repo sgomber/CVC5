@@ -160,14 +160,14 @@ bool State::notify(PatTermInfo& pi, TNode child, TNode val)
       return true;
     }
   }
-  Assert(pi.d_numUnassignChildren.get() > 0);
-  pi.d_numUnassignChildren = pi.d_numUnassignChildren.get() - 1;
-  if (pi.d_numUnassignChildren == 0)
+  // set to unknown, handle cases
+  pi.d_eq = d_sink;
+  // if a Boolean connective, we can possibly evaluate
+  if (pi.d_isBooleanConnective)
   {
-    // set to unknown, handle cases
-    pi.d_eq = d_sink;
-    // if a Boolean connective, we can possibly evaluate
-    if (pi.d_isBooleanConnective)
+    Assert(pi.d_numUnassigned.get() > 0);
+    pi.d_numUnassigned = pi.d_numUnassigned.get() - 1;
+    if (pi.d_numUnassigned == 0)
     {
       NodeManager* nm = NodeManager::currentNM();
       Kind k = pi.d_pattern.getKind();
@@ -227,12 +227,8 @@ bool State::notify(PatTermInfo& pi, TNode child, TNode val)
           }
         }
       }
+      return true;
     }
-    else
-    {
-      // if not assigned yet, we won't merge
-    }
-    return true;
   }
   return false;
 }
@@ -253,25 +249,31 @@ void State::notifyPatternEqGround(TNode p, TNode g)
     ++tnIndex;
     p = it->second.d_pattern;
     g = it->second.d_eq;
-    for (TNode pp : it->second.d_parentNotify)
+    // notify the parents always, notify the congruence parents if sink
+    size_t maxIter = isSink(g) ? 2 : 1;
+    for (size_t i=0; i<maxIter; i++)
     {
-      if (pp.getKind() == FORALL)
+      std::vector<TNode>& notifyList = i==0 ? it->second.d_parentNotify : it->second.d_parentCongNotify;
+      for (TNode pp : notifyList)
       {
-        // if we have a quantified formula as a parent, notify
-        notifyQuant(pp, p, g);
-        if (isFinished())
+        if (pp.getKind() == FORALL)
         {
-          // could be finished now
-          break;
+          // if we have a quantified formula as a parent, notify
+          notifyQuant(pp, p, g);
+          if (isFinished())
+          {
+            // could be finished now
+            break;
+          }
+          continue;
         }
-        continue;
-      }
-      // otherwise, notify the parent
-      it = d_pInfo.find(pp);
-      Assert(it != d_pInfo.end());
-      if (notify(it->second, p, g))
-      {
-        toNotify.push_back(it);
+        // otherwise, notify the parent
+        it = d_pInfo.find(pp);
+        Assert(it != d_pInfo.end());
+        if (notify(it->second, p, g))
+        {
+          toNotify.push_back(it);
+        }
       }
     }
   }
