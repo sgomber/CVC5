@@ -39,7 +39,7 @@ State::State(Env& env, QuantifiersState& qs)
 
 bool State::isFinished() const
 {
-  d_numActiveQuant = 0;
+  return d_numActiveQuant == 0;
 }
 
 QuantInfo& State::getOrMkQuantInfo(TNode q, expr::TermCanonize& tc)
@@ -301,8 +301,9 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
     std::map<TNode, std::vector<Node>>::const_iterator itm;
     for (size_t i = 0; i < 2; i++)
     {
+      bool isEq = (i==0);
       const std::map<TNode, std::vector<Node>>& cs =
-          qi.getMatchConstraints(i == 0);
+          qi.getMatchConstraints(isEq);
       itm = cs.find(val);
       if (itm == cs.end())
       {
@@ -310,7 +311,12 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
       }
       for (TNode c : itm->second)
       {
-        // TODO
+        TNode r = d_qstate.getRepresentative(c);
+        if (isEq != (val==r))
+        {
+          setInactive = true;
+          break;
+        }
       }
       if (setInactive)
       {

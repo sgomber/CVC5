@@ -18,9 +18,8 @@
 #ifndef CVC5__THEORY__QUANTIFIERS__CCFV__QUANT_SET_H
 #define CVC5__THEORY__QUANTIFIERS__CCFV__QUANT_SET_H
 
-#include <map>
+#include <vector>
 
-#include "context/cdo.h"
 #include "expr/node.h"
 
 namespace cvc5 {
@@ -31,13 +30,11 @@ namespace ccfv {
 class QuantifiersSet
 {
  public:
-  QuantifiersSet(context::Context* c);
+  QuantifiersSet() {}
   /** the list of quantified formulas */
   std::vector<TNode> d_quants;
   /** The index of the quantified formula we are assigning the variables of */
   size_t d_qindex;
-  /** total number of alive quantified formulas */
-  context::CDO<size_t> d_numAlive;
 };
 
 }  // namespace ccfv

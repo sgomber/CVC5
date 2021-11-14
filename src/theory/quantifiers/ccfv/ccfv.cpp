@@ -46,49 +46,77 @@ void CongruenceClosureFv::registerQuantifier(Node q)
 
 void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
 {
-  std::unordered_set<TNode> visited;
-  std::unordered_set<TNode>::iterator it;
+  // we will notify the quantified formula when the pattern becomes set
+  PatternTerm& pi = d_state.getOrMkPatTermInfo(p);
+  pi.d_parentNotify.push_back(q);
+  
+  // Now, traverse p. This sets up the pattern info for subterms of p.
+  std::unordered_map<TNode, bool> visited;
+  std::unordered_map<TNode, bool>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
+  std::vector<TNode> freeVars;
+  // parents list
+  std::map<TNode, std::vector<TNode> > parentList;
   do
   {
     cur = visit.back();
     visit.pop_back();
     it = visited.find(cur);
-
     if (it == visited.end())
     {
-      visited.insert(cur);
-      if (expr::isBooleanConnective(cur))
+      if (!expr::hasFreeVar(cur))
       {
-        // require notify from each child
-        for (TNode cc : cur)
+        visited[cur] = true;
+        continue;
+      }
+      if (cur.getKind()==BOUND_VARIABLE)
+      {
+        visited[cur] = true;
+        qi.addCongruenceTerm(cur);
+        freeVars.push_back(cur);
+        continue;
+      }
+      visited[cur] = false;
+      Assert (cur.getNumChildren() > 0);
+      bool isBoolConnective = expr::isBooleanConnective(cur);
+      for (TNode cc : cur)
+      {
+        if (!expr::hasFreeVar(cc))
         {
-          if (!expr::hasFreeVar(cc))
-          {
-            continue;
-          }
+          continue;
+        }
+        if (isBoolConnective)
+        {
+          // Boolean connectives require notifications to parent
           PatternTerm& pi = d_state.getOrMkPatTermInfo(cc);
           pi.d_parentNotify.push_back(cur);
-          visit.push_back(cc);
         }
-      }
-      else if (expr::hasFreeVar(cur))
-      {
-        // we will add this term to the equality engine
-        qi.addCongruenceTerm(cur);
-        // traverse to its children
-        if (cur.getNumChildren() > 0)
+        else
         {
-          visit.insert(visit.end(), cur.begin(), cur.end());
+          // Other terms will track # total unassigned free variables
+          parentList[cc].push_back(cur);
         }
+        visit.push_back(cc);
       }
     }
+    else if (!it->second)
+    {
+      visited[cur] = true;
+      // we will add this term to the equality engine. We add at post-order
+      // traversal to that the order of terms is correct, i.e. we add subterms
+      // first.
+      qi.addCongruenceTerm(cur);
+    }
   } while (!visit.empty());
-  // we will notify the quantified formula
-  PatternTerm& pi = d_state.getOrMkPatTermInfo(p);
-  pi.d_parentNotify.push_back(q);
+  
+  // go back and set the use list of the free variables
+  std::map<TNode, std::vector<TNode> >::iterator itpl;
+  for (TNode v : freeVars)
+  {
+    
+  }
 }
 
 void CongruenceClosureFv::preRegisterQuantifier(Node q) {}
