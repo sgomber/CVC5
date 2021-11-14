@@ -18,6 +18,7 @@
 #include "expr/node_algorithm.h"
 #include "expr/skolem_manager.h"
 #include "theory/quantifiers/quantifiers_state.h"
+#include "theory/uf/equality_engine_iterator.h"
 
 using namespace cvc5::kind;
 
@@ -29,7 +30,7 @@ namespace ccfv {
 State::State(Env& env, QuantifiersState& qs)
     : EnvObj(env),
       d_qstate(qs),
-      d_groundEqc(context()),
+      //d_groundEqc(context()),
       d_numActiveQuant(context(), 0)
 {
   NodeManager* nm = NodeManager::currentNM();
@@ -38,6 +39,22 @@ State::State(Env& env, QuantifiersState& qs)
 }
 
 bool State::isFinished() const { return d_numActiveQuant == 0; }
+
+void State::resetRound()
+{
+  // get the ground equivalence classes
+  d_groundEqc.clear();
+  eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
+  eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
+  while (!eqcs_i.isFinished())
+  {
+    d_groundEqc.insert(*eqcs_i);
+    ++eqcs_i;
+  }
+  // clear the equivalence class info
+  d_eqcInfo.clear();
+  // TODO: activate the quantified formulas
+}
 
 QuantInfo& State::getOrMkQuantInfo(TNode q, expr::TermCanonize& tc)
 {
@@ -88,18 +105,100 @@ PatTermInfo& State::getPatTermInfo(TNode p)
   return it->second;
 }
 
-EqcInfo& State::getOrMkEqcInfo(TNode r)
+EqcInfo* State::getOrMkEqcInfo(TNode r, bool doMk )
 {
   std::map<Node, EqcInfo>::iterator it = d_eqcInfo.find(r);
   if (it == d_eqcInfo.end())
   {
+    if (!doMk)
+    {
+      return nullptr;
+    }
     d_eqcInfo.emplace(r, context());
     it = d_eqcInfo.find(r);
   }
-  return it->second;
+  return &it->second;
 }
 
-bool State::notify(PatTermInfo& pi, TNode child, TNode val)
+
+bool State::eqNotifyTriggerPredicate(TNode predicate, bool value)
+{
+  // use this?
+  return true;
+}
+
+bool State::eqNotifyTriggerTermEquality(TheoryId tag,
+                                             TNode t1,
+                                             TNode t2,
+                                             bool value)
+{
+  // use this?
+  return true;
+}
+
+void State::eqNotifyConstantTermMerge(TNode t1, TNode t2)
+{
+  // should never happen
+  Assert(false);
+}
+
+void State::eqNotifyNewClass(TNode t)
+{
+  // do nothing
+}
+
+void State::eqNotifyMerge(TNode t1, TNode t2)
+{
+  if (d_groundEqc.find(t1) != d_groundEqc.end())
+  {
+    // should never merge ground equivalence classes
+    Assert(d_groundEqc.find(t2) == d_groundEqc.end());
+    // swap
+    std::swap(t1, t2);
+  }
+  else if (d_groundEqc.find(t2) != d_groundEqc.end())
+  {
+    // update the list of ground equivalence classes, which is overapproximated
+    // i.e. we do not remove t2
+    d_groundEqc.insert(t1);
+  }
+  else
+  {
+    // two patterns merging, track the list
+    EqcInfo* eq2 = getOrMkEqcInfo(t2);
+    EqcInfo* eq1 = getOrMkEqcInfo(t1, true);
+    eq1->d_eqPats.push_back(t2);
+    if (eq2 != nullptr)
+    {
+      for (const Node& n : eq2->d_eqPats)
+      {
+        eq1->d_eqPats.push_back(n);
+      }
+    }
+    return;
+  }
+  // we are in a situation where a ground equivalence class t2 has merged
+  // with a pattern equivalence class.
+  // notify the pattern for the representative
+  notifyPatternEqGround(t1, t2);
+  // if there are patterns equal to this one, notify them too
+  EqcInfo* eq = getOrMkEqcInfo(t1);
+  if (eq != nullptr)
+  {
+    for (TNode t : eq->d_eqPats)
+    {
+      notifyPatternEqGround(t, t2);
+    }
+  }
+}
+
+void State::eqNotifyDisequal(TNode t1, TNode t2, TNode reason)
+{
+  // should never happen
+  Assert(false);
+}
+
+bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
 {
   if (!pi.isActive())
   {
@@ -188,6 +287,7 @@ bool State::notify(PatTermInfo& pi, TNode child, TNode val)
       else
       {
         TNode cval1 = getValue(pi.d_pattern[0]);
+        Assert(!cval1.isNull());
         Assert(cval1.isConst() || isSink(cval1));
         if (k == NOT)
         {
@@ -207,6 +307,7 @@ bool State::notify(PatTermInfo& pi, TNode child, TNode val)
           {
             // otherwise, we only are known if the branches are equal
             TNode cval2 = getValue(pi.d_pattern[1]);
+            Assert(!cval2.isNull());
             if (cval2.isConst() && cval2 == getValue(pi.d_pattern[2]))
             {
               pi.d_eq = cval2;
@@ -219,6 +320,7 @@ bool State::notify(PatTermInfo& pi, TNode child, TNode val)
           if (cval1.isConst())
           {
             TNode cval2 = getValue(pi.d_pattern[0]);
+            Assert(!cval2.isNull());
             if (cval2.isConst())
             {
               // if both side evaluate, we evaluate
@@ -264,9 +366,9 @@ void State::notifyPatternEqGround(TNode p, TNode g)
           // if we have a quantified formula as a parent, notify is a special
           // method, which will test the constraints
           notifyQuant(pp, p, g);
+          // could be finished now
           if (isFinished())
           {
-            // could be finished now
             break;
           }
           continue;
@@ -274,7 +376,7 @@ void State::notifyPatternEqGround(TNode p, TNode g)
         // otherwise, notify the parent
         it = d_pInfo.find(pp);
         Assert(it != d_pInfo.end());
-        if (notify(it->second, p, g))
+        if (notifyChild(it->second, p, g))
         {
           toNotify.push_back(it);
         }
@@ -337,6 +439,9 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
     qi.setActive(false);
     d_numActiveQuant = d_numActiveQuant - 1;
   }
+  // otherwise, we could have an instantiation, but we do not check for this
+  // here; instead this is handled based on watching the number of free
+  // variables assigned.
 }
 
 Node State::getSink() const { return d_sink; }

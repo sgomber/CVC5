@@ -49,8 +49,8 @@ class State : protected EnvObj
   State(Env& env, QuantifiersState& qs);
   /** Is finished */
   bool isFinished() const;
-  /** Activate quantified formula */
-  // void activateQuant(TNode q);
+  /** Reset round */
+  void resetRound();
 
   /** Get quantifiers info */
   QuantInfo& getOrMkQuantInfo(TNode q, expr::TermCanonize& tc);
@@ -62,8 +62,21 @@ class State : protected EnvObj
   PatTermInfo& getOrMkPatTermInfo(TNode p);
   PatTermInfo& getPatTermInfo(TNode p);
   /** Get equivalence class info */
-  EqcInfo& getOrMkEqcInfo(TNode r);
+  EqcInfo* getOrMkEqcInfo(TNode r, bool doMk = false);
 
+  
+  bool eqNotifyTriggerPredicate(TNode predicate, bool value);
+  bool eqNotifyTriggerTermEquality(TheoryId tag,
+                                   TNode t1,
+                                   TNode t2,
+                                   bool value);
+
+  void eqNotifyConstantTermMerge(TNode t1, TNode t2);
+  void eqNotifyNewClass(TNode t);
+  void eqNotifyMerge(TNode t1, TNode t2);
+  void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
+
+ private:
   /**
    * Called when it is determined what pattern p is equal to.
    *
@@ -77,15 +90,16 @@ class State : protected EnvObj
   Node getSink() const;
   /** Is sink */
   bool isSink(TNode n) const;
-  /** Get value */
+  /** 
+   * Get value for pattern or ordinary term p. This is either a ground
+   * represenative, or the sink, or the null node if p is active.
+   */
   TNode getValue(TNode p) const;
-
- private:
   /**
    * Notify that child was assigned value val, set eq if possible.
    * Return true if we set eq during this call.
    */
-  bool notify(PatTermInfo& pi, TNode child, TNode val);
+  bool notifyChild(PatTermInfo& pi, TNode child, TNode val);
   /**
    * Notify quantified formula
    */
@@ -103,9 +117,11 @@ class State : protected EnvObj
   /** The sink node */
   Node d_sink;
   /** the set of ground equivalence classes */
-  NodeSet d_groundEqc;
+  //NodeSet d_groundEqc;
   /** total number of alive quantified formulas */
   context::CDO<size_t> d_numActiveQuant;
+  /** ground equivalence classes */
+  std::unordered_set<Node> d_groundEqc;
 };
 
 }  // namespace ccfv

@@ -70,17 +70,6 @@ class InstDriver : public QuantifiersModule
 
   void assignVar(TNode v, TNode eqc);
 
-  bool eqNotifyTriggerPredicate(TNode predicate, bool value);
-  bool eqNotifyTriggerTermEquality(TheoryId tag,
-                                   TNode t1,
-                                   TNode t2,
-                                   bool value);
-
-  void eqNotifyConstantTermMerge(TNode t1, TNode t2);
-  void eqNotifyNewClass(TNode t);
-  void eqNotifyMerge(TNode t1, TNode t2);
-  void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
-
   /** The state */
   State& d_state;
 
