@@ -22,9 +22,14 @@
 
 #include "context/cdo.h"
 #include "expr/node.h"
-#include "expr/term_canonize.h"
 
 namespace cvc5 {
+  
+namespace expr
+{
+  class TermCanonize;
+}
+
 namespace theory {
 namespace quantifiers {
 namespace ccfv {
@@ -52,7 +57,16 @@ class QuantInfo
    */
   const std::map<TNode, std::vector<Node>>& getMatchConstraints(
       bool isEq) const;
-
+  /** Get matchers */
+  const std::vector<TNode>& getMatchers() const;
+  /** Add congruence term */
+  void addCongruenceTerm(TNode cong);
+  /** Get congruence terms, the terms to add to the equality engine */
+  const std::vector<TNode>& getCongruenceTerms() const;
+  /** Is alive? */
+  bool isActive() const;
+  /** set dead */
+  void setActive(bool val);
  private:
   /**
    * Process matching requirement for subterm cur which is a disjunct in the
@@ -77,6 +91,8 @@ class QuantInfo
   std::map<TNode, std::vector<Node>> d_matcherDeqReq;
   /** List of all match terms */
   std::vector<TNode> d_matchers;
+  /** List of all congruence terms */
+  std::vector<TNode> d_congTerms;
   //------------------- within search
   /** is alive, false if we know it is not possible to construct a propagating
    * instance for this quantified formula  */

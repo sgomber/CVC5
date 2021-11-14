@@ -42,7 +42,7 @@ class EqcInfo
   typedef context::CDList<Node> NodeList;
 
  public:
-  EqcInfo(context::Context* c);
+  EqcInfo(context::Context* c) : d_eqPats(c) {}
   /** List of terms in this equivalence class that are not the representative */
   NodeList d_eqPats;
 };

@@ -33,6 +33,7 @@ class FreeVarInfo
   /** term list, all pattern terms that contain this variable */
   std::vector<TNode> d_useList;
 
+  //--------------------- in search
   /** The list of ground equivalence classes we are considering */
   std::vector<TNode> d_eqcDomain;
   /** The current index in the domain we are searching */

@@ -33,7 +33,61 @@ void CongruenceClosureFv::reset_round(Theory::Effort e) {}
 
 void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e) {}
 
-void CongruenceClosureFv::registerQuantifier(Node q) {}
+void CongruenceClosureFv::registerQuantifier(Node q) 
+{
+  QuantInfo& qi = d_state.getOrMkQuantInfo(q, d_tcanon);
+  // its pattern terms are registered
+  const std::vector<TNode>& ms = qi.getMatchers();
+  for (TNode p : ms)
+  {
+    registerMatchTerm(p, q, qi);
+  }
+}
+
+void CongruenceClosureFv::registerMatchTerm(TNode p, TNode q, QuantInfo& qi)
+{
+  std::unordered_set<TNode> visited;
+  std::unordered_set<TNode>::iterator it;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+    it = visited.find(cur);
+
+    if (it == visited.end()) {
+      visited.insert(cur);
+      if (expr::isBooleanConnective(cur))
+      {
+        // require notify from each child
+        for (TNode cc : cur)
+        {
+          if (!expr::hasFreeVar(cc))
+          {
+            continue;
+          }
+          PatternTerm& pi = d_state.getOrMkPatTermInfo(cc);
+          pi.d_parentNotify.push_back(cur);
+          visit.push_back(cc);
+        }
+      }
+      else if (expr::hasFreeVar(cur))
+      {
+        // we will add this term to the equality engine
+        qi.addCongruenceTerm(cur);
+        // traverse to its children
+        if (cur.getNumChildren()>0)
+        {
+          visit.insert(visit.end(),cur.begin(),cur.end());
+        }
+      }
+    }
+  } while (!visit.empty());
+  // we will notify the quantified formula
+  PatternTerm& pi = d_state.getOrMkPatTermInfo(p);
+  pi.d_parentNotify.push_back(q);
+}
 
 void CongruenceClosureFv::preRegisterQuantifier(Node q) {}
 

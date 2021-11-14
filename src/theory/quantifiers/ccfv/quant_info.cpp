@@ -17,6 +17,7 @@
 
 #include "expr/node_algorithm.h"
 #include "theory/quantifiers/ematching/trigger_term_info.h"
+#include "expr/term_canonize.h"
 
 using namespace cvc5::kind;
 
@@ -99,7 +100,10 @@ void QuantInfo::processMatchRequirement(TNode cur, std::vector<TNode>& visit)
     // do nothing, unhandled
     return;
   }
-  else if (k == EQUAL)
+  // TODO: sanitize the term, remove any nested quantifiers here
+  
+  
+  if (k == EQUAL)
   {
     // maybe pattern equals ground?
     for (size_t i = 0; i < 2; i++)
@@ -175,6 +179,24 @@ const std::map<TNode, std::vector<Node>>& QuantInfo::getMatchConstraints(
     bool isEq) const
 {
   return isEq ? d_matcherEqReq : d_matcherDeqReq;
+}
+
+const std::vector<TNode>& QuantInfo::getMatchers() const
+{
+  return d_matchers;
+}
+
+void QuantInfo::addCongruenceTerm(TNode t) { d_congTerms.push_back(t); }
+const std::vector<TNode>& QuantInfo::getCongruenceTerms() const { return d_congTerms; }
+
+bool QuantInfo::isActive() const
+{
+  return d_isActive.get();
+}
+
+void QuantInfo::setActive(bool val)
+{
+  d_isActive = val;
 }
 
 }

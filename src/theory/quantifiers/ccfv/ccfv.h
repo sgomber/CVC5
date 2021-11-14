@@ -60,6 +60,8 @@ class CongruenceClosureFv : public QuantifiersModule
   std::string identify() const override;
 
  private:
+  /** Register match term */
+  void registerMatchTerm(TNode m, QuantInfo& qi);
   /** State */
   ccfv::State d_state;
   /** Instantiation driver */

@@ -15,14 +15,30 @@
 
 #include "theory/quantifiers/ccfv/pattern_term_info.h"
 
+#include "expr/node_algorithm.h"
+
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-PatTermInfo::PatTermInfo(context::Context* c, size_t numVars) : d_eq(c), d_numUnassignVar(c, numVars) {}
+PatTermInfo::PatTermInfo(context::Context* c) : d_eq(c), d_numUnassignChildren(c, 0) {}
 
-bool isActive() const { return d_eq.isNull(); }
+void PatTermInfo::initialize(TNode pattern)
+{
+  Assert (expr::hasFreeVar(pattern));
+  d_pattern = pattern;
+  for (TNode pc : pattern)
+  {
+    if (expr::hasFreeVar(pc))
+    {
+      d_numUnassignChildren = d_numUnassignChildren+1;
+    }
+  }
+  Assert (d_eq.isNull());
+}
+
+bool PatTermInfo::isActive() const { return d_eq.get().isNull(); }
 
 }
 }  // namespace quantifiers

@@ -17,6 +17,8 @@
 #ifndef CVC5__THEORY__QUANTIFIERS__CCFV__INST_DRIVER_H
 #define CVC5__THEORY__QUANTIFIERS__CCFV__INST_DRIVER_H
 
+#include "theory/quantifiers/ccfv/state.h"
+
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
@@ -47,9 +49,8 @@ class InstDriver : public QuantifiersModule
 {
  public:
   InstDriver(Env& env,
+             State& state,
              QuantifiersState& qs,
-             QuantifiersInferenceManager& qim,
-             QuantifiersRegistry& qr,
              TermRegistry& tr);
   /** Get quantifiers info */
   QuantInfo& getQuantInfo(TNode q);
@@ -84,36 +85,17 @@ class InstDriver : public QuantifiersModule
   void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
 
   /**
-   * Called when it is determined what pattern p is equal to.
-   *
-   * If g is non-null, then g is the (ground) equivalence class that pattern p
-   * is equal to. If g is null, then we have determined that p will *never*
-   * merge into a ground equivalence class in this context.
-   */
-  void notifyPatternEqGround(TNode p, TNode g);
-  /**
    * Called when the current watched match term was
    */
   void notifyQuantMatch(TNode q, bool success);
-
-  /** the set of ground equivalence classes */
-  NodeSet d_groundEqc;
+  /** The state */
+  State& d_state;
 
   /** The current stack of quantified variables */
   std::vector<TNode> d_varStack;
 
   /** The set of quantified formulas */
   QuantifiersSet d_qset;
-  /** Map quantified formulas to their info */
-  std::map<Node, QuantInfo> d_quantInfo;
-  /** Free variable info */
-  std::map<Node, FreeVarInfo> d_fvInfo;
-  /** Pattern term info */
-  std::map<Node, PatTermInfo> d_pInfo;
-  /** Equivalence class info */
-  std::map<Node, EqcInfo> d_eqcInfo;
-  /** */
-  Node d_sink;
 };
 
 }

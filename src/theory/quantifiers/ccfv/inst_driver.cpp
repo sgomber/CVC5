@@ -20,39 +20,10 @@ namespace theory {
 namespace quantifiers {
 
 InstDriver::InstDriver(Env& env,
-                       QuantifiersState& qs,
-                       QuantifiersInferenceManager& qim,
-                       QuantifiersRegistry& qr,
-                       TermRegistry& tr)
+                        State& state,
+                QuantifiersState& qs,
+                TermRegistry& tr)
 {
-}
-
-QuantInfo& InstDriver::getQuantInfo(TNode q)
-{
-  std::map<Node, QuantInfo>::iterator it = d_quantInfo.find(q);
-  Assert(it != d_quantInfo.end());
-  return it->second;
-}
-
-FreeVarInfo& InstDriver::getFreeVarInfo(TNode v)
-{
-  std::map<Node, FreeVarInfo>::iterator it = d_fvInfo.find(v);
-  Assert(it != d_fvInfo.end());
-  return it->second;
-}
-
-PatTermInfo& InstDriver::getPatTermInfo(TNode p)
-{
-  std::map<Node, PatTermInfo>::iterator it = d_pInfo.find(p);
-  Assert(it != d_pInfo.end());
-  return it->second;
-}
-
-EqcInfo& InstDriver::getEqcInfo(TNode r)
-{
-  std::map<Node, EqcInfo>::iterator it = d_eqcInfo.find(r);
-  Assert(it != d_eqcInfo.end());
-  return it->second;
 }
 
 bool InstDriver::eqNotifyTriggerPredicate(TNode predicate, bool value)
@@ -94,13 +65,13 @@ void InstDriver::eqNotifyMerge(TNode t1, TNode t2)
   {
     // update the list of ground equivalence classes, which is overapproximated
     // i.e. we do not remove t2
-    d_state.d_groundEqc.insert(t1);
+    d_groundEqc.insert(t1);
   }
   else
   {
     // two patterns merging, track the list
-    EqcInfo* eq2 = getOrMkEqcInfo(t2);
-    EqcInfo* eq1 = getOrMkEqcInfo(t1, true);
+    EqcInfo* eq2 = d_state.getOrMkEqcInfo(t2);
+    EqcInfo* eq1 = d_state.getOrMkEqcInfo(t1, true);
     eq1->d_eqPats.insert(t2);
     if (eq2 != nullptr)
     {
@@ -116,52 +87,9 @@ void InstDriver::eqNotifyMerge(TNode t1, TNode t2)
   EqcInfo* eq = getOrMkEqcInfo(t1);
   if (eq != nullptr)
   {
-    for (TNode t : d_state.d_eqPats)
+    for (TNode t : eq->d_eqPats)
     {
       notifyPatternEqGround(t, t2);
-    }
-  }
-}
-
-void InstDriver::notifyPatternEqGround(TNode p, TNode g)
-{
-  const PatTermInto& pti = getPatternTermInfo(p);
-  // if still active
-  if (!pti.d_isActive)
-  {
-    return;
-  }
-  pti.d_isActive = false;
-  for (size_t i = 0; i < 2; i++)
-  {
-    const std::map<const TNode, std::vector<TNode> >& req =
-        i == 0 ? pti.d_gEqReq : pti.d_gDeqReq;
-    bool processEq = (i == 0);
-    for (const std::pair<const TNode, std::vector<TNode> >& r : req)
-    {
-      Assert(r.first.isNull() || d_equalityEngine.hasTerm(r.first));
-      if (!g.isNull())
-      {
-        if (!r.first.isNull()
-            || (d_equalityEngine.getRepresentative(r.first) == g) == processEq)
-        {
-          // the required constraint was satisfied, do not mark dead
-          continue;
-        }
-      }
-      // mark all as dead
-      for (TNode n : r.second)
-      {
-        // parent could be a quantified formula
-        if (n.getKind() == FORALL)
-        {
-          // notify dead
-        }
-        else
-        {
-          eqNotifyPatternEqGround(n, Node::null());
-        }
-      }
     }
   }
 }
