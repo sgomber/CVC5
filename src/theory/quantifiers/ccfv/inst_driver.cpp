@@ -43,6 +43,19 @@ void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
   std::map<TNode, std::vector<TNode>> partition;
   std::map<TNode, size_t> fvLevel;
   assignVariableLevels(0, quants, partition, fvLevel);
+  
+  // set the start levels
+  std::map<TNode, size_t>::iterator itf;
+  for (TNode q : quants)
+  {
+    QuantInfo& qi = d_state.getQuantInfo(q);
+    const std::vector<TNode>& fvs = qi.getOrderedFreeVariables();
+    Assert (!fvs.empty());
+    itf= fvLevel.find(fvs[0]);
+    Assert (itf!=fvLevel.end());
+    SearchLevel& slevel = getSearchLevel(itf->second);
+    slevel.d_startQuants.push_back(q);
+  }
 }
 
 void InstDriver::assignVariableLevels(

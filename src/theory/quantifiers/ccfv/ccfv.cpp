@@ -109,6 +109,7 @@ void CongruenceClosureFv::assertNode(Node q)
   const std::vector<TNode>& fvars = qi.getOrderedFreeVariables();
   for (TNode v : fvars)
   {
+    // (*)
     FreeVarInfo& fi = d_state.getOrMkFreeVarInfo(v);
     fi.d_quantList.push_back(q);
   }

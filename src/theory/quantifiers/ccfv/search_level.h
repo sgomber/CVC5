@@ -33,8 +33,6 @@ class SearchLevel
   SearchLevel() {}
   /** the list of variables we assign at this search level */
   std::vector<TNode> d_varsToAssign;
-  /** The terms that are fully assigned at this level */
-  std::vector<TNode> d_finalTerms;
   /** The quantified formulas that are fully assigned at this level */
   std::vector<TNode> d_finalQuants;
   /** The quantified formulas that are rooted as this level */

@@ -75,6 +75,10 @@ class PatTermInfo
   /** is Boolean connective */
   bool d_isBooleanConnective;
   //---------------------- matching
+  /** Get next watch eqc */
+  Node getNextWatchEqc();
+ private:
+  //---------------------- matching
   /**
    * Watched equivalence classes. This is the set of equivalence classes that
    * may be relevant if this pattern is equal.

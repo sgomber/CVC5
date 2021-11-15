@@ -52,6 +52,17 @@ void PatTermInfo::initialize(TNode pattern)
 
 bool PatTermInfo::isActive() const { return d_eq.get().isNull(); }
 
+Node PatTermInfo::getNextWatchEqc()
+{
+  if (d_watchEqcIndex >= d_watchEqc.size())
+  {
+    return TNode::null();
+  }
+  TNode next = d_watchEqc[d_watchEqcIndex];
+  d_watchEqcIndex = d_watchEqcIndex.get() + 1;
+  return next;
+}
+
 }  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
