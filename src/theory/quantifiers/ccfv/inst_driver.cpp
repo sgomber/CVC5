@@ -202,7 +202,7 @@ bool InstDriver::assignSearchLevel(size_t level)
       return false;
     }
   }
-  
+
   // assign final terms to sink
   // The use list terms of the variables to assign here are those that are now
   // fully assigned. If these terms have not yet merged, we are done.
