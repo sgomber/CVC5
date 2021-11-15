@@ -20,14 +20,29 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-FreeVarInfo::FreeVarInfo(context::Context* c) : d_useList(c), d_quantList(c) {}
+FreeVarInfo::FreeVarInfo(context::Context* c) : d_useList(c), d_quantList(c), d_context(c) {}
 
 void FreeVarInfo::resetRound()
 {
-  d_currLevel = 0;
-  d_eqcDomain.clear();
-  d_eqcIndex = 0;
-  d_fullyAssignedPat.clear();
+  d_eqcProcessed.clear();
+  d_qindex = 0;
+  d_itql = d_qlist.begin();
+}
+
+bool FreeVarInfo::isFinished() const
+{
+  return d_itql==d_qlist.end();
+}
+
+void FreeVarInfo::addQuantMatch(TNode f, size_t index, TNode q)
+{
+  std::pair<TNode, size_t> key(f, index);
+  std::map<std::pair<TNode, size_t>, NodeList>::iterator it = d_qlist.find(key);
+  if (it == d_qlist.end())
+  {
+    it = d_qlist.emplace(key, d_context).first;
+  }
+  it->second.push_back(q);
 }
 
 }  // namespace ccfv

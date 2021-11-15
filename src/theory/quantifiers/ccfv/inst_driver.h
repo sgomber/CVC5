@@ -68,6 +68,9 @@ class InstDriver : protected EnvObj
   void check(const std::vector<TNode>& quants);
 
  private:
+   /** Reset the search */
+   void resetSearchLevels(const std::vector<TNode>& quants);
+   /** Assign variable levels for all quantifiers */
   void assignVariableLevels(size_t level,
                             const std::vector<TNode>& quants,
                             std::map<TNode, std::vector<TNode>>& partition,

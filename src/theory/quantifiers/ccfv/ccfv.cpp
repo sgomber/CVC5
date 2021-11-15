@@ -118,7 +118,7 @@ void CongruenceClosureFv::assertNode(Node q)
 
   TNode cur;
   // track parents list
-  std::map<TNode, std::vector<TNode>> parentList;
+  //std::map<TNode, std::vector<TNode>> parentList;
   do
   {
     cur = visit.back();
@@ -139,15 +139,25 @@ void CongruenceClosureFv::assertNode(Node q)
         continue;
       }
       Assert(cur.getNumChildren() > 0);
-      // compute if Boolean connective
-      bool isBoolConnective = expr::isBooleanConnective(cur);
-      if (!isBoolConnective && !ee->isFunctionKind(k))
+      bool isBoolConnective = false;
+      Node matchOp;
+      if (ee->isFunctionKind(k))
       {
-        // not handled as Boolean connective or congruence kind
-        continue;
+        matchOp = getTermDatabase()->getMatchOperator(cur);
       }
-      for (TNode cc : cur)
+      else
       {
+        // compute if Boolean connective
+        if (!expr::isBooleanConnective(cur))
+        {
+          // not handled as Boolean connective or congruence kind
+          continue;
+        }
+        isBoolConnective = true;
+      }
+      for (size_t i=0, nchild = cur.getNumChildren(); i<nchild; i++)
+      {
+        TNode cc = cur[i];
         if (!expr::hasFreeVar(cc))
         {
           continue;
@@ -160,10 +170,19 @@ void CongruenceClosureFv::assertNode(Node q)
         }
         else
         {
+          Assert (ee->isFunctionKind(k));
+          Assert (cur.hasOperator());
           // Other terms will track # total unassigned free variables
-          parentList[cc].push_back(cur);
-          // Boolean connectives require notifications to parent
+          //parentList[cc].push_back(cur);
+          // congruence terms will recieve notifications when unassigned
           pi.d_parentCongNotify.push_back(cur);
+          if (cc.getKind()==BOUND_VARIABLE && !matchOp.isNull())
+          {
+            // if a bound variable, we track that the quantified formula may
+            // want to match this position
+            FreeVarInfo& fi = d_state.getOrMkFreeVarInfo(cc);
+            fi.addQuantMatch(matchOp, i, q);
+          }
         }
         visit.push_back(cc);
       }
@@ -171,6 +190,7 @@ void CongruenceClosureFv::assertNode(Node q)
   } while (!visit.empty());
 
   // go back and set the use list of the free variables
+  /*
   std::map<TNode, std::vector<TNode>>::iterator itpl;
   for (TNode v : fvars)
   {
@@ -201,6 +221,7 @@ void CongruenceClosureFv::assertNode(Node q)
       }
     } while (!containing.empty());
   }
+  */
 
   // TODO: should not do this until we are running
   // now, add the congruence terms to the equality engine

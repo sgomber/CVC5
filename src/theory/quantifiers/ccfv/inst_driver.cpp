@@ -33,6 +33,11 @@ InstDriver::InstDriver(Env& env,
 
 void InstDriver::check(const std::vector<TNode>& quants)
 {
+  resetSearchLevels(quants);
+}
+
+void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
+{
   // compute the levels at which the variables are at
   d_levels.clear();
   std::map<TNode, std::vector<TNode>> partition;

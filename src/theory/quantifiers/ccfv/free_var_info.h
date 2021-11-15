@@ -40,18 +40,24 @@ class FreeVarInfo
   NodeSet d_useList;
   /** quantifiers list */
   NodeList d_quantList;
-
   //--------------------- in search
-  /** Level in the search */
-  size_t d_currLevel;
-  /** The list of ground equivalence classes we are considering */
-  std::vector<TNode> d_eqcDomain;
-  /** The current index in the domain we are searching */
-  size_t d_eqcIndex;
-  /** The list of terms that have become fully assigned after we assign this */
-  std::vector<TNode> d_fullyAssignedPat;
+  /** The list of ground equivalence classes we have already considered */
+  std::unordered_set<TNode> d_eqcProcessed;
+  /** The current index in quantifiers */
+  size_t d_qindex;
   /** Reset domain */
   void resetRound();
+  /** Is finished? */
+  bool isFinished() const;
+  /** Add quantifier */
+  void addQuantMatch(TNode f, size_t index, TNode q);
+ private:
+  /** context */
+  context::Context * d_context;
+  /** Map from (function, argument position) to quantifiers list */
+  std::map<std::pair<TNode, size_t>, NodeList> d_qlist;
+  /** Iterator through the above list */
+  std::map<std::pair<TNode, size_t>, NodeList>::iterator d_itql;
 };
 
 }  // namespace ccfv
