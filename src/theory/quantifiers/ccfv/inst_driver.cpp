@@ -39,7 +39,6 @@ void InstDriver::check(const std::vector<TNode>& quants)
     QuantInfo& qi = d_state.getQuantInfo(q);
     qi.resetRound();
   }
-  // reset information for quantified formulas
   // reset search levels
   // NOTE: could incrementally maintain this?
   resetSearchLevels(quants);

@@ -20,6 +20,7 @@
 
 #include <map>
 
+#include "context/cdo.h"
 #include "context/cdlist.h"
 #include "expr/node.h"
 
@@ -42,9 +43,11 @@ class EqcInfo
   typedef context::CDList<Node> NodeList;
 
  public:
-  EqcInfo(context::Context* c) : d_eqPats(c) {}
+  EqcInfo(context::Context* c) : d_eqPats(c), d_groundEqc(c) {}
   /** List of terms in this equivalence class that are not the representative */
   NodeList d_eqPats;
+  /** The original ground equivalence class for this */
+  context::CDO<TNode> d_groundEqc;
 };
 
 }  // namespace ccfv

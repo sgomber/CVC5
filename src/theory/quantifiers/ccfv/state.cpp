@@ -28,7 +28,7 @@ namespace quantifiers {
 namespace ccfv {
 
 State::State(Env& env, QuantifiersState& qs)
-    : EnvObj(env), d_qstate(qs), d_matchers(context())
+    : EnvObj(env), d_qstate(qs), d_numActiveQuant(context(), 0)
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
@@ -37,17 +37,18 @@ State::State(Env& env, QuantifiersState& qs)
   d_false = nm->mkConst(false);
 }
 
-bool State::isFinished() const { return d_sstate->d_numActiveQuant == 0; }
+bool State::isFinished() const { return d_numActiveQuant == 0; }
 
 void State::resetRound(size_t nquant)
 {
   // reset the search state
-  d_sstate.reset(new SearchState(context()));
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
+  d_groundEqc.clear();
+  d_typeGroundEqc.clear();
   // for Boolean, true/false are always the ground equivalence classes
-  d_sstate->d_groundEqc.insert(d_true);
-  d_sstate->d_groundEqc.insert(d_false);
+  d_groundEqc.insert(d_true);
+  d_groundEqc.insert(d_false);
   std::map<TypeNode, NodeSet>::iterator itt;
   while (!eqcs_i.isFinished())
   {
@@ -58,16 +59,11 @@ void State::resetRound(size_t nquant)
       // skip Boolean equivalence classes
       continue;
     }
-    d_sstate->d_groundEqc.insert(r);
-    itt = d_sstate->d_typeGroundEqc.find(tn);
-    if (itt == d_sstate->d_typeGroundEqc.end())
-    {
-      itt = d_sstate->d_typeGroundEqc.emplace(tn, context()).first;
-    }
-    itt->second.insert(r);
+    d_groundEqc.insert(r);
+    d_typeGroundEqc[tn].insert(r);
     ++eqcs_i;
   }
-  d_sstate->d_numActiveQuant = nquant;
+  d_numActiveQuant = nquant;
 
   // clear the equivalence class info?
   // NOTE: if we are adding terms when quantified formulas are asserted, then
@@ -202,6 +198,15 @@ EqcInfo* State::getOrMkEqcInfo(TNode r, bool doMk)
   }
   return &it->second;
 }
+const EqcInfo* State::getEqcInfo(TNode r) const
+{
+  std::map<Node, EqcInfo>::const_iterator it = d_eqcInfo.find(r);
+  if (it == d_eqcInfo.end())
+  {
+    return nullptr;
+  }
+  return &it->second;
+}
 
 bool State::eqNotifyTriggerPredicate(TNode predicate, bool value)
 {
@@ -233,6 +238,7 @@ void State::eqNotifyMerge(TNode t1, TNode t2)
 {
   // constants always remain representatives
   Assert(!t2.isConst());
+  EqcInfo* eq1 = nullptr;
   if (isGroundEqc(t1))
   {
     // should never merge ground equivalence classes
@@ -244,32 +250,54 @@ void State::eqNotifyMerge(TNode t1, TNode t2)
   {
     // update the list of ground equivalence classes, which is overapproximated
     // i.e. we do not remove t2
-    d_sstate->d_groundEqc.insert(t1);
+    eq1 = getOrMkEqcInfo(t1, true);
+    eq1->d_groundEqc = t2;
   }
   else
   {
     // two patterns merging, track the list
+    eq1 = getOrMkEqcInfo(t1, true);
     EqcInfo* eq2 = getOrMkEqcInfo(t2);
-    EqcInfo* eq1 = getOrMkEqcInfo(t1, true);
-    eq1->d_eqPats.push_back(t2);
     if (eq2 != nullptr)
     {
-      for (const Node& n : eq2->d_eqPats)
+      if (!eq2->d_groundEqc.get().isNull())
       {
-        eq1->d_eqPats.push_back(n);
+        // an equivalence class whose representative is a pattern that was
+        // already made equal to a ground equivalence class
+        t2 = eq2->d_groundEqc.get();
+        eq1->d_groundEqc = t2;
+      }
+      else
+      {
+        // track that the pattern and all patterns made equal to it are equivalent
+        for (const Node& n : eq2->d_eqPats)
+        {
+          eq1->d_eqPats.push_back(n);
+        }
+        eq1->d_eqPats.push_back(t2);
+        return;
       }
     }
-    return;
+    else
+    {
+      // track that the pattern is equivalent
+      eq1->d_eqPats.push_back(t2);
+      return;
+    }
   }
+  Assert (isGroundEqc(t2));
   // we are in a situation where a ground equivalence class t2 has merged
   // with a pattern equivalence class.
   // notify the pattern for the representative
   notifyPatternEqGround(t1, t2);
   // if there are patterns equal to this one, notify them too
-  EqcInfo* eq = getOrMkEqcInfo(t1);
-  if (eq != nullptr)
+  if (eq1==nullptr)
   {
-    for (TNode t : eq->d_eqPats)
+    eq1 = getOrMkEqcInfo(t1);
+  }
+  if (eq1 != nullptr)
+  {
+    for (TNode t : eq1->d_eqPats)
     {
       notifyPatternEqGround(t, t2);
     }
@@ -479,7 +507,7 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
     // quantified formula is already inactive
     return;
   }
-  Assert(d_sstate->d_numActiveQuant.get() > 0);
+  Assert(d_numActiveQuant.get() > 0);
   // check whether we should set inactive
   bool setInactive = false;
   if (isSink(val))
@@ -526,9 +554,8 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
   else if (qi.getCurrentMatcher() == p)
   {
     // if this was the current matcher, we need the next one
-    TNode next = qi.getNextMatcher();
-    d_matchers[p] = false;
-    d_matchers[next] = true;
+    qi.getNextMatcher();
+    // NOTE: register here?
   }
   // otherwise, we could have an instantiation, but we do not check for this
   // here; instead this is handled based on watching the number of free
@@ -539,12 +566,7 @@ void State::setQuantInactive(QuantInfo& qi)
 {
   Assert(qi.isActive());
   qi.setActive(false);
-  d_sstate->d_numActiveQuant = d_sstate->d_numActiveQuant - 1;
-  TNode m = qi.getCurrentMatcher();
-  if (!m.isNull())
-  {
-    d_matchers[m] = false;
-  }
+  d_numActiveQuant = d_numActiveQuant - 1;
 }
 
 Node State::getSink() const { return d_sink; }
@@ -554,7 +576,23 @@ bool State::isSink(TNode n) const { return n == d_sink; }
 bool State::isGroundEqc(TNode r) const
 {
   Assert(d_sstate != nullptr);
-  return d_sstate->d_groundEqc.find(r) != d_sstate->d_groundEqc.end();
+  return d_groundEqc.find(r) != d_groundEqc.end();
+}
+
+TNode State::getGroundRepresentative(TNode n) const
+{
+  TNode r = d_qstate.getRepresentative(n);
+  if (isGroundEqc(r))
+  {
+    return r;
+  }
+  // otherwise it may be a pattern that became a representative of an equivalence class?
+  const EqcInfo * eq = getEqcInfo(r);
+  if (eq==nullptr)
+  {
+    return TNode::null();
+  }
+  return eq->d_groundEqc.get();
 }
 
 bool State::isQuantActive(TNode q) const
@@ -579,11 +617,6 @@ TNode State::getValue(TNode p) const
     return r;
   }
   return d_sink;
-}
-
-State::SearchState::SearchState(context::Context* c)
-    : d_groundEqc(c), d_numActiveQuant(c, 0)
-{
 }
 
 }  // namespace ccfv

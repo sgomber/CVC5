@@ -102,12 +102,16 @@ class State : protected EnvObj
   bool isSink(TNode n) const;
   /** Is ground eqc? */
   bool isGroundEqc(TNode r) const;
+  /** Get the ground representative */
+  TNode getGroundRepresentative(TNode n) const;
   /** Is quantifier active? */
   bool isQuantActive(TNode q) const;
 
  private:
   /** Get equivalence class info */
   EqcInfo* getOrMkEqcInfo(TNode r, bool doMk = false);
+  /** Get equivalence class info, or nullptr if it does not exist */
+  const EqcInfo* getEqcInfo(TNode r) const;
   /**
    * Called when it is determined what pattern p is equal to.
    *
@@ -143,25 +147,12 @@ class State : protected EnvObj
   Node d_true;
   Node d_false;
   // --------------------------- temporary state
-  class SearchState
-  {
-   public:
-    SearchState(context::Context* c);
-    /**
-     * Ground equivalence classes.
-     */
-    NodeSet d_groundEqc;
-    /** Ground equivalence classes per type */
-    std::map<TypeNode, NodeSet> d_typeGroundEqc;
-    /** total number of alive quantified formulas */
-    context::CDO<size_t> d_numActiveQuant;
-    /** active matchers */
-    std::unordered_set<Node> d_activeMatchers;
-  };
-  /** The search state */
-  std::unique_ptr<SearchState> d_sstate;
-  /** Map from matchers to whether they are active */
-  NodeBoolMap d_matchers;
+  /** Ground equivalence classes. */
+  std::unordered_set<TNode> d_groundEqc;
+  /** Ground equivalence classes per type */
+  std::map<TypeNode, std::unordered_set<TNode>> d_typeGroundEqc;
+  /** total number of alive quantified formulas */
+  context::CDO<size_t> d_numActiveQuant;
 };
 
 }  // namespace ccfv
