@@ -47,10 +47,10 @@ void PatTermInfo::initialize(TNode pattern, TermDb* tdb)
 
 void PatTermInfo::resetRound()
 {
-  Assert (d_watchEqc.empty());
-  Assert (d_watchEqcList.empty());
+  Assert(d_watchEqc.empty());
+  Assert(d_watchEqcList.empty());
   d_watchEqcIndex = 0;
-  Assert (isActive());
+  Assert(isActive());
   if (d_isBooleanConnective)
   {
     /*
@@ -73,7 +73,7 @@ bool PatTermInfo::isActive() const { return d_eq.get().isNull(); }
 
 void PatTermInfo::addWatchEqc(TNode eqc)
 {
-  if (d_watchEqc.find(eqc)==d_watchEqc.end())
+  if (d_watchEqc.find(eqc) == d_watchEqc.end())
   {
     d_watchEqc.insert(eqc);
     d_watchEqcList.push_back(eqc);

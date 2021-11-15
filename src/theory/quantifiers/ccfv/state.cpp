@@ -185,7 +185,7 @@ PatTermInfo& State::getPatTermInfo(TNode p)
 
 MatchEqcInfo& State::getMatchEqcInfo(TNode r)
 {
-  Assert (isGroundEqc(r));
+  Assert(isGroundEqc(r));
   std::map<Node, MatchEqcInfo>::iterator it = d_meqcInfo.find(r);
   if (it == d_meqcInfo.end())
   {
@@ -593,8 +593,9 @@ bool State::isSink(TNode n) const { return n == d_sink; }
 
 const std::unordered_set<TNode>& State::getGroundEqcFor(TypeNode tn) const
 {
-  std::map<TypeNode, std::unordered_set<TNode>>::const_iterator it = d_typeGroundEqc.find(tn);
-  if (it==d_typeGroundEqc.end())
+  std::map<TypeNode, std::unordered_set<TNode>>::const_iterator it =
+      d_typeGroundEqc.find(tn);
+  if (it == d_typeGroundEqc.end())
   {
     return d_emptyEqc;
   }

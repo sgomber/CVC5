@@ -20,8 +20,8 @@
 
 #include <map>
 
-#include "context/cdlist.h"
 #include "context/cdhashset.h"
+#include "context/cdlist.h"
 #include "context/cdo.h"
 #include "expr/node.h"
 
@@ -41,6 +41,7 @@ class PatTermInfo
 {
   using NodeList = context::CDList<Node>;
   using NodeSet = context::CDHashSet<Node>;
+
  public:
   PatTermInfo(context::Context* c);
   /** initialize */
@@ -88,6 +89,7 @@ class PatTermInfo
   void addWatchEqc(TNode eqc);
   /** Get next watch eqc */
   TNode getNextWatchEqc();
+
  private:
   //---------------------- matching
   /**

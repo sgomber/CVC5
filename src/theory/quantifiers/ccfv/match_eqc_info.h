@@ -30,7 +30,7 @@ namespace quantifiers {
 class TermDb;
 
 namespace ccfv {
-  
+
 class State;
 
 /**
@@ -39,13 +39,16 @@ class State;
 class MatchEqcInfo
 {
  public:
-  /** 
+  /**
    * Mapping from match operators to terms in this equivalence over that
    * match operator, whose arguments are normalized to be representatives.
    */
   std::unordered_map<TNode, std::vector<Node> > d_matchOps;
   /** initialize */
-  void initialize(TNode rep, const State& s, eq::EqualityEngine* ee, TermDb* tdb);
+  void initialize(TNode rep,
+                  const State& s,
+                  eq::EqualityEngine* ee,
+                  TermDb* tdb);
 };
 
 }  // namespace ccfv

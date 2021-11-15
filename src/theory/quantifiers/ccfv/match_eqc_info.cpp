@@ -15,21 +15,24 @@
 
 #include "theory/quantifiers/ccfv/match_eqc_info.h"
 
-#include "theory/quantifiers/term_database.h"
-#include "theory/uf/equality_engine_iterator.h"
 #include "expr/node_algorithm.h"
 #include "theory/quantifiers/ccfv/state.h"
+#include "theory/quantifiers/term_database.h"
+#include "theory/uf/equality_engine_iterator.h"
 
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-void MatchEqcInfo::initialize(TNode r, const State& s, eq::EqualityEngine* ee, TermDb* tdb)
+void MatchEqcInfo::initialize(TNode r,
+                              const State& s,
+                              eq::EqualityEngine* ee,
+                              TermDb* tdb)
 {
   Assert(ee->hasTerm(r));
   Assert(ee->getRepresentative(r) == r);
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   eq::EqClassIterator eqc_i = eq::EqClassIterator(r, ee);
   while (!eqc_i.isFinished())
   {
@@ -56,11 +59,11 @@ void MatchEqcInfo::initialize(TNode r, const State& s, eq::EqualityEngine* ee, T
     {
       TNode ncr = s.getGroundRepresentative(nc);
       args.push_back(ncr);
-      childChanged = childChanged || ncr!=nc;
+      childChanged = childChanged || ncr != nc;
     }
     Node nn = childChanged ? Node(n) : nm->mkNode(n.getKind(), args);
     std::vector<Node>& ms = d_matchOps[matchOp];
-    if (std::find(ms.begin(), ms.end(), nn)==ms.end())
+    if (std::find(ms.begin(), ms.end(), nn) == ms.end())
     {
       ms.push_back(nn);
     }
