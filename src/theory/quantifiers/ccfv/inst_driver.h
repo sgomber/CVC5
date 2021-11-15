@@ -68,10 +68,10 @@ class InstDriver : protected EnvObj
   void check(const std::vector<TNode>& quants);
 
  private:
-void assignVariableLevels(size_t level, 
-                                      const std::vector<TNode>& quants, 
-                                      std::map<TNode, std::vector<TNode>>& partition, 
-                                      std::map<TNode, size_t>& fvLevel);
+  void assignVariableLevels(size_t level,
+                            const std::vector<TNode>& quants,
+                            std::map<TNode, std::vector<TNode>>& partition,
+                            std::map<TNode, size_t>& fvLevel);
   /** are we finished? */
   bool isFinished() const;
   /** Assign variable to the equivalence class eqc */

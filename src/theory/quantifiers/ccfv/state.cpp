@@ -50,7 +50,7 @@ void State::resetRound(size_t nquant)
   d_sstate->d_numActiveQuant = nquant;
   // clear the equivalence class info
   d_eqcInfo.clear();
-  // reset free variable information 
+  // reset free variable information
   for (std::pair<const Node, FreeVarInfo>& fi : d_fvInfo)
   {
     fi.second.resetRound();

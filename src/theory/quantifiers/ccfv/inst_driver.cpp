@@ -38,15 +38,15 @@ void InstDriver::check(const std::vector<TNode>& quants)
   std::map<TNode, std::vector<TNode>> partition;
   std::map<TNode, size_t> fvLevel;
   assignVariableLevels(0, quants, partition, fvLevel);
-
 }
 
-void InstDriver::assignVariableLevels(size_t level, 
-                                      const std::vector<TNode>& quants, 
-                                      std::map<TNode, std::vector<TNode>>& partition, 
-                                      std::map<TNode, size_t>& fvLevel)
+void InstDriver::assignVariableLevels(
+    size_t level,
+    const std::vector<TNode>& quants,
+    std::map<TNode, std::vector<TNode>>& partition,
+    std::map<TNode, size_t>& fvLevel)
 {
-  Assert (!quants.empty());
+  Assert(!quants.empty());
   // partition the quantifiers by their first variable
   SearchLevel& slevel = getSearchLevel(level);
   // every next variable must be included in this subtree
@@ -63,7 +63,7 @@ void InstDriver::assignVariableLevels(size_t level,
     }
     else
     {
-      if (std::find(nextVars.begin(), nextVars.end(), next)==nextVars.end())
+      if (std::find(nextVars.begin(), nextVars.end(), next) == nextVars.end())
       {
         nextVars.push_back(next);
       }
@@ -80,10 +80,10 @@ void InstDriver::assignVariableLevels(size_t level,
   for (TNode v : nextVars)
   {
     it = partition.find(v);
-    if (it==partition.end())
+    if (it == partition.end())
     {
       // already processed at a lower level
-      Assert (fvLevel.find(v)!=fvLevel.end());
+      Assert(fvLevel.find(v) != fvLevel.end());
       continue;
     }
     // copy and remove from partition
@@ -92,17 +92,17 @@ void InstDriver::assignVariableLevels(size_t level,
     // get next level
     size_t nextLevel;
     itl = fvLevel.find(v);
-    if (itl!=fvLevel.end())
+    if (itl != fvLevel.end())
     {
       // it might have been processed in another subtree that we were not
       // a part of
-      nextLevel = itl->second+1;
+      nextLevel = itl->second + 1;
     }
     else
     {
       slevel.d_varsToAssign.push_back(v);
       fvLevel[v] = level;
-      nextLevel = level+1;
+      nextLevel = level + 1;
     }
     assignVariableLevels(nextLevel, nextQuants, partition, fvLevel);
   }
@@ -112,18 +112,15 @@ bool InstDriver::isFinished() const { return d_state.isFinished(); }
 
 void InstDriver::assignVar(TNode v, TNode eqc)
 {
-  Assert (d_qstate.getEqualityEngine()->consistent());
+  Assert(d_qstate.getEqualityEngine()->consistent());
   // assert to the equality engine
   Node eq = v.eqNode(eqc);
   d_qstate.getEqualityEngine()->assertEquality(eq, true, eq);
   // should still be consistent
-  Assert (d_qstate.getEqualityEngine()->consistent());
+  Assert(d_qstate.getEqualityEngine()->consistent());
 }
 
-SearchLevel& InstDriver::getSearchLevel(size_t i)
-{
-  return d_levels[i];
-}
+SearchLevel& InstDriver::getSearchLevel(size_t i) { return d_levels[i]; }
 
 }  // namespace ccfv
 }  // namespace quantifiers

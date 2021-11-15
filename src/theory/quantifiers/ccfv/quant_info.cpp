@@ -63,7 +63,7 @@ void QuantInfo::initialize(TNode q,
       uncontainedVar.push_back(v);
     }
   }
-  // Sort variables by their index in the term canonizer. This is to ensure 
+  // Sort variables by their index in the term canonizer. This is to ensure
   // a variable ordering in the driver where shared variables are assigned
   // first.
   std::sort(varList.begin(), varList.end());
@@ -71,8 +71,9 @@ void QuantInfo::initialize(TNode q,
   {
     d_canonVarOrdered.push_back(vl.second);
   }
-  d_canonVarOrdered.insert(d_canonVarOrdered.end(), uncontainedVar.begin(), uncontainedVar.end());
-  Assert (d_canonVarOrdered.size()==q[0].getNumChildren());
+  d_canonVarOrdered.insert(
+      d_canonVarOrdered.end(), uncontainedVar.begin(), uncontainedVar.end());
+  Assert(d_canonVarOrdered.size() == q[0].getNumChildren());
 
   // compute matching requirements
   std::unordered_set<TNode> processed;
@@ -287,13 +288,13 @@ void QuantInfo::resetRound()
   // TODO: compute order of matchers in d_topLevelMatchers heuristically?
   d_isActive = true;
   d_watchMatcherIndex = 0;
-  
+
   d_initVarIndex = 0;
 }
 
 TNode QuantInfo::getNextVariable()
 {
-  if (d_initVarIndex>=d_canonVarOrdered.size())
+  if (d_initVarIndex >= d_canonVarOrdered.size())
   {
     return TNode::null();
   }
