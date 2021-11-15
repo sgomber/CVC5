@@ -124,7 +124,7 @@ void CongruenceClosureFv::assertNode(Node q)
       if (k == BOUND_VARIABLE)
       {
         // should be one of the free variables of the quantified formula
-        Assert (std::find(fvars.begin(), fvars.end(), cur)!=fvars.end());
+        Assert(std::find(fvars.begin(), fvars.end(), cur) != fvars.end());
         continue;
       }
       Assert(cur.getNumChildren() > 0);

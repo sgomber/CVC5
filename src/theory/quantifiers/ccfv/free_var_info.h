@@ -20,8 +20,8 @@
 
 #include <unordered_set>
 
-#include "context/cdlist.h"
 #include "context/cdhashset.h"
+#include "context/cdlist.h"
 #include "expr/node.h"
 
 namespace cvc5 {

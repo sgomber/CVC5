@@ -35,9 +35,7 @@ State::State(Env& env, QuantifiersState& qs)
   d_sink = sm->mkDummySkolem("sink", nm->booleanType());
 }
 
-void State::assertQuant(TNode q) {
-  d_quants.push_back(q);
-}
+void State::assertQuant(TNode q) { d_quants.push_back(q); }
 
 bool State::isFinished() const { return d_sstate->d_numActiveQuant == 0; }
 

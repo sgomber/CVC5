@@ -80,7 +80,7 @@ class InstDriver : protected EnvObj
   TermRegistry& d_treg;
 
   /** The current stack of quantified variables */
-  //std::vector<TNode> d_varStack;
+  // std::vector<TNode> d_varStack;
 
   /** The set of quantified formulas */
   // QuantifiersSet d_qset;

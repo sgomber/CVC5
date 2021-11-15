@@ -15,8 +15,8 @@
 
 #include "theory/quantifiers/ccfv/inst_driver.h"
 
-#include "theory/uf/equality_engine.h"
 #include "theory/quantifiers/quantifiers_state.h"
+#include "theory/uf/equality_engine.h"
 
 namespace cvc5 {
 namespace theory {
@@ -39,19 +39,17 @@ void InstDriver::check()
     return;
   }
   // TODO: compute levels of variables
-
 }
 
 bool InstDriver::isFinished() const { return d_state.isFinished(); }
 
-void InstDriver::assignVar(TNode v,
-                           TNode eqc)
+void InstDriver::assignVar(TNode v, TNode eqc)
 {
   Node eq = v.eqNode(eqc);
   d_qstate.getEqualityEngine()->assertEquality(eq, true, eq);
 }
 
-}
+}  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5
