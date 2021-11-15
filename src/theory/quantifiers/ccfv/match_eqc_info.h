@@ -37,8 +37,11 @@ namespace ccfv {
 class MatchEqcInfo
 {
  public:
-  /** the set of match operators in this equivalence class */
-  std::unordered_map<TNode, std::vector<TNode> > d_matchOps;
+  /** 
+   * Mapping from match operators to terms in this equivalence over that
+   * match operator, whose arguments are normalized to be representatives.
+   */
+  std::unordered_map<TNode, std::vector<Node> > d_matchOps;
   /** initialize */
   void initialize(TNode rep, eq::EqualityEngine* ee, TermDb* tdb);
 };

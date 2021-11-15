@@ -190,6 +190,11 @@ bool InstDriver::assignSearchLevel(size_t level)
   return true;
 }
 
+void InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
+{
+  // get constraints to determine initial equivalence classes
+}
+
 bool InstDriver::isFinished() const { return d_state.isFinished(); }
 
 void InstDriver::assignVar(TNode v, TNode eqc)

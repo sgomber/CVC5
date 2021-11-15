@@ -81,24 +81,18 @@ class InstDriver : protected EnvObj
   bool assignSearchLevel(size_t level);
   /** Assign variable to the equivalence class eqc */
   void assignVar(TNode v, TNode eqc);
+  /** Process matcher */
+  void processMatcher(QuantInfo& qi, TNode matcher);
   /** Get search level */
   SearchLevel& getSearchLevel(size_t i);
-
   /** The state of matching for quantifiers and pattern terms */
   State& d_state;
   /** Reference to the state of the quantifiers engine */
   QuantifiersState& d_qstate;
   /** Reference to the term registry */
   TermRegistry& d_treg;
-
   /** Search levels */
   std::map<size_t, SearchLevel> d_levels;
-
-  /** The current stack of quantified variables */
-  // std::vector<TNode> d_varStack;
-
-  /** The set of quantified formulas */
-  // QuantifiersSet d_qset;
 };
 
 }  // namespace ccfv

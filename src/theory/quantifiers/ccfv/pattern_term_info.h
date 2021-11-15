@@ -21,6 +21,7 @@
 #include <map>
 
 #include "context/cdlist.h"
+#include "context/cdhashset.h"
 #include "context/cdo.h"
 #include "expr/node.h"
 
@@ -38,12 +39,14 @@ namespace ccfv {
  */
 class PatTermInfo
 {
-  typedef context::CDList<Node> NodeList;
-
+  using NodeList = context::CDList<Node>;
+  using NodeSet = context::CDHashSet<Node>;
  public:
   PatTermInfo(context::Context* c);
   /** initialize */
   void initialize(TNode pattern, TermDb* tdb);
+  /** Reset round */
+  void resetRound();
   /**
    * is active, false if it has merged to a ground equivalence class, or if
    * its variables have been fully assigned.
@@ -55,6 +58,9 @@ class PatTermInfo
   TNode d_pattern;
   /** The match operator */
   TNode d_matchOp;
+  /** is Boolean connective */
+  bool d_isBooleanConnective;
+  //---------------------- during search
   /**
    * The ground term we are currently equal to, if any. This may also be
    * the sink node.
@@ -77,19 +83,20 @@ class PatTermInfo
    * over f. We notify these parents of our value only if become equal to sink.
    */
   NodeList d_parentCongNotify;
-  /** is Boolean connective */
-  bool d_isBooleanConnective;
   //---------------------- matching
+  /** Add watched equivalence class */
+  void addWatchEqc(TNode eqc);
   /** Get next watch eqc */
-  Node getNextWatchEqc();
-
+  TNode getNextWatchEqc();
  private:
   //---------------------- matching
   /**
    * Watched equivalence classes. This is the set of equivalence classes that
    * may be relevant if this pattern is equal.
    */
-  NodeList d_watchEqc;
+  NodeSet d_watchEqc;
+  /** List we are procesing */
+  NodeList d_watchEqcList;
   /**
    * Watched equivalence classes we have processed.
    * - If pattern is variable, this is the index we have tried

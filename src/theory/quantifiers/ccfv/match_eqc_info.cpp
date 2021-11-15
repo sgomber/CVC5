@@ -17,6 +17,7 @@
 
 #include "theory/quantifiers/term_database.h"
 #include "theory/uf/equality_engine_iterator.h"
+#include "expr/node_algorithm.h"
 
 namespace cvc5 {
 namespace theory {
@@ -27,17 +28,41 @@ void MatchEqcInfo::initialize(TNode r, eq::EqualityEngine* ee, TermDb* tdb)
 {
   Assert(ee->hasTerm(r));
   Assert(ee->getRepresentative(r) == r);
+  NodeManager * nm = NodeManager::currentNM();
   eq::EqClassIterator eqc_i = eq::EqClassIterator(r, ee);
   while (!eqc_i.isFinished())
   {
     TNode n = (*eqc_i);
     ++eqc_i;
+    if (!expr::hasFreeVar(n))
+    {
+      // could have a pattern that was already merged, skip it
+      continue;
+    }
     Node matchOp = tdb->getMatchOperator(n);
     if (matchOp.isNull())
     {
       continue;
     }
-    d_matchOps[matchOp].push_back(n);
+    // normalize arguments based on representatives?
+    std::vector<Node> args;
+    if (n.getMetaKind() == kind::metakind::PARAMETERIZED)
+    {
+      args.push_back(n.getOperator());
+    }
+    bool childChanged = false;
+    for (TNode nc : n)
+    {
+      TNode ncr = ee->getRepresentative(nc);
+      args.push_back(ncr);
+      childChanged = childChanged || ncr!=nc;
+    }
+    Node nn = childChanged ? Node(n) : nm->mkNode(n.getKind(), args);
+    std::vector<Node>& ms = d_matchOps[matchOp];
+    if (std::find(ms.begin(), ms.end(), nn)==ms.end())
+    {
+      ms.push_back(nn);
+    }
   }
 }
 
