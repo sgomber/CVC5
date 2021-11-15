@@ -27,7 +27,8 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-State::State(Env& env, QuantifiersState& qs) : EnvObj(env), d_qstate(qs), d_matchers(context())
+State::State(Env& env, QuantifiersState& qs)
+    : EnvObj(env), d_qstate(qs), d_matchers(context())
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
@@ -59,7 +60,7 @@ void State::resetRound(size_t nquant)
     }
     d_sstate->d_groundEqc.insert(r);
     itt = d_sstate->d_typeGroundEqc.find(tn);
-    if (itt==d_sstate->d_typeGroundEqc.end())
+    if (itt == d_sstate->d_typeGroundEqc.end())
     {
       itt = d_sstate->d_typeGroundEqc.emplace(tn, context()).first;
     }
@@ -67,11 +68,11 @@ void State::resetRound(size_t nquant)
     ++eqcs_i;
   }
   d_sstate->d_numActiveQuant = nquant;
-  
+
   // clear the equivalence class info?
   // NOTE: if we are adding terms when quantified formulas are asserted, then
   // we should not clear the equivalence class information here.
-  //d_eqcInfo.clear();
+  // d_eqcInfo.clear();
   // reset free variable information
   /*
   for (std::pair<const Node, FreeVarInfo>& fi : d_fvInfo)
@@ -231,7 +232,7 @@ void State::eqNotifyNewClass(TNode t)
 void State::eqNotifyMerge(TNode t1, TNode t2)
 {
   // constants always remain representatives
-  Assert (!t2.isConst());
+  Assert(!t2.isConst());
   if (isGroundEqc(t1))
   {
     // should never merge ground equivalence classes
@@ -290,7 +291,8 @@ bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
   }
   if (pi.d_isBooleanConnective)
   {
-    // if a Boolean connective, handle short circuiting if we set a non-sink value
+    // if a Boolean connective, handle short circuiting if we set a non-sink
+    // value
     if (!isSink(val))
     {
       Assert(val.getKind() == CONST_BOOLEAN);
@@ -523,7 +525,7 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
     d_sstate->d_numActiveQuant = d_sstate->d_numActiveQuant - 1;
   }
   // if this was the current matcher, we need another
-  if (qi.getCurrentMatcher()==p)
+  if (qi.getCurrentMatcher() == p)
   {
     TNode next = qi.getNextMatcher();
     d_matchers[p] = false;

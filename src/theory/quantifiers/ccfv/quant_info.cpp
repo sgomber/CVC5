@@ -26,8 +26,7 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-QuantInfo::QuantInfo(context::Context* c)
-    : d_isActive(c), d_tlMatcherIndex(c)
+QuantInfo::QuantInfo(context::Context* c) : d_isActive(c), d_tlMatcherIndex(c)
 {
 }
 
@@ -402,21 +401,22 @@ TNode QuantInfo::getCurrentMatcher() const
   {
     return TNode::null();
   }
-  if (d_tlMatcherIndex.get()>0 && d_tlMatcherIndex.get()<=d_topLevelMatchers.size())
+  if (d_tlMatcherIndex.get() > 0
+      && d_tlMatcherIndex.get() <= d_topLevelMatchers.size())
   {
-    return d_topLevelMatchers[d_tlMatcherIndex.get()-1];
+    return d_topLevelMatchers[d_tlMatcherIndex.get() - 1];
   }
   return TNode::null();
 }
 
 TNode QuantInfo::getNextMatcher()
 {
-  if (!d_isActive.get() || d_tlMatcherIndex.get()>d_topLevelMatchers.size())
+  if (!d_isActive.get() || d_tlMatcherIndex.get() > d_topLevelMatchers.size())
   {
     return TNode::null();
   }
   d_tlMatcherIndex = d_tlMatcherIndex.get() + 1;
-  return d_topLevelMatchers[d_tlMatcherIndex.get()-1];
+  return d_topLevelMatchers[d_tlMatcherIndex.get() - 1];
 }
 
 const std::vector<TNode>& QuantInfo::getFreeVariables() const

@@ -20,8 +20,8 @@
 
 #include <memory>
 
-#include "context/cdhashset.h"
 #include "context/cdhashmap.h"
+#include "context/cdhashset.h"
 #include "smt/env_obj.h"
 #include "theory/quantifiers/ccfv/eqc_info.h"
 #include "theory/quantifiers/ccfv/free_var_info.h"
