@@ -72,7 +72,7 @@ class CongruenceClosureFv : public QuantifiersModule
   expr::TermCanonize d_tcanon;
 };
 
-}
+}  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

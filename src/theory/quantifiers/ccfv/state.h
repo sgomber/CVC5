@@ -53,8 +53,8 @@ class State : protected EnvObj
   void resetRound();
 
   void initializeQuantInfo(TNode q,
-                              eq::EqualityEngine* ee,
-                              expr::TermCanonize& tc);
+                           eq::EqualityEngine* ee,
+                           expr::TermCanonize& tc);
   /** Get quantifiers info */
   QuantInfo& getQuantInfo(TNode q);
   /** Get free variable info */
@@ -86,6 +86,7 @@ class State : protected EnvObj
   Node getSink() const;
   /** Is sink */
   bool isSink(TNode n) const;
+
  private:
   /**
    * Called when it is determined what pattern p is equal to.

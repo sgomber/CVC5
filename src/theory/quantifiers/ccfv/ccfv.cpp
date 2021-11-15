@@ -15,8 +15,8 @@
 
 #include "theory/quantifiers/ccfv/ccfv.h"
 
-#include "options/quantifiers_options.h"
 #include "expr/node_algorithm.h"
+#include "options/quantifiers_options.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/term_registry.h"
 
@@ -31,19 +31,32 @@ CongruenceClosureFv::CongruenceClosureFv(Env& env,
                                          QuantifiersState& qs,
                                          QuantifiersInferenceManager& qim,
                                          QuantifiersRegistry& qr,
-                                         TermRegistry& tr) : QuantifiersModule(env, qs, qim, qr, tr), d_state(env, qs), d_driver(env, d_state, qs, tr)
+                                         TermRegistry& tr)
+    : QuantifiersModule(env, qs, qim, qr, tr),
+      d_state(env, qs),
+      d_driver(env, d_state, qs, tr)
 {
 }
 
-bool CongruenceClosureFv::needsCheck(Theory::Effort e) { 
+bool CongruenceClosureFv::needsCheck(Theory::Effort e)
+{
   bool performCheck = false;
-  if( options().quantifiers.quantConflictFind ){
-    if( e==Theory::EFFORT_LAST_CALL ){
-      performCheck = options().quantifiers.qcfWhenMode == options::QcfWhenMode::LAST_CALL;
-    }else if( e==Theory::EFFORT_FULL ){
-      performCheck = options().quantifiers.qcfWhenMode == options::QcfWhenMode::DEFAULT;
-    }else if( e==Theory::EFFORT_STANDARD ){
-      performCheck = options().quantifiers.qcfWhenMode == options::QcfWhenMode::STD;
+  if (options().quantifiers.quantConflictFind)
+  {
+    if (e == Theory::EFFORT_LAST_CALL)
+    {
+      performCheck =
+          options().quantifiers.qcfWhenMode == options::QcfWhenMode::LAST_CALL;
+    }
+    else if (e == Theory::EFFORT_FULL)
+    {
+      performCheck =
+          options().quantifiers.qcfWhenMode == options::QcfWhenMode::DEFAULT;
+    }
+    else if (e == Theory::EFFORT_STANDARD)
+    {
+      performCheck =
+          options().quantifiers.qcfWhenMode == options::QcfWhenMode::STD;
     }
   }
   return performCheck;
@@ -51,7 +64,7 @@ bool CongruenceClosureFv::needsCheck(Theory::Effort e) {
 
 void CongruenceClosureFv::reset_round(Theory::Effort e) {}
 
-void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e) 
+void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e)
 {
   FirstOrderModel* fm = d_treg.getModel();
   for (size_t i = 0, nquant = fm->getNumAssertedQuantifiers(); i < nquant; i++)
@@ -73,13 +86,13 @@ void CongruenceClosureFv::registerQuantifier(Node q) {}
 void CongruenceClosureFv::assertNode(Node q)
 {
   // eager?
-  //Assert(q.getKind() == FORALL);
-  //d_state.initializeQuantInfo(q, d_qstate.getEqualityEngine(), d_tcanon);
+  // Assert(q.getKind() == FORALL);
+  // d_state.initializeQuantInfo(q, d_qstate.getEqualityEngine(), d_tcanon);
 }
 
 void CongruenceClosureFv::activateQuantifier(TNode q)
 {
-  Assert (q.getKind()==FORALL);
+  Assert(q.getKind() == FORALL);
   QuantInfo& qi = d_state.getQuantInfo(q);
 
   // Now, traverse p. This sets up the pattern info for subterms of p.
@@ -187,14 +200,14 @@ void CongruenceClosureFv::activateQuantifier(TNode q)
       }
     } while (!containing.empty());
   }
-  
+
   // add the congruence terms to the equality engine
   for (TNode p : pterms)
   {
     ee->addTerm(p);
     // should now exist in the equality engine, and not have a value
-    Assert (ee->hasTerm(p));
-    Assert (d_state.getValue(p).isNull());
+    Assert(ee->hasTerm(p));
+    Assert(d_state.getValue(p).isNull());
   }
 }
 
@@ -205,7 +218,7 @@ std::string CongruenceClosureFv::identify() const
   return "CongruenceClosureFv";
 }
 
-}
+}  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5

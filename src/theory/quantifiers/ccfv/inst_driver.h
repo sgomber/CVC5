@@ -17,13 +17,12 @@
 #ifndef CVC5__THEORY__QUANTIFIERS__CCFV__INST_DRIVER_H
 #define CVC5__THEORY__QUANTIFIERS__CCFV__INST_DRIVER_H
 
-#include "theory/quantifiers/ccfv/state.h"
 #include "smt/env_obj.h"
+#include "theory/quantifiers/ccfv/state.h"
 
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
-  
 
 class QuantifiersState;
 class TermRegistry;
@@ -87,7 +86,7 @@ class InstDriver : protected EnvObj
   std::vector<TNode> d_varStack;
 
   /** The set of quantified formulas */
-  //QuantifiersSet d_qset;
+  // QuantifiersSet d_qset;
 };
 
 }  // namespace ccfv

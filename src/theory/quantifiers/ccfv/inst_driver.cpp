@@ -22,7 +22,8 @@ namespace quantifiers {
 InstDriver::InstDriver(Env& env,
                        State& state,
                        QuantifiersState& qs,
-                       TermRegistry& tr) : EnvObj(env), d_state(state), d_qstate(qs), d_treg(tr)
+                       TermRegistry& tr)
+    : EnvObj(env), d_state(state), d_qstate(qs), d_treg(tr)
 {
 }
 
@@ -44,9 +45,7 @@ void InstDriver::check()
 
 bool InstDriver::isFinished() const { return false; }
 
-TNode InstDriver::getNextVariable() {
-  return TNode::null();
-}
+TNode InstDriver::getNextVariable() { return TNode::null(); }
 
 void InstDriver::pushVar(TNode v)
 {

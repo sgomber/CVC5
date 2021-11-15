@@ -119,7 +119,7 @@ void QuantInfo::computeMatchReq(TNode cur,
       }
     }
   }
-  if (k==EQUAL || ee->isFunctionKind(k) || expr::isBooleanConnective(cur))
+  if (k == EQUAL || ee->isFunctionKind(k) || expr::isBooleanConnective(cur))
   {
     // Equality between patterns, matchable predicate, or Boolean connective.
     // Note that equalities and Boolean connectives are simply marked as
@@ -145,7 +145,6 @@ void QuantInfo::addMatchTermReq(TNode t, Node eqc, bool isEq)
     if (!eqc.isNull())
     {
       // this should only happen if miniscoping
-      
     }
     return;
   }

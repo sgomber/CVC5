@@ -57,8 +57,8 @@ void State::resetRound()
 }
 
 void State::initializeQuantInfo(TNode q,
-                                   eq::EqualityEngine* ee,
-                                   expr::TermCanonize& tc)
+                                eq::EqualityEngine* ee,
+                                expr::TermCanonize& tc)
 {
   std::map<Node, QuantInfo>::iterator it = d_quantInfo.find(q);
   if (it == d_quantInfo.end())
@@ -337,8 +337,8 @@ bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
 
 void State::notifyPatternEqGround(TNode p, TNode g)
 {
-  Assert (!g.isNull());
-  Assert (d_groundEqc.find(g)!=d_groundEqc.end() || isSink(g));
+  Assert(!g.isNull());
+  Assert(d_groundEqc.find(g) != d_groundEqc.end() || isSink(g));
   std::map<Node, PatTermInfo>::iterator it = d_pInfo.find(p);
   Assert(it != d_pInfo.end());
   Assert(it->second.isActive());
