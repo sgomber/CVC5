@@ -49,7 +49,7 @@ class State : protected EnvObj
 
  public:
   State(Env& env, QuantifiersState& qs);
-  /** 
+  /**
    * Reset round, where nquant is the number of quantified formulas
    */
   void resetRound(size_t nquant);
@@ -63,7 +63,7 @@ class State : protected EnvObj
   /** Get free variable info */
   FreeVarInfo& getOrMkFreeVarInfo(TNode v);
   const FreeVarInfo& getFreeVarInfo(TNode v) const;
-  /** 
+  /**
    * Get active free variables, sorted by how often they occur
    */
   std::vector<TNode> getActiveFreeVarList() const;

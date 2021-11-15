@@ -62,9 +62,7 @@ bool CongruenceClosureFv::needsCheck(Theory::Effort e)
   return performCheck;
 }
 
-void CongruenceClosureFv::reset_round(Theory::Effort e)
-{
-}
+void CongruenceClosureFv::reset_round(Theory::Effort e) {}
 
 void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e)
 {

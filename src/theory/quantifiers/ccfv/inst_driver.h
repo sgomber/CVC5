@@ -18,8 +18,8 @@
 #define CVC5__THEORY__QUANTIFIERS__CCFV__INST_DRIVER_H
 
 #include "smt/env_obj.h"
-#include "theory/quantifiers/ccfv/state.h"
 #include "theory/quantifiers/ccfv/search_level.h"
+#include "theory/quantifiers/ccfv/state.h"
 
 namespace cvc5 {
 namespace theory {
@@ -81,8 +81,8 @@ class InstDriver : protected EnvObj
   TermRegistry& d_treg;
 
   /** Search levels */
-  std::map< size_t, SearchLevel > d_levels;
-  
+  std::map<size_t, SearchLevel> d_levels;
+
   /** The current stack of quantified variables */
   // std::vector<TNode> d_varStack;
 

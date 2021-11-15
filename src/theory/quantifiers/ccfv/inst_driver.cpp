@@ -36,7 +36,6 @@ void InstDriver::check(const std::vector<TNode>& quants)
   // TODO: compute levels of variables
   d_levels.clear();
   std::vector<TNode> fvars = d_state.getActiveFreeVarList();
-  
 }
 
 bool InstDriver::isFinished() const { return d_state.isFinished(); }

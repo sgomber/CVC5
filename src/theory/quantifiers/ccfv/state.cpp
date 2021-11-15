@@ -27,8 +27,7 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-State::State(Env& env, QuantifiersState& qs)
-    : EnvObj(env), d_qstate(qs)
+State::State(Env& env, QuantifiersState& qs) : EnvObj(env), d_qstate(qs)
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
@@ -93,23 +92,23 @@ const FreeVarInfo& State::getFreeVarInfo(TNode v) const
   return it->second;
 }
 
-bool sortVarNQuant(const std::pair<size_t,TNode> &a,
-            const std::pair<size_t,TNode> &b)
+bool sortVarNQuant(const std::pair<size_t, TNode>& a,
+                   const std::pair<size_t, TNode>& b)
 {
   if (a.first > b.first)
   {
     return true;
   }
-  return a.first==b.first && a.second<b.second;
+  return a.first == b.first && a.second < b.second;
 }
 
 std::vector<TNode> State::getActiveFreeVarList() const
 {
-  std::vector<std::pair<size_t,TNode>> fvarList;
+  std::vector<std::pair<size_t, TNode>> fvarList;
   for (const std::pair<const Node, FreeVarInfo>& fi : d_fvInfo)
   {
     size_t nquant = fi.second.d_quantList.size();
-    if (nquant>0)
+    if (nquant > 0)
     {
       fvarList.push_back(std::pair<size_t, TNode>(nquant, fi.first));
     }
