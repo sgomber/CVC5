@@ -64,7 +64,7 @@ class InstDriver : protected EnvObj
   EqcInfo& getEqcInfo(TNode r);
 
   /** check */
-  void check();
+  void check(const std::vector<TNode>& quants);
 
  private:
   /** are we finished? */
@@ -79,6 +79,9 @@ class InstDriver : protected EnvObj
   /** Reference to the term registry */
   TermRegistry& d_treg;
 
+  /** Search levels */
+  std::map< size_t, SearchLevel > d_levels;
+  
   /** The current stack of quantified variables */
   // std::vector<TNode> d_varStack;
 

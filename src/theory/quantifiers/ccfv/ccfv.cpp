@@ -64,12 +64,27 @@ bool CongruenceClosureFv::needsCheck(Theory::Effort e)
 
 void CongruenceClosureFv::reset_round(Theory::Effort e)
 {
-  d_state.resetRound();
 }
 
 void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e)
 {
+  std::vector<TNode> quants;
+  FirstOrderModel* fm = d_treg.getModel();
+  for (size_t i = 0, nquant = fm->getNumAssertedQuantifiers(); i < nquant; i++)
+  {
+    Node q = fm->getAssertedQuantifier(i, true);
+    if (!d_qreg.hasOwnership(q, this))
+    {
+      return;
+    }
+    quants.push_back(q);
+  }
   // run with the instantiation driver
+  if (!quants.empty())
+  {
+    d_state.resetRound(quants.size());
+    d_driver.check(quants);
+  }
 }
 
 void CongruenceClosureFv::registerQuantifier(Node q) {}
@@ -85,8 +100,6 @@ void CongruenceClosureFv::assertNode(Node q)
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
   // initialize the internal information for the quantified formula
   QuantInfo& qi = d_state.initializeQuantInfo(q, ee, d_tcanon);
-  // assert it
-  d_state.assertQuant(q);
   // free variables from the quantified formula
   const std::vector<TNode>& fvars = qi.getFreeVariables();
 

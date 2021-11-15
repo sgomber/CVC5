@@ -28,14 +28,12 @@ namespace quantifiers {
 namespace ccfv {
 
 State::State(Env& env, QuantifiersState& qs)
-    : EnvObj(env), d_qstate(qs), d_quants(context())
+    : EnvObj(env), d_qstate(qs)
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
   d_sink = sm->mkDummySkolem("sink", nm->booleanType());
 }
-
-void State::assertQuant(TNode q) { d_quants.push_back(q); }
 
 bool State::isFinished() const { return d_sstate->d_numActiveQuant == 0; }
 
@@ -52,12 +50,7 @@ void State::resetRound()
   }
   // clear the equivalence class info
   d_eqcInfo.clear();
-  d_sstate->d_numActiveQuant = d_quants.size();
-}
-
-const context::CDList<Node>& State::getAssertedQuant() const
-{
-  return d_quants;
+  d_sstate->d_numActiveQuant = nquant;
 }
 
 QuantInfo& State::initializeQuantInfo(TNode q,
@@ -98,6 +91,37 @@ const FreeVarInfo& State::getFreeVarInfo(TNode v) const
   std::map<Node, FreeVarInfo>::const_iterator it = d_fvInfo.find(v);
   Assert(it != d_fvInfo.end());
   return it->second;
+}
+
+bool sortVarNQuant(const std::pair<size_t,TNode> &a,
+            const std::pair<size_t,TNode> &b)
+{
+  if (a.first > b.first)
+  {
+    return true;
+  }
+  return a.first==b.first && a.second<b.second;
+}
+
+std::vector<TNode> State::getActiveFreeVarList() const
+{
+  std::vector<std::pair<size_t,TNode>> fvarList;
+  for (const std::pair<const Node, FreeVarInfo>& fi : d_fvInfo)
+  {
+    size_t nquant = fi.second.d_quantList.size();
+    if (nquant>0)
+    {
+      fvarList.push_back(std::pair<size_t, TNode>(nquant, fi.first));
+    }
+  }
+  // sort by most quantifiers first
+  std::sort(fvarList.begin(), fvarList.end(), sortVarNQuant);
+  std::vector<TNode> fvar;
+  for (const std::pair<size_t, TNode>& v : fvarList)
+  {
+    fvar.push_back(v.first);
+  }
+  return fvar;
 }
 
 PatTermInfo& State::getOrMkPatTermInfo(TNode p)

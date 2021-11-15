@@ -49,27 +49,29 @@ class State : protected EnvObj
 
  public:
   State(Env& env, QuantifiersState& qs);
-  /** assert quantified formula */
-  void assertQuant(TNode q);
-  /** Reset round */
-  void resetRound();
-  /** Get the list of asserted quantified formulas */
-  const context::CDList<Node>& getAssertedQuant() const;
-
+  /** 
+   * Reset round, where nquant is the number of quantified formulas
+   */
+  void resetRound(size_t nquant);
+  //---------------quantifiers info
   QuantInfo& initializeQuantInfo(TNode q,
                                  eq::EqualityEngine* ee,
                                  expr::TermCanonize& tc);
   /** Get quantifiers info */
   QuantInfo& getQuantInfo(TNode q);
+  //---------------free variable info
   /** Get free variable info */
   FreeVarInfo& getOrMkFreeVarInfo(TNode v);
   const FreeVarInfo& getFreeVarInfo(TNode v) const;
+  /** 
+   * Get active free variables, sorted by how often they occur
+   */
+  std::vector<TNode> getActiveFreeVarList() const;
+  //---------------pattern term info
   /** Get pattern term info */
   PatTermInfo& getOrMkPatTermInfo(TNode p);
   PatTermInfo& getPatTermInfo(TNode p);
-  /** Get equivalence class info */
-  EqcInfo* getOrMkEqcInfo(TNode r, bool doMk = false);
-
+  //---------------equality notifications
   bool eqNotifyTriggerPredicate(TNode predicate, bool value);
   bool eqNotifyTriggerTermEquality(TheoryId tag,
                                    TNode t1,
@@ -80,7 +82,7 @@ class State : protected EnvObj
   void eqNotifyNewClass(TNode t);
   void eqNotifyMerge(TNode t1, TNode t2);
   void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
-
+  //---------------queries
   /** Is finished */
   bool isFinished() const;
   /**
@@ -96,6 +98,8 @@ class State : protected EnvObj
   bool isGroundEqc(TNode r) const;
 
  private:
+  /** Get equivalence class info */
+  EqcInfo* getOrMkEqcInfo(TNode r, bool doMk = false);
   /**
    * Called when it is determined what pattern p is equal to.
    *
@@ -125,8 +129,6 @@ class State : protected EnvObj
   std::map<Node, EqcInfo> d_eqcInfo;
   /** The sink node */
   Node d_sink;
-  /** Asserted quantified formulas */
-  NodeList d_quants;
   // --------------------------- temporary state
   class SearchState
   {
