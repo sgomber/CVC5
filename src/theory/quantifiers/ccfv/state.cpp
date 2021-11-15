@@ -537,7 +537,7 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
 
 void State::setQuantInactive(QuantInfo& qi)
 {
-  Assert (qi.isActive());
+  Assert(qi.isActive());
   qi.setActive(false);
   d_sstate->d_numActiveQuant = d_sstate->d_numActiveQuant - 1;
   TNode m = qi.getCurrentMatcher();
