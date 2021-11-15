@@ -42,6 +42,8 @@ class FreeVarInfo
   NodeList d_quantList;
 
   //--------------------- in search
+  /** Level in the search */
+  size_t d_currLevel;
   /** The list of ground equivalence classes we are considering */
   std::vector<TNode> d_eqcDomain;
   /** The current index in the domain we are searching */
@@ -49,7 +51,7 @@ class FreeVarInfo
   /** The list of terms that have become fully assigned after we assign this */
   std::vector<TNode> d_fullyAssignedPat;
   /** Reset domain */
-  void resetDomain();
+  void resetRound();
 };
 
 }  // namespace ccfv

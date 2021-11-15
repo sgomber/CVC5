@@ -64,9 +64,13 @@ class State : protected EnvObj
   FreeVarInfo& getOrMkFreeVarInfo(TNode v);
   const FreeVarInfo& getFreeVarInfo(TNode v) const;
   /**
+   * Get active free variables
+   */
+  std::vector<TNode> getFreeVarList() const;
+  /**
    * Get active free variables, sorted by how often they occur
    */
-  std::vector<TNode> getActiveFreeVarList() const;
+  std::vector<TNode> getOrderedFreeVarList() const;
   //---------------pattern term info
   /** Get pattern term info */
   PatTermInfo& getOrMkPatTermInfo(TNode p);

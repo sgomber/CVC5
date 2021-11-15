@@ -44,19 +44,35 @@ void QuantInfo::initialize(TNode q,
 
   // compute the variable correspondence
   std::map<TNode, Node>::iterator it;
+  std::vector<std::pair<size_t, TNode>> varList;
+  std::vector<TNode> uncontainedVar;
   for (const Node& v : q[0])
   {
     it = visited.find(v);
     if (it != visited.end())
     {
-      d_canonVars.push_back(it->second);
+      TNode cv = it->second;
+      d_canonVars.push_back(cv);
+      size_t index = tc.getIndexForFreeVariable(cv);
+      varList.push_back(std::pair<size_t, TNode>(index, cv));
     }
     else
     {
       Assert(false);
       d_canonVars.push_back(v);
+      uncontainedVar.push_back(v);
     }
   }
+  // Sort variables by their index in the term canonizer. This is to ensure 
+  // a variable ordering in the driver where shared variables are assigned
+  // first.
+  std::sort(varList.begin(), varList.end());
+  for (std::pair<size_t, TNode>& vl : varList)
+  {
+    d_canonVarOrdered.push_back(vl.second);
+  }
+  d_canonVarOrdered.insert(d_canonVarOrdered.end(), uncontainedVar.begin(), uncontainedVar.end());
+  Assert (d_canonVarOrdered.size()==q[0].getNumChildren());
 
   // compute matching requirements
   std::unordered_set<TNode> processed;
@@ -268,10 +284,22 @@ void QuantInfo::resetRound()
     d_isActive = false;
     return;
   }
-
   // TODO: compute order of matchers in d_topLevelMatchers heuristically?
   d_isActive = true;
   d_watchMatcherIndex = 0;
+  
+  d_initVarIndex = 0;
+}
+
+TNode QuantInfo::getNextVariable()
+{
+  if (d_initVarIndex>=d_canonVarOrdered.size())
+  {
+    return TNode::null();
+  }
+  TNode next = d_canonVarOrdered[d_initVarIndex];
+  d_initVarIndex++;
+  return next;
 }
 
 TNode QuantInfo::getNextMatcher()
@@ -289,6 +317,11 @@ TNode QuantInfo::getNextMatcher()
 const std::vector<TNode>& QuantInfo::getFreeVariables() const
 {
   return d_canonVars;
+}
+
+const std::vector<TNode>& QuantInfo::getOrderedFreeVariables() const
+{
+  return d_canonVarOrdered;
 }
 
 const std::map<TNode, std::vector<Node>>& QuantInfo::getConstraints() const

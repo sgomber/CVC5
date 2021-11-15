@@ -48,6 +48,8 @@ class QuantInfo
   //-------------------------- static information
   /** Get free variables */
   const std::vector<TNode>& getFreeVariables() const;
+  /** Get free variables */
+  const std::vector<TNode>& getOrderedFreeVariables() const;
   /**
    * Get the constraints, which maps pattern terms to node corresponding to
    * their constraints for making the quantified formula have a propagating
@@ -65,6 +67,8 @@ class QuantInfo
    * Reset round, called once per full effort check
    */
   void resetRound();
+  /** Get next variable */
+  TNode getNextVariable();
   /**
    * Get next matcher from the list, increment the index for which matcher
    * we are considering.
@@ -97,6 +101,11 @@ class QuantInfo
    */
   std::vector<TNode> d_canonVars;
   /**
+   * Ordered list of canon variables, ensures that the index of the variables
+   * from term canonization is minimal lexiocographically.
+   */
+  std::vector<TNode> d_canonVarOrdered;
+  /**
    * The match terms maped to their requirements. A requirement for p can be:
    * (1) Node::null(), saying that the term must be equal to any ground term
    * (2) (not (= p g)), saying that pattern must be disequal from g
@@ -121,6 +130,9 @@ class QuantInfo
    * Subterms of d_req that we don't handle.
    */
   std::unordered_set<TNode> d_unknownTerms;
+  //------------------- initializing search
+  /** init variable index */
+  size_t d_initVarIndex;
   //------------------- within search
   /** is alive, false if we know it is not possible to construct a propagating
    * instance for this quantified formula  */

@@ -22,8 +22,9 @@ namespace ccfv {
 
 FreeVarInfo::FreeVarInfo(context::Context* c) : d_useList(c), d_quantList(c) {}
 
-void FreeVarInfo::resetDomain()
+void FreeVarInfo::resetRound()
 {
+  d_currLevel = 0;
   d_eqcDomain.clear();
   d_eqcIndex = 0;
   d_fullyAssignedPat.clear();

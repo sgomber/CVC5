@@ -38,7 +38,7 @@ bool State::isFinished() const { return d_sstate->d_numActiveQuant == 0; }
 
 void State::resetRound(size_t nquant)
 {
-  // get the ground equivalence classes
+  // reset the search state
   d_sstate.reset(new SearchState(context()));
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
@@ -47,9 +47,14 @@ void State::resetRound(size_t nquant)
     d_sstate->d_groundEqc.insert(*eqcs_i);
     ++eqcs_i;
   }
+  d_sstate->d_numActiveQuant = nquant;
   // clear the equivalence class info
   d_eqcInfo.clear();
-  d_sstate->d_numActiveQuant = nquant;
+  // reset free variable information 
+  for (std::pair<const Node, FreeVarInfo>& fi : d_fvInfo)
+  {
+    fi.second.resetRound();
+  }
 }
 
 QuantInfo& State::initializeQuantInfo(TNode q,
@@ -92,6 +97,19 @@ const FreeVarInfo& State::getFreeVarInfo(TNode v) const
   return it->second;
 }
 
+std::vector<TNode> State::getFreeVarList() const
+{
+  std::vector<TNode> fvar;
+  for (const std::pair<const Node, FreeVarInfo>& fi : d_fvInfo)
+  {
+    if (!fi.second.d_quantList.empty())
+    {
+      fvar.push_back(fi.first);
+    }
+  }
+  return fvar;
+}
+
 bool sortVarNQuant(const std::pair<size_t, TNode>& a,
                    const std::pair<size_t, TNode>& b)
 {
@@ -102,7 +120,7 @@ bool sortVarNQuant(const std::pair<size_t, TNode>& a,
   return a.first == b.first && a.second < b.second;
 }
 
-std::vector<TNode> State::getActiveFreeVarList() const
+std::vector<TNode> State::getOrderedFreeVarList() const
 {
   std::vector<std::pair<size_t, TNode>> fvarList;
   for (const std::pair<const Node, FreeVarInfo>& fi : d_fvInfo)
