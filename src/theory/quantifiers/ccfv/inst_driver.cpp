@@ -331,7 +331,7 @@ bool InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
 
 void InstDriver::runMatching(PatTermInfo* pi)
 {
-  Assert (pi!=nullptr);
+  Assert(pi != nullptr);
   TNode op = pi->d_matchOp;
   if (op.isNull())
   {
@@ -345,7 +345,7 @@ void InstDriver::runMatching(PatTermInfo* pi)
   // get the status of the arguments of pi
   std::vector<size_t> matchIndices;
   std::vector<size_t> nmatchIndices;
-  for (size_t i=0, nchild = pi->d_pattern.getNumChildren(); i<nchild; i++)
+  for (size_t i = 0, nchild = pi->d_pattern.getNumChildren(); i < nchild; i++)
   {
     TNode pic = pi->d_pattern[i];
     // Note we use get ground representative here. We do not use getValue,
@@ -365,7 +365,7 @@ void InstDriver::runMatching(PatTermInfo* pi)
   }
   // we should not have ground representatives for each child of the pattern,
   // otherwise we should be fully assigned
-  Assert (!nmatchIndices.empty());
+  Assert(!nmatchIndices.empty());
 
   std::unordered_map<TNode, std::vector<Node>>::iterator itm;
   TNode weqc = pi->getNextWatchEqc();
@@ -387,12 +387,12 @@ void InstDriver::runMatching(PatTermInfo* pi)
     // for each term with the same match operator
     for (const Node& m : itm->second)
     {
-      Assert (m.getNumChildren()==pargs.size());
+      Assert(m.getNumChildren() == pargs.size());
       bool matchSuccess = true;
       for (size_t i : matchIndices)
       {
-        Assert (d_state.isGroundEqc(m[i]));
-        if (pargs[i]!=m[i])
+        Assert(d_state.isGroundEqc(m[i]));
+        if (pargs[i] != m[i])
         {
           matchSuccess = false;
           break;
