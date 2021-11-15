@@ -38,7 +38,7 @@ class FreeVarInfo
 
  public:
   FreeVarInfo(context::Context* c);
-  /** 
+  /**
    * Term list, all pattern terms that are fully assigned when we have an
    * assignment for this variable.
    */
@@ -54,9 +54,10 @@ class FreeVarInfo
   bool isFinished() const;
   /** Get next argument position to match */
   bool getNextMatchPosition(State* s, TNode& f, size_t& index);
+
  private:
   /** context */
-  context::Context * d_context;
+  context::Context* d_context;
   /** Map from (function, argument position) to quantifiers list */
   std::map<std::pair<TNode, size_t>, NodeList> d_qlist;
   /** Iterator through the above list */

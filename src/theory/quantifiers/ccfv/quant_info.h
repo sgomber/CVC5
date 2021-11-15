@@ -48,7 +48,7 @@ class QuantInfo
   //-------------------------- static information
   /** Get free variables */
   const std::vector<TNode>& getFreeVariables() const;
-  /** 
+  /**
    * Get ordered free variables
    */
   const std::vector<TNode>& getOrderedFreeVariables() const;
@@ -66,7 +66,7 @@ class QuantInfo
   const std::vector<TNode>& getTopLevelMatchers() const;
   //-------------------------- per round
   /** reset variable count */
-  //void resetSearchVariableCount();
+  // void resetSearchVariableCount();
   /**
    * Get next variable. This is used to initialize the search.
    */

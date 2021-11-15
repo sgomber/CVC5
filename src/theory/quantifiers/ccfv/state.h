@@ -70,7 +70,7 @@ class State : protected EnvObj
   /**
    * Get active free variables, sorted by how often they occur
    */
-  //std::vector<TNode> getOrderedFreeVarList() const;
+  // std::vector<TNode> getOrderedFreeVarList() const;
   //---------------pattern term info
   /** Get pattern term info */
   PatTermInfo& getOrMkPatTermInfo(TNode p);
@@ -102,6 +102,7 @@ class State : protected EnvObj
   bool isGroundEqc(TNode r) const;
   /** Is quantifier active? */
   bool isQuantActive(TNode q) const;
+
  private:
   /** Get equivalence class info */
   EqcInfo* getOrMkEqcInfo(TNode r, bool doMk = false);

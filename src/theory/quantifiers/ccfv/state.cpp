@@ -518,7 +518,7 @@ bool State::isGroundEqc(TNode r) const
 bool State::isQuantActive(TNode q) const
 {
   std::map<Node, QuantInfo>::const_iterator it = d_quantInfo.find(q);
-  Assert (it!=d_quantInfo.end());
+  Assert(it != d_quantInfo.end());
   return it->second.isActive();
 }
 

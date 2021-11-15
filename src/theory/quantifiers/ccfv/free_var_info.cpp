@@ -30,15 +30,9 @@ void FreeVarInfo::resetDomain()
   d_itql = d_qlist.begin();
 }
 
-bool FreeVarInfo::isActive() const
-{
-  return true;
-}
+bool FreeVarInfo::isActive() const { return true; }
 
-bool FreeVarInfo::isFinished() const
-{
-  return d_itql==d_qlist.end();
-}
+bool FreeVarInfo::isFinished() const { return d_itql == d_qlist.end(); }
 
 void FreeVarInfo::addQuantMatch(TNode f, size_t index, TNode q)
 {
@@ -53,7 +47,7 @@ void FreeVarInfo::addQuantMatch(TNode f, size_t index, TNode q)
 
 bool FreeVarInfo::getNextMatchPosition(State* s, TNode& f, size_t& index)
 {
-  while (d_itql!=d_qlist.end())
+  while (d_itql != d_qlist.end())
   {
     for (TNode q : d_itql->second)
     {

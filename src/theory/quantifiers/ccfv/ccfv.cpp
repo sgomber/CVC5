@@ -100,7 +100,7 @@ void CongruenceClosureFv::assertNode(Node q)
   // (3) notifications from children to congruence terms
   // (4) free variables to use list terms
   // (5) addition of congruence terms to the equality engine
-  
+
   // get the equality engine
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
   // initialize the internal information for the quantified formula
@@ -148,10 +148,10 @@ void CongruenceClosureFv::assertNode(Node q)
       }
       Assert(cur.getNumChildren() > 0);
       bool isBoolConnective = false;
-      //Node matchOp;
+      // Node matchOp;
       if (ee->isFunctionKind(k))
       {
-        //matchOp = getTermDatabase()->getMatchOperator(cur);
+        // matchOp = getTermDatabase()->getMatchOperator(cur);
       }
       else
       {
@@ -163,7 +163,7 @@ void CongruenceClosureFv::assertNode(Node q)
         }
         isBoolConnective = true;
       }
-      for (size_t i=0, nchild = cur.getNumChildren(); i<nchild; i++)
+      for (size_t i = 0, nchild = cur.getNumChildren(); i < nchild; i++)
       {
         TNode cc = cur[i];
         if (!expr::hasFreeVar(cc))
@@ -178,8 +178,8 @@ void CongruenceClosureFv::assertNode(Node q)
         }
         else
         {
-          Assert (ee->isFunctionKind(k));
-          Assert (cur.hasOperator());
+          Assert(ee->isFunctionKind(k));
+          Assert(cur.hasOperator());
           // Other terms will track # total unassigned free variables
           parentList[cc].push_back(cur);
           // congruence terms will recieve notifications when unassigned
@@ -214,8 +214,8 @@ void CongruenceClosureFv::assertNode(Node q)
       if (it == containing.end())
       {
         containing.insert(cur);
-        // we have fvars[i] < fvars[j] for i < j, set or overwrite the max variable
-        // here.
+        // we have fvars[i] < fvars[j] for i < j, set or overwrite the max
+        // variable here.
         termToMaxVar[cur] = v;
         itpl = parentList.find(cur);
         if (itpl != parentList.end())
@@ -225,7 +225,8 @@ void CongruenceClosureFv::assertNode(Node q)
       }
     } while (!containing.empty());
   }
-  // map free variables to terms that are fully assigned when that free variable is assigned
+  // map free variables to terms that are fully assigned when that free variable
+  // is assigned
   for (const std::pair<TNode, TNode>& tv : termToMaxVar)
   {
     FreeVarInfo& fi = d_state.getOrMkFreeVarInfo(tv.second);
