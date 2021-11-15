@@ -62,22 +62,12 @@ bool CongruenceClosureFv::needsCheck(Theory::Effort e)
   return performCheck;
 }
 
-void CongruenceClosureFv::reset_round(Theory::Effort e) {}
+void CongruenceClosureFv::reset_round(Theory::Effort e) {
+  d_state.resetRound();
+}
 
 void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e)
 {
-  FirstOrderModel* fm = d_treg.getModel();
-  for (size_t i = 0, nquant = fm->getNumAssertedQuantifiers(); i < nquant; i++)
-  {
-    Node q = fm->getAssertedQuantifier(i);
-    if (!d_qreg.hasOwnership(q, this))
-    {
-      continue;
-    }
-    // activate the quantified formula
-    d_state.initializeQuantInfo(q, d_qstate.getEqualityEngine(), d_tcanon);
-    activateQuantifier(q);
-  }
   // run with the instantiation driver
 }
 
@@ -85,25 +75,29 @@ void CongruenceClosureFv::registerQuantifier(Node q) {}
 
 void CongruenceClosureFv::assertNode(Node q)
 {
-  // eager?
-  // Assert(q.getKind() == FORALL);
-  // d_state.initializeQuantInfo(q, d_qstate.getEqualityEngine(), d_tcanon);
+  Assert(q.getKind() == FORALL);
+  if (!d_qreg.hasOwnership(q, this))
+  {
+    return;
+  }
+  addQuantToState(q);
 }
 
-void CongruenceClosureFv::activateQuantifier(TNode q)
+void CongruenceClosureFv::addQuantToState(TNode q)
 {
   Assert(q.getKind() == FORALL);
-  QuantInfo& qi = d_state.getQuantInfo(q);
+  // activate in this context
+  QuantInfo& qi = d_state.initializeQuantInfo(q, d_qstate.getEqualityEngine(), d_tcanon);
+  d_state.addQuantifiedFormula(q);
+  // get the equality engine
+  eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
 
-  // Now, traverse p. This sets up the pattern info for subterms of p.
   std::unordered_set<TNode> visited;
   std::unordered_set<TNode>::iterator it;
   std::vector<TNode> visit;
 
-  // its pattern terms are registered
+  // we traverse its constraint terms to set up the parent notification lists
   const std::vector<TNode>& cterms = qi.getConstraintTerms();
-  const std::vector<TNode>& pterms = qi.getCongruenceTerms();
-  const std::vector<TNode>& mterms = qi.getTopLevelMatchers();
   for (TNode c : cterms)
   {
     // we will notify the quantified formula when the pattern becomes set
@@ -113,12 +107,9 @@ void CongruenceClosureFv::activateQuantifier(TNode q)
     visit.push_back(c);
   }
 
-  // get the equality engine
-  eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
-
   TNode cur;
   std::vector<TNode> freeVars;
-  // parents list
+  // track parents list
   std::map<TNode, std::vector<TNode>> parentList;
   do
   {
@@ -201,7 +192,8 @@ void CongruenceClosureFv::activateQuantifier(TNode q)
     } while (!containing.empty());
   }
 
-  // add the congruence terms to the equality engine
+  // now, add the congruence terms to the equality engine
+  const std::vector<TNode>& pterms = qi.getCongruenceTerms();
   for (TNode p : pterms)
   {
     ee->addTerm(p);

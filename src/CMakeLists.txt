@@ -702,6 +702,7 @@ libcvc5_add_sources(
   theory/quantifiers/ccfv/ccfv.cpp
   theory/quantifiers/ccfv/ccfv.h
   theory/quantifiers/ccfv/eqc_info.h
+  theory/quantifiers/ccfv/free_var_info.cpp
   theory/quantifiers/ccfv/free_var_info.h
   theory/quantifiers/ccfv/pattern_term_info.cpp
   theory/quantifiers/ccfv/pattern_term_info.h

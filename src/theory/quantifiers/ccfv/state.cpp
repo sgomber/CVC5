@@ -30,33 +30,37 @@ namespace ccfv {
 State::State(Env& env, QuantifiersState& qs)
     : EnvObj(env),
       d_qstate(qs),
-      // d_groundEqc(context()),
-      d_numActiveQuant(context(), 0)
+      d_quants(context())
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
   d_sink = sm->mkDummySkolem("sink", nm->booleanType());
 }
 
-bool State::isFinished() const { return d_numActiveQuant == 0; }
+void State::assert(TNode q)
+{
+  
+}
+
+bool State::isFinished() const { return d_sstate->d_numActiveQuant == 0; }
 
 void State::resetRound()
 {
   // get the ground equivalence classes
-  d_groundEqc.clear();
+  d_sstate.reset(new SearchState(context());
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
   while (!eqcs_i.isFinished())
   {
-    d_groundEqc.insert(*eqcs_i);
+    d_sstate->d_groundEqc.insert(*eqcs_i);
     ++eqcs_i;
   }
   // clear the equivalence class info
   d_eqcInfo.clear();
-  // TODO: activate the quantified formulas
+  d_sstate->d_numActiveQuant = d_quants.size();
 }
 
-void State::initializeQuantInfo(TNode q,
+QuantInfo& State::initializeQuantInfo(TNode q,
                                 eq::EqualityEngine* ee,
                                 expr::TermCanonize& tc)
 {
@@ -68,6 +72,7 @@ void State::initializeQuantInfo(TNode q,
     // initialize
     it->second.initialize(q, ee, tc);
   }
+  return it->second;
 }
 
 QuantInfo& State::getQuantInfo(TNode q)
@@ -77,7 +82,15 @@ QuantInfo& State::getQuantInfo(TNode q)
   return it->second;
 }
 
-FreeVarInfo& State::getOrMkFreeVarInfo(TNode v) { return d_fvInfo[v]; }
+FreeVarInfo& State::getOrMkFreeVarInfo(TNode v) {
+  std::map<Node, FreeVarInfo>::iterator it = d_fvInfo.find(v);
+  if (it == d_fvInfo.end())
+  {
+    d_fvInfo.emplace(v, context());
+    it = d_fvInfo.find(v);
+  }
+  return it->second;
+}
 
 const FreeVarInfo& State::getFreeVarInfo(TNode v) const
 {
@@ -149,18 +162,18 @@ void State::eqNotifyNewClass(TNode t)
 
 void State::eqNotifyMerge(TNode t1, TNode t2)
 {
-  if (d_groundEqc.find(t1) != d_groundEqc.end())
+  if (isGroundEqc(t1))
   {
     // should never merge ground equivalence classes
-    Assert(d_groundEqc.find(t2) == d_groundEqc.end());
+    Assert(!isGroundEqc(t2));
     // swap
     std::swap(t1, t2);
   }
-  else if (d_groundEqc.find(t2) != d_groundEqc.end())
+  else if (isGroundEqc(t2))
   {
     // update the list of ground equivalence classes, which is overapproximated
     // i.e. we do not remove t2
-    d_groundEqc.insert(t1);
+    d_sstate->d_groundEqc.insert(t1);
   }
   else
   {
@@ -338,7 +351,7 @@ bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
 void State::notifyPatternEqGround(TNode p, TNode g)
 {
   Assert(!g.isNull());
-  Assert(d_groundEqc.find(g) != d_groundEqc.end() || isSink(g));
+  Assert(isGroundEqc(g) || isSink(g));
   std::map<Node, PatTermInfo>::iterator it = d_pInfo.find(p);
   Assert(it != d_pInfo.end());
   Assert(it->second.isActive());
@@ -450,6 +463,11 @@ Node State::getSink() const { return d_sink; }
 
 bool State::isSink(TNode n) const { return n == d_sink; }
 
+bool State::isGroundEqc(TNode r) const
+{
+  Assert (d_sstate!=nullptr);
+  return d_sstate->d_groundEqc.find(r)!=d_sstate->d_groundEqc.end();
+}
 TNode State::getValue(TNode p) const
 {
   std::map<Node, PatTermInfo>::const_iterator it = d_pInfo.find(p);
@@ -460,13 +478,19 @@ TNode State::getValue(TNode p) const
   Assert(!expr::hasFreeVar(p));
   // use equality engine, go to sink if not a part of equivalence classes
   TNode r = d_qstate.getRepresentative(p);
-  if (d_groundEqc.find(r) != d_groundEqc.end())
+  if (isGroundEqc(r))
   {
     return r;
   }
   return d_sink;
 }
 
+  State::SearchState::SearchState(context::Context * c) :
+    d_groundEqc(c),
+    d_numActiveQuant(c, 0)
+    {
+    }
+                 
 }  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory

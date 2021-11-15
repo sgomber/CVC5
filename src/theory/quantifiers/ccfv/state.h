@@ -47,12 +47,14 @@ class State : protected EnvObj
 
  public:
   State(Env& env, QuantifiersState& qs);
+  /** assert quantified formula */
+  void assert(TNode q);
   /** Is finished */
   bool isFinished() const;
   /** Reset round */
   void resetRound();
 
-  void initializeQuantInfo(TNode q,
+  QuantInfo& initializeQuantInfo(TNode q,
                            eq::EqualityEngine* ee,
                            expr::TermCanonize& tc);
   /** Get quantifiers info */
@@ -105,6 +107,8 @@ class State : protected EnvObj
    * Notify quantified formula
    */
   void notifyQuant(TNode q, TNode p, TNode val);
+  /** Is ground eqc? */
+  bool isGroundEqc(TNode r) const;
   /** Quantifiers state */
   QuantifiersState& d_qstate;
   /** Map quantified formulas to their info */
@@ -117,12 +121,20 @@ class State : protected EnvObj
   std::map<Node, EqcInfo> d_eqcInfo;
   /** The sink node */
   Node d_sink;
-  /** the set of ground equivalence classes */
-  // NodeSet d_groundEqc;
-  /** total number of alive quantified formulas */
-  context::CDO<size_t> d_numActiveQuant;
-  /** ground equivalence classes */
-  std::unordered_set<Node> d_groundEqc;
+  /** Asserted quantified formulas */
+  NodeList d_quants;
+  // --------------------------- temporary state
+  class SearchState
+  {
+  public:
+    SearchState(context::Context * c);
+    /** total number of alive quantified formulas */
+    context::CDO<size_t> d_numActiveQuant;
+    /** ground equivalence classes */
+    std::unordered_set<Node> d_groundEqc;
+  };
+  /** The search state */
+  std::unique_ptr<SearchState> d_sstate;
 };
 
 }  // namespace ccfv
