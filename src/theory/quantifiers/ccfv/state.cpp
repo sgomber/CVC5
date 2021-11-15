@@ -171,7 +171,7 @@ PatTermInfo& State::getOrMkPatTermInfo(TNode p)
   {
     it = d_pInfo.emplace(p, context()).first;
     // initialize the pattern
-    it->second.initialize(p);
+    it->second.initialize(p, d_tdb);
   }
   return it->second;
 }

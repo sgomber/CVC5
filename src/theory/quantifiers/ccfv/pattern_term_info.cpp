@@ -16,6 +16,7 @@
 #include "theory/quantifiers/ccfv/pattern_term_info.h"
 
 #include "expr/node_algorithm.h"
+#include "theory/quantifiers/term_database.h"
 
 namespace cvc5 {
 namespace theory {
@@ -32,7 +33,7 @@ PatTermInfo::PatTermInfo(context::Context* c)
 {
 }
 
-void PatTermInfo::initialize(TNode pattern)
+void PatTermInfo::initialize(TNode pattern, TermDb* tdb)
 {
   Assert(expr::hasFreeVar(pattern));
   d_pattern = pattern;
@@ -52,6 +53,10 @@ void PatTermInfo::initialize(TNode pattern)
     // TODO: duplicate children?? should probably handle in rewriter
     // for quantifiers
     d_numUnassigned = d_pattern.getNumChildren();
+  }
+  else
+  {
+    d_matchOp = tdb->getMatchOperator(pattern);
   }
   Assert(d_eq.get().isNull());
 }

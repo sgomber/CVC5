@@ -142,7 +142,6 @@ void CongruenceClosureFv::assertNode(Node q)
       if (!expr::hasFreeVar(cur))
       {
         // FIXME: require initial notifications for these terms
-        // does not contain free variables, we don't require
         continue;
       }
       Kind k = cur.getKind();

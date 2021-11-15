@@ -27,6 +27,9 @@
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
+
+class TermDb;
+
 namespace ccfv {
 
 /**
@@ -40,7 +43,7 @@ class PatTermInfo
  public:
   PatTermInfo(context::Context* c);
   /** initialize */
-  void initialize(TNode pattern);
+  void initialize(TNode pattern, TermDb* tdb);
   /**
    * is active, false if it has merged to a ground equivalence class, or if
    * its variables have been fully assigned.
@@ -49,7 +52,9 @@ class PatTermInfo
   /** Notify that child was assigned value val, set eq if possible. */
   bool notify(TNode child, TNode val, bool isSink);
   /** This pattern term. */
-  Node d_pattern;
+  TNode d_pattern;
+  /** The match operator */
+  TNode d_matchOp;
   /**
    * The ground term we are currently equal to, if any. This may also be
    * the sink node.
