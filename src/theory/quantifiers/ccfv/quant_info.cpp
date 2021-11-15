@@ -304,7 +304,8 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
         itpl = parentList.find(ccur);
         if (itpl != parentList.end())
         {
-          ctnVisit.insert(ctnVisit.end(), itpl->second.begin(), itpl->second.end());
+          ctnVisit.insert(
+              ctnVisit.end(), itpl->second.begin(), itpl->second.end());
         }
       }
     } while (!ctnVisit.empty());

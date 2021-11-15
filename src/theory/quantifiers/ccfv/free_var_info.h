@@ -44,7 +44,7 @@ class FreeVarInfo
    */
   NodeSet d_useList;
   /**
-   * List of quantifiers that contain this variable 
+   * List of quantifiers that contain this variable
    */
   NodeList d_quantList;
   /** Add quantifier */

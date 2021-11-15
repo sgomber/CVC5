@@ -201,9 +201,8 @@ void CongruenceClosureFv::assertNode(Node q)
     }
   } while (!visit.empty());
 
-
-  // (4) map free variables to terms that are fully assigned when that free variable
-  // is assigned
+  // (4) map free variables to terms that are fully assigned when that free
+  // variable is assigned
   const std::map<TNode, TNode>& termToMaxVar = qi.getTermMaxVarMap();
   for (const std::pair<const TNode, TNode>& tv : termToMaxVar)
   {
