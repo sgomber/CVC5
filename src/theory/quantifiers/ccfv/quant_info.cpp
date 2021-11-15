@@ -460,7 +460,7 @@ void QuantInfo::setActive(bool val) { d_isActive = val; }
 
 bool QuantInfo::isDeqConstraint(TNode c, TNode p)
 {
-  return c.getKind()==NOT && c[0].getKind()==EQUAL && c[0][0]==p;
+  return c.getKind() == NOT && c[0].getKind() == EQUAL && c[0][0] == p;
 }
 bool QuantInfo::isDeqConstraint(TNode p, TNode c, TNode& val)
 {

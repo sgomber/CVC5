@@ -207,7 +207,7 @@ bool InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
   TNode eq;
   std::vector<TNode> deq;
   std::map<TNode, std::vector<Node>>::const_iterator itc = cs.find(matcher);
-  if (itc!=cs.end())
+  if (itc != cs.end())
   {
     bool setInactive = false;
     for (const Node& cc : itc->second)
@@ -220,8 +220,8 @@ bool InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
       TNode dval;
       if (QuantInfo::isDeqConstraint(cc, matcher, dval))
       {
-        Assert (!tn.isBoolean());
-        Assert (!dval.isNull());
+        Assert(!tn.isBoolean());
+        Assert(!dval.isNull());
         dval = d_state.getGroundRepresentative(dval);
         if (!dval.isNull())
         {
@@ -229,7 +229,7 @@ bool InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
           {
             deq.push_back(dval);
           }
-          else if (eq==dval)
+          else if (eq == dval)
           {
             // term must be equal and disequal to the same thing
             setInactive = true;
@@ -249,7 +249,7 @@ bool InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
           if (eq.isNull())
           {
             // also check if disequality constraints contradict
-            if (std::find(deq.begin(), deq.end(), eq)!=deq.end())
+            if (std::find(deq.begin(), deq.end(), eq) != deq.end())
             {
               // term must be equal and disequal to the same thing
               setInactive = true;
@@ -260,7 +260,7 @@ bool InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
             }
             deq.clear();
           }
-          else if (eval!=eq)
+          else if (eval != eq)
           {
             // Matcher needs to be equal to two different things that are not
             // equal. This should happen very infrequently, e.g.
@@ -282,11 +282,12 @@ bool InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
       }
     }
   }
-  // if we have an equality constraint, we limit to matching in that equivalence class
+  // if we have an equality constraint, we limit to matching in that equivalence
+  // class
   PatTermInfo& pi = d_state.getPatTermInfo(matcher);
   if (!eq.isNull())
   {
-    Assert (d_state.isGroundEqc(eq));
+    Assert(d_state.isGroundEqc(eq));
     pi.addWatchEqc(eq);
   }
   else
@@ -294,7 +295,7 @@ bool InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
     // otherwise, we must consider all equivalence clases
     if (tn.isBoolean())
     {
-      Assert (deq.empty());
+      Assert(deq.empty());
       pi.addWatchEqc(d_true);
       pi.addWatchEqc(d_false);
     }
@@ -304,7 +305,7 @@ bool InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
       const std::unordered_set<TNode>& eqcs = d_state.getGroundEqcFor(tn);
       for (TNode eqc : eqcs)
       {
-        if (std::find(deq.begin(), deq.end(), eqc)==deq.end())
+        if (std::find(deq.begin(), deq.end(), eqc) == deq.end())
         {
           pi.addWatchEqc(eqc);
         }
@@ -324,27 +325,25 @@ void InstDriver::runMatching(PatTermInfo& pi)
     // if not a matchable operator
     return;
   }
-  Assert (pi.d_pattern.getNumChildren()>0);
+  Assert(pi.d_pattern.getNumChildren() > 0);
   std::vector<TNode> pargs;
   // get the status of the arguments of pi
   for (TNode pic : pi.d_pattern)
   {
-    
   }
-  
-  
-  std::unordered_map<TNode, std::vector<Node> >::iterator itm;
+
+  std::unordered_map<TNode, std::vector<Node>>::iterator itm;
   TNode weqc = pi.getNextWatchEqc();
   while (!weqc.isNull())
   {
-    Assert (d_state.isGroundEqc(weqc));
+    Assert(d_state.isGroundEqc(weqc));
     MatchEqcInfo& meqc = d_state.getMatchEqcInfo(weqc);
     // increment weqc to the next equivalence class
     weqc = pi.getNextWatchEqc();
-    
+
     // get the terms to match in this equivalence class
     itm = meqc.d_matchOps.find(op);
-    if (itm== meqc.d_matchOps.end())
+    if (itm == meqc.d_matchOps.end())
     {
       // none in this equivalence class
       continue;

@@ -328,7 +328,7 @@ void State::notifyPatternSink(TNode p) { notifyPatternEqGround(p, d_sink); }
 
 bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
 {
-  Assert (isGroundEqc(val) || isSink(val));
+  Assert(isGroundEqc(val) || isSink(val));
   if (!pi.isActive())
   {
     // already set

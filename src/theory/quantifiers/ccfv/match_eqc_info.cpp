@@ -74,7 +74,8 @@ void MatchEqcInfo::initialize(TNode r,
     }
     if (!success)
     {
-      // the term had an argument that we did not find a ground representative for
+      // the term had an argument that we did not find a ground representative
+      // for
       continue;
     }
     Node nn = childChanged ? Node(n) : nm->mkNode(n.getKind(), args);
