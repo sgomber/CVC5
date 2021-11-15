@@ -84,7 +84,7 @@ class InstDriver : protected EnvObj
   /** Process matcher */
   bool processMatcher(QuantInfo& qi, TNode matcher);
   /** Run matching */
-  void runMatching(PatTermInfo& pi);
+  void runMatching(PatTermInfo* pi);
   /** Get search level */
   SearchLevel& getSearchLevel(size_t i);
   /** common constants */

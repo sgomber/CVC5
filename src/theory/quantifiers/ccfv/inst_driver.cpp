@@ -144,6 +144,7 @@ bool InstDriver::assignSearchLevel(size_t level)
   // find the next assignment for each variable
   std::vector<TNode> assignment;
   bool success = false;
+  // FIXME: need to get matchers for the right variable
   for (TNode v : slevel.d_varsToAssign)
   {
     PatTermInfo& pi = d_state.getPatTermInfo(v);
@@ -188,19 +189,31 @@ bool InstDriver::assignSearchLevel(size_t level)
   }
   if (!success)
   {
+    // could not find an assignment
     return false;
   }
   // assign each variable
   for (size_t i = 0, nvars = slevel.d_varsToAssign.size(); i < nvars; i++)
   {
     assignVar(slevel.d_varsToAssign[i], assignment[i]);
+    if (d_state.isFinished())
+    {
+      return false;
+    }
   }
+  // now, all active quantified formulas that are still active should have
+  // propagating instances.
 
   return true;
 }
 
 bool InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
 {
+  PatTermInfo& pi = d_state.getPatTermInfo(matcher);
+  if (!pi.isActive())
+  {
+    return false;
+  }
   TypeNode tn = matcher.getType();
   // get constraints to determine initial equivalence classes
   const std::map<TNode, std::vector<Node>>& cs = qi.getConstraints();
@@ -284,7 +297,6 @@ bool InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
   }
   // if we have an equality constraint, we limit to matching in that equivalence
   // class
-  PatTermInfo& pi = d_state.getPatTermInfo(matcher);
   if (!eq.isNull())
   {
     Assert(d_state.isGroundEqc(eq));
@@ -313,33 +325,57 @@ bool InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
     }
   }
   // now run matching
-  runMatching(pi);
+  runMatching(&pi);
   return true;
 }
 
-void InstDriver::runMatching(PatTermInfo& pi)
+void InstDriver::runMatching(PatTermInfo* pi)
 {
-  TNode op = pi.d_matchOp;
+  Assert (pi!=nullptr);
+  TNode op = pi->d_matchOp;
   if (op.isNull())
   {
-    // if not a matchable operator
+    // If not a matchable operator. This is also the base case of
+    // BOUND_VARIABLE.
     return;
   }
-  Assert(pi.d_pattern.getNumChildren() > 0);
+  Assert(pi->d_pattern.getNumChildren() > 0);
   std::vector<TNode> pargs;
+  std::vector<PatTermInfo*> piargs;
   // get the status of the arguments of pi
-  for (TNode pic : pi.d_pattern)
+  std::vector<size_t> matchIndices;
+  std::vector<size_t> nmatchIndices;
+  for (size_t i=0, nchild = pi->d_pattern.getNumChildren(); i<nchild; i++)
   {
+    TNode pic = pi->d_pattern[i];
+    // Note we use get ground representative here. We do not use getValue,
+    // which should never be sink.
+    TNode gpic = d_state.getGroundRepresentative(pic);
+    pargs.push_back(gpic);
+    if (!gpic.isNull())
+    {
+      matchIndices.push_back(i);
+      piargs.push_back(nullptr);
+    }
+    else
+    {
+      nmatchIndices.push_back(i);
+      piargs.push_back(&d_state.getPatTermInfo(pic));
+    }
   }
+  // we should not have ground representatives for each child of the pattern,
+  // otherwise we should be fully assigned
+  Assert (!nmatchIndices.empty());
 
   std::unordered_map<TNode, std::vector<Node>>::iterator itm;
-  TNode weqc = pi.getNextWatchEqc();
+  TNode weqc = pi->getNextWatchEqc();
+  bool newMatches = false;
   while (!weqc.isNull())
   {
     Assert(d_state.isGroundEqc(weqc));
     MatchEqcInfo& meqc = d_state.getMatchEqcInfo(weqc);
     // increment weqc to the next equivalence class
-    weqc = pi.getNextWatchEqc();
+    weqc = pi->getNextWatchEqc();
 
     // get the terms to match in this equivalence class
     itm = meqc.d_matchOps.find(op);
@@ -348,7 +384,39 @@ void InstDriver::runMatching(PatTermInfo& pi)
       // none in this equivalence class
       continue;
     }
-    //
+    // for each term with the same match operator
+    for (const Node& m : itm->second)
+    {
+      Assert (m.getNumChildren()==pargs.size());
+      bool matchSuccess = true;
+      for (size_t i : matchIndices)
+      {
+        Assert (d_state.isGroundEqc(m[i]));
+        if (pargs[i]!=m[i])
+        {
+          matchSuccess = false;
+          break;
+        }
+      }
+      // if successful, we will match the children of this pattern to the
+      // ground equivalence class
+      if (matchSuccess)
+      {
+        newMatches = true;
+        for (size_t i : nmatchIndices)
+        {
+          piargs[i]->addWatchEqc(m[i]);
+        }
+      }
+    }
+  }
+  // recurse
+  if (newMatches)
+  {
+    for (size_t i : nmatchIndices)
+    {
+      runMatching(piargs[i]);
+    }
   }
 }
 
