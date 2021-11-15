@@ -706,6 +706,8 @@ libcvc5_add_sources(
   theory/quantifiers/ccfv/free_var_info.h
   theory/quantifiers/ccfv/inst_driver.cpp
   theory/quantifiers/ccfv/inst_driver.h
+  theory/quantifiers/ccfv/match_eqc_info.cpp
+  theory/quantifiers/ccfv/match_eqc_info.h
   theory/quantifiers/ccfv/pattern_term_info.cpp
   theory/quantifiers/ccfv/pattern_term_info.h
   theory/quantifiers/ccfv/quant_info.cpp

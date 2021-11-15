@@ -594,6 +594,7 @@ TNode State::getGroundRepresentative(TNode n) const
   {
     return TNode::null();
   }
+  // check the equivalence class info, which may also be null
   return eq->d_groundEqc.get();
 }
 
@@ -613,12 +614,12 @@ TNode State::getValue(TNode p) const
   }
   Assert(!expr::hasFreeVar(p));
   // use equality engine, go to sink if not a part of equivalence classes
-  TNode r = d_qstate.getRepresentative(p);
-  if (isGroundEqc(r))
+  TNode r = getGroundRepresentative(p);
+  if (r.isNull())
   {
-    return r;
+    return d_sink;
   }
-  return d_sink;
+  return r;
 }
 
 }  // namespace ccfv

@@ -39,13 +39,19 @@ void PatTermInfo::initialize(TNode pattern)
   d_isBooleanConnective = expr::isBooleanConnective(pattern);
   if (d_isBooleanConnective)
   {
+    /*
     for (TNode pc : pattern)
     {
-      if (expr::hasFreeVar(pc))
+      if (!expr::hasFreeVar(pc))
       {
-        d_numUnassigned = d_numUnassigned + 1;
+        continue;
       }
+      d_numUnassigned = d_numUnassigned + 1;
     }
+    */
+    // TODO: duplicate children?? should probably handle in rewriter
+    // for quantifiers
+    d_numUnassigned = d_pattern.getNumChildren();
   }
   Assert(d_eq.get().isNull());
 }

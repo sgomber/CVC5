@@ -141,6 +141,7 @@ void CongruenceClosureFv::assertNode(Node q)
       visited.insert(cur);
       if (!expr::hasFreeVar(cur))
       {
+        // FIXME: require initial notifications for these terms
         // does not contain free variables, we don't require
         continue;
       }
@@ -168,13 +169,8 @@ void CongruenceClosureFv::assertNode(Node q)
         }
         isBoolConnective = true;
       }
-      for (size_t i = 0, nchild = cur.getNumChildren(); i < nchild; i++)
+      for (TNode cc : cur)
       {
-        TNode cc = cur[i];
-        if (!expr::hasFreeVar(cc))
-        {
-          continue;
-        }
         PatTermInfo& pi = d_state.getOrMkPatTermInfo(cc);
         if (isBoolConnective)
         {
