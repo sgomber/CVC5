@@ -22,7 +22,7 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-FreeVarInfo::FreeVarInfo(context::Context* c) : d_useList(c), d_context(c) {}
+FreeVarInfo::FreeVarInfo(context::Context* c) : d_useList(c), d_quantList(c), d_context(c) {}
 
 void FreeVarInfo::resetDomain()
 {

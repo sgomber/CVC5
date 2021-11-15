@@ -74,6 +74,18 @@ class PatTermInfo
   NodeList d_parentCongNotify;
   /** is Boolean connective */
   bool d_isBooleanConnective;
+  //---------------------- matching
+  /** 
+   * Watched equivalence classes. This is the set of equivalence classes that
+   * may be relevant if this pattern is equal.
+   */
+  NodeList d_watchEqc;
+  /** 
+   * Watched equivalence classes we have processed.
+   * - If pattern is variable, this is the index we have tried
+   * - Otherwise, this is the index in the
+   */
+  context::CDO<size_t> d_watchEqcIndex;
 };
 
 }  // namespace ccfv

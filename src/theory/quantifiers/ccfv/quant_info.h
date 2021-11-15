@@ -62,6 +62,8 @@ class QuantInfo
   const std::vector<TNode>& getConstraintTerms() const;
   /** Get congruence terms, the terms to add to the equality engine */
   const std::vector<TNode>& getCongruenceTerms() const;
+  /** Get congruence term variable map */
+  const std::map<TNode, TNode>& getTermMaxVarMap() const;
   /** Get matchers */
   const std::vector<TNode>& getTopLevelMatchers() const;
   //-------------------------- per round
@@ -127,6 +129,15 @@ class QuantInfo
    * engine that this class was initialized for.
    */
   std::vector<TNode> d_congTerms;
+  /**
+   * The maximum variable for each term. For each pattern subterm
+   * t, this is the variable that occurs in t that has a maximum index in
+   * d_canonVarOrdered.
+   *
+   * This variable is used for tracking the variable which, when assigned,
+   * makes the congruence term fully assigned.
+   */
+  std::map<TNode, TNode> d_termMaxVar;
   /**
    * List of all top-level congruence terms, i.e. ones that occur as subterms in
    * the domain of d_req in positions that are not nested under other congruence

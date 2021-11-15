@@ -23,7 +23,7 @@ namespace quantifiers {
 namespace ccfv {
 
 PatTermInfo::PatTermInfo(context::Context* c)
-    : d_eq(c), d_numUnassigned(c, 0), d_parentNotify(c), d_parentCongNotify(c)
+    : d_eq(c), d_numUnassigned(c, 0), d_parentNotify(c), d_parentCongNotify(c), d_watchEqc(c), d_watchEqcIndex(0)
 {
 }
 

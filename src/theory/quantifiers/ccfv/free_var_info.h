@@ -43,6 +43,10 @@ class FreeVarInfo
    * assignment for this variable.
    */
   NodeSet d_useList;
+  /**
+   * List of quantifiers that contain this variable 
+   */
+  NodeList d_quantList;
   /** Add quantifier */
   void addQuantMatch(TNode f, size_t index, TNode q);
   /** Is active? */

@@ -186,6 +186,8 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
   // which is the set of terms in the body of ee that do not occur beneath
   // a congruence term.
   // (3) d_unknownTerms, the set of subterms we don't know how to handle.
+  // (4) d_termMaxVar, which maps congruence terms to the variable they
+  // watch to be fully defined.
 
   // We track pairs (t, b) where t is the term we are traversing, and b is
   // whether we have traversed inside a congruence term.
@@ -201,6 +203,8 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
     d_reqTerms.push_back(r.first);
     visit.push_back(std::pair<TNode, bool>(r.first, false));
   }
+  // track parents list
+  std::map<TNode, std::vector<TNode>> parentList;
   // traverse
   while (!visit.empty())
   {
@@ -260,6 +264,8 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
         for (TNode cc : cur.first)
         {
           visit.push_back(std::pair<TNode, bool>(cc, inCongTerm));
+          // remember the parent list
+          parentList[cc].push_back(cur.first);
         }
       }
     }
@@ -275,6 +281,33 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
         d_congTerms.push_back(cur.first);
       }
     }
+  }
+  std::unordered_set<TNode>::iterator itc;
+  std::map<TNode, std::vector<TNode>>::iterator itpl;
+  for (TNode v : d_canonVarOrdered)
+  {
+    std::vector<TNode> ctnVisit;
+    std::unordered_set<TNode> containing;
+    TNode ccur;
+    ctnVisit.push_back(v);
+    do
+    {
+      ccur = ctnVisit.back();
+      ctnVisit.pop_back();
+      itc = containing.find(ccur);
+      if (itc == containing.end())
+      {
+        containing.insert(ccur);
+        // we have fvars[i] < fvars[j] for i < j, set or overwrite the max
+        // variable here.
+        d_termMaxVar[ccur] = v;
+        itpl = parentList.find(ccur);
+        if (itpl != parentList.end())
+        {
+          ctnVisit.insert(ctnVisit.end(), itpl->second.begin(), itpl->second.end());
+        }
+      }
+    } while (!ctnVisit.empty());
   }
 }
 
@@ -337,6 +370,11 @@ const std::vector<TNode>& QuantInfo::getConstraintTerms() const
 const std::vector<TNode>& QuantInfo::getCongruenceTerms() const
 {
   return d_congTerms;
+}
+
+const std::map<TNode, TNode>& QuantInfo::getTermMaxVarMap() const
+{
+  return d_termMaxVar;
 }
 
 const std::vector<TNode>& QuantInfo::getTopLevelMatchers() const
