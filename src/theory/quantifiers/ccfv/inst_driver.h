@@ -18,10 +18,16 @@
 #define CVC5__THEORY__QUANTIFIERS__CCFV__INST_DRIVER_H
 
 #include "theory/quantifiers/ccfv/state.h"
+#include "smt/env_obj.h"
 
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
+  
+
+class QuantifiersState;
+class TermRegistry;
+
 namespace ccfv {
 
 /**
@@ -45,7 +51,7 @@ x -> b
   y -> f
 
 */
-class InstDriver : public QuantifiersModule
+class InstDriver : protected EnvObj
 {
  public:
   InstDriver(Env& env, State& state, QuantifiersState& qs, TermRegistry& tr);
@@ -72,12 +78,16 @@ class InstDriver : public QuantifiersModule
 
   /** The state of matching for quantifiers and pattern terms */
   State& d_state;
+  /** Reference to the state of the quantifiers engine */
+  QuantifiersState& d_qstate;
+  /** Reference to the term registry */
+  TermRegistry& d_treg;
 
   /** The current stack of quantified variables */
   std::vector<TNode> d_varStack;
 
   /** The set of quantified formulas */
-  QuantifiersSet d_qset;
+  //QuantifiersSet d_qset;
 };
 
 }  // namespace ccfv

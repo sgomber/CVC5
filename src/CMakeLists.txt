@@ -699,6 +699,8 @@ libcvc5_add_sources(
   theory/quantifiers/candidate_rewrite_database.h
   theory/quantifiers/candidate_rewrite_filter.cpp
   theory/quantifiers/candidate_rewrite_filter.h
+  theory/quantifiers/ccfv/ccfv.cpp
+  theory/quantifiers/ccfv/ccfv.h
   theory/quantifiers/ccfv/eqc_info.h
   theory/quantifiers/ccfv/free_var_info.h
   theory/quantifiers/ccfv/pattern_term_info.cpp

@@ -52,6 +52,8 @@ class QuantInfo
    * instance. For details on the range of constraints, see d_req.
    */
   const std::map<TNode, std::vector<Node>>& getConstraints() const;
+  /** Get the constraint terms */
+  const std::vector<TNode>& getConstraintTerms() const;
   /** Get congruence terms, the terms to add to the equality engine */
   const std::vector<TNode>& getCongruenceTerms() const;
   /** Get matchers */

@@ -22,13 +22,14 @@ namespace quantifiers {
 InstDriver::InstDriver(Env& env,
                        State& state,
                        QuantifiersState& qs,
-                       TermRegistry& tr)
+                       TermRegistry& tr) : EnvObj(env), d_state(state), d_qstate(qs), d_treg(tr)
 {
 }
 
 void InstDriver::check()
 {
-  // TODO
+  // TODO: compute levels of variables
+  /*
   do
   {
     TNode v = getNextVariable();
@@ -38,14 +39,18 @@ void InstDriver::check()
     }
     // otherwise increment current
   } while (!d_stack.empty());
+  */
 }
 
 bool InstDriver::isFinished() const { return false; }
 
-TNode InstDriver::getNextVariable() {}
+TNode InstDriver::getNextVariable() {
+  return TNode::null();
+}
 
 void InstDriver::pushVar(TNode v)
 {
+  /*
   // push a context
   // context().push();
   d_varStack.push_back(v);
@@ -70,15 +75,18 @@ void InstDriver::pushVar(TNode v)
       fvi.d_fullyAssignedPat.push_back(pat);
     }
   }
+  */
 }
 
 void InstDriver::popVar()
 {
+  /*
   Assert(!d_varStack.empty());
 
   TNode v = d_varStack.back();
 
   d_varStack.pop_back();
+  */
 }
 
 void InstDriver::assignVar(TNode v,
@@ -88,10 +96,11 @@ void InstDriver::assignVar(TNode v,
   Node eq = v.eqNode(eqc);
   d_ee->assertEquality(eq);
   // may be finished
-  if (isFinished())
+  if (d_state.isFinished())
   {
     return;
   }
+  /*
   const FreeVarInfo& fvi = getFreeVarInfo(v);
   // for each fully assigned pattern, if they are not fully assigned, we mark
   // them as dead
@@ -104,6 +113,7 @@ void InstDriver::assignVar(TNode v,
       break;
     }
   }
+  */
 }
 
 }  // namespace quantifiers

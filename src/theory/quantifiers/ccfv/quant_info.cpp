@@ -119,18 +119,17 @@ void QuantInfo::computeMatchReq(TNode cur,
       }
     }
   }
-  else if (ee->isFunctionKind(k) || expr::isBooleanConnective(cur))
+  if (k==EQUAL || ee->isFunctionKind(k) || expr::isBooleanConnective(cur))
   {
-    // Matchable predicate, or Boolean connective.
-    // Note that Boolean connectives are simply marked as matching constraints
-    // here, the main algorithm will determine how to process them.
+    // Equality between patterns, matchable predicate, or Boolean connective.
+    // Note that equalities and Boolean connectives are simply marked as
+    // constraints here, the main algorithm will determine how to process them.
     // Flip polarity since we want to falsify.
     Node eqc = NodeManager::currentNM()->mkConst(!pol);
     addMatchTermReq(cur, eqc, true);
     return;
   }
-  // Unmatchable predicate, or equality between patterns.
-  // Add all of its children without polarity.
+  // Unmatchable predicate, add all of its children without polarity.
   for (TNode lc : cur)
   {
     // to be propagating, it must be equal to something
@@ -140,6 +139,16 @@ void QuantInfo::computeMatchReq(TNode cur,
 
 void QuantInfo::addMatchTermReq(TNode t, Node eqc, bool isEq)
 {
+  // if we have no free variables
+  if (!expr::hasFreeVar(t))
+  {
+    if (!eqc.isNull())
+    {
+      // this should only happen if miniscoping
+      
+    }
+    return;
+  }
   // if not equal, make (not (= t eqc))
   if (!isEq)
   {
@@ -160,7 +169,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
   // (2) d_topLevelMatchers, the set of terms that we may do matching with,
   // which is the set of terms in the body of ee that do not occur beneath
   // a congruence term.
-  // (3) d_unknownTerms, the set of subterms we don't handle
+  // (3) d_unknownTerms, the set of subterms we don't know how to handle.
 
   // We track pairs (t, b) where t is the term we are traversing, and b is
   // whether we have traversed inside a congruence term.
@@ -255,10 +264,15 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
 
 void QuantInfo::resetRound()
 {
+  if (d_topLevelMatchers.empty())
+  {
+    d_isActive = false;
+    return;
+  }
+
   // TODO: compute order of matchers in d_topLevelMatchers heuristically?
   d_isActive = true;
   d_watchMatcherIndex = 0;
-  Assert(!d_topLevelMatchers.empty());
 }
 
 TNode QuantInfo::getNextMatcher()
@@ -278,6 +292,10 @@ const std::map<TNode, std::vector<Node>>& QuantInfo::getConstraints() const
   return d_req;
 }
 
+const std::vector<TNode>& QuantInfo::getConstraintTerms() const
+{
+  return d_reqTerms;
+}
 const std::vector<TNode>& QuantInfo::getCongruenceTerms() const
 {
   return d_congTerms;

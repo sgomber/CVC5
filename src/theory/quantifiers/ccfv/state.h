@@ -52,10 +52,10 @@ class State : protected EnvObj
   /** Reset round */
   void resetRound();
 
-  /** Get quantifiers info */
-  QuantInfo& getOrMkQuantInfo(TNode q,
+  void initializeQuantInfo(TNode q,
                               eq::EqualityEngine* ee,
                               expr::TermCanonize& tc);
+  /** Get quantifiers info */
   QuantInfo& getQuantInfo(TNode q);
   /** Get free variable info */
   FreeVarInfo& getOrMkFreeVarInfo(TNode v);
@@ -77,25 +77,24 @@ class State : protected EnvObj
   void eqNotifyMerge(TNode t1, TNode t2);
   void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
 
- private:
-  /**
-   * Called when it is determined what pattern p is equal to.
-   *
-   * If g is non-null, then g is the (ground) equivalence class that pattern p
-   * is equal to. If g is null, then we have determined that p will *never*
-   * merge into a ground equivalence class in this context.
-   */
-  void notifyPatternEqGround(TNode p, TNode g);
-
-  /** Get sink node */
-  Node getSink() const;
-  /** Is sink */
-  bool isSink(TNode n) const;
   /**
    * Get value for pattern or ordinary term p. This is either a ground
    * represenative, or the sink, or the null node if p is active.
    */
   TNode getValue(TNode p) const;
+  /** Get sink node */
+  Node getSink() const;
+  /** Is sink */
+  bool isSink(TNode n) const;
+ private:
+  /**
+   * Called when it is determined what pattern p is equal to.
+   *
+   * If g is not sunk, then g is the (ground) equivalence class that pattern p
+   * is equal to. If g is the sink, then we have determined that p will *never*
+   * merge into a ground equivalence class in this context.
+   */
+  void notifyPatternEqGround(TNode p, TNode g);
   /**
    * Notify that child was assigned value val, set eq if possible.
    * Return true if we set eq during this call.

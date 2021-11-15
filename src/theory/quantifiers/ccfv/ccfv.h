@@ -29,6 +29,7 @@
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
+namespace ccfv {
 
 /**
 
@@ -43,8 +44,6 @@ class CongruenceClosureFv : public QuantifiersModule
                       TermRegistry& tr);
 
   bool needsCheck(Theory::Effort e) override;
-
-  QEffort needsModel(Theory::Effort e) override;
 
   void reset_round(Theory::Effort e) override;
 
@@ -64,15 +63,16 @@ class CongruenceClosureFv : public QuantifiersModule
 
  private:
   /** Register match term */
-  void registerMatchTerm(TNode m, QuantInfo& qi);
+  void activateQuantifier(TNode q);
   /** State */
-  ccfv::State d_state;
+  State d_state;
   /** Instantiation driver */
-  ccfv::InstDriver d_driver;
+  InstDriver d_driver;
   /** Term canonizer */
-  expr::TermCanonizer d_tcanon;
+  expr::TermCanonize d_tcanon;
 };
 
+}
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5
