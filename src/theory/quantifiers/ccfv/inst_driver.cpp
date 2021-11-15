@@ -162,7 +162,7 @@ bool InstDriver::assignSearchLevel(size_t level)
         // quantified formula is not active
         continue;
       }
-      TNode matcher = qi.getCurrentMatcher();
+      TNode matcher = qi.getMatcherFor(v);
       if (matcher.isNull())
       {
         // doesn't have a matcher, continue
@@ -201,6 +201,7 @@ bool InstDriver::assignSearchLevel(size_t level)
       return false;
     }
   }
+  
   // now, all active quantified formulas that are still active should have
   // propagating instances.
 

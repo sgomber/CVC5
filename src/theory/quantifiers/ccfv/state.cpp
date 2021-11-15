@@ -571,12 +571,6 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
   {
     setQuantInactive(qi);
   }
-  else if (qi.getCurrentMatcher() == p)
-  {
-    // if this was the current matcher, we need the next one
-    qi.getNextMatcher();
-    // NOTE: register here?
-  }
   // otherwise, we could have an instantiation, but we do not check for this
   // here; instead this is handled based on watching the number of free
   // variables assigned.

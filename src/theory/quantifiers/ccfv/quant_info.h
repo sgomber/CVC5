@@ -64,8 +64,6 @@ class QuantInfo
   const std::vector<TNode>& getCongruenceTerms() const;
   /** Get congruence term variable map */
   const std::map<TNode, TNode>& getTermMaxVarMap() const;
-  /** Get matchers */
-  const std::vector<TNode>& getTopLevelMatchers() const;
   //-------------------------- per round
   /** reset variable count */
   // void resetSearchVariableCount();
@@ -78,13 +76,8 @@ class QuantInfo
    * Reset round, called once per full effort check
    */
   void resetRound();
-  /** get the current matcher */
-  TNode getCurrentMatcher() const;
-  /**
-   * Get next matcher from the list, increment the index for which matcher
-   * we are considering.
-   */
-  TNode getNextMatcher();
+  /** get the matcher for variable v */
+  TNode getMatcherFor(TNode v) const;
   /** Is alive? */
   bool isActive() const;
   /** set dead */
@@ -146,11 +139,16 @@ class QuantInfo
    */
   std::map<TNode, TNode> d_termMaxVar;
   /**
-   * List of all top-level congruence terms, i.e. ones that occur as subterms in
+   * Mapping from free variables to a "matcher" for that variable. These terms determine what to invoke matching on.
+   * 
+   * A matcher for variable v:
+   * (1) is a top-level congruence term, i.e. one that occurs as a subterm in
    * the domain of d_req in positions that are not nested under other congruence
-   * terms. These terms determine what to invoke matching on.
+   * terms.
+   * (2) is such that no other matcher t for v' exists that contains v, where
+   * v' < v. In other words, matchers for earlier variables in the variable order do not bind v.
    */
-  std::vector<TNode> d_topLevelMatchers;
+  std::map<TNode, TNode> d_matchers;
   /**
    * Subterms of d_req that we don't handle.
    */
@@ -162,8 +160,6 @@ class QuantInfo
   /** is alive, false if we know it is not possible to construct a propagating
    * instance for this quantified formula  */
   context::CDO<bool> d_isActive;
-  /** index in matchers */
-  context::CDO<size_t> d_tlMatcherIndex;
 };
 
 }  // namespace ccfv

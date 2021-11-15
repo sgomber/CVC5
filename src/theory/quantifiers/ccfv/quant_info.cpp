@@ -26,7 +26,7 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-QuantInfo::QuantInfo(context::Context* c) : d_isActive(c), d_tlMatcherIndex(c)
+QuantInfo::QuantInfo(context::Context* c) : d_isActive(c)
 {
 }
 
@@ -286,6 +286,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
   std::unordered_set<TNode>::iterator itc;
   std::map<TNode, std::vector<TNode>>::iterator itpl;
   std::map<TNode, std::vector<Node>>::iterator itr;
+  std::unordered_set<TNode> usedMatchers;
   for (TNode v : d_canonVarOrdered)
   {
     // for each variable, we ensure that this variable occurs in the list
@@ -311,9 +312,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
           itc = topLevelMatchers.find(ccur);
           if (itc != topLevelMatchers.end())
           {
-            if (std::find(
-                    d_topLevelMatchers.begin(), d_topLevelMatchers.end(), ccur)
-                == d_topLevelMatchers.end())
+            if (usedMatchers.find(ccur)!=usedMatchers.end())
             {
               // It may already be added (e.g. to match an earlier variable).
               // In this case, we don't need to add a new matcher
@@ -364,15 +363,19 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
         }
       }
     } while (!ctnVisit.empty());
+    // if we don't already have a matcher for this variable
     if (!alreadyMatcher)
     {
       if (!tlMatcher.isNull())
       {
-        d_topLevelMatchers.push_back(tlMatcher);
+        // use the matcher for this variable
+        d_matchers[v] = tlMatcher;
+        // Notice that variables in d_canonVarOrdered are assigned in order, thus this justifies matching for future variables.
+        usedMatchers.insert(tlMatcher);
       }
       else
       {
-        // Assert?
+        // Assert that no matchers exist?
       }
     }
   }
@@ -381,7 +384,6 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
 void QuantInfo::resetRound()
 {
   d_isActive = true;
-  d_tlMatcherIndex = 0;
   d_initVarIndex = 0;
 }
 
@@ -396,28 +398,14 @@ TNode QuantInfo::getNextSearchVariable()
   return next;
 }
 
-TNode QuantInfo::getCurrentMatcher() const
+TNode QuantInfo::getMatcherFor(TNode v) const
 {
-  if (!d_isActive.get())
+  std::map<TNode, TNode>::const_iterator it = d_matchers.find(v);
+  if (it==d_matchers.end())
   {
     return TNode::null();
   }
-  if (d_tlMatcherIndex.get() > 0
-      && d_tlMatcherIndex.get() <= d_topLevelMatchers.size())
-  {
-    return d_topLevelMatchers[d_tlMatcherIndex.get() - 1];
-  }
-  return TNode::null();
-}
-
-TNode QuantInfo::getNextMatcher()
-{
-  if (!d_isActive.get() || d_tlMatcherIndex.get() > d_topLevelMatchers.size())
-  {
-    return TNode::null();
-  }
-  d_tlMatcherIndex = d_tlMatcherIndex.get() + 1;
-  return d_topLevelMatchers[d_tlMatcherIndex.get() - 1];
+  return it->second;
 }
 
 const std::vector<TNode>& QuantInfo::getFreeVariables() const
@@ -447,11 +435,6 @@ const std::vector<TNode>& QuantInfo::getCongruenceTerms() const
 const std::map<TNode, TNode>& QuantInfo::getTermMaxVarMap() const
 {
   return d_termMaxVar;
-}
-
-const std::vector<TNode>& QuantInfo::getTopLevelMatchers() const
-{
-  return d_topLevelMatchers;
 }
 
 bool QuantInfo::isActive() const { return d_isActive.get(); }
