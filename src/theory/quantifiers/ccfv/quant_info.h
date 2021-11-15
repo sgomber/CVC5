@@ -78,6 +78,8 @@ class QuantInfo
    * Reset round, called once per full effort check
    */
   void resetRound();
+  /** get the current matcher */
+  TNode getCurrentMatcher() const;
   /**
    * Get next matcher from the list, increment the index for which matcher
    * we are considering.
@@ -156,7 +158,7 @@ class QuantInfo
    * instance for this quantified formula  */
   context::CDO<bool> d_isActive;
   /** index in matchers */
-  context::CDO<size_t> d_watchMatcherIndex;
+  context::CDO<size_t> d_tlMatcherIndex;
 };
 
 }  // namespace ccfv

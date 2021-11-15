@@ -21,6 +21,7 @@
 #include <memory>
 
 #include "context/cdhashset.h"
+#include "context/cdhashmap.h"
 #include "smt/env_obj.h"
 #include "theory/quantifiers/ccfv/eqc_info.h"
 #include "theory/quantifiers/ccfv/free_var_info.h"
@@ -46,6 +47,7 @@ class State : protected EnvObj
 {
   typedef context::CDList<Node> NodeList;
   typedef context::CDHashSet<Node> NodeSet;
+  typedef context::CDHashMap<Node, bool> NodeBoolMap;
 
  public:
   State(Env& env, QuantifiersState& qs);
@@ -135,18 +137,29 @@ class State : protected EnvObj
   std::map<Node, EqcInfo> d_eqcInfo;
   /** The sink node */
   Node d_sink;
+  /** common constants */
+  Node d_true;
+  Node d_false;
   // --------------------------- temporary state
   class SearchState
   {
    public:
     SearchState(context::Context* c);
-    /** ground equivalence classes */
+    /**
+     * Ground equivalence classes.
+     */
     NodeSet d_groundEqc;
+    /** Ground equivalence classes per type */
+    std::map<TypeNode, NodeSet> d_typeGroundEqc;
     /** total number of alive quantified formulas */
     context::CDO<size_t> d_numActiveQuant;
+    /** active matchers */
+    std::unordered_set<Node> d_activeMatchers;
   };
   /** The search state */
   std::unique_ptr<SearchState> d_sstate;
+  /** Map from matchers to whether they are active */
+  NodeBoolMap d_matchers;
 };
 
 }  // namespace ccfv

@@ -27,11 +27,13 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-State::State(Env& env, QuantifiersState& qs) : EnvObj(env), d_qstate(qs)
+State::State(Env& env, QuantifiersState& qs) : EnvObj(env), d_qstate(qs), d_matchers(context())
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
   d_sink = sm->mkDummySkolem("sink", nm->booleanType());
+  d_true = nm->mkConst(true);
+  d_false = nm->mkConst(false);
 }
 
 bool State::isFinished() const { return d_sstate->d_numActiveQuant == 0; }
@@ -42,14 +44,34 @@ void State::resetRound(size_t nquant)
   d_sstate.reset(new SearchState(context()));
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
+  // for Boolean, true/false are always the ground equivalence classes
+  d_sstate->d_groundEqc.insert(d_true);
+  d_sstate->d_groundEqc.insert(d_false);
+  std::map<TypeNode, NodeSet>::iterator itt;
   while (!eqcs_i.isFinished())
   {
-    d_sstate->d_groundEqc.insert(*eqcs_i);
+    TNode r = *eqcs_i;
+    TypeNode tn = r.getType();
+    if (tn.isBoolean())
+    {
+      // skip Boolean equivalence classes
+      continue;
+    }
+    d_sstate->d_groundEqc.insert(r);
+    itt = d_sstate->d_typeGroundEqc.find(tn);
+    if (itt==d_sstate->d_typeGroundEqc.end())
+    {
+      itt = d_sstate->d_typeGroundEqc.emplace(tn, context()).first;
+    }
+    itt->second.insert(r);
     ++eqcs_i;
   }
   d_sstate->d_numActiveQuant = nquant;
-  // clear the equivalence class info
-  d_eqcInfo.clear();
+  
+  // clear the equivalence class info?
+  // NOTE: if we are adding terms when quantified formulas are asserted, then
+  // we should not clear the equivalence class information here.
+  //d_eqcInfo.clear();
   // reset free variable information
   /*
   for (std::pair<const Node, FreeVarInfo>& fi : d_fvInfo)
@@ -208,6 +230,8 @@ void State::eqNotifyNewClass(TNode t)
 
 void State::eqNotifyMerge(TNode t1, TNode t2)
 {
+  // constants always remain representatives
+  Assert (!t2.isConst());
   if (isGroundEqc(t1))
   {
     // should never merge ground equivalence classes
@@ -264,14 +288,15 @@ bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
     // already set
     return false;
   }
-  // if a Boolean connective, handle short circuiting
   if (pi.d_isBooleanConnective)
   {
+    // if a Boolean connective, handle short circuiting if we set a non-sink value
     if (!isSink(val))
     {
       Assert(val.getKind() == CONST_BOOLEAN);
       bool pol = val.getConst<bool>();
       Kind k = pi.d_pattern.getKind();
+      // implies and xor are eliminated from quantifier bodies
       Assert(k != IMPLIES && k != XOR);
       if ((k == AND && !pol) || (k == OR && pol))
       {
@@ -308,25 +333,13 @@ bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
         }
       }
     }
-  }
-  else
-  {
-    // if the value of a child is unknown, we are now unknown
-    if (isSink(val))
-    {
-      pi.d_eq = val;
-      return true;
-    }
-  }
-  // set to unknown, handle cases
-  pi.d_eq = d_sink;
-  // if a Boolean connective, we can possibly evaluate
-  if (pi.d_isBooleanConnective)
-  {
+    // if a Boolean connective, we can possibly evaluate
     Assert(pi.d_numUnassigned.get() > 0);
     pi.d_numUnassigned = pi.d_numUnassigned.get() - 1;
     if (pi.d_numUnassigned == 0)
     {
+      // set to unknown, handle cases
+      pi.d_eq = d_sink;
       NodeManager* nm = NodeManager::currentNM();
       Kind k = pi.d_pattern.getKind();
       Assert(k != IMPLIES && k != XOR);
@@ -388,6 +401,15 @@ bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
           }
         }
       }
+      return true;
+    }
+  }
+  else
+  {
+    // if the value of a child is unknown, we are now unknown
+    if (isSink(val))
+    {
+      pi.d_eq = val;
       return true;
     }
   }
@@ -499,6 +521,13 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
   {
     qi.setActive(false);
     d_sstate->d_numActiveQuant = d_sstate->d_numActiveQuant - 1;
+  }
+  // if this was the current matcher, we need another
+  if (qi.getCurrentMatcher()==p)
+  {
+    TNode next = qi.getNextMatcher();
+    d_matchers[p] = false;
+    d_matchers[next] = true;
   }
   // otherwise, we could have an instantiation, but we do not check for this
   // here; instead this is handled based on watching the number of free

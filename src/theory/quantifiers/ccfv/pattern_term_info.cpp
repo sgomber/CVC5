@@ -47,7 +47,7 @@ void PatTermInfo::initialize(TNode pattern)
       }
     }
   }
-  Assert(d_eq.isNull());
+  Assert(d_eq.get().isNull());
 }
 
 bool PatTermInfo::isActive() const { return d_eq.get().isNull(); }

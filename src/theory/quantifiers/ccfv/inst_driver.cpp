@@ -33,8 +33,15 @@ InstDriver::InstDriver(Env& env,
 
 void InstDriver::check(const std::vector<TNode>& quants)
 {
+  // reset round for all quantified formulas
+  for (TNode q : quants)
+  {
+    QuantInfo& qi = d_state.getQuantInfo(q);
+    qi.resetRound();
+  }
+  // reset information for quantified formulas
   // reset search levels
-  // TODO: incrementally maintain this?
+  // NOTE: could incrementally maintain this?
   resetSearchLevels(quants);
 }
 
