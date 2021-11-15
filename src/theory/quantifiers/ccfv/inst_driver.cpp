@@ -137,7 +137,7 @@ void InstDriver::assignVariableLevels(
 bool InstDriver::assignSearchLevel(size_t level)
 {
   SearchLevel& slevel = getSearchLevel(level);
-  Assert (!slevel.d_varsToAssign.empty());
+  Assert(!slevel.d_varsToAssign.empty());
   // find the next assignment for each variable
   std::vector<TNode> assignment;
   bool success = false;
@@ -147,7 +147,7 @@ bool InstDriver::assignSearchLevel(size_t level)
     const FreeVarInfo& fi = d_state.getFreeVarInfo(v);
     TNode eqc = pi.getNextWatchEqc();
     size_t qindex = 0;
-    while (eqc.isNull() && qindex<fi.d_quantList.size())
+    while (eqc.isNull() && qindex < fi.d_quantList.size())
     {
       // get the next quantified formula containing v
       TNode q = fi.d_quantList[qindex];
@@ -182,11 +182,11 @@ bool InstDriver::assignSearchLevel(size_t level)
     return false;
   }
   // assign each variable
-  for (size_t i=0, nvars = slevel.d_varsToAssign.size(); i<nvars; i++)
+  for (size_t i = 0, nvars = slevel.d_varsToAssign.size(); i < nvars; i++)
   {
     assignVar(slevel.d_varsToAssign[i], assignment[i]);
   }
-  
+
   return true;
 }
 
@@ -202,7 +202,7 @@ void InstDriver::assignVar(TNode v, TNode eqc)
   }
   else
   {
-    Assert (v.getType().isComparableTo(eqc.getType()));
+    Assert(v.getType().isComparableTo(eqc.getType()));
     // assert to the equality engine
     Node eq = v.eqNode(eqc);
     d_qstate.getEqualityEngine()->assertEquality(eq, true, eq);

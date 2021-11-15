@@ -92,7 +92,7 @@ class State : protected EnvObj
   void eqNotifyNewClass(TNode t);
   void eqNotifyMerge(TNode t1, TNode t2);
   void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
-  /** 
+  /**
    * Called when we have determined that pattern p will not merge with any
    * ground equivalence class.
    */
@@ -117,6 +117,7 @@ class State : protected EnvObj
   bool isQuantActive(TNode q) const;
   /** Set quantified formula inactive */
   void setQuantInactive(QuantInfo& qi);
+
  private:
   /** Get equivalence class info */
   EqcInfo* getOrMkEqcInfo(TNode r, bool doMk = false);
