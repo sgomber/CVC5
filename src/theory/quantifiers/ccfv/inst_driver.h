@@ -77,6 +77,8 @@ class InstDriver : protected EnvObj
                             std::map<TNode, size_t>& fvLevel);
   /** are we finished? */
   bool isFinished() const;
+  /** Assign search level */
+  bool assignSearchLevel(size_t level);
   /** Assign variable to the equivalence class eqc */
   void assignVar(TNode v, TNode eqc);
   /** Get search level */

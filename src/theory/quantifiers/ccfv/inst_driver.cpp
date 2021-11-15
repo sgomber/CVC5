@@ -134,16 +134,81 @@ void InstDriver::assignVariableLevels(
   }
 }
 
+bool InstDriver::assignSearchLevel(size_t level)
+{
+  SearchLevel& slevel = getSearchLevel(level);
+  Assert (!slevel.d_varsToAssign.empty());
+  // find the next assignment for each variable
+  std::vector<TNode> assignment;
+  bool success = false;
+  for (TNode v : slevel.d_varsToAssign)
+  {
+    PatTermInfo& pi = d_state.getPatTermInfo(v);
+    const FreeVarInfo& fi = d_state.getFreeVarInfo(v);
+    TNode eqc = pi.getNextWatchEqc();
+    size_t qindex = 0;
+    while (eqc.isNull() && qindex<fi.d_quantList.size())
+    {
+      // get the next quantified formula containing v
+      TNode q = fi.d_quantList[qindex];
+      qindex++;
+      QuantInfo& qi = d_state.getQuantInfo(q);
+      if (!qi.isActive())
+      {
+        // quantified formula is not active
+        continue;
+      }
+      TNode matcher = qi.getCurrentMatcher();
+      if (matcher.isNull())
+      {
+        // doesn't have a matcher, continue
+        continue;
+      }
+      // maybe succeeded match?
+      eqc = pi.getNextWatchEqc();
+    }
+    if (eqc.isNull())
+    {
+      eqc = d_state.getSink();
+    }
+    else
+    {
+      success = true;
+    }
+    assignment.push_back(eqc);
+  }
+  if (!success)
+  {
+    return false;
+  }
+  // assign each variable
+  for (size_t i=0, nvars = slevel.d_varsToAssign.size(); i<nvars; i++)
+  {
+    assignVar(slevel.d_varsToAssign[i], assignment[i]);
+  }
+  
+  return true;
+}
+
 bool InstDriver::isFinished() const { return d_state.isFinished(); }
 
 void InstDriver::assignVar(TNode v, TNode eqc)
 {
   Assert(d_qstate.getEqualityEngine()->consistent());
-  // assert to the equality engine
-  Node eq = v.eqNode(eqc);
-  d_qstate.getEqualityEngine()->assertEquality(eq, true, eq);
-  // should still be consistent
-  Assert(d_qstate.getEqualityEngine()->consistent());
+  if (d_state.isSink(eqc))
+  {
+    // notify the state
+    d_state.notifyPatternSink(v);
+  }
+  else
+  {
+    Assert (v.getType().isComparableTo(eqc.getType()));
+    // assert to the equality engine
+    Node eq = v.eqNode(eqc);
+    d_qstate.getEqualityEngine()->assertEquality(eq, true, eq);
+    // should still be consistent
+    Assert(d_qstate.getEqualityEngine()->consistent());
+  }
 }
 
 SearchLevel& InstDriver::getSearchLevel(size_t i) { return d_levels[i]; }

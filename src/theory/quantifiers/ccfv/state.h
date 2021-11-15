@@ -92,6 +92,11 @@ class State : protected EnvObj
   void eqNotifyNewClass(TNode t);
   void eqNotifyMerge(TNode t1, TNode t2);
   void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
+  /** 
+   * Called when we have determined that pattern p will not merge with any
+   * ground equivalence class.
+   */
+  void notifyPatternSink(TNode p);
   //---------------queries
   /** Is finished */
   bool isFinished() const;
@@ -110,7 +115,8 @@ class State : protected EnvObj
   TNode getGroundRepresentative(TNode n) const;
   /** Is quantifier active? */
   bool isQuantActive(TNode q) const;
-
+  /** Set quantified formula inactive */
+  void setQuantInactive(QuantInfo& qi);
  private:
   /** Get equivalence class info */
   EqcInfo* getOrMkEqcInfo(TNode r, bool doMk = false);
@@ -133,8 +139,6 @@ class State : protected EnvObj
    * Notify quantified formula
    */
   void notifyQuant(TNode q, TNode p, TNode val);
-  /** Set quantified formula inactive */
-  void setQuantInactive(QuantInfo& qi);
   /** Quantifiers state */
   QuantifiersState& d_qstate;
   /** Term database */

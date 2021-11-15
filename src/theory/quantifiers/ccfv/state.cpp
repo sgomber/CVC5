@@ -323,6 +323,11 @@ void State::eqNotifyDisequal(TNode t1, TNode t2, TNode reason)
   Assert(false);
 }
 
+void State::notifyPatternSink(TNode p)
+{
+  notifyPatternEqGround(p, d_sink);
+}
+
 bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
 {
   if (!pi.isActive())
@@ -475,8 +480,10 @@ void State::notifyPatternEqGround(TNode p, TNode g)
   {
     it = toNotify[tnIndex];
     ++tnIndex;
+    Assert(it != d_pInfo.end());
     p = it->second.d_pattern;
     g = it->second.d_eq;
+    Assert (!g.isNull());
     // notify the ordinary parents always, notify the congruence parents if sink
     size_t maxIter = isSink(g) ? 2 : 1;
     for (size_t i = 0; i < maxIter; i++)
@@ -499,7 +506,7 @@ void State::notifyPatternEqGround(TNode p, TNode g)
           }
           continue;
         }
-        // otherwise, notify the parent
+        // otherwise, notify the parent pattern
         it = d_pInfo.find(pp);
         Assert(it != d_pInfo.end());
         if (notifyChild(it->second, p, g))
