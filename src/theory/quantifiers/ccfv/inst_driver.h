@@ -19,6 +19,7 @@
 
 #include "smt/env_obj.h"
 #include "theory/quantifiers/ccfv/state.h"
+#include "theory/quantifiers/ccfv/search_level.h"
 
 namespace cvc5 {
 namespace theory {

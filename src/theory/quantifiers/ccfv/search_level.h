@@ -27,10 +27,10 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-class QuantifiersSet
+class SearchLevel
 {
  public:
-  QuantifiersSet() {}
+  SearchLevel() {}
   /** the list of quantified formulas */
   std::vector<TNode> d_varsToAssign;
   /** The terms that are fully assigned at this level */

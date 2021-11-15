@@ -37,7 +37,7 @@ State::State(Env& env, QuantifiersState& qs)
 
 bool State::isFinished() const { return d_sstate->d_numActiveQuant == 0; }
 
-void State::resetRound()
+void State::resetRound(size_t nquant)
 {
   // get the ground equivalence classes
   d_sstate.reset(new SearchState(context()));
@@ -119,7 +119,7 @@ std::vector<TNode> State::getActiveFreeVarList() const
   std::vector<TNode> fvar;
   for (const std::pair<size_t, TNode>& v : fvarList)
   {
-    fvar.push_back(v.first);
+    fvar.push_back(v.second);
   }
   return fvar;
 }
