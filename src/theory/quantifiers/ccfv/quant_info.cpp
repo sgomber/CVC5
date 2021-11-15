@@ -26,9 +26,7 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-QuantInfo::QuantInfo(context::Context* c) : d_isActive(c)
-{
-}
+QuantInfo::QuantInfo(context::Context* c) : d_isActive(c) {}
 
 void QuantInfo::initialize(TNode q,
                            eq::EqualityEngine* ee,
@@ -312,7 +310,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
           itc = topLevelMatchers.find(ccur);
           if (itc != topLevelMatchers.end())
           {
-            if (usedMatchers.find(ccur)!=usedMatchers.end())
+            if (usedMatchers.find(ccur) != usedMatchers.end())
             {
               // It may already be added (e.g. to match an earlier variable).
               // In this case, we don't need to add a new matcher
@@ -370,7 +368,8 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
       {
         // use the matcher for this variable
         d_matchers[v] = tlMatcher;
-        // Notice that variables in d_canonVarOrdered are assigned in order, thus this justifies matching for future variables.
+        // Notice that variables in d_canonVarOrdered are assigned in order,
+        // thus this justifies matching for future variables.
         usedMatchers.insert(tlMatcher);
       }
       else
@@ -401,7 +400,7 @@ TNode QuantInfo::getNextSearchVariable()
 TNode QuantInfo::getMatcherFor(TNode v) const
 {
   std::map<TNode, TNode>::const_iterator it = d_matchers.find(v);
-  if (it==d_matchers.end())
+  if (it == d_matchers.end())
   {
     return TNode::null();
   }

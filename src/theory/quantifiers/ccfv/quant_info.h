@@ -139,14 +139,16 @@ class QuantInfo
    */
   std::map<TNode, TNode> d_termMaxVar;
   /**
-   * Mapping from free variables to a "matcher" for that variable. These terms determine what to invoke matching on.
-   * 
+   * Mapping from free variables to a "matcher" for that variable. These terms
+   * determine what to invoke matching on.
+   *
    * A matcher for variable v:
    * (1) is a top-level congruence term, i.e. one that occurs as a subterm in
    * the domain of d_req in positions that are not nested under other congruence
    * terms.
    * (2) is such that no other matcher t for v' exists that contains v, where
-   * v' < v. In other words, matchers for earlier variables in the variable order do not bind v.
+   * v' < v. In other words, matchers for earlier variables in the variable
+   * order do not bind v.
    */
   std::map<TNode, TNode> d_matchers;
   /**

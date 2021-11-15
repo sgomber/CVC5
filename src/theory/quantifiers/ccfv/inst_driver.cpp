@@ -201,7 +201,7 @@ bool InstDriver::assignSearchLevel(size_t level)
       return false;
     }
   }
-  
+
   // now, all active quantified formulas that are still active should have
   // propagating instances.
 
