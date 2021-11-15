@@ -35,14 +35,16 @@ State::State(Env& env, QuantifiersState& qs)
   d_sink = sm->mkDummySkolem("sink", nm->booleanType());
 }
 
-void State::assert(TNode q) {}
+void State::assertQuant(TNode q) {
+  d_quants.push_back(q);
+}
 
 bool State::isFinished() const { return d_sstate->d_numActiveQuant == 0; }
 
 void State::resetRound()
 {
   // get the ground equivalence classes
-  d_sstate.reset(new SearchState(context());
+  d_sstate.reset(new SearchState(context()));
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
   while (!eqcs_i.isFinished())
@@ -53,6 +55,11 @@ void State::resetRound()
   // clear the equivalence class info
   d_eqcInfo.clear();
   d_sstate->d_numActiveQuant = d_quants.size();
+}
+
+const context::CDList<Node>& State::getAssertedQuant() const
+{
+  return d_quants;
 }
 
 QuantInfo& State::initializeQuantInfo(TNode q,
@@ -405,7 +412,7 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
     // quantified formula is already inactive
     return;
   }
-  Assert(d_numActiveQuant.get() > 0);
+  Assert(d_sstate->d_numActiveQuant.get() > 0);
   // check whether we should set inactive
   bool setInactive = false;
   if (isSink(val))
@@ -448,7 +455,7 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
   if (setInactive)
   {
     qi.setActive(false);
-    d_numActiveQuant = d_numActiveQuant - 1;
+    d_sstate->d_numActiveQuant = d_sstate->d_numActiveQuant - 1;
   }
   // otherwise, we could have an instantiation, but we do not check for this
   // here; instead this is handled based on watching the number of free

@@ -46,6 +46,8 @@ class QuantInfo
    */
   void initialize(TNode q, eq::EqualityEngine* ee, expr::TermCanonize& tc);
   //-------------------------- static information
+  /** Get free variables */
+  const std::vector<TNode>& getFreeVariables() const;
   /**
    * Get the constraints, which maps pattern terms to node corresponding to
    * their constraints for making the quantified formula have a propagating

@@ -81,18 +81,14 @@ void CongruenceClosureFv::assertNode(Node q)
   {
     return;
   }
-  addQuantToState(q);
-}
-
-void CongruenceClosureFv::addQuantToState(TNode q)
-{
-  Assert(q.getKind() == FORALL);
-  // activate in this context
-  QuantInfo& qi =
-      d_state.initializeQuantInfo(q, d_qstate.getEqualityEngine(), d_tcanon);
-  d_state.addQuantifiedFormula(q);
   // get the equality engine
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
+  // initialize the internal information for the quantified formula
+  QuantInfo& qi = d_state.initializeQuantInfo(q, ee, d_tcanon);
+  // assert it
+  d_state.assertQuant(q);
+  // free variables from the quantified formula
+  const std::vector<TNode>& fvars = qi.getFreeVariables();
 
   std::unordered_set<TNode> visited;
   std::unordered_set<TNode>::iterator it;
@@ -110,7 +106,6 @@ void CongruenceClosureFv::addQuantToState(TNode q)
   }
 
   TNode cur;
-  std::vector<TNode> freeVars;
   // track parents list
   std::map<TNode, std::vector<TNode>> parentList;
   do
@@ -128,7 +123,8 @@ void CongruenceClosureFv::addQuantToState(TNode q)
       Kind k = cur.getKind();
       if (k == BOUND_VARIABLE)
       {
-        freeVars.push_back(cur);
+        // should be one of the free variables of the quantified formula
+        Assert (std::find(fvars.begin(), fvars.end(), cur)!=fvars.end());
         continue;
       }
       Assert(cur.getNumChildren() > 0);
@@ -165,9 +161,10 @@ void CongruenceClosureFv::addQuantToState(TNode q)
 
   // go back and set the use list of the free variables
   std::map<TNode, std::vector<TNode>>::iterator itpl;
-  for (TNode v : freeVars)
+  for (TNode v : fvars)
   {
     FreeVarInfo& fi = d_state.getOrMkFreeVarInfo(v);
+    fi.d_quantList.push_back(q);
     std::unordered_set<TNode> containing;
     visit.push_back(v);
     do
@@ -194,6 +191,7 @@ void CongruenceClosureFv::addQuantToState(TNode q)
     } while (!containing.empty());
   }
 
+  // TODO: should not do this until we are running
   // now, add the congruence terms to the equality engine
   const std::vector<TNode>& pterms = qi.getCongruenceTerms();
   for (TNode p : pterms)

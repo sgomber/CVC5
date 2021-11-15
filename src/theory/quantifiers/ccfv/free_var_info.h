@@ -20,6 +20,7 @@
 
 #include <unordered_set>
 
+#include "context/cdlist.h"
 #include "context/cdhashset.h"
 #include "expr/node.h"
 
@@ -30,6 +31,7 @@ namespace ccfv {
 
 class FreeVarInfo
 {
+  typedef context::CDList<Node> NodeList;
   typedef context::CDHashSet<Node> NodeSet;
 
  public:
@@ -37,7 +39,7 @@ class FreeVarInfo
   /** term list, all pattern terms that contain this variable */
   NodeSet d_useList;
   /** quantifiers list */
-  NodeSet d_quantList;
+  NodeList d_quantList;
 
   //--------------------- in search
   /** The list of ground equivalence classes we are considering */
@@ -46,7 +48,7 @@ class FreeVarInfo
   size_t d_eqcIndex;
   /** The list of terms that have become fully assigned after we assign this */
   std::vector<TNode> d_fullyAssignedPat;
-
+  /** Reset domain */
   void resetDomain();
 };
 

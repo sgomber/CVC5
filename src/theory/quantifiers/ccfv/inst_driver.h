@@ -64,18 +64,12 @@ class InstDriver : protected EnvObj
   EqcInfo& getEqcInfo(TNode r);
 
   /** check */
-  void check(Theory::Effort e, QEffort quant_e);
+  void check();
 
  private:
   /** are we finished? */
   bool isFinished() const;
-  TNode getNextVariable();
-  /**
-   * Push variable v to the stack.
-   */
-  void pushVar(TNode v);
-  void popVar();
-
+  /** Assign variable to the equivalence class eqc */
   void assignVar(TNode v, TNode eqc);
 
   /** The state of matching for quantifiers and pattern terms */
@@ -86,7 +80,7 @@ class InstDriver : protected EnvObj
   TermRegistry& d_treg;
 
   /** The current stack of quantified variables */
-  std::vector<TNode> d_varStack;
+  //std::vector<TNode> d_varStack;
 
   /** The set of quantified formulas */
   // QuantifiersSet d_qset;

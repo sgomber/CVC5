@@ -18,6 +18,8 @@
 #ifndef CVC5__THEORY__QUANTIFIERS__CCFV__STATE_H
 #define CVC5__THEORY__QUANTIFIERS__CCFV__STATE_H
 
+#include <memory>
+
 #include "context/cdhashset.h"
 #include "smt/env_obj.h"
 #include "theory/quantifiers/ccfv/eqc_info.h"
@@ -42,17 +44,17 @@ class CongruenceClosureFv;
 
 class State : protected EnvObj
 {
+  typedef context::CDList<Node> NodeList;
   typedef context::CDHashSet<Node> NodeSet;
-  friend class CongruenceClosureFv;
 
  public:
   State(Env& env, QuantifiersState& qs);
   /** assert quantified formula */
-  void assert(TNode q);
-  /** Is finished */
-  bool isFinished() const;
+  void assertQuant(TNode q);
   /** Reset round */
   void resetRound();
+  /** Get the list of asserted quantified formulas */
+  const context::CDList<Node>& getAssertedQuant() const;
 
   QuantInfo& initializeQuantInfo(TNode q,
                                  eq::EqualityEngine* ee,
@@ -79,6 +81,8 @@ class State : protected EnvObj
   void eqNotifyMerge(TNode t1, TNode t2);
   void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
 
+  /** Is finished */
+  bool isFinished() const;
   /**
    * Get value for pattern or ordinary term p. This is either a ground
    * represenative, or the sink, or the null node if p is active.
@@ -88,6 +92,8 @@ class State : protected EnvObj
   Node getSink() const;
   /** Is sink */
   bool isSink(TNode n) const;
+  /** Is ground eqc? */
+  bool isGroundEqc(TNode r) const;
 
  private:
   /**
@@ -107,8 +113,6 @@ class State : protected EnvObj
    * Notify quantified formula
    */
   void notifyQuant(TNode q, TNode p, TNode val);
-  /** Is ground eqc? */
-  bool isGroundEqc(TNode r) const;
   /** Quantifiers state */
   QuantifiersState& d_qstate;
   /** Map quantified formulas to their info */
@@ -128,10 +132,10 @@ class State : protected EnvObj
   {
    public:
     SearchState(context::Context* c);
+    /** ground equivalence classes */
+    NodeSet d_groundEqc;
     /** total number of alive quantified formulas */
     context::CDO<size_t> d_numActiveQuant;
-    /** ground equivalence classes */
-    std::unordered_set<Node> d_groundEqc;
   };
   /** The search state */
   std::unique_ptr<SearchState> d_sstate;

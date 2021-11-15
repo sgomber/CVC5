@@ -286,6 +286,11 @@ TNode QuantInfo::getNextMatcher()
   return next;
 }
 
+const std::vector<TNode>& QuantInfo::getFreeVariables() const
+{
+  return d_canonVars;
+}
+
 const std::map<TNode, std::vector<Node>>& QuantInfo::getConstraints() const
 {
   return d_req;
