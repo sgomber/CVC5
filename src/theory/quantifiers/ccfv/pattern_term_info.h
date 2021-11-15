@@ -77,6 +77,7 @@ class PatTermInfo
   //---------------------- matching
   /** Get next watch eqc */
   Node getNextWatchEqc();
+
  private:
   //---------------------- matching
   /**
