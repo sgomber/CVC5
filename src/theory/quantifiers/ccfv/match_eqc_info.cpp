@@ -15,7 +15,7 @@
 
 #include "theory/quantifiers/ccfv/match_eqc_info.h"
 
-#include "theory/quantifeirs/term_database.h"
+#include "theory/quantifiers/term_database.h"
 #include "theory/uf/equality_engine_iterator.h"
 
 namespace cvc5 {

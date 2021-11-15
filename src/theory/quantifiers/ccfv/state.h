@@ -25,6 +25,7 @@
 #include "smt/env_obj.h"
 #include "theory/quantifiers/ccfv/eqc_info.h"
 #include "theory/quantifiers/ccfv/free_var_info.h"
+#include "theory/quantifiers/ccfv/match_eqc_info.h"
 #include "theory/quantifiers/ccfv/pattern_term_info.h"
 #include "theory/quantifiers/ccfv/quant_info.h"
 
@@ -38,6 +39,7 @@ namespace theory {
 namespace quantifiers {
 
 class QuantifiersState;
+class TermDb;
 
 namespace ccfv {
 
@@ -50,7 +52,7 @@ class State : protected EnvObj
   typedef context::CDHashMap<Node, bool> NodeBoolMap;
 
  public:
-  State(Env& env, QuantifiersState& qs);
+  State(Env& env, QuantifiersState& qs, TermDb* tdb);
   /**
    * Reset round, where nquant is the number of quantified formulas
    */
@@ -77,6 +79,8 @@ class State : protected EnvObj
   /** Get pattern term info */
   PatTermInfo& getOrMkPatTermInfo(TNode p);
   PatTermInfo& getPatTermInfo(TNode p);
+  //---------------match information
+  MatchEqcInfo& getMatchEqcInfo(TNode r);
   //---------------equality notifications
   bool eqNotifyTriggerPredicate(TNode predicate, bool value);
   bool eqNotifyTriggerTermEquality(TheoryId tag,
@@ -133,6 +137,8 @@ class State : protected EnvObj
   void setQuantInactive(QuantInfo& qi);
   /** Quantifiers state */
   QuantifiersState& d_qstate;
+  /** Term database */
+  TermDb* d_tdb;
   /** Map quantified formulas to their info */
   std::map<Node, QuantInfo> d_quantInfo;
   /** Free variable info */
@@ -141,6 +147,8 @@ class State : protected EnvObj
   std::map<Node, PatTermInfo> d_pInfo;
   /** Equivalence class info */
   std::map<Node, EqcInfo> d_eqcInfo;
+  /** Match equivalence class info */
+  std::map<Node, MatchEqcInfo> d_meqcInfo;
   /** The sink node */
   Node d_sink;
   /** common constants */

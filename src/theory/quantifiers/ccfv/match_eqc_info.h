@@ -26,6 +26,9 @@
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
+
+  class TermDb;
+  
 namespace ccfv {
 
 /**

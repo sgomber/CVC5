@@ -27,8 +27,8 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-State::State(Env& env, QuantifiersState& qs)
-    : EnvObj(env), d_qstate(qs), d_numActiveQuant(context(), 0)
+State::State(Env& env, QuantifiersState& qs, TermDb* tdb)
+    : EnvObj(env), d_qstate(qs), d_tdb(tdb), d_numActiveQuant(context(), 0)
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
@@ -169,8 +169,7 @@ PatTermInfo& State::getOrMkPatTermInfo(TNode p)
   std::map<Node, PatTermInfo>::iterator it = d_pInfo.find(p);
   if (it == d_pInfo.end())
   {
-    d_pInfo.emplace(p, context());
-    it = d_pInfo.find(p);
+    it = d_pInfo.emplace(p, context()).first;
     // initialize the pattern
     it->second.initialize(p);
   }
@@ -181,6 +180,19 @@ PatTermInfo& State::getPatTermInfo(TNode p)
 {
   std::map<Node, PatTermInfo>::iterator it = d_pInfo.find(p);
   Assert(it != d_pInfo.end());
+  return it->second;
+}
+
+MatchEqcInfo& State::getMatchEqcInfo(TNode r)
+{
+  std::map<Node, MatchEqcInfo>::iterator it = d_meqcInfo.find(r);
+  if (it == d_meqcInfo.end())
+  {
+    MatchEqcInfo& meqc = d_meqcInfo[r];
+    // initialize the match information
+    meqc.initialize(r, d_qstate.getEqualityEngine(), d_tdb);
+    return meqc;
+  }
   return it->second;
 }
 
