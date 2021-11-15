@@ -28,16 +28,16 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-/** 
+/**
  * For matching
  */
 class MatchEqcInfo
 {
-public:
+ public:
   /** the set of match operators in this equivalence class */
   std::unordered_map<TNode, std::vector<TNode> > d_matchOps;
   /** initialize */
-  void initialize(TNode rep, eq::EqualityEngine * ee, TermDb* tdb);
+  void initialize(TNode rep, eq::EqualityEngine* ee, TermDb* tdb);
 };
 
 }  // namespace ccfv

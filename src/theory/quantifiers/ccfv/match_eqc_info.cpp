@@ -18,18 +18,17 @@
 #include "theory/quantifeirs/term_database.h"
 #include "theory/uf/equality_engine_iterator.h"
 
-
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-void MatchEqcInfo::initialize(TNode r, eq::EqualityEngine * ee, TermDb* tdb)
+void MatchEqcInfo::initialize(TNode r, eq::EqualityEngine* ee, TermDb* tdb)
 {
-  Assert (ee->hasTerm(r));
-  Assert (ee->getRepresentative(r)==r);
-  eq::EqClassIterator eqc_i = eq::EqClassIterator( r, ee );
-  while( !eqc_i.isFinished() )
+  Assert(ee->hasTerm(r));
+  Assert(ee->getRepresentative(r) == r);
+  eq::EqClassIterator eqc_i = eq::EqClassIterator(r, ee);
+  while (!eqc_i.isFinished())
   {
     TNode n = (*eqc_i);
     ++eqc_i;

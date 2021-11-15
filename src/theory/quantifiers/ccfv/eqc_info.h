@@ -50,12 +50,12 @@ class EqcInfo
   context::CDO<TNode> d_groundEqc;
 };
 
-/** 
+/**
  * For matching
  */
 class MatchEqcInfo
 {
-public:
+ public:
   /** the set of match operators in this equivalence class */
   std::unordered_set<TNode> d_matchOps;
   /** initialize */
