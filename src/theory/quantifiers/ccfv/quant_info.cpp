@@ -205,6 +205,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
   }
   // track parents list
   std::map<TNode, std::vector<TNode>> parentList;
+  std::unordered_set<TNode> topLevelMatchers;
   // traverse
   while (!visit.empty())
   {
@@ -226,8 +227,8 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
       {
         if (!inCongTerm)
         {
-          // record top level term
-          d_topLevelMatchers.push_back(cur.first);
+          // record top level matcher
+          topLevelMatchers.insert(cur.first);
           // we are now within a congruence term
           visit.pop_back();
           visited[cur] = true;
@@ -284,8 +285,14 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
   }
   std::unordered_set<TNode>::iterator itc;
   std::map<TNode, std::vector<TNode>>::iterator itpl;
+  std::map<TNode, std::vector<Node>>::iterator itr;
   for (TNode v : d_canonVarOrdered)
   {
+    // for each variable, we ensure that this variable occurs in the list
+    // of top-level matchers d_topLevelMatchers so far. We add one term.
+    Node tlMatcher;
+    size_t tlMatcherScore = 0;
+    bool alreadyMatcher = false;
     std::vector<TNode> ctnVisit;
     std::unordered_set<TNode> containing;
     TNode ccur;
@@ -298,6 +305,52 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
       if (itc == containing.end())
       {
         containing.insert(ccur);
+        if (!alreadyMatcher)
+        {
+          // if this is a top-level matcher
+          itc = topLevelMatchers.find(ccur);
+          if (itc!=topLevelMatchers.end())
+          {
+            if (std::find(d_topLevelMatchers.begin(), d_topLevelMatchers.end(), ccur)==d_topLevelMatchers.end())
+            {
+              // It may already be added (e.g. to match an earlier variable).
+              // In this case, we don't need to add a new matcher
+              alreadyMatcher = true;
+            }
+            else if (tlMatcherScore<3)
+            {
+              // prefer matchers in increasing order:
+              // 0-no constraints, 1-null constraint, 2-disequality, 3-equality
+              size_t tlCurScore = 0;
+              itr = d_req.find(ccur);
+              if (itr!=d_req.end())
+              {
+                for (const Node& cs : itr->second)
+                {
+                  if (cs.isNull())
+                  {
+                    tlCurScore = 1;
+                  }
+                  else if (cs.getKind()==NOT)
+                  {
+                    tlCurScore = 2;
+                  }
+                  else
+                  {
+                    tlCurScore = 3;
+                    break;
+                  }
+                }
+              }
+              if (tlMatcher.isNull() || tlCurScore>tlMatcherScore)
+              {
+                // Take this as the new best candidate matcher
+                tlMatcher = ccur;
+                tlMatcherScore = tlCurScore;
+              }
+            }
+          }
+        }
         // we have fvars[i] < fvars[j] for i < j, set or overwrite the max
         // variable here.
         d_termMaxVar[ccur] = v;
@@ -309,6 +362,17 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
         }
       }
     } while (!ctnVisit.empty());
+    if (!alreadyMatcher)
+    {
+      if (!tlMatcher.isNull())
+      {
+        d_topLevelMatchers.push_back(tlMatcher);
+      }
+      else
+      {
+        // Assert?
+      }
+    }
   }
 }
 

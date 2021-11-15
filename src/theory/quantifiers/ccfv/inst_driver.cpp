@@ -33,6 +33,8 @@ InstDriver::InstDriver(Env& env,
 
 void InstDriver::check(const std::vector<TNode>& quants)
 {
+  // reset search levels
+  // TODO: incrementally maintain this?
   resetSearchLevels(quants);
 }
 
