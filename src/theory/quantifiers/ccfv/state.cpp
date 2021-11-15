@@ -521,12 +521,11 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
   // if we should set inactive, update qi and decrement d_numActiveQuant
   if (setInactive)
   {
-    qi.setActive(false);
-    d_sstate->d_numActiveQuant = d_sstate->d_numActiveQuant - 1;
+    setQuantInactive(qi);
   }
-  // if this was the current matcher, we need another
-  if (qi.getCurrentMatcher() == p)
+  else if (qi.getCurrentMatcher() == p)
   {
+    // if this was the current matcher, we need the next one
     TNode next = qi.getNextMatcher();
     d_matchers[p] = false;
     d_matchers[next] = true;
@@ -534,6 +533,18 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
   // otherwise, we could have an instantiation, but we do not check for this
   // here; instead this is handled based on watching the number of free
   // variables assigned.
+}
+
+void State::setQuantInactive(QuantInfo& qi)
+{
+  Assert (qi.isActive());
+  qi.setActive(false);
+  d_sstate->d_numActiveQuant = d_sstate->d_numActiveQuant - 1;
+  TNode m = qi.getCurrentMatcher();
+  if (!m.isNull())
+  {
+    d_matchers[m] = false;
+  }
 }
 
 Node State::getSink() const { return d_sink; }

@@ -125,6 +125,8 @@ class State : protected EnvObj
    * Notify quantified formula
    */
   void notifyQuant(TNode q, TNode p, TNode val);
+  /** Set quantified formula inactive */
+  void setQuantInactive(QuantInfo& qi);
   /** Quantifiers state */
   QuantifiersState& d_qstate;
   /** Map quantified formulas to their info */
