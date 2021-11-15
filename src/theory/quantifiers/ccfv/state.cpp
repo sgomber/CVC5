@@ -28,19 +28,14 @@ namespace quantifiers {
 namespace ccfv {
 
 State::State(Env& env, QuantifiersState& qs)
-    : EnvObj(env),
-      d_qstate(qs),
-      d_quants(context())
+    : EnvObj(env), d_qstate(qs), d_quants(context())
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
   d_sink = sm->mkDummySkolem("sink", nm->booleanType());
 }
 
-void State::assert(TNode q)
-{
-  
-}
+void State::assert(TNode q) {}
 
 bool State::isFinished() const { return d_sstate->d_numActiveQuant == 0; }
 
@@ -61,8 +56,8 @@ void State::resetRound()
 }
 
 QuantInfo& State::initializeQuantInfo(TNode q,
-                                eq::EqualityEngine* ee,
-                                expr::TermCanonize& tc)
+                                      eq::EqualityEngine* ee,
+                                      expr::TermCanonize& tc)
 {
   std::map<Node, QuantInfo>::iterator it = d_quantInfo.find(q);
   if (it == d_quantInfo.end())
@@ -82,7 +77,8 @@ QuantInfo& State::getQuantInfo(TNode q)
   return it->second;
 }
 
-FreeVarInfo& State::getOrMkFreeVarInfo(TNode v) {
+FreeVarInfo& State::getOrMkFreeVarInfo(TNode v)
+{
   std::map<Node, FreeVarInfo>::iterator it = d_fvInfo.find(v);
   if (it == d_fvInfo.end())
   {
@@ -465,8 +461,8 @@ bool State::isSink(TNode n) const { return n == d_sink; }
 
 bool State::isGroundEqc(TNode r) const
 {
-  Assert (d_sstate!=nullptr);
-  return d_sstate->d_groundEqc.find(r)!=d_sstate->d_groundEqc.end();
+  Assert(d_sstate != nullptr);
+  return d_sstate->d_groundEqc.find(r) != d_sstate->d_groundEqc.end();
 }
 TNode State::getValue(TNode p) const
 {
@@ -485,12 +481,11 @@ TNode State::getValue(TNode p) const
   return d_sink;
 }
 
-  State::SearchState::SearchState(context::Context * c) :
-    d_groundEqc(c),
-    d_numActiveQuant(c, 0)
-    {
-    }
-                 
+State::SearchState::SearchState(context::Context* c)
+    : d_groundEqc(c), d_numActiveQuant(c, 0)
+{
+}
+
 }  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory

@@ -30,8 +30,7 @@ InstDriver::InstDriver(Env& env,
 void InstDriver::check(Theory::Effort e, QEffort quant_e)
 {
   // TODO: compute levels of variables
-  
-  
+
   FirstOrderModel* fm = d_treg.getModel();
   for (size_t i = 0, nquant = fm->getNumAssertedQuantifiers(); i < nquant; i++)
   {
@@ -42,7 +41,7 @@ void InstDriver::check(Theory::Effort e, QEffort quant_e)
     }
     activateQuantifier(q);
   }
-  
+
   /*
   do
   {

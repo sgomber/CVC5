@@ -62,7 +62,8 @@ bool CongruenceClosureFv::needsCheck(Theory::Effort e)
   return performCheck;
 }
 
-void CongruenceClosureFv::reset_round(Theory::Effort e) {
+void CongruenceClosureFv::reset_round(Theory::Effort e)
+{
   d_state.resetRound();
 }
 
@@ -87,7 +88,8 @@ void CongruenceClosureFv::addQuantToState(TNode q)
 {
   Assert(q.getKind() == FORALL);
   // activate in this context
-  QuantInfo& qi = d_state.initializeQuantInfo(q, d_qstate.getEqualityEngine(), d_tcanon);
+  QuantInfo& qi =
+      d_state.initializeQuantInfo(q, d_qstate.getEqualityEngine(), d_tcanon);
   d_state.addQuantifiedFormula(q);
   // get the equality engine
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();

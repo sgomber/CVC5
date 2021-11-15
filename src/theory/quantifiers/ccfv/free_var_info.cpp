@@ -20,7 +20,7 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-FreeVarInfo::FreeVarInfo(context::Context * c) : d_useList(c), d_quantList(c) {}
+FreeVarInfo::FreeVarInfo(context::Context* c) : d_useList(c), d_quantList(c) {}
 
 void FreeVarInfo::resetDomain()
 {
@@ -28,7 +28,6 @@ void FreeVarInfo::resetDomain()
   d_eqcIndex = 0;
   d_fullyAssignedPat.clear();
 }
-
 
 }  // namespace ccfv
 }  // namespace quantifiers

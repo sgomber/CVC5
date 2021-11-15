@@ -31,8 +31,9 @@ namespace ccfv {
 class FreeVarInfo
 {
   typedef context::CDHashSet<Node> NodeSet;
+
  public:
-   FreeVarInfo(context::Context * c);
+  FreeVarInfo(context::Context* c);
   /** term list, all pattern terms that contain this variable */
   NodeSet d_useList;
   /** quantifiers list */

@@ -62,9 +62,10 @@ class InstDriver : protected EnvObj
   PatTermInfo& getPatTermInfo(TNode p);
   /** Get equivalence class info */
   EqcInfo& getEqcInfo(TNode r);
-  
+
   /** check */
   void check(Theory::Effort e, QEffort quant_e);
+
  private:
   /** are we finished? */
   bool isFinished() const;

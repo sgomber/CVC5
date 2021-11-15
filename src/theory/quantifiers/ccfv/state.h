@@ -55,8 +55,8 @@ class State : protected EnvObj
   void resetRound();
 
   QuantInfo& initializeQuantInfo(TNode q,
-                           eq::EqualityEngine* ee,
-                           expr::TermCanonize& tc);
+                                 eq::EqualityEngine* ee,
+                                 expr::TermCanonize& tc);
   /** Get quantifiers info */
   QuantInfo& getQuantInfo(TNode q);
   /** Get free variable info */
@@ -126,8 +126,8 @@ class State : protected EnvObj
   // --------------------------- temporary state
   class SearchState
   {
-  public:
-    SearchState(context::Context * c);
+   public:
+    SearchState(context::Context* c);
     /** total number of alive quantified formulas */
     context::CDO<size_t> d_numActiveQuant;
     /** ground equivalence classes */
