@@ -328,6 +328,7 @@ void State::notifyPatternSink(TNode p) { notifyPatternEqGround(p, d_sink); }
 
 bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
 {
+  Assert (isGroundEqc(val) || isSink(val));
   if (!pi.isActive())
   {
     // already set
@@ -548,14 +549,15 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
         }
         // if a disequality constraint
         bool isEq = true;
-        if (c.getKind() == NOT)
+        TNode dval;
+        if (QuantInfo::isDeqConstraint(c, p, dval))
         {
           Assert(c[0].getKind() == EQUAL);
           isEq = false;
-          c = c[0][1];
+          c = dval;
         }
         // otherwise check the constraint
-        TNode r = d_qstate.getRepresentative(c);
+        TNode r = getGroundRepresentative(c);
         if (isEq != (val == r))
         {
           setInactive = true;

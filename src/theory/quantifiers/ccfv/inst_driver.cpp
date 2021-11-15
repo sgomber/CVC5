@@ -29,6 +29,9 @@ InstDriver::InstDriver(Env& env,
                        TermRegistry& tr)
     : EnvObj(env), d_state(state), d_qstate(qs), d_treg(tr)
 {
+  NodeManager* nm = NodeManager::currentNM();
+  d_true = nm->mkConst(true);
+  d_false = nm->mkConst(false);
 }
 
 void InstDriver::check(const std::vector<TNode>& quants)
@@ -164,7 +167,12 @@ bool InstDriver::assignSearchLevel(size_t level)
         // doesn't have a matcher, continue
         continue;
       }
-      processMatcher(qi, matcher);
+      if (!processMatcher(qi, matcher))
+      {
+        // failed to process matcher, e.g. a top-level constraint was
+        // not satisfied
+        continue;
+      }
       // maybe succeeded match?
       eqc = pi.getNextWatchEqc();
     }
@@ -191,10 +199,158 @@ bool InstDriver::assignSearchLevel(size_t level)
   return true;
 }
 
-void InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
+bool InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
 {
+  TypeNode tn = matcher.getType();
   // get constraints to determine initial equivalence classes
   const std::map<TNode, std::vector<Node>>& cs = qi.getConstraints();
+  TNode eq;
+  std::vector<TNode> deq;
+  std::map<TNode, std::vector<Node>>::const_iterator itc = cs.find(matcher);
+  if (itc!=cs.end())
+  {
+    bool setInactive = false;
+    for (const Node& cc : itc->second)
+    {
+      if (cc.isNull())
+      {
+        // constraint says that the term must be equal to anything
+        continue;
+      }
+      TNode dval;
+      if (QuantInfo::isDeqConstraint(cc, matcher, dval))
+      {
+        Assert (!tn.isBoolean());
+        Assert (!dval.isNull());
+        dval = d_state.getGroundRepresentative(dval);
+        if (!dval.isNull())
+        {
+          if (eq.isNull())
+          {
+            deq.push_back(dval);
+          }
+          else if (eq==dval)
+          {
+            // term must be equal and disequal to the same thing
+            setInactive = true;
+          }
+        }
+        else
+        {
+          // the pattern needs to be disequal to a term that does not exist
+          setInactive = true;
+        }
+      }
+      else
+      {
+        TNode eval = d_state.getGroundRepresentative(cc);
+        if (!eval.isNull())
+        {
+          if (eq.isNull())
+          {
+            // also check if disequality constraints contradict
+            if (std::find(deq.begin(), deq.end(), eq)!=deq.end())
+            {
+              // term must be equal and disequal to the same thing
+              setInactive = true;
+            }
+            else
+            {
+              eq = eval;
+            }
+            deq.clear();
+          }
+          else if (eval!=eq)
+          {
+            // Matcher needs to be equal to two different things that are not
+            // equal. This should happen very infrequently, e.g.
+            // forall x. (f(x) = a ^ f(x) = b) => P(x) where a is not currently
+            // equal to b.
+            setInactive = true;
+          }
+        }
+        else
+        {
+          // the pattern needs to be equal to a term that does not exist
+          setInactive = true;
+        }
+      }
+      if (setInactive)
+      {
+        d_state.setQuantInactive(qi);
+        return false;
+      }
+    }
+  }
+  // if we have an equality constraint, we limit to matching in that equivalence class
+  PatTermInfo& pi = d_state.getPatTermInfo(matcher);
+  if (!eq.isNull())
+  {
+    Assert (d_state.isGroundEqc(eq));
+    pi.addWatchEqc(eq);
+  }
+  else
+  {
+    // otherwise, we must consider all equivalence clases
+    if (tn.isBoolean())
+    {
+      Assert (deq.empty());
+      pi.addWatchEqc(d_true);
+      pi.addWatchEqc(d_false);
+    }
+    else
+    {
+      // if not Boolean, we can filter by deq
+      const std::unordered_set<TNode>& eqcs = d_state.getGroundEqcFor(tn);
+      for (TNode eqc : eqcs)
+      {
+        if (std::find(deq.begin(), deq.end(), eqc)==deq.end())
+        {
+          pi.addWatchEqc(eqc);
+        }
+      }
+    }
+  }
+  // now run matching
+  runMatching(pi);
+  return true;
+}
+
+void InstDriver::runMatching(PatTermInfo& pi)
+{
+  TNode op = pi.d_matchOp;
+  if (op.isNull())
+  {
+    // if not a matchable operator
+    return;
+  }
+  Assert (pi.d_pattern.getNumChildren()>0);
+  std::vector<TNode> pargs;
+  // get the status of the arguments of pi
+  for (TNode pic : pi.d_pattern)
+  {
+    
+  }
+  
+  
+  std::unordered_map<TNode, std::vector<Node> >::iterator itm;
+  TNode weqc = pi.getNextWatchEqc();
+  while (!weqc.isNull())
+  {
+    Assert (d_state.isGroundEqc(weqc));
+    MatchEqcInfo& meqc = d_state.getMatchEqcInfo(weqc);
+    // increment weqc to the next equivalence class
+    weqc = pi.getNextWatchEqc();
+    
+    // get the terms to match in this equivalence class
+    itm = meqc.d_matchOps.find(op);
+    if (itm== meqc.d_matchOps.end())
+    {
+      // none in this equivalence class
+      continue;
+    }
+    //
+  }
 }
 
 bool InstDriver::isFinished() const { return d_state.isFinished(); }

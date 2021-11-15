@@ -116,6 +116,7 @@ void QuantInfo::computeMatchReq(TNode cur,
     pol = false;
     cur = cur[0];
     k = cur.getKind();
+    // double negations should already be eliminated
     Assert(k != NOT);
   }
   // NOTE: could sanitize the term, remove any nested quantifiers here?
@@ -332,7 +333,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
                   {
                     tlCurScore = 1;
                   }
-                  else if (cs.getKind() == NOT)
+                  else if (isDeqConstraint(cs, ccur))
                   {
                     tlCurScore = 2;
                   }
@@ -456,6 +457,20 @@ const std::vector<TNode>& QuantInfo::getTopLevelMatchers() const
 bool QuantInfo::isActive() const { return d_isActive.get(); }
 
 void QuantInfo::setActive(bool val) { d_isActive = val; }
+
+bool QuantInfo::isDeqConstraint(TNode c, TNode p)
+{
+  return c.getKind()==NOT && c[0].getKind()==EQUAL && c[0][0]==p;
+}
+bool QuantInfo::isDeqConstraint(TNode p, TNode c, TNode& val)
+{
+  if (isDeqConstraint(c, p))
+  {
+    val = c[0][1];
+    return true;
+  }
+  return false;
+}
 
 }  // namespace ccfv
 }  // namespace quantifiers

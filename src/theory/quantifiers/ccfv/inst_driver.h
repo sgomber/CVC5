@@ -82,9 +82,14 @@ class InstDriver : protected EnvObj
   /** Assign variable to the equivalence class eqc */
   void assignVar(TNode v, TNode eqc);
   /** Process matcher */
-  void processMatcher(QuantInfo& qi, TNode matcher);
+  bool processMatcher(QuantInfo& qi, TNode matcher);
+  /** Run matching */
+  void runMatching(PatTermInfo& pi);
   /** Get search level */
   SearchLevel& getSearchLevel(size_t i);
+  /** common constants */
+  Node d_true;
+  Node d_false;
   /** The state of matching for quantifiers and pattern terms */
   State& d_state;
   /** Reference to the state of the quantifiers engine */

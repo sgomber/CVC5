@@ -90,6 +90,10 @@ class QuantInfo
   /** set dead */
   void setActive(bool val);
 
+  /** is c a disequality constraint for p? */
+  static bool isDeqConstraint(TNode c, TNode p, TNode& val);
+  /** is c a disequality constraint for p? */
+  static bool isDeqConstraint(TNode c, TNode p);
  private:
   /**
    * Process matching requirement for subterm cur which is a disjunct in the
