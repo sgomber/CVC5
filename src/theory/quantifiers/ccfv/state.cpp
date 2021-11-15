@@ -269,7 +269,8 @@ void State::eqNotifyMerge(TNode t1, TNode t2)
       }
       else
       {
-        // track that the pattern and all patterns made equal to it are equivalent
+        // track that the pattern and all patterns made equal to it are
+        // equivalent
         for (const Node& n : eq2->d_eqPats)
         {
           eq1->d_eqPats.push_back(n);
@@ -285,13 +286,13 @@ void State::eqNotifyMerge(TNode t1, TNode t2)
       return;
     }
   }
-  Assert (isGroundEqc(t2));
+  Assert(isGroundEqc(t2));
   // we are in a situation where a ground equivalence class t2 has merged
   // with a pattern equivalence class.
   // notify the pattern for the representative
   notifyPatternEqGround(t1, t2);
   // if there are patterns equal to this one, notify them too
-  if (eq1==nullptr)
+  if (eq1 == nullptr)
   {
     eq1 = getOrMkEqcInfo(t1);
   }
@@ -586,9 +587,10 @@ TNode State::getGroundRepresentative(TNode n) const
   {
     return r;
   }
-  // otherwise it may be a pattern that became a representative of an equivalence class?
-  const EqcInfo * eq = getEqcInfo(r);
-  if (eq==nullptr)
+  // otherwise it may be a pattern that became a representative of an
+  // equivalence class?
+  const EqcInfo* eq = getEqcInfo(r);
+  if (eq == nullptr)
   {
     return TNode::null();
   }

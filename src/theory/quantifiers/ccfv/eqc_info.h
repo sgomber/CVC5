@@ -20,8 +20,8 @@
 
 #include <map>
 
-#include "context/cdo.h"
 #include "context/cdlist.h"
+#include "context/cdo.h"
 #include "expr/node.h"
 
 namespace cvc5 {
