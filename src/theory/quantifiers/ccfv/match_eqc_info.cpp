@@ -18,13 +18,14 @@
 #include "theory/quantifiers/term_database.h"
 #include "theory/uf/equality_engine_iterator.h"
 #include "expr/node_algorithm.h"
+#include "theory/quantifiers/ccfv/state.h"
 
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-void MatchEqcInfo::initialize(TNode r, eq::EqualityEngine* ee, TermDb* tdb)
+void MatchEqcInfo::initialize(TNode r, const State& s, eq::EqualityEngine* ee, TermDb* tdb)
 {
   Assert(ee->hasTerm(r));
   Assert(ee->getRepresentative(r) == r);
@@ -53,7 +54,7 @@ void MatchEqcInfo::initialize(TNode r, eq::EqualityEngine* ee, TermDb* tdb)
     bool childChanged = false;
     for (TNode nc : n)
     {
-      TNode ncr = ee->getRepresentative(nc);
+      TNode ncr = s.getGroundRepresentative(nc);
       args.push_back(ncr);
       childChanged = childChanged || ncr!=nc;
     }

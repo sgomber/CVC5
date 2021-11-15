@@ -185,12 +185,13 @@ PatTermInfo& State::getPatTermInfo(TNode p)
 
 MatchEqcInfo& State::getMatchEqcInfo(TNode r)
 {
+  Assert (isGroundEqc(r));
   std::map<Node, MatchEqcInfo>::iterator it = d_meqcInfo.find(r);
   if (it == d_meqcInfo.end())
   {
     MatchEqcInfo& meqc = d_meqcInfo[r];
     // initialize the match information
-    meqc.initialize(r, d_qstate.getEqualityEngine(), d_tdb);
+    meqc.initialize(r, *this, d_qstate.getEqualityEngine(), d_tdb);
     return meqc;
   }
   return it->second;
@@ -589,6 +590,16 @@ void State::setQuantInactive(QuantInfo& qi)
 Node State::getSink() const { return d_sink; }
 
 bool State::isSink(TNode n) const { return n == d_sink; }
+
+const std::unordered_set<TNode>& State::getGroundEqcFor(TypeNode tn) const
+{
+  std::map<TypeNode, std::unordered_set<TNode>>::const_iterator it = d_typeGroundEqc.find(tn);
+  if (it==d_typeGroundEqc.end())
+  {
+    return d_emptyEqc;
+  }
+  return it->second;
+}
 
 bool State::isGroundEqc(TNode r) const
 {

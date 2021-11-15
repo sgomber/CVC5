@@ -109,6 +109,8 @@ class State : protected EnvObj
   Node getSink() const;
   /** Is sink */
   bool isSink(TNode n) const;
+  /** Get ground equivalence classes */
+  const std::unordered_set<TNode>& getGroundEqcFor(TypeNode tn) const;
   /** Is ground eqc? */
   bool isGroundEqc(TNode r) const;
   /** Get the ground representative */
@@ -164,6 +166,8 @@ class State : protected EnvObj
   std::unordered_set<TNode> d_groundEqc;
   /** Ground equivalence classes per type */
   std::map<TypeNode, std::unordered_set<TNode>> d_typeGroundEqc;
+  /** Empty set */
+  std::unordered_set<TNode> d_emptyEqc;
   /** total number of alive quantified formulas */
   context::CDO<size_t> d_numActiveQuant;
 };

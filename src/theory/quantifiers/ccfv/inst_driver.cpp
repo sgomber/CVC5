@@ -164,6 +164,7 @@ bool InstDriver::assignSearchLevel(size_t level)
         // doesn't have a matcher, continue
         continue;
       }
+      processMatcher(qi, matcher);
       // maybe succeeded match?
       eqc = pi.getNextWatchEqc();
     }
@@ -193,6 +194,7 @@ bool InstDriver::assignSearchLevel(size_t level)
 void InstDriver::processMatcher(QuantInfo& qi, TNode matcher)
 {
   // get constraints to determine initial equivalence classes
+  const std::map<TNode, std::vector<Node>>& cs = qi.getConstraints();
 }
 
 bool InstDriver::isFinished() const { return d_state.isFinished(); }
