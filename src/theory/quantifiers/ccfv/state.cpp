@@ -469,7 +469,11 @@ void State::notifyPatternEqGround(TNode p, TNode g)
   Assert(isGroundEqc(g) || isSink(g));
   std::map<Node, PatTermInfo>::iterator it = d_pInfo.find(p);
   Assert(it != d_pInfo.end());
-  Assert(it->second.isActive());
+  if(!it->second.isActive())
+  {
+    // already assigned
+    return;
+  }
   it->second.d_eq = g;
   // run notifications until fixed point
   size_t tnIndex = 0;

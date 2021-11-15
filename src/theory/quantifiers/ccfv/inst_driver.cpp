@@ -165,7 +165,7 @@ bool InstDriver::assignSearchLevel(size_t level)
       TNode matcher = qi.getMatcherFor(v);
       if (matcher.isNull())
       {
-        // doesn't have a matcher, continue
+        // doesn't have a matcher for this variable, continue
         continue;
       }
       if (!processMatcher(qi, matcher))
@@ -190,6 +190,7 @@ bool InstDriver::assignSearchLevel(size_t level)
   if (!success)
   {
     // could not find an assignment
+    // TODO: is this right?
     return false;
   }
   // assign each variable
@@ -201,9 +202,35 @@ bool InstDriver::assignSearchLevel(size_t level)
       return false;
     }
   }
+  
+  // assign final terms to sink
+  // The use list terms of the variables to assign here are those that are now
+  // fully assigned. If these terms have not yet merged, we are done.
+  for (TNode v : slevel.d_varsToAssign)
+  {
+    const FreeVarInfo& fi = d_state.getFreeVarInfo(v);
+    for (const Node& t : fi.d_useList)
+    {
+      d_state.notifyPatternSink(t);
+      if (d_state.isFinished())
+      {
+        return false;
+      }
+    }
+  }
 
   // now, all active quantified formulas that are still active should have
   // propagating instances.
+  for (TNode q : slevel.d_finalQuants)
+  {
+    QuantInfo& qi = d_state.getQuantInfo(q);
+    if (!qi.isActive())
+    {
+      continue;
+    }
+    // fully assigned and still active, can construct propagating instance?
+    // TODO
+  }
 
   return true;
 }
