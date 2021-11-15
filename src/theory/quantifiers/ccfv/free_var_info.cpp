@@ -15,18 +15,24 @@
 
 #include "theory/quantifiers/ccfv/free_var_info.h"
 
+#include "theory/quantifiers/ccfv/state.h"
+
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-FreeVarInfo::FreeVarInfo(context::Context* c) : d_useList(c), d_quantList(c), d_context(c) {}
+FreeVarInfo::FreeVarInfo(context::Context* c) : d_useList(c), d_context(c) {}
 
-void FreeVarInfo::resetRound()
+void FreeVarInfo::resetDomain()
 {
   d_eqcProcessed.clear();
-  d_qindex = 0;
   d_itql = d_qlist.begin();
+}
+
+bool FreeVarInfo::isActive() const
+{
+  return true;
 }
 
 bool FreeVarInfo::isFinished() const
@@ -43,6 +49,25 @@ void FreeVarInfo::addQuantMatch(TNode f, size_t index, TNode q)
     it = d_qlist.emplace(key, d_context).first;
   }
   it->second.push_back(q);
+}
+
+bool FreeVarInfo::getNextMatchPosition(State* s, TNode& f, size_t& index)
+{
+  while (d_itql!=d_qlist.end())
+  {
+    for (TNode q : d_itql->second)
+    {
+      if (s->isQuantActive(q))
+      {
+        f = d_itql->first.first;
+        index = d_itql->first.second;
+        d_itql++;
+        return true;
+      }
+    }
+    d_itql++;
+  }
+  return false;
 }
 
 }  // namespace ccfv

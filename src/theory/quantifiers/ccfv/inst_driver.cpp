@@ -60,7 +60,7 @@ void InstDriver::assignVariableLevels(
   for (TNode q : quants)
   {
     QuantInfo& qi = d_state.getQuantInfo(q);
-    TNode next = qi.getNextVariable();
+    TNode next = qi.getNextSearchVariable();
     if (next.isNull())
     {
       // fully assigned at this level

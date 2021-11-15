@@ -29,6 +29,8 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
+class State;
+
 class FreeVarInfo
 {
   typedef context::CDList<Node> NodeList;
@@ -36,21 +38,22 @@ class FreeVarInfo
 
  public:
   FreeVarInfo(context::Context* c);
-  /** term list, all pattern terms that contain this variable */
+  /** 
+   * Term list, all pattern terms that are fully assigned when we have an
+   * assignment for this variable.
+   */
   NodeSet d_useList;
-  /** quantifiers list */
-  NodeList d_quantList;
-  //--------------------- in search
-  /** The list of ground equivalence classes we have already considered */
-  std::unordered_set<TNode> d_eqcProcessed;
-  /** The current index in quantifiers */
-  size_t d_qindex;
-  /** Reset domain */
-  void resetRound();
-  /** Is finished? */
-  bool isFinished() const;
   /** Add quantifier */
   void addQuantMatch(TNode f, size_t index, TNode q);
+  /** Is active? */
+  bool isActive() const;
+  //--------------------- in search
+  /** Reset domain */
+  void resetDomain();
+  /** Is finished? */
+  bool isFinished() const;
+  /** Get next argument position to match */
+  bool getNextMatchPosition(State* s, TNode& f, size_t& index);
  private:
   /** context */
   context::Context * d_context;
@@ -58,6 +61,8 @@ class FreeVarInfo
   std::map<std::pair<TNode, size_t>, NodeList> d_qlist;
   /** Iterator through the above list */
   std::map<std::pair<TNode, size_t>, NodeList>::iterator d_itql;
+  /** The list of ground equivalence classes we have already considered */
+  std::unordered_set<TNode> d_eqcProcessed;
 };
 
 }  // namespace ccfv

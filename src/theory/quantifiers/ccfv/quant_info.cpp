@@ -292,7 +292,7 @@ void QuantInfo::resetRound()
   d_initVarIndex = 0;
 }
 
-TNode QuantInfo::getNextVariable()
+TNode QuantInfo::getNextSearchVariable()
 {
   if (d_initVarIndex >= d_canonVarOrdered.size())
   {

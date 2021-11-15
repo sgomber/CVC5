@@ -94,12 +94,19 @@ void CongruenceClosureFv::assertNode(Node q)
   {
     return;
   }
+  // Assert quantified formula. This sets up:
+  // (1) notifications from constraint terms to quantified formulas
+  // (2) notifications from children to Boolean connectives
+  // (3) notifications from children to congruence terms
+  // (4) free variables to use list terms
+  // (5) addition of congruence terms to the equality engine
+  
   // get the equality engine
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
   // initialize the internal information for the quantified formula
   QuantInfo& qi = d_state.initializeQuantInfo(q, ee, d_tcanon);
   // free variables from the quantified formula
-  const std::vector<TNode>& fvars = qi.getFreeVariables();
+  const std::vector<TNode>& fvars = qi.getOrderedFreeVariables();
 
   std::unordered_set<TNode> visited;
   std::unordered_set<TNode>::iterator it;
@@ -118,7 +125,7 @@ void CongruenceClosureFv::assertNode(Node q)
 
   TNode cur;
   // track parents list
-  //std::map<TNode, std::vector<TNode>> parentList;
+  std::map<TNode, std::vector<TNode>> parentList;
   do
   {
     cur = visit.back();
@@ -129,6 +136,7 @@ void CongruenceClosureFv::assertNode(Node q)
       visited.insert(cur);
       if (!expr::hasFreeVar(cur))
       {
+        // does not contain free variables, we don't require
         continue;
       }
       Kind k = cur.getKind();
@@ -140,17 +148,17 @@ void CongruenceClosureFv::assertNode(Node q)
       }
       Assert(cur.getNumChildren() > 0);
       bool isBoolConnective = false;
-      Node matchOp;
+      //Node matchOp;
       if (ee->isFunctionKind(k))
       {
-        matchOp = getTermDatabase()->getMatchOperator(cur);
+        //matchOp = getTermDatabase()->getMatchOperator(cur);
       }
       else
       {
         // compute if Boolean connective
         if (!expr::isBooleanConnective(cur))
         {
-          // not handled as Boolean connective or congruence kind
+          // not handled as Boolean connective or congruence kind, skip
           continue;
         }
         isBoolConnective = true;
@@ -173,9 +181,10 @@ void CongruenceClosureFv::assertNode(Node q)
           Assert (ee->isFunctionKind(k));
           Assert (cur.hasOperator());
           // Other terms will track # total unassigned free variables
-          //parentList[cc].push_back(cur);
+          parentList[cc].push_back(cur);
           // congruence terms will recieve notifications when unassigned
           pi.d_parentCongNotify.push_back(cur);
+          /*
           if (cc.getKind()==BOUND_VARIABLE && !matchOp.isNull())
           {
             // if a bound variable, we track that the quantified formula may
@@ -183,6 +192,7 @@ void CongruenceClosureFv::assertNode(Node q)
             FreeVarInfo& fi = d_state.getOrMkFreeVarInfo(cc);
             fi.addQuantMatch(matchOp, i, q);
           }
+          */
         }
         visit.push_back(cc);
       }
@@ -190,12 +200,10 @@ void CongruenceClosureFv::assertNode(Node q)
   } while (!visit.empty());
 
   // go back and set the use list of the free variables
-  /*
   std::map<TNode, std::vector<TNode>>::iterator itpl;
+  std::map<TNode, TNode> termToMaxVar;
   for (TNode v : fvars)
   {
-    FreeVarInfo& fi = d_state.getOrMkFreeVarInfo(v);
-    fi.d_quantList.push_back(q);
     std::unordered_set<TNode> containing;
     visit.push_back(v);
     do
@@ -206,13 +214,9 @@ void CongruenceClosureFv::assertNode(Node q)
       if (it == containing.end())
       {
         containing.insert(cur);
-        if (fi.d_useList.find(cur) == fi.d_useList.end())
-        {
-          fi.d_useList.insert(cur);
-          // increment the number of variables
-          PatTermInfo& pi = d_state.getOrMkPatTermInfo(cur);
-          pi.d_numUnassigned = pi.d_numUnassigned + 1;
-        }
+        // we have fvars[i] < fvars[j] for i < j, set or overwrite the max variable
+        // here.
+        termToMaxVar[cur] = v;
         itpl = parentList.find(cur);
         if (itpl != parentList.end())
         {
@@ -221,9 +225,13 @@ void CongruenceClosureFv::assertNode(Node q)
       }
     } while (!containing.empty());
   }
-  */
+  // map free variables to terms that are fully assigned when that free variable is assigned
+  for (const std::pair<TNode, TNode>& tv : termToMaxVar)
+  {
+    FreeVarInfo& fi = d_state.getOrMkFreeVarInfo(tv.second);
+    fi.d_useList.insert(tv.first);
+  }
 
-  // TODO: should not do this until we are running
   // now, add the congruence terms to the equality engine
   const std::vector<TNode>& pterms = qi.getCongruenceTerms();
   for (TNode p : pterms)

@@ -48,7 +48,9 @@ class QuantInfo
   //-------------------------- static information
   /** Get free variables */
   const std::vector<TNode>& getFreeVariables() const;
-  /** Get free variables */
+  /** 
+   * Get ordered free variables
+   */
   const std::vector<TNode>& getOrderedFreeVariables() const;
   /**
    * Get the constraints, which maps pattern terms to node corresponding to
@@ -63,12 +65,17 @@ class QuantInfo
   /** Get matchers */
   const std::vector<TNode>& getTopLevelMatchers() const;
   //-------------------------- per round
+  /** reset variable count */
+  //void resetSearchVariableCount();
+  /**
+   * Get next variable. This is used to initialize the search.
+   */
+  TNode getNextSearchVariable();
+  //-------------------------- per round
   /**
    * Reset round, called once per full effort check
    */
   void resetRound();
-  /** Get next variable */
-  TNode getNextVariable();
   /**
    * Get next matcher from the list, increment the index for which matcher
    * we are considering.

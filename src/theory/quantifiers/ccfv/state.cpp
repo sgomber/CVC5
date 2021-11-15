@@ -51,10 +51,12 @@ void State::resetRound(size_t nquant)
   // clear the equivalence class info
   d_eqcInfo.clear();
   // reset free variable information
+  /*
   for (std::pair<const Node, FreeVarInfo>& fi : d_fvInfo)
   {
     fi.second.resetRound();
   }
+  */
 }
 
 QuantInfo& State::initializeQuantInfo(TNode q,
@@ -102,7 +104,7 @@ std::vector<TNode> State::getFreeVarList() const
   std::vector<TNode> fvar;
   for (const std::pair<const Node, FreeVarInfo>& fi : d_fvInfo)
   {
-    if (!fi.second.d_quantList.empty())
+    if (!fi.second.isActive())
     {
       fvar.push_back(fi.first);
     }
@@ -120,6 +122,7 @@ bool sortVarNQuant(const std::pair<size_t, TNode>& a,
   return a.first == b.first && a.second < b.second;
 }
 
+/*
 std::vector<TNode> State::getOrderedFreeVarList() const
 {
   std::vector<std::pair<size_t, TNode>> fvarList;
@@ -140,6 +143,7 @@ std::vector<TNode> State::getOrderedFreeVarList() const
   }
   return fvar;
 }
+*/
 
 PatTermInfo& State::getOrMkPatTermInfo(TNode p)
 {
@@ -510,6 +514,14 @@ bool State::isGroundEqc(TNode r) const
   Assert(d_sstate != nullptr);
   return d_sstate->d_groundEqc.find(r) != d_sstate->d_groundEqc.end();
 }
+
+bool State::isQuantActive(TNode q) const
+{
+  std::map<Node, QuantInfo>::const_iterator it = d_quantInfo.find(q);
+  Assert (it!=d_quantInfo.end());
+  return it->second.isActive();
+}
+
 TNode State::getValue(TNode p) const
 {
   std::map<Node, PatTermInfo>::const_iterator it = d_pInfo.find(p);
