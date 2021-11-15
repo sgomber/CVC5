@@ -309,21 +309,23 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
         {
           // if this is a top-level matcher
           itc = topLevelMatchers.find(ccur);
-          if (itc!=topLevelMatchers.end())
+          if (itc != topLevelMatchers.end())
           {
-            if (std::find(d_topLevelMatchers.begin(), d_topLevelMatchers.end(), ccur)==d_topLevelMatchers.end())
+            if (std::find(
+                    d_topLevelMatchers.begin(), d_topLevelMatchers.end(), ccur)
+                == d_topLevelMatchers.end())
             {
               // It may already be added (e.g. to match an earlier variable).
               // In this case, we don't need to add a new matcher
               alreadyMatcher = true;
             }
-            else if (tlMatcherScore<3)
+            else if (tlMatcherScore < 3)
             {
               // prefer matchers in increasing order:
               // 0-no constraints, 1-null constraint, 2-disequality, 3-equality
               size_t tlCurScore = 0;
               itr = d_req.find(ccur);
-              if (itr!=d_req.end())
+              if (itr != d_req.end())
               {
                 for (const Node& cs : itr->second)
                 {
@@ -331,7 +333,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
                   {
                     tlCurScore = 1;
                   }
-                  else if (cs.getKind()==NOT)
+                  else if (cs.getKind() == NOT)
                   {
                     tlCurScore = 2;
                   }
@@ -342,7 +344,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
                   }
                 }
               }
-              if (tlMatcher.isNull() || tlCurScore>tlMatcherScore)
+              if (tlMatcher.isNull() || tlCurScore > tlMatcherScore)
               {
                 // Take this as the new best candidate matcher
                 tlMatcher = ccur;
