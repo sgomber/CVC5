@@ -36,11 +36,11 @@ namespace ccfv {
  * This class does matching modulo equality for terms. It does not generate
  * substitutions, instead its main purpose is to set a relevant domain of
  * variables.
- * 
- * For example, say our E-graph is 
+ *
+ * For example, say our E-graph is
  *   { a, f(a,b,c), f(c,c,d), g(c), g(d) } { b, c }, { e }, { d }
  * where the first term in each equivalence class is the representative.
- * 
+ *
  * Each pattern has a set of unprocessed and processed "watched equivalence
  * classes" W. Assume initially that:
  *   W(f(g(x),y,b)) = {a} / {}
@@ -57,7 +57,7 @@ namespace ccfv {
  *   W(x) = {c, d} / {}
  * Notice that matching does not process the watched equivalence classes of
  * variables.
- * 
+ *
  * As a result, substitutions x -> {c, d}, y -> {b} are relevant for making
  * f(g(x),y,b) equal to a.
  */
