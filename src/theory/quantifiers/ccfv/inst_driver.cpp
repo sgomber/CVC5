@@ -465,7 +465,7 @@ void InstDriver::search()
     if (pushLevel(currLevel))
     {
       Assert(!isFinished());
-      if (currLevel<d_numLevels)
+      if (currLevel < d_numLevels)
       {
         currLevel++;
       }

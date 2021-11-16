@@ -35,14 +35,11 @@ Matching::Matching(Env& env, State& state, QuantifiersState& qs, TermDb* tdb)
   d_false = nm->mkConst(false);
 }
 
-void Matching::initializeLevel(size_t level)
-{
-  d_mpmap[level].clear();
-}
+void Matching::initializeLevel(size_t level) { d_mpmap[level].clear(); }
 
 bool Matching::processMatcher(size_t level, QuantInfo& qi, TNode matcher)
 {
-  Assert (d_state.getPatTermInfo(matcher).isActive());
+  Assert(d_state.getPatTermInfo(matcher).isActive());
   // get the match pattern info
   std::map<TNode, MatchPatInfo>& mmp = d_mpmap[level];
   MatchPatInfo* mpi = &mmp[matcher];
@@ -161,10 +158,12 @@ bool Matching::processMatcher(size_t level, QuantInfo& qi, TNode matcher)
   return true;
 }
 
-void Matching::runMatching(std::map< TNode, MatchPatInfo>& mmp, TNode p, MatchPatInfo* mpi)
+void Matching::runMatching(std::map<TNode, MatchPatInfo>& mmp,
+                           TNode p,
+                           MatchPatInfo* mpi)
 {
   Assert(pi != nullptr);
-  Assert (mpi != nullptr);
+  Assert(mpi != nullptr);
   TNode op = d_tdb->getMatchOperator(p);
   if (op.isNull())
   {
@@ -180,7 +179,7 @@ void Matching::runMatching(std::map< TNode, MatchPatInfo>& mmp, TNode p, MatchPa
   }
   // the ground representatives of the pattern, if they exist
   std::vector<TNode> pargs;
-  // pattern term information for 
+  // pattern term information for
   std::vector<MatchPatInfo*> mpiargs;
   std::vector<size_t> matchIndices;
   std::vector<size_t> nmatchIndices;
@@ -203,8 +202,7 @@ void Matching::runMatching(std::map< TNode, MatchPatInfo>& mmp, TNode p, MatchPa
       {
         // get the status of the arguments of pi
         Assert(p.getNumChildren() > 0);
-        for (size_t i = 0, nchild = p.getNumChildren(); i < nchild;
-             i++)
+        for (size_t i = 0, nchild = p.getNumChildren(); i < nchild; i++)
         {
           TNode pic = p[i];
           // Note we use get ground representative here. We do not use getValue,
@@ -249,7 +247,7 @@ void Matching::runMatching(std::map< TNode, MatchPatInfo>& mmp, TNode p, MatchPa
           for (size_t i : nmatchIndices)
           {
             mpiargs[i]->addWatchEqc(m[i]);
-            if (p[i].getKind()==BOUND_VARIABLE)
+            if (p[i].getKind() == BOUND_VARIABLE)
             {
               // don't need to run matching on variables
               continue;

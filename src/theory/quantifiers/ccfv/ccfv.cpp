@@ -95,7 +95,7 @@ void CongruenceClosureFv::assertNode(Node q)
     return;
   }
   // Assert quantified formula. This sets up:
-  // (*) 
+  // (*)
   // (1) notifications from constraint terms to quantified formulas
   // (2) notifications from children to Boolean connectives
   // (3) notifications from children to congruence terms

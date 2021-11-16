@@ -18,8 +18,8 @@
 #define CVC5__THEORY__QUANTIFIERS__CCFV__MATCHING_H
 
 #include "smt/env_obj.h"
-#include "theory/quantifiers/ccfv/state.h"
 #include "theory/quantifiers/ccfv/match_pat_info.h"
+#include "theory/quantifiers/ccfv/state.h"
 
 namespace cvc5 {
 namespace theory {
@@ -72,9 +72,12 @@ class Matching : protected EnvObj
   bool processMatcher(size_t level, QuantInfo& qi, TNode matcher);
   /** Get the pattern matching information at the given level */
   std::map<TNode, MatchPatInfo>& getMatchPatInfo(size_t level);
+
  private:
   /** Run matching */
-  void runMatching(std::map< TNode, MatchPatInfo>& mmp, TNode p, MatchPatInfo* mpi);
+  void runMatching(std::map<TNode, MatchPatInfo>& mmp,
+                   TNode p,
+                   MatchPatInfo* mpi);
   /** common constants */
   Node d_true;
   Node d_false;
@@ -85,7 +88,7 @@ class Matching : protected EnvObj
   /** Term database */
   TermDb* d_tdb;
   /** Mapping search levels, patterns to match info */
-  std::map<size_t, std::map< TNode, MatchPatInfo> > d_mpmap;
+  std::map<size_t, std::map<TNode, MatchPatInfo> > d_mpmap;
 };
 
 }  // namespace ccfv

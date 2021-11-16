@@ -68,9 +68,9 @@ void QuantInfo::initialize(TNode q,
   {
     d_canonVarOrdered.push_back(vl.second);
   }
-  //d_canonVarOrdered.insert(
+  // d_canonVarOrdered.insert(
   //    d_canonVarOrdered.end(), uncontainedVar.begin(), uncontainedVar.end());
-  //Assert(d_canonVarOrdered.size() == q[0].getNumChildren());
+  // Assert(d_canonVarOrdered.size() == q[0].getNumChildren());
 
   // compute matching requirements
   std::unordered_set<TNode> processed;
@@ -169,7 +169,7 @@ void QuantInfo::computeMatchReq(TNode cur,
   // NOTE: could sanitize the term, remove any nested quantifiers here?
   // This is probably not necessary, the equality engine will treat the term
   // as a leaf.
-  
+
   // P(x) V (Q(x) ^ R(x)) V f(x) = a V R(f(x)) V f(x) != g(x)
   // P(x) -> false
   // (Q(x) ^ R(x)) -> false
@@ -228,8 +228,6 @@ void QuantInfo::addMatchTermReq(TNode t, Node eqc, bool isEq)
 }
 
 // f( g(x) + 1 )
-
-
 
 void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
 {
@@ -296,7 +294,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
           visited[cur] = false;
         }
       }
-      else if (!inCongTerm && expr::isBooleanConnective(cur.first)) // EQUAL
+      else if (!inCongTerm && expr::isBooleanConnective(cur.first))  // EQUAL
       {
         // if we are not in a congruence term, and we are Boolean connective,
         // recurse
@@ -428,7 +426,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
       {
         // use the matcher for this variable
         d_matchers[v] = tlMatcher;
-        Assert (expr::hasSubterm(tlMatcher,v));
+        Assert(expr::hasSubterm(tlMatcher, v));
         // Notice that variables in d_canonVarOrdered are assigned in order,
         // thus this justifies matching for future variables.
         usedMatchers.insert(tlMatcher);
@@ -436,7 +434,8 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
       else
       {
         // Warn that no matchers exist?
-        Trace("ccfv-warn") << "Warning: no matcher exists for variable " << v << " in " << d_quant << std::endl;
+        Trace("ccfv-warn") << "Warning: no matcher exists for variable " << v
+                           << " in " << d_quant << std::endl;
       }
     }
   }
