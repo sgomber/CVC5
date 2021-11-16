@@ -90,9 +90,9 @@ void InstDriver::check(const std::vector<TNode>& quants)
 
   // do initial notifications for relevant ground terms in the bodies of
   // quantified formulas.
+  FreeVarInfo& fiNull = d_state.getOrMkFreeVarInfo(Node::null());
   Trace("ccfv-debug") << "Initial notify " << fiNull.d_useList.size()
                       << " ground terms..." << std::endl;
-  FreeVarInfo& fiNull = d_state.getOrMkFreeVarInfo(Node::null());
   for (const Node& t : fiNull.d_useList)
   {
     TNode trep = d_state.getGroundRepresentative(t);
@@ -162,7 +162,7 @@ void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
     for (std::pair<const size_t, SearchLevel>& sl : d_levels)
     {
       Trace("ccfv-debug") << "Search level #" << sl.first << ":" << std::endl;
-      Trace("ccfv-debug") << sl.
+      Trace("ccfv-debug") << sl.second.toStringDebug() << std::endl;
     }
   }
 }

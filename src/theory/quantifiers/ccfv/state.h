@@ -112,6 +112,9 @@ class State : protected EnvObj
   /** Set quantified formula inactive */
   void setQuantInactive(QuantInfo& qi);
 
+  /** debugging */
+  std::string toStringDebug() const;
+  std::string toStringDebugSearch() const;
  private:
   /** Get equivalence class info */
   EqcInfo* getOrMkEqcInfo(TNode r, bool doMk = false);

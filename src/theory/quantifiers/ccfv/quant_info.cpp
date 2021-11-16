@@ -101,7 +101,8 @@ void QuantInfo::initialize(TNode q,
 std::string QuantInfo::toStringDebug() const
 {
   std::stringstream ss;
-  ss << "--- QuantInfo for " << d_quant << std::endl;
+  ss << "--- QuantInfo for " << d_quant.getId() << std::endl;
+  ss << "Body: " << d_canonBody << std::endl;
   ss << "Vars: " << d_canonVarOrdered << std::endl;
   ss << "Constraints:" << std::endl;
   if (d_req.empty())

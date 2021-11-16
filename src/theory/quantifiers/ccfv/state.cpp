@@ -46,6 +46,8 @@ void State::resetRound(size_t nquant)
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
   d_groundEqc.clear();
   d_typeGroundEqc.clear();
+  // matching information is not maintained incrementally
+  d_meqcInfo.clear();
   // for Boolean, true/false are always the ground equivalence classes
   d_groundEqc.insert(d_true);
   d_groundEqc.insert(d_false);
@@ -577,6 +579,25 @@ TNode State::getValue(TNode p) const
     return d_sink;
   }
   return r;
+}
+
+std::string State::toStringDebug() const
+{
+  std::stringstream ss;
+  ss << "#groundEqc = " << d_groundEqc.size() << std::endl;
+  ss << "#matchEqc = " << d_meqcInfo.size() << std::endl;
+  ss << "#eqcInfo = " << d_eqcInfo.size() << std::endl;
+  ss << "#patterns = " << d_pInfo.size() << std::endl;
+  ss << "#freeVars = " << d_fvInfo.size() << std::endl;
+  ss << "#quants = " << d_numActiveQuant.get() << " / " <<  d_quantInfo.size() << std::endl;
+  return ss.str();
+}
+
+std::string State::toStringDebugSearch() const
+{
+  std::stringstream ss;
+  ss << "activeQuants = " << d_numActiveQuant.get();
+  return ss.str();
 }
 
 }  // namespace ccfv
