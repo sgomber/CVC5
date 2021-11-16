@@ -42,16 +42,13 @@ InstDriver::InstDriver(Env& env,
       d_matching(env, state, qs),
       d_numLevels(0),
       d_keep(context()),
+      d_foundInst(false),
       d_inConflict(false)
 {
-  NodeManager* nm = NodeManager::currentNM();
-  d_true = nm->mkConst(true);
-  d_false = nm->mkConst(false);
 }
 
-void InstDriver::addToEqualityEngine(TNode q)
+void InstDriver::addToEqualityEngine(QuantInfo& qi)
 {
-  QuantInfo& qi = d_state.getQuantInfo(q);
   // add the congruence terms to the equality engine
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
   Assert(ee->consistent());
@@ -68,19 +65,64 @@ void InstDriver::addToEqualityEngine(TNode q)
 
 void InstDriver::check(const std::vector<TNode>& quants)
 {
+  Trace("ccfv") << "InstDriver::check" << std::endl;
+  // we modify the equality engine, so open a scope
+  context()->push();
+  
+  // Reset the state. Notice that we must do this before adding pattern terms
+  // to the equality engine.
+  Trace("ccfv-debug") << "Reset state..." << std::endl;
+  d_state.resetRound(quants.size());
+  
+  // reset information about whether we have found instantiations
+  d_foundInst = false;
   d_inConflict = false;
+  
   // reset round for all quantified formulas
+  Trace("ccfv-debug") << "Reset " << quants.size() << " quants..." << std::endl;
   for (TNode q : quants)
   {
     QuantInfo& qi = d_state.getQuantInfo(q);
     qi.resetRound();
+    // add congruence terms from quantified formulas to the equality engine
+    addToEqualityEngine(qi);
   }
-  // reset search levels
-  // NOTE: could incrementally maintain this?
-  resetSearchLevels(quants);
 
-  // now perform the search
-  search();
+  // do initial notifications for relevant ground terms in the bodies of
+  // quantified formulas.
+  Trace("ccfv-debug") << "Initial notify " << fiNull.d_useList.size() << " ground terms..." << std::endl;
+  FreeVarInfo& fiNull = d_state.getOrMkFreeVarInfo(Node::null());
+  for (const Node& t : fiNull.d_useList)
+  {
+    TNode trep = d_state.getGroundRepresentative(t);
+    if (trep.isNull())
+    {
+      d_state.notifyPatternSink(t);
+    }
+    else
+    {
+      d_state.notifyPatternEqGround(t, trep);
+    }
+  }
+  
+  // if not already finished, perform the search over assignments to variables
+  if (!isFinished())
+  {
+    // reset search levels
+    // NOTE: could incrementally maintain this?
+    Trace("ccfv-debug") << "Reset search levels..." << std::endl;
+    resetSearchLevels(quants);
+    Trace("ccfv-debug") << "Search..." << std::endl;
+    search();
+    Trace("ccfv-debug") << "...finished" << std::endl;
+  }
+  else
+  {
+    Trace("ccfv-debug") << "...already finished" << std::endl;
+  }
+  
+  // pop the context
+  context()->pop();
 }
 
 void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
@@ -112,6 +154,15 @@ void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
   {
     Assert(sl.first < d_numLevels);
     sl.second.d_firstTime = true;
+  }
+  
+  if (Trace.isOn("ccfv-debug"))
+  {
+    for (std::pair<const size_t, SearchLevel>& sl : d_levels)
+    {
+      Trace("ccfv-debug") << "Search level #" << sl.first << ":" << std::endl;
+      Trace("ccfv-debug") << sl.
+    }
   }
 }
 
@@ -363,8 +414,13 @@ bool InstDriver::pushLevel(size_t level)
       }
     }
     Instantiate* qinst = d_qim.getInstantiate();
-    if (!qinst->addInstantiation(q, inst, id))
+    if (qinst->addInstantiation(q, inst, id))
     {
+      d_foundInst = true;
+    }
+    else
+    {
+      // warning?
     }
   }
 
@@ -388,18 +444,10 @@ SearchLevel& InstDriver::getSearchLevel(size_t i) { return d_levels[i]; }
 
 void InstDriver::search()
 {
-  context()->push();
-  // TODO: do initial notifications for watched ground terms
-  FreeVarInfo& fiNull = d_state.getOrMkFreeVarInfo(Node::null());
-
-  if (isFinished())
-  {
-    return;
-  }
-
+  Assert (!isFinished());
   bool isExhausted = false;
   size_t currLevel = 0;
-  while (!isExhausted)
+  while (!isExhausted && !d_inConflict)
   {
     // assign at current level
     if (pushLevel(currLevel))
@@ -417,8 +465,6 @@ void InstDriver::search()
       currLevel--;
     }
   }
-
-  context()->pop();
 }
 
 bool InstDriver::isFinished() const

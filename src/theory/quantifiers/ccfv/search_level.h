@@ -43,6 +43,8 @@ class SearchLevel
   std::vector<TNode> d_startQuants;
   /** First time running this round */
   bool d_firstTime;
+  /** debugging */
+  std::string toStringDebug() const;
 };
 
 }  // namespace ccfv

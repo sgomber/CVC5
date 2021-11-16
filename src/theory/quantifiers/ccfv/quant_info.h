@@ -88,6 +88,8 @@ class QuantInfo
   /** is c a disequality constraint for p? */
   static bool isDeqConstraint(TNode c, TNode p);
 
+  /** Debug print */
+  std::string toStringDebug() const;
  private:
   /**
    * Process matching requirement for subterm cur which is a disjunct in the
@@ -100,8 +102,6 @@ class QuantInfo
   void addMatchTermReq(TNode t, Node eqc, bool isEq);
   /** Process match requirement terms */
   void processMatchReqTerms(eq::EqualityEngine* ee);
-  /** Debug print */
-  std::string toStringDebug() const;
   //------------------- static
   /** The quantified formula */
   Node d_quant;

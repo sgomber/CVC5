@@ -81,6 +81,14 @@ class State : protected EnvObj
    * ground equivalence class.
    */
   void notifyPatternSink(TNode p);
+  /**
+   * Called when it is determined what pattern p is equal to.
+   *
+   * If g is not sunk, then g is the (ground) equivalence class that pattern p
+   * is equal to. If g is the sink, then we have determined that p will *never*
+   * merge into a ground equivalence class in this context.
+   */
+  void notifyPatternEqGround(TNode p, TNode g);
   //---------------queries
   /** Is finished */
   bool isFinished() const;
@@ -109,14 +117,6 @@ class State : protected EnvObj
   EqcInfo* getOrMkEqcInfo(TNode r, bool doMk = false);
   /** Get equivalence class info, or nullptr if it does not exist */
   const EqcInfo* getEqcInfo(TNode r) const;
-  /**
-   * Called when it is determined what pattern p is equal to.
-   *
-   * If g is not sunk, then g is the (ground) equivalence class that pattern p
-   * is equal to. If g is the sink, then we have determined that p will *never*
-   * merge into a ground equivalence class in this context.
-   */
-  void notifyPatternEqGround(TNode p, TNode g);
   /**
    * Notify that child was assigned value val, set eq if possible.
    * Return true if we set eq during this call.

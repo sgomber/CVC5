@@ -714,6 +714,7 @@ libcvc5_add_sources(
   theory/quantifiers/ccfv/pattern_term_info.h
   theory/quantifiers/ccfv/quant_info.cpp
   theory/quantifiers/ccfv/quant_info.h
+  theory/quantifiers/ccfv/search_level.cpp
   theory/quantifiers/ccfv/search_level.h
   theory/quantifiers/ccfv/state.cpp
   theory/quantifiers/ccfv/state.h

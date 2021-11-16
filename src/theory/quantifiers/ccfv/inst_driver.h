@@ -76,7 +76,7 @@ class InstDriver : protected EnvObj
   void check(const std::vector<TNode>& quants);
 
   /** Add to equality engine */
-  void addToEqualityEngine(TNode q);
+  void addToEqualityEngine(QuantInfo& qi);
 
  private:
   /** Reset the search */
@@ -90,19 +90,12 @@ class InstDriver : protected EnvObj
   bool pushLevel(size_t level);
   /** Assign variable to the equivalence class eqc */
   void assignVar(TNode v, TNode eqc);
-  /** Process matcher */
-  bool processMatcher(QuantInfo& qi, TNode matcher);
-  /** Run matching */
-  void runMatching(PatTermInfo* pi);
   /** Get search level */
   SearchLevel& getSearchLevel(size_t i);
   /** Search */
   void search();
   /** Is finished */
   bool isFinished() const;
-  /** common constants */
-  Node d_true;
-  Node d_false;
   /** The state of matching for quantifiers and pattern terms */
   State& d_state;
   /** Reference to the state of the quantifiers engine */
@@ -119,6 +112,8 @@ class InstDriver : protected EnvObj
   size_t d_numLevels;
   /** Keep set, for asserted equalities */
   NodeSet d_keep;
+  /** Have we found any instance? */
+  bool d_foundInst;
   /** Have we found a conflicting instance? */
   bool d_inConflict;
 };

@@ -80,7 +80,6 @@ void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e)
   // run with the instantiation driver
   if (!quants.empty())
   {
-    d_state.resetRound(quants.size());
     d_driver.check(quants);
   }
 }
