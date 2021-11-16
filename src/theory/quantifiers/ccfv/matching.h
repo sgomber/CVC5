@@ -61,7 +61,7 @@ namespace ccfv {
  *
  * As a result, substitutions over x -> {c, d}, y -> {b} are relevant for making
  * f(g(x),y,b) equal to a.
- * 
+ *
  * Notice that we use this to compute candidate substitutions for a single
  * variable only, and do this for possibly many terms (one for each active
  * quantified formula) simultaneously. In particular, this means that if x < y
