@@ -65,7 +65,7 @@ namespace ccfv {
 class Matching : protected EnvObj
 {
  public:
-  Matching(Env& env, State& state, QuantifiersState& qs);
+  Matching(Env& env, State& state, QuantifiersState& qs, TermDb* tdb);
   /** Initialize matching */
   void initializeLevel(size_t level);
   /** Process matcher */
@@ -74,7 +74,7 @@ class Matching : protected EnvObj
   std::map<TNode, MatchPatInfo>& getMatchPatInfo(size_t level);
  private:
   /** Run matching */
-  void runMatching(std::map< TNode, MatchPatInfo>& mmp, PatTermInfo* pi, MatchPatInfo* mpi);
+  void runMatching(std::map< TNode, MatchPatInfo>& mmp, TNode p, MatchPatInfo* mpi);
   /** common constants */
   Node d_true;
   Node d_false;
@@ -82,6 +82,8 @@ class Matching : protected EnvObj
   State& d_state;
   /** Reference to the state of the quantifiers engine */
   QuantifiersState& d_qstate;
+  /** Term database */
+  TermDb* d_tdb;
   /** Mapping search levels, patterns to match info */
   std::map<size_t, std::map< TNode, MatchPatInfo> > d_mpmap;
 };

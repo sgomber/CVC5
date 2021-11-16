@@ -17,6 +17,7 @@
 
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/quantifiers_state.h"
+#include "theory/quantifiers/term_database.h"
 #include "theory/uf/equality_engine.h"
 
 using namespace cvc5::kind;
@@ -26,8 +27,8 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-Matching::Matching(Env& env, State& state, QuantifiersState& qs)
-    : EnvObj(env), d_state(state), d_qstate(qs)
+Matching::Matching(Env& env, State& state, QuantifiersState& qs, TermDb* tdb)
+    : EnvObj(env), d_state(state), d_qstate(qs), d_tdb(tdb)
 {
   NodeManager* nm = NodeManager::currentNM();
   d_true = nm->mkConst(true);
@@ -41,12 +42,7 @@ void Matching::initializeLevel(size_t level)
 
 bool Matching::processMatcher(size_t level, QuantInfo& qi, TNode matcher)
 {
-  // get the pattern info
-  PatTermInfo& pi = d_state.getPatTermInfo(matcher);
-  if (!pi.isActive())
-  {
-    return false;
-  }
+  Assert (d_state.getPatTermInfo(matcher).isActive());
   // get the match pattern info
   std::map<TNode, MatchPatInfo>& mmp = d_mpmap[level];
   MatchPatInfo* mpi = &mmp[matcher];
@@ -161,15 +157,15 @@ bool Matching::processMatcher(size_t level, QuantInfo& qi, TNode matcher)
     }
   }
   // now run matching
-  runMatching(mmp, &pi, mpi);
+  runMatching(mmp, matcher, mpi);
   return true;
 }
 
-void Matching::runMatching(std::map< TNode, MatchPatInfo>& mmp, PatTermInfo* pi, MatchPatInfo* mpi)
+void Matching::runMatching(std::map< TNode, MatchPatInfo>& mmp, TNode p, MatchPatInfo* mpi)
 {
   Assert(pi != nullptr);
   Assert (mpi != nullptr);
-  TNode op = pi->d_matchOp;
+  TNode op = d_tdb->getMatchOperator(p);
   if (op.isNull())
   {
     // If not a matchable operator. This is also the base case of
@@ -182,8 +178,9 @@ void Matching::runMatching(std::map< TNode, MatchPatInfo>& mmp, PatTermInfo* pi,
     // no new equivalence classes to process
     return;
   }
+  // the ground representatives of the pattern, if they exist
   std::vector<TNode> pargs;
-  std::vector<PatTermInfo*> piargs;
+  // pattern term information for 
   std::vector<MatchPatInfo*> mpiargs;
   std::vector<size_t> matchIndices;
   std::vector<size_t> nmatchIndices;
@@ -201,15 +198,15 @@ void Matching::runMatching(std::map< TNode, MatchPatInfo>& mmp, PatTermInfo* pi,
     }
     else
     {
-      // set up the matching information for pi->d_pattern
+      // set up the matching information for p
       if (pargs.empty())
       {
         // get the status of the arguments of pi
-        Assert(pi->d_pattern.getNumChildren() > 0);
-        for (size_t i = 0, nchild = pi->d_pattern.getNumChildren(); i < nchild;
+        Assert(p.getNumChildren() > 0);
+        for (size_t i = 0, nchild = p.getNumChildren(); i < nchild;
              i++)
         {
-          TNode pic = pi->d_pattern[i];
+          TNode pic = p[i];
           // Note we use get ground representative here. We do not use getValue,
           // which should never be sink.
           TNode gpic = d_state.getGroundRepresentative(pic);
@@ -217,17 +214,14 @@ void Matching::runMatching(std::map< TNode, MatchPatInfo>& mmp, PatTermInfo* pi,
           if (!gpic.isNull())
           {
             matchIndices.push_back(i);
-            piargs.push_back(nullptr);
             mpiargs.push_back(nullptr);
           }
           else
           {
             nmatchIndices.push_back(i);
-            piargs.push_back(&d_state.getPatTermInfo(pic));
             mpiargs.push_back(&mmp[pic]);
           }
         }
-        // TODO
         // we should not have ground representatives for each child of the
         // pattern, otherwise we should be fully assigned
         Assert(!nmatchIndices.empty());
@@ -255,13 +249,13 @@ void Matching::runMatching(std::map< TNode, MatchPatInfo>& mmp, PatTermInfo* pi,
           for (size_t i : nmatchIndices)
           {
             mpiargs[i]->addWatchEqc(m[i]);
-            if (pi->d_pattern[i].getKind()==BOUND_VARIABLE)
+            if (p[i].getKind()==BOUND_VARIABLE)
             {
               // don't need to run matching on variables
               continue;
             }
             // recurse to do matching on the argument
-            runMatching(mmp, piargs[i], mpiargs[i]);
+            runMatching(mmp, p[i], mpiargs[i]);
             // if it is not possible that we are equal, we stop matching this
             // term
             if (!mpiargs[i]->isMaybeEqc(m[i]))

@@ -428,6 +428,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
       {
         // use the matcher for this variable
         d_matchers[v] = tlMatcher;
+        Assert (expr::hasSubterm(tlMatcher,v));
         // Notice that variables in d_canonVarOrdered are assigned in order,
         // thus this justifies matching for future variables.
         usedMatchers.insert(tlMatcher);
@@ -505,6 +506,7 @@ bool QuantInfo::isDeqConstraint(TNode c, TNode p)
 {
   return c.getKind() == NOT && c[0].getKind() == EQUAL && c[0][0] == p;
 }
+
 bool QuantInfo::isDeqConstraint(TNode p, TNode c, TNode& val)
 {
   if (isDeqConstraint(c, p))
