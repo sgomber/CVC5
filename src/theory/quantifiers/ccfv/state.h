@@ -115,6 +115,7 @@ class State : protected EnvObj
   /** debugging */
   std::string toStringDebug() const;
   std::string toStringDebugSearch() const;
+
  private:
   /** Get equivalence class info */
   EqcInfo* getOrMkEqcInfo(TNode r, bool doMk = false);

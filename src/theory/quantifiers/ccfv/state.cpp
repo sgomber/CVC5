@@ -589,7 +589,8 @@ std::string State::toStringDebug() const
   ss << "#eqcInfo = " << d_eqcInfo.size() << std::endl;
   ss << "#patterns = " << d_pInfo.size() << std::endl;
   ss << "#freeVars = " << d_fvInfo.size() << std::endl;
-  ss << "#quants = " << d_numActiveQuant.get() << " / " <<  d_quantInfo.size() << std::endl;
+  ss << "#quants = " << d_numActiveQuant.get() << " / " << d_quantInfo.size()
+     << std::endl;
   return ss.str();
 }
 
