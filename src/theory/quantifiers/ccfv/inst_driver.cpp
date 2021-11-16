@@ -27,7 +27,7 @@ InstDriver::InstDriver(Env& env,
                        State& state,
                        QuantifiersState& qs,
                        TermRegistry& tr)
-    : EnvObj(env), d_state(state), d_qstate(qs), d_treg(tr), d_numLevels(0)
+    : EnvObj(env), d_state(state), d_qstate(qs), d_treg(tr), d_numLevels(0), d_keep(context())
 {
   NodeManager* nm = NodeManager::currentNM();
   d_true = nm->mkConst(true);
@@ -157,7 +157,6 @@ bool InstDriver::pushLevel(size_t level)
     // already at maximum level
     return false;
   }
-  context()->push();
   SearchLevel& slevel = getSearchLevel(level);
   bool wasFirstTime = slevel.d_firstTime;
   if (slevel.d_firstTime)
@@ -174,7 +173,6 @@ bool InstDriver::pushLevel(size_t level)
     }
     if (d_state.isFinished())
     {
-      context()->pop();
       return false;
     }
   }
@@ -186,7 +184,7 @@ bool InstDriver::pushLevel(size_t level)
   for (TNode v : slevel.d_varsToAssign)
   {
     PatTermInfo& pi = d_state.getPatTermInfo(v);
-    const FreeVarInfo& fi = d_state.getFreeVarInfo(v);
+    FreeVarInfo& fi = d_state.getFreeVarInfo(v);
     TNode eqc = pi.getNextWatchEqc();
     while (eqc.isNull())
     {
@@ -233,9 +231,11 @@ bool InstDriver::pushLevel(size_t level)
     // Could not find an assignment to any variables, and this was not the
     // first time we ran. In this case, a previous assign ran strictly
     // more information.
-    context()->pop();
     return false;
   }
+  // we push here, since we are updating the state of the equality engine
+  
+  context()->push();
   // assign each variable
   for (size_t i = 0, nvars = slevel.d_varsToAssign.size(); i < nvars; i++)
   {
@@ -453,54 +453,62 @@ void InstDriver::runMatching(PatTermInfo* pi)
 
   std::unordered_map<TNode, std::vector<Node>>::iterator itm;
   TNode weqc = pi->getNextWatchEqc();
-  bool newMatches = false;
   while (!weqc.isNull())
   {
     Assert(d_state.isGroundEqc(weqc));
     MatchEqcInfo& meqc = d_state.getMatchEqcInfo(weqc);
-    // increment weqc to the next equivalence class
-    weqc = pi->getNextWatchEqc();
 
     // get the terms to match in this equivalence class
     itm = meqc.d_matchOps.find(op);
     if (itm == meqc.d_matchOps.end())
     {
+      // no matchable terms in this equivalence class
+    }
+    else
+    {
       // none in this equivalence class
-      continue;
-    }
-    // for each term with the same match operator
-    for (const Node& m : itm->second)
-    {
-      Assert(m.getNumChildren() == pargs.size());
-      bool matchSuccess = true;
-      for (size_t i : matchIndices)
+      // for each term with the same match operator
+      bool isMaybeEq = false;
+      for (const Node& m : itm->second)
       {
-        Assert(d_state.isGroundEqc(m[i]));
-        if (pargs[i] != m[i])
+        Assert(m.getNumChildren() == pargs.size());
+        bool matchSuccess = true;
+        for (size_t i : matchIndices)
         {
-          matchSuccess = false;
-          break;
+          Assert(d_state.isGroundEqc(m[i]));
+          if (pargs[i] != m[i])
+          {
+            matchSuccess = false;
+            break;
+          }
+        }
+        // if successful, we will match the children of this pattern to the
+        // ground equivalence class
+        if (matchSuccess)
+        {
+          for (size_t i : nmatchIndices)
+          {
+            piargs[i]->addWatchEqc(m[i]);
+            // recurse immediately
+            runMatching(piargs[i]);
+            // check 
+            if (!piargs[i]->isMaybeEqc(m[i]))
+            {
+              matchSuccess = false;
+              break;
+            }
+          }
+          isMaybeEq = isMaybeEq || matchSuccess;
         }
       }
-      // if successful, we will match the children of this pattern to the
-      // ground equivalence class
-      if (matchSuccess)
+      // if its possible that we are equal
+      if (isMaybeEq)
       {
-        newMatches = true;
-        for (size_t i : nmatchIndices)
-        {
-          piargs[i]->addWatchEqc(m[i]);
-        }
+        pi->addMaybeEqc(weqc);
       }
     }
-  }
-  // recurse
-  if (newMatches)
-  {
-    for (size_t i : nmatchIndices)
-    {
-      runMatching(piargs[i]);
-    }
+    // increment weqc to the next equivalence class
+    weqc = pi->getNextWatchEqc();
   }
 }
 
@@ -511,6 +519,7 @@ void InstDriver::assignVar(TNode v, TNode eqc)
   Assert(v.getType().isComparableTo(eqc.getType()));
   // assert to the equality engine
   Node eq = v.eqNode(eqc);
+  d_keep.insert(eq);
   d_qstate.getEqualityEngine()->assertEquality(eq, true, eq);
   // should still be consistent
   Assert(d_qstate.getEqualityEngine()->consistent());

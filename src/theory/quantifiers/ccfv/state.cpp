@@ -59,6 +59,11 @@ void State::resetRound(size_t nquant)
       // skip Boolean equivalence classes
       continue;
     }
+    if (expr::hasBoundVar(r))
+    {
+      // skip pattern terms
+      continue;
+    }
     d_groundEqc.insert(r);
     d_typeGroundEqc[tn].insert(r);
     ++eqcs_i;
@@ -111,9 +116,9 @@ FreeVarInfo& State::getOrMkFreeVarInfo(TNode v)
   return it->second;
 }
 
-const FreeVarInfo& State::getFreeVarInfo(TNode v) const
+FreeVarInfo& State::getFreeVarInfo(TNode v)
 {
-  std::map<Node, FreeVarInfo>::const_iterator it = d_fvInfo.find(v);
+  std::map<Node, FreeVarInfo>::iterator it = d_fvInfo.find(v);
   Assert(it != d_fvInfo.end());
   return it->second;
 }
@@ -642,7 +647,8 @@ TNode State::getValue(TNode p) const
   {
     return it->second.d_eq;
   }
-  Assert(!expr::hasFreeVar(p));
+  // all pattern terms should have been assigned pattern term info
+  Assert(!expr::hasBoundVar(p));
   // use equality engine, go to sink if not a part of equivalence classes
   TNode r = getGroundRepresentative(p);
   if (r.isNull())

@@ -30,13 +30,13 @@ PatTermInfo::PatTermInfo(context::Context* c)
       d_parentCongNotify(c),
       d_watchEqc(c),
       d_watchEqcList(c),
-      d_watchEqcIndex(0)
+      d_watchEqcIndex(0),
+      d_maybeEqc(c)
 {
 }
 
 void PatTermInfo::initialize(TNode pattern, TermDb* tdb)
 {
-  Assert(expr::hasFreeVar(pattern));
   d_pattern = pattern;
   d_isBooleanConnective = expr::isBooleanConnective(pattern);
   if (!d_isBooleanConnective)
@@ -56,7 +56,7 @@ void PatTermInfo::resetRound()
     /*
     for (TNode pc : pattern)
     {
-      if (!expr::hasFreeVar(pc))
+      if (!expr::hasBoundVar(pc))
       {
         continue;
       }
@@ -89,6 +89,22 @@ TNode PatTermInfo::getNextWatchEqc()
   TNode next = d_watchEqcList[d_watchEqcIndex];
   d_watchEqcIndex = d_watchEqcIndex.get() + 1;
   return next;
+}
+
+void PatTermInfo::addMaybeEqc(TNode eqc)
+{
+  Assert (d_pattern.getKind() != kind::BOUND_VARIABLE);
+  d_maybeEqc.insert(eqc);
+}
+
+bool PatTermInfo::isMaybeEqc(TNode eqc) const
+{
+  if (d_pattern.getKind() == kind::BOUND_VARIABLE)
+  {
+    // special case, we don't track maybe eqc for variables, always return true
+    return true;
+  }
+  return d_maybeEqc.find(eqc)!=d_maybeEqc.end();
 }
 
 }  // namespace ccfv

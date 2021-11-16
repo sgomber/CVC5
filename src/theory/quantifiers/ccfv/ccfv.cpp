@@ -139,7 +139,7 @@ void CongruenceClosureFv::assertNode(Node q)
     if (it == visited.end())
     {
       visited.insert(cur);
-      if (!expr::hasFreeVar(cur))
+      if (!expr::hasBoundVar(cur))
       {
         // FIXME: require initial notifications for these terms
         continue;

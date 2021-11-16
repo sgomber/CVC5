@@ -173,7 +173,7 @@ void QuantInfo::computeMatchReq(TNode cur,
     // maybe pattern equals ground?
     for (size_t i = 0; i < 2; i++)
     {
-      if (!expr::hasFreeVar(cur[i]))
+      if (!expr::hasBoundVar(cur[i]))
       {
         // Equality involving a ground term.
         // Flip polarity since we want to falsify.
@@ -202,16 +202,11 @@ void QuantInfo::computeMatchReq(TNode cur,
 
 void QuantInfo::addMatchTermReq(TNode t, Node eqc, bool isEq)
 {
-  // if we have no free variables
-  if (!expr::hasFreeVar(t))
-  {
-    if (!eqc.isNull())
-    {
-      // this should only happen if miniscoping
-    }
-    return;
-  }
-  // if not equal, make (not (= t eqc))
+  // notice that in rare cases, t may have no free variables, e.g. 
+  // if miniscoping is disabled, or there is a ground subterm in a non-entailed
+  // position.
+  
+  // if not equal, make into disequality constraint (not (= t eqc))
   if (!isEq)
   {
     Assert(!eqc.isNull());
@@ -259,8 +254,8 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
     it = visited.find(cur);
     if (it == visited.end())
     {
-      // don't care about terms without free variables
-      if (!expr::hasFreeVar(cur.first))
+      // don't care about terms without variables
+      if (!expr::hasBoundVar(cur.first))
       {
         visit.pop_back();
         visited[cur] = true;

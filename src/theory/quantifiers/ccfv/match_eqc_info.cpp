@@ -42,7 +42,7 @@ void MatchEqcInfo::initialize(TNode r,
     ++eqc_i;
     // NOTE: this is not necessary?
     /*
-    if (!expr::hasFreeVar(n))
+    if (!expr::hasBoundVar(n))
     {
       // could have a pattern that was already merged, skip it
       continue;

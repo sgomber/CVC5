@@ -66,7 +66,7 @@ class State : protected EnvObj
   //---------------free variable info
   /** Get free variable info */
   FreeVarInfo& getOrMkFreeVarInfo(TNode v);
-  const FreeVarInfo& getFreeVarInfo(TNode v) const;
+  FreeVarInfo& getFreeVarInfo(TNode v);
   /**
    * Get active free variables
    */

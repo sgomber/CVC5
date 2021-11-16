@@ -53,6 +53,7 @@ x -> b
 */
 class InstDriver : protected EnvObj
 {
+  using NodeSet = context::CDHashSet<Node>;
  public:
   InstDriver(Env& env, State& state, QuantifiersState& qs, TermRegistry& tr);
   /** Get quantifiers info */
@@ -100,6 +101,8 @@ class InstDriver : protected EnvObj
   std::map<size_t, SearchLevel> d_levels;
   /** Number of levels */
   size_t d_numLevels;
+  /** Keep set, for asserted equalities */
+  NodeSet d_keep;
 };
 
 }  // namespace ccfv

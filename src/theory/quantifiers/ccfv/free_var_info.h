@@ -20,6 +20,7 @@
 
 #include <unordered_set>
 
+#include "context/cdo.h"
 #include "context/cdhashset.h"
 #include "context/cdlist.h"
 #include "expr/node.h"

@@ -89,6 +89,10 @@ class PatTermInfo
   void addWatchEqc(TNode eqc);
   /** Get next watch eqc */
   TNode getNextWatchEqc();
+  /** Add maybe equal */
+  void addMaybeEqc(TNode eqc);
+  /** Is maybe equal? */
+  bool isMaybeEqc(TNode eqc) const;
 
  private:
   //---------------------- matching
@@ -105,6 +109,11 @@ class PatTermInfo
    * - Otherwise, this is the index in the
    */
   context::CDO<size_t> d_watchEqcIndex;
+  /**
+   * Maybe equal to set 
+   */
+  NodeSet d_maybeEqc;
+  
 };
 
 }  // namespace ccfv
