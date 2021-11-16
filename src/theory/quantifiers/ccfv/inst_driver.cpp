@@ -244,7 +244,7 @@ bool InstDriver::pushLevel(size_t level)
     if (d_state.isSink(eqc))
     {
       d_state.notifyPatternSink(v);
-      // TODO: disable all quantified formulas?
+      // TODO: disable all quantified formulas that contain this variable?
     }
     else
     {
