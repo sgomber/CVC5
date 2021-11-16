@@ -417,7 +417,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
       }
       else
       {
-        // Assert that no matchers exist?
+        // Warn that no matchers exist?
       }
     }
   }

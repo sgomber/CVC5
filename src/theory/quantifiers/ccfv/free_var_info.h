@@ -34,8 +34,8 @@ class State;
 
 class FreeVarInfo
 {
-  typedef context::CDList<Node> NodeList;
-  typedef context::CDHashSet<Node> NodeSet;
+  using NodeList = context::CDList<Node>;
+  using NodeSet = context::CDHashSet<Node>;
 
  public:
   FreeVarInfo(context::Context* c);

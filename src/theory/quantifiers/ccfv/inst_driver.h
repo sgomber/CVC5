@@ -26,6 +26,7 @@ namespace theory {
 namespace quantifiers {
 
 class QuantifiersState;
+class QuantifiersInferenceManager;
 class TermRegistry;
 
 namespace ccfv {
@@ -56,7 +57,8 @@ class InstDriver : protected EnvObj
   using NodeSet = context::CDHashSet<Node>;
 
  public:
-  InstDriver(Env& env, State& state, QuantifiersState& qs, TermRegistry& tr);
+  InstDriver(Env& env, State& state, QuantifiersState& qs, 
+                      QuantifiersInferenceManager& qim, TermRegistry& tr);
   /** Get quantifiers info */
   QuantInfo& getQuantInfo(TNode q);
   /** Get free variable info */
@@ -89,6 +91,8 @@ class InstDriver : protected EnvObj
   SearchLevel& getSearchLevel(size_t i);
   /** Search */
   void search();
+  /** Is finished */
+  bool isFinished() const;
   /** common constants */
   Node d_true;
   Node d_false;
@@ -96,6 +100,8 @@ class InstDriver : protected EnvObj
   State& d_state;
   /** Reference to the state of the quantifiers engine */
   QuantifiersState& d_qstate;
+  /** Reference to the quantifiers inference manager */
+  QuantifiersInferenceManager& d_qim;
   /** Reference to the term registry */
   TermRegistry& d_treg;
   /** Search levels */
@@ -104,6 +110,8 @@ class InstDriver : protected EnvObj
   size_t d_numLevels;
   /** Keep set, for asserted equalities */
   NodeSet d_keep;
+  /** Have we found a conflicting instance? */
+  bool d_inConflict;
 };
 
 }  // namespace ccfv

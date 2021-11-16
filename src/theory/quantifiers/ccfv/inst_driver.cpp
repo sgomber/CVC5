@@ -16,7 +16,13 @@
 #include "theory/quantifiers/ccfv/inst_driver.h"
 
 #include "theory/quantifiers/quantifiers_state.h"
+#include "theory/quantifiers/quantifiers_inference_manager.h"
+#include "theory/quantifiers/term_registry.h"
+#include "theory/quantifiers/instantiate.h"
 #include "theory/uf/equality_engine.h"
+#include "options/quantifiers_options.h"
+
+using namespace cvc5::kind;
 
 namespace cvc5 {
 namespace theory {
@@ -26,13 +32,16 @@ namespace ccfv {
 InstDriver::InstDriver(Env& env,
                        State& state,
                        QuantifiersState& qs,
+                       QuantifiersInferenceManager& qim, 
                        TermRegistry& tr)
     : EnvObj(env),
       d_state(state),
       d_qstate(qs),
+      d_qim(qim),
       d_treg(tr),
       d_numLevels(0),
-      d_keep(context())
+      d_keep(context()),
+      d_inConflict(false)
 {
   NodeManager* nm = NodeManager::currentNM();
   d_true = nm->mkConst(true);
@@ -41,6 +50,7 @@ InstDriver::InstDriver(Env& env,
 
 void InstDriver::check(const std::vector<TNode>& quants)
 {
+  d_inConflict = false;
   // reset round for all quantified formulas
   for (TNode q : quants)
   {
@@ -182,7 +192,8 @@ bool InstDriver::pushLevel(size_t level)
     }
   }
   Assert(!slevel.d_varsToAssign.empty());
-  // find the next assignment for each variable
+  // Find the next assignment for each variable. Variables that are at the
+  // same level can be assigned in parallel.
   std::vector<TNode> assignment;
   bool success = false;
   // assign all variables in parallel
@@ -234,7 +245,7 @@ bool InstDriver::pushLevel(size_t level)
   if (!success && !wasFirstTime)
   {
     // Could not find an assignment to any variables, and this was not the
-    // first time we ran. In this case, a previous assign ran strictly
+    // first time we ran. In this case, a previous assignment ran strictly
     // more information.
     return false;
   }
@@ -289,8 +300,55 @@ bool InstDriver::pushLevel(size_t level)
     {
       continue;
     }
-    // fully assigned and still active, can construct propagating instance?
-    // TODO
+    // fully assigned and still active, can construct propagating instance
+    // construct propagating instance
+    const std::vector<TNode>& fvs = qi.getFreeVariables();
+    Assert (q[0].getNumChildren()==fvs.size());
+    std::vector<Node> inst;
+    std::map<TNode, TNode> subs;
+    for (size_t i=0, nvars = fvs.size(); i<nvars; i++)
+    {
+      TNode vval = d_state.getGroundRepresentative(fvs[i]);
+      if (vval.getKind()==BOUND_VARIABLE)
+      {
+        // unconstrained variable? take arbitrary ground term
+        vval = vval.getType().mkGroundTerm();
+      }
+      inst.push_back(vval);
+      subs[q[0][i]] = vval;
+    }
+    EntailmentCheck* ec = d_treg.getEntailmentCheck();
+    Node instEval = ec->evaluateTerm(
+        q[1], subs, false, options().quantifiers.qcfTConstraint, true);
+    // If it is the case that instantiation can be rewritten to a Boolean
+    // combination of terms that exist in the current context, then inst_eval
+    // is non-null. Moreover, we insist that inst_eval is not true, or else
+    // the instantiation is trivially entailed and hence is spurious.
+    InferenceId id = InferenceId::QUANTIFIERS_INST_CCFV_PROP;
+    if (instEval.isNull())
+    {
+      // ... spurious
+      continue;
+    }
+    else if (instEval.isConst())
+    {
+      Assert (instEval.getType().isBoolean());
+      if (instEval.getConst<bool>())
+      {
+        // ... spurious, entailed
+        continue;
+      }
+      else
+      {
+        d_inConflict = true;
+        id = InferenceId::QUANTIFIERS_INST_CCFV_CONFLICT;
+      }
+    }
+    Instantiate* qinst = d_qim.getInstantiate();
+    if (!qinst->addInstantiation(q, inst, id))
+    {
+      
+    }
   }
 
   return true;
@@ -427,37 +485,18 @@ void InstDriver::runMatching(PatTermInfo* pi)
     // If not a matchable operator. This is also the base case of
     // BOUND_VARIABLE.
     return;
+  }  
+  TNode weqc = pi->getNextWatchEqc();
+  if (weqc.isNull())
+  {
+    // no new equivalence classes to process
+    return;
   }
-  Assert(pi->d_pattern.getNumChildren() > 0);
   std::vector<TNode> pargs;
   std::vector<PatTermInfo*> piargs;
-  // get the status of the arguments of pi
   std::vector<size_t> matchIndices;
   std::vector<size_t> nmatchIndices;
-  for (size_t i = 0, nchild = pi->d_pattern.getNumChildren(); i < nchild; i++)
-  {
-    TNode pic = pi->d_pattern[i];
-    // Note we use get ground representative here. We do not use getValue,
-    // which should never be sink.
-    TNode gpic = d_state.getGroundRepresentative(pic);
-    pargs.push_back(gpic);
-    if (!gpic.isNull())
-    {
-      matchIndices.push_back(i);
-      piargs.push_back(nullptr);
-    }
-    else
-    {
-      nmatchIndices.push_back(i);
-      piargs.push_back(&d_state.getPatTermInfo(pic));
-    }
-  }
-  // we should not have ground representatives for each child of the pattern,
-  // otherwise we should be fully assigned
-  Assert(!nmatchIndices.empty());
-
   std::unordered_map<TNode, std::vector<Node>>::iterator itm;
-  TNode weqc = pi->getNextWatchEqc();
   while (!weqc.isNull())
   {
     Assert(d_state.isGroundEqc(weqc));
@@ -471,6 +510,33 @@ void InstDriver::runMatching(PatTermInfo* pi)
     }
     else
     {
+      // set up the matching information for pi->d_pattern
+      if (pargs.empty())
+      {
+        // get the status of the arguments of pi
+        Assert(pi->d_pattern.getNumChildren() > 0);
+        for (size_t i = 0, nchild = pi->d_pattern.getNumChildren(); i < nchild; i++)
+        {
+          TNode pic = pi->d_pattern[i];
+          // Note we use get ground representative here. We do not use getValue,
+          // which should never be sink.
+          TNode gpic = d_state.getGroundRepresentative(pic);
+          pargs.push_back(gpic);
+          if (!gpic.isNull())
+          {
+            matchIndices.push_back(i);
+            piargs.push_back(nullptr);
+          }
+          else
+          {
+            nmatchIndices.push_back(i);
+            piargs.push_back(&d_state.getPatTermInfo(pic));
+          }
+        }
+        // we should not have ground representatives for each child of the pattern,
+        // otherwise we should be fully assigned
+        Assert(!nmatchIndices.empty());
+      }
       // none in this equivalence class
       // for each term with the same match operator
       bool isMaybeEq = false;
@@ -494,9 +560,10 @@ void InstDriver::runMatching(PatTermInfo* pi)
           for (size_t i : nmatchIndices)
           {
             piargs[i]->addWatchEqc(m[i]);
-            // recurse immediately
+            // recurse to do matching on the argument
             runMatching(piargs[i]);
-            // check
+            // if it is not possible that we are equal, we stop matching this
+            // term
             if (!piargs[i]->isMaybeEqc(m[i]))
             {
               matchSuccess = false;
@@ -506,7 +573,7 @@ void InstDriver::runMatching(PatTermInfo* pi)
           isMaybeEq = isMaybeEq || matchSuccess;
         }
       }
-      // if its possible that we are equal
+      // if its possible that we are equal by matching, record this here
       if (isMaybeEq)
       {
         pi->addMaybeEqc(weqc);
@@ -534,19 +601,27 @@ SearchLevel& InstDriver::getSearchLevel(size_t i) { return d_levels[i]; }
 
 void InstDriver::search()
 {
-  bool isFinished = false;
+  context()->push();
+  // TODO: do initial notifications for watched ground terms
+  
+  if (isFinished())
+  {
+    return;
+  }
+  
+  bool isExhausted = false;
   size_t currLevel = 0;
-  while (!isFinished)
+  while (!isExhausted)
   {
     // assign at current level
     if (pushLevel(currLevel))
     {
-      Assert(!d_state.isFinished());
+      Assert(!isFinished());
       currLevel++;
     }
     else if (currLevel == 0)
     {
-      isFinished = true;
+      isExhausted = true;
     }
     else
     {
@@ -554,6 +629,13 @@ void InstDriver::search()
       currLevel--;
     }
   }
+  
+  context()->pop();
+}
+
+bool InstDriver::isFinished() const
+{
+  return d_inConflict || d_state.isFinished();
 }
 
 }  // namespace ccfv

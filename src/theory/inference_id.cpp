@@ -192,6 +192,10 @@ const char* toString(InferenceId i)
       return "QUANTIFIERS_INST_CBQI_CONFLICT";
     case InferenceId::QUANTIFIERS_INST_CBQI_PROP:
       return "QUANTIFIERS_INST_CBQI_PROP";
+    case InferenceId::QUANTIFIERS_INST_CCFV_CONFLICT:
+      return "QUANTIFIERS_INST_CCFV_CONFLICT";
+    case InferenceId::QUANTIFIERS_INST_CCFV_PROP:
+      return "QUANTIFIERS_INST_CCFV_PROP";
     case InferenceId::QUANTIFIERS_INST_FMF_EXH:
       return "QUANTIFIERS_INST_FMF_EXH";
     case InferenceId::QUANTIFIERS_INST_FMF_FMC:

@@ -611,7 +611,6 @@ const std::unordered_set<TNode>& State::getGroundEqcFor(TypeNode tn) const
 
 bool State::isGroundEqc(TNode r) const
 {
-  Assert(d_sstate != nullptr);
   return d_groundEqc.find(r) != d_groundEqc.end();
 }
 

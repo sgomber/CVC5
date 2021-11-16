@@ -34,7 +34,7 @@ CongruenceClosureFv::CongruenceClosureFv(Env& env,
                                          TermRegistry& tr)
     : QuantifiersModule(env, qs, qim, qr, tr),
       d_state(env, qs, getTermDatabase()),
-      d_driver(env, d_state, qs, tr)
+      d_driver(env, d_state, qs, qim, tr)
 {
 }
 

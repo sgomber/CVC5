@@ -47,9 +47,9 @@ class CongruenceClosureFv;
 
 class State : protected EnvObj
 {
-  typedef context::CDList<Node> NodeList;
-  typedef context::CDHashSet<Node> NodeSet;
-  typedef context::CDHashMap<Node, bool> NodeBoolMap;
+  using NodeList = context::CDList<Node>;
+  using NodeSet = context::CDHashSet<Node>;
+  using NodeBoolMap = context::CDHashMap<Node, bool>;
 
  public:
   State(Env& env, QuantifiersState& qs, TermDb* tdb);

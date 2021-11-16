@@ -289,6 +289,10 @@ enum class InferenceId
   QUANTIFIERS_INST_CBQI_CONFLICT,
   // propagating instantiation from conflict-based instantiation
   QUANTIFIERS_INST_CBQI_PROP,
+  // conflicting instantiation from congruence closure with free variables
+  QUANTIFIERS_INST_CCFV_CONFLICT,
+  // propagating instantiation from congruence closure with free variables
+  QUANTIFIERS_INST_CCFV_PROP,
   // instantiation from naive exhaustive instantiation in finite model finding
   QUANTIFIERS_INST_FMF_EXH,
   // instantiation from finite model finding based on its model-based algorithm
