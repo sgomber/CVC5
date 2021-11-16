@@ -202,10 +202,10 @@ void QuantInfo::computeMatchReq(TNode cur,
 
 void QuantInfo::addMatchTermReq(TNode t, Node eqc, bool isEq)
 {
-  // notice that in rare cases, t may have no free variables, e.g. 
+  // notice that in rare cases, t may have no free variables, e.g.
   // if miniscoping is disabled, or there is a ground subterm in a non-entailed
   // position.
-  
+
   // if not equal, make into disequality constraint (not (= t eqc))
   if (!isEq)
   {

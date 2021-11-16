@@ -27,7 +27,12 @@ InstDriver::InstDriver(Env& env,
                        State& state,
                        QuantifiersState& qs,
                        TermRegistry& tr)
-    : EnvObj(env), d_state(state), d_qstate(qs), d_treg(tr), d_numLevels(0), d_keep(context())
+    : EnvObj(env),
+      d_state(state),
+      d_qstate(qs),
+      d_treg(tr),
+      d_numLevels(0),
+      d_keep(context())
 {
   NodeManager* nm = NodeManager::currentNM();
   d_true = nm->mkConst(true);
@@ -234,7 +239,7 @@ bool InstDriver::pushLevel(size_t level)
     return false;
   }
   // we push here, since we are updating the state of the equality engine
-  
+
   context()->push();
   // assign each variable
   for (size_t i = 0, nvars = slevel.d_varsToAssign.size(); i < nvars; i++)
@@ -491,7 +496,7 @@ void InstDriver::runMatching(PatTermInfo* pi)
             piargs[i]->addWatchEqc(m[i]);
             // recurse immediately
             runMatching(piargs[i]);
-            // check 
+            // check
             if (!piargs[i]->isMaybeEqc(m[i]))
             {
               matchSuccess = false;

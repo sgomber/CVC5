@@ -20,9 +20,9 @@
 
 #include <unordered_set>
 
-#include "context/cdo.h"
 #include "context/cdhashset.h"
 #include "context/cdlist.h"
+#include "context/cdo.h"
 #include "expr/node.h"
 
 namespace cvc5 {
@@ -52,6 +52,7 @@ class FreeVarInfo
   TNode getNextQuantifier();
   /** Is active? */
   bool isActive() const;
+
  private:
   /** context */
   context::CDO<size_t> d_quantIndex;

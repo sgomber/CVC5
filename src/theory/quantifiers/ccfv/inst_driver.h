@@ -54,6 +54,7 @@ x -> b
 class InstDriver : protected EnvObj
 {
   using NodeSet = context::CDHashSet<Node>;
+
  public:
   InstDriver(Env& env, State& state, QuantifiersState& qs, TermRegistry& tr);
   /** Get quantifiers info */

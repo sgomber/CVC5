@@ -110,10 +110,9 @@ class PatTermInfo
    */
   context::CDO<size_t> d_watchEqcIndex;
   /**
-   * Maybe equal to set 
+   * Maybe equal to set
    */
   NodeSet d_maybeEqc;
-  
 };
 
 }  // namespace ccfv

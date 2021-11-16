@@ -93,7 +93,7 @@ TNode PatTermInfo::getNextWatchEqc()
 
 void PatTermInfo::addMaybeEqc(TNode eqc)
 {
-  Assert (d_pattern.getKind() != kind::BOUND_VARIABLE);
+  Assert(d_pattern.getKind() != kind::BOUND_VARIABLE);
   d_maybeEqc.insert(eqc);
 }
 
@@ -104,7 +104,7 @@ bool PatTermInfo::isMaybeEqc(TNode eqc) const
     // special case, we don't track maybe eqc for variables, always return true
     return true;
   }
-  return d_maybeEqc.find(eqc)!=d_maybeEqc.end();
+  return d_maybeEqc.find(eqc) != d_maybeEqc.end();
 }
 
 }  // namespace ccfv
