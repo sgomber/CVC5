@@ -47,11 +47,13 @@ class FreeVarInfo
    * List of quantifiers that contain this variable
    */
   NodeList d_quantList;
+  /** Get next quantifier */
+  TNode getNextQuantifier();
   /** Is active? */
   bool isActive() const;
  private:
   /** context */
-  context::Context* d_context;
+  context::CDO<size_t> d_quantIndex;
 };
 
 }  // namespace ccfv

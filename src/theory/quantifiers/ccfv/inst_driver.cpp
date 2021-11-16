@@ -182,17 +182,21 @@ bool InstDriver::pushLevel(size_t level)
   // find the next assignment for each variable
   std::vector<TNode> assignment;
   bool success = false;
+  // assign all variables in parallel
   for (TNode v : slevel.d_varsToAssign)
   {
     PatTermInfo& pi = d_state.getPatTermInfo(v);
     const FreeVarInfo& fi = d_state.getFreeVarInfo(v);
     TNode eqc = pi.getNextWatchEqc();
-    size_t qindex = 0;
-    while (eqc.isNull() && qindex < fi.d_quantList.size())
+    while (eqc.isNull())
     {
       // get the next quantified formula containing v
-      TNode q = fi.d_quantList[qindex];
-      qindex++;
+      TNode q = fi.getNextQuantifier();
+      if (q.isNull())
+      {
+        // no more quantifiers to match
+        break;
+      }
       QuantInfo& qi = d_state.getQuantInfo(q);
       if (!qi.isActive())
       {

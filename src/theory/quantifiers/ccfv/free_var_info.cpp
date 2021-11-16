@@ -23,10 +23,22 @@ namespace quantifiers {
 namespace ccfv {
 
 FreeVarInfo::FreeVarInfo(context::Context* c)
-    : d_useList(c), d_quantList(c), d_context(c)
+    : d_useList(c), d_quantList(c), d_quantIndex(c, 0)
 {
 }
 bool FreeVarInfo::isActive() const { return !d_quantList.empty(); }
+
+TNode FreeVarInfo::getNextQuantifier()
+{
+  if (d_quantIndex >= d_quantList.size())
+  {
+    return TNode::null();
+  }
+  TNode next = d_quantList[d_quantIndex];
+  d_quantIndex = d_quantIndex.get() + 1;
+  return next;
+}
+
 /*
 void FreeVarInfo::resetDomain()
 {
