@@ -71,14 +71,12 @@ class InstDriver : protected EnvObj
   /** Reset the search */
   void resetSearchLevels(const std::vector<TNode>& quants);
   /** Assign variable levels for all quantifiers */
-  void assignVariableLevels(size_t level,
+  void assignVarsToLevels(size_t level,
                             const std::vector<TNode>& quants,
                             std::map<TNode, std::vector<TNode>>& partition,
                             std::map<TNode, size_t>& fvLevel);
-  /** are we finished? */
-  bool isFinished() const;
   /** Assign search level */
-  bool assignSearchLevel(size_t level);
+  bool pushLevel(size_t level);
   /** Assign variable to the equivalence class eqc */
   void assignVar(TNode v, TNode eqc);
   /** Process matcher */
@@ -87,6 +85,8 @@ class InstDriver : protected EnvObj
   void runMatching(PatTermInfo* pi);
   /** Get search level */
   SearchLevel& getSearchLevel(size_t i);
+  /** Search */
+  void search();
   /** common constants */
   Node d_true;
   Node d_false;
@@ -98,6 +98,9 @@ class InstDriver : protected EnvObj
   TermRegistry& d_treg;
   /** Search levels */
   std::map<size_t, SearchLevel> d_levels;
+  /** Number of levels */
+  size_t d_numLevels;
+  
 };
 
 }  // namespace ccfv

@@ -582,9 +582,11 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
 
 void State::setQuantInactive(QuantInfo& qi)
 {
-  Assert(qi.isActive());
-  qi.setActive(false);
-  d_numActiveQuant = d_numActiveQuant - 1;
+  if (qi.isActive())
+  {
+    qi.setActive(false);
+    d_numActiveQuant = d_numActiveQuant - 1;
+  }
 }
 
 Node State::getSink() const { return d_sink; }

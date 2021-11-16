@@ -30,13 +30,19 @@ namespace ccfv {
 class SearchLevel
 {
  public:
-  SearchLevel() {}
+  SearchLevel() : d_firstTime(true) {}
   /** the list of variables we assign at this search level */
   std::vector<TNode> d_varsToAssign;
   /** The quantified formulas that are fully assigned at this level */
   std::vector<TNode> d_finalQuants;
-  /** The quantified formulas that are rooted as this level */
+  /** 
+   * The quantified formulas that are rooted at the level directly beneath
+   * this one. We disable these quantified formulas when d_firstTime becomes
+   * false.
+   */
   std::vector<TNode> d_startQuants;
+  /** First time running this round */
+  bool d_firstTime;
 };
 
 }  // namespace ccfv

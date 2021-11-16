@@ -93,6 +93,8 @@ void QuantInfo::initialize(TNode q,
 
   // now we go back and process terms in the match requirements
   processMatchReqTerms(ee);
+  
+  // TODO: debug print
 }
 
 void QuantInfo::computeMatchReq(TNode cur,

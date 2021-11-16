@@ -27,7 +27,7 @@ InstDriver::InstDriver(Env& env,
                        State& state,
                        QuantifiersState& qs,
                        TermRegistry& tr)
-    : EnvObj(env), d_state(state), d_qstate(qs), d_treg(tr)
+    : EnvObj(env), d_state(state), d_qstate(qs), d_treg(tr), d_numLevels(0)
 {
   NodeManager* nm = NodeManager::currentNM();
   d_true = nm->mkConst(true);
@@ -45,6 +45,9 @@ void InstDriver::check(const std::vector<TNode>& quants)
   // reset search levels
   // NOTE: could incrementally maintain this?
   resetSearchLevels(quants);
+  
+  // now perform the search
+  search();
 }
 
 void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
@@ -53,7 +56,7 @@ void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
   d_levels.clear();
   std::map<TNode, std::vector<TNode>> partition;
   std::map<TNode, size_t> fvLevel;
-  assignVariableLevels(0, quants, partition, fvLevel);
+  assignVarsToLevels(0, quants, partition, fvLevel);
 
   // set the start levels
   std::map<TNode, size_t>::iterator itf;
@@ -64,12 +67,22 @@ void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
     Assert(!fvs.empty());
     itf = fvLevel.find(fvs[0]);
     Assert(itf != fvLevel.end());
-    SearchLevel& slevel = getSearchLevel(itf->second);
-    slevel.d_startQuants.push_back(q);
+    if (itf->second>0)
+    {
+      SearchLevel& slevel = getSearchLevel(itf->second-1);
+      slevel.d_startQuants.push_back(q);
+    }
+  }
+  // set that it is the first time seeing each of the levels
+  d_numLevels = d_levels.size();
+  for (std::pair<const size_t, SearchLevel>& sl : d_levels)
+  {
+    Assert (sl.first<d_numLevels);
+    sl.second.d_firstTime = true;
   }
 }
 
-void InstDriver::assignVariableLevels(
+void InstDriver::assignVarsToLevels(
     size_t level,
     const std::vector<TNode>& quants,
     std::map<TNode, std::vector<TNode>>& partition,
@@ -133,13 +146,38 @@ void InstDriver::assignVariableLevels(
       fvLevel[v] = level;
       nextLevel = level + 1;
     }
-    assignVariableLevels(nextLevel, nextQuants, partition, fvLevel);
+    assignVarsToLevels(nextLevel, nextQuants, partition, fvLevel);
   }
 }
 
-bool InstDriver::assignSearchLevel(size_t level)
+bool InstDriver::pushLevel(size_t level)
 {
+  if (level==d_numLevels)
+  {
+    // already at maximum level
+    return false;
+  }
+  context()->push();
   SearchLevel& slevel = getSearchLevel(level);
+  bool wasFirstTime = slevel.d_firstTime;
+  if (slevel.d_firstTime)
+  {
+    slevel.d_firstTime = false;
+  }
+  else
+  {
+    // if not first time, disable all that start here
+    for (TNode q : slevel.d_startQuants)
+    {
+      QuantInfo& qi = d_state.getQuantInfo(q);
+      d_state.setQuantInactive(qi);
+    }
+    if (d_state.isFinished())
+    {
+      context()->pop();
+      return false;
+    }
+  }
   Assert(!slevel.d_varsToAssign.empty());
   // find the next assignment for each variable
   std::vector<TNode> assignment;
@@ -187,18 +225,32 @@ bool InstDriver::assignSearchLevel(size_t level)
     }
     assignment.push_back(eqc);
   }
-  if (!success)
+  if (!success && !wasFirstTime)
   {
-    // could not find an assignment
-    // TODO: is this right?
+    // Could not find an assignment to any variables, and this was not the
+    // first time we ran. In this case, a previous assign ran strictly
+    // more information.
+    context()->pop();
     return false;
   }
   // assign each variable
   for (size_t i = 0, nvars = slevel.d_varsToAssign.size(); i < nvars; i++)
   {
-    assignVar(slevel.d_varsToAssign[i], assignment[i]);
+    TNode v = slevel.d_varsToAssign[i];
+    TNode eqc = assignment[i];
+    if (d_state.isSink(eqc))
+    {
+      d_state.notifyPatternSink(v);
+      // TODO: disable all quantified formulas?
+    }
+    else
+    {
+      // otherwise, assert v = eqc to the equality engine
+      assignVar(v, eqc);
+    }
     if (d_state.isFinished())
     {
+      context()->pop();
       return false;
     }
   }
@@ -214,6 +266,7 @@ bool InstDriver::assignSearchLevel(size_t level)
       d_state.notifyPatternSink(t);
       if (d_state.isFinished())
       {
+        context()->pop();
         return false;
       }
     }
@@ -448,28 +501,44 @@ void InstDriver::runMatching(PatTermInfo* pi)
   }
 }
 
-bool InstDriver::isFinished() const { return d_state.isFinished(); }
 
 void InstDriver::assignVar(TNode v, TNode eqc)
 {
   Assert(d_qstate.getEqualityEngine()->consistent());
-  if (d_state.isSink(eqc))
-  {
-    // notify the state
-    d_state.notifyPatternSink(v);
-  }
-  else
-  {
-    Assert(v.getType().isComparableTo(eqc.getType()));
-    // assert to the equality engine
-    Node eq = v.eqNode(eqc);
-    d_qstate.getEqualityEngine()->assertEquality(eq, true, eq);
-    // should still be consistent
-    Assert(d_qstate.getEqualityEngine()->consistent());
-  }
+  Assert (!d_state.isSink(eqc));
+  Assert(v.getType().isComparableTo(eqc.getType()));
+  // assert to the equality engine
+  Node eq = v.eqNode(eqc);
+  d_qstate.getEqualityEngine()->assertEquality(eq, true, eq);
+  // should still be consistent
+  Assert(d_qstate.getEqualityEngine()->consistent());
 }
 
 SearchLevel& InstDriver::getSearchLevel(size_t i) { return d_levels[i]; }
+
+void InstDriver::search()
+{
+  bool isFinished = false;
+  size_t currLevel = 0;
+  while (!isFinished)
+  {
+    // assign at current level
+    if (pushLevel(currLevel))
+    {
+      Assert (!d_state.isFinished());
+      currLevel++;
+    }
+    else if (currLevel==0)
+    {
+      isFinished = true;
+    }
+    else
+    {
+      context()->pop();
+      currLevel--;
+    }
+  }
+}
 
 }  // namespace ccfv
 }  // namespace quantifiers
