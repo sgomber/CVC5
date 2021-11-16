@@ -35,7 +35,7 @@ class SearchLevel
   std::vector<TNode> d_varsToAssign;
   /** The quantified formulas that are fully assigned at this level */
   std::vector<TNode> d_finalQuants;
-  /** 
+  /**
    * The quantified formulas that are rooted at the level directly beneath
    * this one. We disable these quantified formulas when d_firstTime becomes
    * false.

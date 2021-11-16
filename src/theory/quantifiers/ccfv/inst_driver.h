@@ -72,9 +72,9 @@ class InstDriver : protected EnvObj
   void resetSearchLevels(const std::vector<TNode>& quants);
   /** Assign variable levels for all quantifiers */
   void assignVarsToLevels(size_t level,
-                            const std::vector<TNode>& quants,
-                            std::map<TNode, std::vector<TNode>>& partition,
-                            std::map<TNode, size_t>& fvLevel);
+                          const std::vector<TNode>& quants,
+                          std::map<TNode, std::vector<TNode>>& partition,
+                          std::map<TNode, size_t>& fvLevel);
   /** Assign search level */
   bool pushLevel(size_t level);
   /** Assign variable to the equivalence class eqc */
@@ -100,7 +100,6 @@ class InstDriver : protected EnvObj
   std::map<size_t, SearchLevel> d_levels;
   /** Number of levels */
   size_t d_numLevels;
-  
 };
 
 }  // namespace ccfv

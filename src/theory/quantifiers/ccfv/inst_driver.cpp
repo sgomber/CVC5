@@ -45,7 +45,7 @@ void InstDriver::check(const std::vector<TNode>& quants)
   // reset search levels
   // NOTE: could incrementally maintain this?
   resetSearchLevels(quants);
-  
+
   // now perform the search
   search();
 }
@@ -67,9 +67,9 @@ void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
     Assert(!fvs.empty());
     itf = fvLevel.find(fvs[0]);
     Assert(itf != fvLevel.end());
-    if (itf->second>0)
+    if (itf->second > 0)
     {
-      SearchLevel& slevel = getSearchLevel(itf->second-1);
+      SearchLevel& slevel = getSearchLevel(itf->second - 1);
       slevel.d_startQuants.push_back(q);
     }
   }
@@ -77,7 +77,7 @@ void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
   d_numLevels = d_levels.size();
   for (std::pair<const size_t, SearchLevel>& sl : d_levels)
   {
-    Assert (sl.first<d_numLevels);
+    Assert(sl.first < d_numLevels);
     sl.second.d_firstTime = true;
   }
 }
@@ -152,7 +152,7 @@ void InstDriver::assignVarsToLevels(
 
 bool InstDriver::pushLevel(size_t level)
 {
-  if (level==d_numLevels)
+  if (level == d_numLevels)
   {
     // already at maximum level
     return false;
@@ -501,11 +501,10 @@ void InstDriver::runMatching(PatTermInfo* pi)
   }
 }
 
-
 void InstDriver::assignVar(TNode v, TNode eqc)
 {
   Assert(d_qstate.getEqualityEngine()->consistent());
-  Assert (!d_state.isSink(eqc));
+  Assert(!d_state.isSink(eqc));
   Assert(v.getType().isComparableTo(eqc.getType()));
   // assert to the equality engine
   Node eq = v.eqNode(eqc);
@@ -525,10 +524,10 @@ void InstDriver::search()
     // assign at current level
     if (pushLevel(currLevel))
     {
-      Assert (!d_state.isFinished());
+      Assert(!d_state.isFinished());
       currLevel++;
     }
-    else if (currLevel==0)
+    else if (currLevel == 0)
     {
       isFinished = true;
     }
