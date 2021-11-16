@@ -47,27 +47,11 @@ class FreeVarInfo
    * List of quantifiers that contain this variable
    */
   NodeList d_quantList;
-  /** Add quantifier */
-  void addQuantMatch(TNode f, size_t index, TNode q);
   /** Is active? */
   bool isActive() const;
-  //--------------------- in search
-  /** Reset domain */
-  void resetDomain();
-  /** Is finished? */
-  bool isFinished() const;
-  /** Get next argument position to match */
-  bool getNextMatchPosition(State* s, TNode& f, size_t& index);
-
  private:
   /** context */
   context::Context* d_context;
-  /** Map from (function, argument position) to quantifiers list */
-  std::map<std::pair<TNode, size_t>, NodeList> d_qlist;
-  /** Iterator through the above list */
-  std::map<std::pair<TNode, size_t>, NodeList>::iterator d_itql;
-  /** The list of ground equivalence classes we have already considered */
-  std::unordered_set<TNode> d_eqcProcessed;
 };
 
 }  // namespace ccfv

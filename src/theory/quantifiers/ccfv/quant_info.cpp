@@ -94,7 +94,53 @@ void QuantInfo::initialize(TNode q,
   // now we go back and process terms in the match requirements
   processMatchReqTerms(ee);
 
-  // TODO: debug print
+  // debug print
+  Trace("ccfv-quant") << toStringDebug();
+}
+
+std::string QuantInfo::toStringDebug() const
+{
+  std::stringstream ss;
+  ss << "--- QuantInfo for " << d_quant << std::endl;
+  ss << "Vars: " << d_canonVarOrdered << std::endl;
+  ss << "Constraints:" << std::endl;
+  if (d_req.empty())
+  {
+    ss << "  (none)" << std::endl;
+  }
+  else
+  {
+    for (const std::pair<const TNode, std::vector<Node>>& r : d_req)
+    {
+      ss << "  " << r.first << " -> " << r.second << std::endl;
+    }
+  }
+  ss << "Congruence terms: " << d_congTerms << std::endl;
+  if (!d_termMaxVar.empty())
+  {
+    ss << "Term to maximum variable:" << std::endl;
+    for (const std::pair<const TNode, TNode>& t : d_termMaxVar)
+    {
+      ss << "  " << t.first << " -> " << t.second << std::endl;
+    }
+  }
+  if (!d_matchers.empty())
+  {
+    ss << "Matchers:" << std::endl;
+    for (const std::pair<const TNode, TNode>& t : d_matchers)
+    {
+      ss << "  " << t.first << " -> " << t.second << std::endl;
+    }
+  }
+  if (!d_unknownTerms.empty())
+  {
+    ss << "Unknown terms:" << std::endl;
+    for (TNode t : d_unknownTerms)
+    {
+      ss << "  " << t << std::endl;
+    }
+  }
+  return ss.str();
 }
 
 void QuantInfo::computeMatchReq(TNode cur,

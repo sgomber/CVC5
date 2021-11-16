@@ -26,14 +26,13 @@ FreeVarInfo::FreeVarInfo(context::Context* c)
     : d_useList(c), d_quantList(c), d_context(c)
 {
 }
-
+bool FreeVarInfo::isActive() const { return !d_quantList.empty(); }
+/*
 void FreeVarInfo::resetDomain()
 {
   d_eqcProcessed.clear();
   d_itql = d_qlist.begin();
 }
-
-bool FreeVarInfo::isActive() const { return true; }
 
 bool FreeVarInfo::isFinished() const { return d_itql == d_qlist.end(); }
 
@@ -66,6 +65,7 @@ bool FreeVarInfo::getNextMatchPosition(State* s, TNode& f, size_t& index)
   }
   return false;
 }
+*/
 
 }  // namespace ccfv
 }  // namespace quantifiers

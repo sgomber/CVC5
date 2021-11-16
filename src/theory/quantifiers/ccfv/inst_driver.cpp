@@ -182,7 +182,6 @@ bool InstDriver::pushLevel(size_t level)
   // find the next assignment for each variable
   std::vector<TNode> assignment;
   bool success = false;
-  // FIXME: need to get matchers for the right variable
   for (TNode v : slevel.d_varsToAssign)
   {
     PatTermInfo& pi = d_state.getPatTermInfo(v);

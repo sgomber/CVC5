@@ -100,6 +100,8 @@ class QuantInfo
   void addMatchTermReq(TNode t, Node eqc, bool isEq);
   /** Process match requirement terms */
   void processMatchReqTerms(eq::EqualityEngine* ee);
+  /** Debug print */
+  std::string toStringDebug() const;
   //------------------- static
   /** The quantified formula */
   Node d_quant;
