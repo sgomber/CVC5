@@ -452,7 +452,8 @@ void InstDriver::search()
   size_t currLevel = 0;
   while (!isExhausted && !d_inConflict)
   {
-    Trace("ccfv-search") << "search: level = " << currLevel << ", " << d_state.toStringDebugSearch() << std::endl;
+    Trace("ccfv-search") << "search: level = " << currLevel << ", "
+                         << d_state.toStringDebugSearch() << std::endl;
     // assign at current level
     if (pushLevel(currLevel))
     {
@@ -469,7 +470,8 @@ void InstDriver::search()
       currLevel--;
     }
   }
-  Trace("ccfv-search") << "search: finished, conflict = " << d_inConflict << std::endl;
+  Trace("ccfv-search") << "search: finished, conflict = " << d_inConflict
+                       << std::endl;
 }
 
 bool InstDriver::isFinished() const
