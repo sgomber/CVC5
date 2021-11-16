@@ -90,6 +90,7 @@ class QuantInfo
 
   /** Debug print */
   std::string toStringDebug() const;
+
  private:
   /**
    * Process matching requirement for subterm cur which is a disjunct in the

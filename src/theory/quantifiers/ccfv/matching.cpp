@@ -26,12 +26,8 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-Matching::Matching(Env& env,
-                       State& state,
-                       QuantifiersState& qs)
-    : EnvObj(env),
-      d_state(state),
-      d_qstate(qs)
+Matching::Matching(Env& env, State& state, QuantifiersState& qs)
+    : EnvObj(env), d_state(state), d_qstate(qs)
 {
   NodeManager* nm = NodeManager::currentNM();
   d_true = nm->mkConst(true);

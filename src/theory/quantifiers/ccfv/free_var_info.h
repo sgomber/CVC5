@@ -31,7 +31,7 @@ namespace quantifiers {
 namespace ccfv {
 
 /**
- * Information for a free variable. 
+ * Information for a free variable.
  */
 class FreeVarInfo
 {
@@ -49,6 +49,7 @@ class FreeVarInfo
   NodeList d_quantList;
   /** Get next quantifier, and increment the quantifier index. */
   TNode getNextQuantifier();
+
  private:
   /** The current index in d_quantList we are looking at, for matching */
   context::CDO<size_t> d_quantIndex;

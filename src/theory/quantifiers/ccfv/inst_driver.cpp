@@ -68,16 +68,16 @@ void InstDriver::check(const std::vector<TNode>& quants)
   Trace("ccfv") << "InstDriver::check" << std::endl;
   // we modify the equality engine, so open a scope
   context()->push();
-  
+
   // Reset the state. Notice that we must do this before adding pattern terms
   // to the equality engine.
   Trace("ccfv-debug") << "Reset state..." << std::endl;
   d_state.resetRound(quants.size());
-  
+
   // reset information about whether we have found instantiations
   d_foundInst = false;
   d_inConflict = false;
-  
+
   // reset round for all quantified formulas
   Trace("ccfv-debug") << "Reset " << quants.size() << " quants..." << std::endl;
   for (TNode q : quants)
@@ -90,7 +90,8 @@ void InstDriver::check(const std::vector<TNode>& quants)
 
   // do initial notifications for relevant ground terms in the bodies of
   // quantified formulas.
-  Trace("ccfv-debug") << "Initial notify " << fiNull.d_useList.size() << " ground terms..." << std::endl;
+  Trace("ccfv-debug") << "Initial notify " << fiNull.d_useList.size()
+                      << " ground terms..." << std::endl;
   FreeVarInfo& fiNull = d_state.getOrMkFreeVarInfo(Node::null());
   for (const Node& t : fiNull.d_useList)
   {
@@ -104,7 +105,7 @@ void InstDriver::check(const std::vector<TNode>& quants)
       d_state.notifyPatternEqGround(t, trep);
     }
   }
-  
+
   // if not already finished, perform the search over assignments to variables
   if (!isFinished())
   {
@@ -120,7 +121,7 @@ void InstDriver::check(const std::vector<TNode>& quants)
   {
     Trace("ccfv-debug") << "...already finished" << std::endl;
   }
-  
+
   // pop the context
   context()->pop();
 }
@@ -155,7 +156,7 @@ void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
     Assert(sl.first < d_numLevels);
     sl.second.d_firstTime = true;
   }
-  
+
   if (Trace.isOn("ccfv-debug"))
   {
     for (std::pair<const size_t, SearchLevel>& sl : d_levels)
@@ -444,7 +445,7 @@ SearchLevel& InstDriver::getSearchLevel(size_t i) { return d_levels[i]; }
 
 void InstDriver::search()
 {
-  Assert (!isFinished());
+  Assert(!isFinished());
   bool isExhausted = false;
   size_t currLevel = 0;
   while (!isExhausted && !d_inConflict)

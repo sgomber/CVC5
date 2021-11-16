@@ -83,7 +83,7 @@ class PatTermInfo
    */
   NodeList d_parentCongNotify;
   //---------------------- matching
-  /** 
+  /**
    * Add watched equivalence class, which is an equivalence class that might
    * be relevant for matching.
    */
@@ -92,10 +92,10 @@ class PatTermInfo
   TNode getNextWatchEqc();
   /** Set that it is possible that this pattern can be equal to eqc. */
   void addMaybeEqc(TNode eqc);
-  /** 
+  /**
    * Is this pattern maybe equal to eqc? Returns true if this pattern is
    * a bound variable, or if eqc was added via addMaybeEqc.
-   * 
+   *
    * This method should be called on eqc that we have processed as watched
    * equivalence classes (those for which getNextWatchEqc has returned eqc).
    * If this returns false, then the pattern of this class will never be
@@ -119,7 +119,7 @@ class PatTermInfo
    */
   context::CDO<size_t> d_watchEqcIndex;
   /**
-   * Maybe equal to, which is a subset of d_watchEqc. 
+   * Maybe equal to, which is a subset of d_watchEqc.
    *
    * The equivalence classes we have processed in d_watchEqc that are not in
    * d_maybeEqc are such that this pattern will never merge with.

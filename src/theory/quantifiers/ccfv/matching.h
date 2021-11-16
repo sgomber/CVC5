@@ -31,16 +31,15 @@ class TermRegistry;
 namespace ccfv {
 
 /**
-*/
+ */
 class Matching : protected EnvObj
 {
  public:
-  Matching(Env& env,
-             State& state,
-             QuantifiersState& qs);
+  Matching(Env& env, State& state, QuantifiersState& qs);
   /** Process matcher */
   bool processMatcher(QuantInfo& qi, TNode matcher);
-private:
+
+ private:
   /** Run matching */
   void runMatching(PatTermInfo* pi);
   /** common constants */
