@@ -123,52 +123,6 @@ FreeVarInfo& State::getFreeVarInfo(TNode v)
   return it->second;
 }
 
-std::vector<TNode> State::getFreeVarList() const
-{
-  std::vector<TNode> fvar;
-  for (const std::pair<const Node, FreeVarInfo>& fi : d_fvInfo)
-  {
-    if (!fi.second.isActive())
-    {
-      fvar.push_back(fi.first);
-    }
-  }
-  return fvar;
-}
-
-bool sortVarNQuant(const std::pair<size_t, TNode>& a,
-                   const std::pair<size_t, TNode>& b)
-{
-  if (a.first > b.first)
-  {
-    return true;
-  }
-  return a.first == b.first && a.second < b.second;
-}
-
-/*
-std::vector<TNode> State::getOrderedFreeVarList() const
-{
-  std::vector<std::pair<size_t, TNode>> fvarList;
-  for (const std::pair<const Node, FreeVarInfo>& fi : d_fvInfo)
-  {
-    size_t nquant = fi.second.d_quantList.size();
-    if (nquant > 0)
-    {
-      fvarList.push_back(std::pair<size_t, TNode>(nquant, fi.first));
-    }
-  }
-  // sort by most quantifiers first
-  std::sort(fvarList.begin(), fvarList.end(), sortVarNQuant);
-  std::vector<TNode> fvar;
-  for (const std::pair<size_t, TNode>& v : fvarList)
-  {
-    fvar.push_back(v.second);
-  }
-  return fvar;
-}
-*/
-
 PatTermInfo& State::getOrMkPatTermInfo(TNode p)
 {
   std::map<Node, PatTermInfo>::iterator it = d_pInfo.find(p);
@@ -224,32 +178,6 @@ const EqcInfo* State::getEqcInfo(TNode r) const
     return nullptr;
   }
   return &it->second;
-}
-
-bool State::eqNotifyTriggerPredicate(TNode predicate, bool value)
-{
-  // use this?
-  return true;
-}
-
-bool State::eqNotifyTriggerTermEquality(TheoryId tag,
-                                        TNode t1,
-                                        TNode t2,
-                                        bool value)
-{
-  // use this?
-  return true;
-}
-
-void State::eqNotifyConstantTermMerge(TNode t1, TNode t2)
-{
-  // should never happen
-  Assert(false);
-}
-
-void State::eqNotifyNewClass(TNode t)
-{
-  // do nothing
 }
 
 void State::eqNotifyMerge(TNode t1, TNode t2)
@@ -321,12 +249,6 @@ void State::eqNotifyMerge(TNode t1, TNode t2)
       notifyPatternEqGround(t, t2);
     }
   }
-}
-
-void State::eqNotifyDisequal(TNode t1, TNode t2, TNode reason)
-{
-  // should never happen
-  Assert(false);
 }
 
 void State::notifyPatternSink(TNode p) { notifyPatternEqGround(p, d_sink); }

@@ -48,6 +48,23 @@ InstDriver::InstDriver(Env& env,
   d_false = nm->mkConst(false);
 }
 
+void InstDriver::addToEqualityEngine(TNode q)
+{
+  QuantInfo& qi = d_state.getQuantInfo(q);
+  // add the congruence terms to the equality engine
+  eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
+  Assert(ee->consistent());
+  const std::vector<TNode>& pterms = qi.getCongruenceTerms();
+  for (TNode p : pterms)
+  {
+    ee->addTerm(p);
+    // should now exist in the equality engine, and not have a value
+    Assert(ee->consistent());
+    Assert(ee->hasTerm(p));
+    Assert(d_state.getValue(p).isNull());
+  }
+}
+
 void InstDriver::check(const std::vector<TNode>& quants)
 {
   d_inConflict = false;

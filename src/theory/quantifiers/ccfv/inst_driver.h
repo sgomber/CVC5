@@ -74,6 +74,8 @@ class InstDriver : protected EnvObj
   /** check */
   void check(const std::vector<TNode>& quants);
 
+  /** Add to equality engine */
+  void addToEqualityEngine(TNode q);
  private:
   /** Reset the search */
   void resetSearchLevels(const std::vector<TNode>& quants);

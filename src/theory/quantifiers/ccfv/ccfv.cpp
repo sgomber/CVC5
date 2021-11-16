@@ -99,7 +99,6 @@ void CongruenceClosureFv::assertNode(Node q)
   // (2) notifications from children to Boolean connectives
   // (3) notifications from children to congruence terms
   // (4) free variables to use list terms
-  // (5) addition of congruence terms to the equality engine
 
   // get the equality engine
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
@@ -141,7 +140,12 @@ void CongruenceClosureFv::assertNode(Node q)
       visited.insert(cur);
       if (!expr::hasBoundVar(cur))
       {
-        // FIXME: require initial notifications for these terms
+        // a ground term
+        // (*)
+        // require initial notifications for these terms, which we store in
+        // the null free variable info.
+        FreeVarInfo& fiNull = d_state.getOrMkFreeVarInfo(Node::null());
+        fiNull.d_useList.insert(cur);
         continue;
       }
       Kind k = cur.getKind();
@@ -153,12 +157,7 @@ void CongruenceClosureFv::assertNode(Node q)
       }
       Assert(cur.getNumChildren() > 0);
       bool isBoolConnective = false;
-      // Node matchOp;
-      if (ee->isFunctionKind(k))
-      {
-        // matchOp = getTermDatabase()->getMatchOperator(cur);
-      }
-      else
+      if (!ee->isFunctionKind(k))
       {
         // compute if Boolean connective
         if (!expr::isBooleanConnective(cur))
@@ -182,15 +181,6 @@ void CongruenceClosureFv::assertNode(Node q)
           Assert(cur.hasOperator());
           // (3) congruence terms will recieve notifications when unassigned
           pi.d_parentCongNotify.push_back(cur);
-          /*
-          if (cc.getKind()==BOUND_VARIABLE && !matchOp.isNull())
-          {
-            // if a bound variable, we track that the quantified formula may
-            // want to match this position
-            FreeVarInfo& fi = d_state.getOrMkFreeVarInfo(cc);
-            fi.addQuantMatch(matchOp, i, q);
-          }
-          */
         }
         visit.push_back(cc);
       }
@@ -204,16 +194,6 @@ void CongruenceClosureFv::assertNode(Node q)
   {
     FreeVarInfo& fi = d_state.getOrMkFreeVarInfo(tv.second);
     fi.d_useList.insert(tv.first);
-  }
-
-  // (5) add the congruence terms to the equality engine
-  const std::vector<TNode>& pterms = qi.getCongruenceTerms();
-  for (TNode p : pterms)
-  {
-    ee->addTerm(p);
-    // should now exist in the equality engine, and not have a value
-    Assert(ee->hasTerm(p));
-    Assert(d_state.getValue(p).isNull());
   }
 }
 

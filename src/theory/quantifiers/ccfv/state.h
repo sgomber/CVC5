@@ -67,14 +67,6 @@ class State : protected EnvObj
   /** Get free variable info */
   FreeVarInfo& getOrMkFreeVarInfo(TNode v);
   FreeVarInfo& getFreeVarInfo(TNode v);
-  /**
-   * Get active free variables
-   */
-  std::vector<TNode> getFreeVarList() const;
-  /**
-   * Get active free variables, sorted by how often they occur
-   */
-  // std::vector<TNode> getOrderedFreeVarList() const;
   //---------------pattern term info
   /** Get pattern term info */
   PatTermInfo& getOrMkPatTermInfo(TNode p);
@@ -82,16 +74,8 @@ class State : protected EnvObj
   //---------------match information
   MatchEqcInfo& getMatchEqcInfo(TNode r);
   //---------------equality notifications
-  bool eqNotifyTriggerPredicate(TNode predicate, bool value);
-  bool eqNotifyTriggerTermEquality(TheoryId tag,
-                                   TNode t1,
-                                   TNode t2,
-                                   bool value);
-
-  void eqNotifyConstantTermMerge(TNode t1, TNode t2);
-  void eqNotifyNewClass(TNode t);
+  /** Called when equivalence classes t1 and t2 merge. */
   void eqNotifyMerge(TNode t1, TNode t2);
-  void eqNotifyDisequal(TNode t1, TNode t2, TNode reason);
   /**
    * Called when we have determined that pattern p will not merge with any
    * ground equivalence class.
