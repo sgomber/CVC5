@@ -114,6 +114,7 @@ void InstDriver::check(const std::vector<TNode>& quants)
     Trace("ccfv-debug") << "Reset search levels..." << std::endl;
     resetSearchLevels(quants);
     Trace("ccfv-debug") << "Search..." << std::endl;
+    Trace("ccfv-debug") << d_state.toStringDebug() << std::endl;
     search();
     Trace("ccfv-debug") << "...finished" << std::endl;
   }
@@ -446,10 +447,12 @@ SearchLevel& InstDriver::getSearchLevel(size_t i) { return d_levels[i]; }
 void InstDriver::search()
 {
   Assert(!isFinished());
+  Trace("ccfv-search") << "search: start" << std::endl;
   bool isExhausted = false;
   size_t currLevel = 0;
   while (!isExhausted && !d_inConflict)
   {
+    Trace("ccfv-search") << "search: level = " << currLevel << ", " << d_state.toStringDebugSearch() << std::endl;
     // assign at current level
     if (pushLevel(currLevel))
     {
@@ -466,6 +469,7 @@ void InstDriver::search()
       currLevel--;
     }
   }
+  Trace("ccfv-search") << "search: finished, conflict = " << d_inConflict << std::endl;
 }
 
 bool InstDriver::isFinished() const
