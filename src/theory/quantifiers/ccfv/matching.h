@@ -32,7 +32,7 @@ class TermRegistry;
 namespace ccfv {
 
 /**
- * Runs global matching.
+ * Manages global parallel matching.
  *
  * This class does matching modulo equality for terms. It does not generate
  * substitutions, instead its main purpose is to set a relevant domain of
@@ -60,7 +60,13 @@ namespace ccfv {
  * variables.
  *
  * As a result, substitutions over x -> {c, d}, y -> {b} are relevant for making
- * f(g(x),y,b) equal to a. In practice, we take only one of these. TODO
+ * f(g(x),y,b) equal to a.
+ * 
+ * Notice that we use this to compute candidate substitutions for a single
+ * variable only, and do this for possibly many terms (one for each active
+ * quantified formula) simultaneously. In particular, this means that if x < y
+ * in our variable order, we consider assignments for { c, d } and then rerun
+ * matching at the next level to find candidates for y.
  */
 class Matching : protected EnvObj
 {
