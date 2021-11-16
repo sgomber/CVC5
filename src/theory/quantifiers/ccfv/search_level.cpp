@@ -15,7 +15,6 @@
 
 #include "theory/quantifiers/ccfv/search_level.h"
 
-
 #include <sstream>
 
 namespace cvc5 {
@@ -29,10 +28,10 @@ std::string SearchLevel::toStringDebug() const
 {
   std::stringstream ss;
   ss << "Variables: " << d_varsToAssign << std::endl;
-  for (size_t i=0; i<2; i++)
+  for (size_t i = 0; i < 2; i++)
   {
-    const std::vector<TNode>& quants = i==0 ? d_startQuants : d_finalQuants;
-    ss << (i==0 ? "Start" : "Final") << " quants: [ ";
+    const std::vector<TNode>& quants = i == 0 ? d_startQuants : d_finalQuants;
+    ss << (i == 0 ? "Start" : "Final") << " quants: [ ";
     for (TNode q : quants)
     {
       ss << q.getId() << " ";
@@ -41,9 +40,8 @@ std::string SearchLevel::toStringDebug() const
   }
   return ss.str();
 }
-  
+
 }  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5
-

@@ -21,7 +21,7 @@ namespace quantifiers {
 namespace ccfv {
 
 MatchPatInfo::MatchPatInfo() : d_watchEqcIndex(0) {}
-  
+
 void MatchPatInfo::addWatchEqc(TNode eqc)
 {
   if (d_watchEqc.find(eqc) == d_watchEqc.end())
@@ -42,10 +42,7 @@ TNode MatchPatInfo::getNextWatchEqc()
   return next;
 }
 
-void MatchPatInfo::addMaybeEqc(TNode eqc)
-{
-  d_maybeEqc.insert(eqc);
-}
+void MatchPatInfo::addMaybeEqc(TNode eqc) { d_maybeEqc.insert(eqc); }
 
 bool MatchPatInfo::isMaybeEqc(TNode eqc) const
 {
