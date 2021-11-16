@@ -44,6 +44,9 @@ class MatchEqcInfo
    * match operator, whose arguments are normalized to be representatives.
    * Notice that this means that we only consider terms that are unique
    * modulo congruence.
+   * { c, a }, { g(b), b }
+   * f(a,b) ---> f(c, g(b))
+   * f(c,b) ---> f(c, g(b))
    */
   std::unordered_map<TNode, std::vector<Node> > d_matchOps;
   /** initialize this equivalence class information */

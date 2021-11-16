@@ -19,6 +19,7 @@
 
 #include "smt/env_obj.h"
 #include "theory/quantifiers/ccfv/state.h"
+#include "theory/quantifiers/ccfv/match_pat_info.h"
 
 namespace cvc5 {
 namespace theory {
@@ -58,19 +59,22 @@ namespace ccfv {
  * Notice that matching does not process the watched equivalence classes of
  * variables.
  *
- * As a result, substitutions x -> {c, d}, y -> {b} are relevant for making
- * f(g(x),y,b) equal to a.
+ * As a result, substitutions over x -> {c, d}, y -> {b} are relevant for making
+ * f(g(x),y,b) equal to a. In practice, we take only one of these. TODO
  */
 class Matching : protected EnvObj
 {
  public:
   Matching(Env& env, State& state, QuantifiersState& qs);
+  /** Initialize matching */
+  void initializeLevel(size_t level);
   /** Process matcher */
-  bool processMatcher(QuantInfo& qi, TNode matcher);
-
+  bool processMatcher(size_t level, QuantInfo& qi, TNode matcher);
+  /** Get the pattern matching information at the given level */
+  std::map<TNode, MatchPatInfo>& getMatchPatInfo(size_t level);
  private:
   /** Run matching */
-  void runMatching(PatTermInfo* pi);
+  void runMatching(std::map< TNode, MatchPatInfo>& mmp, PatTermInfo* pi, MatchPatInfo* mpi);
   /** common constants */
   Node d_true;
   Node d_false;
@@ -78,6 +82,8 @@ class Matching : protected EnvObj
   State& d_state;
   /** Reference to the state of the quantifiers engine */
   QuantifiersState& d_qstate;
+  /** Mapping search levels, patterns to match info */
+  std::map<size_t, std::map< TNode, MatchPatInfo> > d_mpmap;
 };
 
 }  // namespace ccfv

@@ -34,14 +34,22 @@ Matching::Matching(Env& env, State& state, QuantifiersState& qs)
   d_false = nm->mkConst(false);
 }
 
-bool Matching::processMatcher(QuantInfo& qi, TNode matcher)
+void Matching::initializeLevel(size_t level)
 {
+  d_mpmap[level].clear();
+}
+
+bool Matching::processMatcher(size_t level, QuantInfo& qi, TNode matcher)
+{
+  // get the pattern info
   PatTermInfo& pi = d_state.getPatTermInfo(matcher);
   if (!pi.isActive())
   {
     return false;
   }
-  TypeNode tn = matcher.getType();
+  // get the match pattern info
+  std::map<TNode, MatchPatInfo>& mmp = d_mpmap[level];
+  MatchPatInfo* mpi = &mmp[matcher];
   // get constraints to determine initial equivalence classes
   const std::map<TNode, std::vector<Node>>& cs = qi.getConstraints();
   TNode eq;
@@ -60,7 +68,7 @@ bool Matching::processMatcher(QuantInfo& qi, TNode matcher)
       TNode dval;
       if (QuantInfo::isDeqConstraint(cc, matcher, dval))
       {
-        Assert(!tn.isBoolean());
+        Assert(!matcher.getType().isBoolean());
         Assert(!dval.isNull());
         dval = d_state.getGroundRepresentative(dval);
         if (!dval.isNull())
@@ -127,16 +135,17 @@ bool Matching::processMatcher(QuantInfo& qi, TNode matcher)
   if (!eq.isNull())
   {
     Assert(d_state.isGroundEqc(eq));
-    pi.addWatchEqc(eq);
+    mpi->addWatchEqc(eq);
   }
   else
   {
+    TypeNode tn = matcher.getType();
     // otherwise, we must consider all equivalence clases
     if (tn.isBoolean())
     {
       Assert(deq.empty());
-      pi.addWatchEqc(d_true);
-      pi.addWatchEqc(d_false);
+      mpi->addWatchEqc(d_true);
+      mpi->addWatchEqc(d_false);
     }
     else
     {
@@ -146,19 +155,20 @@ bool Matching::processMatcher(QuantInfo& qi, TNode matcher)
       {
         if (std::find(deq.begin(), deq.end(), eqc) == deq.end())
         {
-          pi.addWatchEqc(eqc);
+          mpi->addWatchEqc(eqc);
         }
       }
     }
   }
   // now run matching
-  runMatching(&pi);
+  runMatching(mmp, &pi, mpi);
   return true;
 }
 
-void Matching::runMatching(PatTermInfo* pi)
+void Matching::runMatching(std::map< TNode, MatchPatInfo>& mmp, PatTermInfo* pi, MatchPatInfo* mpi)
 {
   Assert(pi != nullptr);
+  Assert (mpi != nullptr);
   TNode op = pi->d_matchOp;
   if (op.isNull())
   {
@@ -166,7 +176,7 @@ void Matching::runMatching(PatTermInfo* pi)
     // BOUND_VARIABLE.
     return;
   }
-  TNode weqc = pi->getNextWatchEqc();
+  TNode weqc = mpi->getNextWatchEqc();
   if (weqc.isNull())
   {
     // no new equivalence classes to process
@@ -174,6 +184,7 @@ void Matching::runMatching(PatTermInfo* pi)
   }
   std::vector<TNode> pargs;
   std::vector<PatTermInfo*> piargs;
+  std::vector<MatchPatInfo*> mpiargs;
   std::vector<size_t> matchIndices;
   std::vector<size_t> nmatchIndices;
   std::unordered_map<TNode, std::vector<Node>>::iterator itm;
@@ -207,13 +218,16 @@ void Matching::runMatching(PatTermInfo* pi)
           {
             matchIndices.push_back(i);
             piargs.push_back(nullptr);
+            mpiargs.push_back(nullptr);
           }
           else
           {
             nmatchIndices.push_back(i);
             piargs.push_back(&d_state.getPatTermInfo(pic));
+            mpiargs.push_back(&mmp[pic]);
           }
         }
+        // TODO
         // we should not have ground representatives for each child of the
         // pattern, otherwise we should be fully assigned
         Assert(!nmatchIndices.empty());
@@ -240,12 +254,17 @@ void Matching::runMatching(PatTermInfo* pi)
         {
           for (size_t i : nmatchIndices)
           {
-            piargs[i]->addWatchEqc(m[i]);
+            mpiargs[i]->addWatchEqc(m[i]);
+            if (pi->d_pattern[i].getKind()==BOUND_VARIABLE)
+            {
+              // don't need to run matching on variables
+              continue;
+            }
             // recurse to do matching on the argument
-            runMatching(piargs[i]);
+            runMatching(mmp, piargs[i], mpiargs[i]);
             // if it is not possible that we are equal, we stop matching this
             // term
-            if (!piargs[i]->isMaybeEqc(m[i]))
+            if (!mpiargs[i]->isMaybeEqc(m[i]))
             {
               matchSuccess = false;
               break;
@@ -257,12 +276,17 @@ void Matching::runMatching(PatTermInfo* pi)
       // if its possible that we are equal by matching, record this here
       if (isMaybeEq)
       {
-        pi->addMaybeEqc(weqc);
+        mpi->addMaybeEqc(weqc);
       }
     }
     // increment weqc to the next equivalence class
-    weqc = pi->getNextWatchEqc();
+    weqc = mpi->getNextWatchEqc();
   }
+}
+
+std::map<TNode, MatchPatInfo>& Matching::getMatchPatInfo(size_t level)
+{
+  return d_mpmap[level];
 }
 
 }  // namespace ccfv

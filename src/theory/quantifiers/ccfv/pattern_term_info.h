@@ -82,49 +82,6 @@ class PatTermInfo
    * since this indicates that the parent should be set to sink.
    */
   NodeList d_parentCongNotify;
-  //---------------------- matching
-  /**
-   * Add watched equivalence class, which is an equivalence class that might
-   * be relevant for matching.
-   */
-  void addWatchEqc(TNode eqc);
-  /** Get the next watched eqc, increment the watched counter. */
-  TNode getNextWatchEqc();
-  /** Set that it is possible that this pattern can be equal to eqc. */
-  void addMaybeEqc(TNode eqc);
-  /**
-   * Is this pattern maybe equal to eqc? Returns true if this pattern is
-   * a bound variable, or if eqc was added via addMaybeEqc.
-   *
-   * This method should be called on eqc that we have processed as watched
-   * equivalence classes (those for which getNextWatchEqc has returned eqc).
-   * If this returns false, then the pattern of this class will never be
-   * equal to eqc.
-   */
-  bool isMaybeEqc(TNode eqc) const;
-
- private:
-  //---------------------- matching
-  /**
-   * Watched equivalence classes. This is the set of equivalence classes that
-   * may be relevant if this pattern is equal.
-   */
-  NodeSet d_watchEqc;
-  /** List we are procesing */
-  NodeList d_watchEqcList;
-  /**
-   * Watched equivalence classes we have processed.
-   * - If pattern is variable, this is the index we have tried
-   * - Otherwise, this is the index in the
-   */
-  context::CDO<size_t> d_watchEqcIndex;
-  /**
-   * Maybe equal to, which is a subset of d_watchEqc.
-   *
-   * The equivalence classes we have processed in d_watchEqc that are not in
-   * d_maybeEqc are such that this pattern will never merge with.
-   */
-  NodeSet d_maybeEqc;
 };
 
 }  // namespace ccfv

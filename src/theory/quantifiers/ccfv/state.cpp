@@ -375,6 +375,7 @@ bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
               pi.d_eq = nm->mkConst(cval1 == cval2);
             }
           }
+          // TODO: could check equality
         }
       }
       return true;

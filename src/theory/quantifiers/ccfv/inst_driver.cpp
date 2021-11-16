@@ -10,7 +10,7 @@
  * directory for licensing information.
  * ****************************************************************************
  *
- * Congruence closure with free variables
+ * Search procedure for instantiations in CCFV
  */
 
 #include "theory/quantifiers/ccfv/inst_driver.h"
@@ -66,7 +66,7 @@ void InstDriver::addToEqualityEngine(QuantInfo& qi)
 void InstDriver::check(const std::vector<TNode>& quants)
 {
   Trace("ccfv") << "InstDriver::check" << std::endl;
-  // we modify the equality engine, so open a scope
+  // we modify the equality engine, so we push the SAT context
   context()->push();
 
   // Reset the state. Notice that we must do this before adding pattern terms
@@ -123,7 +123,7 @@ void InstDriver::check(const std::vector<TNode>& quants)
     Trace("ccfv-debug") << "...already finished" << std::endl;
   }
 
-  // pop the context
+  // pop the context that was done at the beginning
   context()->pop();
 }
 
@@ -236,6 +236,11 @@ void InstDriver::assignVarsToLevels(
   }
 }
 
+void InstDriver::initializeLevel(size_t level)
+{
+  d_matching.initializeLevel(level);
+}
+
 bool InstDriver::pushLevel(size_t level)
 {
   if (level == d_numLevels)
@@ -267,12 +272,13 @@ bool InstDriver::pushLevel(size_t level)
   // same level can be assigned in parallel.
   std::vector<TNode> assignment;
   bool success = false;
+  std::map<TNode, MatchPatInfo>& mpm = d_matching.getMatchPatInfo(level);
   // assign all variables in parallel
   for (TNode v : slevel.d_varsToAssign)
   {
-    PatTermInfo& pi = d_state.getPatTermInfo(v);
+    MatchPatInfo& mpi = mpm[v];
     FreeVarInfo& fi = d_state.getFreeVarInfo(v);
-    TNode eqc = pi.getNextWatchEqc();
+    TNode eqc = mpi.getNextWatchEqc();
     while (eqc.isNull())
     {
       // get the next quantified formula containing v
@@ -294,14 +300,14 @@ bool InstDriver::pushLevel(size_t level)
         // doesn't have a matcher for this variable, continue
         continue;
       }
-      if (!d_matching.processMatcher(qi, matcher))
+      if (!d_matching.processMatcher(level, qi, matcher))
       {
         // failed to process matcher, e.g. a top-level constraint was
         // not satisfied
         continue;
       }
       // maybe succeeded match?
-      eqc = pi.getNextWatchEqc();
+      eqc = mpi.getNextWatchEqc();
     }
     if (eqc.isNull())
     {
@@ -450,15 +456,23 @@ void InstDriver::search()
   Trace("ccfv-search") << "search: start" << std::endl;
   bool isExhausted = false;
   size_t currLevel = 0;
+  initializeLevel(0);
   while (!isExhausted && !d_inConflict)
   {
     Trace("ccfv-search") << "search: level = " << currLevel << ", "
                          << d_state.toStringDebugSearch() << std::endl;
-    // assign at current level
+    // assign all variables at current level
     if (pushLevel(currLevel))
     {
       Assert(!isFinished());
-      currLevel++;
+      if (currLevel<d_numLevels)
+      {
+        currLevel++;
+      }
+      else
+      {
+        context()->pop();
+      }
     }
     else if (currLevel == 0)
     {

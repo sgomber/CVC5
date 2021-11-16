@@ -66,6 +66,7 @@ void CongruenceClosureFv::reset_round(Theory::Effort e) {}
 
 void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e)
 {
+  // TODO: only if proper effort
   std::vector<TNode> quants;
   FirstOrderModel* fm = d_treg.getModel();
   for (size_t i = 0, nquant = fm->getNumAssertedQuantifiers(); i < nquant; i++)
@@ -94,6 +95,7 @@ void CongruenceClosureFv::assertNode(Node q)
     return;
   }
   // Assert quantified formula. This sets up:
+  // (*) 
   // (1) notifications from constraint terms to quantified formulas
   // (2) notifications from children to Boolean connectives
   // (3) notifications from children to congruence terms

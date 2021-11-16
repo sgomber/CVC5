@@ -68,9 +68,9 @@ void QuantInfo::initialize(TNode q,
   {
     d_canonVarOrdered.push_back(vl.second);
   }
-  d_canonVarOrdered.insert(
-      d_canonVarOrdered.end(), uncontainedVar.begin(), uncontainedVar.end());
-  Assert(d_canonVarOrdered.size() == q[0].getNumChildren());
+  //d_canonVarOrdered.insert(
+  //    d_canonVarOrdered.end(), uncontainedVar.begin(), uncontainedVar.end());
+  //Assert(d_canonVarOrdered.size() == q[0].getNumChildren());
 
   // compute matching requirements
   std::unordered_set<TNode> processed;
@@ -169,6 +169,13 @@ void QuantInfo::computeMatchReq(TNode cur,
   // NOTE: could sanitize the term, remove any nested quantifiers here?
   // This is probably not necessary, the equality engine will treat the term
   // as a leaf.
+  
+  // P(x) V (Q(x) ^ R(x)) V f(x) = a V R(f(x)) V f(x) != g(x)
+  // P(x) -> false
+  // (Q(x) ^ R(x)) -> false
+  // f(x) -> (not (= f(x) a))
+  // R(f(x)) -> false
+  // f(x)=g(x) -> true
   if (k == EQUAL)
   {
     // maybe pattern equals ground?
@@ -220,11 +227,15 @@ void QuantInfo::addMatchTermReq(TNode t, Node eqc, bool isEq)
   }
 }
 
+// f( g(x) + 1 )
+
+
+
 void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
 {
   // Now, traverse each of the terms in match requirements. This sets up:
   // (1) d_congTerms, the set of terms we are doing congruence over
-  // (2) d_topLevelMatchers, the set of terms that we may do matching with,
+  // (2) d_matchers, the set of terms that we may do matching with,
   // which is the set of terms in the body of ee that do not occur beneath
   // a congruence term.
   // (3) d_unknownTerms, the set of subterms we don't know how to handle.
@@ -285,7 +296,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
           visited[cur] = false;
         }
       }
-      else if (!inCongTerm && expr::isBooleanConnective(cur.first))
+      else if (!inCongTerm && expr::isBooleanConnective(cur.first)) // EQUAL
       {
         // if we are not in a congruence term, and we are Boolean connective,
         // recurse
@@ -359,6 +370,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
               // It may already be added (e.g. to match an earlier variable).
               // In this case, we don't need to add a new matcher
               alreadyMatcher = true;
+              d_matchers[v] = ccur;
             }
             else if (tlMatcherScore < 3)
             {
@@ -396,6 +408,10 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
         }
         // we have fvars[i] < fvars[j] for i < j, set or overwrite the max
         // variable here.
+        // for ordered variables xyzw, d_termMaxVar maps:
+        // f(x,y) -> y
+        // f(x,z) -> z
+        // f(y) -> y
         d_termMaxVar[ccur] = v;
         itpl = parentList.find(ccur);
         if (itpl != parentList.end())
@@ -419,6 +435,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
       else
       {
         // Warn that no matchers exist?
+        Trace("ccfv-warn") << "Warning: no matcher exists for variable " << v << " in " << d_quant << std::endl;
       }
     }
   }

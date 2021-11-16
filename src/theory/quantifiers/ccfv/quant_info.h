@@ -149,9 +149,9 @@ class QuantInfo
    * (1) is a top-level congruence term, i.e. one that occurs as a subterm in
    * the domain of d_req in positions that are not nested under other congruence
    * terms.
-   * (2) is such that no other matcher t for v' exists that contains v, where
-   * v' < v. In other words, matchers for earlier variables in the variable
-   * order do not bind v.
+   * (2) if t is a matcher for variable v' where v' < v, and t contains v, then
+   * t is also the matcher for v. In other words, matchers for earlier
+   * variables in the order are used for all variables they bind.
    */
   std::map<TNode, TNode> d_matchers;
   /**

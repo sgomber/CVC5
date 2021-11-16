@@ -32,8 +32,8 @@ namespace quantifiers {
 namespace ccfv {
 
 /**
-
-*/
+ * Congruence closure with free variables procedure
+ */
 class CongruenceClosureFv : public QuantifiersModule
 {
  public:
