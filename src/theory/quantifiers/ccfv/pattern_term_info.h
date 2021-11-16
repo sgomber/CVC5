@@ -67,10 +67,7 @@ class PatTermInfo
    * the sink node.
    */
   context::CDO<TNode> d_eq;
-  /**
-   * The number of unassigned free variables if a congruence term,
-   * or the number of unassigned children otherwise.
-   */
+  /** The number of unassigned children (for Boolean connectives). */
   context::CDO<size_t> d_numUnassigned;
   /**
    * The list of pattern terms that are the parent of this. For pattern p,
@@ -81,17 +78,29 @@ class PatTermInfo
   NodeList d_parentNotify;
   /**
    * The list of pattern terms f( ... p ... ) where we are doing congruence
-   * over f. We notify these parents of our value only if become equal to sink.
+   * over f. We notify these parents of our value only if become equal to sink,
+   * since this indicates that the parent should be set to sink.
    */
   NodeList d_parentCongNotify;
   //---------------------- matching
-  /** Add watched equivalence class */
+  /** 
+   * Add watched equivalence class, which is an equivalence class that might
+   * be relevant for matching.
+   */
   void addWatchEqc(TNode eqc);
-  /** Get next watch eqc */
+  /** Get the next watched eqc, increment the watched counter. */
   TNode getNextWatchEqc();
-  /** Add maybe equal */
+  /** Set that it is possible that this pattern can be equal to eqc. */
   void addMaybeEqc(TNode eqc);
-  /** Is maybe equal? */
+  /** 
+   * Is this pattern maybe equal to eqc? Returns true if this pattern is
+   * a bound variable, or if eqc was added via addMaybeEqc.
+   * 
+   * This method should be called on eqc that we have processed as watched
+   * equivalence classes (those for which getNextWatchEqc has returned eqc).
+   * If this returns false, then the pattern of this class will never be
+   * equal to eqc.
+   */
   bool isMaybeEqc(TNode eqc) const;
 
  private:
@@ -110,7 +119,10 @@ class PatTermInfo
    */
   context::CDO<size_t> d_watchEqcIndex;
   /**
-   * Maybe equal to set
+   * Maybe equal to, which is a subset of d_watchEqc. 
+   *
+   * The equivalence classes we have processed in d_watchEqc that are not in
+   * d_maybeEqc are such that this pattern will never merge with.
    */
   NodeSet d_maybeEqc;
 };

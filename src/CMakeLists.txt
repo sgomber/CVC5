@@ -708,11 +708,12 @@ libcvc5_add_sources(
   theory/quantifiers/ccfv/inst_driver.h
   theory/quantifiers/ccfv/match_eqc_info.cpp
   theory/quantifiers/ccfv/match_eqc_info.h
+  theory/quantifiers/ccfv/matching.cpp
+  theory/quantifiers/ccfv/matching.h
   theory/quantifiers/ccfv/pattern_term_info.cpp
   theory/quantifiers/ccfv/pattern_term_info.h
   theory/quantifiers/ccfv/quant_info.cpp
   theory/quantifiers/ccfv/quant_info.h
-  theory/quantifiers/ccfv/quant_set.h
   theory/quantifiers/ccfv/search_level.h
   theory/quantifiers/ccfv/state.cpp
   theory/quantifiers/ccfv/state.h

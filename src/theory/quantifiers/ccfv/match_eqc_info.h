@@ -34,7 +34,7 @@ namespace ccfv {
 class State;
 
 /**
- * For matching
+ * For matching, caches a map of matchable terms in an equivalence class.
  */
 class MatchEqcInfo
 {
@@ -42,9 +42,11 @@ class MatchEqcInfo
   /**
    * Mapping from match operators to terms in this equivalence over that
    * match operator, whose arguments are normalized to be representatives.
+   * Notice that this means that we only consider terms that are unique
+   * modulo congruence.
    */
   std::unordered_map<TNode, std::vector<Node> > d_matchOps;
-  /** initialize */
+  /** initialize this equivalence class information */
   void initialize(TNode rep,
                   const State& s,
                   eq::EqualityEngine* ee,

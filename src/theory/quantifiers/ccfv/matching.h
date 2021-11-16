@@ -10,31 +10,46 @@
  * directory for licensing information.
  * ****************************************************************************
  *
- * Set of quantified formulas
  */
 
 #include "cvc5_private.h"
 
-#ifndef CVC5__THEORY__QUANTIFIERS__CCFV__QUANT_SET_H
-#define CVC5__THEORY__QUANTIFIERS__CCFV__QUANT_SET_H
+#ifndef CVC5__THEORY__QUANTIFIERS__CCFV__MATCHING_H
+#define CVC5__THEORY__QUANTIFIERS__CCFV__MATCHING_H
 
-#include <vector>
-
-#include "expr/node.h"
+#include "smt/env_obj.h"
+#include "theory/quantifiers/ccfv/state.h"
 
 namespace cvc5 {
 namespace theory {
 namespace quantifiers {
+
+class QuantifiersState;
+class QuantifiersInferenceManager;
+class TermRegistry;
+
 namespace ccfv {
 
-class QuantifiersSet
+/**
+*/
+class Matching : protected EnvObj
 {
  public:
-  QuantifiersSet() {}
-  /** the list of quantified formulas */
-  std::vector<TNode> d_quants;
-  /** The index of the quantified formula we are assigning the variables of */
-  size_t d_qindex;
+  Matching(Env& env,
+             State& state,
+             QuantifiersState& qs);
+  /** Process matcher */
+  bool processMatcher(QuantInfo& qi, TNode matcher);
+private:
+  /** Run matching */
+  void runMatching(PatTermInfo* pi);
+  /** common constants */
+  Node d_true;
+  Node d_false;
+  /** The state of matching for quantifiers and pattern terms */
+  State& d_state;
+  /** Reference to the state of the quantifiers engine */
+  QuantifiersState& d_qstate;
 };
 
 }  // namespace ccfv

@@ -26,8 +26,6 @@ FreeVarInfo::FreeVarInfo(context::Context* c)
     : d_useList(c), d_quantList(c), d_quantIndex(c, 0)
 {
 }
-bool FreeVarInfo::isActive() const { return !d_quantList.empty(); }
-
 TNode FreeVarInfo::getNextQuantifier()
 {
   if (d_quantIndex >= d_quantList.size())

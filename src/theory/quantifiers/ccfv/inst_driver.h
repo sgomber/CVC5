@@ -20,6 +20,7 @@
 #include "smt/env_obj.h"
 #include "theory/quantifiers/ccfv/search_level.h"
 #include "theory/quantifiers/ccfv/state.h"
+#include "theory/quantifiers/ccfv/matching.h"
 
 namespace cvc5 {
 namespace theory {
@@ -110,6 +111,8 @@ class InstDriver : protected EnvObj
   QuantifiersInferenceManager& d_qim;
   /** Reference to the term registry */
   TermRegistry& d_treg;
+  /** Matching utility */
+  Matching d_matching;
   /** Search levels */
   std::map<size_t, SearchLevel> d_levels;
   /** Number of levels */

@@ -30,8 +30,9 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-class State;
-
+/**
+ * Information for a free variable. 
+ */
 class FreeVarInfo
 {
   using NodeList = context::CDList<Node>;
@@ -41,20 +42,15 @@ class FreeVarInfo
   FreeVarInfo(context::Context* c);
   /**
    * Term list, all pattern terms that are fully assigned when we have an
-   * assignment for this variable.
+   * assignment for this variable, based on the global variable ordering.
    */
   NodeSet d_useList;
-  /**
-   * List of quantifiers that contain this variable
-   */
+  /** List of quantifiers that contain this variable */
   NodeList d_quantList;
-  /** Get next quantifier */
+  /** Get next quantifier, and increment the quantifier index. */
   TNode getNextQuantifier();
-  /** Is active? */
-  bool isActive() const;
-
  private:
-  /** context */
+  /** The current index in d_quantList we are looking at, for matching */
   context::CDO<size_t> d_quantIndex;
 };
 

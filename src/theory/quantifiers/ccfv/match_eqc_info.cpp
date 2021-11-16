@@ -40,14 +40,12 @@ void MatchEqcInfo::initialize(TNode r,
   {
     TNode n = (*eqc_i);
     ++eqc_i;
-    // NOTE: this is not necessary?
-    /*
     if (!expr::hasBoundVar(n))
     {
-      // could have a pattern that was already merged, skip it
+      // could be a pattern that was already merged, this must be congruent
+      // to another term, so we skip it.
       continue;
     }
-    */
     Node matchOp = tdb->getMatchOperator(n);
     if (matchOp.isNull())
     {
@@ -78,6 +76,7 @@ void MatchEqcInfo::initialize(TNode r,
       // for
       continue;
     }
+    // store it, which may already exist if there is a congruent term
     Node nn = childChanged ? Node(n) : nm->mkNode(n.getKind(), args);
     std::vector<Node>& ms = d_matchOps[matchOp];
     if (std::find(ms.begin(), ms.end(), nn) == ms.end())
