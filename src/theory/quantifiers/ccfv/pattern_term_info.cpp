@@ -40,9 +40,7 @@ void PatTermInfo::initialize(TNode pattern, TermDb* tdb)
 
 void PatTermInfo::resetRound()
 {
-  Assert(d_watchEqc.empty());
-  Assert(d_watchEqcList.empty());
-  Assert(isActive());
+  d_eq = Node::null();
   if (d_isBooleanConnective)
   {
     /*

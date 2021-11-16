@@ -164,7 +164,6 @@ void Matching::runMatching(std::map<TNode, MatchPatInfo>& mmp,
                            TNode p,
                            MatchPatInfo* mpi)
 {
-  Assert(pi != nullptr);
   Assert(mpi != nullptr);
   TNode op = d_tdb->getMatchOperator(p);
   if (op.isNull())
