@@ -57,8 +57,11 @@ class InstDriver : protected EnvObj
   using NodeSet = context::CDHashSet<Node>;
 
  public:
-  InstDriver(Env& env, State& state, QuantifiersState& qs, 
-                      QuantifiersInferenceManager& qim, TermRegistry& tr);
+  InstDriver(Env& env,
+             State& state,
+             QuantifiersState& qs,
+             QuantifiersInferenceManager& qim,
+             TermRegistry& tr);
   /** Get quantifiers info */
   QuantInfo& getQuantInfo(TNode q);
   /** Get free variable info */

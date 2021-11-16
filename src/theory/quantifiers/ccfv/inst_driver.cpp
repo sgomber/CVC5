@@ -15,12 +15,12 @@
 
 #include "theory/quantifiers/ccfv/inst_driver.h"
 
-#include "theory/quantifiers/quantifiers_state.h"
-#include "theory/quantifiers/quantifiers_inference_manager.h"
-#include "theory/quantifiers/term_registry.h"
-#include "theory/quantifiers/instantiate.h"
-#include "theory/uf/equality_engine.h"
 #include "options/quantifiers_options.h"
+#include "theory/quantifiers/instantiate.h"
+#include "theory/quantifiers/quantifiers_inference_manager.h"
+#include "theory/quantifiers/quantifiers_state.h"
+#include "theory/quantifiers/term_registry.h"
+#include "theory/uf/equality_engine.h"
 
 using namespace cvc5::kind;
 
@@ -32,7 +32,7 @@ namespace ccfv {
 InstDriver::InstDriver(Env& env,
                        State& state,
                        QuantifiersState& qs,
-                       QuantifiersInferenceManager& qim, 
+                       QuantifiersInferenceManager& qim,
                        TermRegistry& tr)
     : EnvObj(env),
       d_state(state),
@@ -303,13 +303,13 @@ bool InstDriver::pushLevel(size_t level)
     // fully assigned and still active, can construct propagating instance
     // construct propagating instance
     const std::vector<TNode>& fvs = qi.getFreeVariables();
-    Assert (q[0].getNumChildren()==fvs.size());
+    Assert(q[0].getNumChildren() == fvs.size());
     std::vector<Node> inst;
     std::map<TNode, TNode> subs;
-    for (size_t i=0, nvars = fvs.size(); i<nvars; i++)
+    for (size_t i = 0, nvars = fvs.size(); i < nvars; i++)
     {
       TNode vval = d_state.getGroundRepresentative(fvs[i]);
-      if (vval.getKind()==BOUND_VARIABLE)
+      if (vval.getKind() == BOUND_VARIABLE)
       {
         // unconstrained variable? take arbitrary ground term
         vval = vval.getType().mkGroundTerm();
@@ -332,7 +332,7 @@ bool InstDriver::pushLevel(size_t level)
     }
     else if (instEval.isConst())
     {
-      Assert (instEval.getType().isBoolean());
+      Assert(instEval.getType().isBoolean());
       if (instEval.getConst<bool>())
       {
         // ... spurious, entailed
@@ -347,7 +347,6 @@ bool InstDriver::pushLevel(size_t level)
     Instantiate* qinst = d_qim.getInstantiate();
     if (!qinst->addInstantiation(q, inst, id))
     {
-      
     }
   }
 
@@ -485,7 +484,7 @@ void InstDriver::runMatching(PatTermInfo* pi)
     // If not a matchable operator. This is also the base case of
     // BOUND_VARIABLE.
     return;
-  }  
+  }
   TNode weqc = pi->getNextWatchEqc();
   if (weqc.isNull())
   {
@@ -515,7 +514,8 @@ void InstDriver::runMatching(PatTermInfo* pi)
       {
         // get the status of the arguments of pi
         Assert(pi->d_pattern.getNumChildren() > 0);
-        for (size_t i = 0, nchild = pi->d_pattern.getNumChildren(); i < nchild; i++)
+        for (size_t i = 0, nchild = pi->d_pattern.getNumChildren(); i < nchild;
+             i++)
         {
           TNode pic = pi->d_pattern[i];
           // Note we use get ground representative here. We do not use getValue,
@@ -533,8 +533,8 @@ void InstDriver::runMatching(PatTermInfo* pi)
             piargs.push_back(&d_state.getPatTermInfo(pic));
           }
         }
-        // we should not have ground representatives for each child of the pattern,
-        // otherwise we should be fully assigned
+        // we should not have ground representatives for each child of the
+        // pattern, otherwise we should be fully assigned
         Assert(!nmatchIndices.empty());
       }
       // none in this equivalence class
@@ -603,12 +603,12 @@ void InstDriver::search()
 {
   context()->push();
   // TODO: do initial notifications for watched ground terms
-  
+
   if (isFinished())
   {
     return;
   }
-  
+
   bool isExhausted = false;
   size_t currLevel = 0;
   while (!isExhausted)
@@ -629,7 +629,7 @@ void InstDriver::search()
       currLevel--;
     }
   }
-  
+
   context()->pop();
 }
 
