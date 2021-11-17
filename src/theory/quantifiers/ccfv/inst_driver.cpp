@@ -398,6 +398,12 @@ bool InstDriver::pushLevel(size_t level)
       context()->pop();
       return false;
     }
+    if (Trace.isOn("ccfv-ee"))
+    {
+      Trace("ccfv-ee") << "E-graph after assignment:" << std::endl;
+      Trace("ccfv-ee") << d_qstate.getEqualityEngine()->debugPrintEqc() << std::endl;
+    }
+    Trace("ccfv-search-debug") << "Process final terms for " << v << std::endl;
     // assign final terms to sink
     // The use list terms of the variables to assign here are those that are now
     // fully assigned. If these terms have not yet merged, we are done.
@@ -416,6 +422,7 @@ bool InstDriver::pushLevel(size_t level)
 
   // now, all active quantified formulas that are still active should have
   // propagating instances.
+  Trace("ccfv-search-debug") << "Process final quants" << std::endl;
   for (TNode q : slevel.d_finalQuants)
   {
     QuantInfo& qi = d_state.getQuantInfo(q);

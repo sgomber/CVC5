@@ -122,6 +122,8 @@ void EqEngineManagerCentral::initializeTheories()
           << std::endl;
       d_masterEqualityEngine = &d_centralEqualityEngine;
       d_centralEENotify.d_newClassNotify.push_back(d_masterEENotify.get());
+      // required for CCFV
+      d_centralEENotify.d_mergeNotify.push_back(d_masterEENotify.get());
     }
   }
 

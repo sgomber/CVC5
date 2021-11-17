@@ -167,7 +167,7 @@ void CongruenceClosureFv::assertNode(Node q)
       if (!ee->isFunctionKind(k))
       {
         // compute if Boolean connective
-        if (!expr::isBooleanConnective(cur))
+        if (k != EQUAL && !expr::isBooleanConnective(cur))
         {
           // not handled as Boolean connective or congruence kind, skip
           continue;
