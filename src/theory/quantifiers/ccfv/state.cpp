@@ -85,13 +85,12 @@ void State::resetRound(size_t nquant)
     d_typeGroundEqc[tn].insert(r);
   }
   d_numActiveQuant = nquant;
-  
+
   // reset round on pattern infos
   for (std::pair<const Node, PatTermInfo>& p : d_pInfo)
   {
     p.second.resetRound();
   }
-  
 
   // clear the equivalence class info?
   // NOTE: if we are adding terms when quantified formulas are asserted, then
@@ -284,7 +283,7 @@ void State::notifyPatternSink(TNode p) { notifyPatternEqGround(p, d_sink); }
 
 bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
 {
-  Assert (!val.isNull());
+  Assert(!val.isNull());
   Assert(isGroundEqc(val) || isSink(val));
   if (!pi.isActive())
   {
@@ -294,7 +293,8 @@ bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
   if (pi.d_isBooleanConnective)
   {
     Trace("ccfv-state-debug")
-        << "Notify Bool connective: " << pi.d_pattern << " child " << child << " == " << val << std::endl;
+        << "Notify Bool connective: " << pi.d_pattern << " child " << child
+        << " == " << val << std::endl;
     // if a Boolean connective, handle short circuiting if we set a non-sink
     // value
     if (!isSink(val))
@@ -302,7 +302,8 @@ bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
       Kind k = pi.d_pattern.getKind();
       // implies and xor are eliminated from quantifier bodies
       Assert(k != IMPLIES && k != XOR);
-      if ((k == AND && !val.getConst<bool>()) || (k == OR && val.getConst<bool>()))
+      if ((k == AND && !val.getConst<bool>())
+          || (k == OR && val.getConst<bool>()))
       {
         // the value determines the value of this
         pi.d_eq = val;
@@ -320,7 +321,8 @@ bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
           if (!vbranch.isNull())
           {
             pi.d_eq = vbranch;
-            Trace("ccfv-state-debug") << "...branched to " << vbranch << std::endl;
+            Trace("ccfv-state-debug")
+                << "...branched to " << vbranch << std::endl;
             return true;
           }
         }
@@ -334,7 +336,8 @@ bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
             if (child == pi.d_pattern[vcond.getConst<bool>() ? 1 : 2])
             {
               pi.d_eq = val;
-              Trace("ccfv-state-debug") << "...relevant branch " << val << std::endl;
+              Trace("ccfv-state-debug")
+                  << "...relevant branch " << val << std::endl;
               return true;
             }
           }
@@ -344,7 +347,8 @@ bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
     // if a Boolean connective, we can possibly evaluate
     Assert(pi.d_numUnassigned.get() > 0);
     pi.d_numUnassigned = pi.d_numUnassigned.get() - 1;
-    Trace("ccfv-state-debug") << "...unassigned children now " << pi.d_numUnassigned << std::endl;
+    Trace("ccfv-state-debug")
+        << "...unassigned children now " << pi.d_numUnassigned << std::endl;
     if (pi.d_numUnassigned == 0)
     {
       // set to unknown, handle cases
@@ -497,7 +501,8 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
     // quantified formula is already inactive
     return;
   }
-  Trace("ccfv-state-debug") << "Notify quant constraint " << q.getId() << " " << p << " == " << val << std::endl;
+  Trace("ccfv-state-debug") << "Notify quant constraint " << q.getId() << " "
+                            << p << " == " << val << std::endl;
   Assert(d_numActiveQuant.get() > 0);
   // check whether we should set inactive
   bool setInactive = false;
@@ -533,7 +538,8 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
         TNode r = getGroundRepresentative(c);
         if (isEq != (val == r))
         {
-          Trace("ccfv-state-debug") << "...inactive due to constraint " << c << std::endl;
+          Trace("ccfv-state-debug")
+              << "...inactive due to constraint " << c << std::endl;
           setInactive = true;
           break;
         }

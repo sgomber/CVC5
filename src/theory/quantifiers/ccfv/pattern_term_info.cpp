@@ -31,7 +31,8 @@ PatTermInfo::PatTermInfo(context::Context* c)
 void PatTermInfo::initialize(TNode pattern, TermDb* tdb)
 {
   d_pattern = pattern;
-  d_isBooleanConnective = pattern.getKind()==kind::EQUAL || expr::isBooleanConnective(pattern);
+  d_isBooleanConnective =
+      pattern.getKind() == kind::EQUAL || expr::isBooleanConnective(pattern);
   if (!d_isBooleanConnective)
   {
     d_matchOp = tdb->getMatchOperator(pattern);

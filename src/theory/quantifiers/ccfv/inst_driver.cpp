@@ -401,7 +401,8 @@ bool InstDriver::pushLevel(size_t level)
     if (Trace.isOn("ccfv-ee"))
     {
       Trace("ccfv-ee") << "E-graph after assignment:" << std::endl;
-      Trace("ccfv-ee") << d_qstate.getEqualityEngine()->debugPrintEqc() << std::endl;
+      Trace("ccfv-ee") << d_qstate.getEqualityEngine()->debugPrintEqc()
+                       << std::endl;
     }
     Trace("ccfv-search-debug") << "Process final terms for " << v << std::endl;
     // assign final terms to sink
