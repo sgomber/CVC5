@@ -32,7 +32,7 @@ namespace quantifiers {
 class TermDb;
 
 namespace ccfv {
-  
+
 class State;
 
 /**

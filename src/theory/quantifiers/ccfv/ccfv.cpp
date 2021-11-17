@@ -80,8 +80,7 @@ void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e)
   if (Trace.isOn("ccfv-engine"))
   {
     double clSet2 = double(clock()) / double(CLOCKS_PER_SEC);
-    Trace("ccfv-engine") << "Finished ccfv, time = "
-                         << (clSet2 - clSet);
+    Trace("ccfv-engine") << "Finished ccfv, time = " << (clSet2 - clSet);
     Trace("ccfv-engine") << ", #inst = " << d_driver.numFoundInst();
     if (d_driver.inConflict())
     {

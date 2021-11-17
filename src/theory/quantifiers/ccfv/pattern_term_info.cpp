@@ -16,8 +16,8 @@
 #include "theory/quantifiers/ccfv/pattern_term_info.h"
 
 #include "expr/node_algorithm.h"
-#include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/ccfv/state.h"
+#include "theory/quantifiers/term_database.h"
 
 using namespace cvc5::kind;
 
@@ -130,7 +130,7 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
     }
     else
     {
-      if (k==EQUAL)
+      if (k == EQUAL)
       {
         // sink on either side of equality is automatic sink
         d_eq = val;
@@ -158,7 +158,8 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
           if (s.isSink(cvalue))
           {
             // unknown, we are done
-            Trace("ccfv-state-debug") << "...unknown child of AND/OR" << std::endl;
+            Trace("ccfv-state-debug")
+                << "...unknown child of AND/OR" << std::endl;
             return true;
           }
         }
@@ -169,13 +170,15 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
       {
         TNode cval1 = s.getValue(d_pattern[0]);
         Assert(!cval1.isNull());
-        Assert(!d_pattern[0].getType().isBoolean() || cval1.isConst() || isSink(cval1));
+        Assert(!d_pattern[0].getType().isBoolean() || cval1.isConst()
+               || isSink(cval1));
         if (k == NOT)
         {
           if (cval1.isConst())
           {
             d_eq = nm->mkConst(!cval1.getConst<bool>());
-            Trace("ccfv-state-debug") << "...eval negation " << d_eq.get() << std::endl;
+            Trace("ccfv-state-debug")
+                << "...eval negation " << d_eq.get() << std::endl;
           }
         }
         else if (k == ITE)
@@ -184,7 +187,8 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
           {
             // if condition evaluates, get value of branch
             d_eq = s.getValue(d_pattern[cval1.getConst<bool>() ? 1 : 2]);
-            Trace("ccfv-state-debug") << "...take branch " << d_eq.get() << std::endl;
+            Trace("ccfv-state-debug")
+                << "...take branch " << d_eq.get() << std::endl;
           }
           else
           {
@@ -195,7 +199,8 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
             if (!s.isSink(cval1) && cval2 == s.getValue(d_pattern[2]))
             {
               d_eq = cval2;
-              Trace("ccfv-state-debug") << "...equal branches " << cval2 << std::endl;
+              Trace("ccfv-state-debug")
+                  << "...equal branches " << cval2 << std::endl;
             }
           }
         }
@@ -217,11 +222,13 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
               if (cval1 == cval2)
               {
                 d_eq = nm->mkConst(true);
-                Trace("ccfv-state-debug") << "...equal via " << cval1 << std::endl;
+                Trace("ccfv-state-debug")
+                    << "...equal via " << cval1 << std::endl;
               }
               else if (s.areDisequal(cval1, cval2))
               {
-                Trace("ccfv-state-debug") << "...disequal " << cval1 << " != " << cval2 << std::endl;
+                Trace("ccfv-state-debug")
+                    << "...disequal " << cval1 << " != " << cval2 << std::endl;
                 d_eq = nm->mkConst(false);
               }
               else
@@ -233,7 +240,7 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
                 // it as "sink", since we want to propagate equalities between
                 // known terms. Notice that Booleans require being assigned to
                 // constants, so this only applies to non-Boolean equalities.
-                Assert (!val.isBoolean());
+                Assert(!val.isBoolean());
                 d_eq = Node::null();
                 return false;
               }

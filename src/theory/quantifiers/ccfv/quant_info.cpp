@@ -126,7 +126,8 @@ std::string QuantInfo::toStringDebug() const
   if (!d_varToFinalTerms.empty())
   {
     ss << "Variable to final terms:" << std::endl;
-    for (const std::pair<const TNode, std::vector<TNode>>& t : d_varToFinalTerms)
+    for (const std::pair<const TNode, std::vector<TNode>>& t :
+         d_varToFinalTerms)
     {
       ss << "  " << t.first << " -> " << t.second << std::endl;
     }
@@ -454,7 +455,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
   for (TNode ct : d_congTerms)
   {
     ittf = termToMaxVar.find(ct);
-    if (ittf!=termToMaxVar.end())
+    if (ittf != termToMaxVar.end())
     {
       d_varToFinalTerms[ittf->second].push_back(ct);
     }
@@ -512,7 +513,8 @@ const std::vector<TNode>& QuantInfo::getCongruenceTerms() const
   return d_congTerms;
 }
 
-const std::map<TNode, std::vector<TNode>>& QuantInfo::getVarToFinalTermMap() const
+const std::map<TNode, std::vector<TNode>>& QuantInfo::getVarToFinalTermMap()
+    const
 {
   return d_varToFinalTerms;
 }

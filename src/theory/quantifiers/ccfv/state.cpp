@@ -394,7 +394,8 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
         }
         else
         {
-          Trace("ccfv-state-debug") << "...satisfied constraint " << c << std::endl;
+          Trace("ccfv-state-debug")
+              << "...satisfied constraint " << c << std::endl;
         }
       }
     }
