@@ -78,21 +78,12 @@ class InstDriver : protected EnvObj
              QuantifiersState& qs,
              QuantifiersInferenceManager& qim,
              TermRegistry& tr);
-  /** Get quantifiers info */
-  QuantInfo& getQuantInfo(TNode q);
-  /** Get free variable info */
-  FreeVarInfo& getFreeVarInfo(TNode v);
-  /** Get pattern term info */
-  PatTermInfo& getPatTermInfo(TNode p);
-  /** Get equivalence class info */
-  EqcInfo& getEqcInfo(TNode r);
-
   /** check */
   void check(const std::vector<TNode>& quants);
-
-  /** Add to equality engine */
-  void addToEqualityEngine(QuantInfo& qi);
-
+  /** Are we in conflict? */
+  bool inConflict() const;
+  /** The number of instantiations added */
+  size_t numFoundInst() const;
  private:
   /** Reset the search */
   void resetSearchLevels(const std::vector<TNode>& quants);
@@ -105,6 +96,8 @@ class InstDriver : protected EnvObj
   void initializeLevel(size_t level);
   /** Assign search level */
   bool pushLevel(size_t level);
+  /** Add to equality engine */
+  void addToEqualityEngine(QuantInfo& qi);
   /** Assign variable to the equivalence class eqc */
   void assignVar(TNode v, TNode eqc);
   /** Get search level */
@@ -130,7 +123,7 @@ class InstDriver : protected EnvObj
   /** Keep set, for asserted equalities */
   NodeSet d_keep;
   /** Have we found any instance? */
-  bool d_foundInst;
+  size_t d_foundInst;
   /** Have we found a conflicting instance? */
   bool d_inConflict;
 };

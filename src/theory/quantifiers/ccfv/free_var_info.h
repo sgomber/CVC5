@@ -41,10 +41,10 @@ class FreeVarInfo
  public:
   FreeVarInfo(context::Context* c);
   /**
-   * Term list, all pattern terms that are fully assigned when we have an
+   * Final term list, all pattern terms that are fully assigned when we have an
    * assignment for this variable, based on the global variable ordering.
    */
-  NodeSet d_useList;
+  NodeSet d_finalTerms;
   /** List of quantifiers that contain this variable */
   NodeList d_quantList;
   /** Get next quantifier, and increment the quantifier index. */

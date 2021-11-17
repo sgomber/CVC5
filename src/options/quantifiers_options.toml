@@ -772,6 +772,14 @@ name   = "Quantifiers"
   help       = "qcf experimental variable ordering"
 
 [[option]]
+  name       = "ccfv"
+  category   = "regular"
+  long       = "ccfv"
+  type       = "bool"
+  default    = "false"
+  help       = "enable congruence closure with free variables"
+
+[[option]]
   name       = "instNoEntail"
   category   = "regular"
   long       = "inst-no-entail"

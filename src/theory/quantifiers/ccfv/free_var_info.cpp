@@ -23,9 +23,10 @@ namespace quantifiers {
 namespace ccfv {
 
 FreeVarInfo::FreeVarInfo(context::Context* c)
-    : d_useList(c), d_quantList(c), d_quantIndex(c, 0)
+    : d_finalTerms(c), d_quantList(c), d_quantIndex(c, 0)
 {
 }
+
 TNode FreeVarInfo::getNextQuantifier()
 {
   if (d_quantIndex >= d_quantList.size())
@@ -36,46 +37,6 @@ TNode FreeVarInfo::getNextQuantifier()
   d_quantIndex = d_quantIndex.get() + 1;
   return next;
 }
-
-/*
-void FreeVarInfo::resetDomain()
-{
-  d_eqcProcessed.clear();
-  d_itql = d_qlist.begin();
-}
-
-bool FreeVarInfo::isFinished() const { return d_itql == d_qlist.end(); }
-
-void FreeVarInfo::addQuantMatch(TNode f, size_t index, TNode q)
-{
-  std::pair<TNode, size_t> key(f, index);
-  std::map<std::pair<TNode, size_t>, NodeList>::iterator it = d_qlist.find(key);
-  if (it == d_qlist.end())
-  {
-    it = d_qlist.emplace(key, d_context).first;
-  }
-  it->second.push_back(q);
-}
-
-bool FreeVarInfo::getNextMatchPosition(State* s, TNode& f, size_t& index)
-{
-  while (d_itql != d_qlist.end())
-  {
-    for (TNode q : d_itql->second)
-    {
-      if (s->isQuantActive(q))
-      {
-        f = d_itql->first.first;
-        index = d_itql->first.second;
-        d_itql++;
-        return true;
-      }
-    }
-    d_itql++;
-  }
-  return false;
-}
-*/
 
 }  // namespace ccfv
 }  // namespace quantifiers

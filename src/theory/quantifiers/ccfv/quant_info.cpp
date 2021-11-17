@@ -35,11 +35,15 @@ void QuantInfo::initialize(TNode q,
   Assert(q.getKind() == FORALL);
   d_quant = q;
 
+  Trace("ccfv-quant-debug") << "Register quant " << d_quant.getId() << " : " << d_quant << std::endl;
+  
   // canonize the body of the quantified formula
+  Trace("ccfv-quant-debug") << "Get canonized body..." << std::endl;
   std::map<TNode, Node> visited;
   d_canonBody = tc.getCanonicalTerm(q[1], visited);
 
   // compute the variable correspondence
+  Trace("ccfv-quant-debug") << "Compute variable correspondence..." << std::endl;
   std::map<TNode, Node>::iterator it;
   std::vector<std::pair<size_t, TNode>> varList;
   std::vector<TNode> uncontainedVar;
@@ -63,16 +67,15 @@ void QuantInfo::initialize(TNode q,
   // Sort variables by their index in the term canonizer. This is to ensure
   // a variable ordering in the driver where shared variables are assigned
   // first.
+  Trace("ccfv-quant-debug") << "Compute variable order..." << std::endl;
   std::sort(varList.begin(), varList.end());
   for (std::pair<size_t, TNode>& vl : varList)
   {
     d_canonVarOrdered.push_back(vl.second);
   }
-  // d_canonVarOrdered.insert(
-  //    d_canonVarOrdered.end(), uncontainedVar.begin(), uncontainedVar.end());
-  // Assert(d_canonVarOrdered.size() == q[0].getNumChildren());
 
   // compute matching requirements
+  Trace("ccfv-quant-debug") << "Compute constraints..." << std::endl;
   std::unordered_set<TNode> processed;
   std::unordered_set<TNode>::iterator itp;
   std::vector<TNode> visit;
@@ -92,6 +95,7 @@ void QuantInfo::initialize(TNode q,
   } while (!visit.empty());
 
   // now we go back and process terms in the match requirements
+  Trace("ccfv-quant-debug") << "Process terms..." << std::endl;
   processMatchReqTerms(ee);
 
   // debug print
@@ -254,6 +258,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
     d_reqTerms.push_back(r.first);
     visit.push_back(std::pair<TNode, bool>(r.first, false));
   }
+  Trace("ccfv-quant-debug") << "Traverse terms..." << std::endl;
   // track parents list
   std::map<TNode, std::vector<TNode>> parentList;
   std::unordered_set<TNode> topLevelMatchers;
@@ -334,6 +339,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
       }
     }
   }
+  Trace("ccfv-quant-debug") << "Compute candidate matchers..." << std::endl;
   std::unordered_set<TNode>::iterator itc;
   std::map<TNode, std::vector<TNode>>::iterator itpl;
   std::map<TNode, std::vector<Node>>::iterator itr;

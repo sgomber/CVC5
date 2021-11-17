@@ -26,6 +26,8 @@ QuantifiersStatistics::QuantifiersStatistics()
         "theory::QuantifiersEngine::time")),
       d_qcf_time(smtStatisticsRegistry().registerTimer(
           "theory::QuantifiersEngine::time_qcf")),
+      d_ccfvTime(smtStatisticsRegistry().registerTimer(
+          "theory::QuantifiersEngine::time_ccfv")),
       d_ematching_time(smtStatisticsRegistry().registerTimer(
           "theory::QuantifiersEngine::time_ematching")),
       d_num_quant(smtStatisticsRegistry().registerInt(

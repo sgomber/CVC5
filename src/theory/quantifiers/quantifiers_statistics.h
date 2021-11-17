@@ -34,6 +34,7 @@ class QuantifiersStatistics
   QuantifiersStatistics();
   TimerStat d_time;
   TimerStat d_qcf_time;
+  TimerStat d_ccfvTime;
   TimerStat d_ematching_time;
   IntStat d_num_quant;
   IntStat d_instantiation_rounds;

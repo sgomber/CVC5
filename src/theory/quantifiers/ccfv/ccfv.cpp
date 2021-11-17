@@ -40,33 +40,25 @@ CongruenceClosureFv::CongruenceClosureFv(Env& env,
 
 bool CongruenceClosureFv::needsCheck(Theory::Effort e)
 {
-  bool performCheck = false;
-  if (options().quantifiers.quantConflictFind)
-  {
-    if (e == Theory::EFFORT_LAST_CALL)
-    {
-      performCheck =
-          options().quantifiers.qcfWhenMode == options::QcfWhenMode::LAST_CALL;
-    }
-    else if (e == Theory::EFFORT_FULL)
-    {
-      performCheck =
-          options().quantifiers.qcfWhenMode == options::QcfWhenMode::DEFAULT;
-    }
-    else if (e == Theory::EFFORT_STANDARD)
-    {
-      performCheck =
-          options().quantifiers.qcfWhenMode == options::QcfWhenMode::STD;
-    }
-  }
-  return performCheck;
+  return (e == Theory::EFFORT_FULL);
 }
 
 void CongruenceClosureFv::reset_round(Theory::Effort e) {}
 
 void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e)
 {
-  // TODO: only if proper effort
+  CodeTimer codeTimer(d_qstate.getStats().d_ccfvTime);
+  if (quant_e != QEFFORT_CONFLICT)
+  {
+    return;
+  }
+  double clSet = 0;
+  if (Trace.isOn("ccfv-engine"))
+  {
+    clSet = double(clock()) / double(CLOCKS_PER_SEC);
+    Trace("ccfv-engine") << "---Congruence Closure with Free Variables Round, effort = " << e
+                        << "---" << std::endl;
+  }
   std::vector<TNode> quants;
   FirstOrderModel* fm = d_treg.getModel();
   for (size_t i = 0, nquant = fm->getNumAssertedQuantifiers(); i < nquant; i++)
@@ -74,7 +66,7 @@ void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e)
     Node q = fm->getAssertedQuantifier(i, true);
     if (!d_qreg.hasOwnership(q, this))
     {
-      return;
+      continue;
     }
     quants.push_back(q);
   }
@@ -82,6 +74,19 @@ void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e)
   if (!quants.empty())
   {
     d_driver.check(quants);
+  }
+
+  if (Trace.isOn("ccfv-engine"))
+  {
+    double clSet2 = double(clock()) / double(CLOCKS_PER_SEC);
+    Trace("ccfv-engine") << "Finished conflict find engine, time = "
+                        << (clSet2 - clSet);
+    Trace("ccfv-engine") << ", #inst = " << d_driver.numFoundInst();
+    if (d_driver.inConflict())
+    {
+      Trace("ccfv-engine") << ", conflict";
+    }
+    Trace("ccfv-engine") << std::endl;
   }
 }
 
@@ -146,7 +151,7 @@ void CongruenceClosureFv::assertNode(Node q)
         // require initial notifications for these terms, which we store in
         // the null free variable info.
         FreeVarInfo& fiNull = d_state.getOrMkFreeVarInfo(Node::null());
-        fiNull.d_useList.insert(cur);
+        fiNull.d_finalTerms.insert(cur);
         continue;
       }
       Kind k = cur.getKind();
@@ -194,7 +199,7 @@ void CongruenceClosureFv::assertNode(Node q)
   for (const std::pair<const TNode, TNode>& tv : termToMaxVar)
   {
     FreeVarInfo& fi = d_state.getOrMkFreeVarInfo(tv.second);
-    fi.d_useList.insert(tv.first);
+    fi.d_finalTerms.insert(tv.first);
   }
 }
 

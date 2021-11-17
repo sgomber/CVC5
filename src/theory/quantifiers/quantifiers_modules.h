@@ -31,6 +31,7 @@
 #include "theory/quantifiers/quant_split.h"
 #include "theory/quantifiers/sygus/synth_engine.h"
 #include "theory/quantifiers/sygus_inst.h"
+#include "theory/quantifiers/ccfv/ccfv.h"
 
 namespace cvc5 {
 namespace theory {
@@ -78,6 +79,8 @@ class QuantifiersModules
   std::unique_ptr<ModelEngine> d_model_engine;
   /** bounded integers utility */
   std::unique_ptr<BoundedIntegers> d_bint;
+  /** Congruence closure with free variables */
+  std::unique_ptr<ccfv::CongruenceClosureFv> d_ccfv;
   /** Conflict find mechanism for quantifiers */
   std::unique_ptr<QuantConflictFind> d_qcf;
   /** subgoal generator */

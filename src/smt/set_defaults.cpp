@@ -658,6 +658,18 @@ void SetDefaults::setDefaultsPost(const LogicInfo& logic, Options& opts) const
   // set the default decision mode
   setDefaultDecisionMode(logic, opts);
 
+  if (logic.isHigherOrder())
+  {
+    if (!opts.theory.assignFunctionValues)
+    {
+      // must assign function values
+      opts.theory.assignFunctionValues = true;
+    }
+  }
+
+  // set all defaults in the quantifiers theory, which includes sygus
+  setDefaultsQuantifiers(logic, opts);
+
   // set up of central equality engine
   if (opts.theory.eeMode == options::EqEngineMode::CENTRAL)
   {
@@ -676,19 +688,7 @@ void SetDefaults::setDefaultsPost(const LogicInfo& logic, Options& opts) const
       opts.arith.arithCongMan = false;
     }
   }
-
-  if (logic.isHigherOrder())
-  {
-    if (!opts.theory.assignFunctionValues)
-    {
-      // must assign function values
-      opts.theory.assignFunctionValues = true;
-    }
-  }
-
-  // set all defaults in the quantifiers theory, which includes sygus
-  setDefaultsQuantifiers(logic, opts);
-
+  
   // shared selectors are generally not good to combine with standard
   // quantifier techniques e.g. E-matching
   if (!opts.datatypes.dtSharedSelectorsWasSetByUser)
@@ -1438,6 +1438,10 @@ void SetDefaults::setDefaultsQuantifiers(const LogicInfo& logic,
     }
   }
   // implied options...
+  if (opts.quantifiers.ccfv)
+  {
+    opts.theory.eeMode = options::EqEngineMode::CENTRAL;
+  }
   if (opts.quantifiers.qcfModeWasSetByUser || opts.quantifiers.qcfTConstraint)
   {
     opts.quantifiers.quantConflictFind = true;

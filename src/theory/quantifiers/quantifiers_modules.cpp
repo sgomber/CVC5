@@ -49,68 +49,74 @@ void QuantifiersModules::initialize(Env& env,
                                     QModelBuilder* builder,
                                     std::vector<QuantifiersModule*>& modules)
 {
+  const Options& opts = env.getOptions();
   // add quantifiers modules
-  if (options::quantConflictFind())
+  if (opts.quantifiers.ccfv)
+  {
+    d_ccfv.reset(new ccfv::CongruenceClosureFv(env, qs, qim, qr, tr));
+    modules.push_back(d_ccfv.get());
+  }
+  if (opts.quantifiers.quantConflictFind)
   {
     d_qcf.reset(new QuantConflictFind(env, qs, qim, qr, tr));
     modules.push_back(d_qcf.get());
   }
-  if (options::conjectureGen())
+  if (opts.quantifiers.conjectureGen)
   {
     d_sg_gen.reset(new ConjectureGenerator(env, qs, qim, qr, tr));
     modules.push_back(d_sg_gen.get());
   }
-  if (!options::finiteModelFind() || options::fmfInstEngine())
+  if (!opts.quantifiers.finiteModelFind || opts.quantifiers.fmfInstEngine)
   {
     d_inst_engine.reset(new InstantiationEngine(env, qs, qim, qr, tr));
     modules.push_back(d_inst_engine.get());
   }
-  if (options::cegqi())
+  if (opts.quantifiers.cegqi)
   {
     d_i_cbqi.reset(new InstStrategyCegqi(env, qs, qim, qr, tr));
     modules.push_back(d_i_cbqi.get());
     qim.getInstantiate()->addRewriter(d_i_cbqi->getInstRewriter());
   }
-  if (options::sygus())
+  if (opts.quantifiers.sygus)
   {
     d_synth_e.reset(new SynthEngine(env, qs, qim, qr, tr));
     modules.push_back(d_synth_e.get());
   }
   // bounded integer instantiation is used when the user requests it via
   // fmfBound, or if strings are enabled.
-  if (options::fmfBound() || options::stringExp())
+  if (opts.quantifiers.fmfBound || opts.strings.stringExp)
   {
     d_bint.reset(new BoundedIntegers(env, qs, qim, qr, tr));
     modules.push_back(d_bint.get());
   }
 
-  if (options::finiteModelFind() || options::fmfBound() || options::stringExp())
+  if (opts.quantifiers.finiteModelFind || opts.quantifiers.fmfBound || opts.strings.stringExp)
   {
     d_model_engine.reset(new ModelEngine(env, qs, qim, qr, tr, builder));
     modules.push_back(d_model_engine.get());
   }
-  if (options::quantDynamicSplit() != options::QuantDSplitMode::NONE)
+  if (opts.quantifiers.quantDynamicSplit != options::QuantDSplitMode::NONE)
   {
     d_qsplit.reset(new QuantDSplit(env, qs, qim, qr, tr));
     modules.push_back(d_qsplit.get());
   }
-  if (options::quantAlphaEquiv())
+  if (opts.quantifiers.quantAlphaEquiv)
   {
     d_alpha_equiv.reset(new AlphaEquivalence(env));
   }
   // full saturation : instantiate from relevant domain, then arbitrary terms
-  if (options::fullSaturateQuant() || options::fullSaturateInterleave())
+  if (opts.quantifiers.fullSaturateQuant || opts.quantifiers.fullSaturateInterleave)
   {
     d_rel_dom.reset(new RelevantDomain(env, qs, qr, tr));
     d_fs.reset(new InstStrategyEnum(env, qs, qim, qr, tr, d_rel_dom.get()));
     modules.push_back(d_fs.get());
   }
-  if (options::poolInst())
+  if (opts.quantifiers.poolInst)
   {
     d_ipool.reset(new InstStrategyPool(env, qs, qim, qr, tr));
     modules.push_back(d_ipool.get());
   }
-  if (options::sygusInst())
+  if (opts.quantifiers.sygusInst)
   {
     d_sygus_inst.reset(new SygusInst(env, qs, qim, qr, tr));
     modules.push_back(d_sygus_inst.get());
