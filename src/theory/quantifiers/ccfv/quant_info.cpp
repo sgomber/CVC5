@@ -304,6 +304,13 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
           visited[cur] = false;
         }
       }
+      else if (!isTraverseTerm(cur.first))
+      {
+        // a term that should never be traversed, e.g. a nested closure
+        visit.pop_back();
+        visited[cur] = true;
+        continue;
+      }
       else if (!inCongTerm)
       {
         // if we are not a congruence term, and we are not in a congruence term,
@@ -535,6 +542,11 @@ void QuantInfo::setActive(bool val) { d_isActive = val; }
 void QuantInfo::setNoConflict() { d_maybeConflict = false; }
 
 bool QuantInfo::isMaybeConflict() const { return d_maybeConflict.get(); }
+
+bool QuantInfo::isTraverseTerm(TNode n)
+{
+  return !n.isClosure();
+}
 
 bool QuantInfo::isDeqConstraint(TNode c, TNode p)
 {

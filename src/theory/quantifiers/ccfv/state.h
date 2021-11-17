@@ -111,10 +111,14 @@ class State : protected EnvObj
   TNode getGroundRepresentative(TNode n) const;
   /** Are disequal? */
   bool areDisequal(TNode a, TNode b) const;
+  /** Invoke the rewriter for term n */
+  Node doRewrite(Node n);
   /** Is quantifier active? */
   bool isQuantActive(TNode q) const;
   /** Set quantified formula inactive */
   void setQuantInactive(QuantInfo& qi);
+  /** Assert equality */
+  void assertEquality(TNode p, TNode g);
 
   /** debugging */
   std::string toStringDebug() const;
@@ -161,6 +165,8 @@ class State : protected EnvObj
   std::unordered_set<TNode> d_emptyEqc;
   /** total number of alive quantified formulas */
   context::CDO<size_t> d_numActiveQuant;
+  /** Keep set, for asserted equalities */
+  NodeSet d_keep;
 };
 
 }  // namespace ccfv

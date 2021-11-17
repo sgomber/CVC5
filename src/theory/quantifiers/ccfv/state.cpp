@@ -32,7 +32,8 @@ State::State(Env& env, QuantifiersState& qs, TermDb* tdb)
       d_qstate(qs),
       d_tdb(tdb),
       d_notifyActive(context(), false),
-      d_numActiveQuant(context(), 0)
+      d_numActiveQuant(context(), 0),
+      d_keep(context())
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
@@ -314,8 +315,9 @@ void State::notifyPatternEqGround(TNode p, TNode g)
     }
     else if (it->second.d_isWatchedEval.get())
     {
+      Trace("ccfv-state-debug") << "Notify assert " << p << " == " << g << std::endl;
       // if it is a watched evaluate term, assert the equality here
-      // TODO
+      assertEquality(p, g);
     }
     for (size_t i = 0; i < maxIter; i++)
     {
@@ -446,6 +448,20 @@ void State::setQuantInactive(QuantInfo& qi)
   }
 }
 
+void State::assertEquality(TNode p, TNode g)
+{
+  Trace("ccfv-state-assert") << "Assert: " << p << " == " << g << std::endl;
+  Assert(d_qstate.getEqualityEngine()->consistent());
+  Assert(!isNone(g));
+  Assert(p.getType().isComparableTo(g.getType()));
+  // assert to the equality engine
+  Node eq = p.eqNode(g);
+  d_keep.insert(eq);
+  d_qstate.getEqualityEngine()->assertEquality(eq, true, eq);
+  // should still be consistent
+  Assert(d_qstate.getEqualityEngine()->consistent());
+}
+
 Node State::getNone() const { return d_none; }
 
 bool State::isNone(TNode n) const { return n == d_none; }
@@ -491,6 +507,11 @@ TNode State::getGroundRepresentative(TNode n) const
 bool State::areDisequal(TNode a, TNode b) const
 {
   return d_qstate.areDisequal(a, b);
+}
+
+Node State::doRewrite(Node n)
+{
+  return rewrite(n);
 }
 
 bool State::isQuantActive(TNode q) const

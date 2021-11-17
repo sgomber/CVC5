@@ -41,7 +41,6 @@ InstDriver::InstDriver(Env& env,
       d_treg(tr),
       d_matching(env, state, qs, tr.getTermDatabase()),
       d_numLevels(0),
-      d_keep(context()),
       d_foundInst(0),
       d_inConflict(false)
 {
@@ -390,7 +389,7 @@ bool InstDriver::pushLevel(size_t level)
     else
     {
       // otherwise, assert v = eqc to the equality engine
-      assignVar(v, eqc);
+      d_state.assertEquality(v, eqc);
     }
     if (d_state.isFinished())
     {
@@ -480,19 +479,6 @@ bool InstDriver::pushLevel(size_t level)
   }
   Trace("ccfv-search") << "...successful assign" << std::endl;
   return true;
-}
-
-void InstDriver::assignVar(TNode v, TNode eqc)
-{
-  Assert(d_qstate.getEqualityEngine()->consistent());
-  Assert(!d_state.isNone(eqc));
-  Assert(v.getType().isComparableTo(eqc.getType()));
-  // assert to the equality engine
-  Node eq = v.eqNode(eqc);
-  d_keep.insert(eq);
-  d_qstate.getEqualityEngine()->assertEquality(eq, true, eq);
-  // should still be consistent
-  Assert(d_qstate.getEqualityEngine()->consistent());
 }
 
 SearchLevel& InstDriver::getSearchLevel(size_t i) { return d_levels[i]; }

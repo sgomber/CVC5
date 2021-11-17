@@ -121,8 +121,6 @@ class InstDriver : protected EnvObj
   std::map<size_t, SearchLevel> d_levels;
   /** Number of levels */
   size_t d_numLevels;
-  /** Keep set, for asserted equalities */
-  NodeSet d_keep;
   /** Have we found any instance? */
   size_t d_foundInst;
   /** Have we found a conflicting instance? */
