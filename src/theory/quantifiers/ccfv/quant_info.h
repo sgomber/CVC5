@@ -154,6 +154,8 @@ class QuantInfo
    * variables in the order are used for all variables they bind.
    */
   std::map<TNode, TNode> d_matchers;
+  /** All matchers for each variable */
+  std::map<TNode, std::vector<TNode>> d_candidateMatchers;
   /**
    * Subterms of d_req that we don't handle.
    */
