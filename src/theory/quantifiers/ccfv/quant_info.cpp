@@ -26,7 +26,10 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-QuantInfo::QuantInfo(context::Context* c) : d_isActive(c, true), d_maybeConflict(c, true) {}
+QuantInfo::QuantInfo(context::Context* c)
+    : d_isActive(c, true), d_maybeConflict(c, true)
+{
+}
 
 void QuantInfo::initialize(TNode q,
                            eq::EqualityEngine* ee,
@@ -303,7 +306,8 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
       }
       else if (!inCongTerm)
       {
-        // if we are not a congruence term, and we are not in a congruence term, recurse
+        // if we are not a congruence term, and we are not in a congruence term,
+        // recurse
         visit.pop_back();
         visited[cur] = true;
       }

@@ -28,13 +28,17 @@ namespace quantifiers {
 namespace ccfv {
 
 PatTermInfo::PatTermInfo(context::Context* c)
-    : d_eq(c), d_numUnassigned(c, 0), d_parentNotify(c), d_parentCongNotify(c), d_isWatchedEval(c, false)
+    : d_eq(c),
+      d_numUnassigned(c, 0),
+      d_parentNotify(c),
+      d_parentCongNotify(c),
+      d_isWatchedEval(c, false)
 {
 }
 
-void PatTermInfo::initialize(TNode pattern, eq::EqualityEngine * ee, TermDb* tdb)
+void PatTermInfo::initialize(TNode pattern, eq::EqualityEngine* ee, TermDb* tdb)
 {
-  Assert (!pattern.isNull());
+  Assert(!pattern.isNull());
   d_pattern = pattern;
   d_isCongTerm = ee->isFunctionKind(d_pattern.getKind());
   if (d_isCongTerm)
@@ -122,7 +126,7 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
           }
         }
       }
-      else if (k==NOT)
+      else if (k == NOT)
       {
         NodeManager* nm = NodeManager::currentNM();
         d_eq = nm->mkConst(!val.getConst<bool>());
@@ -186,10 +190,10 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
         d_eq = nm->mkConst(k == AND);
         Trace("ccfv-state-debug") << "...exhausted AND/OR" << std::endl;
       }
-      else if (k==EQUAL)
-      {       
+      else if (k == EQUAL)
+      {
         TNode cval1 = s.getValue(d_pattern[0]);
-        Assert (!cval1.isNull() && !s.isNone(cval1));
+        Assert(!cval1.isNull() && !s.isNone(cval1));
         // this handles any type EQUAL. If either side is none, we are none.
         // Otherwise, we handle cases below.
         TNode cval2 = s.getValue(d_pattern[1]);
@@ -201,8 +205,7 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
         if (cval1 == cval2)
         {
           d_eq = nm->mkConst(true);
-          Trace("ccfv-state-debug")
-              << "...equal via " << cval1 << std::endl;
+          Trace("ccfv-state-debug") << "...equal via " << cval1 << std::endl;
         }
         else if (s.areDisequal(cval1, cval2))
         {

@@ -58,8 +58,7 @@ class State : protected EnvObj
    */
   void resetRound(size_t nquant);
   //---------------quantifiers info
-  QuantInfo& initializeQuantInfo(TNode q,
-                                 expr::TermCanonize& tc);
+  QuantInfo& initializeQuantInfo(TNode q, expr::TermCanonize& tc);
   /** Get quantifiers info */
   QuantInfo& getQuantInfo(TNode q);
   //---------------free variable info

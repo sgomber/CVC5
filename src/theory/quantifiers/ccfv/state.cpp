@@ -106,8 +106,7 @@ void State::resetRound(size_t nquant)
   */
 }
 
-QuantInfo& State::initializeQuantInfo(TNode q,
-                                      expr::TermCanonize& tc)
+QuantInfo& State::initializeQuantInfo(TNode q, expr::TermCanonize& tc)
 {
   std::map<Node, QuantInfo>::iterator it = d_quantInfo.find(q);
   if (it == d_quantInfo.end())

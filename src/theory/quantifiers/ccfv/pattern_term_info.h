@@ -28,7 +28,7 @@
 namespace cvc5 {
 namespace theory {
 namespace eq {
-  class EqualityEngine;
+class EqualityEngine;
 }
 namespace quantifiers {
 
@@ -50,7 +50,7 @@ class PatTermInfo
  public:
   PatTermInfo(context::Context* c);
   /** initialize */
-  void initialize(TNode pattern, eq::EqualityEngine * ee, TermDb* tdb);
+  void initialize(TNode pattern, eq::EqualityEngine* ee, TermDb* tdb);
   /** Reset round */
   void resetRound();
   /**
