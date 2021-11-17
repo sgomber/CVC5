@@ -99,9 +99,9 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
     Kind k = d_pattern.getKind();
     // implies and xor are eliminated from quantifier bodies
     Assert(k != IMPLIES && k != XOR);
-    if (k==AND || k==OR)
+    if (k == AND || k == OR)
     {
-      if (val.isConst() && val.getConst<bool>()==(k==OR))
+      if (val.isConst() && val.getConst<bool>() == (k == OR))
       {
         // the value determines the value of this
         d_eq = val;
@@ -181,14 +181,14 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
       // set to unknown, handle cases
       d_eq = s.getNone();
       NodeManager* nm = NodeManager::currentNM();
-      Assert (k!=NOT);
+      Assert(k != NOT);
       if (k == AND || k == OR)
       {
         bool hasSome = false;
         for (TNode pc : d_pattern)
         {
           TNode cvalue = s.getValue(pc);
-          Assert (!cvalue.isNull());
+          Assert(!cvalue.isNull());
           if (s.isNone(cvalue))
           {
             // unknown, we are done
@@ -202,7 +202,7 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
           }
           else
           {
-            Assert (cvalue.isConst());
+            Assert(cvalue.isConst());
           }
         }
         // if any child is some, we are some as well
@@ -215,7 +215,7 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
         // short circuited above.
         // Otherwise, we handle cases below.
         TNode cval[2];
-        for (size_t i=0; i<2; i++)
+        for (size_t i = 0; i < 2; i++)
         {
           cval[i] = s.getValue(d_pattern[i]);
           Assert(!cval[i].isNull() && !s.isNone(cval[i]));
@@ -295,9 +295,7 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
               // (ite some t some) ---> some
               // (ite some some t) ---> some
               d_eq = s.getSome();
-              Trace("ccfv-state-debug")
-                  << "...branch with some" << std::endl;
-            
+              Trace("ccfv-state-debug") << "...branch with some" << std::endl;
             }
             else
             {
@@ -321,7 +319,7 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
         for (TNode pc : d_pattern)
         {
           TNode cvalue = s.getValue(pc);
-          Assert (!cvalue.isNull());
+          Assert(!cvalue.isNull());
           if (s.isSome(cvalue))
           {
             Trace("ccfv-state-debug")
@@ -338,9 +336,8 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
           npr = s.getGroundRepresentative(npr);
           if (!npr.isNull())
           {
-              d_eq = npr;
-              Trace("ccfv-state-debug")
-                  << "...evaluates to " << npr << std::endl;
+            d_eq = npr;
+            Trace("ccfv-state-debug") << "...evaluates to " << npr << std::endl;
           }
           else
           {

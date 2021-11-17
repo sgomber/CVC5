@@ -543,10 +543,7 @@ void QuantInfo::setNoConflict() { d_maybeConflict = false; }
 
 bool QuantInfo::isMaybeConflict() const { return d_maybeConflict.get(); }
 
-bool QuantInfo::isTraverseTerm(TNode n)
-{
-  return !n.isClosure();
-}
+bool QuantInfo::isTraverseTerm(TNode n) { return !n.isClosure(); }
 
 bool QuantInfo::isDeqConstraint(TNode c, TNode p)
 {

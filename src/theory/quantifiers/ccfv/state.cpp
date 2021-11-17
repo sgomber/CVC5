@@ -315,7 +315,8 @@ void State::notifyPatternEqGround(TNode p, TNode g)
     }
     else if (it->second.d_isWatchedEval.get())
     {
-      Trace("ccfv-state-debug") << "Notify assert " << p << " == " << g << std::endl;
+      Trace("ccfv-state-debug")
+          << "Notify assert " << p << " == " << g << std::endl;
       // if it is a watched evaluate term, assert the equality here
       assertEquality(p, g);
     }
@@ -509,10 +510,7 @@ bool State::areDisequal(TNode a, TNode b) const
   return d_qstate.areDisequal(a, b);
 }
 
-Node State::doRewrite(Node n)
-{
-  return rewrite(n);
-}
+Node State::doRewrite(Node n) { return rewrite(n); }
 
 bool State::isQuantActive(TNode q) const
 {
