@@ -382,7 +382,7 @@ bool InstDriver::pushLevel(size_t level)
           {
             Trace("ccfv-search")
                 << "...finished while setting quant inactive" << std::endl;
-            return false;
+            return true;
           }
         }
       }
@@ -395,8 +395,7 @@ bool InstDriver::pushLevel(size_t level)
     if (d_state.isFinished())
     {
       Trace("ccfv-search") << "...finished after assignment" << std::endl;
-      context()->pop();
-      return false;
+      return true;
     }
     if (Trace.isOn("ccfv-ee"))
     {
@@ -415,8 +414,7 @@ bool InstDriver::pushLevel(size_t level)
       {
         Trace("ccfv-search")
             << "...finished while setting term inactive" << std::endl;
-        context()->pop();
-        return false;
+        return true;
       }
     }
   }
@@ -448,7 +446,7 @@ bool InstDriver::pushLevel(size_t level)
       inst.push_back(vval);
       subs[q[0][i]] = vval;
     }
-    Trace("ccfv-search") << "...check inst for " << q.getId() << std::endl;
+    Trace("ccfv-search") << "...check inst for " << q.getId() << " : " << inst << std::endl;
     EntailmentCheck* ec = d_treg.getEntailmentCheck();
     Node instEval = ec->evaluateTerm(
         q[1], subs, false, options().quantifiers.qcfTConstraint, true);
@@ -460,6 +458,7 @@ bool InstDriver::pushLevel(size_t level)
     if (instEval.isNull())
     {
       // ... spurious
+      Trace("ccfv-search") << "...spurious" << std::endl;
       continue;
     }
     else if (instEval.isConst())
@@ -468,13 +467,19 @@ bool InstDriver::pushLevel(size_t level)
       if (instEval.getConst<bool>())
       {
         // ... spurious, entailed
+        Trace("ccfv-search") << "...spurious, entailed" << std::endl;
         continue;
       }
       else
       {
         d_inConflict = true;
         id = InferenceId::QUANTIFIERS_INST_CCFV_CONFLICT;
+        Trace("ccfv-search") << "...conflict!" << std::endl;
       }
+    }
+    else
+    {
+        Trace("ccfv-search") << "...propagating!" << std::endl;
     }
     Instantiate* qinst = d_qim.getInstantiate();
     if (qinst->addInstantiation(q, inst, id))
@@ -490,8 +495,7 @@ bool InstDriver::pushLevel(size_t level)
     if (d_state.isFinished())
     {
       Trace("ccfv-search") << "...finished after processing inst" << std::endl;
-      context()->pop();
-      return false;
+      return true;
     }
   }
   Trace("ccfv-search") << "...successful assign" << std::endl;
@@ -526,17 +530,20 @@ void InstDriver::search()
     Assert(currLevel < d_numLevels);
     Trace("ccfv-search") << "search: level = " << currLevel << ", "
                          << d_state.toStringDebugSearch() << std::endl;
-    // assign all variables at current level
+    // assign all variables at current level, this returns true if the
+    // context was pushed, false otherwise. 
     if (pushLevel(currLevel))
     {
-      Assert(!isFinished());
-      if (currLevel < d_numLevels)
+      if (!d_state.isFinished() && currLevel+1 < d_numLevels)
       {
         currLevel++;
         initializeLevel(currLevel);
       }
       else
       {
+        // we may be finished after the last assignment, or we may have hit the
+        // maximum levels, in this case, we pop the context and try the next
+        // assignment at the current level.
         context()->pop();
       }
     }

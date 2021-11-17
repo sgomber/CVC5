@@ -107,6 +107,8 @@ class State : protected EnvObj
   bool isGroundEqc(TNode r) const;
   /** Get the ground representative */
   TNode getGroundRepresentative(TNode n) const;
+  /** Are disequal? */
+  bool areDisequal(TNode a, TNode b) const;
   /** Is quantifier active? */
   bool isQuantActive(TNode q) const;
   /** Set quantified formula inactive */
@@ -121,11 +123,6 @@ class State : protected EnvObj
   EqcInfo* getOrMkEqcInfo(TNode r, bool doMk = false);
   /** Get equivalence class info, or nullptr if it does not exist */
   const EqcInfo* getEqcInfo(TNode r) const;
-  /**
-   * Notify that child was assigned value val, set eq if possible.
-   * Return true if we set eq during this call.
-   */
-  bool notifyChild(PatTermInfo& pi, TNode child, TNode val);
   /**
    * Notify quantified formula
    */

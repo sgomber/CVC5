@@ -32,6 +32,8 @@ namespace quantifiers {
 class TermDb;
 
 namespace ccfv {
+  
+class State;
 
 /**
  * A quantified formula is a pattern term whose parent is
@@ -53,8 +55,13 @@ class PatTermInfo
    * its variables have been fully assigned.
    */
   bool isActive() const;
-  /** Notify that child was assigned value val, set eq if possible. */
-  bool notify(TNode child, TNode val, bool isSink);
+  /**
+   * Notify that child was assigned value val, set eq if possible.
+   * Return true if we set eq during this call.
+   *
+   * This call is not responsible for notifying parents.
+   */
+  bool notifyChild(State& s, TNode child, TNode val);
   /** This pattern term. */
   TNode d_pattern;
   /** The match operator */

@@ -62,8 +62,8 @@ class QuantInfo
   const std::vector<TNode>& getConstraintTerms() const;
   /** Get congruence terms, the terms to add to the equality engine */
   const std::vector<TNode>& getCongruenceTerms() const;
-  /** Get congruence term variable map */
-  const std::map<TNode, TNode>& getTermMaxVarMap() const;
+  /** Get variable to final terms map */
+  const std::map<TNode, std::vector<TNode>>& getVarToFinalTermMap() const;
   //-------------------------- per round
   /** reset variable count */
   // void resetSearchVariableCount();
@@ -140,7 +140,7 @@ class QuantInfo
    * This variable is used for tracking the variable which, when assigned,
    * makes the congruence term fully assigned.
    */
-  std::map<TNode, TNode> d_termMaxVar;
+  std::map<TNode, std::vector<TNode>> d_varToFinalTerms;
   /**
    * Mapping from free variables to a "matcher" for that variable. These terms
    * determine what to invoke matching on.

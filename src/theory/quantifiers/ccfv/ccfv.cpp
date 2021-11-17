@@ -80,7 +80,7 @@ void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e)
   if (Trace.isOn("ccfv-engine"))
   {
     double clSet2 = double(clock()) / double(CLOCKS_PER_SEC);
-    Trace("ccfv-engine") << "Finished conflict find engine, time = "
+    Trace("ccfv-engine") << "Finished ccfv, time = "
                          << (clSet2 - clSet);
     Trace("ccfv-engine") << ", #inst = " << d_driver.numFoundInst();
     if (d_driver.inConflict())
@@ -196,11 +196,14 @@ void CongruenceClosureFv::assertNode(Node q)
 
   // (4) map free variables to terms that are fully assigned when that free
   // variable is assigned
-  const std::map<TNode, TNode>& termToMaxVar = qi.getTermMaxVarMap();
-  for (const std::pair<const TNode, TNode>& tv : termToMaxVar)
+  const std::map<TNode, std::vector<TNode>>& vft = qi.getVarToFinalTermMap();
+  for (const std::pair<const TNode, std::vector<TNode>>& tv : vft)
   {
-    FreeVarInfo& fi = d_state.getOrMkFreeVarInfo(tv.second);
-    fi.d_finalTerms.insert(tv.first);
+    FreeVarInfo& fi = d_state.getOrMkFreeVarInfo(tv.first);
+    for (TNode ft : tv.second)
+    {
+      fi.d_finalTerms.insert(ft);
+    }
   }
 }
 

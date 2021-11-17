@@ -281,157 +281,6 @@ void State::eqNotifyMerge(TNode t1, TNode t2)
 
 void State::notifyPatternSink(TNode p) { notifyPatternEqGround(p, d_sink); }
 
-bool State::notifyChild(PatTermInfo& pi, TNode child, TNode val)
-{
-  Assert(!val.isNull());
-  Assert(isGroundEqc(val) || isSink(val));
-  if (!pi.isActive())
-  {
-    // already set
-    return false;
-  }
-  if (pi.d_isBooleanConnective)
-  {
-    Trace("ccfv-state-debug")
-        << "Notify Bool connective: " << pi.d_pattern << " child " << child
-        << " == " << val << std::endl;
-    // if a Boolean connective, handle short circuiting if we set a non-sink
-    // value
-    if (!isSink(val))
-    {
-      Kind k = pi.d_pattern.getKind();
-      // implies and xor are eliminated from quantifier bodies
-      Assert(k != IMPLIES && k != XOR);
-      if ((k == AND && !val.getConst<bool>())
-          || (k == OR && val.getConst<bool>()))
-      {
-        // the value determines the value of this
-        pi.d_eq = val;
-        Trace("ccfv-state-debug") << "...short circuit " << val << std::endl;
-        return true;
-      }
-      if (k == ITE)
-      {
-        // if the condition is being set, and the branch already has a value,
-        // then this has the value of the branch.
-        if (pi.d_pattern[0] == child)
-        {
-          bool pol = val.getConst<bool>();
-          Node vbranch = getValue(pi.d_pattern[pol ? 1 : 2]);
-          if (!vbranch.isNull())
-          {
-            pi.d_eq = vbranch;
-            Trace("ccfv-state-debug")
-                << "...branched to " << vbranch << std::endl;
-            return true;
-          }
-        }
-        else
-        {
-          // if the branch is being set, the condition is determined, and it is
-          // the relevant branch, then this value is val.
-          Node vcond = getValue(pi.d_pattern[0]);
-          if (!vcond.isNull() && vcond.isConst())
-          {
-            if (child == pi.d_pattern[vcond.getConst<bool>() ? 1 : 2])
-            {
-              pi.d_eq = val;
-              Trace("ccfv-state-debug")
-                  << "...relevant branch " << val << std::endl;
-              return true;
-            }
-          }
-        }
-      }
-    }
-    // if a Boolean connective, we can possibly evaluate
-    Assert(pi.d_numUnassigned.get() > 0);
-    pi.d_numUnassigned = pi.d_numUnassigned.get() - 1;
-    Trace("ccfv-state-debug")
-        << "...unassigned children now " << pi.d_numUnassigned << std::endl;
-    if (pi.d_numUnassigned == 0)
-    {
-      // set to unknown, handle cases
-      pi.d_eq = d_sink;
-      NodeManager* nm = NodeManager::currentNM();
-      Kind k = pi.d_pattern.getKind();
-      Assert(k != IMPLIES && k != XOR);
-      if (k == AND || k == OR)
-      {
-        for (TNode pc : pi.d_pattern)
-        {
-          TNode cvalue = getValue(pc);
-          if (isSink(cvalue))
-          {
-            // unknown, we are done
-            return true;
-          }
-        }
-        pi.d_eq = nm->mkConst(k == AND);
-      }
-      else
-      {
-        TNode cval1 = getValue(pi.d_pattern[0]);
-        Assert(!cval1.isNull());
-        Assert(cval1.isConst() || isSink(cval1));
-        if (k == NOT)
-        {
-          if (cval1.isConst())
-          {
-            pi.d_eq = nm->mkConst(!cval1.getConst<bool>());
-          }
-        }
-        else if (k == ITE)
-        {
-          if (cval1.isConst())
-          {
-            // if condition evaluates, get value of branch
-            pi.d_eq = getValue(pi.d_pattern[cval1.getConst<bool>() ? 1 : 2]);
-          }
-          else
-          {
-            // otherwise, we only are known if the branches are equal
-            TNode cval2 = getValue(pi.d_pattern[1]);
-            Assert(!cval2.isNull());
-            // this handles any type ITE
-            if (!isSink(cval1) && cval2 == getValue(pi.d_pattern[2]))
-            {
-              pi.d_eq = cval2;
-            }
-          }
-        }
-        else
-        {
-          Assert(k == EQUAL);
-          // this handles any type EQUAL
-          if (!isSink(cval1))
-          {
-            TNode cval2 = getValue(pi.d_pattern[0]);
-            Assert(!cval2.isNull());
-            if (!isSink(cval2))
-            {
-              // if both side evaluate, we evaluate
-              pi.d_eq = nm->mkConst(cval1 == cval2);
-            }
-          }
-          // TODO: could check equality
-        }
-      }
-      return true;
-    }
-  }
-  else
-  {
-    // if the value of a child is unknown, we are now unknown
-    if (isSink(val))
-    {
-      pi.d_eq = val;
-      return true;
-    }
-  }
-  return false;
-}
-
 void State::notifyPatternEqGround(TNode p, TNode g)
 {
   Assert(!g.isNull());
@@ -483,7 +332,7 @@ void State::notifyPatternEqGround(TNode p, TNode g)
         // otherwise, notify the parent pattern
         it = d_pInfo.find(pp);
         Assert(it != d_pInfo.end());
-        if (notifyChild(it->second, p, g))
+        if (it->second.notifyChild(*this, p, g))
         {
           toNotify.push_back(it);
         }
@@ -514,7 +363,7 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
   else
   {
     const std::map<TNode, std::vector<Node>>& cs = qi.getConstraints();
-    std::map<TNode, std::vector<Node>>::const_iterator itm = cs.find(val);
+    std::map<TNode, std::vector<Node>>::const_iterator itm = cs.find(p);
     if (itm != cs.end())
     {
       for (TNode c : itm->second)
@@ -543,7 +392,15 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
           setInactive = true;
           break;
         }
+        else
+        {
+          Trace("ccfv-state-debug") << "...satisfied constraint " << c << std::endl;
+        }
       }
+    }
+    else
+    {
+      Trace("ccfv-state-debug") << "...no constraints" << std::endl;
     }
   }
   // if we should set inactive, update qi and decrement d_numActiveQuant
@@ -605,6 +462,11 @@ TNode State::getGroundRepresentative(TNode n) const
   }
   // check the equivalence class info, which may also be null
   return eq->d_groundEqc.get();
+}
+
+bool State::areDisequal(TNode a, TNode b) const
+{
+  return d_qstate.areDisequal(a, b);
 }
 
 bool State::isQuantActive(TNode q) const

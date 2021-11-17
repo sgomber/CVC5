@@ -123,10 +123,10 @@ std::string QuantInfo::toStringDebug() const
     }
   }
   ss << "Congruence terms: " << d_congTerms << std::endl;
-  if (!d_termMaxVar.empty())
+  if (!d_varToFinalTerms.empty())
   {
-    ss << "Term to maximum variable:" << std::endl;
-    for (const std::pair<const TNode, TNode>& t : d_termMaxVar)
+    ss << "Variable to final terms:" << std::endl;
+    for (const std::pair<const TNode, std::vector<TNode>>& t : d_varToFinalTerms)
     {
       ss << "  " << t.first << " -> " << t.second << std::endl;
     }
@@ -241,8 +241,8 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
   // which is the set of terms in the body of ee that do not occur beneath
   // a congruence term.
   // (3) d_unknownTerms, the set of subterms we don't know how to handle.
-  // (4) d_termMaxVar, which maps congruence terms to the variable they
-  // watch to be fully defined.
+  // (4) d_varToFinalTerms, which maps variables to the terms that are
+  // final when they are assigned
 
   // We track pairs (t, b) where t is the term we are traversing, and b is
   // whether we have traversed inside a congruence term.
@@ -269,7 +269,8 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
     it = visited.find(cur);
     if (it == visited.end())
     {
-      // don't care about terms without variables
+      // don't care about terms without variables.
+      // NOTE: don't consider these as congruence terms??
       if (!expr::hasBoundVar(cur.first))
       {
         visit.pop_back();
@@ -345,6 +346,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
   std::map<TNode, std::vector<TNode>>::iterator itpl;
   std::map<TNode, std::vector<Node>>::iterator itr;
   std::unordered_set<TNode> usedMatchers;
+  std::map<TNode, TNode> termToMaxVar;
   for (TNode v : d_canonVarOrdered)
   {
     // for each variable, we ensure that this variable occurs in the list
@@ -418,7 +420,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
         // f(x,y) -> y
         // f(x,z) -> z
         // f(y) -> y
-        d_termMaxVar[ccur] = v;
+        termToMaxVar[ccur] = v;
         itpl = parentList.find(ccur);
         if (itpl != parentList.end())
         {
@@ -445,6 +447,16 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
         Trace("ccfv-warn") << "Warning: no matcher exists for variable " << v
                            << " in " << d_quant << std::endl;
       }
+    }
+  }
+  // set the final terms
+  std::map<TNode, TNode>::iterator ittf;
+  for (TNode ct : d_congTerms)
+  {
+    ittf = termToMaxVar.find(ct);
+    if (ittf!=termToMaxVar.end())
+    {
+      d_varToFinalTerms[ittf->second].push_back(ct);
     }
   }
 }
@@ -500,9 +512,9 @@ const std::vector<TNode>& QuantInfo::getCongruenceTerms() const
   return d_congTerms;
 }
 
-const std::map<TNode, TNode>& QuantInfo::getTermMaxVarMap() const
+const std::map<TNode, std::vector<TNode>>& QuantInfo::getVarToFinalTermMap() const
 {
-  return d_termMaxVar;
+  return d_varToFinalTerms;
 }
 
 bool QuantInfo::isActive() const { return d_isActive.get(); }
