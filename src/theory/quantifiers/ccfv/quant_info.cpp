@@ -35,15 +35,17 @@ void QuantInfo::initialize(TNode q,
   Assert(q.getKind() == FORALL);
   d_quant = q;
 
-  Trace("ccfv-quant-debug") << "Register quant " << d_quant.getId() << " : " << d_quant << std::endl;
-  
+  Trace("ccfv-quant-debug")
+      << "Register quant " << d_quant.getId() << " : " << d_quant << std::endl;
+
   // canonize the body of the quantified formula
   Trace("ccfv-quant-debug") << "Get canonized body..." << std::endl;
   std::map<TNode, Node> visited;
   d_canonBody = tc.getCanonicalTerm(q[1], visited);
 
   // compute the variable correspondence
-  Trace("ccfv-quant-debug") << "Compute variable correspondence..." << std::endl;
+  Trace("ccfv-quant-debug")
+      << "Compute variable correspondence..." << std::endl;
   std::map<TNode, Node>::iterator it;
   std::vector<std::pair<size_t, TNode>> varList;
   std::vector<TNode> uncontainedVar;
@@ -297,7 +299,8 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
           visited[cur] = false;
         }
       }
-      else if (!inCongTerm && (k==EQUAL || expr::isBooleanConnective(cur.first)))
+      else if (!inCongTerm
+               && (k == EQUAL || expr::isBooleanConnective(cur.first)))
       {
         // if we are not in a congruence term, and we are Boolean connective
         // or equality, recurse

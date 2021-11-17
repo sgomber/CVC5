@@ -84,6 +84,7 @@ class InstDriver : protected EnvObj
   bool inConflict() const;
   /** The number of instantiations added */
   size_t numFoundInst() const;
+
  private:
   /** Reset the search */
   void resetSearchLevels(const std::vector<TNode>& quants);

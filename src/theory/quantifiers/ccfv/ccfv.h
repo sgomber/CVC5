@@ -63,6 +63,7 @@ class CongruenceClosureFv : public QuantifiersModule
 
   /** Get the state */
   State* getState();
+
  private:
   /** Add quantified formula to state */
   void addQuantToState(TNode q);

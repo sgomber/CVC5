@@ -90,7 +90,8 @@ void QuantifiersModules::initialize(Env& env,
     modules.push_back(d_bint.get());
   }
 
-  if (opts.quantifiers.finiteModelFind || opts.quantifiers.fmfBound || opts.strings.stringExp)
+  if (opts.quantifiers.finiteModelFind || opts.quantifiers.fmfBound
+      || opts.strings.stringExp)
   {
     d_model_engine.reset(new ModelEngine(env, qs, qim, qr, tr, builder));
     modules.push_back(d_model_engine.get());
@@ -105,7 +106,8 @@ void QuantifiersModules::initialize(Env& env,
     d_alpha_equiv.reset(new AlphaEquivalence(env));
   }
   // full saturation : instantiate from relevant domain, then arbitrary terms
-  if (opts.quantifiers.fullSaturateQuant || opts.quantifiers.fullSaturateInterleave)
+  if (opts.quantifiers.fullSaturateQuant
+      || opts.quantifiers.fullSaturateInterleave)
   {
     d_rel_dom.reset(new RelevantDomain(env, qs, qr, tr));
     d_fs.reset(new InstStrategyEnum(env, qs, qim, qr, tr, d_rel_dom.get()));

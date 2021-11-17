@@ -688,7 +688,7 @@ void SetDefaults::setDefaultsPost(const LogicInfo& logic, Options& opts) const
       opts.arith.arithCongMan = false;
     }
   }
-  
+
   // shared selectors are generally not good to combine with standard
   // quantifier techniques e.g. E-matching
   if (!opts.datatypes.dtSharedSelectorsWasSetByUser)

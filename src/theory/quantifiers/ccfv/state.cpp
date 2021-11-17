@@ -28,7 +28,11 @@ namespace quantifiers {
 namespace ccfv {
 
 State::State(Env& env, QuantifiersState& qs, TermDb* tdb)
-    : EnvObj(env), d_qstate(qs), d_tdb(tdb), d_notifyActive(context(), false), d_numActiveQuant(context(), 0)
+    : EnvObj(env),
+      d_qstate(qs),
+      d_tdb(tdb),
+      d_notifyActive(context(), false),
+      d_numActiveQuant(context(), 0)
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
@@ -41,7 +45,7 @@ bool State::isFinished() const { return d_numActiveQuant == 0; }
 
 void State::resetRound(size_t nquant)
 {
-  Assert (!d_notifyActive);
+  Assert(!d_notifyActive);
   // We are actively getting notifications in this context. This is set within
   // a local context push in the InstDriver and does not need to be reset to
   // false.
@@ -420,7 +424,8 @@ void State::notifyPatternEqGround(TNode p, TNode g)
     // already assigned
     return;
   }
-  Trace("ccfv-state-debug") << "Notify pattern eq ground: " << p << " == " << g << std::endl;
+  Trace("ccfv-state-debug")
+      << "Notify pattern eq ground: " << p << " == " << g << std::endl;
   it->second.d_eq = g;
   // run notifications until fixed point
   size_t tnIndex = 0;

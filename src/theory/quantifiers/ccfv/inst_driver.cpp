@@ -127,15 +127,9 @@ void InstDriver::check(const std::vector<TNode>& quants)
   context()->pop();
 }
 
-bool InstDriver::inConflict() const
-{
-  return d_inConflict;
-}
+bool InstDriver::inConflict() const { return d_inConflict; }
 
-size_t InstDriver::numFoundInst() const
-{
-  return d_foundInst;
-}
+size_t InstDriver::numFoundInst() const { return d_foundInst; }
 
 void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
 {
@@ -186,7 +180,7 @@ void InstDriver::assignVarsToLevels(
 {
   Assert(!quants.empty());
   // partition the quantifiers by their first variable
-  SearchLevel* slevel = level==0 ? nullptr : &getSearchLevel(level-1);
+  SearchLevel* slevel = level == 0 ? nullptr : &getSearchLevel(level - 1);
   // every next variable must be included in this subtree
   std::vector<TNode> nextVars;
   // for each quantified formula that we require assigning next variable
@@ -196,7 +190,7 @@ void InstDriver::assignVarsToLevels(
     TNode next = qi.getNextSearchVariable();
     if (next.isNull())
     {
-      Assert (slevel!=nullptr);
+      Assert(slevel != nullptr);
       // fully assigned at this level
       slevel->d_finalQuants.push_back(q);
     }
@@ -282,7 +276,8 @@ bool InstDriver::pushLevel(size_t level)
     }
     if (d_state.isFinished())
     {
-      Trace("ccfv-search") << "...finished after disabling start quants" << std::endl;
+      Trace("ccfv-search") << "...finished after disabling start quants"
+                           << std::endl;
       return false;
     }
   }
@@ -316,7 +311,8 @@ bool InstDriver::pushLevel(size_t level)
         continue;
       }
       TNode matcher = qi.getMatcherFor(v);
-      Trace("ccfv-matching") << "  ...matcher " << matcher << " from " << q.getId() << std::endl;
+      Trace("ccfv-matching")
+          << "  ...matcher " << matcher << " from " << q.getId() << std::endl;
       if (matcher.isNull())
       {
         // doesn't have a matcher for this variable, continue
@@ -384,7 +380,8 @@ bool InstDriver::pushLevel(size_t level)
           d_state.setQuantInactive(qi);
           if (d_state.isFinished())
           {
-            Trace("ccfv-search") << "...finished while setting quant inactive" << std::endl;
+            Trace("ccfv-search")
+                << "...finished while setting quant inactive" << std::endl;
             return false;
           }
         }
@@ -409,7 +406,8 @@ bool InstDriver::pushLevel(size_t level)
       d_state.notifyPatternSink(t);
       if (d_state.isFinished())
       {
-        Trace("ccfv-search") << "...finished while setting term inactive" << std::endl;
+        Trace("ccfv-search")
+            << "...finished while setting term inactive" << std::endl;
         context()->pop();
         return false;
       }
@@ -510,14 +508,14 @@ SearchLevel& InstDriver::getSearchLevel(size_t i) { return d_levels[i]; }
 void InstDriver::search()
 {
   Assert(!isFinished());
-  Assert (d_numLevels>0);
+  Assert(d_numLevels > 0);
   Trace("ccfv-search") << "search: start" << std::endl;
   bool isExhausted = false;
   size_t currLevel = 0;
   initializeLevel(0);
   while (!isExhausted && !d_inConflict)
   {
-    Assert (currLevel<d_numLevels);
+    Assert(currLevel < d_numLevels);
     Trace("ccfv-search") << "search: level = " << currLevel << ", "
                          << d_state.toStringDebugSearch() << std::endl;
     // assign all variables at current level

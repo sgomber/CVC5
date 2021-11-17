@@ -130,7 +130,8 @@ bool Matching::processMatcher(size_t level, QuantInfo& qi, TNode matcher)
   MatchPatInfo* mpi = &mmp[mrep];
   // if we have an equality constraint, we limit to matching in that equivalence
   // class
-  Trace("ccfv-matching") << "  w-eqc based on constraints for " << matcher << ":";
+  Trace("ccfv-matching") << "  w-eqc based on constraints for " << matcher
+                         << ":";
   if (!eq.isNull())
   {
     Assert(d_state.isGroundEqc(eq));
@@ -146,7 +147,7 @@ bool Matching::processMatcher(size_t level, QuantInfo& qi, TNode matcher)
       Assert(deq.empty());
       mpi->addWatchEqc(d_true);
       mpi->addWatchEqc(d_false);
-    Trace("ccfv-matching") << " (Boolean) true false" << std::endl;
+      Trace("ccfv-matching") << " (Boolean) true false" << std::endl;
     }
     else
     {
@@ -279,7 +280,8 @@ void Matching::runMatching(std::map<TNode, MatchPatInfo>& mmp,
               break;
             }
           }
-          Trace("ccfv-matching-debug") << "    ...success=" << matchSuccess << std::endl;
+          Trace("ccfv-matching-debug")
+              << "    ...success=" << matchSuccess << std::endl;
           isMaybeEq = isMaybeEq || matchSuccess;
         }
       }
@@ -287,7 +289,8 @@ void Matching::runMatching(std::map<TNode, MatchPatInfo>& mmp,
       if (isMaybeEq)
       {
         mpi->addMaybeEqc(weqc);
-        Trace("ccfv-matching-debug") << "    ...maybe eq (" << p << ", " << weqc << ")" << std::endl;
+        Trace("ccfv-matching-debug")
+            << "    ...maybe eq (" << p << ", " << weqc << ")" << std::endl;
       }
     }
     // increment weqc to the next equivalence class

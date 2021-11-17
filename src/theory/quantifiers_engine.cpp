@@ -21,6 +21,8 @@
 #include "options/smt_options.h"
 #include "options/strings_options.h"
 #include "options/uf_options.h"
+#include "theory/quantifiers/ccfv/ccfv.h"
+#include "theory/quantifiers/ccfv/state.h"
 #include "theory/quantifiers/equality_query.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/fmf/first_order_model_fmc.h"
@@ -33,8 +35,6 @@
 #include "theory/quantifiers/quantifiers_rewriter.h"
 #include "theory/quantifiers/quantifiers_state.h"
 #include "theory/quantifiers/quantifiers_statistics.h"
-#include "theory/quantifiers/ccfv/ccfv.h"
-#include "theory/quantifiers/ccfv/state.h"
 #include "theory/quantifiers/relevant_domain.h"
 #include "theory/quantifiers/skolemize.h"
 #include "theory/quantifiers/term_registry.h"
@@ -129,7 +129,7 @@ void QuantifiersEngine::finishInit(TheoryEngine* te)
   // quantifiers bound inference needs to be informed of the bounded integers
   // module, which has information about which quantifiers have finite bounds
   d_qreg.getQuantifiersBoundInference().finishInit(d_qmodules->d_bint.get());
-  
+
   if (d_qmodules->d_ccfv.get())
   {
     d_ccfvState = d_qmodules->d_ccfv->getState();
@@ -658,7 +658,7 @@ void QuantifiersEngine::eqNotifyNewClass(TNode t) { d_treg.addTerm(t); }
 
 void QuantifiersEngine::eqNotifyMerge(TNode t1, TNode t2)
 {
-  if (d_ccfvState!=nullptr)
+  if (d_ccfvState != nullptr)
   {
     d_ccfvState->eqNotifyMerge(t1, t2);
   }

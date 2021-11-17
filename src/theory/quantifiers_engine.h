@@ -52,7 +52,7 @@ class TermEnumeration;
 class TermRegistry;
 
 namespace ccfv {
-  class State;
+class State;
 }
 }
 

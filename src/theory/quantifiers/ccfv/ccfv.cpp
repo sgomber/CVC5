@@ -56,8 +56,9 @@ void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e)
   if (Trace.isOn("ccfv-engine"))
   {
     clSet = double(clock()) / double(CLOCKS_PER_SEC);
-    Trace("ccfv-engine") << "---Congruence Closure with Free Variables Round, effort = " << e
-                        << "---" << std::endl;
+    Trace("ccfv-engine")
+        << "---Congruence Closure with Free Variables Round, effort = " << e
+        << "---" << std::endl;
   }
   std::vector<TNode> quants;
   FirstOrderModel* fm = d_treg.getModel();
@@ -80,7 +81,7 @@ void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e)
   {
     double clSet2 = double(clock()) / double(CLOCKS_PER_SEC);
     Trace("ccfv-engine") << "Finished conflict find engine, time = "
-                        << (clSet2 - clSet);
+                         << (clSet2 - clSet);
     Trace("ccfv-engine") << ", #inst = " << d_driver.numFoundInst();
     if (d_driver.inConflict())
     {
@@ -210,11 +211,8 @@ std::string CongruenceClosureFv::identify() const
   return "CongruenceClosureFv";
 }
 
- State* CongruenceClosureFv::getState()
- {
-   return &d_state;
- }
- 
+State* CongruenceClosureFv::getState() { return &d_state; }
+
 }  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory
