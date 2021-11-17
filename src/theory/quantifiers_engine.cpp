@@ -33,6 +33,8 @@
 #include "theory/quantifiers/quantifiers_rewriter.h"
 #include "theory/quantifiers/quantifiers_state.h"
 #include "theory/quantifiers/quantifiers_statistics.h"
+#include "theory/quantifiers/ccfv/ccfv.h"
+#include "theory/quantifiers/ccfv/state.h"
 #include "theory/quantifiers/relevant_domain.h"
 #include "theory/quantifiers/skolemize.h"
 #include "theory/quantifiers/term_registry.h"
@@ -61,7 +63,8 @@ QuantifiersEngine::QuantifiersEngine(
       d_model(nullptr),
       d_quants_prereg(userContext()),
       d_quants_red(userContext()),
-      d_numInstRoundsLemma(0)
+      d_numInstRoundsLemma(0),
+      d_ccfvState(nullptr)
 {
   Trace("quant-init-debug")
       << "Initialize model engine, mbqi : " << options().quantifiers.mbqiMode
@@ -126,6 +129,11 @@ void QuantifiersEngine::finishInit(TheoryEngine* te)
   // quantifiers bound inference needs to be informed of the bounded integers
   // module, which has information about which quantifiers have finite bounds
   d_qreg.getQuantifiersBoundInference().finishInit(d_qmodules->d_bint.get());
+  
+  if (d_qmodules->d_ccfv.get())
+  {
+    d_ccfvState = d_qmodules->d_ccfv->getState();
+  }
 }
 
 quantifiers::QuantifiersRegistry& QuantifiersEngine::getQuantifiersRegistry()
@@ -647,6 +655,14 @@ void QuantifiersEngine::assertQuantifier( Node f, bool pol ){
 }
 
 void QuantifiersEngine::eqNotifyNewClass(TNode t) { d_treg.addTerm(t); }
+
+void QuantifiersEngine::eqNotifyMerge(TNode t1, TNode t2)
+{
+  if (d_ccfvState!=nullptr)
+  {
+    d_ccfvState->eqNotifyMerge(t1, t2);
+  }
+}
 
 void QuantifiersEngine::markRelevant( Node q ) {
   d_model->markRelevant( q );

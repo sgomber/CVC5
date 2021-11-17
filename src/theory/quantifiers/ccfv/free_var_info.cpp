@@ -38,6 +38,11 @@ TNode FreeVarInfo::getNextQuantifier()
   return next;
 }
 
+void FreeVarInfo::resetLevel()
+{
+  d_quantIndex = 0;
+}
+
 }  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory

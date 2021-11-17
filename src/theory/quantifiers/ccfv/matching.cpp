@@ -126,14 +126,16 @@ bool Matching::processMatcher(size_t level, QuantInfo& qi, TNode matcher)
   std::map<TNode, MatchPatInfo>& mmp = getMatchPatInfo(level);
   // take representative, ensures that congruent patterns are only matched
   // once.
-  TNode mrep = d_qstate.getEqualityEngine().getRepresentative(matcher);
+  TNode mrep = d_qstate.getEqualityEngine()->getRepresentative(matcher);
   MatchPatInfo* mpi = &mmp[mrep];
   // if we have an equality constraint, we limit to matching in that equivalence
   // class
+  Trace("ccfv-matching") << "  w-eqc based on constraints for " << matcher << ":";
   if (!eq.isNull())
   {
     Assert(d_state.isGroundEqc(eq));
     mpi->addWatchEqc(eq);
+    Trace("ccfv-matching") << " (equality) " << eq << std::endl;
   }
   else
   {
@@ -144,9 +146,11 @@ bool Matching::processMatcher(size_t level, QuantInfo& qi, TNode matcher)
       Assert(deq.empty());
       mpi->addWatchEqc(d_true);
       mpi->addWatchEqc(d_false);
+    Trace("ccfv-matching") << " (Boolean) true false" << std::endl;
     }
     else
     {
+      Trace("ccfv-matching") << "  (disequalities)";
       // if not Boolean, we can filter by deq
       const std::unordered_set<TNode>& eqcs = d_state.getGroundEqcFor(tn);
       for (TNode eqc : eqcs)
@@ -154,8 +158,10 @@ bool Matching::processMatcher(size_t level, QuantInfo& qi, TNode matcher)
         if (std::find(deq.begin(), deq.end(), eqc) == deq.end())
         {
           mpi->addWatchEqc(eqc);
+          Trace("ccfv-matching") << " " << eqc;
         }
       }
+      Trace("ccfv-matching") << std::endl;
     }
   }
   // now run matching
@@ -173,12 +179,14 @@ void Matching::runMatching(std::map<TNode, MatchPatInfo>& mmp,
   {
     // If not a matchable operator. This is also the base case of
     // BOUND_VARIABLE.
+    Trace("ccfv-matching-debug") << "    ...no match op for " << p << std::endl;
     return;
   }
   TNode weqc = mpi->getNextWatchEqc();
   if (weqc.isNull())
   {
     // no new equivalence classes to process
+    Trace("ccfv-matching-debug") << "    ...no w-eqc" << std::endl;
     return;
   }
   // the ground representatives of the pattern, if they exist
@@ -190,6 +198,7 @@ void Matching::runMatching(std::map<TNode, MatchPatInfo>& mmp,
   std::unordered_map<TNode, std::vector<Node>>::iterator itm;
   while (!weqc.isNull())
   {
+    Trace("ccfv-matching-debug") << "    process w-eqc " << weqc << std::endl;
     Assert(d_state.isGroundEqc(weqc));
     MatchEqcInfo& meqc = d_state.getMatchEqcInfo(weqc);
 
@@ -198,6 +207,7 @@ void Matching::runMatching(std::map<TNode, MatchPatInfo>& mmp,
     if (itm == meqc.d_matchOps.end())
     {
       // no matchable terms in this equivalence class
+      Trace("ccfv-matching-debug") << "    ...no matches" << std::endl;
     }
     else
     {
@@ -222,7 +232,7 @@ void Matching::runMatching(std::map<TNode, MatchPatInfo>& mmp,
           {
             nmatchIndices.push_back(i);
             // take representative
-            TNode picr = d_qstate.getEqualityEngine().getRepresentative(pic);
+            TNode picr = d_qstate.getEqualityEngine()->getRepresentative(pic);
             mpiargs.push_back(&mmp[picr]);
           }
         }
@@ -235,6 +245,7 @@ void Matching::runMatching(std::map<TNode, MatchPatInfo>& mmp,
       bool isMaybeEq = false;
       for (const Node& m : itm->second)
       {
+        Trace("ccfv-matching-debug") << "    check " << m << std::endl;
         Assert(m.getNumChildren() == pargs.size());
         bool matchSuccess = true;
         for (size_t i : matchIndices)
@@ -268,6 +279,7 @@ void Matching::runMatching(std::map<TNode, MatchPatInfo>& mmp,
               break;
             }
           }
+          Trace("ccfv-matching-debug") << "    ...success=" << matchSuccess << std::endl;
           isMaybeEq = isMaybeEq || matchSuccess;
         }
       }
@@ -275,6 +287,7 @@ void Matching::runMatching(std::map<TNode, MatchPatInfo>& mmp,
       if (isMaybeEq)
       {
         mpi->addMaybeEqc(weqc);
+        Trace("ccfv-matching-debug") << "    ...maybe eq (" << p << ", " << weqc << ")" << std::endl;
       }
     }
     // increment weqc to the next equivalence class

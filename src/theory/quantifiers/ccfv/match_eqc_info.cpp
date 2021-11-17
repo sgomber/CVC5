@@ -40,7 +40,7 @@ void MatchEqcInfo::initialize(TNode r,
   {
     TNode n = (*eqc_i);
     ++eqc_i;
-    if (!expr::hasBoundVar(n))
+    if (expr::hasBoundVar(n))
     {
       // could be a pattern that was already merged, this must be congruent
       // to another term, so we skip it.
@@ -51,6 +51,7 @@ void MatchEqcInfo::initialize(TNode r,
     {
       continue;
     }
+    Trace("ccfv-matching-debug") << "      ...matchable: " << n << std::endl;
     // normalize arguments based on *ground* representatives from the state
     std::vector<Node> args;
     if (n.getMetaKind() == kind::metakind::PARAMETERIZED)
@@ -65,6 +66,7 @@ void MatchEqcInfo::initialize(TNode r,
       if (ncr.isNull())
       {
         success = false;
+        Trace("ccfv-matching-debug") << "      ...bad argument" << std::endl;
         break;
       }
       args.push_back(ncr);
@@ -82,6 +84,10 @@ void MatchEqcInfo::initialize(TNode r,
     if (std::find(ms.begin(), ms.end(), nn) == ms.end())
     {
       ms.push_back(nn);
+    }
+    else
+    {
+      Trace("ccfv-matching-debug") << "      ...congruent" << std::endl;
     }
   }
 }

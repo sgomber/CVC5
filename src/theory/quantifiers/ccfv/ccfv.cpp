@@ -210,6 +210,11 @@ std::string CongruenceClosureFv::identify() const
   return "CongruenceClosureFv";
 }
 
+ State* CongruenceClosureFv::getState()
+ {
+   return &d_state;
+ }
+ 
 }  // namespace ccfv
 }  // namespace quantifiers
 }  // namespace theory

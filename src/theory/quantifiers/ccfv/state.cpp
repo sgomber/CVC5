@@ -28,7 +28,7 @@ namespace quantifiers {
 namespace ccfv {
 
 State::State(Env& env, QuantifiersState& qs, TermDb* tdb)
-    : EnvObj(env), d_qstate(qs), d_tdb(tdb), d_numActiveQuant(context(), 0)
+    : EnvObj(env), d_qstate(qs), d_tdb(tdb), d_notifyActive(context(), false), d_numActiveQuant(context(), 0)
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
@@ -41,8 +41,18 @@ bool State::isFinished() const { return d_numActiveQuant == 0; }
 
 void State::resetRound(size_t nquant)
 {
+  Assert (!d_notifyActive);
+  // We are actively getting notifications in this context. This is set within
+  // a local context push in the InstDriver and does not need to be reset to
+  // false.
+  d_notifyActive = true;
   // reset the search state
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
+  if (Trace.isOn("ccfv-matching"))
+  {
+    Trace("ccfv-matching") << "E-graph:" << std::endl;
+    Trace("ccfv-matching") << ee->debugPrintEqc() << std::endl;
+  }
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(ee);
   d_groundEqc.clear();
   d_typeGroundEqc.clear();
@@ -55,6 +65,7 @@ void State::resetRound(size_t nquant)
   while (!eqcs_i.isFinished())
   {
     TNode r = *eqcs_i;
+    ++eqcs_i;
     TypeNode tn = r.getType();
     if (tn.isBoolean())
     {
@@ -68,7 +79,6 @@ void State::resetRound(size_t nquant)
     }
     d_groundEqc.insert(r);
     d_typeGroundEqc[tn].insert(r);
-    ++eqcs_i;
   }
   d_numActiveQuant = nquant;
 
@@ -184,6 +194,12 @@ const EqcInfo* State::getEqcInfo(TNode r) const
 
 void State::eqNotifyMerge(TNode t1, TNode t2)
 {
+  if (!d_notifyActive)
+  {
+    // we are not notify active. This is called when equivalence classes
+    // merge outside of when we are running CCFV.
+    return;
+  }
   // constants always remain representatives
   Assert(!t2.isConst());
   EqcInfo* eq1 = nullptr;
@@ -404,6 +420,7 @@ void State::notifyPatternEqGround(TNode p, TNode g)
     // already assigned
     return;
   }
+  Trace("ccfv-state-debug") << "Notify pattern eq ground: " << p << " == " << g << std::endl;
   it->second.d_eq = g;
   // run notifications until fixed point
   size_t tnIndex = 0;

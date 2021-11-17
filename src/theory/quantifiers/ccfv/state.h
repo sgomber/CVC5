@@ -144,6 +144,8 @@ class State : protected EnvObj
   std::map<Node, EqcInfo> d_eqcInfo;
   /** Match equivalence class info */
   std::map<Node, MatchEqcInfo> d_meqcInfo;
+  /** Are we actively listening for merges? */
+  context::CDO<bool> d_notifyActive;
   /** The sink node */
   Node d_sink;
   /** common constants */

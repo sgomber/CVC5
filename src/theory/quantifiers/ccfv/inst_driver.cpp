@@ -186,7 +186,7 @@ void InstDriver::assignVarsToLevels(
 {
   Assert(!quants.empty());
   // partition the quantifiers by their first variable
-  SearchLevel& slevel = getSearchLevel(level);
+  SearchLevel* slevel = level==0 ? nullptr : &getSearchLevel(level-1);
   // every next variable must be included in this subtree
   std::vector<TNode> nextVars;
   // for each quantified formula that we require assigning next variable
@@ -196,8 +196,9 @@ void InstDriver::assignVarsToLevels(
     TNode next = qi.getNextSearchVariable();
     if (next.isNull())
     {
+      Assert (slevel!=nullptr);
       // fully assigned at this level
-      slevel.d_finalQuants.push_back(q);
+      slevel->d_finalQuants.push_back(q);
     }
     else
     {
@@ -210,9 +211,14 @@ void InstDriver::assignVarsToLevels(
       partition[next].push_back(q);
     }
   }
+  if (nextVars.empty())
+  {
+    return;
+  }
   // Add each variable to the search, which may make recursive calls that
   // process the variables lower. Those that are not processed in lower levels
   // are processed here.
+  slevel = &getSearchLevel(level);
   std::map<TNode, std::vector<TNode>>::iterator it;
   std::map<TNode, size_t>::iterator itl;
   for (TNode v : nextVars)
@@ -238,7 +244,7 @@ void InstDriver::assignVarsToLevels(
     }
     else
     {
-      slevel.d_varsToAssign.push_back(v);
+      slevel->d_varsToAssign.push_back(v);
       fvLevel[v] = level;
       nextLevel = level + 1;
     }
@@ -249,6 +255,13 @@ void InstDriver::assignVarsToLevels(
 void InstDriver::initializeLevel(size_t level)
 {
   d_matching.initializeLevel(level);
+  // reset counter for quantified formulas
+  SearchLevel& slevel = getSearchLevel(level);
+  for (TNode v : slevel.d_varsToAssign)
+  {
+    FreeVarInfo& fi = d_state.getFreeVarInfo(v);
+    fi.resetLevel();
+  }
 }
 
 bool InstDriver::pushLevel(size_t level)
@@ -282,6 +295,7 @@ bool InstDriver::pushLevel(size_t level)
   // assign all variables in parallel
   for (TNode v : slevel.d_varsToAssign)
   {
+    Trace("ccfv-matching") << "  process matching for " << v << std::endl;
     MatchPatInfo& mpi = mpm[v];
     FreeVarInfo& fi = d_state.getFreeVarInfo(v);
     TNode eqc = mpi.getNextWatchEqc();
@@ -292,6 +306,7 @@ bool InstDriver::pushLevel(size_t level)
       if (q.isNull())
       {
         // no more quantifiers to match
+        Trace("ccfv-matching") << "  ...no quantifiers" << std::endl;
         break;
       }
       QuantInfo& qi = d_state.getQuantInfo(q);
@@ -301,6 +316,7 @@ bool InstDriver::pushLevel(size_t level)
         continue;
       }
       TNode matcher = qi.getMatcherFor(v);
+      Trace("ccfv-matching") << "  ...matcher " << matcher << " from " << q.getId() << std::endl;
       if (matcher.isNull())
       {
         // doesn't have a matcher for this variable, continue
@@ -315,6 +331,7 @@ bool InstDriver::pushLevel(size_t level)
       // maybe succeeded match?
       eqc = mpi.getNextWatchEqc();
     }
+    Trace("ccfv-matching") << "  ...return watched " << eqc << std::endl;
     if (eqc.isNull())
     {
       eqc = d_state.getSink();
@@ -510,6 +527,7 @@ void InstDriver::search()
       if (currLevel < d_numLevels)
       {
         currLevel++;
+        initializeLevel(currLevel);
       }
       else
       {

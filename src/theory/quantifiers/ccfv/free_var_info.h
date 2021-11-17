@@ -50,6 +50,8 @@ class FreeVarInfo
   /** Get next quantifier, and increment the quantifier index. */
   TNode getNextQuantifier();
 
+  /** reset level */
+  void resetLevel();
  private:
   /** The current index in d_quantList we are looking at, for matching */
   context::CDO<size_t> d_quantIndex;

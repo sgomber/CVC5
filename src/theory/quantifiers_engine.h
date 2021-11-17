@@ -50,6 +50,10 @@ class TermDb;
 class TermDbSygus;
 class TermEnumeration;
 class TermRegistry;
+
+namespace ccfv {
+  class State;
+}
 }
 
 /**
@@ -95,6 +99,7 @@ class QuantifiersEngine : protected EnvObj
   void assertQuantifier( Node q, bool pol );
   /** notification when master equality engine is updated */
   void eqNotifyNewClass(TNode t);
+  void eqNotifyMerge(TNode t1, TNode t2);
   /** mark relevant quantified formula, this will indicate it should be checked
    * before the others */
   void markRelevant(Node q);
@@ -204,6 +209,8 @@ class QuantifiersEngine : protected EnvObj
   BoolMap d_quants_red;
   /** Number of rounds we have instantiated */
   uint32_t d_numInstRoundsLemma;
+  /** Modules requiring eager notifications */
+  quantifiers::ccfv::State* d_ccfvState;
 }; /* class QuantifiersEngine */
 
 }  // namespace theory
