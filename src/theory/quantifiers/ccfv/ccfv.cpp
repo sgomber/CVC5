@@ -100,12 +100,13 @@ void CongruenceClosureFv::assertNode(Node q)
     return;
   }
   // Assert quantified formula. This sets up:
-  // (*)
+  // (0) variables to quantifiers
   // (1) notifications from constraint terms to quantified formulas
   // (2) notifications from children to congruence terms
   // (3) notifications from children to other terms (including Boolean
   // connectives and theory symbols that we do not do congruence over)
   // (4) free variables to use list terms
+  // (5) marking "watched evaluate" terms
 
   // get the equality engine
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
@@ -115,7 +116,7 @@ void CongruenceClosureFv::assertNode(Node q)
   const std::vector<TNode>& fvars = qi.getOrderedFreeVariables();
   for (TNode v : fvars)
   {
-    // (*)
+    // (0) remember that this variable is contained in q
     FreeVarInfo& fi = d_state.getOrMkFreeVarInfo(v);
     fi.d_quantList.push_back(q);
   }
@@ -194,6 +195,12 @@ void CongruenceClosureFv::assertNode(Node q)
     {
       fi.d_finalTerms.insert(ft);
     }
+  }
+  const std::vector<TNode>& eat = qi.getEvalArgTerms();
+  for (TNode et : eat)
+  {
+    PatTermInfo& pi = d_state.getOrMkPatTermInfo(et);
+    pi.d_isWatchedEval = true;
   }
 }
 

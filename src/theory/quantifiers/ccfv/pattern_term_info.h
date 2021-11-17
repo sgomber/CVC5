@@ -92,6 +92,10 @@ class PatTermInfo
    * since this indicates that the parent should be set to none.
    */
   NodeList d_parentCongNotify;
+  /**
+   * Are we watching whether to evaluate this term?
+   */
+  context::CDO<bool> d_isWatchedEval;
 };
 
 }  // namespace ccfv

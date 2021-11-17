@@ -448,35 +448,12 @@ bool InstDriver::pushLevel(size_t level)
     }
     Trace("ccfv-search") << "...check inst for " << q.getId() << " : " << inst
                          << std::endl;
-    EntailmentCheck* ec = d_treg.getEntailmentCheck();
-    Node instEval = ec->evaluateTerm(
-        q[1], subs, false, options().quantifiers.qcfTConstraint, true);
-    // If it is the case that instantiation can be rewritten to a Boolean
-    // combination of terms that exist in the current context, then inst_eval
-    // is non-null. Moreover, we insist that inst_eval is not true, or else
-    // the instantiation is trivially entailed and hence is spurious.
     InferenceId id = InferenceId::QUANTIFIERS_INST_CCFV_PROP;
-    if (instEval.isNull())
+    if (qi.isMaybeConflict())
     {
-      // ... spurious
-      Trace("ccfv-search") << "...spurious" << std::endl;
-      continue;
-    }
-    else if (instEval.isConst())
-    {
-      Assert(instEval.getType().isBoolean());
-      if (instEval.getConst<bool>())
-      {
-        // ... spurious, entailed
-        Trace("ccfv-search") << "...spurious, entailed" << std::endl;
-        continue;
-      }
-      else
-      {
-        d_inConflict = true;
-        id = InferenceId::QUANTIFIERS_INST_CCFV_CONFLICT;
-        Trace("ccfv-search") << "...conflict!" << std::endl;
-      }
+      d_inConflict = true;
+      id = InferenceId::QUANTIFIERS_INST_CCFV_CONFLICT;
+      Trace("ccfv-search") << "...conflict!" << std::endl;
     }
     else
     {
@@ -490,6 +467,8 @@ bool InstDriver::pushLevel(size_t level)
     else
     {
       // warning?
+      Trace("ccfv-warn") << "Failed to assign" << std::endl;
+      Assert(false) << "Failed CCFV instantiation: " << inst << " for " << q;
     }
     // now, set the quantified formula inactive
     d_state.setQuantInactive(qi);

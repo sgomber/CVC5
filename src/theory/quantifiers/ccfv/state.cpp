@@ -308,7 +308,16 @@ void State::notifyPatternEqGround(TNode p, TNode g)
     g = it->second.d_eq;
     Assert(!g.isNull());
     // notify the ordinary parents always, notify the congruence parents if none
-    size_t maxIter = isNone(g) ? 2 : 1;
+    size_t maxIter = 1;
+    if (isNone(g))
+    {
+      maxIter = 2;
+    }
+    else if (it->second.d_isWatchedEval.get())
+    {
+      // if it is a watched evaluate term, assert the equality here
+      // TODO
+    }
     for (size_t i = 0; i < maxIter; i++)
     {
       context::CDList<Node>& notifyList =
@@ -360,13 +369,11 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
     setInactive = true;
     Trace("ccfv-state-debug") << "...inactive due to none" << std::endl;
   }
-  else if (isSome(val))
-  {
-    // it has some value
-    qi.setNoConflict();
-  }
   else
   {
+    // Are we the "some" val? This is true for predicates whose value is
+    // a predicate e.g. equality applied to existing terms.
+    bool valSome = isSome(val);
     const std::map<TNode, std::vector<Node>>& cs = qi.getConstraints();
     std::map<TNode, std::vector<Node>>::const_iterator itm = cs.find(p);
     if (itm != cs.end())
@@ -378,6 +385,14 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
           // the constraint said you must be disequal to none, i.e. we must be
           // equal to something. we are ok
           continue;
+        }
+        else if (valSome)
+        {
+          // it has the "some" value, and we have any constraint, we remain
+          // active but are not strictly a conflict
+          qi.setNoConflict();
+          Trace("ccfv-state-debug") << "...no conflict" << std::endl;
+          break;
         }
         // if a disequality constraint
         bool isEq = true;
