@@ -221,7 +221,7 @@ void Matching::runMatching(std::map<TNode, MatchPatInfo>& mmp,
         {
           TNode pic = p[i];
           // Note we use get ground representative here. We do not use getValue,
-          // which should never be sink.
+          // which should never be none.
           TNode gpic = d_state.getGroundRepresentative(pic);
           pargs.push_back(gpic);
           if (!gpic.isNull())

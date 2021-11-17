@@ -98,7 +98,7 @@ void InstDriver::check(const std::vector<TNode>& quants)
     TNode trep = d_state.getGroundRepresentative(t);
     if (trep.isNull())
     {
-      d_state.notifyPatternSink(t);
+      d_state.notifyPatternNone(t);
     }
     else
     {
@@ -330,7 +330,7 @@ bool InstDriver::pushLevel(size_t level)
     Trace("ccfv-matching") << "  ...return watched " << eqc << std::endl;
     if (eqc.isNull())
     {
-      eqc = d_state.getSink();
+      eqc = d_state.getNone();
     }
     else
     {
@@ -366,12 +366,12 @@ bool InstDriver::pushLevel(size_t level)
     TNode v = slevel.d_varsToAssign[i];
     TNode eqc = assignment[i];
     const FreeVarInfo& fi = d_state.getFreeVarInfo(v);
-    if (d_state.isSink(eqc))
+    if (d_state.isNone(eqc))
     {
-      d_state.notifyPatternSink(v);
+      d_state.notifyPatternNone(v);
       // Disable all quantified formulas that contain this variable? NOTE: this
       // may be redundant, as quantified formulas that have a variable assigned
-      // to sink should likely be set inactive for other reasons.
+      // to none should likely be set inactive for other reasons.
       for (const Node& q : fi.d_quantList)
       {
         QuantInfo& qi = d_state.getQuantInfo(q);
@@ -404,12 +404,12 @@ bool InstDriver::pushLevel(size_t level)
                        << std::endl;
     }
     Trace("ccfv-search-debug") << "Process final terms for " << v << std::endl;
-    // assign final terms to sink
+    // assign final terms to none
     // The use list terms of the variables to assign here are those that are now
     // fully assigned. If these terms have not yet merged, we are done.
     for (const Node& t : fi.d_finalTerms)
     {
-      d_state.notifyPatternSink(t);
+      d_state.notifyPatternNone(t);
       if (d_state.isFinished())
       {
         Trace("ccfv-search")
@@ -506,7 +506,7 @@ bool InstDriver::pushLevel(size_t level)
 void InstDriver::assignVar(TNode v, TNode eqc)
 {
   Assert(d_qstate.getEqualityEngine()->consistent());
-  Assert(!d_state.isSink(eqc));
+  Assert(!d_state.isNone(eqc));
   Assert(v.getType().isComparableTo(eqc.getType()));
   // assert to the equality engine
   Node eq = v.eqNode(eqc);

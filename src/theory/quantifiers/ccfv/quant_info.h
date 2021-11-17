@@ -62,6 +62,8 @@ class QuantInfo
   const std::vector<TNode>& getConstraintTerms() const;
   /** Get congruence terms, the terms to add to the equality engine */
   const std::vector<TNode>& getCongruenceTerms() const;
+  /** Get evaluate argument terms */
+  const std::vector<TNode>& getEvalArgTerms() const;
   /** Get variable to final terms map */
   const std::map<TNode, std::vector<TNode>>& getVarToFinalTermMap() const;
   //-------------------------- per round
@@ -82,6 +84,10 @@ class QuantInfo
   bool isActive() const;
   /** set dead */
   void setActive(bool val);
+  /** Set no conflict */
+  void setNoConflict();
+  /** Is maybe conflict */
+  bool isMaybeConflict() const;
 
   /** is c a disequality constraint for p? */
   static bool isDeqConstraint(TNode c, TNode p, TNode& val);
@@ -157,9 +163,11 @@ class QuantInfo
   /** All matchers for each variable */
   std::map<TNode, std::vector<TNode>> d_candidateMatchers;
   /**
-   * Subterms of d_req that we don't handle.
+   * Subterms of d_req that are direct subterms of a congruence term that
+   * are not congruence terms. These will require evaluation + asserting
+   * equalities.
    */
-  std::unordered_set<TNode> d_unknownTerms;
+  std::vector<TNode> d_evalArgTerms;
   //------------------- initializing search
   /** init variable index */
   size_t d_initVarIndex;
@@ -167,6 +175,12 @@ class QuantInfo
   /** is alive, false if we know it is not possible to construct a propagating
    * instance for this quantified formula  */
   context::CDO<bool> d_isActive;
+  /**
+   * False if a constraint was not entailed; a fully assigned quantified
+   * formula with this flag set to flag corresponds to one with a propagating
+   * instance.
+   */
+  context::CDO<bool> d_maybeConflict;
 };
 
 }  // namespace ccfv

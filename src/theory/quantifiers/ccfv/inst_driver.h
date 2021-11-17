@@ -53,7 +53,7 @@ x -> b
   y -> e
   y -> f
 
-// maybe process when sink instead of when firstTime?
+// maybe process when none instead of when firstTime?
 Q1 xyz
 Q2 z
 Q3 xw

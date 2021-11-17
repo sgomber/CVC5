@@ -59,7 +59,6 @@ class State : protected EnvObj
   void resetRound(size_t nquant);
   //---------------quantifiers info
   QuantInfo& initializeQuantInfo(TNode q,
-                                 eq::EqualityEngine* ee,
                                  expr::TermCanonize& tc);
   /** Get quantifiers info */
   QuantInfo& getQuantInfo(TNode q);
@@ -80,12 +79,12 @@ class State : protected EnvObj
    * Called when we have determined that pattern p will not merge with any
    * ground equivalence class.
    */
-  void notifyPatternSink(TNode p);
+  void notifyPatternNone(TNode p);
   /**
    * Called when it is determined what pattern p is equal to.
    *
    * If g is not sunk, then g is the (ground) equivalence class that pattern p
-   * is equal to. If g is the sink, then we have determined that p will *never*
+   * is equal to. If g is the none, then we have determined that p will *never*
    * merge into a ground equivalence class in this context.
    */
   void notifyPatternEqGround(TNode p, TNode g);
@@ -94,13 +93,17 @@ class State : protected EnvObj
   bool isFinished() const;
   /**
    * Get value for pattern or ordinary term p. This is either a ground
-   * represenative, or the sink, or the null node if p is active.
+   * represenative, or the none, or the null node if p is active.
    */
   TNode getValue(TNode p) const;
-  /** Get sink node */
-  Node getSink() const;
-  /** Is sink */
-  bool isSink(TNode n) const;
+  /** Get none node */
+  Node getNone() const;
+  /** Is none */
+  bool isNone(TNode n) const;
+  /** Get some node */
+  Node getSome() const;
+  /** Is some */
+  bool isSome(TNode n) const;
   /** Get ground equivalence classes */
   const std::unordered_set<TNode>& getGroundEqcFor(TypeNode tn) const;
   /** Is ground eqc? */
@@ -143,8 +146,10 @@ class State : protected EnvObj
   std::map<Node, MatchEqcInfo> d_meqcInfo;
   /** Are we actively listening for merges? */
   context::CDO<bool> d_notifyActive;
-  /** The sink node */
-  Node d_sink;
+  /** The none node */
+  Node d_none;
+  /** The some node */
+  Node d_some;
   /** common constants */
   Node d_true;
   Node d_false;

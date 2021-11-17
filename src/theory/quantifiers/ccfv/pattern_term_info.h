@@ -27,6 +27,9 @@
 
 namespace cvc5 {
 namespace theory {
+namespace eq {
+  class EqualityEngine;
+}
 namespace quantifiers {
 
 class TermDb;
@@ -47,7 +50,7 @@ class PatTermInfo
  public:
   PatTermInfo(context::Context* c);
   /** initialize */
-  void initialize(TNode pattern, TermDb* tdb);
+  void initialize(TNode pattern, eq::EqualityEngine * ee, TermDb* tdb);
   /** Reset round */
   void resetRound();
   /**
@@ -66,12 +69,12 @@ class PatTermInfo
   TNode d_pattern;
   /** The match operator */
   TNode d_matchOp;
-  /** is Boolean connective */
-  bool d_isBooleanConnective;
+  /** is congruence term */
+  bool d_isCongTerm;
   //---------------------- during search
   /**
    * The ground term we are currently equal to, if any. This may also be
-   * the sink node.
+   * the none node.
    */
   context::CDO<TNode> d_eq;
   /** The number of unassigned children (for Boolean connectives). */
@@ -85,8 +88,8 @@ class PatTermInfo
   NodeList d_parentNotify;
   /**
    * The list of pattern terms f( ... p ... ) where we are doing congruence
-   * over f. We notify these parents of our value only if become equal to sink,
-   * since this indicates that the parent should be set to sink.
+   * over f. We notify these parents of our value only if become equal to none,
+   * since this indicates that the parent should be set to none.
    */
   NodeList d_parentCongNotify;
 };

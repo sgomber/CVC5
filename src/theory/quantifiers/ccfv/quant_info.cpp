@@ -26,7 +26,7 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-QuantInfo::QuantInfo(context::Context* c) : d_isActive(c) {}
+QuantInfo::QuantInfo(context::Context* c) : d_isActive(c, true), d_maybeConflict(c, true) {}
 
 void QuantInfo::initialize(TNode q,
                            eq::EqualityEngine* ee,
@@ -140,10 +140,10 @@ std::string QuantInfo::toStringDebug() const
       ss << "  " << t.first << " -> " << t.second << std::endl;
     }
   }
-  if (!d_unknownTerms.empty())
+  if (!d_evalArgTerms.empty())
   {
-    ss << "Unknown terms:" << std::endl;
-    for (TNode t : d_unknownTerms)
+    ss << "Evaluate argument terms:" << std::endl;
+    for (TNode t : d_evalArgTerms)
     {
       ss << "  " << t << std::endl;
     }
@@ -241,7 +241,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
   // (2) d_matchers, the set of terms that we may do matching with,
   // which is the set of terms in the body of ee that do not occur beneath
   // a congruence term.
-  // (3) d_unknownTerms, the set of subterms we don't know how to handle.
+  // (3) d_evalArgTerms, the set of subterms we don't know how to handle.
   // (4) d_varToFinalTerms, which maps variables to the terms that are
   // final when they are assigned
 
@@ -301,22 +301,22 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
           visited[cur] = false;
         }
       }
-      else if (!inCongTerm
-               && (k == EQUAL || expr::isBooleanConnective(cur.first)))
+      else if (!inCongTerm)
       {
-        // if we are not in a congruence term, and we are Boolean connective
-        // or equality, recurse
+        // if we are not a congruence term, and we are not in a congruence term, recurse
         visit.pop_back();
         visited[cur] = true;
       }
       else
       {
-        // not handled as Boolean connective or congruence kind, do nothing
-        // we remember the term as an unknown term.
-        d_unknownTerms.insert(cur.first);
+        // we are in a congruence term, but we are not a congruence kind,
+        // e.g. we are (+ x 1) in the term (P (+ x 1)). We traverse to
+        // add x and 1, noting the children are not in a congruence term.
+        // We furthermore add this to the list of evaluate arg terms.
+        d_evalArgTerms.push_back(cur.first);
         visit.pop_back();
         visited[cur] = true;
-        continue;
+        inCongTerm = false;
       }
       // recurse to children
       if (cur.first.getNumChildren() > 0)
@@ -513,6 +513,11 @@ const std::vector<TNode>& QuantInfo::getCongruenceTerms() const
   return d_congTerms;
 }
 
+const std::vector<TNode>& QuantInfo::getEvalArgTerms() const
+{
+  return d_evalArgTerms;
+}
+
 const std::map<TNode, std::vector<TNode>>& QuantInfo::getVarToFinalTermMap()
     const
 {
@@ -522,6 +527,10 @@ const std::map<TNode, std::vector<TNode>>& QuantInfo::getVarToFinalTermMap()
 bool QuantInfo::isActive() const { return d_isActive.get(); }
 
 void QuantInfo::setActive(bool val) { d_isActive = val; }
+
+void QuantInfo::setNoConflict() { d_maybeConflict = false; }
+
+bool QuantInfo::isMaybeConflict() const { return d_maybeConflict.get(); }
 
 bool QuantInfo::isDeqConstraint(TNode c, TNode p)
 {

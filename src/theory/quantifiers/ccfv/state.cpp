@@ -36,7 +36,8 @@ State::State(Env& env, QuantifiersState& qs, TermDb* tdb)
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
-  d_sink = sm->mkDummySkolem("sink", nm->booleanType());
+  d_none = sm->mkDummySkolem("none", nm->booleanType());
+  d_some = sm->mkDummySkolem("some", nm->booleanType());
   d_true = nm->mkConst(true);
   d_false = nm->mkConst(false);
 }
@@ -106,7 +107,6 @@ void State::resetRound(size_t nquant)
 }
 
 QuantInfo& State::initializeQuantInfo(TNode q,
-                                      eq::EqualityEngine* ee,
                                       expr::TermCanonize& tc)
 {
   std::map<Node, QuantInfo>::iterator it = d_quantInfo.find(q);
@@ -115,7 +115,7 @@ QuantInfo& State::initializeQuantInfo(TNode q,
     d_quantInfo.emplace(q, context());
     it = d_quantInfo.find(q);
     // initialize
-    it->second.initialize(q, ee, tc);
+    it->second.initialize(q, d_qstate.getEqualityEngine(), tc);
   }
   return it->second;
 }
@@ -152,7 +152,7 @@ PatTermInfo& State::getOrMkPatTermInfo(TNode p)
   {
     it = d_pInfo.emplace(p, context()).first;
     // initialize the pattern
-    it->second.initialize(p, d_tdb);
+    it->second.initialize(p, d_qstate.getEqualityEngine(), d_tdb);
   }
   return it->second;
 }
@@ -279,12 +279,12 @@ void State::eqNotifyMerge(TNode t1, TNode t2)
   }
 }
 
-void State::notifyPatternSink(TNode p) { notifyPatternEqGround(p, d_sink); }
+void State::notifyPatternNone(TNode p) { notifyPatternEqGround(p, d_none); }
 
 void State::notifyPatternEqGround(TNode p, TNode g)
 {
   Assert(!g.isNull());
-  Assert(isGroundEqc(g) || isSink(g));
+  Assert(isGroundEqc(g) || isNone(g));
   std::map<Node, PatTermInfo>::iterator it = d_pInfo.find(p);
   Assert(it != d_pInfo.end());
   if (!it->second.isActive())
@@ -307,8 +307,8 @@ void State::notifyPatternEqGround(TNode p, TNode g)
     p = it->second.d_pattern;
     g = it->second.d_eq;
     Assert(!g.isNull());
-    // notify the ordinary parents always, notify the congruence parents if sink
-    size_t maxIter = isSink(g) ? 2 : 1;
+    // notify the ordinary parents always, notify the congruence parents if none
+    size_t maxIter = isNone(g) ? 2 : 1;
     for (size_t i = 0; i < maxIter; i++)
     {
       context::CDList<Node>& notifyList =
@@ -355,10 +355,15 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
   Assert(d_numActiveQuant.get() > 0);
   // check whether we should set inactive
   bool setInactive = false;
-  if (isSink(val))
+  if (isNone(val))
   {
     setInactive = true;
-    Trace("ccfv-state-debug") << "...inactive due to sink" << std::endl;
+    Trace("ccfv-state-debug") << "...inactive due to none" << std::endl;
+  }
+  else if (isSome(val))
+  {
+    // it has some value
+    qi.setNoConflict();
   }
   else
   {
@@ -370,7 +375,7 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
       {
         if (c.isNull())
         {
-          // the constraint said you must be disequal to sink, i.e. we must be
+          // the constraint said you must be disequal to none, i.e. we must be
           // equal to something. we are ok
           continue;
         }
@@ -427,9 +432,13 @@ void State::setQuantInactive(QuantInfo& qi)
   }
 }
 
-Node State::getSink() const { return d_sink; }
+Node State::getNone() const { return d_none; }
 
-bool State::isSink(TNode n) const { return n == d_sink; }
+bool State::isNone(TNode n) const { return n == d_none; }
+
+Node State::getSome() const { return d_some; }
+
+bool State::isSome(TNode n) const { return n == d_some; }
 
 const std::unordered_set<TNode>& State::getGroundEqcFor(TypeNode tn) const
 {
@@ -486,11 +495,11 @@ TNode State::getValue(TNode p) const
   }
   // all pattern terms should have been assigned pattern term info
   Assert(!expr::hasBoundVar(p));
-  // use equality engine, go to sink if not a part of equivalence classes
+  // use equality engine, go to none if not a part of equivalence classes
   TNode r = getGroundRepresentative(p);
   if (r.isNull())
   {
-    return d_sink;
+    return d_none;
   }
   return r;
 }

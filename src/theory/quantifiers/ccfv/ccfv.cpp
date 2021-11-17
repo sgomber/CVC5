@@ -102,14 +102,15 @@ void CongruenceClosureFv::assertNode(Node q)
   // Assert quantified formula. This sets up:
   // (*)
   // (1) notifications from constraint terms to quantified formulas
-  // (2) notifications from children to Boolean connectives
-  // (3) notifications from children to congruence terms
+  // (2) notifications from children to congruence terms
+  // (3) notifications from children to other terms (including Boolean
+  // connectives and theory symbols that we do not do congruence over)
   // (4) free variables to use list terms
 
   // get the equality engine
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
   // initialize the internal information for the quantified formula
-  QuantInfo& qi = d_state.initializeQuantInfo(q, ee, d_tcanon);
+  QuantInfo& qi = d_state.initializeQuantInfo(q, d_tcanon);
   // free variables from the quantified formula
   const std::vector<TNode>& fvars = qi.getOrderedFreeVariables();
   for (TNode v : fvars)
@@ -162,31 +163,21 @@ void CongruenceClosureFv::assertNode(Node q)
         continue;
       }
       Assert(cur.getNumChildren() > 0);
-      bool isBoolConnective = false;
-      if (!ee->isFunctionKind(k))
-      {
-        // compute if Boolean connective
-        if (k != EQUAL && !expr::isBooleanConnective(cur))
-        {
-          // not handled as Boolean connective or congruence kind, skip
-          continue;
-        }
-        isBoolConnective = true;
-      }
+      bool isCongKind = ee->isFunctionKind(k);
       for (TNode cc : cur)
       {
         PatTermInfo& pi = d_state.getOrMkPatTermInfo(cc);
-        if (isBoolConnective)
-        {
-          // (2) Boolean connectives require notifications to parent
-          pi.d_parentNotify.push_back(cur);
-        }
-        else
+        if (isCongKind)
         {
           Assert(ee->isFunctionKind(k));
           Assert(cur.hasOperator());
-          // (3) congruence terms will recieve notifications when unassigned
+          // (2) congruence terms will recieve notifications when unassigned
           pi.d_parentCongNotify.push_back(cur);
+        }
+        else
+        {
+          // (3) other kinds require notifications to parent
+          pi.d_parentNotify.push_back(cur);
         }
         visit.push_back(cc);
       }
