@@ -231,8 +231,6 @@ void QuantInfo::addMatchTermReq(TNode t, Node eqc, bool isEq)
   }
 }
 
-// f( g(x) + 1 )
-
 void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
 {
   // Now, traverse each of the terms in match requirements. This sets up:
@@ -299,10 +297,10 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
           visited[cur] = false;
         }
       }
-      else if (!inCongTerm && expr::isBooleanConnective(cur.first))  // EQUAL
+      else if (!inCongTerm && (k==EQUAL || expr::isBooleanConnective(cur.first)))
       {
-        // if we are not in a congruence term, and we are Boolean connective,
-        // recurse
+        // if we are not in a congruence term, and we are Boolean connective
+        // or equality, recurse
         visit.pop_back();
         visited[cur] = true;
       }
@@ -363,11 +361,12 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
       if (itc == containing.end())
       {
         containing.insert(ccur);
-        if (!alreadyMatcher)
+        // if this is a top-level matcher
+        itc = topLevelMatchers.find(ccur);
+        if (itc != topLevelMatchers.end())
         {
-          // if this is a top-level matcher
-          itc = topLevelMatchers.find(ccur);
-          if (itc != topLevelMatchers.end())
+          d_candidateMatchers[v].push_back(ccur);
+          if (!alreadyMatcher)
           {
             if (usedMatchers.find(ccur) != usedMatchers.end())
             {

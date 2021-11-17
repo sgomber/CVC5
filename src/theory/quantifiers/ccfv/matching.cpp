@@ -124,7 +124,10 @@ bool Matching::processMatcher(size_t level, QuantInfo& qi, TNode matcher)
   }
   // get the match pattern info
   std::map<TNode, MatchPatInfo>& mmp = getMatchPatInfo(level);
-  MatchPatInfo* mpi = &mmp[matcher];
+  // take representative, ensures that congruent patterns are only matched
+  // once.
+  TNode mrep = d_qstate.getEqualityEngine().getRepresentative(matcher);
+  MatchPatInfo* mpi = &mmp[mrep];
   // if we have an equality constraint, we limit to matching in that equivalence
   // class
   if (!eq.isNull())
@@ -218,7 +221,9 @@ void Matching::runMatching(std::map<TNode, MatchPatInfo>& mmp,
           else
           {
             nmatchIndices.push_back(i);
-            mpiargs.push_back(&mmp[pic]);
+            // take representative
+            TNode picr = d_qstate.getEqualityEngine().getRepresentative(pic);
+            mpiargs.push_back(&mmp[picr]);
           }
         }
         // we should not have ground representatives for each child of the
