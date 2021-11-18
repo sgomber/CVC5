@@ -115,10 +115,17 @@ class QuantInfo
   void addMatchTermReq(TNode t, Node eqc, bool isEq);
   /** Process match requirement terms */
   void processMatchReqTerms(TermDb* tdb, eq::EqualityEngine* ee);
+  /** Register candidate matcher */
+  void registerCandidateMatcher(TermDb* tdb, TNode m);
   /** Set matchers */
   TNode getBestMatcherFor(TermDb* tdb,
                           TNode v,
                           std::unordered_set<TNode>& usedMatchers);
+  /**
+   * Get minimum matcher, returns the minimal number of current terms in a
+   * matchable function in m, or 0 if there are no matching constraints.
+   */
+  size_t getMinMatchCount(TermDb* tdb, TNode m) const;
   //------------------- static
   /** The quantified formula */
   Node d_quant;
@@ -159,6 +166,17 @@ class QuantInfo
   std::map<TNode, std::vector<TNode>> d_varToFinalTerms;
   /** All matchers for each variable */
   std::map<TNode, std::vector<TNode>> d_candidateMatchers;
+  /** 
+   * Matcher to constraint score
+   * 0: no constraints, 2: "some" constraint, 4: disequal, 6: equal +
+   * 1 if matching restriction
+   */
+  std::map<TNode, size_t> d_matcherToCScore;
+  /**
+   * Matchers to the function symbols they require matching for, e.g. 
+   * P(f(g(x))) ---> [P, f, g]
+   */ 
+  std::map<TNode, std::vector<TNode>> d_matcherToFun;
   /**
    * Subterms of d_req that are direct subterms of a congruence term that
    * are not congruence terms. These will require evaluation + asserting

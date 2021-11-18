@@ -88,7 +88,9 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
       d_eq = val;
       return true;
     }
-    // TODO: could propagate `some`? This would be in rare cases
+    // TODO: could propagate `some`? This would be in rare cases where
+    // a Boolean term was a child of a term. Even so, Boolean terms would
+    // not work with evaluation due to use of Boolean term variables.
   }
   else
   {

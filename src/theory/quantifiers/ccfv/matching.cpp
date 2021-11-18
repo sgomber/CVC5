@@ -221,7 +221,9 @@ void Matching::runMatching(std::map<TNode, MatchPatInfo>& mmp,
         {
           TNode pic = p[i];
           // Note we use get ground representative here. We do not use getValue,
-          // which should never be none.
+          // which should never be none. Notice this will return something
+          // non-null if the child of p is ground, or if the child of p has
+          // been assigned and is equal to a ground term.
           TNode gpic = d_state.getGroundRepresentative(pic);
           pargs.push_back(gpic);
           if (!gpic.isNull())
