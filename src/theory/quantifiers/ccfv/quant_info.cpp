@@ -33,7 +33,7 @@ QuantInfo::QuantInfo(context::Context* c)
 }
 
 void QuantInfo::initialize(TNode q,
-                           TermDb * tdb, 
+                           TermDb* tdb,
                            eq::EqualityEngine* ee,
                            expr::TermCanonize& tc)
 {
@@ -240,7 +240,7 @@ void QuantInfo::addMatchTermReq(TNode t, Node eqc, bool isEq)
   }
 }
 
-void QuantInfo::processMatchReqTerms(TermDb * tdb, eq::EqualityEngine* ee)
+void QuantInfo::processMatchReqTerms(TermDb* tdb, eq::EqualityEngine* ee)
 {
   // Now, traverse each of the terms in match requirements. This sets up:
   // (1) d_congTerms, the set of terms we are doing congruence over
@@ -356,7 +356,8 @@ void QuantInfo::processMatchReqTerms(TermDb * tdb, eq::EqualityEngine* ee)
     }
   }
   Trace("ccfv-quant-debug") << "Compute candidate matchers..." << std::endl;
-  std::unordered_set<std::pair<TNode, bool>, NodeBoolPairHashFunction>::iterator itc;
+  std::unordered_set<std::pair<TNode, bool>, NodeBoolPairHashFunction>::iterator
+      itc;
   std::unordered_set<TNode>::iterator itm;
   std::map<TNode, std::vector<TNode>>::iterator itpl;
   std::map<TNode, TNode> termToMaxVar;
@@ -365,7 +366,8 @@ void QuantInfo::processMatchReqTerms(TermDb * tdb, eq::EqualityEngine* ee)
   {
     // for each variable, visit the parents list, tracking whether we are in
     // a matchable context.
-    std::unordered_set<std::pair<TNode, bool>, NodeBoolPairHashFunction> containing;
+    std::unordered_set<std::pair<TNode, bool>, NodeBoolPairHashFunction>
+        containing;
     ctnVisit.push_back(std::pair<TNode, bool>(v, true));
     do
     {
@@ -376,7 +378,8 @@ void QuantInfo::processMatchReqTerms(TermDb * tdb, eq::EqualityEngine* ee)
       {
         containing.insert(cur);
         // if this is a matchable context, and we are a top-level matcher
-        bool isMatchable = cur.second && (cur.first==v || tdb->isMatchable(cur.first));
+        bool isMatchable =
+            cur.second && (cur.first == v || tdb->isMatchable(cur.first));
         if (isMatchable)
         {
           itm = topLevelMatchers.find(cur.first);
@@ -414,7 +417,8 @@ void QuantInfo::processMatchReqTerms(TermDb * tdb, eq::EqualityEngine* ee)
     }
     else
     {
-      // otherwise marked as null, will be notified immediately at the beginning of CCFV search
+      // otherwise marked as null, will be notified immediately at the beginning
+      // of CCFV search
       d_varToFinalTerms[Node::null()].push_back(ct);
     }
   }

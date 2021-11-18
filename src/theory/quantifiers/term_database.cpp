@@ -183,7 +183,8 @@ Node TermDb::getOrMakeTypeFreshVariable(TypeNode tn)
   return it->second;
 }
 
-Node TermDb::getMatchOperator( TNode n ) {
+Node TermDb::getMatchOperator(TNode n)
+{
   Kind k = n.getKind();
   //datatype operators may be parametric, always assume they are
   if (k == SELECT || k == STORE || k == SET_UNION || k == SET_INTER
@@ -213,10 +214,7 @@ Node TermDb::getMatchOperator( TNode n ) {
   return Node::null();
 }
 
-bool TermDb::isMatchable(TNode n)
-{
-  return !getMatchOperator(n).isNull();
-}
+bool TermDb::isMatchable(TNode n) { return !getMatchOperator(n).isNull(); }
 
 void TermDb::addTerm(Node n)
 {

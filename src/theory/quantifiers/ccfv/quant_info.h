@@ -52,7 +52,10 @@ class QuantInfo
   /**
    * Initialize, called once.
    */
-  void initialize(TNode q, TermDb * tdb, eq::EqualityEngine* ee, expr::TermCanonize& tc);
+  void initialize(TNode q,
+                  TermDb* tdb,
+                  eq::EqualityEngine* ee,
+                  expr::TermCanonize& tc);
   //-------------------------- static information
   /** Get free variables */
   const std::vector<TNode>& getFreeVariables() const;
@@ -111,7 +114,7 @@ class QuantInfo
   /** Add match term that must be (dis)equal from eqc */
   void addMatchTermReq(TNode t, Node eqc, bool isEq);
   /** Process match requirement terms */
-  void processMatchReqTerms(TermDb * tdb, eq::EqualityEngine* ee);
+  void processMatchReqTerms(TermDb* tdb, eq::EqualityEngine* ee);
   /** Set matchers */
   TNode getBestMatcherFor(TermDb* tdb,
                           TNode v,
