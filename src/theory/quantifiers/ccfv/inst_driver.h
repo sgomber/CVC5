@@ -125,9 +125,9 @@ class InstDriver : protected EnvObj
   /** Have we found any instance? */
   size_t d_foundInst;
   /** mapping to instances */
-  std::map<TNode, std::vector< std::vector<Node> > > d_insts;
+  std::map<TNode, std::vector<std::vector<Node>>> d_insts;
   /** Index of conflicting instances (for debugging) */
-  std::map<TNode, std::unordered_set<size_t> > d_conflictInstIndex;
+  std::map<TNode, std::unordered_set<size_t>> d_conflictInstIndex;
   /** Have we found a conflicting instance? */
   bool d_inConflict;
 };

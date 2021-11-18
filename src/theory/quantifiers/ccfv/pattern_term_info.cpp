@@ -337,7 +337,8 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
           if (!npr.isNull())
           {
             d_eq = npr;
-            Trace("ccfv-state-debug") << "...evaluate + find " << npr << std::endl;
+            Trace("ccfv-state-debug")
+                << "...evaluate + find " << npr << std::endl;
           }
           else
           {

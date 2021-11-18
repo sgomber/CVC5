@@ -126,25 +126,31 @@ void InstDriver::check(const std::vector<TNode>& quants)
 
   // pop the context that was done at the beginning
   context()->pop();
-  
+
   // Now send instantiations. We do this only after popping the scope
   Instantiate* qinst = d_qim.getInstantiate();
-  for (std::pair<const TNode, std::vector<std::vector<Node>> >& i : d_insts)
+  for (std::pair<const TNode, std::vector<std::vector<Node>>>& i : d_insts)
   {
     Node q = i.first;
     std::unordered_set<size_t>& cci = d_conflictInstIndex[q];
-    for (size_t ii=0, ninst = i.second.size(); ii<ninst; ii++)
+    for (size_t ii = 0, ninst = i.second.size(); ii < ninst; ii++)
     {
-      InferenceId id = cci.find(ii)!=cci.end() ? InferenceId::QUANTIFIERS_INST_CCFV_CONFLICT : InferenceId::QUANTIFIERS_INST_CCFV_PROP;
+      InferenceId id = cci.find(ii) != cci.end()
+                           ? InferenceId::QUANTIFIERS_INST_CCFV_CONFLICT
+                           : InferenceId::QUANTIFIERS_INST_CCFV_PROP;
       if (qinst->addInstantiation(q, i.second[ii], id))
       {
-        Trace("ccfv-inst") << "Added instance for " << q.getId() << " : " << i.second[ii] << std::endl;
+        Trace("ccfv-inst") << "Added instance for " << q.getId() << " : "
+                           << i.second[ii] << std::endl;
       }
       else
       {
-        Trace("ccfv-inst") << "FAILED to add instance for " << q.getId() << " : " << i.second[ii] << std::endl;
-        Trace("ccfv-warn") << "Failed to add instantiation " << i.second[ii] << " for " << q << std::endl;
-        Assert(false) << "Failed CCFV instantiation: " << i.second[ii] << " for " << q;
+        Trace("ccfv-inst") << "FAILED to add instance for " << q.getId()
+                           << " : " << i.second[ii] << std::endl;
+        Trace("ccfv-warn") << "Failed to add instantiation " << i.second[ii]
+                           << " for " << q << std::endl;
+        Assert(false) << "Failed CCFV instantiation: " << i.second[ii]
+                      << " for " << q;
       }
     }
   }

@@ -33,8 +33,8 @@ namespace ccfv {
 
 /**
  * Congruence closure with free variables procedure
- * 
- * 
+ *
+ *
 
  TODO:
 - dynamic matching
