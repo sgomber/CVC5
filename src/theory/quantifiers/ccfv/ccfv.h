@@ -33,6 +33,15 @@ namespace ccfv {
 
 /**
  * Congruence closure with free variables procedure
+ * 
+ * 
+
+ TODO:
+- dynamic matching
+- account for unmatchable terms
+- buffer instantiations until after context is reset
+- pop contexts when finished
+
  */
 class CongruenceClosureFv : public QuantifiersModule
 {
