@@ -407,7 +407,10 @@ void QuantInfo::processMatchReqTerms(TermDb* tdb, eq::EqualityEngine* ee)
         // which will be converted in d_varToFinalTerms below to:
         //   y->[f(x,y), f(y)], z -> [f(x,z)]
         // which determines when terms are fully assigned.
-        termToMaxVar[cur.first] = v;
+        if (cur.first!=v)
+        {
+          termToMaxVar[cur.first] = v;
+        }
         itpl = parentList.find(cur.first);
         if (itpl != parentList.end())
         {
@@ -466,7 +469,6 @@ void QuantInfo::registerCandidateMatcher(TermDb* tdb, TNode m)
       }
     }
   }
-  d_matcherToCScore[m] = cscore;
   // compute the functions that we have to match for this
   std::vector<TNode>& funs = d_matcherToFun[m];
   std::unordered_set<TNode> visited;
@@ -502,6 +504,7 @@ void QuantInfo::registerCandidateMatcher(TermDb* tdb, TNode m)
   {
     cscore = cscore + 1;
   }
+  d_matcherToCScore[m] = cscore;
 }
 
 bool QuantInfo::resetRound(TermDb* tdb)
