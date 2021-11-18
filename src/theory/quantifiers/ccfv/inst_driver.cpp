@@ -68,11 +68,6 @@ void InstDriver::check(const std::vector<TNode>& quants)
   // we modify the equality engine, so we push the SAT context
   context()->push();
 
-  // Reset the state. Notice that we must do this before adding pattern terms
-  // to the equality engine.
-  Trace("ccfv-debug") << "Reset state..." << std::endl;
-  d_state.resetRound(quants.size());
-
   // reset information about whether we have found instantiations
   d_foundInst = 0;
   d_insts.clear();
@@ -88,6 +83,12 @@ void InstDriver::check(const std::vector<TNode>& quants)
     // add congruence terms from quantified formulas to the equality engine
     addToEqualityEngine(qi);
   }
+  
+  // Reset the state. Notice that we must do this *after* adding pattern terms
+  // to the equality engine, since ground terms in quantifier bodies should
+  // be considered "known" terms.
+  Trace("ccfv-debug") << "Reset state..." << std::endl;
+  d_state.resetRound(quants.size());
 
   // do initial notifications for relevant ground terms in the bodies of
   // quantified formulas.

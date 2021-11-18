@@ -18,6 +18,7 @@
 #include "expr/node_algorithm.h"
 #include "expr/term_canonize.h"
 #include "theory/quantifiers/ematching/trigger_term_info.h"
+#include "theory/quantifiers/term_database.h"
 
 using namespace cvc5::kind;
 
@@ -273,12 +274,18 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
     it = visited.find(cur);
     if (it == visited.end())
     {
-      // don't care about terms without variables.
-      // NOTE: don't consider these as congruence terms??
-      if (!expr::hasBoundVar(cur.first))
+      if (!isTraverseTerm(cur.first))
       {
+        // a term that should never be traversed, e.g. a nested closure
         visit.pop_back();
         visited[cur] = true;
+        continue;
+      }
+      else if (!expr::hasBoundVar(cur.first))
+      {
+        // don't traverse terms without variables, although we do add these
+        // as congruence terms.
+        visited[cur] = false;
         continue;
       }
       Kind k = cur.first.getKind();
@@ -303,13 +310,6 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
           // will add to congruence terms at post-traversal
           visited[cur] = false;
         }
-      }
-      else if (!isTraverseTerm(cur.first))
-      {
-        // a term that should never be traversed, e.g. a nested closure
-        visit.pop_back();
-        visited[cur] = true;
-        continue;
       }
       else if (!inCongTerm)
       {
@@ -471,6 +471,11 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
       d_varToFinalTerms[ittf->second].push_back(ct);
     }
   }
+}
+
+void QuantInfo::setMatchers(TermDb* tdb)
+{
+  
 }
 
 void QuantInfo::resetRound()

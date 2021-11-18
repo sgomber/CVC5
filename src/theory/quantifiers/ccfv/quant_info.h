@@ -32,8 +32,16 @@ class TermCanonize;
 
 namespace theory {
 namespace quantifiers {
+
+class TermDb;
+
 namespace ccfv {
 
+/**
+ * Stores all static information for a quantified formula. Also maintains
+ * context-dependent state information for the quantified formula in CCFV
+ * search.
+ */
 class QuantInfo
 {
   using NodeBoolPairHashFunction =
@@ -111,6 +119,8 @@ class QuantInfo
   void addMatchTermReq(TNode t, Node eqc, bool isEq);
   /** Process match requirement terms */
   void processMatchReqTerms(eq::EqualityEngine* ee);
+  /** Set matchers */
+  void setMatchers(TermDb* tdb);
   //------------------- static
   /** The quantified formula */
   Node d_quant;

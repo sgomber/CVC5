@@ -39,7 +39,6 @@ namespace ccfv {
  TODO:
 - dynamic matching
 - account for unmatchable terms
-- register quantifier bodies before
 
  */
 class CongruenceClosureFv : public QuantifiersModule
