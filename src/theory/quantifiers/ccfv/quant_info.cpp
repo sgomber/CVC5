@@ -504,21 +504,24 @@ void QuantInfo::registerCandidateMatcher(TermDb* tdb, TNode m)
   }
 }
 
-void QuantInfo::resetRound(TermDb* tdb)
+bool QuantInfo::resetRound(TermDb* tdb)
 {
-  d_isActive = true;
+  // quantified formulas are initially inactive, they are marked active when
+  // their search level is processed for the first time.
+  d_isActive = false;
   d_initVarIndex = 0;
 
   d_matchers.clear();
   std::unordered_set<TNode> usedMatchers;
   std::map<TNode, std::vector<TNode>>::iterator itcm;
+  bool feasible = true;
   for (TNode v : d_canonVarOrdered)
   {
-    TNode m = getBestMatcherFor(tdb, v, usedMatchers);
+    TNode m = getBestMatcherFor(tdb, v, usedMatchers, feasible);
     // could have realized by setting up matching that we will never be propagating
-    if (!d_isActive.get())
+    if (!feasible)
     {
-      return;
+      return false;
     }
     if (!m.isNull())
     {
@@ -538,11 +541,13 @@ void QuantInfo::resetRound(TermDb* tdb)
                          << " in " << d_quant << std::endl;
     }
   }
+  return true;
 }
 
 TNode QuantInfo::getBestMatcherFor(TermDb* tdb,
                                    TNode v,
-                                   std::unordered_set<TNode>& usedMatchers)
+                                   std::unordered_set<TNode>& usedMatchers,
+                                   bool& feasible)
 {
   std::map<TNode, std::vector<TNode>>::iterator itcm =
       d_candidateMatchers.find(v);
@@ -575,9 +580,10 @@ TNode QuantInfo::getBestMatcherFor(TermDb* tdb,
     {
       mmscore = itmm->second;
     }
-    if (cscore>0 && mmscore==0)
+    if (cscore>=2 && mmscore==0)
     {
       // we are done if there is a constraint term that is infeasible to match
+      feasible = false;
     }
     // prefer matchers in increasing order:
     // 0-no constraints, 1-null constraint, 2-disequality, 3-equality

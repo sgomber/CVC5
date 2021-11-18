@@ -122,6 +122,8 @@ class InstDriver : protected EnvObj
   std::map<size_t, SearchLevel> d_levels;
   /** Number of levels */
   size_t d_numLevels;
+  /** Maximum level initialized */
+  size_t d_maxInitLevel;
   /** Have we found any instance? */
   size_t d_foundInst;
   /** mapping to instances */

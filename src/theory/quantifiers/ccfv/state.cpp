@@ -440,6 +440,15 @@ void State::notifyQuant(TNode q, TNode p, TNode val)
   // variables assigned.
 }
 
+void State::setQuantActive(QuantInfo& qi)
+{
+  if (!qi.isActive())
+  {
+    qi.setActive(true);
+    d_numActiveQuant = d_numActiveQuant + 1;
+  }
+}
+
 void State::setQuantInactive(QuantInfo& qi)
 {
   if (qi.isActive())

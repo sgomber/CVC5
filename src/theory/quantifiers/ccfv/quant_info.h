@@ -79,7 +79,7 @@ class QuantInfo
   /**
    * Reset round, called once per full effort check
    */
-  void resetRound(TermDb* tdb);
+  bool resetRound(TermDb* tdb);
   /** Get next variable. This is used to initialize the search. */
   TNode getNextSearchVariable();
   //-------------------------- queries local to round
@@ -120,7 +120,8 @@ class QuantInfo
   /** Set matchers */
   TNode getBestMatcherFor(TermDb* tdb,
                           TNode v,
-                          std::unordered_set<TNode>& usedMatchers);
+                          std::unordered_set<TNode>& usedMatchers,
+                          bool& feasible);
   /**
    * Get minimum matcher, returns the minimal number of current terms in a
    * matchable function in m, or 0 if there are no matching constraints.

@@ -115,7 +115,8 @@ class State : protected EnvObj
   Node doRewrite(Node n);
   /** Is quantifier active? */
   bool isQuantActive(TNode q) const;
-  /** Set quantified formula inactive */
+  /** Set quantified formula active / inactive */
+  void setQuantActive(QuantInfo& qi);
   void setQuantInactive(QuantInfo& qi);
   /** Assert equality */
   void assertEquality(TNode p, TNode g);

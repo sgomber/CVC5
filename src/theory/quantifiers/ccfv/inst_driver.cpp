@@ -41,6 +41,7 @@ InstDriver::InstDriver(Env& env,
       d_treg(tr),
       d_matching(env, state, qs, tr.getTermDatabase()),
       d_numLevels(0),
+      d_maxInitLevel(0),
       d_foundInst(0),
       d_inConflict(false)
 {
@@ -81,8 +82,7 @@ void InstDriver::check(const std::vector<TNode>& quants)
   for (TNode q : quants)
   {
     QuantInfo& qi = d_state.getQuantInfo(q);
-    qi.resetRound(tdb);
-    if (qi.isActive())
+    if (qi.resetRound(tdb))
     {
       // add congruence terms from quantified formulas to the equality engine
       addToEqualityEngine(qi);
@@ -185,11 +185,8 @@ void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
     Assert(!fvs.empty());
     itf = fvLevel.find(fvs[0]);
     Assert(itf != fvLevel.end());
-    if (itf->second > 0)
-    {
-      SearchLevel& slevel = getSearchLevel(itf->second - 1);
-      slevel.d_startQuants.push_back(q);
-    }
+    SearchLevel& slevel = getSearchLevel(itf->second);
+    slevel.d_startQuants.push_back(q);
   }
   // set that it is the first time seeing each of the levels
   d_numLevels = d_levels.size();
@@ -293,6 +290,19 @@ void InstDriver::initializeLevel(size_t level)
     FreeVarInfo& fi = d_state.getFreeVarInfo(v);
     fi.resetLevel();
   }
+  // if first time, we activate quantified formulas that start at this level
+  if (slevel.d_firstTime)
+  {
+    Assert (level+1>d_maxInitLevel);
+    d_maxInitLevel = level+1;
+    // activate quantified formulas that are first time
+    for (TNode q : slevel.d_startQuants)
+    {
+      QuantInfo& qi = d_state.getQuantInfo(q);
+      d_state.setQuantActive(qi);
+    }
+    slevel.d_firstTime = false;
+  }
 }
 
 bool InstDriver::pushLevel(size_t level)
@@ -303,26 +313,6 @@ bool InstDriver::pushLevel(size_t level)
     return false;
   }
   SearchLevel& slevel = getSearchLevel(level);
-  bool wasFirstTime = slevel.d_firstTime;
-  if (slevel.d_firstTime)
-  {
-    slevel.d_firstTime = false;
-  }
-  else
-  {
-    // if not first time, disable all that start here
-    for (TNode q : slevel.d_startQuants)
-    {
-      QuantInfo& qi = d_state.getQuantInfo(q);
-      d_state.setQuantInactive(qi);
-    }
-    if (d_state.isFinished())
-    {
-      Trace("ccfv-search") << "...finished after disabling start quants"
-                           << std::endl;
-      return false;
-    }
-  }
   Assert(!slevel.d_varsToAssign.empty());
   // Find the next assignment for each variable. Variables that are at the
   // same level can be assigned in parallel.
@@ -380,10 +370,10 @@ bool InstDriver::pushLevel(size_t level)
     }
     assignment.push_back(eqc);
   }
-  if (!success && !wasFirstTime)
+  if (!success && d_maxInitLevel==d_numLevels)
   {
-    // Could not find an assignment to any variables, and this was not the
-    // first time we ran. In this case, a previous assignment ran strictly
+    // Could not find an assignment to any variables, and we have initialized
+    // all levels. In this case, a previous assignment ran strictly
     // more information.
     Trace("ccfv-search") << "...no assignment" << std::endl;
     return false;
@@ -439,10 +429,10 @@ bool InstDriver::pushLevel(size_t level)
       Trace("ccfv-search") << "...finished after assignment" << std::endl;
       return true;
     }
-    if (Trace.isOn("ccfv-ee"))
+    if (Trace.isOn("ccfv-matching-debug"))
     {
-      Trace("ccfv-ee") << "E-graph after assignment:" << std::endl;
-      Trace("ccfv-ee") << d_qstate.getEqualityEngine()->debugPrintEqc()
+      Trace("ccfv-matching-debug") << "E-graph after assignment:" << std::endl;
+      Trace("ccfv-matching-debug") << d_qstate.getEqualityEngine()->debugPrintEqc()
                        << std::endl;
     }
     Trace("ccfv-search-debug") << "Process final terms for " << v << std::endl;
