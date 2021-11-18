@@ -79,7 +79,7 @@ class QuantInfo
   /**
    * Reset round, called once per full effort check
    */
-  bool resetRound(TermDb* tdb);
+  void resetRound(TermDb* tdb);
   /** Get next variable. This is used to initialize the search. */
   TNode getNextSearchVariable();
   //-------------------------- queries local to round

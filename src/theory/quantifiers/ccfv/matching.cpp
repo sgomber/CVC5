@@ -39,9 +39,11 @@ void Matching::initializeLevel(size_t level) { d_mpmap[level].clear(); }
 
 bool Matching::processMatcher(size_t level, QuantInfo& qi, TNode matcher)
 {
-  // the matcher should be active, or otherwise the quantified formula should
-  // have been marked inactive.
-  Assert(d_state.getPatTermInfo(matcher).isActive());
+  // if the matcher is inactive, it won't find any matches, skip it
+  if(!d_state.getPatTermInfo(matcher).isActive())
+  {
+    return true;
+  }
   // get constraints to determine initial equivalence classes
   const std::map<TNode, std::vector<Node>>& cs = qi.getConstraints();
   TNode eq;

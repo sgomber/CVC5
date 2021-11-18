@@ -96,6 +96,8 @@ class InstDriver : protected EnvObj
                           std::map<TNode, size_t>& fvLevel);
   /** Initialize at level */
   void initializeLevel(size_t level);
+  /** End level */
+  void endLevel(size_t level);
   /** Assign search level */
   bool pushLevel(size_t level);
   /** Add to equality engine */
@@ -122,8 +124,6 @@ class InstDriver : protected EnvObj
   std::map<size_t, SearchLevel> d_levels;
   /** Number of levels */
   size_t d_numLevels;
-  /** Maximum level initialized */
-  size_t d_maxInitLevel;
   /** Have we found any instance? */
   size_t d_foundInst;
   /** mapping to instances */
@@ -132,6 +132,10 @@ class InstDriver : protected EnvObj
   std::map<TNode, std::unordered_set<size_t>> d_conflictInstIndex;
   /** Have we found a conflicting instance? */
   bool d_inConflict;
+  /** Quantified formulas that are out of scope */
+  std::vector<Node> d_noScopeQuant;
+  /** The index in the above vector that we have processed */
+  context::CDO<size_t> d_noScopeQuantIndex;
 };
 
 }  // namespace ccfv

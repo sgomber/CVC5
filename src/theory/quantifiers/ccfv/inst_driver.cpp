@@ -41,9 +41,9 @@ InstDriver::InstDriver(Env& env,
       d_treg(tr),
       d_matching(env, state, qs, tr.getTermDatabase()),
       d_numLevels(0),
-      d_maxInitLevel(0),
       d_foundInst(0),
-      d_inConflict(false)
+      d_inConflict(false),
+      d_noScopeQuantIndex(context(), 0)
 {
 }
 
@@ -73,15 +73,22 @@ void InstDriver::check(const std::vector<TNode>& quants)
   for (TNode q : quants)
   {
     QuantInfo& qi = d_state.getQuantInfo(q);
-    if (qi.resetRound(tdb))
+    qi.resetRound(tdb);
+    if (qi.isActive())
     {
       activeQuants.push_back(q);
     }
   }
   Trace("ccfv-debug") << "..." << activeQuants.size() << "/" << quants.size()
                       << " are initially active" << std::endl;
+                      
+  if (activeQuants.empty())
+  {
+    return;
+  }
 
   // we modify the equality engine, so we push the SAT context
+  int prevLevel = context()->getLevel();
   context()->push();
 
   // reset information about whether we have found instantiations
@@ -89,6 +96,8 @@ void InstDriver::check(const std::vector<TNode>& quants)
   d_insts.clear();
   d_conflictInstIndex.clear();
   d_inConflict = false;
+  d_noScopeQuant.clear();
+  d_noScopeQuantIndex = 0;
 
   Trace("ccfv-debug") << "Add quant bodies to equality engine..." << std::endl;
   for (TNode q : activeQuants)
@@ -141,6 +150,7 @@ void InstDriver::check(const std::vector<TNode>& quants)
 
   // pop the context that was done at the beginning
   context()->pop();
+  AlwaysAssert (context()->getLevel()==prevLevel) << "Context mismatch: " << prevLevel << " != " << context()->getLevel();
 
   // Now send instantiations. We do this only after popping the scope
   Instantiate* qinst = d_qim.getInstantiate();
@@ -182,6 +192,7 @@ void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
   std::map<TNode, std::vector<TNode>> partition;
   std::map<TNode, size_t> fvLevel;
   assignVarsToLevels(0, quants, partition, fvLevel);
+  d_numLevels = d_levels.size();
 
   // set the start levels
   std::map<TNode, size_t>::iterator itf;
@@ -192,15 +203,19 @@ void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
     Assert(!fvs.empty());
     itf = fvLevel.find(fvs[0]);
     Assert(itf != fvLevel.end());
-    SearchLevel& slevel = getSearchLevel(itf->second);
-    slevel.d_startQuants.push_back(q);
+    // don't need to set quantified formulas at level 0, these have no impact
+    if (itf->second>0)
+    {
+      SearchLevel& slevel = getSearchLevel(itf->second);
+      slevel.d_startQuants.push_back(q);
+    }
   }
   // set that it is the first time seeing each of the levels
-  d_numLevels = d_levels.size();
   for (std::pair<const size_t, SearchLevel>& sl : d_levels)
   {
     Assert(sl.first < d_numLevels);
-    sl.second.d_firstTime = true;
+    sl.second.d_firstTimePre = true;
+    sl.second.d_firstTimePost = true;
   }
 
   if (Trace.isOn("ccfv-debug"))
@@ -297,18 +312,24 @@ void InstDriver::initializeLevel(size_t level)
     FreeVarInfo& fi = d_state.getFreeVarInfo(v);
     fi.resetLevel();
   }
-  // if first time, we activate quantified formulas that start at this level
-  if (slevel.d_firstTime)
+}
+
+void InstDriver::endLevel(size_t level)
+{
+  // activate quantified formulas that are first time
+  SearchLevel& slevel = getSearchLevel(level);
+  if (slevel.d_firstTimePost)
   {
-    Assert(level + 1 > d_maxInitLevel);
-    d_maxInitLevel = level + 1;
-    // activate quantified formulas that are first time
-    for (TNode q : slevel.d_startQuants)
-    {
-      QuantInfo& qi = d_state.getQuantInfo(q);
-      d_state.setQuantActive(qi);
-    }
-    slevel.d_firstTime = false;
+    d_noScopeQuant.insert(d_noScopeQuant.end(), slevel.d_startQuants.begin(), slevel.d_startQuants.end());
+    slevel.d_firstTimePost = false;
+  }
+  // referesh set all the out of scope quantified formulas to inactive
+  while (d_noScopeQuantIndex.get()<d_noScopeQuant.size())
+  {
+    TNode nsq = d_noScopeQuant[d_noScopeQuantIndex.get()];
+    QuantInfo& qi = d_state.getQuantInfo(nsq);
+    d_state.setQuantInactive(qi);
+    d_noScopeQuantIndex = d_noScopeQuantIndex.get()+1;
   }
 }
 
@@ -320,6 +341,8 @@ bool InstDriver::pushLevel(size_t level)
     return false;
   }
   SearchLevel& slevel = getSearchLevel(level);
+  bool wasFirstTimePre = slevel.d_firstTimePre;
+  slevel.d_firstTimePre = false;
   Assert(!slevel.d_varsToAssign.empty());
   // Find the next assignment for each variable. Variables that are at the
   // same level can be assigned in parallel.
@@ -377,11 +400,11 @@ bool InstDriver::pushLevel(size_t level)
     }
     assignment.push_back(eqc);
   }
-  if (!success && d_maxInitLevel == d_numLevels)
+  if (!success && !wasFirstTimePre)
   {
-    // Could not find an assignment to any variables, and we have initialized
-    // all levels. In this case, a previous assignment ran strictly
-    // more information.
+    // Could not find an assignment to any variables, and we already ran
+    // the level below this one. In this case, a previous assignment ran
+    // strictly more information.
     Trace("ccfv-search") << "...no assignment" << std::endl;
     return false;
   }
@@ -448,6 +471,7 @@ bool InstDriver::pushLevel(size_t level)
     // fully assigned. If these terms have not yet merged, we are done.
     for (const Node& t : fi.d_finalTerms)
     {
+      Trace("ccfv-search-debug") << "...final: " << t << std::endl;
       d_state.notifyPatternNone(t);
       if (d_state.isFinished())
       {
@@ -483,7 +507,7 @@ bool InstDriver::pushLevel(size_t level)
       }
       inst.push_back(vval);
     }
-    Trace("ccfv-search") << "...check inst for " << q.getId() << " : " << inst
+    Trace("ccfv-search") << "...instantiation for " << q.getId() << " : " << inst
                          << std::endl;
     if (qi.isMaybeConflict())
     {
@@ -547,8 +571,15 @@ void InstDriver::search()
     else
     {
       context()->pop();
+      endLevel(currLevel);
       currLevel--;
     }
+  }
+  // if we terminated early, process any necessary context pops
+  while (currLevel>0)
+  {
+    context()->pop();
+    currLevel--;
   }
   Trace("ccfv-search") << "search: finished, conflict = " << d_inConflict
                        << std::endl;

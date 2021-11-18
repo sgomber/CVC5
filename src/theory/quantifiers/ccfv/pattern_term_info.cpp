@@ -243,7 +243,7 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
           // it as "none", since we want to propagate equalities between
           // known terms. Notice that Booleans require being assigned to
           // constants, so this only applies to non-Boolean equalities.
-          Assert(!val.isBoolean());
+          Assert(!val.getType().isBoolean());
           d_eq = s.getSome();
           return true;
         }
@@ -252,7 +252,7 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
       {
         TNode cval1 = s.getValue(d_pattern[0]);
         Assert(!cval1.isNull());
-        Assert(cval1.isConst() || isNone(cval1) || isSome(cval1));
+        Assert(cval1.isConst() || s.isNone(cval1) || s.isSome(cval1));
         if (cval1.isConst())
         {
           // if condition evaluates, get value of branch

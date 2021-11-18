@@ -407,10 +407,7 @@ void QuantInfo::processMatchReqTerms(TermDb* tdb, eq::EqualityEngine* ee)
         // which will be converted in d_varToFinalTerms below to:
         //   y->[f(x,y), f(y)], z -> [f(x,z)]
         // which determines when terms are fully assigned.
-        if (cur.first!=v)
-        {
-          termToMaxVar[cur.first] = v;
-        }
+        termToMaxVar[cur.first] = v;
         itpl = parentList.find(cur.first);
         if (itpl != parentList.end())
         {
@@ -426,6 +423,11 @@ void QuantInfo::processMatchReqTerms(TermDb* tdb, eq::EqualityEngine* ee)
   std::map<TNode, TNode>::iterator ittf;
   for (TNode ct : d_congTerms)
   {
+    if (ct.getKind()==BOUND_VARIABLE)
+    {
+      // don't need to mark free variables as final
+      continue;
+    }
     ittf = termToMaxVar.find(ct);
     if (ittf != termToMaxVar.end())
     {
@@ -507,11 +509,9 @@ void QuantInfo::registerCandidateMatcher(TermDb* tdb, TNode m)
   d_matcherToCScore[m] = cscore;
 }
 
-bool QuantInfo::resetRound(TermDb* tdb)
+void QuantInfo::resetRound(TermDb* tdb)
 {
-  // quantified formulas are initially inactive, they are marked active when
-  // their search level is processed for the first time.
-  d_isActive = false;
+  d_isActive = true;
   d_initVarIndex = 0;
 
   d_matchers.clear();
@@ -525,7 +525,8 @@ bool QuantInfo::resetRound(TermDb* tdb)
     // propagating
     if (!feasible)
     {
-      return false;
+      d_isActive = false;
+      return;
     }
     if (!m.isNull())
     {
@@ -545,7 +546,6 @@ bool QuantInfo::resetRound(TermDb* tdb)
                          << " in " << d_quant << std::endl;
     }
   }
-  return true;
 }
 
 TNode QuantInfo::getBestMatcherFor(TermDb* tdb,

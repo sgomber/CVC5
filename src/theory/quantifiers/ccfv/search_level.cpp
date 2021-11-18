@@ -22,7 +22,7 @@ namespace theory {
 namespace quantifiers {
 namespace ccfv {
 
-SearchLevel::SearchLevel() : d_firstTime(true) {}
+SearchLevel::SearchLevel() : d_firstTimePre(true), d_firstTimePost(true) {}
 
 std::string SearchLevel::toStringDebug() const
 {

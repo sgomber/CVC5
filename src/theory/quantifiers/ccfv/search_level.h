@@ -42,7 +42,9 @@ class SearchLevel
    */
   std::vector<TNode> d_startQuants;
   /** First time running this round */
-  bool d_firstTime;
+  bool d_firstTimePre;
+  /** First time running this round */
+  bool d_firstTimePost;
   /** debugging */
   std::string toStringDebug() const;
 };
