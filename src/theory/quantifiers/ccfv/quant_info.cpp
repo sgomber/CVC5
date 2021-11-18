@@ -33,6 +33,7 @@ QuantInfo::QuantInfo(context::Context* c)
 }
 
 void QuantInfo::initialize(TNode q,
+                           TermDb * tdb, 
                            eq::EqualityEngine* ee,
                            expr::TermCanonize& tc)
 {
@@ -102,7 +103,7 @@ void QuantInfo::initialize(TNode q,
 
   // now we go back and process terms in the match requirements
   Trace("ccfv-quant-debug") << "Process terms..." << std::endl;
-  processMatchReqTerms(ee);
+  processMatchReqTerms(tdb, ee);
 
   // debug print
   Trace("ccfv-quant") << toStringDebug();
@@ -239,7 +240,7 @@ void QuantInfo::addMatchTermReq(TNode t, Node eqc, bool isEq)
   }
 }
 
-void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
+void QuantInfo::processMatchReqTerms(TermDb * tdb, eq::EqualityEngine* ee)
 {
   // Now, traverse each of the terms in match requirements. This sets up:
   // (1) d_congTerms, the set of terms we are doing congruence over
@@ -355,42 +356,49 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
     }
   }
   Trace("ccfv-quant-debug") << "Compute candidate matchers..." << std::endl;
-  std::unordered_set<TNode>::iterator itc;
+  std::unordered_set<std::pair<TNode, bool>, NodeBoolPairHashFunction>::iterator itc;
+  std::unordered_set<TNode>::iterator itm;
   std::map<TNode, std::vector<TNode>>::iterator itpl;
   std::map<TNode, TNode> termToMaxVar;
+  std::vector<std::pair<TNode, bool>> ctnVisit;
   for (TNode v : d_canonVarOrdered)
   {
-    // for each variable, we
-    std::vector<TNode> ctnVisit;
-    std::unordered_set<TNode> containing;
-    TNode ccur;
-    ctnVisit.push_back(v);
+    // for each variable, visit the parents list, tracking whether we are in
+    // a matchable context.
+    std::unordered_set<std::pair<TNode, bool>, NodeBoolPairHashFunction> containing;
+    ctnVisit.push_back(std::pair<TNode, bool>(v, true));
     do
     {
-      ccur = ctnVisit.back();
+      cur = ctnVisit.back();
       ctnVisit.pop_back();
-      itc = containing.find(ccur);
+      itc = containing.find(cur);
       if (itc == containing.end())
       {
-        containing.insert(ccur);
-        // if this is a top-level matcher
-        itc = topLevelMatchers.find(ccur);
-        if (itc != topLevelMatchers.end())
+        containing.insert(cur);
+        // if this is a matchable context, and we are a top-level matcher
+        bool isMatchable = cur.second && (cur.first==v || tdb->isMatchable(cur.first));
+        if (isMatchable)
         {
-          d_candidateMatchers[v].push_back(ccur);
+          itm = topLevelMatchers.find(cur.first);
+          if (itm != topLevelMatchers.end())
+          {
+            d_candidateMatchers[v].push_back(cur.first);
+          }
         }
         // we have fvars[i] < fvars[j] for i < j, set or overwrite the max
-        // variable here.
-        // for ordered variables xyzw, d_termMaxVar maps:
+        // variable here. For example, for ordering x<y<z<w, d_termMaxVar maps:
         //   f(x,y) -> y, f(x,z) -> z, f(y) -> y
         // which will be converted in d_varToFinalTerms below to:
         //   y->[f(x,y), f(y)], z -> [f(x,z)]
-        termToMaxVar[ccur] = v;
-        itpl = parentList.find(ccur);
+        // which determines when terms are fully assigned.
+        termToMaxVar[cur.first] = v;
+        itpl = parentList.find(cur.first);
         if (itpl != parentList.end())
         {
-          ctnVisit.insert(
-              ctnVisit.end(), itpl->second.begin(), itpl->second.end());
+          for (TNode p : itpl->second)
+          {
+            ctnVisit.push_back(std::pair<TNode, bool>(p, isMatchable));
+          }
         }
       }
     } while (!ctnVisit.empty());
@@ -403,6 +411,11 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
     if (ittf != termToMaxVar.end())
     {
       d_varToFinalTerms[ittf->second].push_back(ct);
+    }
+    else
+    {
+      // otherwise marked as null, will be notified immediately at the beginning of CCFV search
+      d_varToFinalTerms[Node::null()].push_back(ct);
     }
   }
 }

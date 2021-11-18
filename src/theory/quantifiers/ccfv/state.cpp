@@ -115,7 +115,7 @@ QuantInfo& State::initializeQuantInfo(TNode q, expr::TermCanonize& tc)
     d_quantInfo.emplace(q, context());
     it = d_quantInfo.find(q);
     // initialize
-    it->second.initialize(q, d_qstate.getEqualityEngine(), tc);
+    it->second.initialize(q, d_tdb, d_qstate.getEqualityEngine(), tc);
   }
   return it->second;
 }

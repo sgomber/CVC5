@@ -48,6 +48,10 @@ class MatchEqcInfo
    * f(a,b) ---> f(c,g(b))
    * f(c,b) ---> f(c,g(b))
    * f(a,a) ---> f(c,c)
+   * 
+   * Notice that we use match operators to resolve overloading, e.g.
+   * array select terms (select t1 t2) and (select s1 s2) are indexed separately
+   * if t1,t2 have different types than s1,s2.
    */
   std::unordered_map<TNode, std::vector<Node> > d_matchOps;
   /** initialize this equivalence class information */

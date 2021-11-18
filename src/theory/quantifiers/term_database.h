@@ -151,7 +151,9 @@ class TermDb : public QuantifiersUtil {
   * If n has a kind that we do not index (like PLUS),
   * then this function returns Node::null().
   */
-  Node getMatchOperator(Node n);
+  Node getMatchOperator(TNode n);
+  /** Is matchable? true if the above method is non-null */
+  bool isMatchable(TNode n);
   /** get term arg index for all f-applications in the current context */
   TNodeTrie* getTermArgTrie(Node f);
   /** get the term arg trie for f-applications in the equivalence class of eqc.

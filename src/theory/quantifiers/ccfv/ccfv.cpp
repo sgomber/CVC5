@@ -102,13 +102,13 @@ void CongruenceClosureFv::assertNode(Node q)
   // Assert quantified formula. This sets up:
   // (1) variables to quantifiers
   // (2) notifications from constraint terms to quantified formulas
-  // (3) initial notifications for ground terms
-  // (4) notifications from children to congruence terms
-  // (5) notifications from children to other terms (including Boolean
+  // (3) notifications from children to congruence terms
+  // (4) notifications from children to other terms (including Boolean
   // connectives and theory symbols that we do not do congruence over)
-  // (6) free variables to "final" terms that are fully assigned when we
-  // assign that variable.
-  // (7) marking "watched evaluate" terms, e.g. (+ x 1) in (P (+ x 1)).
+  // (5) free variables to "final" terms that are fully assigned when we
+  // assign that variable. This includes ground terms, that are notified
+  // by the null variable at the beginning of the search.
+  // (6) marking "watched evaluate" terms, e.g. (+ x 1) in (P (+ x 1)).
 
   // get the equality engine
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
@@ -150,12 +150,6 @@ void CongruenceClosureFv::assertNode(Node q)
       visited.insert(cur);
       if (!expr::hasBoundVar(cur) || !QuantInfo::isTraverseTerm(cur))
       {
-        // (3) ground term or no-traverse term in a relevant position.
-        // require initial notifications for these terms, which we store in
-        // the null free variable info. We furthermore do not traverse these
-        // terms.
-        FreeVarInfo& fiNull = d_state.getOrMkFreeVarInfo(Node::null());
-        fiNull.d_finalTerms.insert(cur);
         continue;
       }
       Kind k = cur.getKind();
@@ -174,12 +168,12 @@ void CongruenceClosureFv::assertNode(Node q)
         {
           Assert(ee->isFunctionKind(k));
           Assert(cur.hasOperator());
-          // (4) congruence terms will recieve notifications when unassigned
+          // (3) congruence terms will recieve notifications when unassigned
           pi.d_parentCongNotify.push_back(cur);
         }
         else
         {
-          // (5) other kinds require notifications to parent
+          // (4) other kinds require notifications to parent
           pi.d_parentNotify.push_back(cur);
         }
         visit.push_back(cc);
@@ -187,7 +181,7 @@ void CongruenceClosureFv::assertNode(Node q)
     }
   } while (!visit.empty());
 
-  // (6) map free variables to terms that are fully assigned when that free
+  // (5) map free variables to terms that are fully assigned when that free
   // variable is assigned
   const std::map<TNode, std::vector<TNode>>& vft = qi.getVarToFinalTermMap();
   for (const std::pair<const TNode, std::vector<TNode>>& tv : vft)
@@ -198,7 +192,7 @@ void CongruenceClosureFv::assertNode(Node q)
       fi.d_finalTerms.insert(ft);
     }
   }
-  // (7) mark evaluate arg terms as watching evaluation. This is for terms
+  // (6) mark evaluate arg terms as watching evaluation. This is for terms
   // (P (+ x 1)), when x becomes assigned to e.g. 100, we rewrite (+ x 1)
   // to 101; if 101 is a term in the equivalence class, we merge (+ x 1) and
   // 101.
