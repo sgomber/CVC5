@@ -150,12 +150,11 @@ std::string QuantInfo::toStringDebug() const
   {
     ss << "Matcher information:" << std::endl;
     std::map<TNode, std::vector<TNode>>::const_iterator itf;
-    for (const std::pair<const TNode, size_t>& t :
-         d_matcherToCScore)
+    for (const std::pair<const TNode, size_t>& t : d_matcherToCScore)
     {
       ss << "  " << t.first << " : c-score = " << t.second;
       itf = d_matcherToFun.find(t.first);
-      Assert (itf!=d_matcherToFun.end());
+      Assert(itf != d_matcherToFun.end());
       if (!itf->second.empty())
       {
         ss << ", funs = " << itf->second;
@@ -440,7 +439,7 @@ void QuantInfo::processMatchReqTerms(TermDb* tdb, eq::EqualityEngine* ee)
 
 void QuantInfo::registerCandidateMatcher(TermDb* tdb, TNode m)
 {
-  if (d_matcherToCScore.find(m)!=d_matcherToCScore.end())
+  if (d_matcherToCScore.find(m) != d_matcherToCScore.end())
   {
     // already registered
     return;
@@ -474,10 +473,12 @@ void QuantInfo::registerCandidateMatcher(TermDb* tdb, TNode m)
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(m);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
-    if (visited.find(cur) == visited.end()) {
+    if (visited.find(cur) == visited.end())
+    {
       visited.insert(cur);
       if (!isTraverseTerm(cur) || !expr::hasBoundVar(cur))
       {
@@ -489,7 +490,7 @@ void QuantInfo::registerCandidateMatcher(TermDb* tdb, TNode m)
       if (!matchOp.isNull())
       {
         // note: should be a congruence kind???
-        if (std::find(funs.begin(), funs.end(), matchOp)==funs.end())
+        if (std::find(funs.begin(), funs.end(), matchOp) == funs.end())
         {
           funs.push_back(matchOp);
         }
@@ -499,7 +500,7 @@ void QuantInfo::registerCandidateMatcher(TermDb* tdb, TNode m)
   } while (!visit.empty());
   if (!funs.empty())
   {
-    cscore = cscore+1;
+    cscore = cscore + 1;
   }
 }
 
@@ -557,7 +558,8 @@ TNode QuantInfo::getBestMatcherFor(TermDb* tdb,
     }
     // prefer matchers in increasing order:
     // 0-no constraints, 1-null constraint, 2-disequality, 3-equality
-    std::pair<size_t, int64_t> mscore = std::pair<size_t, int64_t>(d_matcherToCScore[m], -getMinMatchCount(tdb, m));
+    std::pair<size_t, int64_t> mscore = std::pair<size_t, int64_t>(
+        d_matcherToCScore[m], -getMinMatchCount(tdb, m));
     if (best.isNull() || mscore > bestScore)
     {
       // Take this as the new best candidate matcher
@@ -570,7 +572,8 @@ TNode QuantInfo::getBestMatcherFor(TermDb* tdb,
 
 size_t QuantInfo::getMinMatchCount(TermDb* tdb, TNode m) const
 {
-  std::map<TNode, std::vector<TNode>>::const_iterator it = d_matcherToFun.find(m);
+  std::map<TNode, std::vector<TNode>>::const_iterator it =
+      d_matcherToFun.find(m);
   if (it == d_matcherToFun.end())
   {
     return 0;
@@ -580,11 +583,11 @@ size_t QuantInfo::getMinMatchCount(TermDb* tdb, TNode m) const
   for (TNode f : it->second)
   {
     size_t numF = tdb->getNumGroundTerms(f);
-    if (!hasSet || numF<count)
+    if (!hasSet || numF < count)
     {
       hasSet = true;
       count = numF;
-      if (count==0)
+      if (count == 0)
       {
         // term requires a matcher with zero arguments
         break;

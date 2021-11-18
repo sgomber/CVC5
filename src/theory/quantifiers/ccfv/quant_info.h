@@ -166,16 +166,16 @@ class QuantInfo
   std::map<TNode, std::vector<TNode>> d_varToFinalTerms;
   /** All matchers for each variable */
   std::map<TNode, std::vector<TNode>> d_candidateMatchers;
-  /** 
+  /**
    * Matcher to constraint score
    * 0: no constraints, 2: "some" constraint, 4: disequal, 6: equal +
    * 1 if matching restriction
    */
   std::map<TNode, size_t> d_matcherToCScore;
   /**
-   * Matchers to the function symbols they require matching for, e.g. 
+   * Matchers to the function symbols they require matching for, e.g.
    * P(f(g(x))) ---> [P, f, g]
-   */ 
+   */
   std::map<TNode, std::vector<TNode>> d_matcherToFun;
   /**
    * Subterms of d_req that are direct subterms of a congruence term that
