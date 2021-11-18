@@ -37,7 +37,6 @@ namespace ccfv {
  *
 
  TODO:
-- dynamic matching
 - account for unmatchable terms
 
  */

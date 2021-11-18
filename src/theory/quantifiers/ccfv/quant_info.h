@@ -56,9 +56,7 @@ class QuantInfo
   //-------------------------- static information
   /** Get free variables */
   const std::vector<TNode>& getFreeVariables() const;
-  /**
-   * Get ordered free variables
-   */
+  /** Get ordered list of free variables */
   const std::vector<TNode>& getOrderedFreeVariables() const;
   /**
    * Get the constraints, which maps pattern terms to node corresponding to
@@ -75,17 +73,13 @@ class QuantInfo
   /** Get variable to final terms map */
   const std::map<TNode, std::vector<TNode>>& getVarToFinalTermMap() const;
   //-------------------------- per round
-  /** reset variable count */
-  // void resetSearchVariableCount();
-  /**
-   * Get next variable. This is used to initialize the search.
-   */
-  TNode getNextSearchVariable();
-  //-------------------------- per round
   /**
    * Reset round, called once per full effort check
    */
-  void resetRound();
+  void resetRound(TermDb* tdb);
+  /** Get next variable. This is used to initialize the search. */
+  TNode getNextSearchVariable();
+  //-------------------------- queries local to round
   /** get the matcher for variable v */
   TNode getMatcherFor(TNode v) const;
   /** Is alive? */
@@ -96,14 +90,13 @@ class QuantInfo
   void setNoConflict();
   /** Is maybe conflict */
   bool isMaybeConflict() const;
-
+  //-------------------------- utilities
   /** Do we traverse this node? */
   static bool isTraverseTerm(TNode n);
   /** is c a disequality constraint for p? */
   static bool isDeqConstraint(TNode c, TNode p, TNode& val);
   /** is c a disequality constraint for p? */
   static bool isDeqConstraint(TNode c, TNode p);
-
   /** Debug print */
   std::string toStringDebug() const;
 
@@ -120,7 +113,7 @@ class QuantInfo
   /** Process match requirement terms */
   void processMatchReqTerms(eq::EqualityEngine* ee);
   /** Set matchers */
-  void setMatchers(TermDb* tdb);
+  TNode getBestMatcherFor(TermDb* tdb, TNode v, std::unordered_set<TNode>& usedMatchers);
   //------------------- static
   /** The quantified formula */
   Node d_quant;
@@ -159,6 +152,17 @@ class QuantInfo
    * makes the congruence term fully assigned.
    */
   std::map<TNode, std::vector<TNode>> d_varToFinalTerms;
+  /** All matchers for each variable */
+  std::map<TNode, std::vector<TNode>> d_candidateMatchers;
+  /**
+   * Subterms of d_req that are direct subterms of a congruence term that
+   * are not congruence terms. These will require evaluation + asserting
+   * equalities.
+   */
+  std::vector<TNode> d_evalArgTerms;
+  //------------------- initializing search
+  /** init variable index */
+  size_t d_initVarIndex;
   /**
    * Mapping from free variables to a "matcher" for that variable. These terms
    * determine what to invoke matching on.
@@ -172,17 +176,6 @@ class QuantInfo
    * variables in the order are used for all variables they bind.
    */
   std::map<TNode, TNode> d_matchers;
-  /** All matchers for each variable */
-  std::map<TNode, std::vector<TNode>> d_candidateMatchers;
-  /**
-   * Subterms of d_req that are direct subterms of a congruence term that
-   * are not congruence terms. These will require evaluation + asserting
-   * equalities.
-   */
-  std::vector<TNode> d_evalArgTerms;
-  //------------------- initializing search
-  /** init variable index */
-  size_t d_initVarIndex;
   //------------------- within search
   /** is alive, false if we know it is not possible to construct a propagating
    * instance for this quantified formula  */

@@ -136,10 +136,10 @@ std::string QuantInfo::toStringDebug() const
       ss << "  " << t.first << " -> " << t.second << std::endl;
     }
   }
-  if (!d_matchers.empty())
+  if (!d_candidateMatchers.empty())
   {
-    ss << "Matchers:" << std::endl;
-    for (const std::pair<const TNode, TNode>& t : d_matchers)
+    ss << "Candidate matchers:" << std::endl;
+    for (const std::pair<const TNode, std::vector<TNode>>& t : d_candidateMatchers)
     {
       ss << "  " << t.first << " -> " << t.second << std::endl;
     }
@@ -356,16 +356,10 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
   Trace("ccfv-quant-debug") << "Compute candidate matchers..." << std::endl;
   std::unordered_set<TNode>::iterator itc;
   std::map<TNode, std::vector<TNode>>::iterator itpl;
-  std::map<TNode, std::vector<Node>>::iterator itr;
-  std::unordered_set<TNode> usedMatchers;
   std::map<TNode, TNode> termToMaxVar;
   for (TNode v : d_canonVarOrdered)
   {
-    // for each variable, we ensure that this variable occurs in the list
-    // of top-level matchers d_topLevelMatchers so far. We add one term.
-    Node tlMatcher;
-    size_t tlMatcherScore = 0;
-    bool alreadyMatcher = false;
+    // for each variable, we 
     std::vector<TNode> ctnVisit;
     std::unordered_set<TNode> containing;
     TNode ccur;
@@ -383,55 +377,13 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
         if (itc != topLevelMatchers.end())
         {
           d_candidateMatchers[v].push_back(ccur);
-          if (!alreadyMatcher)
-          {
-            if (usedMatchers.find(ccur) != usedMatchers.end())
-            {
-              // It may already be added (e.g. to match an earlier variable).
-              // In this case, we don't need to add a new matcher
-              alreadyMatcher = true;
-              d_matchers[v] = ccur;
-            }
-            else if (tlMatcherScore < 3)
-            {
-              // prefer matchers in increasing order:
-              // 0-no constraints, 1-null constraint, 2-disequality, 3-equality
-              size_t tlCurScore = 0;
-              itr = d_req.find(ccur);
-              if (itr != d_req.end())
-              {
-                for (const Node& cs : itr->second)
-                {
-                  if (cs.isNull())
-                  {
-                    tlCurScore = 1;
-                  }
-                  else if (isDeqConstraint(cs, ccur))
-                  {
-                    tlCurScore = 2;
-                  }
-                  else
-                  {
-                    tlCurScore = 3;
-                    break;
-                  }
-                }
-              }
-              if (tlMatcher.isNull() || tlCurScore > tlMatcherScore)
-              {
-                // Take this as the new best candidate matcher
-                tlMatcher = ccur;
-                tlMatcherScore = tlCurScore;
-              }
-            }
-          }
         }
         // we have fvars[i] < fvars[j] for i < j, set or overwrite the max
         // variable here.
         // for ordered variables xyzw, d_termMaxVar maps:
-        // f(x,y) -> y
-        // f(x,z) -> z
-        // f(y) -> y
+        //   f(x,y) -> y, f(x,z) -> z, f(y) -> y
+        // which will be converted in d_varToFinalTerms below to:
+        //   y->[f(x,y), f(y)], z -> [f(x,z)]
         termToMaxVar[ccur] = v;
         itpl = parentList.find(ccur);
         if (itpl != parentList.end())
@@ -441,25 +393,6 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
         }
       }
     } while (!ctnVisit.empty());
-    // if we don't already have a matcher for this variable
-    if (!alreadyMatcher)
-    {
-      if (!tlMatcher.isNull())
-      {
-        // use the matcher for this variable
-        d_matchers[v] = tlMatcher;
-        Assert(expr::hasSubterm(tlMatcher, v));
-        // Notice that variables in d_canonVarOrdered are assigned in order,
-        // thus this justifies matching for future variables.
-        usedMatchers.insert(tlMatcher);
-      }
-      else
-      {
-        // Warn that no matchers exist?
-        Trace("ccfv-warn") << "Warning: no matcher exists for variable " << v
-                           << " in " << d_quant << std::endl;
-      }
-    }
   }
   // set the final terms
   std::map<TNode, TNode>::iterator ittf;
@@ -473,12 +406,86 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
   }
 }
 
-void QuantInfo::setMatchers(TermDb* tdb) {}
-
-void QuantInfo::resetRound()
+void QuantInfo::resetRound(TermDb* tdb)
 {
   d_isActive = true;
   d_initVarIndex = 0;
+  
+  d_matchers.clear();
+  std::unordered_set<TNode> usedMatchers;
+  std::map<TNode, std::vector<TNode>>::iterator itcm;
+  for (TNode v : d_canonVarOrdered)
+  {
+    TNode m = getBestMatcherFor(tdb, v, usedMatchers);
+    if (!m.isNull())
+    {
+      Trace("ccfv-matching") << "Matcher (" << d_quant.getId() << ", " << v << ") = " << m << std::endl;
+      // use the matcher for this variable
+      d_matchers[v] = m;
+      Assert(expr::hasSubterm(m, v));
+      // Notice that variables in d_canonVarOrdered are assigned in order,
+      // thus this justifies matching for future variables.
+      usedMatchers.insert(m);
+    }
+    else
+    {
+      // Warn that no matchers exist?
+      Trace("ccfv-warn") << "Warning: no matcher exists for variable " << v
+                          << " in " << d_quant << std::endl;
+    }
+  }
+}
+
+TNode QuantInfo::getBestMatcherFor(TermDb* tdb, TNode v, std::unordered_set<TNode>& usedMatchers)
+{
+  std::map<TNode, std::vector<TNode>>::iterator itcm = d_candidateMatchers.find(v);
+  if (itcm==d_candidateMatchers.end())
+  {
+    return TNode::null();
+  }
+  TNode tlMatcher;
+  size_t tlMatcherScore = 0;
+  std::map<TNode, std::vector<Node>>::iterator itr;
+  // for each candidate matcher
+  for (TNode m : itcm->second)
+  {
+    // if we already used it for a previous variable, use it for this one
+    // as well.
+    if (usedMatchers.find(m) != usedMatchers.end())
+    {
+      return m;
+    }
+    // prefer matchers in increasing order:
+    // 0-no constraints, 1-null constraint, 2-disequality, 3-equality
+    size_t tlCurScore = 0;
+    itr = d_req.find(m);
+    if (itr != d_req.end())
+    {
+      for (const Node& cs : itr->second)
+      {
+        if (cs.isNull())
+        {
+          tlCurScore = 1;
+        }
+        else if (isDeqConstraint(cs, m))
+        {
+          tlCurScore = 2;
+        }
+        else
+        {
+          tlCurScore = 3;
+          break;
+        }
+      }
+    }
+    if (tlMatcher.isNull() || tlCurScore > tlMatcherScore)
+    {
+      // Take this as the new best candidate matcher
+      tlMatcher = m;
+      tlMatcherScore = tlCurScore;
+    }
+  }
+  return tlMatcher;
 }
 
 TNode QuantInfo::getNextSearchVariable()

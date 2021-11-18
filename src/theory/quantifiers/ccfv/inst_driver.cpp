@@ -76,10 +76,11 @@ void InstDriver::check(const std::vector<TNode>& quants)
 
   // reset round for all quantified formulas
   Trace("ccfv-debug") << "Reset " << quants.size() << " quants..." << std::endl;
+  TermDb * tdb = d_treg.getTermDatabase();
   for (TNode q : quants)
   {
     QuantInfo& qi = d_state.getQuantInfo(q);
-    qi.resetRound();
+    qi.resetRound(tdb);
     // add congruence terms from quantified formulas to the equality engine
     addToEqualityEngine(qi);
   }
