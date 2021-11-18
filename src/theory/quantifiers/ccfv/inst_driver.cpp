@@ -89,7 +89,8 @@ void InstDriver::check(const std::vector<TNode>& quants)
       activeQuants.push_back(q);
     }
   }
-  Trace("ccfv-debug") << "..." << activeQuants.size() << "/" << quants.size() << " are initially active" << std::endl;
+  Trace("ccfv-debug") << "..." << activeQuants.size() << "/" << quants.size()
+                      << " are initially active" << std::endl;
 
   // Reset the state. Notice that we must do this *after* adding pattern terms
   // to the equality engine, since ground terms in quantifier bodies should
@@ -293,8 +294,8 @@ void InstDriver::initializeLevel(size_t level)
   // if first time, we activate quantified formulas that start at this level
   if (slevel.d_firstTime)
   {
-    Assert (level+1>d_maxInitLevel);
-    d_maxInitLevel = level+1;
+    Assert(level + 1 > d_maxInitLevel);
+    d_maxInitLevel = level + 1;
     // activate quantified formulas that are first time
     for (TNode q : slevel.d_startQuants)
     {
@@ -370,7 +371,7 @@ bool InstDriver::pushLevel(size_t level)
     }
     assignment.push_back(eqc);
   }
-  if (!success && d_maxInitLevel==d_numLevels)
+  if (!success && d_maxInitLevel == d_numLevels)
   {
     // Could not find an assignment to any variables, and we have initialized
     // all levels. In this case, a previous assignment ran strictly
@@ -432,8 +433,8 @@ bool InstDriver::pushLevel(size_t level)
     if (Trace.isOn("ccfv-matching-debug"))
     {
       Trace("ccfv-matching-debug") << "E-graph after assignment:" << std::endl;
-      Trace("ccfv-matching-debug") << d_qstate.getEqualityEngine()->debugPrintEqc()
-                       << std::endl;
+      Trace("ccfv-matching-debug")
+          << d_qstate.getEqualityEngine()->debugPrintEqc() << std::endl;
     }
     Trace("ccfv-search-debug") << "Process final terms for " << v << std::endl;
     // assign final terms to none

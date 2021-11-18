@@ -518,7 +518,8 @@ bool QuantInfo::resetRound(TermDb* tdb)
   for (TNode v : d_canonVarOrdered)
   {
     TNode m = getBestMatcherFor(tdb, v, usedMatchers, feasible);
-    // could have realized by setting up matching that we will never be propagating
+    // could have realized by setting up matching that we will never be
+    // propagating
     if (!feasible)
     {
       return false;
@@ -571,7 +572,7 @@ TNode QuantInfo::getBestMatcherFor(TermDb* tdb,
     size_t cscore = d_matcherToCScore[m];
     size_t mmscore = 0;
     itmm = matchMinScore.find(m);
-    if (itmm==matchMinScore.end())
+    if (itmm == matchMinScore.end())
     {
       mmscore = getMinMatchCount(tdb, m);
       matchMinScore[m] = mmscore;
@@ -580,15 +581,15 @@ TNode QuantInfo::getBestMatcherFor(TermDb* tdb,
     {
       mmscore = itmm->second;
     }
-    if (cscore>=2 && mmscore==0)
+    if (cscore >= 2 && mmscore == 0)
     {
       // we are done if there is a constraint term that is infeasible to match
       feasible = false;
     }
     // prefer matchers in increasing order:
     // 0-no constraints, 1-null constraint, 2-disequality, 3-equality
-    std::pair<size_t, int64_t> mscore = std::pair<size_t, int64_t>(
-        cscore, -mmscore);
+    std::pair<size_t, int64_t> mscore =
+        std::pair<size_t, int64_t>(cscore, -mmscore);
     if (best.isNull() || mscore > bestScore)
     {
       // Take this as the new best candidate matcher
@@ -603,7 +604,7 @@ size_t QuantInfo::getMinMatchCount(TermDb* tdb, TNode m) const
 {
   std::map<TNode, std::vector<TNode>>::const_iterator it =
       d_matcherToFun.find(m);
-  Assert (it != d_matcherToFun.end());
+  Assert(it != d_matcherToFun.end());
   size_t count = 0;
   bool hasSet = false;
   for (TNode f : it->second)
