@@ -66,7 +66,7 @@ void InstDriver::addToEqualityEngine(QuantInfo& qi)
 void InstDriver::check(const std::vector<TNode>& quants)
 {
   Trace("ccfv") << "InstDriver::check" << std::endl;
-  
+
   Trace("ccfv-debug") << "Reset " << quants.size() << " quants..." << std::endl;
   TermDb* tdb = d_treg.getTermDatabase();
   std::vector<TNode> activeQuants;
@@ -80,7 +80,7 @@ void InstDriver::check(const std::vector<TNode>& quants)
   }
   Trace("ccfv-debug") << "..." << activeQuants.size() << "/" << quants.size()
                       << " are initially active" << std::endl;
-                      
+
   // we modify the equality engine, so we push the SAT context
   context()->push();
 

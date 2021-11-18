@@ -43,6 +43,7 @@ namespace ccfv {
 class CongruenceClosureFv : public QuantifiersModule
 {
   using NodeSet = context::CDHashSet<Node>;
+
  public:
   CongruenceClosureFv(Env& env,
                       QuantifiersState& qs,
