@@ -75,6 +75,8 @@ void InstDriver::check(const std::vector<TNode>& quants)
 
   // reset information about whether we have found instantiations
   d_foundInst = 0;
+  d_insts.clear();
+  d_conflictInstIndex.clear();
   d_inConflict = false;
 
   // reset round for all quantified formulas
@@ -124,6 +126,28 @@ void InstDriver::check(const std::vector<TNode>& quants)
 
   // pop the context that was done at the beginning
   context()->pop();
+  
+  // Now send instantiations. We do this only after popping the scope
+  Instantiate* qinst = d_qim.getInstantiate();
+  for (std::pair<const TNode, std::vector<std::vector<Node>> >& i : d_insts)
+  {
+    Node q = i.first;
+    std::unordered_set<size_t>& cci = d_conflictInstIndex[q];
+    for (size_t ii=0, ninst = i.second.size(); ii<ninst; ii++)
+    {
+      InferenceId id = cci.find(ii)!=cci.end() ? InferenceId::QUANTIFIERS_INST_CCFV_CONFLICT : InferenceId::QUANTIFIERS_INST_CCFV_PROP;
+      if (qinst->addInstantiation(q, i.second[ii], id))
+      {
+        Trace("ccfv-inst") << "Added instance for " << q.getId() << " : " << i.second[ii] << std::endl;
+      }
+      else
+      {
+        Trace("ccfv-inst") << "FAILED to add instance for " << q.getId() << " : " << i.second[ii] << std::endl;
+        Trace("ccfv-warn") << "Failed to add instantiation " << i.second[ii] << " for " << q << std::endl;
+        Assert(false) << "Failed CCFV instantiation: " << i.second[ii] << " for " << q;
+      }
+    }
+  }
 }
 
 bool InstDriver::inConflict() const { return d_inConflict; }
@@ -259,6 +283,11 @@ void InstDriver::initializeLevel(size_t level)
 
 bool InstDriver::pushLevel(size_t level)
 {
+  if (isFinished())
+  {
+    // already finished
+    return false;
+  }
   SearchLevel& slevel = getSearchLevel(level);
   bool wasFirstTime = slevel.d_firstTime;
   if (slevel.d_firstTime)
@@ -433,7 +462,6 @@ bool InstDriver::pushLevel(size_t level)
     const std::vector<TNode>& fvs = qi.getFreeVariables();
     Assert(q[0].getNumChildren() == fvs.size());
     std::vector<Node> inst;
-    std::map<TNode, TNode> subs;
     for (size_t i = 0, nvars = fvs.size(); i < nvars; i++)
     {
       TNode vval = d_state.getGroundRepresentative(fvs[i]);
@@ -443,32 +471,20 @@ bool InstDriver::pushLevel(size_t level)
         vval = vval.getType().mkGroundTerm();
       }
       inst.push_back(vval);
-      subs[q[0][i]] = vval;
     }
     Trace("ccfv-search") << "...check inst for " << q.getId() << " : " << inst
                          << std::endl;
-    InferenceId id = InferenceId::QUANTIFIERS_INST_CCFV_PROP;
     if (qi.isMaybeConflict())
     {
       d_inConflict = true;
-      id = InferenceId::QUANTIFIERS_INST_CCFV_CONFLICT;
+      d_conflictInstIndex[q].insert(d_insts[q].size());
       Trace("ccfv-search") << "...conflict!" << std::endl;
     }
     else
     {
       Trace("ccfv-search") << "...propagating!" << std::endl;
     }
-    Instantiate* qinst = d_qim.getInstantiate();
-    if (qinst->addInstantiation(q, inst, id))
-    {
-      d_foundInst++;
-    }
-    else
-    {
-      // warning?
-      Trace("ccfv-warn") << "Failed to assign" << std::endl;
-      Assert(false) << "Failed CCFV instantiation: " << inst << " for " << q;
-    }
+    d_insts[q].emplace_back(inst);
     // now, set the quantified formula inactive
     d_state.setQuantInactive(qi);
     if (d_state.isFinished())
@@ -500,7 +516,7 @@ void InstDriver::search()
     // context was pushed, false otherwise.
     if (pushLevel(currLevel))
     {
-      if (!d_state.isFinished() && currLevel + 1 < d_numLevels)
+      if (!isFinished() && currLevel + 1 < d_numLevels)
       {
         currLevel++;
         initializeLevel(currLevel);
