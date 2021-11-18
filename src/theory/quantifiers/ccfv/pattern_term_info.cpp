@@ -93,7 +93,7 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
   else
   {
     Trace("ccfv-state-debug")
-        << "Notify Bool connective: " << d_pattern << " child " << child
+        << "Notify interpreted fun: " << d_pattern << " child " << child
         << " == " << val << std::endl;
     // if a Boolean connective, handle short circuiting
     Kind k = d_pattern.getKind();
@@ -337,12 +337,12 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
           if (!npr.isNull())
           {
             d_eq = npr;
-            Trace("ccfv-state-debug") << "...evaluates to " << npr << std::endl;
+            Trace("ccfv-state-debug") << "...evaluate + find " << npr << std::endl;
           }
           else
           {
             Trace("ccfv-state-debug")
-                << "...failed to evaluate " << npattern << std::endl;
+                << "...failed to evaluate + find " << npattern << std::endl;
           }
         }
       }
