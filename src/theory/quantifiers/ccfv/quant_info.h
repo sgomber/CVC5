@@ -113,7 +113,9 @@ class QuantInfo
   /** Process match requirement terms */
   void processMatchReqTerms(eq::EqualityEngine* ee);
   /** Set matchers */
-  TNode getBestMatcherFor(TermDb* tdb, TNode v, std::unordered_set<TNode>& usedMatchers);
+  TNode getBestMatcherFor(TermDb* tdb,
+                          TNode v,
+                          std::unordered_set<TNode>& usedMatchers);
   //------------------- static
   /** The quantified formula */
   Node d_quant;

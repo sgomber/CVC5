@@ -139,7 +139,8 @@ std::string QuantInfo::toStringDebug() const
   if (!d_candidateMatchers.empty())
   {
     ss << "Candidate matchers:" << std::endl;
-    for (const std::pair<const TNode, std::vector<TNode>>& t : d_candidateMatchers)
+    for (const std::pair<const TNode, std::vector<TNode>>& t :
+         d_candidateMatchers)
     {
       ss << "  " << t.first << " -> " << t.second << std::endl;
     }
@@ -359,7 +360,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
   std::map<TNode, TNode> termToMaxVar;
   for (TNode v : d_canonVarOrdered)
   {
-    // for each variable, we 
+    // for each variable, we
     std::vector<TNode> ctnVisit;
     std::unordered_set<TNode> containing;
     TNode ccur;
@@ -410,7 +411,7 @@ void QuantInfo::resetRound(TermDb* tdb)
 {
   d_isActive = true;
   d_initVarIndex = 0;
-  
+
   d_matchers.clear();
   std::unordered_set<TNode> usedMatchers;
   std::map<TNode, std::vector<TNode>>::iterator itcm;
@@ -419,7 +420,8 @@ void QuantInfo::resetRound(TermDb* tdb)
     TNode m = getBestMatcherFor(tdb, v, usedMatchers);
     if (!m.isNull())
     {
-      Trace("ccfv-matching") << "Matcher (" << d_quant.getId() << ", " << v << ") = " << m << std::endl;
+      Trace("ccfv-matching") << "Matcher (" << d_quant.getId() << ", " << v
+                             << ") = " << m << std::endl;
       // use the matcher for this variable
       d_matchers[v] = m;
       Assert(expr::hasSubterm(m, v));
@@ -431,15 +433,18 @@ void QuantInfo::resetRound(TermDb* tdb)
     {
       // Warn that no matchers exist?
       Trace("ccfv-warn") << "Warning: no matcher exists for variable " << v
-                          << " in " << d_quant << std::endl;
+                         << " in " << d_quant << std::endl;
     }
   }
 }
 
-TNode QuantInfo::getBestMatcherFor(TermDb* tdb, TNode v, std::unordered_set<TNode>& usedMatchers)
+TNode QuantInfo::getBestMatcherFor(TermDb* tdb,
+                                   TNode v,
+                                   std::unordered_set<TNode>& usedMatchers)
 {
-  std::map<TNode, std::vector<TNode>>::iterator itcm = d_candidateMatchers.find(v);
-  if (itcm==d_candidateMatchers.end())
+  std::map<TNode, std::vector<TNode>>::iterator itcm =
+      d_candidateMatchers.find(v);
+  if (itcm == d_candidateMatchers.end())
   {
     return TNode::null();
   }

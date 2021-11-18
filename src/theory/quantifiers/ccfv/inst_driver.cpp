@@ -76,7 +76,7 @@ void InstDriver::check(const std::vector<TNode>& quants)
 
   // reset round for all quantified formulas
   Trace("ccfv-debug") << "Reset " << quants.size() << " quants..." << std::endl;
-  TermDb * tdb = d_treg.getTermDatabase();
+  TermDb* tdb = d_treg.getTermDatabase();
   for (TNode q : quants)
   {
     QuantInfo& qi = d_state.getQuantInfo(q);
