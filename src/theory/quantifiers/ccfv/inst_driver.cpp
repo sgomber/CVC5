@@ -83,7 +83,7 @@ void InstDriver::check(const std::vector<TNode>& quants)
     // add congruence terms from quantified formulas to the equality engine
     addToEqualityEngine(qi);
   }
-  
+
   // Reset the state. Notice that we must do this *after* adding pattern terms
   // to the equality engine, since ground terms in quantifier bodies should
   // be considered "known" terms.

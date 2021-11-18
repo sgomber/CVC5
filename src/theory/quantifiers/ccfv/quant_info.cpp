@@ -473,10 +473,7 @@ void QuantInfo::processMatchReqTerms(eq::EqualityEngine* ee)
   }
 }
 
-void QuantInfo::setMatchers(TermDb* tdb)
-{
-  
-}
+void QuantInfo::setMatchers(TermDb* tdb) {}
 
 void QuantInfo::resetRound()
 {
