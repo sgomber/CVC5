@@ -40,7 +40,7 @@ void Matching::initializeLevel(size_t level) { d_mpmap[level].clear(); }
 bool Matching::processMatcher(size_t level, QuantInfo& qi, TNode matcher)
 {
   // if the matcher is inactive, it won't find any matches, skip it
-  if(!d_state.getPatTermInfo(matcher).isActive())
+  if (!d_state.getPatTermInfo(matcher).isActive())
   {
     return true;
   }

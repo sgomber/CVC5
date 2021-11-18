@@ -423,7 +423,7 @@ void QuantInfo::processMatchReqTerms(TermDb* tdb, eq::EqualityEngine* ee)
   std::map<TNode, TNode>::iterator ittf;
   for (TNode ct : d_congTerms)
   {
-    if (ct.getKind()==BOUND_VARIABLE)
+    if (ct.getKind() == BOUND_VARIABLE)
     {
       // don't need to mark free variables as final
       continue;

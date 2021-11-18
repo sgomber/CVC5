@@ -81,7 +81,7 @@ void InstDriver::check(const std::vector<TNode>& quants)
   }
   Trace("ccfv-debug") << "..." << activeQuants.size() << "/" << quants.size()
                       << " are initially active" << std::endl;
-                      
+
   if (activeQuants.empty())
   {
     return;
@@ -150,7 +150,8 @@ void InstDriver::check(const std::vector<TNode>& quants)
 
   // pop the context that was done at the beginning
   context()->pop();
-  AlwaysAssert (context()->getLevel()==prevLevel) << "Context mismatch: " << prevLevel << " != " << context()->getLevel();
+  AlwaysAssert(context()->getLevel() == prevLevel)
+      << "Context mismatch: " << prevLevel << " != " << context()->getLevel();
 
   // Now send instantiations. We do this only after popping the scope
   Instantiate* qinst = d_qim.getInstantiate();
@@ -204,7 +205,7 @@ void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
     itf = fvLevel.find(fvs[0]);
     Assert(itf != fvLevel.end());
     // don't need to set quantified formulas at level 0, these have no impact
-    if (itf->second>0)
+    if (itf->second > 0)
     {
       SearchLevel& slevel = getSearchLevel(itf->second);
       slevel.d_startQuants.push_back(q);
@@ -320,16 +321,18 @@ void InstDriver::endLevel(size_t level)
   SearchLevel& slevel = getSearchLevel(level);
   if (slevel.d_firstTimePost)
   {
-    d_noScopeQuant.insert(d_noScopeQuant.end(), slevel.d_startQuants.begin(), slevel.d_startQuants.end());
+    d_noScopeQuant.insert(d_noScopeQuant.end(),
+                          slevel.d_startQuants.begin(),
+                          slevel.d_startQuants.end());
     slevel.d_firstTimePost = false;
   }
   // referesh set all the out of scope quantified formulas to inactive
-  while (d_noScopeQuantIndex.get()<d_noScopeQuant.size())
+  while (d_noScopeQuantIndex.get() < d_noScopeQuant.size())
   {
     TNode nsq = d_noScopeQuant[d_noScopeQuantIndex.get()];
     QuantInfo& qi = d_state.getQuantInfo(nsq);
     d_state.setQuantInactive(qi);
-    d_noScopeQuantIndex = d_noScopeQuantIndex.get()+1;
+    d_noScopeQuantIndex = d_noScopeQuantIndex.get() + 1;
   }
 }
 
@@ -507,8 +510,8 @@ bool InstDriver::pushLevel(size_t level)
       }
       inst.push_back(vval);
     }
-    Trace("ccfv-search") << "...instantiation for " << q.getId() << " : " << inst
-                         << std::endl;
+    Trace("ccfv-search") << "...instantiation for " << q.getId() << " : "
+                         << inst << std::endl;
     if (qi.isMaybeConflict())
     {
       d_inConflict = true;
@@ -576,7 +579,7 @@ void InstDriver::search()
     }
   }
   // if we terminated early, process any necessary context pops
-  while (currLevel>0)
+  while (currLevel > 0)
   {
     context()->pop();
     currLevel--;
