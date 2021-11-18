@@ -42,6 +42,7 @@ namespace ccfv {
  */
 class CongruenceClosureFv : public QuantifiersModule
 {
+  using NodeSet = context::CDHashSet<Node>;
  public:
   CongruenceClosureFv(Env& env,
                       QuantifiersState& qs,
@@ -79,6 +80,8 @@ class CongruenceClosureFv : public QuantifiersModule
   InstDriver d_driver;
   /** Term canonizer */
   expr::TermCanonize d_tcanon;
+  /** The terms we have set up notifications for */
+  NodeSet d_registeredTerms;
 };
 
 }  // namespace ccfv

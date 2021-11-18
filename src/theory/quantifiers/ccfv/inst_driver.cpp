@@ -66,6 +66,21 @@ void InstDriver::addToEqualityEngine(QuantInfo& qi)
 void InstDriver::check(const std::vector<TNode>& quants)
 {
   Trace("ccfv") << "InstDriver::check" << std::endl;
+  
+  Trace("ccfv-debug") << "Reset " << quants.size() << " quants..." << std::endl;
+  TermDb* tdb = d_treg.getTermDatabase();
+  std::vector<TNode> activeQuants;
+  for (TNode q : quants)
+  {
+    QuantInfo& qi = d_state.getQuantInfo(q);
+    if (qi.resetRound(tdb))
+    {
+      activeQuants.push_back(q);
+    }
+  }
+  Trace("ccfv-debug") << "..." << activeQuants.size() << "/" << quants.size()
+                      << " are initially active" << std::endl;
+                      
   // we modify the equality engine, so we push the SAT context
   context()->push();
 
@@ -75,22 +90,13 @@ void InstDriver::check(const std::vector<TNode>& quants)
   d_conflictInstIndex.clear();
   d_inConflict = false;
 
-  // reset round for all quantified formulas
-  Trace("ccfv-debug") << "Reset " << quants.size() << " quants..." << std::endl;
-  TermDb* tdb = d_treg.getTermDatabase();
-  std::vector<TNode> activeQuants;
-  for (TNode q : quants)
+  Trace("ccfv-debug") << "Add quant bodies to equality engine..." << std::endl;
+  for (TNode q : activeQuants)
   {
     QuantInfo& qi = d_state.getQuantInfo(q);
-    if (qi.resetRound(tdb))
-    {
-      // add congruence terms from quantified formulas to the equality engine
-      addToEqualityEngine(qi);
-      activeQuants.push_back(q);
-    }
+    // add congruence terms from quantified formulas to the equality engine
+    addToEqualityEngine(qi);
   }
-  Trace("ccfv-debug") << "..." << activeQuants.size() << "/" << quants.size()
-                      << " are initially active" << std::endl;
 
   // Reset the state. Notice that we must do this *after* adding pattern terms
   // to the equality engine, since ground terms in quantifier bodies should

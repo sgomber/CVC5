@@ -557,18 +557,14 @@ TNode QuantInfo::getBestMatcherFor(TermDb* tdb,
     return TNode::null();
   }
   TNode best;
+  TNode alreadyMatcher;
   std::pair<size_t, int64_t> bestScore;
   std::map<TNode, size_t> matchMinScore;
   std::map<TNode, size_t>::iterator itmm;
   // for each candidate matcher
   for (TNode m : itcm->second)
   {
-    // if we already used it for a previous variable, use it for this one
-    // as well?
-    if (usedMatchers.find(m) != usedMatchers.end())
-    {
-      return m;
-    }
+    // get their heuristic scores for constraints, matching
     size_t cscore = d_matcherToCScore[m];
     size_t mmscore = 0;
     itmm = matchMinScore.find(m);
@@ -585,19 +581,34 @@ TNode QuantInfo::getBestMatcherFor(TermDb* tdb,
     {
       // we are done if there is a constraint term that is infeasible to match
       feasible = false;
+      return TNode::null();
     }
-    // prefer matchers in increasing order:
-    // 0-no constraints, 1-null constraint, 2-disequality, 3-equality
-    std::pair<size_t, int64_t> mscore =
-        std::pair<size_t, int64_t>(cscore, -mmscore);
-    if (best.isNull() || mscore > bestScore)
+    // if we already used it for a previous variable, use it for this one
+    // as well?
+    if (alreadyMatcher.isNull())
     {
-      // Take this as the new best candidate matcher
-      best = m;
-      bestScore = mscore;
+      // if we already used it for a previous variable, use it for this one
+      // as well?
+      if (usedMatchers.find(m) != usedMatchers.end())
+      {
+        alreadyMatcher = m;
+      }
+      else
+      {
+        // prefer matchers in increasing order:
+        // 0-no constraints, 1-null constraint, 2-disequality, 3-equality
+        std::pair<size_t, int64_t> mscore =
+            std::pair<size_t, int64_t>(cscore, -mmscore);
+        if (best.isNull() || mscore > bestScore)
+        {
+          // Take this as the new best candidate matcher
+          best = m;
+          bestScore = mscore;
+        }
+      }
     }
   }
-  return best;
+  return alreadyMatcher.isNull() ? best : alreadyMatcher;
 }
 
 size_t QuantInfo::getMinMatchCount(TermDb* tdb, TNode m) const

@@ -30,6 +30,7 @@ namespace ccfv {
 PatTermInfo::PatTermInfo(context::Context* c)
     : d_eq(c),
       d_numUnassigned(c, 0),
+      d_numChildren(0),
       d_parentNotify(c),
       d_parentCongNotify(c),
       d_isWatchedEval(c, false)
@@ -45,27 +46,18 @@ void PatTermInfo::initialize(TNode pattern, eq::EqualityEngine* ee, TermDb* tdb)
   {
     d_matchOp = tdb->getMatchOperator(pattern);
   }
+  else
+  {
+    std::set<TNode> children;
+    children.insert(pattern.begin(), pattern.end());
+    d_numChildren = children.size();
+  }
 }
 
 void PatTermInfo::resetRound()
 {
   d_eq = Node::null();
-  if (!d_isCongTerm)
-  {
-    /*
-    for (TNode pc : pattern)
-    {
-      if (!expr::hasBoundVar(pc))
-      {
-        continue;
-      }
-      d_numUnassigned = d_numUnassigned + 1;
-    }
-    */
-    // TODO: duplicate children?? should probably handle in rewriter
-    // for quantifiers
-    d_numUnassigned = d_pattern.getNumChildren();
-  }
+  d_numUnassigned = d_numChildren;
 }
 
 bool PatTermInfo::isActive() const { return d_eq.get().isNull(); }

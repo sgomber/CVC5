@@ -34,7 +34,8 @@ CongruenceClosureFv::CongruenceClosureFv(Env& env,
                                          TermRegistry& tr)
     : QuantifiersModule(env, qs, qim, qr, tr),
       d_state(env, qs, getTermDatabase()),
-      d_driver(env, d_state, qs, qim, tr)
+      d_driver(env, d_state, qs, qim, tr),
+      d_registeredTerms(context())
 {
 }
 
@@ -123,8 +124,7 @@ void CongruenceClosureFv::assertNode(Node q)
     fi.d_quantList.push_back(q);
   }
 
-  std::unordered_set<TNode> visited;
-  std::unordered_set<TNode>::iterator it;
+  NodeSet::const_iterator it;
   std::vector<TNode> visit;
 
   // we traverse its constraint terms to set up the parent notification lists
@@ -144,10 +144,10 @@ void CongruenceClosureFv::assertNode(Node q)
   {
     cur = visit.back();
     visit.pop_back();
-    it = visited.find(cur);
-    if (it == visited.end())
+    it = d_registeredTerms.find(cur);
+    if (it == d_registeredTerms.end())
     {
-      visited.insert(cur);
+      d_registeredTerms.insert(cur);
       if (!expr::hasBoundVar(cur) || !QuantInfo::isTraverseTerm(cur))
       {
         continue;
