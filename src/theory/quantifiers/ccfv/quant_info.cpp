@@ -515,6 +515,11 @@ void QuantInfo::resetRound(TermDb* tdb)
   for (TNode v : d_canonVarOrdered)
   {
     TNode m = getBestMatcherFor(tdb, v, usedMatchers);
+    // could have realized by setting up matching that we will never be propagating
+    if (!d_isActive.get())
+    {
+      return;
+    }
     if (!m.isNull())
     {
       Trace("ccfv-matching") << "Matcher (" << d_quant.getId() << ", " << v
@@ -547,19 +552,37 @@ TNode QuantInfo::getBestMatcherFor(TermDb* tdb,
   }
   TNode best;
   std::pair<size_t, int64_t> bestScore;
+  std::map<TNode, size_t> matchMinScore;
+  std::map<TNode, size_t>::iterator itmm;
   // for each candidate matcher
   for (TNode m : itcm->second)
   {
     // if we already used it for a previous variable, use it for this one
-    // as well.
+    // as well?
     if (usedMatchers.find(m) != usedMatchers.end())
     {
       return m;
     }
+    size_t cscore = d_matcherToCScore[m];
+    size_t mmscore = 0;
+    itmm = matchMinScore.find(m);
+    if (itmm==matchMinScore.end())
+    {
+      mmscore = getMinMatchCount(tdb, m);
+      matchMinScore[m] = mmscore;
+    }
+    else
+    {
+      mmscore = itmm->second;
+    }
+    if (cscore>0 && mmscore==0)
+    {
+      // we are done if there is a constraint term that is infeasible to match
+    }
     // prefer matchers in increasing order:
     // 0-no constraints, 1-null constraint, 2-disequality, 3-equality
     std::pair<size_t, int64_t> mscore = std::pair<size_t, int64_t>(
-        d_matcherToCScore[m], -getMinMatchCount(tdb, m));
+        cscore, -mmscore);
     if (best.isNull() || mscore > bestScore)
     {
       // Take this as the new best candidate matcher
@@ -574,10 +597,7 @@ size_t QuantInfo::getMinMatchCount(TermDb* tdb, TNode m) const
 {
   std::map<TNode, std::vector<TNode>>::const_iterator it =
       d_matcherToFun.find(m);
-  if (it == d_matcherToFun.end())
-  {
-    return 0;
-  }
+  Assert (it != d_matcherToFun.end());
   size_t count = 0;
   bool hasSet = false;
   for (TNode f : it->second)

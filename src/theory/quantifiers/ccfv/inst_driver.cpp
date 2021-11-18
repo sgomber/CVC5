@@ -77,19 +77,25 @@ void InstDriver::check(const std::vector<TNode>& quants)
   // reset round for all quantified formulas
   Trace("ccfv-debug") << "Reset " << quants.size() << " quants..." << std::endl;
   TermDb* tdb = d_treg.getTermDatabase();
+  std::vector<TNode> activeQuants;
   for (TNode q : quants)
   {
     QuantInfo& qi = d_state.getQuantInfo(q);
     qi.resetRound(tdb);
-    // add congruence terms from quantified formulas to the equality engine
-    addToEqualityEngine(qi);
+    if (qi.isActive())
+    {
+      // add congruence terms from quantified formulas to the equality engine
+      addToEqualityEngine(qi);
+      activeQuants.push_back(q);
+    }
   }
+  Trace("ccfv-debug") << "..." << activeQuants.size() << "/" << quants.size() << " are initially active" << std::endl;
 
   // Reset the state. Notice that we must do this *after* adding pattern terms
   // to the equality engine, since ground terms in quantifier bodies should
   // be considered "known" terms.
   Trace("ccfv-debug") << "Reset state..." << std::endl;
-  d_state.resetRound(quants.size());
+  d_state.resetRound(activeQuants.size());
 
   // do initial notifications for relevant ground terms in the bodies of
   // quantified formulas.
@@ -115,7 +121,7 @@ void InstDriver::check(const std::vector<TNode>& quants)
     // reset search levels
     // NOTE: could incrementally maintain this?
     Trace("ccfv-debug") << "Reset search levels..." << std::endl;
-    resetSearchLevels(quants);
+    resetSearchLevels(activeQuants);
     Trace("ccfv-debug") << "Search..." << std::endl;
     Trace("ccfv-debug") << d_state.toStringDebug() << std::endl;
     search();
