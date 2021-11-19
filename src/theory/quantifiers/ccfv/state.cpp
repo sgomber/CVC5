@@ -537,7 +537,7 @@ TNode State::getValue(TNode p) const
   return r;
 }
 
-std::string State::toStringDebug() const
+std::string State::toString() const
 {
   std::stringstream ss;
   ss << "#groundEqc = " << d_groundEqc.size() << std::endl;
@@ -550,10 +550,28 @@ std::string State::toStringDebug() const
   return ss.str();
 }
 
-std::string State::toStringDebugSearch() const
+std::string State::toStringSearch() const
 {
   std::stringstream ss;
   ss << "activeQuants = " << d_numActiveQuant.get();
+  return ss.str();
+}
+
+std::string State::toStringDebugSearch() const
+{
+  std::stringstream ss;
+  ss << "activeQuants = " << d_numActiveQuant.get() << "[";
+  size_t nqc = 0;
+  for (const std::pair<const Node, QuantInfo>& q : d_quantInfo)
+  {
+    if (q.second.isActive())
+    {
+      ss << " " << q.first.getId();
+      nqc++;
+    }
+  }
+  ss << " ]";
+  AlwaysAssert(nqc==d_numActiveQuant.get()) << "Active quant mismatch " << ss.str();
   return ss.str();
 }
 

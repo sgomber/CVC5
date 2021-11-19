@@ -139,7 +139,7 @@ void InstDriver::check(const std::vector<TNode>& quants)
     Trace("ccfv-debug") << "Reset search levels..." << std::endl;
     resetSearchLevels(activeQuants);
     Trace("ccfv-debug") << "Search..." << std::endl;
-    Trace("ccfv-debug") << d_state.toStringDebug() << std::endl;
+    Trace("ccfv-debug") << d_state.toString() << std::endl;
     search();
     Trace("ccfv-debug") << "...finished" << std::endl;
   }
@@ -169,14 +169,18 @@ void InstDriver::check(const std::vector<TNode>& quants)
         Trace("ccfv-inst") << "Added instance for " << q.getId() << " : "
                            << i.second[ii] << std::endl;
       }
-      else
+      else if (id==InferenceId::QUANTIFIERS_INST_CCFV_CONFLICT)
       {
         Trace("ccfv-inst") << "FAILED to add instance for " << q.getId()
                            << " : " << i.second[ii] << std::endl;
         Trace("ccfv-warn") << "Failed to add instantiation " << i.second[ii]
                            << " for " << q << std::endl;
-        Assert(false) << "Failed CCFV instantiation: " << i.second[ii]
+        AlwaysAssert(false) << "Failed CCFV instantiation: " << i.second[ii]
                       << " for " << q;
+      }
+      else
+      {
+        // propagating instances may be entailed
       }
     }
   }
@@ -219,12 +223,12 @@ void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
     sl.second.d_firstTimePost = true;
   }
 
-  if (Trace.isOn("ccfv-debug"))
+  if (Trace.isOn("ccfv-search-levels"))
   {
     for (std::pair<const size_t, SearchLevel>& sl : d_levels)
     {
-      Trace("ccfv-debug") << "Search level #" << sl.first << ":" << std::endl;
-      Trace("ccfv-debug") << sl.second.toStringDebug() << std::endl;
+      Trace("ccfv-search-levels") << "Search level #" << sl.first << ":" << std::endl;
+      Trace("ccfv-search-levels") << sl.second.toStringDebug() << std::endl;
     }
   }
 }
@@ -312,6 +316,10 @@ void InstDriver::initializeLevel(size_t level)
   {
     FreeVarInfo& fi = d_state.getFreeVarInfo(v);
     fi.resetLevel();
+  }
+  if (Trace.isOn("ccfv-search-debug"))
+  {
+    Trace("ccfv-search-debug") << d_state.toStringDebugSearch() << std::endl;
   }
 }
 
@@ -549,7 +557,7 @@ void InstDriver::search()
   {
     Assert(currLevel < d_numLevels);
     Trace("ccfv-search") << "search: level = " << currLevel << ", "
-                         << d_state.toStringDebugSearch() << std::endl;
+                         << d_state.toStringSearch() << std::endl;
     // assign all variables at current level, this returns true if the
     // context was pushed, false otherwise.
     if (pushLevel(currLevel))

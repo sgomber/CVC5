@@ -121,7 +121,8 @@ class State : protected EnvObj
   void assertEquality(TNode p, TNode g);
 
   /** debugging */
-  std::string toStringDebug() const;
+  std::string toString() const;
+  std::string toStringSearch() const;
   std::string toStringDebugSearch() const;
 
  private:

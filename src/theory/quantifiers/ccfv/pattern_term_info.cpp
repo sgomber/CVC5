@@ -341,6 +341,7 @@ bool PatTermInfo::notifyChild(State& s, TNode child, TNode val)
           }
         }
       }
+      // TODO: entailment check?
       return true;
     }
   }
