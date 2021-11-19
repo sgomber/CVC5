@@ -571,7 +571,8 @@ std::string State::toStringDebugSearch() const
     }
   }
   ss << " ]";
-  AlwaysAssert(nqc==d_numActiveQuant.get()) << "Active quant mismatch " << ss.str();
+  AlwaysAssert(nqc == d_numActiveQuant.get())
+      << "Active quant mismatch " << ss.str();
   return ss.str();
 }
 

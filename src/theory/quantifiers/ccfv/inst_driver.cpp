@@ -169,14 +169,14 @@ void InstDriver::check(const std::vector<TNode>& quants)
         Trace("ccfv-inst") << "Added instance for " << q.getId() << " : "
                            << i.second[ii] << std::endl;
       }
-      else if (id==InferenceId::QUANTIFIERS_INST_CCFV_CONFLICT)
+      else if (id == InferenceId::QUANTIFIERS_INST_CCFV_CONFLICT)
       {
         Trace("ccfv-inst") << "FAILED to add instance for " << q.getId()
                            << " : " << i.second[ii] << std::endl;
         Trace("ccfv-warn") << "Failed to add instantiation " << i.second[ii]
                            << " for " << q << std::endl;
-        AlwaysAssert(false) << "Failed CCFV instantiation: " << i.second[ii]
-                      << " for " << q;
+        AlwaysAssert(false)
+            << "Failed CCFV instantiation: " << i.second[ii] << " for " << q;
       }
       else
       {
@@ -227,7 +227,8 @@ void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
   {
     for (std::pair<const size_t, SearchLevel>& sl : d_levels)
     {
-      Trace("ccfv-search-levels") << "Search level #" << sl.first << ":" << std::endl;
+      Trace("ccfv-search-levels")
+          << "Search level #" << sl.first << ":" << std::endl;
       Trace("ccfv-search-levels") << sl.second.toStringDebug() << std::endl;
     }
   }
