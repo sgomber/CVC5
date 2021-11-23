@@ -277,12 +277,17 @@ void ExtfSolver::checkExtfEval(int effort)
     // the subterm (str.replace x "A" "B") does not currently have the correct
     // value, say in this example that (str.replace x "A" "B") != "B".
     std::vector<Node> exp;
+    std::map<size_t, std::vector<Node>> expForChild;
     std::vector<Node> schildren;
     bool schanged = false;
-    for (const Node& nc : n)
+    Node ntgt = n.getKind()==STRING_IN_REGEXP ? n[0] : n;
+    for (size_t i=0, nchildren = ntgt.getNumChildren(); i<nchildren; i++)
     {
-      Node sc = getCurrentSubstitutionFor(effort, nc, exp);
+      Node nc = ntgt[i];
+      std::vector<Node>& expc = expForChild[i];
+      Node sc = getCurrentSubstitutionFor(effort, nc, expc);
       schildren.push_back(sc);
+      exp.insert(exp.end(), expc.begin(), expc.end());
       schanged = schanged || sc != nc;
     }
     // If there is information involving the children, attempt to do an
@@ -291,7 +296,11 @@ void ExtfSolver::checkExtfEval(int effort)
     Node to_reduce = n;
     if (schanged)
     {
-      Node sn = nm->mkNode(n.getKind(), schildren);
+      Node sn = nm->mkNode(ntgt.getKind(), schildren);
+      if (n.getKind()==STRING_IN_REGEXP)
+      {
+        sn = nm->mkNode(STRING_IN_REGEXP, sn, n[1]);
+      }
       Trace("strings-extf-debug")
           << "Check extf " << n << " == " << sn
           << ", constant = " << einfo.d_const << ", effort=" << effort
@@ -299,11 +308,53 @@ void ExtfSolver::checkExtfEval(int effort)
       einfo.d_exp.insert(einfo.d_exp.end(), exp.begin(), exp.end());
       // inference is rewriting the substituted node
       Node nrc = rewrite(sn);
+      Trace("strings-extf-debug") << "...rewrite to " << nrc << std::endl;
       // if rewrites to a constant, then do the inference and mark as reduced
       if (nrc.isConst())
       {
         if (effort < 3)
         {
+          // minimize?
+#if 1
+          std::vector<size_t> rmChildren;
+          for (size_t i=0, nchildren = ntgt.getNumChildren(); i<nchildren; i++)
+          {
+            Node prev = schildren[i];
+            if (prev==ntgt[i])
+            {
+              continue;
+            }
+            schildren[i] = ntgt[i];
+            Node snm = nm->mkNode(ntgt.getKind(), schildren);
+            if (n.getKind()==STRING_IN_REGEXP)
+            {
+              snm = nm->mkNode(STRING_IN_REGEXP, snm, n[1]);
+            }
+            Node nrcm = rewrite(snm);
+            if (nrcm!=nrc)
+            {
+              schildren[i] = prev;
+              continue;
+            }
+            rmChildren.push_back(i);
+          }
+          size_t origSize = einfo.d_exp.size();
+          if (!rmChildren.empty())
+          {
+            einfo.d_exp.clear();
+            for (size_t i=0, nchildren = ntgt.getNumChildren(); i<nchildren; i++)
+            {
+              if (std::find(rmChildren.begin(), rmChildren.end(), i)!=rmChildren.end())
+              {
+                continue;
+              }
+              std::vector<Node>& expc = expForChild[i];
+              einfo.d_exp.insert(einfo.d_exp.end(), expc.begin(), expc.end());
+            }
+          }
+          Trace("ajr-temp") << "Exp size: " << einfo.d_exp.size() << "/" << origSize << std::endl;
+#endif
+          
           d_extt.markReduced(n, ExtReducedId::STRINGS_SR_CONST);
           Trace("strings-extf-debug")
               << "  resolvable by evaluation..." << std::endl;
