@@ -280,7 +280,8 @@ void ExtfSolver::checkExtfEval(int effort)
     std::map<size_t, std::vector<Node>> expForChild;
     std::vector<Node> schildren;
     bool schanged = false;
-    Node ntgt = n.getKind()==STRING_IN_REGEXP ? n[0] : n;
+    bool subsStrInRex = (n.getKind()==STRING_IN_REGEXP && !n[0].isVar());
+    Node ntgt = subsStrInRex ? n[0] : n;
     for (size_t i=0, nchildren = ntgt.getNumChildren(); i<nchildren; i++)
     {
       Node nc = ntgt[i];
@@ -297,7 +298,7 @@ void ExtfSolver::checkExtfEval(int effort)
     if (schanged)
     {
       Node sn = nm->mkNode(ntgt.getKind(), schildren);
-      if (n.getKind()==STRING_IN_REGEXP)
+      if (subsStrInRex)
       {
         sn = nm->mkNode(STRING_IN_REGEXP, sn, n[1]);
       }
@@ -314,8 +315,7 @@ void ExtfSolver::checkExtfEval(int effort)
       {
         if (effort < 3)
         {
-          // minimize?
-#if 1
+          // minimize the substitution?
           std::vector<size_t> rmChildren;
           for (size_t i=0, nchildren = ntgt.getNumChildren(); i<nchildren; i++)
           {
@@ -326,7 +326,7 @@ void ExtfSolver::checkExtfEval(int effort)
             }
             schildren[i] = ntgt[i];
             Node snm = nm->mkNode(ntgt.getKind(), schildren);
-            if (n.getKind()==STRING_IN_REGEXP)
+            if (subsStrInRex)
             {
               snm = nm->mkNode(STRING_IN_REGEXP, snm, n[1]);
             }
@@ -352,8 +352,8 @@ void ExtfSolver::checkExtfEval(int effort)
               einfo.d_exp.insert(einfo.d_exp.end(), expc.begin(), expc.end());
             }
           }
-          Trace("ajr-temp") << "Exp size: " << einfo.d_exp.size() << "/" << origSize << std::endl;
-#endif
+          Trace("strings-extf-debug") << "Minimized exp size: " << einfo.d_exp.size() << "/" << origSize << std::endl;
+          //
           
           d_extt.markReduced(n, ExtReducedId::STRINGS_SR_CONST);
           Trace("strings-extf-debug")
