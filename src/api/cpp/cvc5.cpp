@@ -127,9 +127,6 @@ const static std::unordered_map<Kind, cvc5::Kind> s_kinds{
     {OR, cvc5::Kind::OR},
     {XOR, cvc5::Kind::XOR},
     {ITE, cvc5::Kind::ITE},
-    {MATCH, cvc5::Kind::MATCH},
-    {MATCH_CASE, cvc5::Kind::MATCH_CASE},
-    {MATCH_BIND_CASE, cvc5::Kind::MATCH_BIND_CASE},
     /* UF ------------------------------------------------------------------ */
     {APPLY_UF, cvc5::Kind::APPLY_UF},
     {CARDINALITY_CONSTRAINT, cvc5::Kind::CARDINALITY_CONSTRAINT},
@@ -266,6 +263,9 @@ const static std::unordered_map<Kind, cvc5::Kind> s_kinds{
     {APPLY_TESTER, cvc5::Kind::APPLY_TESTER},
     {APPLY_UPDATER, cvc5::Kind::APPLY_UPDATER},
     {DT_SIZE, cvc5::Kind::DT_SIZE},
+    {MATCH, cvc5::Kind::MATCH},
+    {MATCH_CASE, cvc5::Kind::MATCH_CASE},
+    {MATCH_BIND_CASE, cvc5::Kind::MATCH_BIND_CASE},
     {TUPLE_PROJECT, cvc5::Kind::TUPLE_PROJECT},
     /* Separation Logic ---------------------------------------------------- */
     {SEP_NIL, cvc5::Kind::SEP_NIL},
@@ -373,7 +373,7 @@ const static std::unordered_map<Kind, cvc5::Kind> s_kinds{
     /* Quantifiers --------------------------------------------------------- */
     {FORALL, cvc5::Kind::FORALL},
     {EXISTS, cvc5::Kind::EXISTS},
-    {BOUND_VAR_LIST, cvc5::Kind::BOUND_VAR_LIST},
+    {VARIABLE_LIST, cvc5::Kind::BOUND_VAR_LIST},
     {INST_PATTERN, cvc5::Kind::INST_PATTERN},
     {INST_NO_PATTERN, cvc5::Kind::INST_NO_PATTERN},
     {INST_POOL, cvc5::Kind::INST_POOL},
@@ -407,9 +407,6 @@ const static std::unordered_map<cvc5::Kind, Kind, cvc5::kind::KindHashFunction>
         {cvc5::Kind::OR, OR},
         {cvc5::Kind::XOR, XOR},
         {cvc5::Kind::ITE, ITE},
-        {cvc5::Kind::MATCH, MATCH},
-        {cvc5::Kind::MATCH_CASE, MATCH_CASE},
-        {cvc5::Kind::MATCH_BIND_CASE, MATCH_BIND_CASE},
         /* UF -------------------------------------------------------------- */
         {cvc5::Kind::APPLY_UF, APPLY_UF},
         {cvc5::Kind::CARDINALITY_CONSTRAINT, CARDINALITY_CONSTRAINT},
@@ -576,6 +573,9 @@ const static std::unordered_map<cvc5::Kind, Kind, cvc5::kind::KindHashFunction>
         {cvc5::Kind::APPLY_TESTER, APPLY_TESTER},
         {cvc5::Kind::APPLY_UPDATER, APPLY_UPDATER},
         {cvc5::Kind::DT_SIZE, DT_SIZE},
+        {cvc5::Kind::MATCH, MATCH},
+        {cvc5::Kind::MATCH_CASE, MATCH_CASE},
+        {cvc5::Kind::MATCH_BIND_CASE, MATCH_BIND_CASE},
         {cvc5::Kind::TUPLE_PROJECT, TUPLE_PROJECT},
         {cvc5::Kind::TUPLE_PROJECT_OP, TUPLE_PROJECT},
         /* Separation Logic ------------------------------------------------ */
@@ -673,7 +673,7 @@ const static std::unordered_map<cvc5::Kind, Kind, cvc5::kind::KindHashFunction>
         /* Quantifiers ----------------------------------------------------- */
         {cvc5::Kind::FORALL, FORALL},
         {cvc5::Kind::EXISTS, EXISTS},
-        {cvc5::Kind::BOUND_VAR_LIST, BOUND_VAR_LIST},
+        {cvc5::Kind::BOUND_VAR_LIST, VARIABLE_LIST},
         {cvc5::Kind::INST_PATTERN, INST_PATTERN},
         {cvc5::Kind::INST_NO_PATTERN, INST_NO_PATTERN},
         {cvc5::Kind::INST_POOL, INST_POOL},
@@ -5033,7 +5033,7 @@ void Solver::increment_vars_consts_stats(const Sort& sort, bool is_var) const
 /* .......................................................................... */
 
 template <typename T>
-Term Solver::mkValHelper(T t) const
+Term Solver::mkValHelper(const T& t) const
 {
   //////// all checks before this line
   Node res = getNodeManager()->mkConst(t);
@@ -5247,14 +5247,14 @@ Term Solver::mkTermHelper(Kind kind, const std::vector<Term>& children) const
 
 Term Solver::mkTermHelper(const Op& op, const std::vector<Term>& children) const
 {
-  // Note: Op and children are checked in the caller to avoid double checks
-  checkMkTerm(op.d_kind, children.size());
-  //////// all checks before this line
-
   if (!op.isIndexedHelper())
   {
     return mkTermHelper(op.d_kind, children);
   }
+
+  // Note: Op and children are checked in the caller to avoid double checks
+  checkMkTerm(op.d_kind, children.size());
+  //////// all checks before this line
 
   const cvc5::Kind int_kind = extToIntKind(op.d_kind);
   std::vector<Node> echildren = Term::termVectorToNodes(children);
