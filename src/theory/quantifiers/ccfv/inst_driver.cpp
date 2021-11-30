@@ -497,6 +497,7 @@ bool InstDriver::pushLevel(size_t level)
   // now, all active quantified formulas that are still active should have
   // propagating instances.
   Trace("ccfv-search-debug") << "Process final quants" << std::endl;
+  NodeManager * nm = NodeManager::currentNM();
   for (TNode q : slevel.d_finalQuants)
   {
     QuantInfo& qi = d_state.getQuantInfo(q);
@@ -515,7 +516,7 @@ bool InstDriver::pushLevel(size_t level)
       if (vval.getKind() == BOUND_VARIABLE)
       {
         // unconstrained variable? take arbitrary ground term
-        vval = vval.getType().mkGroundTerm();
+        vval = nm->mkGroundTerm(vval.getType());
       }
       inst.push_back(vval);
     }
