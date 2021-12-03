@@ -16,9 +16,9 @@
 #include "theory/quantifiers/oracle_checker.h"
 
 #include "expr/node_algorithm.h"
+#include "options/base_options.h"
 #include "smt/env.h"
 #include "theory/rewriter.h"
-#include "options/base_options.h"
 
 namespace cvc5 {
 namespace theory {
