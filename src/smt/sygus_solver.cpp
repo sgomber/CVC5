@@ -221,6 +221,10 @@ Result SygusSolver::checkSynth(Assertions& as)
       body = quantifiers::SygusUtils::mkSygusBody(listToVector(d_sygusVars), body, ofuns);
       Trace("smt") << "...constructed exists " << body << std::endl;
     }
+    else
+    {
+      body = body.notNode();
+    }
     if (!d_sygusFunSymbols.empty())
     {
       body = quantifiers::SygusUtils::mkSygusConjecture(
