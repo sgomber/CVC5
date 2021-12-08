@@ -90,7 +90,7 @@ Result SynthVerify::verify(Node query,
         Trace("sygus-engine") << std::endl;
       }
       // check whether the query is satisfied by the model
-      if (options::oracles() || Configuration::isAssertionBuild())
+      if (options().quantifiers.oracles() || Configuration::isAssertionBuild())
       {
         Assert(vars.size() == mvs.size());
         // the values for the query should be a complete model
@@ -105,7 +105,7 @@ Result SynthVerify::verify(Node query,
         // (2) something unexpected went wrong (for debugging).
         if (!squery.isConst() || !squery.getConst<bool>())
         {
-          if (options::oracles())
+          if (options().quantifiers.oracles())
           {
             // In this case, we reconstruct the query, which may include more
             // information about oracles than we had previously. We rerun the
@@ -119,7 +119,7 @@ Result SynthVerify::verify(Node query,
           }
           else
           {
-            Assert(!options::sygusRecFun()
+            Assert(!options().quantifiers.sygusRecFun()
                    || r.asSatisfiabilityResult().isSat() == Result::SAT_UNKNOWN)
                 << "Expected model from verification step to satisfy query";
           }
