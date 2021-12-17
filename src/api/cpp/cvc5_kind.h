@@ -663,16 +663,25 @@ enum Kind : int32_t
    * Multiple-precision rational constant.
    *
    * Parameters:
-   *   See @ref cvc5::api::Solver::mkInteger() "mkInteger()", @ref cvc5::api::Solver::mkReal() "mkReal()".
+   *   See @ref cvc5::api::Solver::mkReal() "mkReal()".
    *
    * Create with:
-   *   - `Solver::mkInteger(const std::string& s) const`
-   *   - `Solver::mkInteger(int64_t val) const`
    *   - `Solver::mkReal(const std::string& s) const`
    *   - `Solver::mkReal(int64_t val) const`
    *   - `Solver::mkReal(int64_t num, int64_t den) const`
    */
   CONST_RATIONAL,
+  /**
+   * Multiple-precision integer constant.
+   *
+   * Parameters:
+   *   See @ref cvc5::api::Solver::mkInteger() "mkInteger()"
+   *
+   * Create with:
+   *   - `Solver::mkInteger(const std::string& s) const`
+   *   - `Solver::mkInteger(int64_t val) const`
+   */
+  CONST_INTEGER,
   /**
    * Less than, chainable.
    *

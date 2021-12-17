@@ -159,6 +159,7 @@ const static std::unordered_map<Kind, cvc5::Kind> s_kinds{
     {ARCCOTANGENT, cvc5::Kind::ARCCOTANGENT},
     {SQRT, cvc5::Kind::SQRT},
     {CONST_RATIONAL, cvc5::Kind::CONST_RATIONAL},
+    {CONST_INTEGER, cvc5::Kind::CONST_INTEGER},
     {LT, cvc5::Kind::LT},
     {LEQ, cvc5::Kind::LEQ},
     {GT, cvc5::Kind::GT},
@@ -444,6 +445,7 @@ const static std::unordered_map<cvc5::Kind, Kind, cvc5::kind::KindHashFunction>
         {cvc5::Kind::SQRT, SQRT},
         {cvc5::Kind::DIVISIBLE_OP, DIVISIBLE},
         {cvc5::Kind::CONST_RATIONAL, CONST_RATIONAL},
+        {cvc5::Kind::CONST_INTEGER, CONST_INTEGER},
         {cvc5::Kind::LT, LT},
         {cvc5::Kind::LEQ, LEQ},
         {cvc5::Kind::GT, GT},
@@ -2807,7 +2809,8 @@ const Rational& getRational(const cvc5::Node& node)
   switch (node.getKind())
   {
     case cvc5::Kind::CAST_TO_REAL: return node[0].getConst<Rational>();
-    case cvc5::Kind::CONST_RATIONAL: return node.getConst<Rational>();
+    case cvc5::Kind::CONST_RATIONAL:
+    case cvc5::Kind::CONST_INTEGER: return node.getConst<Rational>();
     default:
       CVC5_API_CHECK(false) << "Node is not a rational.";
       return node.getConst<Rational>();
@@ -2836,6 +2839,9 @@ bool checkReal64Bounds(const Rational& r)
 
 bool isReal(const Node& node)
 {
+#if 0  // no-subtypes
+  return node.getKind() == cvc5::Kind::CONST_RATIONAL;
+#endif
   return node.getKind() == cvc5::Kind::CONST_RATIONAL
          || node.getKind() == cvc5::Kind::CAST_TO_REAL;
 }
@@ -2850,6 +2856,9 @@ bool isReal64(const Node& node)
 
 bool isInteger(const Node& node)
 {
+#if 0  // no-subtypes
+  return node.getKind() == cvc5::Kind::CONST_INTEGER;
+#endif
   return node.getKind() == cvc5::Kind::CONST_RATIONAL
          && node.getConst<Rational>().isIntegral();
 }
@@ -3490,6 +3499,9 @@ Kind Term::getKindHelper() const
 
 bool Term::isCastedReal() const
 {
+#if 0  // no-subtypes
+  return false;
+#endif
   if (d_node->getKind() == kind::CAST_TO_REAL)
   {
     return (*d_node)[0].isConst() && (*d_node)[0].getType().isInteger();
@@ -5083,7 +5095,13 @@ Term Solver::mkRationalValHelper(const Rational& r, bool isInt) const
   NodeManager* nm = getNodeManager();
   Node res = isInt ? nm->mkConstInt(r) : nm->mkConstReal(r);
   (void)res.getType(true); /* kick off type checking */
-  return Term(this, res);
+  api::Term t = Term(this, res);
+  // NOTE: this block will be eliminated when arithmetic subtyping is eliminated
+  if (!isInt)
+  {
+    t = ensureRealSort(t);
+  }
+  return t;
 }
 
 Term Solver::mkRealOrIntegerFromStrHelper(const std::string& s,
@@ -5857,8 +5875,7 @@ Term Solver::mkReal(const std::string& s) const
   CVC5_API_ARG_CHECK_EXPECTED(s != ".", s)
       << "a string representing a real or rational value.";
   //////// all checks before this line
-  Term rational = mkRealOrIntegerFromStrHelper(s, false);
-  return ensureRealSort(rational);
+  return mkRealOrIntegerFromStrHelper(s, false);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -5867,8 +5884,7 @@ Term Solver::mkReal(int64_t val) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
-  Term rational = mkRationalValHelper(cvc5::Rational(val), false);
-  return ensureRealSort(rational);
+  return mkRationalValHelper(cvc5::Rational(val), false);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -5877,8 +5893,7 @@ Term Solver::mkReal(int64_t num, int64_t den) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
-  Term rational = mkRationalValHelper(cvc5::Rational(num, den), false);
-  return ensureRealSort(rational);
+  return mkRationalValHelper(cvc5::Rational(num, den), false);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
