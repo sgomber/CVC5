@@ -271,6 +271,9 @@ bool TypeNode::isStringLike() const { return isString() || isSequence(); }
 bool TypeNode::isRealOrInt() const { return isReal(); }
 
 bool TypeNode::isSubtypeOf(TypeNode t) const {
+#if 0  // no-subtypes
+  return *this == t;
+#endif
   if(*this == t) {
     return true;
   }
@@ -297,6 +300,9 @@ bool TypeNode::isSubtypeOf(TypeNode t) const {
 }
 
 bool TypeNode::isComparableTo(TypeNode t) const {
+#if 0  // no-subtypes
+  return *this == t;
+#endif
   if(*this == t) {
     return true;
   }
@@ -466,6 +472,10 @@ TypeNode TypeNode::commonTypeNode(TypeNode t0, TypeNode t1, bool isLeast) {
   if(__builtin_expect( (t0 == t1), true )) {
     return t0;
   }
+
+#if 0  // no-subtypes
+  return TypeNode();
+#endif
 
   // t0 != t1 &&
   if(t0.getKind() == kind::TYPE_CONSTANT) {
