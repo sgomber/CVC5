@@ -5080,13 +5080,14 @@ Term Solver::mkValHelper(const T& t) const
 Term Solver::mkRationalValHelper(const Rational& r, bool isInt) const
 {
   //////// all checks before this line
-  NodeManager * nm = getNodeManager();
+  NodeManager* nm = getNodeManager();
   Node res = isInt ? nm->mkConstInt(r) : nm->mkConstReal(r);
   (void)res.getType(true); /* kick off type checking */
   return Term(this, res);
 }
 
-Term Solver::mkRealOrIntegerFromStrHelper(const std::string& s, bool isInt) const
+Term Solver::mkRealOrIntegerFromStrHelper(const std::string& s,
+                                          bool isInt) const
 {
   //////// all checks before this line
   try
