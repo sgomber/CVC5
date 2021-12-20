@@ -1694,6 +1694,26 @@ cdef class Solver:
         r.cr = self.csolver.checkSynth()
         return r
 
+    def checkSynthNext(self):
+        """
+        Try to find a next solution for the synthesis conjecture corresponding
+        to the current list of functions-to-synthesize, universal variables and
+        constraints. Must be called immediately after a successful call to
+        check-synth or check-synth-next. Requires incremental mode.
+
+        SyGuS v2:
+
+        .. code-block:: smtlib
+
+            ( check-synth )
+
+        :return: the result of the check, which is unsat if the check succeeded,
+        in which case solutions are available via getSynthSolutions.
+        """
+        cdef Result r = Result()
+        r.cr = self.csolver.checkSynthNext()
+        return r
+
     def getSynthSolution(self, Term term):
         """
         Get the synthesis solution of the given term. This method should be
@@ -3042,6 +3062,16 @@ cdef class Term:
         cdef Py_ssize_t size
         cdef c_wstring s = self.cterm.getStringValue()
         return PyUnicode_FromWideChar(s.data(), s.size())
+
+    def getRealOrIntegerValueSign(self):
+        """
+        Get integer or real value sign. Must be called on integer or real values,
+        or otherwise an exception is thrown.
+        
+        :return: 0 if this term is zero, -1 if this term is a negative real or
+        integer value, 1 if this term is a positive real or integer value.
+        """
+        return self.cterm.getRealOrIntegerValueSign()
 
     def isIntegerValue(self):
         """:return: True iff this term is an integer value."""

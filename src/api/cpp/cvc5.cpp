@@ -2880,6 +2880,17 @@ bool isUInt64(const Node& node)
 }
 }  // namespace detail
 
+int32_t Term::getRealOrIntegerValueSign() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_CHECK_NOT_NULL;
+  //////// all checks before this line
+  const Rational& r = detail::getRational(*d_node);
+  return static_cast<int32_t>(r.sgn());
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
 bool Term::isInt32Value() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
@@ -7941,6 +7952,18 @@ Result Solver::checkSynth() const
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
   return d_slv->checkSynth();
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+Result Solver::checkSynthNext() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_CHECK(d_slv->getOptions().base.incrementalSolving)
+      << "Cannot checkSynthNext when not solving incrementally (use "
+         "--incremental)";
+  //////// all checks before this line
+  return d_slv->checkSynth(true);
   ////////
   CVC5_API_TRY_CATCH_END;
 }

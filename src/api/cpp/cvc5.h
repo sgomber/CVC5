@@ -1341,6 +1341,13 @@ class CVC5_EXPORT Term
   const_iterator end() const;
 
   /**
+   * Get integer or real value sign. Must be called on integer or real values,
+   * or otherwise an exception is thrown.
+   * @return 0 if this term is zero, -1 if this term is a negative real or
+   * integer value, 1 if this term is a positive real or integer value.
+   */
+  int32_t getRealOrIntegerValueSign() const;
+  /**
    * @return true if the term is an integer value that fits within int32_t.
    */
   bool isInt32Value() const;
@@ -4804,9 +4811,29 @@ class CVC5_EXPORT Solver
    *     (check-synth)
    * \endverbatim
    *
-   * @return the result of the synthesis conjecture.
+   * @return the result of the check, which is unsat if the check succeeded,
+   * in which case solutions are available via getSynthSolutions.
    */
   Result checkSynth() const;
+
+  /**
+   * Try to find a next solution for the synthesis conjecture corresponding to
+   * the current list of functions-to-synthesize, universal variables and
+   * constraints. Must be called immediately after a successful call to
+   * check-synth or check-synth-next. Requires incremental mode.
+   *
+   * SyGuS v2:
+   *
+   * \verbatim embed:rst:leading-asterisk
+   * .. code:: smtlib
+   *
+   *     (check-synth-next)
+   * \endverbatim
+   *
+   * @return the result of the check, which is unsat if the check succeeded,
+   * in which case solutions are available via getSynthSolutions.
+   */
+  Result checkSynthNext() const;
 
   /**
    * Get the synthesis solution of the given term. This method should be called
