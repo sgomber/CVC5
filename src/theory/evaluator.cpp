@@ -170,7 +170,8 @@ Node Evaluator::eval(TNode n,
     }
   }
   Trace("evaluator") << "Run eval internal..." << std::endl;
-  Node ret = evalInternal(n, args, vals, evalAsNode, results).toNode(n.getType());
+  Node ret =
+      evalInternal(n, args, vals, evalAsNode, results).toNode(n.getType());
   // if we failed to evaluate
   if (ret.isNull() && d_rr != nullptr)
   {
@@ -354,7 +355,8 @@ EvalResult Evaluator::evalInternal(
 
           for (const auto& lambdaVal : currNode)
           {
-            lambdaVals.insert(lambdaVals.begin(), results[lambdaVal].toNode(lambdaVal.getType()));
+            lambdaVals.insert(lambdaVals.begin(),
+                              results[lambdaVal].toNode(lambdaVal.getType()));
           }
 
           // Lambdas are evaluated in a recursive fashion because each

@@ -35,7 +35,8 @@ TypeNode ArithConstantTypeRule::computeType(NodeManager* nodeManager,
   {
     if (!n.getConst<Rational>().isIntegral())
     {
-      throw TypeCheckingExceptionPrivate(n, "making an integer constant from a non-integral rational");
+      throw TypeCheckingExceptionPrivate(
+          n, "making an integer constant from a non-integral rational");
     }
   }
   return nodeManager->integerType();

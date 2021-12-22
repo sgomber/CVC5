@@ -266,24 +266,25 @@ bool TypeNode::isWellFounded() const {
 
 bool TypeNode::isStringLike() const { return isString() || isSequence(); }
 
-
-
-bool TypeNode::isReal() const {
+bool TypeNode::isReal() const
+{
 #if 1  // no-subtypes
-  return getKind() == kind::TYPE_CONSTANT && getConst<TypeConstant>() == REAL_TYPE;
+  return getKind() == kind::TYPE_CONSTANT
+         && getConst<TypeConstant>() == REAL_TYPE;
 #endif
-  return
-    ( getKind() == kind::TYPE_CONSTANT && getConst<TypeConstant>() == REAL_TYPE ) ||
-    isInteger();
+  return (getKind() == kind::TYPE_CONSTANT
+          && getConst<TypeConstant>() == REAL_TYPE)
+         || isInteger();
 }
 
 // !!! Note that this will change to isReal() || isInteger() when subtyping is
 // eliminated
-bool TypeNode::isRealOrInt() const {
+bool TypeNode::isRealOrInt() const
+{
 #if 1  // no-subtypes
   return isReal() || isInteger();
 #endif
-  return isReal(); 
+  return isReal();
 }
 
 bool TypeNode::isSubtypeOf(TypeNode t) const {
