@@ -2839,7 +2839,7 @@ bool checkReal64Bounds(const Rational& r)
 
 bool isReal(const Node& node)
 {
-#if 0  // no-subtypes
+#if 1  // no-subtypes
   return node.getKind() == cvc5::Kind::CONST_RATIONAL;
 #endif
   return node.getKind() == cvc5::Kind::CONST_RATIONAL
@@ -2856,7 +2856,7 @@ bool isReal64(const Node& node)
 
 bool isInteger(const Node& node)
 {
-#if 0  // no-subtypes
+#if 1  // no-subtypes
   return node.getKind() == cvc5::Kind::CONST_INTEGER;
 #endif
   return node.getKind() == cvc5::Kind::CONST_RATIONAL
@@ -3510,7 +3510,7 @@ Kind Term::getKindHelper() const
 
 bool Term::isCastedReal() const
 {
-#if 0  // no-subtypes
+#if 1  // no-subtypes
   return false;
 #endif
   if (d_node->getKind() == kind::CAST_TO_REAL)
@@ -5108,10 +5108,13 @@ Term Solver::mkRationalValHelper(const Rational& r, bool isInt) const
   (void)res.getType(true); /* kick off type checking */
   api::Term t = Term(this, res);
   // NOTE: this block will be eliminated when arithmetic subtyping is eliminated
+#if 1  // no-subtypes
+#else
   if (!isInt)
   {
     t = ensureRealSort(t);
   }
+#endif
   return t;
 }
 

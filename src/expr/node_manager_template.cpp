@@ -1288,6 +1288,9 @@ Node NodeManager::mkConstReal(const Rational& r)
 
 Node NodeManager::mkConstInt(const Rational& r)
 {
+#if 1  // no-subtypes
+  return mkConst(kind::CONST_INTEGER, r);
+#endif
   // !!!! Note will update to CONST_INTEGER.
   return mkConst(kind::CONST_RATIONAL, r);
 }

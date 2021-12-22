@@ -93,13 +93,17 @@ Node Rewriter::rewrite(TNode node) {
     // eagerly for the sake of efficiency here.
     return node;
   }
-  return getInstance()->rewriteTo(theoryOf(node), node);
+  Node r = getInstance()->rewriteTo(theoryOf(node), node);
+  AlwaysAssert (r.getType()==node.getType())  << "Bad rewrite " << node << " ---> " << r;
+  return r;
 }
 
 Node Rewriter::extendedRewrite(TNode node, bool aggr)
 {
   quantifiers::ExtendedRewriter er(*this, aggr);
-  return er.extendedRewrite(node);
+  Node r = er.extendedRewrite(node);
+  AlwaysAssert (r.getType()==node.getType()) << "Bad extended rewrite " << node << " ---> " << r;
+  return r;
 }
 
 TrustNode Rewriter::rewriteWithProof(TNode node,
@@ -401,7 +405,9 @@ RewriteResponse Rewriter::preRewrite(theory::TheoryId theoryId,
     // tcpg if necessary and then convert to rewrite response.
     return processTrustRewriteResponse(theoryId, tresponse, true, tcpg);
   }
-  return d_theoryRewriters[theoryId]->preRewrite(n);
+  RewriteResponse rr = d_theoryRewriters[theoryId]->preRewrite(n);
+  AlwaysAssert (n.getType()==rr.d_node.getType()) << "Bad pre rewrite " << n << " ---> " << rr.d_node;
+  return rr;
 }
 
 RewriteResponse Rewriter::postRewrite(theory::TheoryId theoryId,
@@ -415,7 +421,9 @@ RewriteResponse Rewriter::postRewrite(theory::TheoryId theoryId,
         d_theoryRewriters[theoryId]->postRewriteWithProof(n);
     return processTrustRewriteResponse(theoryId, tresponse, false, tcpg);
   }
-  return d_theoryRewriters[theoryId]->postRewrite(n);
+  RewriteResponse rr = d_theoryRewriters[theoryId]->postRewrite(n);
+  AlwaysAssert (n.getType()==rr.d_node.getType()) << "Bad post rewrite " << n << " ---> " << rr.d_node;
+  return rr;
 }
 
 RewriteResponse Rewriter::processTrustRewriteResponse(

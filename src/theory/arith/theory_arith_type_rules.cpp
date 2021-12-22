@@ -25,7 +25,7 @@ TypeNode ArithConstantTypeRule::computeType(NodeManager* nodeManager,
                                             TNode n,
                                             bool check)
 {
-#if 0  // no-subtypes
+#if 1  // no-subtypes
   if (n.getKind() == kind::CONST_RATIONAL)
   {
     return nodeManager->realType();

@@ -858,12 +858,6 @@ inline bool TypeNode::isInteger() const {
     ( getKind() == kind::TYPE_CONSTANT && getConst<TypeConstant>() == INTEGER_TYPE );
 }
 
-inline bool TypeNode::isReal() const {
-  return
-    ( getKind() == kind::TYPE_CONSTANT && getConst<TypeConstant>() == REAL_TYPE ) ||
-    isInteger();
-}
-
 inline bool TypeNode::isString() const {
   return getKind() == kind::TYPE_CONSTANT &&
     getConst<TypeConstant>() == STRING_TYPE;
