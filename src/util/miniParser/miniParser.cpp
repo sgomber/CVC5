@@ -102,7 +102,7 @@ Node mini_parsert::expression()
       }
       else
       {
-        Node result = nm->mkConst(Rational(buffer, 10));
+        Node result = nm->mkConstInt(Rational(buffer, 10));
         return result;
       }
     }
