@@ -337,11 +337,12 @@ Node multConstants(const Node& c1, const Node& c2)
 
 Node ensureConstantType(const Node& t, const Node& r)
 {
-  Assert (t.getType().isRealOrInt());
-  Assert (r.getType().isRealOrInt());
+  Assert(t.getType().isRealOrInt());
+  Assert(r.getType().isRealOrInt());
   if (r.isConst())
   {
-    return NodeManager::currentNM()->mkConstRealOrInt(t.getType(), r.getConst<Rational>());
+    return NodeManager::currentNM()->mkConstRealOrInt(t.getType(),
+                                                      r.getConst<Rational>());
   }
   return r;
 }

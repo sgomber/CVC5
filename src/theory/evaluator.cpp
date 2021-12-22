@@ -186,7 +186,7 @@ Node Evaluator::eval(TNode n,
          || ret
                 == d_rr->rewrite(n.substitute(
                     args.begin(), args.end(), vals.begin(), vals.end())));
-  Assert (ret.getType()==n.getType());
+  Assert(ret.getType() == n.getType());
   return ret;
 }
 
