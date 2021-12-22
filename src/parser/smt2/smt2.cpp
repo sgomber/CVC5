@@ -1246,6 +1246,9 @@ api::Term Smt2::mkAnd(const std::vector<api::Term>& es) const
 bool Smt2::isConstInt(const api::Term& t)
 {
   api::Kind k = t.getKind();
+#if 1  // no-subtypes
+  return k == api::CONST_INTEGER;
+#endif
   // !!! Note when arithmetic subtyping is eliminated, this will update to
   // CONST_INTEGER.
   return k == api::CONST_RATIONAL;

@@ -365,7 +365,8 @@ RewriteResponse ArithRewriter::postRewritePlus(TNode t){
   }
 
   Polynomial res = Polynomial::sumPolynomials(polynomials);
-
+  
+  Node result = ensureConstantType(t, res.getNode());
   return RewriteResponse(REWRITE_DONE, res.getNode());
 }
 
@@ -381,7 +382,8 @@ RewriteResponse ArithRewriter::postRewriteMult(TNode t){
     res = res * currPoly;
   }
 
-  return RewriteResponse(REWRITE_DONE, res.getNode());
+  Node result = ensureConstantType(t, res.getNode());
+  return RewriteResponse(REWRITE_DONE, result);
 }
 
 RewriteResponse ArithRewriter::postRewritePow2(TNode t)

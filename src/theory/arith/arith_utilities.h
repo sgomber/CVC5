@@ -338,6 +338,12 @@ Node negateProofLiteral(TNode n);
  */
 Node multConstants(const Node& c1, const Node& c2);
 
+/**
+ * Ensure constant type, if r is a constant, ensure that its type is the same
+ * as t.
+ */
+Node ensureConstantType(const Node& t, const Node& r);
+
 }  // namespace arith
 }  // namespace theory
 }  // namespace cvc5

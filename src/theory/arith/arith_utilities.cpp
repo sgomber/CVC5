@@ -335,6 +335,17 @@ Node multConstants(const Node& c1, const Node& c2)
       tn, Rational(c1.getConst<Rational>() * c2.getConst<Rational>()));
 }
 
+Node ensureConstantType(const Node& t, const Node& r)
+{
+  Assert (t.getType().isRealOrInt());
+  Assert (r.getType().isRealOrInt());
+  if (r.isConst())
+  {
+    return NodeManager::currentNM()->mkConstRealOrInt(t.getType(), r.getConst<Rational>());
+  }
+  return r;
+}
+
 }  // namespace arith
 }  // namespace theory
 }  // namespace cvc5
