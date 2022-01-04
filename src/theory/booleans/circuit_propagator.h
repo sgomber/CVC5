@@ -29,6 +29,7 @@
 #include "expr/node.h"
 #include "proof/lazy_proof_chain.h"
 #include "proof/trust_node.h"
+#include "smt/env_obj.h"
 
 namespace cvc5 {
 
@@ -45,7 +46,7 @@ namespace booleans {
  * the same fact is not output twice, so that the same edge in the
  * circuit isn't propagated twice, etc.
  */
-class CircuitPropagator
+class CircuitPropagator : protected EnvObj
 {
  public:
   /**
@@ -66,7 +67,7 @@ class CircuitPropagator
   /**
    * Construct a new CircuitPropagator.
    */
-  CircuitPropagator(bool enableForward = true, bool enableBackward = true);
+  CircuitPropagator(Env& env, bool enableForward = true, bool enableBackward = true);
 
   /** Get Node assignment in circuit.  Assert-fails if Node is unassigned. */
   bool getAssignment(TNode n) const
@@ -133,14 +134,12 @@ class CircuitPropagator
     return false;
   }
   /**
-   * Set proof node manager, context and parent proof generator.
+   * Enable proofs based on context and parent proof generator.
    *
    * If parent is non-null, then it is responsible for the proofs provided
    * to this class.
    */
-  void setProof(ProofNodeManager* pnm,
-                context::Context* ctx,
-                ProofGenerator* defParent);
+  void enableProofs(context::Context* ctx, ProofGenerator* defParent);
 
  private:
   /** A context-notify object that clears out stale data. */

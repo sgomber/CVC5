@@ -16,11 +16,14 @@
 #include "theory/arith/nl/cad_solver.h"
 
 #include "expr/skolem_manager.h"
+#include "options/arith_options.h"
+#include "smt/env.h"
 #include "theory/arith/inference_manager.h"
 #include "theory/arith/nl/cad/cdcac.h"
 #include "theory/arith/nl/nl_model.h"
 #include "theory/arith/nl/poly_conversion.h"
 #include "theory/inference_id.h"
+#include "theory/theory.h"
 
 namespace cvc5 {
 namespace theory {
@@ -29,17 +32,18 @@ namespace nl {
 
 CadSolver::CadSolver(Env& env, InferenceManager& im, NlModel& model)
     :
+      EnvObj(env),
 #ifdef CVC5_POLY_IMP
       d_CAC(env),
 #endif
       d_foundSatisfiability(false),
       d_im(im),
-      d_model(model)
+      d_model(model),
+      d_eqsubs(env)
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
-  d_ranVariable = sm->mkDummySkolem(
-      "__z", nm->realType(), "", NodeManager::SKOLEM_EXACT_NAME);
+  d_ranVariable = sm->mkDummySkolem("__z", nm->realType(), "");
 #ifdef CVC5_POLY_IMP
   if (env.isTheoryProofProducing())
   {
@@ -64,16 +68,46 @@ void CadSolver::initLastCall(const std::vector<Node>& assertions)
       Trace("nl-cad") << "  " << a << std::endl;
     }
   }
-  // store or process assertions
-  d_CAC.reset();
-  for (const Node& a : assertions)
+  if (options().arith.nlCadVarElim)
   {
-    d_CAC.getConstraints().addConstraint(a);
+    d_eqsubs.reset();
+    std::vector<Node> processed = d_eqsubs.eliminateEqualities(assertions);
+    if (d_eqsubs.hasConflict())
+    {
+        Node lem = NodeManager::currentNM()->mkAnd(d_eqsubs.getConflict()).negate();
+        d_im.addPendingLemma(lem, InferenceId::ARITH_NL_CAD_CONFLICT, nullptr);
+        Trace("nl-cad") << "Found conflict: " << lem << std::endl;
+        return;
+    }
+    if (Trace.isOn("nl-cad"))
+    {
+      Trace("nl-cad") << "After simplifications" << std::endl;
+      Trace("nl-cad") << "* Assertions: " << std::endl;
+      for (const Node& a : processed)
+      {
+        Trace("nl-cad") << "  " << a << std::endl;
+      }
+    }
+    d_CAC.reset();
+    for (const Node& a : processed)
+    {
+      Assert(!a.isConst());
+      d_CAC.getConstraints().addConstraint(a);
+    }
+  }
+  else
+  {
+    d_CAC.reset();
+    for (const Node& a : assertions)
+    {
+      Assert(!a.isConst());
+      d_CAC.getConstraints().addConstraint(a);
+    }
   }
   d_CAC.computeVariableOrdering();
   d_CAC.retrieveInitialAssignment(d_model, d_ranVariable);
 #else
-  Warning() << "Tried to use CadSolver but libpoly is not available. Compile "
+  warning() << "Tried to use CadSolver but libpoly is not available. Compile "
                "with --poly."
             << std::endl;
 #endif
@@ -83,6 +117,7 @@ void CadSolver::checkFull()
 {
 #ifdef CVC5_POLY_IMP
   if (d_CAC.getConstraints().getConstraints().empty()) {
+    d_foundSatisfiability = true;
     Trace("nl-cad") << "No constraints. Return." << std::endl;
     return;
   }
@@ -100,12 +135,14 @@ void CadSolver::checkFull()
     Trace("nl-cad") << "Collected MIS: " << mis << std::endl;
     Assert(!mis.empty()) << "Infeasible subset can not be empty";
     Trace("nl-cad") << "UNSAT with MIS: " << mis << std::endl;
+    d_eqsubs.postprocessConflict(mis);
+    Trace("nl-cad") << "After postprocessing: " << mis << std::endl;
     Node lem = NodeManager::currentNM()->mkAnd(mis).negate();
     ProofGenerator* proof = d_CAC.closeProof(mis);
     d_im.addPendingLemma(lem, InferenceId::ARITH_NL_CAD_CONFLICT, proof);
   }
 #else
-  Warning() << "Tried to use CadSolver but libpoly is not available. Compile "
+  warning() << "Tried to use CadSolver but libpoly is not available. Compile "
                "with --poly."
             << std::endl;
 #endif
@@ -118,7 +155,7 @@ void CadSolver::checkPartial()
     Trace("nl-cad") << "No constraints. Return." << std::endl;
     return;
   }
-  auto covering = d_CAC.getUnsatCover(0, true);
+  auto covering = d_CAC.getUnsatCover(true);
   if (covering.empty())
   {
     d_foundSatisfiability = true;
@@ -155,7 +192,7 @@ void CadSolver::checkPartial()
     }
   }
 #else
-  Warning() << "Tried to use CadSolver but libpoly is not available. Compile "
+  warning() << "Tried to use CadSolver but libpoly is not available. Compile "
                "with --poly."
             << std::endl;
 #endif
@@ -169,10 +206,15 @@ bool CadSolver::constructModelIfAvailable(std::vector<Node>& assertions)
     return false;
   }
   bool foundNonVariable = false;
+  for (const auto& sub: d_eqsubs.getSubstitutions())
+  {
+    d_model.addSubstitution(sub.first, sub.second);
+    Trace("nl-cad") << "-> " << sub.first << " = " << sub.second << std::endl;
+  }
   for (const auto& v : d_CAC.getVariableOrdering())
   {
     Node variable = d_CAC.getConstraints().varMapper()(v);
-    if (!variable.isVar())
+    if (!Theory::isLeafOf(variable, TheoryId::THEORY_ARITH))
     {
       Trace("nl-cad") << "Not a variable: " << variable << std::endl;
       foundNonVariable = true;
@@ -200,7 +242,7 @@ bool CadSolver::constructModelIfAvailable(std::vector<Node>& assertions)
   assertions.clear();
   return true;
 #else
-  Warning() << "Tried to use CadSolver but libpoly is not available. Compile "
+  warning() << "Tried to use CadSolver but libpoly is not available. Compile "
                "with --poly."
             << std::endl;
   return false;

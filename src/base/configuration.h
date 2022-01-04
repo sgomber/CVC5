@@ -59,8 +59,6 @@ public:
 
   static bool isTracingBuild();
 
-  static bool isDumpingBuild();
-
   static bool isMuzzledBuild();
 
   static bool isAssertionBuild();
@@ -94,8 +92,6 @@ public:
   static bool isBuiltWithCln();
 
   static bool isBuiltWithGlpk();
-
-  static bool isBuiltWithAbc();
 
   static bool isBuiltWithCryptominisat();
 
