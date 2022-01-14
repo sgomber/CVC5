@@ -62,12 +62,6 @@ void SetDefaults::setDefaults(LogicInfo& logic, Options& opts)
 
 void SetDefaults::setDefaultsPre(Options& opts)
 {
-  // internal-only options
-  if (opts.smt.unsatCoresMode == options::UnsatCoresMode::PP_ONLY)
-  {
-    throw OptionException(
-        std::string("Unsat core mode pp-only is for internal use only."));
-  }
   // implied options
   if (opts.smt.debugCheckModels)
   {
@@ -85,13 +79,6 @@ void SetDefaults::setDefaultsPre(Options& opts)
   if (opts.driver.dumpDifficulty)
   {
     opts.smt.produceDifficulty = true;
-  }
-  if (opts.smt.produceDifficulty)
-  {
-    if (opts.smt.unsatCoresMode == options::UnsatCoresMode::OFF)
-    {
-      opts.smt.unsatCoresMode = options::UnsatCoresMode::PP_ONLY;
-    }
   }
   if (opts.smt.checkUnsatCores || opts.driver.dumpUnsatCores
       || opts.smt.unsatAssumptions || opts.smt.minimalUnsatCores
@@ -129,12 +116,12 @@ void SetDefaults::setDefaultsPre(Options& opts)
   }
 
   // set proofs on if not yet set
-  if (opts.smt.unsatCores && !opts.smt.produceProofs)
+  if ((opts.smt.unsatCores || opts.smt.produceDifficulty) && !opts.smt.produceProofs)
   {
     if (opts.smt.produceProofsWasSetByUser)
     {
       verbose(1)
-          << "Forcing proof production since new unsat cores were requested.\n";
+          << "Forcing proof production since a feature requiring proofs was requested.\n";
     }
     opts.smt.produceProofs = true;
   }
