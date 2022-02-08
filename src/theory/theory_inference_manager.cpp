@@ -28,6 +28,7 @@
 #include "theory/theory_state.h"
 #include "theory/uf/equality_engine.h"
 #include "theory/uf/proof_equality_engine.h"
+#include "smt/print_benchmark.h"
 
 using namespace cvc5::kind;
 
@@ -147,6 +148,7 @@ void TheoryInferenceManager::trustedConflict(TrustNode tconf, InferenceId id)
   resourceManager()->spendResource(id);
   Trace("im") << "(conflict " << id << " " << tconf.getProven() << ")"
               << std::endl;
+  printBenchmark(tconf.getProven().negate(), id);
   // annotate if the annotation proof generator is active
   if (d_apg != nullptr)
   {
@@ -283,6 +285,7 @@ bool TheoryInferenceManager::trustedLemma(const TrustNode& tlem,
   d_lemmaIdStats << id;
   resourceManager()->spendResource(id);
   Trace("im") << "(lemma " << id << " " << tlem.getProven() << ")" << std::endl;
+  printBenchmark(tlem.getProven(), id);
   // shouldn't send trivially true or false lemmas
   Assert(!rewrite(tlem.getProven()).isConst());
   d_numCurrentLemmas++;
@@ -418,6 +421,8 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
   Node expn = NodeManager::currentNM()->mkAnd(exp);
   Trace("im") << "(fact " << iid << " " << (pol ? Node(atom) : atom.notNode())
               << " " << expn << ")" << std::endl;
+  Node lem = NodeManager::currentNM()->mkNode(IMPLIES, expn, atom);
+  printBenchmark(lem, iid);
   // call the pre-notify fact method with preReg = false, isInternal = true
   if (d_theory.preNotifyFact(atom, pol, expn, false, true))
   {
@@ -624,6 +629,18 @@ void TheoryInferenceManager::setIncomplete(IncompleteId id)
 void TheoryInferenceManager::notifyInConflict()
 {
   d_theoryState.notifyInConflict();
+}
+
+void TheoryInferenceManager::printBenchmark(Node n, InferenceId id) const
+{
+  Trace("ajr-temp") << "; start from " << id << std::endl;
+  Trace("ajr-temp") << "(echo \"" << id << "\")" << std::endl;
+  PrintBenchmark pb(&d_env.getPrinter());
+  std::stringstream os;
+  pb.printBenchmark(os, logicInfo().getLogicString(), {}, {n.negate()});
+  Trace("ajr-temp") << os.str();
+  Trace("ajr-temp") << "(reset)" << std::endl;
+  Trace("ajr-temp") << "; end from " << id << std::endl;
 }
 
 }  // namespace theory

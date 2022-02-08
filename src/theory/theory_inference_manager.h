@@ -480,6 +480,8 @@ class TheoryInferenceManager : protected EnvObj
   HistogramStat<InferenceId> d_factIdStats;
   /** Statistics for lemmas sent via this inference manager. */
   HistogramStat<InferenceId> d_lemmaIdStats;
+  /** Print benchmark */
+  void printBenchmark(Node n, InferenceId id) const;
 };
 
 }  // namespace theory
