@@ -148,7 +148,7 @@ void TheoryInferenceManager::trustedConflict(TrustNode tconf, InferenceId id)
   resourceManager()->spendResource(id);
   Trace("im") << "(conflict " << id << " " << tconf.getProven() << ")"
               << std::endl;
-  printBenchmark(tconf.getProven().negate(), id);
+  printBenchmark(tconf.getProven(), id);
   // annotate if the annotation proof generator is active
   if (d_apg != nullptr)
   {
@@ -635,7 +635,7 @@ void TheoryInferenceManager::printBenchmark(Node n, InferenceId id) const
 {
   Trace("ajr-temp") << "; start from " << id << std::endl;
   Trace("ajr-temp") << "(echo \"" << id << "\")" << std::endl;
-  PrintBenchmark pb(&d_env.getPrinter());
+  smt::PrintBenchmark pb(&d_env.getPrinter());
   std::stringstream os;
   pb.printBenchmark(os, logicInfo().getLogicString(), {}, {n.negate()});
   Trace("ajr-temp") << os.str();
