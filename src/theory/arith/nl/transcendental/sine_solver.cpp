@@ -249,14 +249,20 @@ void SineSolver::checkMonotonic()
 
   // get model values for points
   TNode tpi = d_data->d_pi;
-  for (const auto& point : mpoints)
+  for (size_t j=0; j<5; j++)
   {
+    Node point = mpoints[j];
     for (size_t i = 0; i < 2; i++)
     {
-      TNode tb = d_data->d_pi_bound[i];
-      Node mpointapprox = point.substitute(tpi, tb);
+      Node mpointapprox = point;
+      if (j!=2)
+      {
+        // bounds are flipped for negative pi
+        TNode tb = d_data->d_pi_bound[j>2 ? 1-i : i];
+        mpointapprox = point.substitute(tpi, tb);
+      }
       mpointsBound[i].emplace_back(
-          d_data->d_model.computeAbstractModelValue(point));
+          d_data->d_model.computeAbstractModelValue(mpointapprox));
       Assert(mpointsBound[i].back().isConst());
     }
   }
