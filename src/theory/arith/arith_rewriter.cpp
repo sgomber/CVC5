@@ -811,7 +811,7 @@ RewriteResponse ArithRewriter::postRewriteTranscendental(TNode t) {
     else if ((t[0].getKind() == MULT || t[0].getKind() == NONLINEAR_MULT)
              && t[0][0].isConst() && t[0][0].getConst<Rational>().sgn() == -1)
     {
-      // sin( -n*x ) ---> -sin(x)
+      // sin(-n*x) ---> -sin(n*x)
       std::vector<Node> mchildren(t[0].begin(), t[0].end());
       mchildren[0] = nm->mkConstReal(-t[0][0].getConst<Rational>());
       Node ret = nm->mkNode(
