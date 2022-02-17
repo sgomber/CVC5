@@ -249,16 +249,16 @@ void SineSolver::checkMonotonic()
 
   // get model values for points
   TNode tpi = d_data->d_pi;
-  for (size_t j=0; j<5; j++)
+  for (size_t j = 0; j < 5; j++)
   {
     Node point = mpoints[j];
     for (size_t i = 0; i < 2; i++)
     {
       Node mpointapprox = point;
-      if (j!=2)
+      if (j != 2)
       {
         // bounds are flipped for negative pi
-        TNode tb = d_data->d_pi_bound[j>2 ? 1-i : i];
+        TNode tb = d_data->d_pi_bound[j > 2 ? 1 - i : i];
         mpointapprox = point.substitute(tpi, tb);
       }
       mpointsBound[i].emplace_back(
@@ -311,14 +311,16 @@ void SineSolver::checkMonotonic()
         }
       }
     }
-    // must ensure that we are actually less than or equal to the lower bound of the previous point
+    // must ensure that we are actually less than or equal to the lower bound of
+    // the previous point
     if (mdir_index > 0
         && sargvalr > mpointsBound[0][mdir_index - 1].getConst<Rational>())
     {
       d_data->d_tf_region[s] = -1;
       Trace("nl-ext-concavity")
           << "Cannot determine the region of transcendental function " << s
-          << ", perhaps its value is close to the boundary " <<  mpointsBound[1][mdir_index - 1];
+          << ", perhaps its value is close to the boundary "
+          << mpointsBound[1][mdir_index - 1];
     }
     else
     {
