@@ -38,7 +38,7 @@ enum class SkolemFunId
   MOD_BY_ZERO,
   /** an uninterpreted function f s.t. f(x) = sqrt(x) */
   SQRT,
-  /** 
+  /**
    * Argument used to purify trancendental function app f(x).
    * For sin(x), this is a variable that is assumed to be in phase with x that
    * is between -pi and pi
