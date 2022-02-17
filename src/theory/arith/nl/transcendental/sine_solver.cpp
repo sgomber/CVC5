@@ -279,14 +279,14 @@ void SineSolver::checkMonotonic()
     while (increment && mdir_index < mpoints.size())
     {
       increment = false;
-      Node pvalUpper = mpointsBound[0][mdir_index];
+      Node pvalUpper = mpointsBound[1][mdir_index];
       Assert(pvalUpper.isConst());
       if (sargvalr < pvalUpper.getConst<Rational>())
       {
         increment = true;
         Trace("nl-ext-tf-mono")
             << "...increment at " << sarg << " since model value is less than "
-            << mpointsBound[0][mdir_index] << std::endl;
+            << mpointsBound[1][mdir_index] << std::endl;
       }
       if (increment)
       {
@@ -306,12 +306,12 @@ void SineSolver::checkMonotonic()
     }
     // must ensure that we are actually in the bounds
     if (mdir_index > 0
-        && sargvalr < mpointsBound[1][mdir_index - 1].getConst<Rational>())
+        && sargvalr > mpointsBound[0][mdir_index - 1].getConst<Rational>())
     {
       d_data->d_tf_region[s] = -1;
       Trace("nl-ext-concavity")
           << "Cannot determine the region of transcendental function " << s
-          << ", perhaps its value is close to the boundary";
+          << ", perhaps its value is close to the boundary " <<  mpointsBound[1][mdir_index - 1];
     }
     else
     {
