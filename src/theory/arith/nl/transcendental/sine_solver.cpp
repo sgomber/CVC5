@@ -246,18 +246,17 @@ void SineSolver::checkMonotonic()
                                d_data->d_pi_neg};
   // upper, lower
   std::vector<Node> mpointsBound[2];
-  
-  
 
   // get model values for points
   TNode tpi = d_data->d_pi;
   for (const auto& point : mpoints)
   {
-    for (size_t i=0; i<2; i++)
+    for (size_t i = 0; i < 2; i++)
     {
       TNode tb = d_data->d_pi_bound[i];
       Node mpointapprox = point.substitute(tpi, tb);
-      mpointsBound[i].emplace_back(d_data->d_model.computeAbstractModelValue(point));
+      mpointsBound[i].emplace_back(
+          d_data->d_model.computeAbstractModelValue(point));
       Assert(mpointsBound[i].back().isConst());
     }
   }
@@ -306,12 +305,13 @@ void SineSolver::checkMonotonic()
       }
     }
     // must ensure that we are actually in the bounds
-    if (mdir_index>0 && sargvalr<mpointsBound[1][mdir_index-1].getConst<Rational>())
+    if (mdir_index > 0
+        && sargvalr < mpointsBound[1][mdir_index - 1].getConst<Rational>())
     {
       d_data->d_tf_region[s] = -1;
       Trace("nl-ext-concavity")
-          << "Cannot determine the region of transcendental function " << s << ", perhaps its value is close to the boundary";
-      
+          << "Cannot determine the region of transcendental function " << s
+          << ", perhaps its value is close to the boundary";
     }
     else
     {
@@ -371,7 +371,7 @@ void SineSolver::doTangentLemma(
     TNode e, TNode c, TNode poly_approx, int region, std::uint64_t d)
 {
   NodeManager* nm = NodeManager::currentNM();
-  if (region==-1)
+  if (region == -1)
   {
     return;
   }
