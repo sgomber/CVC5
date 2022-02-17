@@ -639,14 +639,14 @@ void TheoryInferenceManager::notifyInConflict()
 
 void TheoryInferenceManager::printBenchmark(Node n, InferenceId id) const
 {
-  Trace("ajr-temp") << "; start from " << id << std::endl;
-  Trace("ajr-temp") << "(echo \"" << id << "\")" << std::endl;
+  Trace("im-bench") << "; start from " << id << std::endl;
+  Trace("im-bench") << "(echo \"" << id << "\")" << std::endl;
   smt::PrintBenchmark pb(&d_env.getPrinter());
   std::stringstream os;
   pb.printBenchmark(os, logicInfo().getLogicString(), {}, {n.negate()});
-  Trace("ajr-temp") << os.str();
-  Trace("ajr-temp") << "(reset)" << std::endl;
-  Trace("ajr-temp") << "; end from " << id << std::endl;
+  Trace("im-bench") << os.str();
+  Trace("im-bench") << "(reset)" << std::endl;
+  Trace("im-bench") << "; end from " << id << std::endl;
 }
 
 }  // namespace theory
