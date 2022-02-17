@@ -244,7 +244,7 @@ void SineSolver::checkMonotonic()
                                d_data->d_zero,
                                d_data->d_pi_neg_2,
                                d_data->d_pi_neg};
-  // upper, lower
+  // sound upper, lower bounds for the above points
   std::vector<Node> mpointsBound[2];
 
   // get model values for points
@@ -285,6 +285,7 @@ void SineSolver::checkMonotonic()
     while (increment && mdir_index < mpoints.size())
     {
       increment = false;
+      // if we are less than the upper bound of the next point
       Node pvalUpper = mpointsBound[1][mdir_index];
       Assert(pvalUpper.isConst());
       if (sargvalr < pvalUpper.getConst<Rational>())
@@ -310,7 +311,7 @@ void SineSolver::checkMonotonic()
         }
       }
     }
-    // must ensure that we are actually in the bounds
+    // must ensure that we are actually less than or equal to the lower bound of the previous point
     if (mdir_index > 0
         && sargvalr > mpointsBound[0][mdir_index - 1].getConst<Rational>())
     {
