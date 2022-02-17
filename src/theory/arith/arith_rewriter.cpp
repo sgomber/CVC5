@@ -807,15 +807,20 @@ RewriteResponse ArithRewriter::postRewriteTranscendental(TNode t) {
                               nm->mkNode(kind::SINE, nm->mkConstReal(-rat)));
         return RewriteResponse(REWRITE_AGAIN_FULL, ret);
       }
-    } else if ((t[0].getKind()==MULT || t[0].getKind()==NONLINEAR_MULT) && t[0][0].isConst() && t[0][0].getConst<Rational>().sgn()==-1)
+    }
+    else if ((t[0].getKind() == MULT || t[0].getKind() == NONLINEAR_MULT)
+             && t[0][0].isConst() && t[0][0].getConst<Rational>().sgn() == -1)
     {
       // sin( -n*x ) ---> -sin(x)
       std::vector<Node> mchildren(t[0].begin(), t[0].end());
       mchildren[0] = nm->mkConstReal(-t[0][0].getConst<Rational>());
-      Node ret = nm->mkNode(kind::NEG,
-                            nm->mkNode(kind::SINE, nm->mkNode(t[0].getKind(), mchildren)));
+      Node ret = nm->mkNode(
+          kind::NEG,
+          nm->mkNode(kind::SINE, nm->mkNode(t[0].getKind(), mchildren)));
       return RewriteResponse(REWRITE_AGAIN_FULL, ret);
-    }else{
+    }
+    else
+    {
       // get the factor of PI in the argument
       Node pi_factor;
       Node pi;

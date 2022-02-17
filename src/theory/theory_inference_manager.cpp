@@ -18,6 +18,7 @@
 #include "options/proof_options.h"
 #include "proof/annotation_proof_generator.h"
 #include "proof/eager_proof_generator.h"
+#include "smt/print_benchmark.h"
 #include "smt/smt_statistics_registry.h"
 #include "smt/solver_engine_scope.h"
 #include "theory/builtin/proof_checker.h"
@@ -28,7 +29,6 @@
 #include "theory/theory_state.h"
 #include "theory/uf/equality_engine.h"
 #include "theory/uf/proof_equality_engine.h"
-#include "smt/print_benchmark.h"
 
 using namespace cvc5::kind;
 
