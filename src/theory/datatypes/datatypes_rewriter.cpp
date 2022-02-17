@@ -81,7 +81,7 @@ RewriteResponse DatatypesRewriter::postRewrite(TNode in)
       unsigned weight = c.getWeight();
       children.push_back(nm->mkConstInt(Rational(weight)));
       Node res =
-          children.size() == 1 ? children[0] : nm->mkNode(kind::PLUS, children);
+          children.size() == 1 ? children[0] : nm->mkNode(kind::ADD, children);
       Trace("datatypes-rewrite")
           << "DatatypesRewriter::postRewrite: rewrite size " << in << " to "
           << res << std::endl;
@@ -938,6 +938,9 @@ Node DatatypesRewriter::sygusToBuiltinEval(Node n,
                                            const std::vector<Node>& args)
 {
   Assert(d_sygusEval != nullptr);
+  Assert (n.getType().isDatatype());
+  Assert (n.getType().getDType().isSygus());
+  Assert (n.getType().getDType().getSygusVarList().getNumChildren()==args.size());
   NodeManager* nm = NodeManager::currentNM();
   // constant arguments?
   bool constArgs = true;

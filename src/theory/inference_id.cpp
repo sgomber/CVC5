@@ -124,6 +124,8 @@ const char* toString(InferenceId i)
     case InferenceId::BAGS_FILTER_UP: return "BAGS_FILTER_UP";
     case InferenceId::BAGS_FOLD: return "BAGS_FOLD";
     case InferenceId::BAGS_CARD: return "BAGS_CARD";
+    case InferenceId::TABLES_PRODUCT_UP: return "TABLES_PRODUCT_UP";
+    case InferenceId::TABLES_PRODUCT_DOWN: return "TABLES_PRODUCT_DOWN";
 
     case InferenceId::BV_BITBLAST_CONFLICT: return "BV_BITBLAST_CONFLICT";
     case InferenceId::BV_BITBLAST_INTERNAL_EAGER_LEMMA:
@@ -194,6 +196,8 @@ const char* toString(InferenceId i)
       return "QUANTIFIERS_INST_E_MATCHING_HO";
     case InferenceId::QUANTIFIERS_INST_E_MATCHING_VAR_GEN:
       return "QUANTIFIERS_INST_E_MATCHING_VAR_GEN";
+    case InferenceId::QUANTIFIERS_INST_E_MATCHING_RELATIONAL:
+      return "QUANTIFIERS_INST_E_MATCHING_RELATIONAL";
     case InferenceId::QUANTIFIERS_INST_CBQI_CONFLICT:
       return "QUANTIFIERS_INST_CBQI_CONFLICT";
     case InferenceId::QUANTIFIERS_INST_CBQI_PROP:
