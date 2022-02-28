@@ -398,14 +398,14 @@ void NonlinearExtension::checkFullEffort(std::map<Node, Node>& arithModel,
   Trace("nl-ext") << "interceptModel: do model repair" << std::endl;
   // modify the model values
   d_model.getModelValueRepair(arithModel);
-  //if (!false_asserts.empty())
+  // if (!false_asserts.empty())
   //{
-    // must post-process model with transcendental solver, to ensure we don't
-    // assign values for equivalence classes with transcendental function
-    // applications
-    d_trSlv.postProcessModel(arithModel, termSet);
+  // must post-process model with transcendental solver, to ensure we don't
+  // assign values for equivalence classes with transcendental function
+  // applications
+  d_trSlv.postProcessModel(arithModel, termSet);
   //}
-  
+
   // did not add lemmas
 }
 
