@@ -272,21 +272,7 @@ void NonlinearExtension::checkFullEffort(std::map<Node, Node>& arithModel,
   d_model.reset(d_containing.getValuation().getModel(), arithModel);
   // run a last call effort check
   Trace("nl-ext") << "interceptModel: do model-based refinement" << std::endl;
-  Result::Sat res = modelBasedRefinement(termSet);
-  if (res == Result::Sat::SAT)
-  {
-    Trace("nl-ext") << "interceptModel: do model repair" << std::endl;
-    // modify the model values
-    d_model.getModelValueRepair(arithModel);
-  }
-  // must post-process model with transcendental solver, to ensure we don't
-  // assign values for equivalence classes with transcendental function
-  // applications
-  d_trSlv.postProcessModel(arithModel, termSet);
-}
 
-Result::Sat NonlinearExtension::modelBasedRefinement(const std::set<Node>& termSet)
-{
   ++(d_stats.d_mbrRuns);
   d_checkCounter++;
 
@@ -348,7 +334,7 @@ Result::Sat NonlinearExtension::modelBasedRefinement(const std::set<Node>& termS
       if (d_im.hasSentLemma() || d_im.hasPendingLemma())
       {
         d_im.clearWaitingLemmas();
-        return Result::Sat::UNSAT;
+        return;
       }
     }
     Trace("nl-ext") << "Finished check with status : " << complete_status
@@ -369,7 +355,7 @@ Result::Sat NonlinearExtension::modelBasedRefinement(const std::set<Node>& termS
       if (d_im.hasUsed())
       {
         d_im.clearWaitingLemmas();
-        return Result::Sat::UNSAT;
+        return;
       }
     }
 
@@ -383,7 +369,7 @@ Result::Sat NonlinearExtension::modelBasedRefinement(const std::set<Node>& termS
         d_im.flushWaitingLemmas();
         Trace("nl-ext") << "...added " << count << " waiting lemmas."
                         << std::endl;
-        return Result::Sat::UNSAT;
+        return;
       }
 
       // we are incomplete
@@ -403,14 +389,24 @@ Result::Sat NonlinearExtension::modelBasedRefinement(const std::set<Node>& termS
                            "NonLinearExtension, set incomplete"
                         << std::endl;
         d_containing.getOutputChannel().setIncomplete(IncompleteId::ARITH_NL);
-        return Result::Sat::SAT_UNKNOWN;
+        return;
       }
     }
     d_im.clearWaitingLemmas();
   } while (needsRecheck);
 
+  Trace("nl-ext") << "interceptModel: do model repair" << std::endl;
+  // modify the model values
+  d_model.getModelValueRepair(arithModel);
+  //if (!false_asserts.empty())
+  //{
+    // must post-process model with transcendental solver, to ensure we don't
+    // assign values for equivalence classes with transcendental function
+    // applications
+    d_trSlv.postProcessModel(arithModel, termSet);
+  //}
+  
   // did not add lemmas
-  return Result::Sat::SAT;
 }
 
 void NonlinearExtension::runStrategy(Theory::Effort effort,
