@@ -118,6 +118,21 @@ class NonlinearExtension : EnvObj
   void processSideEffect(const NlLemma& se);
 
  private:
+  /** Model-based refinement
+   *
+   * This is the main entry point of this class for generating lemmas on the
+   * output channel of the theory of arithmetic.
+   *
+   * It is currently run at last call effort. It applies lemma schemas
+   * described in Reynolds et al. FroCoS 2017 that are based on ruling out
+   * the current candidate model.
+   *
+   * This function returns whether we found a satisfying assignment
+   * (Result::Sat::SAT), or not (Result::Sat::UNSAT). Note that UNSAT does not
+   * necessarily means the whole query is UNSAT, but that the linear model was
+   * refuted by a lemma.
+   */
+  Result::Sat modelBasedRefinement(const std::set<Node>& termSet);
 
   /** get assertions
    *
