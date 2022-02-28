@@ -56,7 +56,7 @@ TranscendentalSolver::~TranscendentalSolver() {}
 void TranscendentalSolver::preRegisterTerm(TNode a)
 {
   Kind k = a.getKind();
-  if (k!=Kind::SINE && k!=Kind::EXPONENTIAL)
+  if (k != Kind::SINE && k != Kind::EXPONENTIAL)
   {
     return;
   }
