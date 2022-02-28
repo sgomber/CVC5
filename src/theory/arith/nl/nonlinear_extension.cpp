@@ -270,25 +270,9 @@ void NonlinearExtension::checkFullEffort(std::map<Node, Node>& arithModel,
   }
   Trace("nl-ext") << "NonlinearExtension::interceptModel begin" << std::endl;
   d_model.reset(d_containing.getValuation().getModel(), arithModel);
-
-  // get the assertions
-  std::vector<Node> assertions;
-  getAssertions(assertions);
-
-  Trace("nl-ext-mv-assert")
-      << "Getting model values... check for [model-false]" << std::endl;
-  // get the assertions that are false in the model
-  const std::vector<Node> false_asserts = getUnsatisfiedAssertions(assertions);
-  Trace("nl-ext") << "# false asserts = " << false_asserts.size() << std::endl;
-  if (false_asserts.empty())
-  {
-    // the model was correct without having to check
-    return;
-  }
-
   // run a last call effort check
   Trace("nl-ext") << "interceptModel: do model-based refinement" << std::endl;
-  Result::Sat res = checkFullEffortInternal(assertions, false_asserts, termSet);
+  Result::Sat res = modelBasedRefinement(termSet);
   if (res == Result::Sat::SAT)
   {
     Trace("nl-ext") << "interceptModel: do model repair" << std::endl;
@@ -301,14 +285,20 @@ void NonlinearExtension::checkFullEffort(std::map<Node, Node>& arithModel,
   d_trSlv.postProcessModel(arithModel, termSet);
 }
 
-Result::Sat NonlinearExtension::checkFullEffortInternal(
-    const std::vector<Node>& assertions,
-    const std::vector<Node>& false_asserts,
-    const std::set<Node>& termSet)
+Result::Sat NonlinearExtension::modelBasedRefinement(const std::set<Node>& termSet)
 {
-  Assert(!false_asserts.empty());
   ++(d_stats.d_mbrRuns);
   d_checkCounter++;
+
+  // get the assertions
+  std::vector<Node> assertions;
+  getAssertions(assertions);
+
+  Trace("nl-ext-mv-assert")
+      << "Getting model values... check for [model-false]" << std::endl;
+  // get the assertions that are false in the model
+  const std::vector<Node> false_asserts = getUnsatisfiedAssertions(assertions);
+  Trace("nl-ext") << "# false asserts = " << false_asserts.size() << std::endl;
 
   // get the extended terms belonging to this theory
   std::vector<Node> xtsAll;
@@ -348,13 +338,18 @@ Result::Sat NonlinearExtension::checkFullEffortInternal(
     needsRecheck = false;
     // complete_status:
     //   1 : we may answer SAT, -1 : we may not answer SAT, 0 : unknown
-    int complete_status = 0;
-    // Run the strategy
-    runStrategy(Theory::Effort::EFFORT_FULL, assertions, false_asserts, xts);
-    if (d_im.hasSentLemma() || d_im.hasPendingLemma())
+    int complete_status = 1;
+    // We require a check either if an assertion is false or a shared term has
+    // a wrong value
+    if (!false_asserts.empty())
     {
-      d_im.clearWaitingLemmas();
-      return Result::Sat::UNSAT;
+      complete_status = 0;
+      runStrategy(Theory::Effort::EFFORT_FULL, assertions, false_asserts, xts);
+      if (d_im.hasSentLemma() || d_im.hasPendingLemma())
+      {
+        d_im.clearWaitingLemmas();
+        return Result::Sat::UNSAT;
+      }
     }
     Trace("nl-ext") << "Finished check with status : " << complete_status
                     << std::endl;

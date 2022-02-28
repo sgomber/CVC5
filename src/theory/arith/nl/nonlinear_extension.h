@@ -132,9 +132,7 @@ class NonlinearExtension : EnvObj
    * necessarily means the whole query is UNSAT, but that the linear model was
    * refuted by a lemma.
    */
-  Result::Sat checkFullEffortInternal(const std::vector<Node>& assertions,
-                                      const std::vector<Node>& false_asserts,
-                                      const std::set<Node>& termSet);
+  Result::Sat modelBasedRefinement(const std::set<Node>& termSet);
 
   /** get assertions
    *
