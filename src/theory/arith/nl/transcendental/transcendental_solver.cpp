@@ -488,14 +488,14 @@ void TranscendentalSolver::postProcessModel(std::map<Node, Node>& arithModel,
     // skip integer variables
     if (am.first.getType().isInteger())
     {
-      Trace("nl-ext") << "...keep model value for integer " << am.first
+      Trace("nl-ext") << "...keep model value " << am.second << " for integer " << am.first
                       << std::endl;
       continue;
     }
     // cannot erase values for purification arguments
     if (d_tstate.d_trPurifyVars.find(am.first) != d_tstate.d_trPurifyVars.end())
     {
-      Trace("nl-ext") << "...keep model value for purification variable "
+      Trace("nl-ext") << "...keep model value " << am.second << " for purification variable "
                       << am.first << std::endl;
       continue;
     }
