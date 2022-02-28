@@ -65,8 +65,7 @@ CDProof* TranscendentalState::getProof()
   return d_proof->allocateProof(d_env.getUserContext());
 }
 
-void TranscendentalState::init(const std::vector<Node>& xts,
-                               std::vector<Node>& needsPurify)
+void TranscendentalState::init(const std::vector<Node>& xts)
 {
   d_funcCongClass.clear();
   d_funcMap.clear();
@@ -94,33 +93,8 @@ void TranscendentalState::init(const std::vector<Node>& xts,
     }
     else
     {
-      if (ak == Kind::SINE)
-      {
-        // always not a master
-        consider = false;
-      }
-      else
-      {
-        for (const Node& ac : a)
-        {
-          if (isTranscendentalKind(ac.getKind()))
-          {
-            consider = false;
-            break;
-          }
-        }
-      }
-      if (!consider)
-      {
-        // must assign a purified term
-        needsPurify.push_back(a);
-      }
-      else
-      {
-        // assume own purified
-        d_trPurify[a] = a;
-        d_trPurifies[a] = a;
-      }
+      // always not a master
+      consider = false;
     }
     if (ak == Kind::EXPONENTIAL || ak == Kind::SINE)
     {

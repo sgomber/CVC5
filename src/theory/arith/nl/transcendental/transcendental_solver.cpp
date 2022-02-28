@@ -53,39 +53,42 @@ TranscendentalSolver::TranscendentalSolver(Env& env,
 
 TranscendentalSolver::~TranscendentalSolver() {}
 
-void TranscendentalSolver::initLastCall(const std::vector<Node>& xts)
+void TranscendentalSolver::preRegisterTerm(TNode a)
 {
-  std::vector<Node> needsMaster;
-  d_tstate.init(xts, needsMaster);
-
-  if (d_tstate.d_im.hasUsed()) {
+  Kind k = a.getKind();
+  if (k!=Kind::SINE && k!=Kind::EXPONENTIAL)
+  {
     return;
   }
-
+  if (d_tstate.isPurified(a))
+  {
+    return;
+  }
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
-  for (const Node& a : needsMaster)
+  Node y = sm->mkSkolemFunction(
+      SkolemFunId::TRANSCENDENTAL_PURIFY_ARG, nm->realType(), a);
+  Node new_a = nm->mkNode(k, y);
+  Assert(d_tstate.d_trPurify.find(new_a) == d_tstate.d_trPurify.end());
+  Assert(d_tstate.d_trPurifies.find(new_a) == d_tstate.d_trPurifies.end());
+  d_tstate.d_trPurify[a] = new_a;
+  d_tstate.d_trPurify[new_a] = new_a;
+  d_tstate.d_trPurifies[new_a] = a;
+  d_tstate.d_trPurifyVars.insert(y);
+  // Add purification lemma, which is either:
+  // -pi <= k <= pi ^ k = c*2*pi + x ^ sin(k) = sin(x), or
+  // k = x ^ exp(k) = exp(x)
+  switch (k)
   {
-    // should not have processed this already
-    Assert(d_tstate.d_trPurify.find(a) == d_tstate.d_trPurify.end());
-    Kind k = a.getKind();
-    Assert(k == Kind::SINE || k == Kind::EXPONENTIAL);
-    Node y = sm->mkSkolemFunction(
-        SkolemFunId::TRANSCENDENTAL_PURIFY_ARG, nm->realType(), a);
-    Node new_a = nm->mkNode(k, y);
-    Assert(d_tstate.d_trPurify.find(new_a) == d_tstate.d_trPurify.end());
-    Assert(d_tstate.d_trPurifies.find(new_a) == d_tstate.d_trPurifies.end());
-    d_tstate.d_trPurify[a] = new_a;
-    d_tstate.d_trPurify[new_a] = new_a;
-    d_tstate.d_trPurifies[new_a] = a;
-    d_tstate.d_trPurifyVars.insert(y);
-    switch (k)
-    {
-      case Kind::SINE: d_sineSlv.doPhaseShift(a, new_a, y); break;
-      case Kind::EXPONENTIAL: d_expSlv.doPurification(a, new_a, y); break;
-      default: AlwaysAssert(false) << "Unexpected Kind " << k;
-    }
+    case Kind::SINE: d_sineSlv.doPhaseShift(a, new_a, y); break;
+    case Kind::EXPONENTIAL: d_expSlv.doPurification(a, new_a, y); break;
+    default: AlwaysAssert(false) << "Unexpected Kind " << k;
   }
+}
+
+void TranscendentalSolver::initLastCall(const std::vector<Node>& xts)
+{
+  d_tstate.init(xts);
 }
 
 bool TranscendentalSolver::preprocessAssertionsCheckModel(

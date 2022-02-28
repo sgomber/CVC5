@@ -57,6 +57,10 @@ class TranscendentalSolver : protected EnvObj
                        InferenceManager& im,
                        NlModel& m);
   ~TranscendentalSolver();
+  /**
+   * Does non-context dependent setup for a node connected to a theory.
+   */
+  void preRegisterTerm(TNode n);
 
   /** init last call
    *

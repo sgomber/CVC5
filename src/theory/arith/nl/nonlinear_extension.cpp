@@ -86,6 +86,8 @@ void NonlinearExtension::preRegisterTerm(TNode n)
   // register terms with extended theory, to find extended terms that can be
   // eliminated by context-depedendent simplification.
   d_extTheory.registerTerm(n);
+  // transcendental terms may require purification
+  d_trSlv.preRegisterTerm(n);
 }
 
 void NonlinearExtension::processSideEffect(const NlLemma& se)

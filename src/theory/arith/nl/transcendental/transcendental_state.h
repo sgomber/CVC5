@@ -86,10 +86,8 @@ class TranscendentalState : protected EnvObj
    *
    * This call may add lemmas to lems based on registering term
    * information (for example to ensure congruence of terms).
-   * It puts terms that need to be treated further as a purified term on their
-   * own (for example purification of sine terms) into needsPurify.
    */
-  void init(const std::vector<Node>& xts, std::vector<Node>& needsPurify);
+  void init(const std::vector<Node>& xts);
 
   /**
    * Checks for terms that are congruent but disequal to a.
