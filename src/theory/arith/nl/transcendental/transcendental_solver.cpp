@@ -502,7 +502,7 @@ void TranscendentalSolver::postProcessModel(std::map<Node, Node>& arithModel,
     // application, we replace its value in the model with that application
     if (it != trReps.end())
     {
-      Trace("nl-ext") << "...abstract value for " << am.first << " to "
+      Trace("nl-ext") << "...abstract value for " << am.first << " from " << am.second << " to "
                       << it->second << std::endl;
       am.second = it->second;
     }
