@@ -270,7 +270,7 @@ void NonlinearExtension::checkFullEffort(std::map<Node, Node>& arithModel,
   }
   Trace("nl-ext") << "NonlinearExtension::interceptModel begin" << std::endl;
   d_model.reset(d_containing.getValuation().getModel(), arithModel);
-  
+
   // get the assertions
   std::vector<Node> assertions;
   getAssertions(assertions);
@@ -285,7 +285,7 @@ void NonlinearExtension::checkFullEffort(std::map<Node, Node>& arithModel,
     // the model was correct without having to check
     return;
   }
-  
+
   // run a last call effort check
   Trace("nl-ext") << "interceptModel: do model-based refinement" << std::endl;
   Result::Sat res = checkFullEffortInternal(assertions, false_asserts, termSet);
@@ -301,10 +301,12 @@ void NonlinearExtension::checkFullEffort(std::map<Node, Node>& arithModel,
   d_trSlv.postProcessModel(arithModel, termSet);
 }
 
-Result::Sat NonlinearExtension::checkFullEffortInternal(const std::vector<Node>& assertions,
-                                      const std::vector<Node>& false_asserts, const std::set<Node>& termSet)
+Result::Sat NonlinearExtension::checkFullEffortInternal(
+    const std::vector<Node>& assertions,
+    const std::vector<Node>& false_asserts,
+    const std::set<Node>& termSet)
 {
-  Assert (!false_asserts.empty());
+  Assert(!false_asserts.empty());
   ++(d_stats.d_mbrRuns);
   d_checkCounter++;
 

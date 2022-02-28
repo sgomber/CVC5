@@ -133,7 +133,7 @@ class NonlinearExtension : EnvObj
    * refuted by a lemma.
    */
   Result::Sat checkFullEffortInternal(const std::vector<Node>& assertions,
-                                      const std::vector<Node>& false_asserts, 
+                                      const std::vector<Node>& false_asserts,
                                       const std::set<Node>& termSet);
 
   /** get assertions
