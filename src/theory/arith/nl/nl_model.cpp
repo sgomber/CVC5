@@ -176,6 +176,7 @@ bool NlModel::checkModel(const std::vector<Node>& assertions,
   Trace("nl-ext-cm-debug") << "  solve for equalities..." << std::endl;
   for (const Node& atom : assertions)
   {
+    Trace("nl-ext-cm-debug") << "solve assertion " << atom << std::endl;
     // see if it corresponds to a univariate polynomial equation of degree two
     if (atom.getKind() == EQUAL)
     {
@@ -310,6 +311,8 @@ bool NlModel::addSubstitution(TNode v, TNode s)
       sub = rewrite(ms);
     }
   }
+  Trace("nl-ext-model") << "* check model substitution (final) : " << v << " -> " << s
+                        << std::endl;
   d_substitutions.add(v, s);
   return true;
 }
@@ -371,7 +374,7 @@ bool NlModel::solveEqualitySimple(Node eq,
       return false;
     }
   }
-  Trace("nl-ext-cms") << "simple solve equality " << seq << "..." << std::endl;
+  Trace("nl-ext-cms") << "simple solve equality " << seq << " (from " << eq << "..." << std::endl;
   Assert(seq.getKind() == EQUAL);
   std::map<Node, Node> msum;
   if (!ArithMSum::getMonomialSumLit(seq, msum))
@@ -497,6 +500,7 @@ bool NlModel::solveEqualitySimple(Node eq,
           Trace("nl-ext-cm") << std::endl;
         }
         bool ret = addSubstitution(uvf, uvfv);
+        Trace("nl-ext-cm-debug") << "recurse solve on " << eq << std::endl;
         // recurse
         return ret ? solveEqualitySimple(eq, d, lemmas) : false;
       }
@@ -870,7 +874,7 @@ bool NlModel::simpleCheckModelMsum(const std::map<Node, Node>& msum, bool pol)
               << "  failed due to unknown bound for " << vc << std::endl;
           // should either assign a model bound or eliminate the variable
           // via substitution
-          Assert(false);
+          AlwaysAssert(false);
           return false;
         }
       }
