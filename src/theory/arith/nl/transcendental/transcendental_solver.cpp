@@ -55,8 +55,8 @@ TranscendentalSolver::~TranscendentalSolver() {}
 
 void TranscendentalSolver::initLastCall(const std::vector<Node>& xts)
 {
-  std::vector<Node> needsMaster;
-  d_tstate.init(xts, needsMaster);
+  std::vector<Node> needsPurify;
+  d_tstate.init(xts, needsPurify);
 
   if (d_tstate.d_im.hasUsed())
   {
@@ -72,17 +72,23 @@ void TranscendentalSolver::initLastCall(const std::vector<Node>& xts)
 
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* sm = nm->getSkolemManager();
-  for (const Node& a : needsMaster)
+  for (const Node& a : needsPurify)
   {
-    // should not have processed this already
-    Assert(d_tstate.d_trPurify.find(a) == d_tstate.d_trPurify.end());
     Kind k = a.getKind();
     Assert(k == Kind::SINE || k == Kind::EXPONENTIAL);
     Node y = sm->mkSkolemFunction(
         SkolemFunId::TRANSCENDENTAL_PURIFY_ARG, nm->realType(), a);
     Node new_a = nm->mkNode(k, y);
-    Assert(d_tstate.d_trPurify.find(new_a) == d_tstate.d_trPurify.end());
-    Assert(d_tstate.d_trPurifies.find(new_a) == d_tstate.d_trPurifies.end());
+    // determine if we need to purify
+    if (d_tstate.d_trPurify.find(a)!=d_tstate.d_trPurify.end())
+    {
+      Node mv = d_tstate.d_model.computeAbstractModelValue(a);
+      Node mvn = d_tstate.d_model.computeAbstractModelValue(new_a);
+      if (mv==mvn)
+      {
+        continue;
+      }
+    }
     d_tstate.d_trPurify[a] = new_a;
     d_tstate.d_trPurify[new_a] = new_a;
     d_tstate.d_trPurifies[new_a] = a;

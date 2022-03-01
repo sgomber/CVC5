@@ -110,17 +110,17 @@ void TranscendentalState::init(const std::vector<Node>& xts,
           }
         }
       }
-      if (!consider)
-      {
-        // must assign a purified term
-        needsPurify.push_back(a);
-      }
-      else
+      if (consider)
       {
         // assume own purified
         d_trPurify[a] = a;
         d_trPurifies[a] = a;
       }
+    }
+    if (!consider)
+    {
+      // must assign a purified term
+      needsPurify.push_back(a);
     }
     if (ak == Kind::EXPONENTIAL || ak == Kind::SINE)
     {
