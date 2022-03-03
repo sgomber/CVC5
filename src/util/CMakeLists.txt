@@ -85,7 +85,6 @@ libcvc5_add_sources(
   system_exception.h
   uninterpreted_sort_value.cpp
   uninterpreted_sort_value.h
-  unsafe_interrupt_exception.h
   utility.cpp
   utility.h
   miniParser/miniParser.cpp
