@@ -67,7 +67,7 @@ class AlphaEqVariantProofGenerator : public ProofGenerator
 
  private:
   /** a lazy cd proof */
-  LazyCDProof d_proof;
+  std::unique_ptr<LazyCDProof> d_proof;
   /** name */
   std::string d_name;
 };
