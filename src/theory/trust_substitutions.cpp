@@ -67,6 +67,11 @@ void TrustSubstitutionMap::addSubstitution(TNode x,
   Node ts = t;
   if (ensureFreshQuant)
   {
+    if (d_eqvpg==nullptr)
+    {
+      d_eqvpg.reset(new AlphaEqVariantProofGenerator(
+          nullptr, d_ctx, "TrustSubstitutionMap::AlphaEqVariant"));
+    }
     // convert using the utility
     pg = d_eqvpg->convertEq(x, ts, pg);
     if (Trace.isOn("trust-subs"))
