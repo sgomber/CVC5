@@ -35,7 +35,9 @@ namespace cvc5 {
 namespace theory {
 
 /**
- * A layer on top of SubstitutionMap that tracks proofs.
+ * A layer on top of SubstitutionMap that tracks proofs, and has an interface
+ * for ensuring that the quantified variables in the ranges of substitutions
+ * are fresh.
  */
 class TrustSubstitutionMap : public ProofGenerator
 {
@@ -54,6 +56,13 @@ class TrustSubstitutionMap : public ProofGenerator
   /**
    * Add substitution x -> t, where pg can provide a closed proof of (= x t)
    * in the remainder of this user context.
+   * 
+   * @param x The left hand side of the substitution,
+   * @param t The right hand side of the substitution,
+   * @param pg The proof generator (if one exists) that can provide a proof
+   * of (= x t), or nullptr otherwise,
+   * @param ensureFreshQuant If this is true, then we replace t by t' which
+   * is alpha-equivalent to t and whose quantified variables are fresh.
    */
   void addSubstitution(TNode x,
                        TNode t,
@@ -61,7 +70,7 @@ class TrustSubstitutionMap : public ProofGenerator
                        bool ensureFreshQuant = false);
   /**
    * Add substitution x -> t from a single proof step with rule id, no children
-   * and arguments args.
+   * and arguments args, where ensureFreshQuant is the same as above.
    */
   void addSubstitution(TNode x,
                        TNode t,
