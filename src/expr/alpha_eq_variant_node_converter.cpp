@@ -23,10 +23,10 @@ AlphaEqVariantNodeConverter::AlphaEqVariantNodeConverter() {}
 
 Node AlphaEqVariantNodeConverter::postConvert(Node n)
 {
-  if (n.getKind()==BOUND_VARIABLE)
+  if (n.getKind() == BOUND_VARIABLE)
   {
     std::map<Node, Node>::iterator it = d_bvMap.find(n);
-    if (it!=d_bvMap.end())
+    if (it != d_bvMap.end())
     {
       return it->second;
     }
@@ -37,17 +37,12 @@ Node AlphaEqVariantNodeConverter::postConvert(Node n)
   return n;
 }
 
-
-AlphaEqVariantProofGenerator::AlphaEqVariantProofGenerator(ProofNodeManager* pnm,
-                      context::Context* c,
-                      std::string name) : EagerProofGenerator(pnm, c, name)
-                      {
-                      }
-
-TrustNode AlphaEqVariantProofGenerator::convertEq(TrustNode eqt)
+AlphaEqVariantProofGenerator::AlphaEqVariantProofGenerator(
+    ProofNodeManager* pnm, context::Context* c, std::string name)
+    : EagerProofGenerator(pnm, c, name)
 {
-  
-  return eqt;
 }
-  
+
+TrustNode AlphaEqVariantProofGenerator::convertEq(TrustNode eqt) { return eqt; }
+
 }  // namespace cvc5

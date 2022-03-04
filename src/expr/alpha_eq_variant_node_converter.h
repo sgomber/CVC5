@@ -38,20 +38,22 @@ class AlphaEqVariantNodeConverter : public NodeConverter
   ~AlphaEqVariantNodeConverter() {}
   /** convert node n as described above during post-order traversal */
   Node postConvert(Node n) override;
+
  private:
   /** Mapping bound variables to fresh bound variables of the same type */
   std::map<Node, Node> d_bvMap;
 };
 
-/** 
- * Proof-producing version of the above class. Stores 
+/**
+ * Proof-producing version of the above class. Stores
  */
 class AlphaEqVariantProofGenerator : public EagerProofGenerator
 {
-public:
-  AlphaEqVariantProofGenerator(ProofNodeManager* pnm,
-                      context::Context* c = nullptr,
-                      std::string name = "AlphaEqVariantProofGenerator");
+ public:
+  AlphaEqVariantProofGenerator(
+      ProofNodeManager* pnm,
+      context::Context* c = nullptr,
+      std::string name = "AlphaEqVariantProofGenerator");
   /** Convert trust node */
   TrustNode convertEq(TrustNode eqt);
 };
