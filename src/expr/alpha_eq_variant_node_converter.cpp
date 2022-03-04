@@ -57,37 +57,44 @@ std::shared_ptr<ProofNode> AlphaEqVariantProofGenerator::getProofFor(Node f)
   return d_proof.getProofFor(f);
 }
 
-TrustNode AlphaEqVariantProofGenerator::convertEq(TrustNode eqt)
+Node AlphaEqVariantProofGenerator::convert(Node n)
 {
-  Assert(eqt.getKind() == TrustNodeKind::LEMMA);
-  Node eq = eqt.getProven();
-  Assert(eq.getKind() == EQUAL);
-  AlphaEqVariantNodeConverter aevnc;
-  Node rhs = eq[1];
-  if (!expr::hasBoundVar(rhs))
+  if (!expr::hasBoundVar(n))
   {
     // no need to convert
-    return eqt;
+    return n;
   }
-  Node rhsc = aevnc.convert(rhs);
-  Node finalEq = eq[0].eqNode(rhsc);
-  if (eqt.getGenerator() == nullptr)
-  {
-    // no proofs, just return the equality
-    return TrustNode::mkTrustLemma(finalEq, nullptr);
-  }
-  d_proof.addLazyStep(eq, eqt.getGenerator());
+  AlphaEqVariantNodeConverter aevnc;
+  Node nc = aevnc.convert(n);
   std::vector<Node> aeqArgs;
-  aeqArgs.push_back(rhs);
+  aeqArgs.push_back(n);
   const std::map<Node, Node>& vmap = aevnc.getVariableMapping();
   for (const std::pair<const Node, Node>& v : vmap)
   {
     aeqArgs.push_back(v.first.eqNode(v.second));
   }
-  Node aeq = rhs.eqNode(rhsc);
+  Node aeq = n.eqNode(nc);
   d_proof.addStep(aeq, PfRule::ALPHA_EQUIV, {}, aeqArgs);
+  return nc;
+}
+
+ProofGenerator * AlphaEqVariantProofGenerator::convertEq(Node lhs, Node& rhs, ProofGenerator * pg)
+{
+  Node rhsc = convert(rhs);
+  if (rhs==rhsc || pg == nullptr)
+  {
+    // no proofs or no change, just return
+    rhs = rhsc;
+    return pg;
+  }
+  Node eq = lhs.eqNode(rhs);
+  Node finalEq = lhs.eqNode(rhsc);
+  d_proof.addLazyStep(eq, pg);
+  Node aeq = rhs.eqNode(rhsc);
   d_proof.addStep(finalEq, PfRule::TRANS, {eq, aeq}, {});
-  return eqt;
+  
+  rhs = rhsc;
+  return this;
 }
 
 std::string AlphaEqVariantProofGenerator::identify() const { return d_name; }

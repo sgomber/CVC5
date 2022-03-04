@@ -24,7 +24,6 @@
 #include "expr/node_converter.h"
 #include "expr/type_node.h"
 #include "proof/lazy_proof.h"
-#include "proof/trust_node.h"
 
 namespace cvc5 {
 
@@ -59,8 +58,10 @@ class AlphaEqVariantProofGenerator : public ProofGenerator
       const std::string& name = "AlphaEqVariantProofGenerator");
   /** Get the proof for formula f. */
   std::shared_ptr<ProofNode> getProofFor(Node f) override;
+  /** Convert node */
+  Node convert(Node n);
   /** Convert trust node */
-  TrustNode convertEq(TrustNode eqt);
+  ProofGenerator * convertEq(Node lhs, Node& rhs, ProofGenerator * pg);
   /** Identify this generator (for debugging, etc..) */
   std::string identify() const override;
 

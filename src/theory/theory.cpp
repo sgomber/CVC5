@@ -452,13 +452,13 @@ Theory::PPAssertStatus Theory::ppAssert(TrustNode tin,
     if (in[0].isVar() && isLegalElimination(in[0], in[1])
         && in[0].getKind() != kind::BOOLEAN_TERM_VARIABLE)
     {
-      outSubstitutions.addSubstitutionSolved(in[0], in[1], tin);
+      outSubstitutions.addSubstitutionSolved(in[0], in[1], tin, true);
       return PP_ASSERT_STATUS_SOLVED;
     }
     if (in[1].isVar() && isLegalElimination(in[1], in[0])
         && in[1].getKind() != kind::BOOLEAN_TERM_VARIABLE)
     {
-      outSubstitutions.addSubstitutionSolved(in[1], in[0], tin);
+      outSubstitutions.addSubstitutionSolved(in[1], in[0], tin, true);
       return PP_ASSERT_STATUS_SOLVED;
     }
   }

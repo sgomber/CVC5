@@ -64,14 +64,23 @@ void TrustSubstitutionMap::addSubstitution(TNode x,
 {
   Trace("trust-subs") << "TrustSubstitutionMap::addSubstitution: add " << x
                       << " -> " << t << std::endl;
+  Node ts = t;
   if (ensureFreshQuant)
   {
-    // TODO
+    // convert using the utility
+    pg = d_eqvpg->convertEq(x, ts, pg);
+    if (Trace.isOn("trust-subs"))
+    {
+      if (ts!=t)
+      {
+        Trace("trust-subs") << "...converted to " << ts << std::endl;
+      }
+    }
   }
-  d_subs.addSubstitution(x, t);
+  d_subs.addSubstitution(x, ts);
   if (isProofEnabled())
   {
-    TrustNode tnl = TrustNode::mkTrustRewrite(x, t, pg);
+    TrustNode tnl = TrustNode::mkTrustRewrite(x, ts, pg);
     d_tsubs.push_back(tnl);
     // add to lazy proof
     d_subsPg->addLazyStep(tnl.getProven(), pg, d_trustId);
