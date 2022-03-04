@@ -48,7 +48,10 @@ const std::map<Node, Node>& AlphaEqVariantNodeConverter::getVariableMapping()
 AlphaEqVariantProofGenerator::AlphaEqVariantProofGenerator(
     ProofNodeManager* pnm, context::Context* c, const std::string& name)
     : ProofGenerator(),
-      d_proof(pnm!=nullptr ? new LazyCDProof(pnm, nullptr, c, name + "::LazyCDProof", false) : nullptr),
+      d_proof(
+          pnm != nullptr
+              ? new LazyCDProof(pnm, nullptr, c, name + "::LazyCDProof", false)
+              : nullptr),
       d_name(name)
 {
 }
@@ -69,7 +72,7 @@ Node AlphaEqVariantProofGenerator::convert(Node n)
   AlphaEqVariantNodeConverter aevnc;
   Node nc = aevnc.convert(n);
   Trace("alpha-eq-variant") << "...converted to " << nc << std::endl;
-  if (d_proof!=nullptr)
+  if (d_proof != nullptr)
   {
     std::vector<Node> aeqArgs;
     aeqArgs.push_back(n);
@@ -86,24 +89,26 @@ Node AlphaEqVariantProofGenerator::convert(Node n)
   return nc;
 }
 
-ProofGenerator * AlphaEqVariantProofGenerator::convertEq(Node lhs, Node& rhs, ProofGenerator * pg)
+ProofGenerator* AlphaEqVariantProofGenerator::convertEq(Node lhs,
+                                                        Node& rhs,
+                                                        ProofGenerator* pg)
 {
   Trace("alpha-eq-variant") << "Convert eq " << lhs << " " << rhs << std::endl;
   Node rhsc = convert(rhs);
-  if (rhs==rhsc || pg == nullptr)
+  if (rhs == rhsc || pg == nullptr)
   {
     Trace("alpha-eq-variant") << "...simple return" << std::endl;
     // no proofs or no change, just return
     rhs = rhsc;
     return pg;
   }
-  Assert (d_proof!=nullptr);
+  Assert(d_proof != nullptr);
   Node eq = lhs.eqNode(rhs);
   Node finalEq = lhs.eqNode(rhsc);
   d_proof->addLazyStep(eq, pg);
   Node aeq = rhs.eqNode(rhsc);
   d_proof->addStep(finalEq, PfRule::TRANS, {eq, aeq}, {});
-  
+
   rhs = rhsc;
   return this;
 }

@@ -71,7 +71,7 @@ void TrustSubstitutionMap::addSubstitution(TNode x,
     pg = d_eqvpg->convertEq(x, ts, pg);
     if (Trace.isOn("trust-subs"))
     {
-      if (ts!=t)
+      if (ts != t)
       {
         Trace("trust-subs") << "...converted to " << ts << std::endl;
       }
