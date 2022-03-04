@@ -24,6 +24,7 @@
 #include "expr/node_converter.h"
 #include "expr/type_node.h"
 #include "proof/lazy_proof.h"
+#include "proof/trust_node.h"
 
 namespace cvc5 {
 

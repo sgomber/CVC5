@@ -15,6 +15,8 @@
 
 #include "expr/alpha_eq_variant_node_converter.h"
 
+#include "expr/node_algorithm.h"
+
 using namespace cvc5::kind;
 
 namespace cvc5 {
@@ -57,6 +59,7 @@ std::shared_ptr<ProofNode> AlphaEqVariantProofGenerator::getProofFor(Node f)
 
 TrustNode AlphaEqVariantProofGenerator::convertEq(TrustNode eqt)
 {
+  Assert (eqt.getKind()==TrustNodeKind::LEMMA);
   Node eq = eqt.getProven();
   Assert(eq.getKind() == EQUAL);
   AlphaEqVariantNodeConverter aevnc;
@@ -67,8 +70,12 @@ TrustNode AlphaEqVariantProofGenerator::convertEq(TrustNode eqt)
     return eqt;
   }
   Node rhsc = aevnc.convert(rhs);
-  Node aeq = rhs.eqNode(rhsc);
   Node finalEq = eq[0].eqNode(rhsc);
+  if (eqt.getGenerator()==nullptr)
+  {
+    // no proofs, just return the equality
+    return TrustNode::mkTrustLemma(finalEq, nullptr);
+  }
   d_proof.addLazyStep(eq, eqt.getGenerator());
   std::vector<Node> aeqArgs;
   aeqArgs.push_back(rhs);
@@ -77,6 +84,7 @@ TrustNode AlphaEqVariantProofGenerator::convertEq(TrustNode eqt)
   {
     aeqArgs.push_back(v.first.eqNode(v.second));
   }
+  Node aeq = rhs.eqNode(rhsc);
   d_proof.addStep(aeq, PfRule::ALPHA_EQUIV, {}, aeqArgs);
   d_proof.addStep(finalEq, PfRule::TRANS, {eq, aeq}, {});
   return eqt;
