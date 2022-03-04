@@ -64,6 +64,10 @@ void TrustSubstitutionMap::addSubstitution(TNode x,
 {
   Trace("trust-subs") << "TrustSubstitutionMap::addSubstitution: add " << x
                       << " -> " << t << std::endl;
+  if (ensureFreshQuant)
+  {
+    // TODO
+  }
   d_subs.addSubstitution(x, t);
   if (isProofEnabled())
   {
@@ -89,7 +93,7 @@ void TrustSubstitutionMap::addSubstitution(TNode x,
   LazyCDProof* stepPg = d_helperPf->allocateProof(nullptr, d_ctx);
   Node eq = x.eqNode(t);
   stepPg->addStep(eq, id, children, args);
-  addSubstitution(x, t, stepPg);
+  addSubstitution(x, t, stepPg, ensureFreshQuant);
 }
 
 ProofGenerator* TrustSubstitutionMap::addSubstitutionSolved(
@@ -101,7 +105,7 @@ ProofGenerator* TrustSubstitutionMap::addSubstitutionSolved(
   if (!isProofEnabled() || tn.getGenerator() == nullptr)
   {
     // no generator or not proof enabled, nothing to do
-    addSubstitution(x, t, nullptr);
+    addSubstitution(x, t, nullptr, ensureFreshQuant);
     Trace("trust-subs") << "...no proof" << std::endl;
     return nullptr;
   }
@@ -112,7 +116,7 @@ ProofGenerator* TrustSubstitutionMap::addSubstitutionSolved(
   if (eq == proven)
   {
     // no rewrite required, just use the generator
-    addSubstitution(x, t, tn.getGenerator());
+    addSubstitution(x, t, tn.getGenerator(), ensureFreshQuant);
     Trace("trust-subs") << "...use generator directly" << std::endl;
     return tn.getGenerator();
   }
@@ -130,14 +134,14 @@ ProofGenerator* TrustSubstitutionMap::addSubstitutionSolved(
   d_tspb->clear();
   // link the given generator
   solvePg->addLazyStep(proven, tn.getGenerator());
-  addSubstitution(x, t, solvePg);
+  addSubstitution(x, t, solvePg, ensureFreshQuant);
   return solvePg;
 }
 
 void TrustSubstitutionMap::addSubstitutions(TrustSubstitutionMap& t,
                                             bool ensureFreshQuant)
 {
-  if (!isProofEnabled())
+  if (!isProofEnabled() && !ensureFreshQuant)
   {
     // just use the basic utility
     d_subs.addSubstitutions(t.get());
