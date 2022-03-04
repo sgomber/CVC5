@@ -58,15 +58,28 @@ class AlphaEqVariantProofGenerator : public ProofGenerator
       const std::string& name = "AlphaEqVariantProofGenerator");
   /** Get the proof for formula f. */
   std::shared_ptr<ProofNode> getProofFor(Node f) override;
-  /** Convert node */
+  /** 
+   * Convert node to be an alpha equivalent variant. This:
+   * - Returns the converted form n' of n based on the node converter above,
+   * - Ensures that this proof generator can provide a proof of (= n n').
+   */
   Node convert(Node n);
-  /** Convert trust node */
+  /** 
+   * Assume that pg (if non-null) has a proof of (= lhs rhs). This updates
+   * rhs to its converted form rhs' using the convert method of this class,
+   * then returns a proof generator that has a proof of (= lhs rhs'), which
+   * may be pg if rhs == rhs', or this class otherwise. It may return nullptr
+   * if pg is nullptr.
+   */
   ProofGenerator * convertEq(Node lhs, Node& rhs, ProofGenerator * pg);
   /** Identify this generator (for debugging, etc..) */
   std::string identify() const override;
 
  private:
-  /** a lazy cd proof */
+  /** 
+   * A lazy cd proof for storing intermediate steps for implementing the above
+   * methods.
+   */
   std::unique_ptr<LazyCDProof> d_proof;
   /** name */
   std::string d_name;

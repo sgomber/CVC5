@@ -10,7 +10,7 @@
  * directory for licensing information.
  * ****************************************************************************
  *
- * Implementation of subtype elimination node conversion
+ * Implementation of alpha equivalent variant node conversion
  */
 
 #include "expr/alpha_eq_variant_node_converter.h"
@@ -48,7 +48,7 @@ const std::map<Node, Node>& AlphaEqVariantNodeConverter::getVariableMapping()
 AlphaEqVariantProofGenerator::AlphaEqVariantProofGenerator(
     ProofNodeManager* pnm, context::Context* c, const std::string& name)
     : ProofGenerator(),
-      d_proof(pnm!=nullptr ? new LazyCDProof(pnm, nullptr, c, name + "::LazyCDProof", false)),
+      d_proof(pnm!=nullptr ? new LazyCDProof(pnm, nullptr, c, name + "::LazyCDProof", false) : nullptr),
       d_name(name)
 {
 }
