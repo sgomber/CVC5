@@ -40,6 +40,7 @@ class AlphaEqVariantNodeConverter : public NodeConverter
   Node postConvert(Node n) override;
   /** get mapping */
   const std::map<Node, Node>& getVariableMapping() const;
+
  private:
   /** Mapping bound variables to fresh bound variables of the same type */
   std::map<Node, Node> d_bvMap;
@@ -61,7 +62,8 @@ class AlphaEqVariantProofGenerator : public ProofGenerator
   TrustNode convertEq(TrustNode eqt);
   /** Identify this generator (for debugging, etc..) */
   std::string identify() const override;
-private:
+
+ private:
   /** a lazy cd proof */
   LazyCDProof d_proof;
   /** name */
