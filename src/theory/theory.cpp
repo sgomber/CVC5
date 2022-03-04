@@ -443,8 +443,8 @@ Theory::PPAssertStatus Theory::ppAssert(TrustNode tin,
   TNode in = tin.getNode();
   if (in.getKind() == kind::EQUAL)
   {
-    Assert (!in[0].isConst() || !in[1].isConst());
-    Assert (in[0] != in[1]);
+    Assert(!in[0].isConst() || !in[1].isConst());
+    Assert(in[0] != in[1]);
     // (and (= x t) phi) can be replaced by phi[x/t] if
     // 1) x is a variable
     // 2) x is not in the term t
