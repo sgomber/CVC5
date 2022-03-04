@@ -90,7 +90,7 @@ class EagerProofGenerator : public ProofGenerator
  public:
   EagerProofGenerator(ProofNodeManager* pnm,
                       context::Context* c = nullptr,
-                      std::string name = "EagerProofGenerator");
+                      const std::string& name = "EagerProofGenerator");
   ~EagerProofGenerator() {}
   /** Get the proof for formula f. */
   std::shared_ptr<ProofNode> getProofFor(Node f) override;

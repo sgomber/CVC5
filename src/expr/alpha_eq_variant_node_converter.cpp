@@ -37,12 +37,50 @@ Node AlphaEqVariantNodeConverter::postConvert(Node n)
   return n;
 }
 
-AlphaEqVariantProofGenerator::AlphaEqVariantProofGenerator(
-    ProofNodeManager* pnm, context::Context* c, std::string name)
-    : EagerProofGenerator(pnm, c, name)
+const std::map<Node, Node>& AlphaEqVariantNodeConverter::getVariableMapping() const
 {
+  return d_bvMap;
 }
 
-TrustNode AlphaEqVariantProofGenerator::convertEq(TrustNode eqt) { return eqt; }
+AlphaEqVariantProofGenerator::AlphaEqVariantProofGenerator(
+    ProofNodeManager* pnm, context::Context* c, const std::string& name)
+    : ProofGenerator(), d_proof(pnm, nullptr, c, name + "::LazyCDProof", false), d_name(name)
+{
+}
+std::shared_ptr<ProofNode> AlphaEqVariantProofGenerator::getProofFor(Node f)
+{
+  return d_proof.getProofFor(f);
+}
+
+TrustNode AlphaEqVariantProofGenerator::convertEq(TrustNode eqt) { 
+  Node eq = eqt.getProven();
+  Assert (eq.getKind()==EQUAL);
+  AlphaEqVariantNodeConverter aevnc;
+  Node rhs = eq[1];
+  if (!expr::hasBoundVar(rhs))
+  {
+    // no need to convert
+    return eqt;
+  }
+  Node rhsc = aevnc.convert(rhs);
+  Node aeq = rhs.eqNode(rhsc);  
+  Node finalEq = eq[0].eqNode(rhsc);
+  d_proof.addLazyStep(eq, eqt.getGenerator());
+  std::vector<Node> aeqArgs;
+  aeqArgs.push_back(rhs);
+  const std::map<Node, Node>& vmap = aevnc.getVariableMapping();
+  for (const std::pair< const Node, Node>& v : vmap)
+  {
+    aeqArgs.push_back(v.first.eqNode(v.second));
+  }
+  d_proof.addStep(aeq, PfRule::ALPHA_EQUIV, {}, aeqArgs);
+  d_proof.addStep(finalEq, PfRule::TRANS, {eq, aeq}, {});
+  return eqt; 
+}
+
+std::string AlphaEqVariantProofGenerator::identify() const
+{
+  return d_name;
+}
 
 }  // namespace cvc5

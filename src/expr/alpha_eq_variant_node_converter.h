@@ -23,7 +23,7 @@
 #include "expr/node.h"
 #include "expr/node_converter.h"
 #include "expr/type_node.h"
-#include "proof/eager_proof_generator.h"
+#include "proof/lazy_proof.h"
 
 namespace cvc5 {
 
@@ -38,7 +38,8 @@ class AlphaEqVariantNodeConverter : public NodeConverter
   ~AlphaEqVariantNodeConverter() {}
   /** convert node n as described above during post-order traversal */
   Node postConvert(Node n) override;
-
+  /** get mapping */
+  const std::map<Node, Node>& getVariableMapping() const;
  private:
   /** Mapping bound variables to fresh bound variables of the same type */
   std::map<Node, Node> d_bvMap;
@@ -47,15 +48,24 @@ class AlphaEqVariantNodeConverter : public NodeConverter
 /**
  * Proof-producing version of the above class. Stores
  */
-class AlphaEqVariantProofGenerator : public EagerProofGenerator
+class AlphaEqVariantProofGenerator : public ProofGenerator
 {
  public:
   AlphaEqVariantProofGenerator(
       ProofNodeManager* pnm,
       context::Context* c = nullptr,
-      std::string name = "AlphaEqVariantProofGenerator");
+      const std::string& name = "AlphaEqVariantProofGenerator");
+  /** Get the proof for formula f. */
+  std::shared_ptr<ProofNode> getProofFor(Node f) override;
   /** Convert trust node */
   TrustNode convertEq(TrustNode eqt);
+  /** Identify this generator (for debugging, etc..) */
+  std::string identify() const override;
+private:
+  /** a lazy cd proof */
+  LazyCDProof d_proof;
+  /** name */
+  std::string d_name;
 };
 
 }  // namespace cvc5
