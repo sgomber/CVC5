@@ -52,10 +52,11 @@ void TrustSubstitutionMap::setProofNodeManager(ProofNodeManager* pnm)
     d_applyPg.reset(
         new LazyCDProof(pnm, nullptr, d_ctx, "TrustSubstitutionMap::applyPg"));
     d_helperPf.reset(new CDProofSet<LazyCDProof>(pnm, d_ctx));
+    d_eqvpg.reset(new AlphaEqVariantProofGenerator(pnm, d_ctx, "TrustSubstitutionMap::AlphaEqVariant"));
   }
 }
 
-void TrustSubstitutionMap::addSubstitution(TNode x, TNode t, ProofGenerator* pg)
+void TrustSubstitutionMap::addSubstitution(TNode x, TNode t, ProofGenerator* pg, bool ensureFreshQuant)
 {
   Trace("trust-subs") << "TrustSubstitutionMap::addSubstitution: add " << x
                       << " -> " << t << std::endl;
@@ -73,7 +74,7 @@ void TrustSubstitutionMap::addSubstitution(TNode x,
                                            TNode t,
                                            PfRule id,
                                            const std::vector<Node>& children,
-                                           const std::vector<Node>& args)
+                                           const std::vector<Node>& args, bool ensureFreshQuant)
 {
   if (!isProofEnabled())
   {
@@ -88,7 +89,7 @@ void TrustSubstitutionMap::addSubstitution(TNode x,
 
 ProofGenerator* TrustSubstitutionMap::addSubstitutionSolved(TNode x,
                                                             TNode t,
-                                                            TrustNode tn)
+                                                            TrustNode tn, bool ensureFreshQuant)
 {
   Trace("trust-subs") << "TrustSubstitutionMap::addSubstitutionSolved: add "
                       << x << " -> " << t << " from " << tn.getProven()
@@ -129,7 +130,7 @@ ProofGenerator* TrustSubstitutionMap::addSubstitutionSolved(TNode x,
   return solvePg;
 }
 
-void TrustSubstitutionMap::addSubstitutions(TrustSubstitutionMap& t)
+void TrustSubstitutionMap::addSubstitutions(TrustSubstitutionMap& t, bool ensureFreshQuant)
 {
   if (!isProofEnabled())
   {
@@ -141,7 +142,7 @@ void TrustSubstitutionMap::addSubstitutions(TrustSubstitutionMap& t)
   for (const TrustNode& tns : t.d_tsubs)
   {
     Node proven = tns.getProven();
-    addSubstitution(proven[0], proven[1], tns.getGenerator());
+    addSubstitution(proven[0], proven[1], tns.getGenerator(), ensureFreshQuant);
   }
 }
 

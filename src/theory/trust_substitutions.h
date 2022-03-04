@@ -29,6 +29,7 @@
 #include "proof/theory_proof_step_buffer.h"
 #include "proof/trust_node.h"
 #include "theory/substitutions.h"
+#include "expr/alpha_eq_variant_node_converter.h"
 
 namespace cvc5 {
 namespace theory {
@@ -54,7 +55,7 @@ class TrustSubstitutionMap : public ProofGenerator
    * Add substitution x -> t, where pg can provide a closed proof of (= x t)
    * in the remainder of this user context.
    */
-  void addSubstitution(TNode x, TNode t, ProofGenerator* pg = nullptr);
+  void addSubstitution(TNode x, TNode t, ProofGenerator* pg = nullptr, bool ensureFreshQuant = false);
   /**
    * Add substitution x -> t from a single proof step with rule id, no children
    * and arguments args.
@@ -63,7 +64,7 @@ class TrustSubstitutionMap : public ProofGenerator
                        TNode t,
                        PfRule id,
                        const std::vector<Node>& children,
-                       const std::vector<Node>& args);
+                       const std::vector<Node>& args, bool ensureFreshQuant = false);
   /**
    * Add substitution x -> t, which was derived from the proven field of
    * trust node tn. In other words, (= x t) is the solved form of
@@ -78,12 +79,12 @@ class TrustSubstitutionMap : public ProofGenerator
    *
    * @return The proof generator that can prove (= x t).
    */
-  ProofGenerator* addSubstitutionSolved(TNode x, TNode t, TrustNode tn);
+  ProofGenerator* addSubstitutionSolved(TNode x, TNode t, TrustNode tn, bool ensureFreshQuant = false);
   /**
    * Add substitutions from trust substitution map t. This adds all
    * substitutions from the map t and carries over its information about proofs.
    */
-  void addSubstitutions(TrustSubstitutionMap& t);
+  void addSubstitutions(TrustSubstitutionMap& t, bool ensureFreshQuant = false);
   /**
    * Apply substitutions in this class to node n. Returns a trust node
    * proving n = n*sigma, where the proof generator is provided by this class
@@ -146,6 +147,8 @@ class TrustSubstitutionMap : public ProofGenerator
   NodeUIntMap d_eqtIndex;
   /** Debugging, catches potential for infinite loops */
   std::unordered_set<Node> d_proving;
+  /** A proof generator for ensuring quantified variables are unique */
+  std::unique_ptr<AlphaEqVariantProofGenerator> d_eqvpg;
 };
 
 }  // namespace theory
