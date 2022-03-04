@@ -59,7 +59,7 @@ std::shared_ptr<ProofNode> AlphaEqVariantProofGenerator::getProofFor(Node f)
 
 TrustNode AlphaEqVariantProofGenerator::convertEq(TrustNode eqt)
 {
-  Assert (eqt.getKind()==TrustNodeKind::LEMMA);
+  Assert(eqt.getKind() == TrustNodeKind::LEMMA);
   Node eq = eqt.getProven();
   Assert(eq.getKind() == EQUAL);
   AlphaEqVariantNodeConverter aevnc;
@@ -71,7 +71,7 @@ TrustNode AlphaEqVariantProofGenerator::convertEq(TrustNode eqt)
   }
   Node rhsc = aevnc.convert(rhs);
   Node finalEq = eq[0].eqNode(rhsc);
-  if (eqt.getGenerator()==nullptr)
+  if (eqt.getGenerator() == nullptr)
   {
     // no proofs, just return the equality
     return TrustNode::mkTrustLemma(finalEq, nullptr);
