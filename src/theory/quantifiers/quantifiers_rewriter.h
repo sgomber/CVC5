@@ -18,6 +18,7 @@
 #ifndef CVC5__THEORY__QUANTIFIERS__QUANTIFIERS_REWRITER_H
 #define CVC5__THEORY__QUANTIFIERS__QUANTIFIERS_REWRITER_H
 
+#include "options/quantifiers_options.h"
 #include "proof/trust_node.h"
 #include "theory/theory_rewriter.h"
 
@@ -233,10 +234,20 @@ class QuantifiersRewriter : public TheoryRewriter
                              std::vector<Node>& activeArgs,
                              Node n,
                              Node ipl);
-  Node computeProcessTerms2(Node body,
+  /**
+   *
+   * It may introduce new conditions C into new_conds. It returns a node retBody
+   * such that q of the form
+   *   forall args. body
+   * is equivalent to:
+   *   forall args. ( C V retBody )
+   */
+  Node computeProcessTerms2(const Node& q,
+                            const std::vector<Node>& args,
+                            Node body,
                             std::map<Node, Node>& cache,
-                            std::vector<Node>& new_vars,
-                            std::vector<Node>& new_conds) const;
+                            std::vector<Node>& new_conds,
+                            options::IteLiftQuantMode iteLiftMode) const;
   static void computeDtTesterIteSplit(
       Node n,
       std::map<Node, Node>& pcons,
@@ -283,17 +294,10 @@ class QuantifiersRewriter : public TheoryRewriter
    * - Certain cases of ITE lifting,
    * - Elimination of extended arithmetic functions like to_int/is_int/div/mod,
    * - Elimination of select over store.
-   *
-   * It may introduce new variables V into new_vars and new conditions C into
-   * new_conds. It returns a node retBody such that q of the form
-   *   forall X. body
-   * is equivalent to:
-   *   forall X, V. ( C => retBody )
    */
-  Node computeProcessTerms(Node body,
-                           std::vector<Node>& new_vars,
-                           std::vector<Node>& new_conds,
-                           Node q,
+  Node computeProcessTerms(const Node& q,
+                           const std::vector<Node>& args,
+                           Node body,
                            QAttributes& qa) const;
   //------------------------------------- end process terms
   //------------------------------------- extended rewrite
