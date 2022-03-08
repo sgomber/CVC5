@@ -3226,22 +3226,23 @@ TEST_F(TestApiBlackSolver, proj_issue422)
   slv.push(4);
 }
 
-TEST_F(TestApiBlackSolver, foo)                                                     
-{                                                                                    
-  d_solver.setLogic("HO_ALL");                                                       
-  d_solver.setOption("incremental", "true");                                         
-  d_solver.setOption("produce-unsat-assumptions", "true");                           
-  d_solver.setOption("produce-models", "true");                                      
-  Sort s1 = d_solver.getBooleanSort();                                               
-  Sort s2 = d_solver.mkBagSort(s1);                                                  
-  Term t2 = d_solver.mkConst(s2, "_x0");                                             
-  Term t5 = d_solver.mkConst(s1, "_x3");                                             
-  Term t83 = d_solver.mkTerm(BAG_COUNT, t5, t2);                                     
-  Sort s6 = d_solver.mkFunctionSort(s1, t83.getSort());                              
-  Term t164 = d_solver.mkConst(s6, "_x26");                                          
-  d_solver.checkSat();                                                               
-  Term v = d_solver.getValue(t164);                                                  
-  ASSERT_FALSE(d_solver.checkSatAssuming(d_solver.mkTerm(EQUAL, t164, v)).isUnsat());     
+TEST_F(TestApiBlackSolver, foo)
+{
+  d_solver.setLogic("HO_ALL");
+  d_solver.setOption("incremental", "true");
+  d_solver.setOption("produce-unsat-assumptions", "true");
+  d_solver.setOption("produce-models", "true");
+  Sort s1 = d_solver.getBooleanSort();
+  Sort s2 = d_solver.mkBagSort(s1);
+  Term t2 = d_solver.mkConst(s2, "_x0");
+  Term t5 = d_solver.mkConst(s1, "_x3");
+  Term t83 = d_solver.mkTerm(BAG_COUNT, t5, t2);
+  Sort s6 = d_solver.mkFunctionSort(s1, t83.getSort());
+  Term t164 = d_solver.mkConst(s6, "_x26");
+  d_solver.checkSat();
+  Term v = d_solver.getValue(t164);
+  ASSERT_FALSE(
+      d_solver.checkSatAssuming(d_solver.mkTerm(EQUAL, t164, v)).isUnsat());
 }
 
 }  // namespace test
