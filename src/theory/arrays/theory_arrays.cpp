@@ -108,7 +108,8 @@ TheoryArrays::TheoryArrays(Env& env,
       d_readTableContext(new context::Context()),
       d_arrayMerges(context()),
       d_dstrat(new TheoryArraysDecisionStrategy(this)),
-      d_dstratInit(false)
+      d_dstratInit(false),
+      d_fterms(context())
 {
   d_true = NodeManager::currentNM()->mkConst<bool>(true);
   d_false = NodeManager::currentNM()->mkConst<bool>(false);
@@ -729,6 +730,7 @@ void TheoryArrays::preRegisterTermInternal(TNode node)
       }
 
       checkRowForIndex(node[1], store);
+      d_fterms.push_back(node);
       break;
     }
     case kind::STORE:
@@ -785,6 +787,7 @@ void TheoryArrays::preRegisterTermInternal(TNode node)
     }
 
     checkStore(node);
+    d_fterms.push_back(node);
     break;
   }
   case kind::STORE_ALL: {
@@ -926,6 +929,146 @@ void TheoryArrays::checkPair(TNode r1, TNode r2)
 }
 
 
+
+bool TheoryArrays::areCareDisequal( TNode x, TNode y ) {
+  Assert(d_equalityEngine->hasTerm(x));
+  Assert(d_equalityEngine->hasTerm(y));
+  if (d_equalityEngine->isTriggerTerm(x, THEORY_ARRAYS)
+      && d_equalityEngine->isTriggerTerm(y, THEORY_ARRAYS))
+  {
+    TNode x_shared =
+        d_equalityEngine->getTriggerTermRepresentative(x, THEORY_ARRAYS);
+    TNode y_shared =
+        d_equalityEngine->getTriggerTermRepresentative(y, THEORY_ARRAYS);
+    EqualityStatus eqStatus = d_valuation.getEqualityStatus(x_shared, y_shared);
+    if( eqStatus==EQUALITY_FALSE_AND_PROPAGATED || eqStatus==EQUALITY_FALSE || eqStatus==EQUALITY_FALSE_IN_MODEL ){
+      return true;
+    }
+  }
+  return false;
+}
+
+void TheoryArrays::addCarePairs(TNodeTrie* t1,
+                                 TNodeTrie* t2,
+                                 unsigned arity,
+                                 unsigned depth)
+{
+  if( depth==arity ){
+    if( t2!=nullptr ){
+      Node f1 = t1->getData();
+      Node f2 = t2->getData();
+      if (!d_equalityEngine->areEqual(f1, f2))
+      {
+        Trace("strings-cg-debug") << "TheoryStrings::computeCareGraph(): checking function " << f1 << " and " << f2 << std::endl;
+        vector< pair<TNode, TNode> > currentPairs;
+        for (unsigned k = 0; k < f1.getNumChildren(); ++ k) {
+          TNode x = f1[k];
+          TNode y = f2[k];
+          Assert(d_equalityEngine->hasTerm(x));
+          Assert(d_equalityEngine->hasTerm(y));
+          Assert(!d_equalityEngine->areDisequal(x, y, false));
+          Assert(!areCareDisequal(x, y));
+          if (!d_equalityEngine->areEqual(x, y))
+          {
+            if (d_equalityEngine->isTriggerTerm(x, THEORY_ARRAYS)
+                && d_equalityEngine->isTriggerTerm(y, THEORY_ARRAYS))
+            {
+              TNode x_shared = d_equalityEngine->getTriggerTermRepresentative(
+                  x, THEORY_ARRAYS);
+              TNode y_shared = d_equalityEngine->getTriggerTermRepresentative(
+                  y, THEORY_ARRAYS);
+              currentPairs.push_back(make_pair(x_shared, y_shared));
+            }
+          }
+        }
+        for (unsigned c = 0; c < currentPairs.size(); ++ c) {
+          Trace("strings-cg-pair") << "TheoryStrings::computeCareGraph(): pair : " << currentPairs[c].first << " " << currentPairs[c].second << std::endl;
+          addCarePair(currentPairs[c].first, currentPairs[c].second);
+        }
+      }
+    }
+  }else if( t2==nullptr ){
+    if( depth<(arity-1) ){
+      //add care pairs internal to each child
+      for (std::pair<const TNode, TNodeTrie>& tt : t1->d_data)
+      {
+        addCarePairs(&tt.second, nullptr, arity, depth + 1);
+      }
+    }
+    //add care pairs based on each pair of non-disequal arguments
+    for (std::map<TNode, TNodeTrie>::iterator it = t1->d_data.begin();
+          it != t1->d_data.end();
+          ++it)
+    {
+      std::map<TNode, TNodeTrie>::iterator it2 = it;
+      ++it2;
+      for( ; it2 != t1->d_data.end(); ++it2 ){
+        if (!d_equalityEngine->areDisequal(it->first, it2->first, false))
+        {
+          if( !areCareDisequal(it->first, it2->first) ){
+            addCarePairs( &it->second, &it2->second, arity, depth+1 );
+          }
+        }
+      }
+    }
+  }else{
+    //add care pairs based on product of indices, non-disequal arguments
+    for (std::pair<const TNode, TNodeTrie>& tt1 : t1->d_data)
+    {
+      for (std::pair<const TNode, TNodeTrie>& tt2 : t2->d_data)
+      {
+        if (!d_equalityEngine->areDisequal(tt1.first, tt2.first, false))
+        {
+          if (!areCareDisequal(tt1.first, tt2.first))
+          {
+            addCarePairs(&tt1.second, &tt2.second, arity, depth + 1);
+          }
+        }
+      }
+    }
+  }
+}
+
+void TheoryArrays::computeCareGraph(){
+  Trace("strings-cg") << "TheoryArrays::computeCareGraph(): Build term indices..." << std::endl;
+  // Term index for each (type, operator) pair. We require the operator here
+  // since operators are polymorphic, taking strings/sequences.
+  std::map<std::pair<TypeNode, Node>, TNodeTrie> index;
+  std::map< Node, size_t > arity;
+  size_t functionTerms = d_fterms.size();
+  for (size_t i = 0; i < functionTerms; ++ i) {
+    Assert (f1.getKind()==SELECT || f1.getKind()==STORE);
+    TNode f1 = d_fterms[i];
+    Trace("strings-cg") << "...build for " << f1 << std::endl;
+    Node op = f1.getOperator();
+    std::vector< TNode > reps;
+    bool has_trigger_arg = false;
+    for( unsigned j=0; j<f1.getNumChildren(); j++ ){
+      reps.push_back(d_equalityEngine->getRepresentative(f1[j]));
+      if (d_equalityEngine->isTriggerTerm(f1[j], THEORY_ARRAYS))
+      {
+        has_trigger_arg = true;
+      }
+    }
+    if( has_trigger_arg ){
+      TypeNode ft = f1[0].getType();
+      std::pair<TypeNode, Node> ikey = std::pair<TypeNode, Node>(ft, op);
+      index[ikey].addTerm(f1, reps);
+      arity[op] = reps.size();
+    }
+  }
+  //for each index
+  for (std::pair<const std::pair<TypeNode, Node>, TNodeTrie>& ti : index)
+  {
+    Trace("strings-cg") << "TheoryArrays::computeCareGraph(): Process index "
+                        << ti.first << "..." << std::endl;
+    Node op = ti.first.second;
+    addCarePairs(&ti.second, nullptr, arity[op], 0);
+  }
+}
+
+
+/*
 void TheoryArrays::computeCareGraph()
 {
   if (d_sharedArrays.size() > 0) {
@@ -1016,7 +1159,7 @@ void TheoryArrays::computeCareGraph()
     d_constReadsContext->pop();
   }
 }
-
+*/
 
 /////////////////////////////////////////////////////////////////////////////
 // MODEL GENERATION

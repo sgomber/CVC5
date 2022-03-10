@@ -21,6 +21,7 @@
 #include <tuple>
 #include <unordered_map>
 
+#include "expr/node_trie.h"
 #include "context/cdhashmap.h"
 #include "context/cdhashset.h"
 #include "context/cdqueue.h"
@@ -468,6 +469,8 @@ class TheoryArrays : public Theory {
   std::unique_ptr<TheoryArraysDecisionStrategy> d_dstrat;
   /** Have we registered the above strategy? (context-independent) */
   bool d_dstratInit;
+  /** */
+  context::CDList<TNode> d_fterms;
   /** get the next decision request
    *
    * If the "arrays-eager-index" option is enabled, then whenever a
@@ -480,6 +483,15 @@ class TheoryArrays : public Theory {
    * RIntro1 and RIntro2 rules.
    */
   void computeRelevantTerms(std::set<Node>& termSet) override;
+  /**
+   * Are x and y shared terms that are not equal? This is used for constructing
+   * the care graph in the above function.
+   */
+  bool areCareDisequal(TNode x, TNode y);
+  void addCarePairs(TNodeTrie* t1,
+                                 TNodeTrie* t2,
+                                 unsigned arity,
+                                 unsigned depth);
 };/* class TheoryArrays */
 
 }  // namespace arrays
