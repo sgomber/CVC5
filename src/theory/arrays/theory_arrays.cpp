@@ -1037,8 +1037,8 @@ void TheoryArrays::computeCareGraph(){
   std::map< Node, size_t > arity;
   size_t functionTerms = d_fterms.size();
   for (size_t i = 0; i < functionTerms; ++ i) {
-    Assert (f1.getKind()==SELECT || f1.getKind()==STORE);
     TNode f1 = d_fterms[i];
+    Assert (f1.getKind()==kind::SELECT || f1.getKind()==kind::STORE);
     Trace("strings-cg") << "...build for " << f1 << std::endl;
     Node op = f1.getOperator();
     std::vector< TNode > reps;
@@ -1066,100 +1066,6 @@ void TheoryArrays::computeCareGraph(){
     addCarePairs(&ti.second, nullptr, arity[op], 0);
   }
 }
-
-
-/*
-void TheoryArrays::computeCareGraph()
-{
-  if (d_sharedArrays.size() > 0) {
-    CDNodeSet::key_iterator it1 = d_sharedArrays.key_begin(), it2, iend = d_sharedArrays.key_end();
-    for (; it1 != iend; ++it1) {
-      for (it2 = it1, ++it2; it2 != iend; ++it2) {
-        if ((*it1).getType() != (*it2).getType()) {
-          continue;
-        }
-        EqualityStatus eqStatusArr = getEqualityStatus((*it1), (*it2));
-        if (eqStatusArr != EQUALITY_UNKNOWN) {
-          continue;
-        }
-        Assert(d_valuation.getEqualityStatus((*it1), (*it2))
-               == EQUALITY_UNKNOWN);
-        addCarePair((*it1), (*it2));
-        ++d_numSharedArrayVarSplits;
-        return;
-      }
-    }
-  }
-  if (d_sharedTerms) {
-    // Synchronize d_constReadsContext with SAT context
-    Assert(d_constReadsContext->getLevel() <= context()->getLevel());
-    while (d_constReadsContext->getLevel() < context()->getLevel())
-    {
-      d_constReadsContext->push();
-    }
-
-    // Go through the read terms and see if there are any to split on
-
-    // Give constReadsContext a push so that all the work it does here is erased - models can change if context changes at all
-    // The context is popped at the end.  If this loop is interrupted for some reason, we have to make sure the context still
-    // gets popped or the solver will be in an inconsistent state
-    d_constReadsContext->push();
-    unsigned size = d_reads.size();
-    for (unsigned i = 0; i < size; ++ i) {
-      TNode r1 = d_reads[i];
-
-      Debug("arrays::sharing") << "TheoryArrays::computeCareGraph(): checking read " << r1 << std::endl;
-      Assert(d_equalityEngine->hasTerm(r1));
-      TNode x = r1[1];
-
-      if (!d_equalityEngine->isTriggerTerm(x, THEORY_ARRAYS))
-      {
-        Debug("arrays::sharing") << "TheoryArrays::computeCareGraph(): not connected to shared terms, skipping" << std::endl;
-        continue;
-      }
-      Node x_shared =
-          d_equalityEngine->getTriggerTermRepresentative(x, THEORY_ARRAYS);
-
-      // Get the model value of index and find all reads that read from that same model value: these are the pairs we have to check
-      // Also, insert this read in the list at the proper index
-
-      if (!x_shared.isConst()) {
-        x_shared = d_valuation.getModelValue(x_shared);
-      }
-      if (!x_shared.isNull()) {
-        CTNodeList* temp;
-        CNodeNListMap::iterator it = d_constReads.find(x_shared);
-        if (it == d_constReads.end()) {
-          // This is the only x_shared with this model value - no need to create any splits
-          temp = new(true) CTNodeList(d_constReadsContext);
-          d_constReads[x_shared] = temp;
-        }
-        else {
-          temp = (*it).second;
-          for (size_t j = 0; j < temp->size(); ++j) {
-            checkPair(r1, (*temp)[j]);
-          }
-        }
-        temp->push_back(r1);
-      }
-      else {
-        // We don't know the model value for x.  Just do brute force examination of all pairs of reads
-        for (unsigned j = 0; j < size; ++j) {
-          TNode r2 = d_reads[j];
-          Assert(d_equalityEngine->hasTerm(r2));
-          checkPair(r1,r2);
-        }
-        for (unsigned j = 0; j < d_constReadsList.size(); ++j) {
-          TNode r2 = d_constReadsList[j];
-          Assert(d_equalityEngine->hasTerm(r2));
-          checkPair(r1,r2);
-        }
-      }
-    }
-    d_constReadsContext->pop();
-  }
-}
-*/
 
 /////////////////////////////////////////////////////////////////////////////
 // MODEL GENERATION
