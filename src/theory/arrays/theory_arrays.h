@@ -21,10 +21,10 @@
 #include <tuple>
 #include <unordered_map>
 
-#include "expr/node_trie.h"
 #include "context/cdhashmap.h"
 #include "context/cdhashset.h"
 #include "context/cdqueue.h"
+#include "expr/node_trie.h"
 #include "theory/arrays/array_info.h"
 #include "theory/arrays/inference_manager.h"
 #include "theory/arrays/proof_checker.h"
@@ -489,9 +489,9 @@ class TheoryArrays : public Theory {
    */
   bool areCareDisequal(TNode x, TNode y);
   void addCarePairs(TNodeTrie* t1,
-                                 TNodeTrie* t2,
-                                 unsigned arity,
-                                 unsigned depth);
+                    TNodeTrie* t2,
+                    unsigned arity,
+                    unsigned depth);
 };/* class TheoryArrays */
 
 }  // namespace arrays

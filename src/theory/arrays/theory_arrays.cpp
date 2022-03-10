@@ -928,9 +928,8 @@ void TheoryArrays::checkPair(TNode r1, TNode r2)
   addCarePair(x_shared, y_shared);
 }
 
-
-
-bool TheoryArrays::areCareDisequal( TNode x, TNode y ) {
+bool TheoryArrays::areCareDisequal(TNode x, TNode y)
+{
   Assert(d_equalityEngine->hasTerm(x));
   Assert(d_equalityEngine->hasTerm(y));
   if (d_equalityEngine->isTriggerTerm(x, THEORY_ARRAYS)
@@ -941,7 +940,9 @@ bool TheoryArrays::areCareDisequal( TNode x, TNode y ) {
     TNode y_shared =
         d_equalityEngine->getTriggerTermRepresentative(y, THEORY_ARRAYS);
     EqualityStatus eqStatus = d_valuation.getEqualityStatus(x_shared, y_shared);
-    if( eqStatus==EQUALITY_FALSE_AND_PROPAGATED || eqStatus==EQUALITY_FALSE || eqStatus==EQUALITY_FALSE_IN_MODEL ){
+    if (eqStatus == EQUALITY_FALSE_AND_PROPAGATED || eqStatus == EQUALITY_FALSE
+        || eqStatus == EQUALITY_FALSE_IN_MODEL)
+    {
       return true;
     }
   }
@@ -949,19 +950,24 @@ bool TheoryArrays::areCareDisequal( TNode x, TNode y ) {
 }
 
 void TheoryArrays::addCarePairs(TNodeTrie* t1,
-                                 TNodeTrie* t2,
-                                 unsigned arity,
-                                 unsigned depth)
+                                TNodeTrie* t2,
+                                unsigned arity,
+                                unsigned depth)
 {
-  if( depth==arity ){
-    if( t2!=nullptr ){
+  if (depth == arity)
+  {
+    if (t2 != nullptr)
+    {
       Node f1 = t1->getData();
       Node f2 = t2->getData();
       if (!d_equalityEngine->areEqual(f1, f2))
       {
-        Trace("strings-cg-debug") << "TheoryStrings::computeCareGraph(): checking function " << f1 << " and " << f2 << std::endl;
-        vector< pair<TNode, TNode> > currentPairs;
-        for (unsigned k = 0; k < f1.getNumChildren(); ++ k) {
+        Trace("strings-cg-debug")
+            << "TheoryStrings::computeCareGraph(): checking function " << f1
+            << " and " << f2 << std::endl;
+        vector<pair<TNode, TNode> > currentPairs;
+        for (unsigned k = 0; k < f1.getNumChildren(); ++k)
+        {
           TNode x = f1[k];
           TNode y = f2[k];
           Assert(d_equalityEngine->hasTerm(x));
@@ -981,38 +987,49 @@ void TheoryArrays::addCarePairs(TNodeTrie* t1,
             }
           }
         }
-        for (unsigned c = 0; c < currentPairs.size(); ++ c) {
-          Trace("strings-cg-pair") << "TheoryStrings::computeCareGraph(): pair : " << currentPairs[c].first << " " << currentPairs[c].second << std::endl;
+        for (unsigned c = 0; c < currentPairs.size(); ++c)
+        {
+          Trace("strings-cg-pair")
+              << "TheoryStrings::computeCareGraph(): pair : "
+              << currentPairs[c].first << " " << currentPairs[c].second
+              << std::endl;
           addCarePair(currentPairs[c].first, currentPairs[c].second);
         }
       }
     }
-  }else if( t2==nullptr ){
-    if( depth<(arity-1) ){
-      //add care pairs internal to each child
+  }
+  else if (t2 == nullptr)
+  {
+    if (depth < (arity - 1))
+    {
+      // add care pairs internal to each child
       for (std::pair<const TNode, TNodeTrie>& tt : t1->d_data)
       {
         addCarePairs(&tt.second, nullptr, arity, depth + 1);
       }
     }
-    //add care pairs based on each pair of non-disequal arguments
+    // add care pairs based on each pair of non-disequal arguments
     for (std::map<TNode, TNodeTrie>::iterator it = t1->d_data.begin();
-          it != t1->d_data.end();
-          ++it)
+         it != t1->d_data.end();
+         ++it)
     {
       std::map<TNode, TNodeTrie>::iterator it2 = it;
       ++it2;
-      for( ; it2 != t1->d_data.end(); ++it2 ){
+      for (; it2 != t1->d_data.end(); ++it2)
+      {
         if (!d_equalityEngine->areDisequal(it->first, it2->first, false))
         {
-          if( !areCareDisequal(it->first, it2->first) ){
-            addCarePairs( &it->second, &it2->second, arity, depth+1 );
+          if (!areCareDisequal(it->first, it2->first))
+          {
+            addCarePairs(&it->second, &it2->second, arity, depth + 1);
           }
         }
       }
     }
-  }else{
-    //add care pairs based on product of indices, non-disequal arguments
+  }
+  else
+  {
+    // add care pairs based on product of indices, non-disequal arguments
     for (std::pair<const TNode, TNodeTrie>& tt1 : t1->d_data)
     {
       for (std::pair<const TNode, TNodeTrie>& tt2 : t2->d_data)
@@ -1029,35 +1046,40 @@ void TheoryArrays::addCarePairs(TNodeTrie* t1,
   }
 }
 
-void TheoryArrays::computeCareGraph(){
-  Trace("strings-cg") << "TheoryArrays::computeCareGraph(): Build term indices..." << std::endl;
+void TheoryArrays::computeCareGraph()
+{
+  Trace("strings-cg")
+      << "TheoryArrays::computeCareGraph(): Build term indices..." << std::endl;
   // Term index for each (type, operator) pair. We require the operator here
   // since operators are polymorphic, taking strings/sequences.
   std::map<std::pair<TypeNode, Node>, TNodeTrie> index;
-  std::map< Node, size_t > arity;
+  std::map<Node, size_t> arity;
   size_t functionTerms = d_fterms.size();
-  for (size_t i = 0; i < functionTerms; ++ i) {
+  for (size_t i = 0; i < functionTerms; ++i)
+  {
     TNode f1 = d_fterms[i];
-    Assert (f1.getKind()==kind::SELECT || f1.getKind()==kind::STORE);
+    Assert(f1.getKind() == kind::SELECT || f1.getKind() == kind::STORE);
     Trace("strings-cg") << "...build for " << f1 << std::endl;
     Node op = f1.getOperator();
-    std::vector< TNode > reps;
+    std::vector<TNode> reps;
     bool has_trigger_arg = false;
-    for( unsigned j=0; j<f1.getNumChildren(); j++ ){
+    for (unsigned j = 0; j < f1.getNumChildren(); j++)
+    {
       reps.push_back(d_equalityEngine->getRepresentative(f1[j]));
       if (d_equalityEngine->isTriggerTerm(f1[j], THEORY_ARRAYS))
       {
         has_trigger_arg = true;
       }
     }
-    if( has_trigger_arg ){
+    if (has_trigger_arg)
+    {
       TypeNode ft = f1[0].getType();
       std::pair<TypeNode, Node> ikey = std::pair<TypeNode, Node>(ft, op);
       index[ikey].addTerm(f1, reps);
       arity[op] = reps.size();
     }
   }
-  //for each index
+  // for each index
   for (std::pair<const std::pair<TypeNode, Node>, TNodeTrie>& ti : index)
   {
     Trace("strings-cg") << "TheoryArrays::computeCareGraph(): Process index "
