@@ -52,7 +52,8 @@ TheoryProxy::TheoryProxy(Env& env,
       d_skdm(skdm),
       d_zll(nullptr)
 {
-  bool trackTopLevelLearned = isOutputOn(OutputTag::LEARNED_LITS);
+  bool trackTopLevelLearned = isOutputOn(OutputTag::LEARNED_LITS)
+                              || options().smt.produceLearnedLiterals;
   if (trackTopLevelLearned)
   {
     d_zll = std::make_unique<ZeroLevelLearner>(env, propEngine);
@@ -73,8 +74,7 @@ void TheoryProxy::presolve()
 
 void TheoryProxy::notifyInputFormulas(
     const std::vector<Node>& assertions,
-    std::unordered_map<size_t, Node>& skolemMap,
-    const std::vector<Node>& ppl)
+    std::unordered_map<size_t, Node>& skolemMap)
 {
   // notify the theory engine of preprocessed assertions
   d_theoryEngine->notifyPreprocessedAssertions(assertions);
@@ -100,7 +100,7 @@ void TheoryProxy::notifyInputFormulas(
   // determine what is learnable
   if (d_zll != nullptr)
   {
-    d_zll->notifyInputFormulas(assertions, skolemMap, ppl);
+    d_zll->notifyInputFormulas(assertions, skolemMap);
   }
 }
 
@@ -289,10 +289,13 @@ void TheoryProxy::getSkolems(TNode node,
 
 void TheoryProxy::preRegister(Node n) { d_theoryEngine->preRegister(n); }
 
-const std::unordered_set<Node>& TheoryProxy::getLearnedZeroLevelLiterals() const
+std::vector<Node> TheoryProxy::getLearnedZeroLevelLiterals() const
 {
-  Assert(d_zll != nullptr);
-  return d_zll->getLearnedZeroLevelLiterals();
+  if (d_zll != nullptr)
+  {
+    return d_zll->getLearnedZeroLevelLiterals();
+  }
+  return {};
 }
 
 }  // namespace prop
