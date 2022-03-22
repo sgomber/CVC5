@@ -80,7 +80,9 @@ Result SynthVerify::verify(Node query,
       }
       // sat, but we need to get arbtirary model values below
     }
-    r = checkWithSubsolver(queryp, vars, mvs, d_subOptions, d_subLogicInfo);
+    r = checkWithSubsolver(queryp, vars, mvs, d_subOptions, d_subLogicInfo,
+                                options().quantifiers.sygusVerifyTimeout != 0,
+                                options().quantifiers.sygusVerifyTimeout);
     finished = true;
     Trace("sygus-engine") << "  ...got " << r << std::endl;
     // we try to learn models for "sat" and "unknown" here

@@ -372,7 +372,7 @@ bool SynthConjecture::doCheck()
     if (d_repair_index < ninst)
     {
       std::vector<Node> fail_cvs = d_solutionValues[d_repair_index];
-      if (Trace.isOn("sygus-engine"))
+      if (TraceIsOn("sygus-engine"))
       {
         Trace("sygus-engine") << "CegConjuncture : repair previous solution ";
         for (const Node& fc : fail_cvs)
@@ -422,8 +422,8 @@ bool SynthConjecture::doCheck()
     if (modelSuccess)
     {
       // Must separately compute whether trace is on due to compilation of
-      // Trace.isOn.
-      bool traceIsOn = Trace.isOn("sygus-engine");
+      // TraceIsOn.
+      bool traceIsOn = TraceIsOn("sygus-engine");
       if (printDebug || traceIsOn)
       {
         Trace("sygus-engine") << "  * Value is : ";
@@ -448,7 +448,7 @@ bool SynthConjecture::doCheck()
           else
           {
             Trace("sygus-engine") << ss.str() << " ";
-            if (Trace.isOn("sygus-engine-rr"))
+            if (TraceIsOn("sygus-engine-rr"))
             {
               Node bv = d_tds->sygusToBuiltin(nv, tn);
               bv = rewrite(bv);
@@ -496,7 +496,7 @@ bool SynthConjecture::doCheck()
   Node query;
   if (constructed_cand)
   {
-    if (Trace.isOn("cegqi-check"))
+    if (TraceIsOn("cegqi-check"))
     {
       Trace("cegqi-check") << "CegConjuncture : check candidate : "
                            << std::endl;
@@ -563,12 +563,12 @@ bool SynthConjecture::doCheck()
   std::vector<Node> skModel;
   Result r = d_verify.verify(query, d_innerSks, skModel);
 
-  if (r.asSatisfiabilityResult().isSat() == Result::SAT)
+  if (r.getStatus() == Result::SAT)
   {
     // we have a counterexample
     return processCounterexample(skModel);
   }
-  else if (r.asSatisfiabilityResult().isSat() != Result::UNSAT)
+  else if (r.getStatus() != Result::UNSAT)
   {
     // In the rare case that the subcall is unknown, we simply exclude the
     // solution, without adding a counterexample point. This should only
