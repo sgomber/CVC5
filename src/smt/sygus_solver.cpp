@@ -218,7 +218,8 @@ Result SygusSolver::checkSynth(Assertions& as, bool isNext)
     Trace("smt") << "...constructed sygus constraint " << body << std::endl;
     if (!d_sygusVars.empty() || !ofuns.empty())
     {
-      body = quantifiers::SygusUtils::mkSygusBody(listToVector(d_sygusVars), body, ofuns);
+      body = quantifiers::SygusUtils::mkSygusBody(
+          listToVector(d_sygusVars), body, ofuns);
       Trace("smt") << "...constructed exists " << body << std::endl;
     }
     else

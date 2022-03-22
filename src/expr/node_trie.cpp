@@ -123,5 +123,4 @@ template std::vector<Node> NodeTemplateTrie<false>::getLeaves(
 template std::vector<Node> NodeTemplateTrie<true>::getLeaves(
     size_t depth) const;
 
-
 }  // namespace cvc5
