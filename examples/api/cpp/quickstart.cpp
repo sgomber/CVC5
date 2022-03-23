@@ -17,8 +17,8 @@
 #include <cvc5/cvc5.h>
 
 #include <iostream>
+#include <numeric>
 
-using namespace std;
 using namespace cvc5::api;
 
 int main()
@@ -69,17 +69,17 @@ int main()
   Term one = solver.mkReal(1);
 
   // Next, we construct the term x + y
-  Term xPlusY = solver.mkTerm(PLUS, x, y);
+  Term xPlusY = solver.mkTerm(ADD, {x, y});
 
   // Now we can define the constraints.
   // They use the operators +, <=, and <.
-  // In the API, these are denoted by PLUS, LEQ, and LT.
+  // In the API, these are denoted by ADD, LEQ, and LT.
   // A list of available operators is available in:
   // src/api/cpp/cvc5_kind.h
-  Term constraint1 = solver.mkTerm(LT, zero, x);
-  Term constraint2 = solver.mkTerm(LT, zero, y);
-  Term constraint3 = solver.mkTerm(LT, xPlusY, one);
-  Term constraint4 = solver.mkTerm(LEQ, x, y);
+  Term constraint1 = solver.mkTerm(LT, {zero, x});
+  Term constraint2 = solver.mkTerm(LT, {zero, y});
+  Term constraint3 = solver.mkTerm(LT, {xPlusY, one});
+  Term constraint4 = solver.mkTerm(LEQ, {x, y});
 
   // Now we assert the constraints to the solver.
   solver.assertFormula(constraint1);
@@ -102,7 +102,7 @@ int main()
 
   // It is also possible to get values for compound terms,
   // even if those did not appear in the original formula.
-  Term xMinusY = solver.mkTerm(MINUS, x, y);
+  Term xMinusY = solver.mkTerm(SUB, {x, y});
   Term xMinusYVal = solver.getValue(xMinusY);
 
   // We can now obtain the string representations of the values.
@@ -114,18 +114,26 @@ int main()
   std::cout << "value for y: " << yStr << std::endl;
   std::cout << "value for x - y: " << xMinusYStr << std::endl;
 
-  // Further, we can convert the values to cpp types,
-  // using standard cpp conversion functions.
-  double xDouble = std::stod(xStr);
-  double yDouble = std::stod(yStr);
-  double xMinusYDouble = std::stod(xMinusYStr);
+  // Further, we can convert the values to cpp types
+  std::pair<int64_t, uint64_t> xPair = xVal.getReal64Value();
+  std::pair<int64_t, uint64_t> yPair = yVal.getReal64Value();
+  std::pair<int64_t, uint64_t> xMinusYPair = xMinusYVal.getReal64Value();
+
+  std::cout << "value for x: " << xPair.first << "/" << xPair.second << std::endl;
+  std::cout << "value for y: " << yPair.first << "/" << yPair.second << std::endl;
+  std::cout << "value for x - y: " << xMinusYPair.first << "/" << xMinusYPair.second << std::endl;
 
   // Another way to independently compute the value of x - y would be
-  // to use the cpp minus operator instead of asking the solver.
+  // to perform the (rational) arithmetic manually.
   // However, for more complex terms,
   // it is easier to let the solver do the evaluation.
-  double xMinusYComputed = xDouble - yDouble;
-  if (xMinusYComputed == xMinusYDouble)
+  std::pair<int64_t, uint64_t> xMinusYComputed = {
+    xPair.first * yPair.second - xPair.second * yPair.first,
+    xPair.second * yPair.second
+  };
+  uint64_t g = std::gcd(xMinusYComputed.first, xMinusYComputed.second);
+  xMinusYComputed = { xMinusYComputed.first / g, xMinusYComputed.second / g };
+  if (xMinusYComputed == xMinusYPair)
   {
     std::cout << "computed correctly" << std::endl;
   }
@@ -143,11 +151,11 @@ int main()
   // Next, we assert the same assertions above with integers.
   // This time, we inline the construction of terms
   // to the assertion command.
-  solver.assertFormula(solver.mkTerm(LT, solver.mkInteger(0), a));
-  solver.assertFormula(solver.mkTerm(LT, solver.mkInteger(0), b));
+  solver.assertFormula(solver.mkTerm(LT, {solver.mkInteger(0), a}));
+  solver.assertFormula(solver.mkTerm(LT, {solver.mkInteger(0), b}));
   solver.assertFormula(
-      solver.mkTerm(LT, solver.mkTerm(PLUS, a, b), solver.mkInteger(1)));
-  solver.assertFormula(solver.mkTerm(LEQ, a, b));
+      solver.mkTerm(LT, {solver.mkTerm(ADD, {a, b}), solver.mkInteger(1)}));
+  solver.assertFormula(solver.mkTerm(LEQ, {a, b}));
 
   // We check whether the revised assertion is satisfiable.
   Result r2 = solver.checkSat();

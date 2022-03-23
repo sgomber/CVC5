@@ -21,8 +21,8 @@
 #include "expr/node_manager.h"
 #include "expr/skolem_manager.h"
 #include "proof/proof_checker.h"
-#include "smt/smt_engine_scope.h"
 #include "smt/solver_engine.h"
+#include "smt/solver_engine_scope.h"
 #include "test.h"
 #include "theory/output_channel.h"
 #include "theory/rewriter.h"
@@ -30,7 +30,6 @@
 #include "theory/theory_state.h"
 #include "theory/valuation.h"
 #include "util/resource_manager.h"
-#include "util/unsafe_interrupt_exception.h"
 
 namespace cvc5 {
 namespace test {

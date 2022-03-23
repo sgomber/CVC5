@@ -65,9 +65,9 @@ public:
 
   void debugPrintIsBasic(ArithVar v) const {
     if(isBasic(v)){
-      Warning() << v << " is basic." << std::endl;
+      Trace("model") << v << " is basic." << std::endl;
     }else{
-      Warning() << v << " is non-basic." << std::endl;
+      Trace("model") << v << " is non-basic." << std::endl;
     }
   }
 

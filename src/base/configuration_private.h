@@ -36,12 +36,6 @@ namespace cvc5 {
 #  define IS_TRACING_BUILD false
 #endif /* CVC5_TRACING */
 
-#ifdef CVC5_DUMPING
-#  define IS_DUMPING_BUILD true
-#else /* CVC5_DUMPING */
-#  define IS_DUMPING_BUILD false
-#endif /* CVC5_DUMPING */
-
 #ifdef CVC5_MUZZLE
 #  define IS_MUZZLED_BUILD true
 #else /* CVC5_MUZZLE */
@@ -90,12 +84,6 @@ namespace cvc5 {
 #  define IS_GLPK_BUILD false
 #endif /* CVC5_USE_GLPK */
 
-#if CVC5_USE_ABC
-#  define IS_ABC_BUILD true
-#else /* CVC5_USE_ABC */
-#  define IS_ABC_BUILD false
-#endif /* CVC5_USE_ABC */
-
 #if CVC5_USE_CRYPTOMINISAT
 #  define IS_CRYPTOMINISAT_BUILD true
 #else /* CVC5_USE_CRYPTOMINISAT */
@@ -113,6 +101,12 @@ namespace cvc5 {
 #else /* CVC5_USE_POLY */
 #define IS_POLY_BUILD false
 #endif /* CVC5_USE_POLY */
+
+#if CVC5_USE_COCOA
+#define IS_COCOA_BUILD true
+#else /* CVC5_USE_COCOA */
+#define IS_COCOA_BUILD false
+#endif /* CVC5_USE_COCOA */
 
 #if HAVE_LIBEDITLINE
 #define IS_EDITLINE_BUILD true

@@ -22,7 +22,6 @@
 #include "printer/printer.h"
 #include "smt/abstract_values.h"
 #include "smt/assertions.h"
-#include "smt/dump.h"
 #include "smt/env.h"
 #include "smt/preprocess_proof_generator.h"
 #include "smt/solver_engine.h"
@@ -35,34 +34,25 @@ using namespace cvc5::kind;
 namespace cvc5 {
 namespace smt {
 
-Preprocessor::Preprocessor(SolverEngine& slv,
-                           Env& env,
+Preprocessor::Preprocessor(Env& env,
                            AbstractValues& abs,
-                           SmtEngineStatistics& stats)
-    : d_slv(slv),
-      d_env(env),
+                           SolverEngineStatistics& stats)
+    : EnvObj(env),
       d_absValues(abs),
-      d_propagator(true, true),
+      d_propagator(env, true, true),
       d_assertionsProcessed(env.getUserContext(), false),
-      d_exDefs(env, stats),
-      d_processor(slv, *env.getResourceManager(), stats),
-      d_pnm(nullptr)
+      d_exDefs(env),
+      d_processor(env, stats)
 {
+
 }
 
-Preprocessor::~Preprocessor()
-{
-  if (d_propagator.getNeedsFinish())
-  {
-    d_propagator.finish();
-    d_propagator.setNeedsFinish(false);
-  }
-}
+Preprocessor::~Preprocessor() {}
 
-void Preprocessor::finishInit()
+void Preprocessor::finishInit(TheoryEngine* te, prop::PropEngine* pe)
 {
   d_ppContext.reset(new preprocessing::PreprocessingPassContext(
-      &d_slv, d_env, &d_propagator));
+      d_env, te, pe, &d_propagator));
 
   // initialize the preprocessing passes
   d_processor.finishInit(d_ppContext.get());
@@ -76,7 +66,7 @@ bool Preprocessor::process(Assertions& as)
   Assert(ap.size() != 0)
       << "Can only preprocess a non-empty list of assertions";
 
-  if (d_assertionsProcessed && options::incrementalSolving())
+  if (d_assertionsProcessed && options().base.incrementalSolving)
   {
     // TODO(b/1255): Substitutions in incremental mode should be managed with a
     // proper data structure.
@@ -93,7 +83,7 @@ bool Preprocessor::process(Assertions& as)
   // now, post-process the assertions
 
   // if incremental, compute which variables are assigned
-  if (options::incrementalSolving())
+  if (options().base.incrementalSolving)
   {
     d_ppContext->recordSymbolsInAssertions(ap.ref());
   }
@@ -107,6 +97,15 @@ bool Preprocessor::process(Assertions& as)
 void Preprocessor::clearLearnedLiterals()
 {
   d_propagator.getLearnedLiterals().clear();
+}
+
+std::vector<Node> Preprocessor::getLearnedLiterals() const
+{
+  if (d_ppContext == nullptr)
+  {
+    return {};
+  }
+  return d_ppContext->getLearnedLiterals();
 }
 
 void Preprocessor::cleanup() { d_processor.cleanup(); }
@@ -123,13 +122,13 @@ Node Preprocessor::expandDefinitions(const Node& node,
   Trace("smt") << "SMT expandDefinitions(" << node << ")" << endl;
   // Substitute out any abstract values in node.
   Node n = d_absValues.substituteAbstractValues(node);
-  if (options::typeChecking())
+  if (options().expr.typeChecking)
   {
     // Ensure node is type-checked at this point.
     n.getType(true);
   }
-  // we apply substitutions here, before expanding definitions
-  n = d_env.getTopLevelSubstitutions().apply(n, false);
+  // apply substitutions here (without rewriting), before expanding definitions
+  n = d_env.getTopLevelSubstitutions().apply(n);
   // now call expand definitions
   n = d_exDefs.expandDefinitions(n, cache);
   return n;
@@ -147,22 +146,16 @@ void Preprocessor::expandDefinitions(std::vector<Node>& ns)
 Node Preprocessor::simplify(const Node& node)
 {
   Trace("smt") << "SMT simplify(" << node << ")" << endl;
-  if (Dump.isOn("benchmark"))
-  {
-    d_slv.getOutputManager().getPrinter().toStreamCmdSimplify(
-        d_slv.getOutputManager().getDumpOut(), node);
-  }
   Node ret = expandDefinitions(node);
-  ret = theory::Rewriter::rewrite(ret);
+  ret = rewrite(ret);
   return ret;
 }
 
-void Preprocessor::setProofGenerator(PreprocessProofGenerator* pppg)
+void Preprocessor::enableProofs(PreprocessProofGenerator* pppg)
 {
   Assert(pppg != nullptr);
-  d_pnm = pppg->getManager();
-  d_exDefs.setProofNodeManager(d_pnm);
-  d_propagator.setProof(d_pnm, d_env.getUserContext(), pppg);
+  d_exDefs.enableProofs();
+  d_propagator.enableProofs(userContext(), pppg);
 }
 
 }  // namespace smt

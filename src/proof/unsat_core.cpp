@@ -16,23 +16,23 @@
 #include "proof/unsat_core.h"
 
 #include "base/check.h"
-#include "expr/expr_iomanip.h"
 #include "options/base_options.h"
+#include "options/io_utils.h"
 #include "printer/printer.h"
-#include "smt/smt_engine_scope.h"
+#include "smt/solver_engine_scope.h"
 
 namespace cvc5 {
 
 UnsatCore::UnsatCore(const std::vector<Node>& core)
     : d_useNames(false), d_core(core), d_names()
 {
-  Debug("core") << "UnsatCore size " << d_core.size() << std::endl;
+  Trace("core") << "UnsatCore size " << d_core.size() << std::endl;
 }
 
 UnsatCore::UnsatCore(std::vector<std::string>& names)
     : d_useNames(true), d_core(), d_names(names)
 {
-  Debug("core") << "UnsatCore (names) size " << d_names.size() << std::endl;
+  Trace("core") << "UnsatCore (names) size " << d_names.size() << std::endl;
 }
 
 const std::vector<Node>& UnsatCore::getCore() const { return d_core; }
@@ -50,8 +50,10 @@ UnsatCore::const_iterator UnsatCore::end() const {
 }
 
 void UnsatCore::toStream(std::ostream& out) const {
-  expr::ExprDag::Scope scope(out, false);
-  Printer::getPrinter(options::outputLanguage())->toStream(out, *this);
+  options::ioutils::Scope scope(out);
+  options::ioutils::applyDagThresh(out, 0);
+  auto language = options::ioutils::getOutputLang(out);
+  Printer::getPrinter(language)->toStream(out, *this);
 }
 
 std::ostream& operator<<(std::ostream& out, const UnsatCore& core) {

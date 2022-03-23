@@ -39,6 +39,7 @@ Cegis::Cegis(Env& env,
              SynthConjecture* p)
     : SygusModule(env, qs, qim, tds, p),
       d_eval_unfold(tds->getEvalUnfold()),
+      d_cexClosedEnum(false),
       d_cegis_sampler(env),
       d_usingSymCons(false)
 {
@@ -47,22 +48,30 @@ Cegis::Cegis(Env& env,
 bool Cegis::initialize(Node conj, Node n, const std::vector<Node>& candidates)
 {
   d_base_body = n;
+  d_cexClosedEnum = true;
   if (d_base_body.getKind() == NOT && d_base_body[0].getKind() == FORALL)
   {
     for (const Node& v : d_base_body[0][0])
     {
       d_base_vars.push_back(v);
+      if (!v.getType().isClosedEnumerable())
+      {
+        // not closed enumerable, refinement lemmas cannot be sent to the
+        // quantifier-free datatype solver
+        d_cexClosedEnum = false;
+      }
     }
     d_base_body = d_base_body[0][1];
   }
 
   // assign the cegis sampler if applicable
-  if (options::cegisSample() != options::CegisSampleMode::NONE)
+  if (options().quantifiers.cegisSample != options::CegisSampleMode::NONE)
   {
     Trace("cegis-sample") << "Initialize sampler for " << d_base_body << "..."
                           << std::endl;
     TypeNode bt = d_base_body.getType();
-    d_cegis_sampler.initialize(bt, d_base_vars, options::sygusSamples());
+    d_cegis_sampler.initialize(
+        bt, d_base_vars, options().quantifiers.sygusSamples);
   }
   return processInitialize(conj, n, candidates);
 }
@@ -83,8 +92,8 @@ bool Cegis::processInitialize(Node conj,
     Trace("cegis") << "...register enumerator " << candidates[i];
     // We use symbolic constants if we are doing repair constants or if the
     // grammar construction was not simple.
-    if (options::sygusRepairConst()
-        || options::sygusGrammarConsMode()
+    if (options().quantifiers.sygusRepairConst
+        || options().quantifiers.sygusGrammarConsMode
                != options::SygusGrammarConsMode::SIMPLE)
     {
       TypeNode ctn = candidates[i].getType();
@@ -173,7 +182,8 @@ bool Cegis::addEvalLemmas(const std::vector<Node>& candidates,
     }
   }
   // we only do evaluation unfolding for passive enumerators
-  bool doEvalUnfold = (doGen && options::sygusEvalUnfold()) || d_usingSymCons;
+  bool doEvalUnfold =
+      (doGen && options().quantifiers.sygusEvalUnfold) || d_usingSymCons;
   if (doEvalUnfold)
   {
     Trace("sygus-engine") << "  *** Do evaluation unfolding..." << std::endl;
@@ -232,7 +242,7 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
                                 const std::vector<Node>& candidates,
                                 std::vector<Node>& candidate_values)
 {
-  if (Trace.isOn("cegis"))
+  if (TraceIsOn("cegis"))
   {
     Trace("cegis") << "  Enumerators :\n";
     for (unsigned i = 0, size = enums.size(); i < size; ++i)
@@ -243,7 +253,7 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
     }
   }
   // if we are using grammar-based repair
-  if (d_usingSymCons && options::sygusRepairConst())
+  if (d_usingSymCons && options().quantifiers.sygusRepairConst)
   {
     SygusRepairConst* src = d_parent->getRepairConst();
     Assert(src != nullptr);
@@ -302,7 +312,7 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
     return false;
   }
 
-  if (options::cegisSample() != options::CegisSampleMode::NONE
+  if (options().quantifiers.cegisSample != options::CegisSampleMode::NONE
       && !addedEvalLemmas)
   {
     // if we didn't add a lemma, trying sampling to add a refinement lemma
@@ -451,7 +461,7 @@ void Cegis::addRefinementLemmaConjunct(unsigned wcounter,
   }
   else
   {
-    if (Trace.isOn("cegis-rl"))
+    if (TraceIsOn("cegis-rl"))
     {
       if (d_refinement_lemma_conj.find(lem) == d_refinement_lemma_conj.end())
       {
@@ -465,14 +475,18 @@ void Cegis::addRefinementLemmaConjunct(unsigned wcounter,
 void Cegis::registerRefinementLemma(const std::vector<Node>& vars, Node lem)
 {
   addRefinementLemma(lem);
-  // Make the refinement lemma and add it to lems.
-  // This lemma is guarded by the parent's guard, which has the semantics
-  // "this conjecture has a solution", hence this lemma states:
-  // if the parent conjecture has a solution, it satisfies the specification
-  // for the given concrete point.
-  Node rlem =
-      NodeManager::currentNM()->mkNode(OR, d_parent->getGuard().negate(), lem);
-  d_qim.addPendingLemma(rlem, InferenceId::QUANTIFIERS_SYGUS_CEGIS_REFINE);
+  // must be closed enumerable
+  if (d_cexClosedEnum && options().quantifiers.sygusEvalUnfold)
+  {
+    // Make the refinement lemma and add it to lems.
+    // This lemma is guarded by the parent's guard, which has the semantics
+    // "this conjecture has a solution", hence this lemma states:
+    // if the parent conjecture has a solution, it satisfies the specification
+    // for the given concrete point.
+    Node rlem = NodeManager::currentNM()->mkNode(
+        OR, d_parent->getGuard().negate(), lem);
+    d_qim.addPendingLemma(rlem, InferenceId::QUANTIFIERS_SYGUS_CEGIS_REFINE);
+  }
 }
 
 bool Cegis::usingRepairConst() { return true; }
@@ -502,7 +516,7 @@ bool Cegis::getRefinementEvalLemmas(const std::vector<Node>& vs,
       Assert(!lem.isNull());
       std::map<Node, Node> visited;
       std::map<Node, std::vector<Node> > exp;
-      EvalSygusInvarianceTest vsit;
+      EvalSygusInvarianceTest vsit(d_env.getRewriter());
       Trace("sygus-cref-eval") << "Check refinement lemma conjunct " << lem
                                << " against current model." << std::endl;
       Trace("sygus-cref-eval2") << "Check refinement lemma conjunct " << lem
@@ -617,7 +631,7 @@ bool Cegis::sampleAddRefinementLemma(const std::vector<Node>& candidates,
                                      const std::vector<Node>& vals)
 {
   Trace("sygus-engine") << "  *** Do sample add refinement..." << std::endl;
-  if (Trace.isOn("cegis-sample"))
+  if (TraceIsOn("cegis-sample"))
   {
     Trace("cegis-sample") << "Check sampling for candidate solution"
                           << std::endl;
@@ -661,7 +675,7 @@ bool Cegis::sampleAddRefinementLemma(const std::vector<Node>& candidates,
                 d_refinement_lemmas.begin(), d_refinement_lemmas.end(), rlem)
             == d_refinement_lemmas.end())
         {
-          if (Trace.isOn("cegis-sample"))
+          if (TraceIsOn("cegis-sample"))
           {
             Trace("cegis-sample") << "   false for point #" << i << " : ";
             for (const Node& cn : pt)
@@ -673,7 +687,8 @@ bool Cegis::sampleAddRefinementLemma(const std::vector<Node>& candidates,
           Trace("sygus-engine") << "  *** Refine by sampling" << std::endl;
           addRefinementLemma(rlem);
           // if trust, we are not interested in sending out refinement lemmas
-          if (options::cegisSample() != options::CegisSampleMode::TRUST)
+          if (options().quantifiers.cegisSample
+              != options::CegisSampleMode::TRUST)
           {
             Node lem = nm->mkNode(OR, d_parent->getGuard().negate(), rlem);
             d_qim.addPendingLemma(

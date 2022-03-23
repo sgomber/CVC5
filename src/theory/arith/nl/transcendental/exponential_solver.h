@@ -19,6 +19,7 @@
 #include <map>
 
 #include "expr/node.h"
+#include "smt/env_obj.h"
 
 namespace cvc5 {
 namespace theory {
@@ -26,7 +27,7 @@ namespace arith {
 namespace nl {
 namespace transcendental {
 
-struct TranscendentalState;
+class TranscendentalState;
 
 /** Transcendental solver class
  *
@@ -40,17 +41,17 @@ struct TranscendentalState;
  * It's main functionality are methods that implement lemma schemas below,
  * which return a set of lemmas that should be sent on the output channel.
  */
-class ExponentialSolver
+class ExponentialSolver : protected EnvObj
 {
  public:
-  ExponentialSolver(TranscendentalState* tstate);
+  ExponentialSolver(Env& env, TranscendentalState* tstate);
   ~ExponentialSolver();
 
   /**
    * Ensures that new_a is properly registered as a term where new_a is the
-   * purified version of a, y being the new skolem used for purification.
+   * purified version of a, new_a[0] being the new skolem used for purification.
    */
-  void doPurification(TNode a, TNode new_a, TNode y);
+  void doPurification(TNode a, TNode new_a);
 
   /**
    * check initial refine

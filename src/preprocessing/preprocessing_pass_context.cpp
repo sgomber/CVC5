@@ -16,8 +16,9 @@
 #include "preprocessing/preprocessing_pass_context.h"
 
 #include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
+#include "options/base_options.h"
 #include "smt/env.h"
-#include "smt/solver_engine.h"
 #include "theory/theory_engine.h"
 #include "theory/theory_model.h"
 
@@ -25,14 +26,15 @@ namespace cvc5 {
 namespace preprocessing {
 
 PreprocessingPassContext::PreprocessingPassContext(
-    SolverEngine* slv,
     Env& env,
+    TheoryEngine* te,
+    prop::PropEngine* pe,
     theory::booleans::CircuitPropagator* circuitPropagator)
     : EnvObj(env),
-      d_slv(slv),
+      d_theoryEngine(te),
+      d_propEngine(pe),
       d_circuitPropagator(circuitPropagator),
-      d_llm(
-          env.getTopLevelSubstitutions(), userContext(), getProofNodeManager()),
+      d_llm(env),
       d_symsInAssertions(userContext())
 {
 }
@@ -45,11 +47,11 @@ PreprocessingPassContext::getTopLevelSubstitutions() const
 
 TheoryEngine* PreprocessingPassContext::getTheoryEngine() const
 {
-  return d_slv->getTheoryEngine();
+  return d_theoryEngine;
 }
 prop::PropEngine* PreprocessingPassContext::getPropEngine() const
 {
-  return d_slv->getPropEngine();
+  return d_propEngine;
 }
 
 void PreprocessingPassContext::spendResource(Resource r)
@@ -81,11 +83,24 @@ std::vector<Node> PreprocessingPassContext::getLearnedLiterals() const
   return d_llm.getLearnedLiterals();
 }
 
+void PreprocessingPassContext::printSubstitution(const Node& lhs,
+                                                 const Node& rhs) const
+{
+  Node eq = SkolemManager::getOriginalForm(lhs.eqNode(rhs));
+  output(OutputTag::LEARNED_LITS)
+      << "(learned-lit " << eq << " :preprocess-subs)" << std::endl;
+  output(OutputTag::SUBS) << "(substitution " << eq << ")" << std::endl;
+}
+
 void PreprocessingPassContext::addSubstitution(const Node& lhs,
                                                const Node& rhs,
                                                ProofGenerator* pg)
 {
-  getTopLevelSubstitutions().addSubstitution(lhs, rhs, pg);
+  if (isOutputOn(OutputTag::LEARNED_LITS) || isOutputOn(OutputTag::SUBS))
+  {
+    printSubstitution(lhs, rhs);
+  }
+  d_env.getTopLevelSubstitutions().addSubstitution(lhs, rhs, pg);
 }
 
 void PreprocessingPassContext::addSubstitution(const Node& lhs,
@@ -93,12 +108,25 @@ void PreprocessingPassContext::addSubstitution(const Node& lhs,
                                                PfRule id,
                                                const std::vector<Node>& args)
 {
-  getTopLevelSubstitutions().addSubstitution(lhs, rhs, id, {}, args);
+  if (isOutputOn(OutputTag::LEARNED_LITS) || isOutputOn(OutputTag::SUBS))
+  {
+    printSubstitution(lhs, rhs);
+  }
+  d_env.getTopLevelSubstitutions().addSubstitution(lhs, rhs, id, {}, args);
 }
 
-ProofNodeManager* PreprocessingPassContext::getProofNodeManager() const
+void PreprocessingPassContext::addSubstitutions(
+    theory::TrustSubstitutionMap& tm)
 {
-  return d_env.getProofNodeManager();
+  if (isOutputOn(OutputTag::LEARNED_LITS) || isOutputOn(OutputTag::SUBS))
+  {
+    std::unordered_map<Node, Node> subs = tm.get().getSubstitutions();
+    for (const std::pair<const Node, Node>& s : subs)
+    {
+      printSubstitution(s.first, s.second);
+    }
+  }
+  d_env.getTopLevelSubstitutions().addSubstitutions(tm);
 }
 
 }  // namespace preprocessing

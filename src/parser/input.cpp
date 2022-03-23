@@ -26,7 +26,6 @@
 using namespace std;
 using namespace cvc5;
 using namespace cvc5::parser;
-using namespace cvc5::kind;
 
 namespace cvc5 {
 namespace parser {
@@ -51,12 +50,10 @@ InputStream *Input::getInputStream() {
   return d_inputStream;
 }
 
-Input* Input::newFileInput(const std::string& lang,
-                           const std::string& filename,
-                           bool useMmap)
+Input* Input::newFileInput(const std::string& lang, const std::string& filename)
 {
-  AntlrInputStream *inputStream = 
-    AntlrInputStream::newFileInputStream(filename, useMmap);
+  AntlrInputStream* inputStream =
+      AntlrInputStream::newFileInputStream(filename);
   return AntlrInput::newInput(lang, *inputStream);
 }
 

@@ -23,12 +23,14 @@
 #include "theory/quantifiers/ematching/inst_match_generator_multi_linear.h"
 #include "theory/quantifiers/ematching/inst_match_generator_simple.h"
 #include "theory/quantifiers/ematching/pattern_term_selector.h"
+#include "theory/quantifiers/ematching/relational_match_generator.h"
 #include "theory/quantifiers/ematching/var_match_generator.h"
 #include "theory/quantifiers/instantiate.h"
 #include "theory/quantifiers/quantifiers_state.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_registry.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/rewriter.h"
 #include "util/rational.h"
 
 using namespace cvc5::kind;
@@ -38,8 +40,8 @@ namespace theory {
 namespace quantifiers {
 namespace inst {
 
-InstMatchGenerator::InstMatchGenerator(Trigger* tparent, Node pat)
-    : IMGenerator(tparent)
+InstMatchGenerator::InstMatchGenerator(Env& env, Trigger* tparent, Node pat)
+    : IMGenerator(env, tparent)
 {
   d_cg = nullptr;
   d_needsReset = true;
@@ -183,7 +185,8 @@ void InstMatchGenerator::initialize(Node q,
         }
         else
         {
-          InstMatchGenerator* cimg = getInstMatchGenerator(d_tparent, q, pat);
+          InstMatchGenerator* cimg =
+              getInstMatchGenerator(d_env, d_tparent, q, pat);
           if (cimg)
           {
             d_children.push_back(cimg);
@@ -242,7 +245,7 @@ void InstMatchGenerator::initialize(Node q,
   }
   else if (mpk == INST_CONSTANT)
   {
-    if (d_pattern.getKind() == APPLY_SELECTOR_TOTAL)
+    if (d_pattern.getKind() == APPLY_SELECTOR)
     {
       Node selectorExpr = tdb->getMatchOperator(d_pattern);
       size_t selectorIndex = datatypes::utils::cindexOf(selectorExpr);
@@ -363,7 +366,8 @@ int InstMatchGenerator::getMatch(Node f, Node t, InstMatch& m)
     {
       if (pat.getKind() == GT)
       {
-        t_match = nm->mkNode(MINUS, t, nm->mkConst(Rational(1)));
+        t_match =
+            nm->mkNode(SUB, t, nm->mkConstRealOrInt(t.getType(), Rational(1)));
       }else{
         t_match = t;
       }
@@ -372,19 +376,21 @@ int InstMatchGenerator::getMatch(Node f, Node t, InstMatch& m)
     {
       if (pat.getKind() == EQUAL)
       {
-        if (t.getType().isBoolean())
+        TypeNode tn = t.getType();
+        if (tn.isBoolean())
         {
           t_match = nm->mkConst(!d_qstate.areEqual(nm->mkConst(true), t));
         }
         else
         {
-          Assert(t.getType().isReal());
-          t_match = nm->mkNode(PLUS, t, nm->mkConst(Rational(1)));
+          Assert(tn.isRealOrInt());
+          t_match = nm->mkNode(ADD, t, nm->mkConstRealOrInt(tn, Rational(1)));
         }
       }
       else if (pat.getKind() == GEQ)
       {
-        t_match = nm->mkNode(PLUS, t, nm->mkConst(Rational(1)));
+        t_match =
+            nm->mkNode(ADD, t, nm->mkConstRealOrInt(t.getType(), Rational(1)));
       }
       else if (pat.getKind() == GT)
       {
@@ -572,22 +578,23 @@ uint64_t InstMatchGenerator::addInstantiations(Node f)
   return addedLemmas;
 }
 
-InstMatchGenerator* InstMatchGenerator::mkInstMatchGenerator(Trigger* tparent,
+InstMatchGenerator* InstMatchGenerator::mkInstMatchGenerator(Env& env,
+                                                             Trigger* tparent,
                                                              Node q,
                                                              Node pat)
 {
   std::vector< Node > pats;
   pats.push_back( pat );
   std::map< Node, InstMatchGenerator * > pat_map_init;
-  return mkInstMatchGenerator(tparent, q, pats, pat_map_init);
+  return mkInstMatchGenerator(env, tparent, q, pats, pat_map_init);
 }
 
 InstMatchGenerator* InstMatchGenerator::mkInstMatchGeneratorMulti(
-    Trigger* tparent, Node q, std::vector<Node>& pats)
+    Env& env, Trigger* tparent, Node q, std::vector<Node>& pats)
 {
   Assert(pats.size() > 1);
   InstMatchGeneratorMultiLinear* imgm =
-      new InstMatchGeneratorMultiLinear(tparent, q, pats);
+      new InstMatchGeneratorMultiLinear(env, tparent, q, pats);
   std::vector< InstMatchGenerator* > gens;
   imgm->initialize(q, gens);
   Assert(gens.size() == pats.size());
@@ -599,11 +606,12 @@ InstMatchGenerator* InstMatchGenerator::mkInstMatchGeneratorMulti(
     patsn.push_back( pn );
     pat_map_init[pn] = g;
   }
-  imgm->d_next = mkInstMatchGenerator(tparent, q, patsn, pat_map_init);
+  imgm->d_next = mkInstMatchGenerator(env, tparent, q, patsn, pat_map_init);
   return imgm;
 }
 
 InstMatchGenerator* InstMatchGenerator::mkInstMatchGenerator(
+    Env& env,
     Trigger* tparent,
     Node q,
     std::vector<Node>& pats,
@@ -618,7 +626,7 @@ InstMatchGenerator* InstMatchGenerator::mkInstMatchGenerator(
     InstMatchGenerator* init;
     std::map< Node, InstMatchGenerator * >::iterator iti = pat_map_init.find( pats[pCounter] );
     if( iti==pat_map_init.end() ){
-      init = new InstMatchGenerator(tparent, pats[pCounter]);
+      init = getInstMatchGenerator(env, tparent, q, pats[pCounter]);
     }else{
       init = iti->second;
     }
@@ -641,16 +649,18 @@ InstMatchGenerator* InstMatchGenerator::mkInstMatchGenerator(
   return oinit;
 }
 
-InstMatchGenerator* InstMatchGenerator::getInstMatchGenerator(Trigger* tparent,
+InstMatchGenerator* InstMatchGenerator::getInstMatchGenerator(Env& env,
+                                                              Trigger* tparent,
                                                               Node q,
                                                               Node n)
 {
+  // maybe variable match generator
   if (n.getKind() != INST_CONSTANT)
   {
     Trace("var-trigger-debug")
         << "Is " << n << " a variable trigger?" << std::endl;
     Node x;
-    if (options::purifyTriggers())
+    if (env.getOptions().quantifiers.purifyTriggers)
     {
       Node xi = PatternTermSelector::getInversionVariable(n);
       if (!xi.isNull())
@@ -665,14 +675,25 @@ InstMatchGenerator* InstMatchGenerator::getInstMatchGenerator(Trigger* tparent,
     if (!x.isNull())
     {
       Node s = PatternTermSelector::getInversion(n, x);
+      s = env.getRewriter()->rewrite(s);
       VarMatchGeneratorTermSubs* vmg =
-          new VarMatchGeneratorTermSubs(tparent, x, s);
+          new VarMatchGeneratorTermSubs(env, tparent, x, s);
       Trace("var-trigger") << "Term substitution trigger : " << n
                            << ", var = " << x << ", subs = " << s << std::endl;
       return vmg;
     }
   }
-  return new InstMatchGenerator(tparent, n);
+  Trace("relational-trigger")
+      << "Is " << n << " a relational trigger?" << std::endl;
+  // relational triggers
+  bool hasPol, pol;
+  Node lit;
+  if (TriggerTermInfo::isUsableRelationTrigger(n, hasPol, pol, lit))
+  {
+    Trace("relational-trigger") << "...yes, for literal " << lit << std::endl;
+    return new RelationalMatchGenerator(env, tparent, lit, hasPol, pol);
+  }
+  return new InstMatchGenerator(env, tparent, n);
 }
 
 }  // namespace inst

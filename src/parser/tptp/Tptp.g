@@ -58,8 +58,6 @@ options {
  */
 #define ANTLR3_INLINE_INPUT_ASCII
 
-#include "parser/antlr_tracing.h"
-
 }/* @lexer::includes */
 
 @lexer::postinclude {
@@ -77,9 +75,7 @@ using namespace cvc5::parser;
 #undef SOLVER
 #define SOLVER PARSER_STATE->getSolver()
 #undef MK_TERM
-#define MK_TERM SOLVER->mkTerm
-#undef MK_TERM
-#define MK_TERM SOLVER->mkTerm
+#define MK_TERM(KIND, ...) SOLVER->mkTerm(KIND, {__VA_ARGS__})
 #define UNSUPPORTED PARSER_STATE->unimplementedFeature
 
 }/* @lexer::postinclude */
@@ -92,7 +88,6 @@ using namespace cvc5::parser;
 #include "parser/parse_op.h"
 #include "parser/parser.h"
 #include "parser/tptp/tptp.h"
-#include "parser/antlr_tracing.h"
 
 }/* @parser::includes */
 
@@ -120,7 +115,7 @@ using namespace cvc5::parser;
 #undef SYM_MAN
 #define SYM_MAN PARSER_STATE->getSymbolManager()
 #undef MK_TERM
-#define MK_TERM SOLVER->mkTerm
+#define MK_TERM(KIND, ...) SOLVER->mkTerm(KIND, {__VA_ARGS__})
 #define UNSUPPORTED PARSER_STATE->unimplementedFeature
 
 }/* parser::postinclude */
@@ -154,7 +149,7 @@ parseCommand returns [cvc5::Command* cmd = NULL]
   { PARSER_STATE->popScope();
     std::vector<api::Term> bvl = PARSER_STATE->getFreeVar();
     if(!bvl.empty()) {
-      expr = MK_TERM(api::FORALL,MK_TERM(api::BOUND_VAR_LIST,bvl),expr);
+      expr = MK_TERM(api::FORALL,MK_TERM(api::VARIABLE_LIST,bvl),expr);
     };
   }
     (COMMA_TOK anything*)? RPAREN_TOK DOT_TOK
@@ -261,7 +256,8 @@ parseCommand returns [cvc5::Command* cmd = NULL]
       }
       seq->addCommand(new SetInfoCommand("filename", filename));
       if(PARSER_STATE->hasConjecture()) {
-        seq->addCommand(new QueryCommand(SOLVER->mkFalse()));
+        // note this does not impact how the TPTP status is reported currently
+        seq->addCommand(new CheckSatAssumingCommand(SOLVER->mkTrue()));
       } else {
         seq->addCommand(new CheckSatCommand());
       }
@@ -472,9 +468,9 @@ definedPred[cvc5::ParseOp& p]
                   MK_TERM(api::NOT,
                           MK_TERM(api::EQUAL, r, SOLVER->mkInteger(0))),
                   MK_TERM(api::EQUAL, qr, MK_TERM(api::MULT, n, rr)));
-      api::Term bvl = MK_TERM(api::BOUND_VAR_LIST, q, r);
+      api::Term bvl = MK_TERM(api::VARIABLE_LIST, q, r);
       body = MK_TERM(api::EXISTS, bvl, body);
-      api::Term lbvl = MK_TERM(api::BOUND_VAR_LIST, n);
+      api::Term lbvl = MK_TERM(api::VARIABLE_LIST, n);
       p.d_kind = api::LAMBDA;
       p.d_expr = MK_TERM(api::LAMBDA, lbvl, body);
     }
@@ -532,9 +528,9 @@ thfDefinedPred[cvc5::ParseOp& p]
           MK_TERM(api::NOT,
                   MK_TERM(api::EQUAL, r, SOLVER->mkInteger(0))),
           MK_TERM(api::EQUAL, qr, MK_TERM(api::MULT, n, rr)));
-      api::Term bvl = MK_TERM(api::BOUND_VAR_LIST, q, r);
+      api::Term bvl = MK_TERM(api::VARIABLE_LIST, q, r);
       body = MK_TERM(api::EXISTS, bvl, body);
-      api::Term lbvl = MK_TERM(api::BOUND_VAR_LIST, n);
+      api::Term lbvl = MK_TERM(api::VARIABLE_LIST, n);
       p.d_kind = api::LAMBDA;
       p.d_expr = MK_TERM(api::LAMBDA, lbvl, body);
     }
@@ -570,15 +566,15 @@ definedFun[cvc5::ParseOp& p]
 }
   : '$uminus'
     {
-      p.d_kind = api::UMINUS;
+      p.d_kind = api::NEG;
     }
   | '$sum'
     {
-      p.d_kind = api::PLUS;
+      p.d_kind = api::ADD;
     }
   | '$difference'
     {
-      p.d_kind = api::MINUS;
+      p.d_kind = api::SUB;
     }
   | '$product'
     {
@@ -594,19 +590,19 @@ definedFun[cvc5::ParseOp& p]
     {
       api::Term n = SOLVER->mkVar(SOLVER->getRealSort(), "N");
       api::Term d = SOLVER->mkVar(SOLVER->getRealSort(), "D");
-      api::Term formals = MK_TERM(api::BOUND_VAR_LIST, n, d);
+      api::Term formals = MK_TERM(api::VARIABLE_LIST, n, d);
       api::Term expr = MK_TERM(api::DIVISION, n, d);
       expr = MK_TERM(api::ITE,
                      MK_TERM(api::GEQ, d, SOLVER->mkReal(0)),
                      MK_TERM(api::TO_INTEGER, expr),
-                     MK_TERM(api::UMINUS,
+                     MK_TERM(api::NEG,
                              MK_TERM(api::TO_INTEGER,
-                                     MK_TERM(api::UMINUS, expr))));
+                                     MK_TERM(api::NEG, expr))));
       if (remainder)
       {
         expr = MK_TERM(
             api::TO_INTEGER,
-            MK_TERM(api::MINUS, n, MK_TERM(api::MULT, expr, d)));
+            MK_TERM(api::SUB, n, MK_TERM(api::MULT, expr, d)));
       }
       p.d_kind = api::LAMBDA;
       p.d_expr = MK_TERM(api::LAMBDA, formals, expr);
@@ -617,19 +613,19 @@ definedFun[cvc5::ParseOp& p]
     {
       api::Term n = SOLVER->mkVar(SOLVER->getRealSort(), "N");
       api::Term d = SOLVER->mkVar(SOLVER->getRealSort(), "D");
-      api::Term formals = MK_TERM(api::BOUND_VAR_LIST, n, d);
+      api::Term formals = MK_TERM(api::VARIABLE_LIST, n, d);
       api::Term expr = MK_TERM(api::DIVISION, n, d);
       expr = MK_TERM(api::ITE,
                      MK_TERM(api::GEQ, expr, SOLVER->mkReal(0)),
                      MK_TERM(api::TO_INTEGER, expr),
-                     MK_TERM(api::UMINUS,
+                     MK_TERM(api::NEG,
                              MK_TERM(api::TO_INTEGER,
-                                     MK_TERM(api::UMINUS, expr))));
+                                     MK_TERM(api::NEG, expr))));
       if (remainder)
       {
         expr = MK_TERM(
             api::TO_INTEGER,
-            MK_TERM(api::MINUS, n, MK_TERM(api::MULT, expr, d)));
+            MK_TERM(api::SUB, n, MK_TERM(api::MULT, expr, d)));
       }
       p.d_kind = api::LAMBDA;
       p.d_expr = MK_TERM(api::LAMBDA, formals, expr);
@@ -640,13 +636,13 @@ definedFun[cvc5::ParseOp& p]
     {
       api::Term n = SOLVER->mkVar(SOLVER->getRealSort(), "N");
       api::Term d = SOLVER->mkVar(SOLVER->getRealSort(), "D");
-      api::Term formals = MK_TERM(api::BOUND_VAR_LIST, n, d);
+      api::Term formals = MK_TERM(api::VARIABLE_LIST, n, d);
       api::Term expr = MK_TERM(api::DIVISION, n, d);
       expr = MK_TERM(api::TO_INTEGER, expr);
       if (remainder)
       {
         expr = MK_TERM(api::TO_INTEGER,
-                       MK_TERM(api::MINUS, n, MK_TERM(api::MULT, expr, d)));
+                       MK_TERM(api::SUB, n, MK_TERM(api::MULT, expr, d)));
       }
       p.d_kind = api::LAMBDA;
       p.d_expr = MK_TERM(api::LAMBDA, formals, expr);
@@ -658,30 +654,30 @@ definedFun[cvc5::ParseOp& p]
   | '$ceiling'
     {
       api::Term n = SOLVER->mkVar(SOLVER->getRealSort(), "N");
-      api::Term formals = MK_TERM(api::BOUND_VAR_LIST, n);
-      api::Term expr = MK_TERM(api::UMINUS,
-                          MK_TERM(api::TO_INTEGER, MK_TERM(api::UMINUS, n)));
+      api::Term formals = MK_TERM(api::VARIABLE_LIST, n);
+      api::Term expr = MK_TERM(api::NEG,
+                          MK_TERM(api::TO_INTEGER, MK_TERM(api::NEG, n)));
       p.d_kind = api::LAMBDA;
       p.d_expr = MK_TERM(api::LAMBDA, formals, expr);
     }
   | '$truncate'
     {
       api::Term n = SOLVER->mkVar(SOLVER->getRealSort(), "N");
-      api::Term formals = MK_TERM(api::BOUND_VAR_LIST, n);
+      api::Term formals = MK_TERM(api::VARIABLE_LIST, n);
       api::Term expr =
           MK_TERM(api::ITE,
                   MK_TERM(api::GEQ, n, SOLVER->mkReal(0)),
                   MK_TERM(api::TO_INTEGER, n),
-                  MK_TERM(api::UMINUS,
-                          MK_TERM(api::TO_INTEGER, MK_TERM(api::UMINUS, n))));
+                  MK_TERM(api::NEG,
+                          MK_TERM(api::TO_INTEGER, MK_TERM(api::NEG, n))));
       p.d_kind = api::LAMBDA;
       p.d_expr = MK_TERM(api::LAMBDA, formals, expr);
     }
   | '$round'
     {
       api::Term n = SOLVER->mkVar(SOLVER->getRealSort(), "N");
-      api::Term formals = MK_TERM(api::BOUND_VAR_LIST, n);
-      api::Term decPart = MK_TERM(api::MINUS, n, MK_TERM(api::TO_INTEGER, n));
+      api::Term formals = MK_TERM(api::VARIABLE_LIST, n);
+      api::Term decPart = MK_TERM(api::SUB, n, MK_TERM(api::TO_INTEGER, n));
       api::Term expr = MK_TERM(
           api::ITE,
           MK_TERM(api::LT, decPart, SOLVER->mkReal(1, 2)),
@@ -691,12 +687,12 @@ definedFun[cvc5::ParseOp& p]
                   MK_TERM(api::GT, decPart, SOLVER->mkReal(1, 2)),
                   // if decPart > 0.5, round up
                   MK_TERM(api::TO_INTEGER,
-                          MK_TERM(api::PLUS, n, SOLVER->mkReal(1))),
+                          MK_TERM(api::ADD, n, SOLVER->mkReal(1))),
                   // if decPart == 0.5, round to nearest even integer:
                   // result is: to_int(n/2 + .5) * 2
                   MK_TERM(api::MULT,
                           MK_TERM(api::TO_INTEGER,
-                                  MK_TERM(api::PLUS,
+                                  MK_TERM(api::ADD,
                                           MK_TERM(api::DIVISION,
                                                   n,
                                                   SOLVER->mkReal(2)),
@@ -887,7 +883,7 @@ fofUnitaryFormula[cvc5::api::Term& expr]
       ( COMMA_TOK bindvariable[expr] { bv.push_back(expr); } )* ) RBRACK_TOK
     COLON_TOK fofUnitaryFormula[expr]
     { PARSER_STATE->popScope();
-      expr = MK_TERM(kind, MK_TERM(api::BOUND_VAR_LIST, bv), expr);
+      expr = MK_TERM(kind, MK_TERM(api::VARIABLE_LIST, bv), expr);
     }
   ;
 
@@ -1283,10 +1279,10 @@ thfUnitaryFormula[cvc5::ParseOp& p]
       {
         // apply body of lambda to flatten vars
         expr = PARSER_STATE->mkHoApply(expr, flattenVars);
-        // add variables to BOUND_VAR_LIST
+        // add variables to VARIABLE_LIST
         bv.insert(bv.end(), flattenVars.begin(), flattenVars.end());
       }
-      p.d_expr = MK_TERM(p.d_kind, MK_TERM(api::BOUND_VAR_LIST, bv), expr);
+      p.d_expr = MK_TERM(p.d_kind, MK_TERM(api::VARIABLE_LIST, bv), expr);
     }
   ;
 
@@ -1396,7 +1392,7 @@ tffUnitaryFormula[cvc5::api::Term& expr]
       ( COMMA_TOK tffbindvariable[expr] { bv.push_back(expr); } )* ) RBRACK_TOK
     COLON_TOK tffUnitaryFormula[expr]
     { PARSER_STATE->popScope();
-      expr = MK_TERM(kind, MK_TERM(api::BOUND_VAR_LIST, bv), expr);
+      expr = MK_TERM(kind, MK_TERM(api::VARIABLE_LIST, bv), expr);
     }
   | '$ite_f' LPAREN_TOK tffLogicFormula[expr] COMMA_TOK tffLogicFormula[lhs] COMMA_TOK tffLogicFormula[rhs] RPAREN_TOK
     { expr = MK_TERM(api::ITE, expr, lhs, rhs); }
@@ -1431,7 +1427,7 @@ tffLetTermBinding[std::vector<cvc5::api::Term> & bvlist,
   {
     PARSER_STATE->checkLetBinding(bvlist, lhs, rhs, false);
     std::vector<api::Term> lchildren(++lhs.begin(), lhs.end());
-    rhs = MK_TERM(api::LAMBDA, MK_TERM(api::BOUND_VAR_LIST, lchildren), rhs);
+    rhs = MK_TERM(api::LAMBDA, MK_TERM(api::VARIABLE_LIST, lchildren), rhs);
     // since lhs is always APPLY_UF (otherwise we'd have had a parser error in
     // checkLetBinding) the function to be replaced is always the first
     // argument. Note that the way in which lchildren is built above is also
@@ -1457,7 +1453,7 @@ tffLetFormulaBinding[std::vector<cvc5::api::Term> & bvlist,
   {
     PARSER_STATE->checkLetBinding(bvlist, lhs, rhs, true);
     std::vector<api::Term> lchildren(++lhs.begin(), lhs.end());
-    rhs = MK_TERM(api::LAMBDA, MK_TERM(api::BOUND_VAR_LIST, lchildren), rhs);
+    rhs = MK_TERM(api::LAMBDA, MK_TERM(api::VARIABLE_LIST, lchildren), rhs);
     // since lhs is always APPLY_UF (otherwise we'd have had a parser error in
     // checkLetBinding) the function to be replaced is always the first
     // argument. Note that the way in which lchildren is built above is also

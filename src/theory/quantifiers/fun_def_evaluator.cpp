@@ -54,7 +54,7 @@ void FunDefEvaluator::assertDefinition(Node q)
 Node FunDefEvaluator::evaluateDefinitions(Node n) const
 {
   // should do standard rewrite before this call
-  Assert(Rewriter::rewrite(n) == n);
+  Assert(rewrite(n) == n);
   Trace("fd-eval") << "FunDefEvaluator: evaluateDefinitions " << n << std::endl;
   NodeManager* nm = NodeManager::currentNM();
   std::unordered_map<TNode, unsigned> funDefCount;
@@ -167,7 +167,7 @@ Node FunDefEvaluator::evaluateDefinitions(Node n) const
             itCount = funDefCount.find(f);
           }
           if (itf == d_funDefMap.end()
-              || itCount->second > options::sygusRecFunEvalLimit())
+              || itCount->second > options().quantifiers.sygusRecFunEvalLimit)
           {
             Trace("fd-eval")
                 << "FunDefEvaluator: "
@@ -186,7 +186,7 @@ Node FunDefEvaluator::evaluateDefinitions(Node n) const
           {
             // invoke it on arguments using the evaluator
             sbody = evaluate(sbody, args, children);
-            if (Trace.isOn("fd-eval-debug2"))
+            if (TraceIsOn("fd-eval-debug2"))
             {
               Trace("fd-eval-debug2")
                   << "FunDefEvaluator: evaluation with args:\n";
@@ -217,7 +217,7 @@ Node FunDefEvaluator::evaluateDefinitions(Node n) const
           if (childChanged)
           {
             ret = nm->mkNode(cur.getKind(), children);
-            ret = Rewriter::rewrite(ret);
+            ret = rewrite(ret);
           }
           Trace("fd-eval-debug2") << "built from arguments " << ret << "\n";
           visited[cur] = ret;

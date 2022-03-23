@@ -51,7 +51,7 @@ void ProofNodeUpdater::process(std::shared_ptr<ProofNode> pf)
 {
   if (d_debugFreeAssumps)
   {
-    if (Trace.isOn("pfnu-debug"))
+    if (TraceIsOn("pfnu-debug"))
     {
       Trace("pfnu-debug2") << "Initial proof: " << *pf.get() << std::endl;
       Trace("pfnu-debug") << "ProofNodeUpdater::process" << std::endl;
@@ -154,7 +154,7 @@ void ProofNodeUpdater::processInternal(std::shared_ptr<ProofNode> pf,
         {
           Unhandled()
               << "ProofNodeUpdater::processInternal: cyclic proof! (use "
-                 "--proof-eager-checking)"
+                 "--proof-check=eager)"
               << std::endl;
         }
         visit.push_back(cp);

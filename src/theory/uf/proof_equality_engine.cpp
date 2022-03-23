@@ -18,6 +18,7 @@
 #include "proof/lazy_proof_chain.h"
 #include "proof/proof_node.h"
 #include "proof/proof_node_manager.h"
+#include "smt/env.h"
 #include "theory/rewriter.h"
 #include "theory/uf/eq_proof.h"
 #include "theory/uf/equality_engine.h"
@@ -29,22 +30,25 @@ namespace cvc5 {
 namespace theory {
 namespace eq {
 
-ProofEqEngine::ProofEqEngine(context::Context* c,
-                             context::Context* lc,
-                             EqualityEngine& ee,
-                             ProofNodeManager* pnm)
-    : EagerProofGenerator(pnm, lc, "pfee::" + ee.identify()),
+ProofEqEngine::ProofEqEngine(Env& env, EqualityEngine& ee)
+    : EnvObj(env),
+      EagerProofGenerator(env.getProofNodeManager(),
+                          env.getUserContext(),
+                          "pfee::" + ee.identify()),
       d_ee(ee),
-      d_factPg(c, pnm),
-      d_assumpPg(pnm),
-      d_pnm(pnm),
-      d_proof(pnm, nullptr, c, "pfee::LazyCDProof::" + ee.identify()),
-      d_keep(c)
+      d_factPg(env.getContext(), env.getProofNodeManager()),
+      d_assumpPg(env.getProofNodeManager()),
+      d_pnm(env.getProofNodeManager()),
+      d_proof(env.getProofNodeManager(),
+              nullptr,
+              env.getContext(),
+              "pfee::LazyCDProof::" + ee.identify()),
+      d_keep(env.getContext())
 {
   NodeManager* nm = NodeManager::currentNM();
   d_true = nm->mkConst(true);
   d_false = nm->mkConst(false);
-  AlwaysAssert(pnm != nullptr)
+  AlwaysAssert(env.getProofNodeManager() != nullptr)
       << "Should not construct ProofEqEngine without proof node manager";
 }
 
@@ -177,7 +181,7 @@ TrustNode ProofEqEngine::assertConflict(Node lit)
   // lit may not be equivalent to false, but should rewrite to false
   if (lit != d_false)
   {
-    Assert(Rewriter::rewrite(lit) == d_false)
+    Assert(rewrite(lit) == d_false)
         << "pfee::assertConflict: conflict literal is not rewritable to "
            "false";
     std::vector<Node> exp;
@@ -410,7 +414,7 @@ TrustNode ProofEqEngine::ensureProofForFact(Node conc,
                       << std::endl;
   // should always be non-null
   Assert(pf != nullptr);
-  if (Trace.isOn("pfee-proof") || Trace.isOn("pfee-proof-final"))
+  if (TraceIsOn("pfee-proof") || TraceIsOn("pfee-proof-final"))
   {
     Trace("pfee-proof") << "pfee::ensureProofForFact: printing proof"
                         << std::endl;
@@ -537,7 +541,7 @@ void ProofEqEngine::explainWithProof(Node lit,
       assumps.push_back(a);
     }
   }
-  if (Trace.isOn("pfee-proof"))
+  if (TraceIsOn("pfee-proof"))
   {
     Trace("pfee-proof") << "pfee::explainWithProof: add to proof ---"
                         << std::endl;

@@ -66,6 +66,16 @@ enum class InferenceId
   ARITH_CONF_SOI_SIMPLEX,
   // conflict when getting constraint from fact queue
   ARITH_CONF_FACT_QUEUE,
+  // conflict in tryBranchCut
+  ARITH_CONF_BRANCH_CUT,
+  // conflict in replayAssert
+  ARITH_CONF_REPLAY_ASSERT,
+  // conflict in replayLog
+  ARITH_CONF_REPLAY_LOG,
+  // conflict in replayLogRec
+  ARITH_CONF_REPLAY_LOG_REC,
+  // conflict from handleUnateProp
+  ARITH_CONF_UNATE_PROP,
   // introduces split on a disequality
   ARITH_SPLIT_DEQ,
   // tighten integer inequalities to ceiling
@@ -114,6 +124,10 @@ enum class InferenceId
   // tangent planes (NlSolver::checkTangentPlanes)
   ARITH_NL_TANGENT_PLANE,
   //-------------------- nonlinear transcendental solver
+  // sine symmetry
+  ARITH_NL_T_SINE_SYMM,
+  // boundary reduction
+  ARITH_NL_T_SINE_BOUNDARY_REDUCE,
   // purification of arguments to transcendental functions
   ARITH_NL_T_PURIFY_ARG,
   // initial refinement (TranscendentalSolver::checkTranscendentalInitialRefine)
@@ -144,11 +158,11 @@ enum class InferenceId
   ARITH_NL_POW2_MONOTONE_REFINE,
   // trivial refinements (Pow2Solver::checkFullRefine)
   ARITH_NL_POW2_TRIVIAL_CASE_REFINE,
-  //-------------------- nonlinear cad solver
-  // conflict / infeasible subset obtained from cad
-  ARITH_NL_CAD_CONFLICT,
+  //-------------------- nonlinear coverings solver
+  // conflict / infeasible subset obtained from coverings
+  ARITH_NL_COVERING_CONFLICT,
   // excludes an interval for a single variable
-  ARITH_NL_CAD_EXCLUDED_INTERVAL,
+  ARITH_NL_COVERING_EXCLUDED_INTERVAL,
   //-------------------- nonlinear icp solver
   // conflict obtained from icp
   ARITH_NL_ICP_CONFLICT,
@@ -168,18 +182,28 @@ enum class InferenceId
   // ---------------------------------- end arrays theory
 
   // ---------------------------------- bags theory
-  BAG_NON_NEGATIVE_COUNT,
-  BAG_MK_BAG_SAME_ELEMENT,
-  BAG_MK_BAG,
-  BAG_EQUALITY,
-  BAG_DISEQUALITY,
-  BAG_EMPTY,
-  BAG_UNION_DISJOINT,
-  BAG_UNION_MAX,
-  BAG_INTERSECTION_MIN,
-  BAG_DIFFERENCE_SUBTRACT,
-  BAG_DIFFERENCE_REMOVE,
-  BAG_DUPLICATE_REMOVAL,
+  BAGS_NON_NEGATIVE_COUNT,
+  BAGS_BAG_MAKE,
+  BAGS_BAG_MAKE_SPLIT,
+  BAGS_SKOLEM,
+  BAGS_EQUALITY,
+  BAGS_DISEQUALITY,
+  BAGS_EMPTY,
+  BAGS_UNION_DISJOINT,
+  BAGS_UNION_MAX,
+  BAGS_INTERSECTION_MIN,
+  BAGS_DIFFERENCE_SUBTRACT,
+  BAGS_DIFFERENCE_REMOVE,
+  BAGS_DUPLICATE_REMOVAL,
+  BAGS_MAP_DOWN,
+  BAGS_MAP_UP,
+  BAGS_FILTER_DOWN,
+  BAGS_FILTER_UP,
+  BAGS_FOLD,
+  BAGS_CARD,
+  BAGS_CARD_EMPTY,
+  TABLES_PRODUCT_UP,
+  TABLES_PRODUCT_DOWN,
   // ---------------------------------- end bags theory
 
   // ---------------------------------- bitvector theory
@@ -285,6 +309,8 @@ enum class InferenceId
   QUANTIFIERS_INST_E_MATCHING_HO,
   // E-matching based on variable triggers
   QUANTIFIERS_INST_E_MATCHING_VAR_GEN,
+  // E-matching based on relational triggers
+  QUANTIFIERS_INST_E_MATCHING_RELATIONAL,
   // conflicting instantiation from conflict-based instantiation
   QUANTIFIERS_INST_CBQI_CONFLICT,
   // propagating instantiation from conflict-based instantiation
@@ -341,12 +367,6 @@ enum class InferenceId
   QUANTIFIERS_SYGUS_EXCLUDE_CURRENT,
   // manual exclusion of a current solution for sygus-stream
   QUANTIFIERS_SYGUS_STREAM_EXCLUDE_CURRENT,
-  // Q where Q was solved by a subcall to the single invocation module
-  QUANTIFIERS_SYGUS_SI_SOLVED,
-  // Q where Q was (trusted) solved by sampling
-  QUANTIFIERS_SYGUS_SAMPLE_TRUST_SOLVED,
-  // Q where Q was solved by a verification subcall
-  QUANTIFIERS_SYGUS_VERIFY_SOLVED,
   // ~Q where Q is a PBE conjecture with conflicting examples
   QUANTIFIERS_SYGUS_EXAMPLE_INFER_CONTRA,
   // unif+pi symmetry breaking between multiple enumerators
@@ -459,10 +479,11 @@ enum class InferenceId
   SETS_UP_CLOSURE,
   SETS_UP_CLOSURE_2,
   SETS_UP_UNIV,
-  SETS_UNIV_TYPE,
   //-------------------- sets cardinality solver
   // split on emptyset
   SETS_CARD_SPLIT_EMPTY,
+  // split on equality between two distinct Venn regions
+  SETS_CARD_SPLIT_EQ,
   // cycle of cardinalities, hence all sets have the same
   SETS_CARD_CYCLE,
   // two sets have the same cardinality
@@ -688,10 +709,26 @@ enum class InferenceId
   STRINGS_ARRAY_UPDATE_UNIT,
   // update over conatenation
   STRINGS_ARRAY_UPDATE_CONCAT,
+  // update over conatenation, inverse
+  STRINGS_ARRAY_UPDATE_CONCAT_INVERSE,
   // nth over unit
   STRINGS_ARRAY_NTH_UNIT,
   // nth over conatenation
   STRINGS_ARRAY_NTH_CONCAT,
+  // nth over extract
+  STRINGS_ARRAY_NTH_EXTRACT,
+  // nth over update
+  STRINGS_ARRAY_NTH_UPDATE,
+  // reasoning about the nth term from update term
+  STRINGS_ARRAY_NTH_TERM_FROM_UPDATE,
+  // reasoning about whether an update changes a term or not
+  STRINGS_ARRAY_UPDATE_BOUND,
+  // splitting about equality of sequences
+  STRINGS_ARRAY_EQ_SPLIT,
+  // nth over update when updated with an unit term
+  STRINGS_ARRAY_NTH_UPDATE_WITH_UNIT,
+  // nth over reverse
+  STRINGS_ARRAY_NTH_REV,
   //-------------------- regexp solver
   // regular expression normal form conflict
   //   ( x in R ^ x = y ^ rewrite((str.in_re y R)) = false ) => false
@@ -772,9 +809,11 @@ enum class InferenceId
   // f(x1, .., xn) and P is the reduction predicate for f
   // (see theory_strings_preprocess).
   STRINGS_REDUCTION,
-  //-------------------- prefix conflict
-  // prefix conflict (coarse-grained)
+  //-------------------- merge conflicts
+  // prefix conflict
   STRINGS_PREFIX_CONFLICT,
+  // arithmetic bound conflict
+  STRINGS_ARITH_BOUND_CONFLICT,
   //-------------------- other
   // a lemma added during term registration for an atomic term
   STRINGS_REGISTER_TERM_ATOMIC,
@@ -836,6 +875,15 @@ enum class InferenceId
   // different applications
   //   (not (= (f sk1 .. skn) (g sk1 .. skn))
   UF_HO_MODEL_EXTENSIONALITY,
+  // equivalence of lambda functions
+  //   f = g => forall x. reduce(lambda(f)(x)) = reduce(lambda(g)(x))
+  // This is applied when lamda functions f and g are in the same eq class.
+  UF_HO_LAMBDA_UNIV_EQ,
+  // equivalence of a lambda function and an ordinary function
+  //   f = h => h(t) = reduce(lambda(f)(t))
+  // This is applied when lamda function f and ordinary function h are in the
+  // same eq class.
+  UF_HO_LAMBDA_APP_REDUCE,
   //-------------------- end model-construction specific part
   //-------------------- end HO extension to UF
   //-------------------------------------- end uf theory

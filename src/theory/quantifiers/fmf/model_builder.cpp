@@ -54,8 +54,8 @@ void QModelBuilder::finishInit()
 }
 
 bool QModelBuilder::optUseModel() {
-  return options::mbqiMode() != options::MbqiMode::NONE || options::fmfBound()
-         || options::stringExp();
+  return options().quantifiers.mbqiMode != options::MbqiMode::NONE
+         || options().quantifiers.fmfBound || options().strings.stringExp;
 }
 
 bool QModelBuilder::preProcessBuildModel(TheoryModel* m) {
@@ -65,7 +65,7 @@ bool QModelBuilder::preProcessBuildModel(TheoryModel* m) {
 bool QModelBuilder::preProcessBuildModelStd(TheoryModel* m) {
   d_addedLemmas = 0;
   d_triedLemmas = 0;
-  if (options::fmfFunWellDefinedRelevant())
+  if (options().quantifiers.fmfFunWellDefinedRelevant)
   {
     //traverse equality engine
     std::map< TypeNode, bool > eqc_usort;
@@ -107,7 +107,7 @@ bool QModelBuilder::preProcessBuildModelStd(TheoryModel* m) {
 
 void QModelBuilder::debugModel( TheoryModel* m ){
   //debug the model: cycle through all instantiations for all quantifiers, report ones that are not true
-  if( Trace.isOn("quant-check-model") ){
+  if( TraceIsOn("quant-check-model") ){
     FirstOrderModel* fm = d_model;
     Trace("quant-check-model") << "Testing quantifier instantiations..." << std::endl;
     int tests = 0;

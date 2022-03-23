@@ -17,6 +17,7 @@
 #define CVC5__SMT__SET_DEFAULTS_H
 
 #include "options/options.h"
+#include "smt/env_obj.h"
 #include "theory/logic_info.h"
 
 namespace cvc5 {
@@ -26,14 +27,14 @@ namespace smt {
  * Class responsible for setting default options, which includes managing
  * implied options and dependencies between the options and the logic.
  */
-class SetDefaults
+class SetDefaults : protected EnvObj
 {
  public:
   /**
    * @param isInternalSubsolver Whether we are setting the options for an
    * internal subsolver (see SolverEngine::isInternalSubsolver).
    */
-  SetDefaults(bool isInternalSubsolver);
+  SetDefaults(Env& env, bool isInternalSubsolver);
   /**
    * The purpose of this method is to set the default options and update the
    * logic info for an SMT engine.
@@ -55,6 +56,12 @@ class SetDefaults
    * Determine whether we will be using SyGuS.
    */
   bool usesSygus(const Options& opts) const;
+  /**
+   * Does options enable an input conversion, e.g. solve-bv-as-int?
+   * If this method returns true, then reason is updated with the name of the
+   * option.
+   */
+  bool usesInputConversion(const Options& opts, std::ostream& reason) const;
   /**
    * Check if incompatible with incremental mode. Notice this method may modify
    * the options to ensure that we are compatible with incremental mode.
@@ -92,6 +99,12 @@ class SetDefaults
    * techniques that may interfere with producing correct unsat cores.
    */
   bool safeUnsatCores(const Options& opts) const;
+  /**
+   * Check if incompatible with sygus. Notice this method may
+   * modify the options to ensure that we are compatible with sygus.
+   * The output stream reason is similar to above.
+   */
+  bool incompatibleWithSygus(Options& opts, std::ostream& reason) const;
   /**
    * Check if incompatible with quantified formulas. Notice this method may
    * modify the options to ensure that we are compatible with quantified logics.
@@ -134,6 +147,10 @@ class SetDefaults
    * Set default decision mode
    */
   void setDefaultDecisionMode(const LogicInfo& logic, Options& opts) const;
+  /** Notify that we are modifying option x to val due to reason. */
+  void notifyModifyOption(const std::string& x,
+                          const std::string& val,
+                          const std::string& reason) const;
   /** Are we an internal subsolver? */
   bool d_isInternalSubsolver;
 };

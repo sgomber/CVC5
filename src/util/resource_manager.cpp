@@ -158,6 +158,7 @@ ResourceManager::ResourceManager(StatisticsRegistry& stats,
       d_cumulativeTimeUsed(0),
       d_cumulativeResourceUsed(0),
       d_thisCallResourceUsed(0),
+      d_thisCallResourceBudget(0),
       d_statistics(new ResourceManager::Statistics(stats))
 {
   d_statistics->d_resourceUnitsUsed.set(d_cumulativeResourceUsed);
@@ -187,6 +188,11 @@ uint64_t ResourceManager::getResourceUsage() const
 
 uint64_t ResourceManager::getTimeUsage() const { return d_cumulativeTimeUsed; }
 
+uint64_t ResourceManager::getRemainingTime() const
+{
+  return d_options.base.perCallMillisecondLimit - d_perCallTimer.elapsed();
+}
+
 uint64_t ResourceManager::getResourceRemaining() const
 {
   if (d_options.base.cumulativeResourceLimit <= d_cumulativeResourceUsed)
@@ -199,7 +205,7 @@ void ResourceManager::spendResource(uint64_t amount)
   ++d_statistics->d_spendResourceCalls;
   d_cumulativeResourceUsed += amount;
 
-  Debug("limit") << "ResourceManager::spendResource()" << std::endl;
+  Trace("limit") << "ResourceManager::spendResource()" << std::endl;
   d_thisCallResourceUsed += amount;
   if (out())
   {

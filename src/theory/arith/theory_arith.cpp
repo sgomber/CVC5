@@ -19,6 +19,7 @@
 #include "proof/proof_checker.h"
 #include "proof/proof_rule.h"
 #include "smt/smt_statistics_registry.h"
+#include "theory/arith/arith_evaluator.h"
 #include "theory/arith/arith_rewriter.h"
 #include "theory/arith/equality_solver.h"
 #include "theory/arith/infer_bounds.h"
@@ -40,7 +41,7 @@ TheoryArith::TheoryArith(Env& env, OutputChannel& out, Valuation valuation)
       d_ppRewriteTimer(
           statisticsRegistry().registerTimer("theory::arith::ppRewriteTimer")),
       d_astate(env, valuation),
-      d_im(env, *this, d_astate, d_pnm),
+      d_im(env, *this, d_astate),
       d_ppre(d_env),
       d_bab(env, d_astate, d_im, d_ppre, d_pnm),
       d_eqSolver(nullptr),
@@ -48,7 +49,8 @@ TheoryArith::TheoryArith(Env& env, OutputChannel& out, Valuation valuation)
       d_nonlinearExtension(nullptr),
       d_opElim(d_env),
       d_arithPreproc(env, d_astate, d_im, d_pnm, d_opElim),
-      d_rewriter(d_opElim)
+      d_rewriter(d_opElim),
+      d_arithModelCacheSet(false)
 {
   // currently a cyclic dependency to TheoryArithPrivate
   d_astate.setParent(d_internal);
@@ -125,13 +127,13 @@ void TheoryArith::notifySharedTerm(TNode n) { d_internal->notifySharedTerm(n); }
 TrustNode TheoryArith::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
 {
   CodeTimer timer(d_ppRewriteTimer, /* allow_reentrant = */ true);
-  Debug("arith::preprocess") << "arith::preprocess() : " << atom << endl;
+  Trace("arith::preprocess") << "arith::preprocess() : " << atom << endl;
 
   if (atom.getKind() == kind::EQUAL)
   {
     return d_ppre.ppRewriteEq(atom);
   }
-  Assert(Theory::theoryOf(atom) == THEORY_ARITH);
+  Assert(d_env.theoryOf(atom) == THEORY_ARITH);
   // Eliminate operators. Notice we must do this here since other
   // theories may generate lemmas that involve non-standard operators. For
   // example, quantifier instantiation may use TO_INTEGER terms; SyGuS may
@@ -162,20 +164,25 @@ void TheoryArith::postCheck(Effort level)
 {
   d_im.reset();
   Trace("arith-check") << "TheoryArith::postCheck " << level << std::endl;
+  if (Theory::fullEffort(level))
+  {
+    // Make sure we don't have old lemmas floating around. This can happen if we
+    // didn't actually reach a last call effort check, but backtracked for some
+    // other reason. In such a case, these lemmas are likely to be irrelevant
+    // and possibly even harmful. If we produce proofs, their proofs have most
+    // likely been deallocated already as well.
+    d_im.clearPending();
+    d_im.clearWaitingLemmas();
+  }
   // check with the non-linear solver at last call
   if (level == Theory::EFFORT_LAST_CALL)
   {
-    if (d_nonlinearExtension != nullptr)
+    // If we computed lemmas in the last FULL_EFFORT check, send them now.
+    if (d_im.hasPendingLemma())
     {
-      // If we computed lemmas in the last FULL_EFFORT check, send them now.
-      if (d_im.hasPendingLemma())
-      {
-        d_im.doPendingFacts();
-        d_im.doPendingLemmas();
-        d_im.doPendingPhaseRequirements();
-        return;
-      }
-      d_nonlinearExtension->finalizeModel(getValuation().getModel());
+      d_im.doPendingFacts();
+      d_im.doPendingLemmas();
+      d_im.doPendingPhaseRequirements();
     }
     return;
   }
@@ -193,9 +200,10 @@ void TheoryArith::postCheck(Effort level)
   if (Theory::fullEffort(level))
   {
     d_arithModelCache.clear();
+    d_arithModelCacheSet = false;
+    std::set<Node> termSet;
     if (d_nonlinearExtension != nullptr)
     {
-      std::set<Node> termSet;
       updateModelCache(termSet);
       d_nonlinearExtension->checkFullEffort(d_arithModelCache, termSet);
     }
@@ -204,6 +212,15 @@ void TheoryArith::postCheck(Effort level)
       // set incomplete
       d_im.setIncomplete(IncompleteId::ARITH_NL_DISABLED);
     }
+    // If we won't be doing a last call effort check (which implies that
+    // models will be computed), we must sanity check the integer model
+    // from the linear solver now. We also must update the model cache
+    // if we did not do so above.
+    if (d_nonlinearExtension == nullptr)
+    {
+      updateModelCache(termSet);
+    }
+    sanityCheckIntegerModel();
   }
 }
 
@@ -263,7 +280,7 @@ bool TheoryArith::collectModelInfo(TheoryModel* m,
 bool TheoryArith::collectModelValues(TheoryModel* m,
                                      const std::set<Node>& termSet)
 {
-  if (Trace.isOn("arith::model"))
+  if (TraceIsOn("arith::model"))
   {
     Trace("arith::model") << "arithmetic model after pruning" << std::endl;
     for (const auto& p : d_arithModelCache)
@@ -273,12 +290,6 @@ bool TheoryArith::collectModelValues(TheoryModel* m,
   }
 
   updateModelCache(termSet);
-
-  if (sanityCheckIntegerModel())
-  {
-    // We added a lemma
-    return false;
-  }
 
   // We are now ready to assert the model.
   for (const std::pair<const Node, Node>& p : d_arithModelCache)
@@ -323,21 +334,30 @@ void TheoryArith::presolve(){
 }
 
 EqualityStatus TheoryArith::getEqualityStatus(TNode a, TNode b) {
-  Debug("arith") << "TheoryArith::getEqualityStatus(" << a << ", " << b << ")" << std::endl;
+  Trace("arith") << "TheoryArith::getEqualityStatus(" << a << ", " << b << ")" << std::endl;
+  if (a == b)
+  {
+    return EQUALITY_TRUE_IN_MODEL;
+  }
   if (d_arithModelCache.empty())
   {
     return d_internal->getEqualityStatus(a,b);
   }
-  Node aval = Rewriter::rewrite(a.substitute(d_arithModelCache.begin(), d_arithModelCache.end()));
-  Node bval = Rewriter::rewrite(b.substitute(d_arithModelCache.begin(), d_arithModelCache.end()));
-  if (aval == bval)
+  Node diff = d_env.getNodeManager()->mkNode(Kind::SUB, a, b);
+  std::optional<bool> isZero = isExpressionZero(d_env, diff, d_arithModelCache);
+  if (isZero)
   {
-    return EQUALITY_TRUE_IN_MODEL;
+    return *isZero ? EQUALITY_TRUE_IN_MODEL : EQUALITY_FALSE_IN_MODEL;
   }
-  return EQUALITY_FALSE_IN_MODEL;
+  return EQUALITY_UNKNOWN;
 }
 
 Node TheoryArith::getModelValue(TNode var) {
+  std::map<Node, Node>::iterator it = d_arithModelCache.find(var);
+  if (it != d_arithModelCache.end())
+  {
+    return it->second;
+  }
   return d_internal->getModelValue( var );
 }
 
@@ -356,16 +376,18 @@ eq::ProofEqEngine* TheoryArith::getProofEqEngine()
 
 void TheoryArith::updateModelCache(std::set<Node>& termSet)
 {
-  if (d_arithModelCache.empty())
+  if (!d_arithModelCacheSet)
   {
+    d_arithModelCacheSet = true;
     collectAssertedTerms(termSet);
     d_internal->collectModelValues(termSet, d_arithModelCache);
   }
 }
 void TheoryArith::updateModelCache(const std::set<Node>& termSet)
 {
-  if (d_arithModelCache.empty())
+  if (!d_arithModelCacheSet)
   {
+    d_arithModelCacheSet = true;
     d_internal->collectModelValues(termSet, d_arithModelCache);
   }
 }
@@ -383,9 +405,9 @@ bool TheoryArith::sanityCheckIntegerModel()
       Trace("arith-check") << p.first << " -> " << p.second << std::endl;
       if (p.first.getType().isInteger() && !p.second.getType().isInteger())
       {
-        Assert(false) << "TheoryArithPrivate generated a bad model value for "
-                        "integer variable "
-                      << p.first << " : " << p.second;
+        warning() << "TheoryArithPrivate generated a bad model value for "
+                     "integer variable "
+                  << p.first << " : " << p.second << std::endl;
         // must branch and bound
         TrustNode lem =
             d_bab.branchIntegerVariable(p.first, p.second.getConst<Rational>());

@@ -17,9 +17,9 @@
 
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/preprocessing_pass_context.h"
-#include "smt/smt_engine_scope.h"
 #include "smt/smt_statistics_registry.h"
 #include "smt/solver_engine.h"
+#include "smt/solver_engine_scope.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/quantifiers_preprocess.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
@@ -301,14 +301,13 @@ bool SygusInference::solveSygus(const std::vector<Node>& assertions,
   Trace("sygus-infer") << "*** Check sat..." << std::endl;
   Result r = rrSygus->checkSat();
   Trace("sygus-infer") << "...result : " << r << std::endl;
-  if (r.asSatisfiabilityResult().isSat() != Result::UNSAT)
+  // get the synthesis solutions
+  std::map<Node, Node> synth_sols;
+  if (!rrSygus->getSubsolverSynthSolutions(synth_sols))
   {
     // failed, conjecture was infeasible
     return false;
   }
-  // get the synthesis solutions
-  std::map<Node, Node> synth_sols;
-  rrSygus->getSynthSolutions(synth_sols);
 
   std::vector<Node> final_ff;
   std::vector<Node> final_ff_sol;

@@ -22,7 +22,6 @@
 #include "preprocessing/assertion_pipeline.h"
 #include "proof/conv_proof_generator.h"
 #include "smt/env.h"
-#include "smt/smt_engine_stats.h"
 #include "smt/solver_engine.h"
 #include "theory/rewriter.h"
 #include "theory/theory.h"
@@ -35,10 +34,7 @@ using namespace cvc5::kind;
 namespace cvc5 {
 namespace smt {
 
-ExpandDefs::ExpandDefs(Env& env, SmtEngineStatistics& stats)
-    : d_env(env), d_smtStats(stats), d_tpg(nullptr)
-{
-}
+ExpandDefs::ExpandDefs(Env& env) : EnvObj(env), d_tpg(nullptr) {}
 
 ExpandDefs::~ExpandDefs() {}
 
@@ -93,7 +89,7 @@ TrustNode ExpandDefs::expandDefinitions(TNode n,
         result.push(ret.isNull() ? n : ret);
         continue;
       }
-      theory::TheoryId tid = theory::Theory::theoryOf(node);
+      theory::TheoryId tid = d_env.theoryOf(node);
       theory::TheoryRewriter* tr = rr->getTheoryRewriter(tid);
 
       Assert(tr != NULL);
@@ -129,14 +125,14 @@ TrustNode ExpandDefs::expandDefinitions(TNode n,
       // Working upwards
       // Reconstruct the node from it's (now rewritten) children on the stack
 
-      Debug("expand") << "cons : " << node << std::endl;
+      Trace("expand") << "cons : " << node << std::endl;
       if (node.getNumChildren() > 0)
       {
         // cout << "cons : " << node << std::endl;
         NodeBuilder nb(node.getKind());
         if (node.getMetaKind() == metakind::PARAMETERIZED)
         {
-          Debug("expand") << "op   : " << node.getOperator() << std::endl;
+          Trace("expand") << "op   : " << node.getOperator() << std::endl;
           // cout << "op   : " << node.getOperator() << std::endl;
           nb << node.getOperator();
         }
@@ -146,7 +142,7 @@ TrustNode ExpandDefs::expandDefinitions(TNode n,
           Node expanded = result.top();
           result.pop();
           // cout << "exchld : " << expanded << std::endl;
-          Debug("expand") << "exchld : " << expanded << std::endl;
+          Trace("expand") << "exchld : " << expanded << std::endl;
           nb << expanded;
         }
         node = nb;
@@ -168,11 +164,13 @@ TrustNode ExpandDefs::expandDefinitions(TNode n,
   return TrustNode::mkTrustRewrite(orig, res, tpg);
 }
 
-void ExpandDefs::setProofNodeManager(ProofNodeManager* pnm)
+void ExpandDefs::enableProofs()
 {
+  // initialize if not done already
   if (d_tpg == nullptr)
   {
-    d_tpg.reset(new TConvProofGenerator(pnm,
+    Assert(d_env.getProofNodeManager() != nullptr);
+    d_tpg.reset(new TConvProofGenerator(d_env.getProofNodeManager(),
                                         d_env.getUserContext(),
                                         TConvPolicy::FIXPOINT,
                                         TConvCachePolicy::NEVER,

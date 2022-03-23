@@ -68,7 +68,7 @@ void CommandExecutor::printStatistics(std::ostream& out) const
   if (d_solver->getOptionInfo("stats").boolValue())
   {
     const auto& stats = d_solver->getStatistics();
-    auto it = stats.begin(d_solver->getOptionInfo("stats-expert").boolValue(),
+    auto it = stats.begin(d_solver->getOptionInfo("stats-internal").boolValue(),
                           d_solver->getOptionInfo("stats-all").boolValue());
     for (; it != stats.end(); ++it)
     {
@@ -132,20 +132,16 @@ bool CommandExecutor::doCommandSingleton(Command* cmd)
   {
     d_result = res = csa->getResult();
   }
-  const QueryCommand* q = dynamic_cast<const QueryCommand*>(cmd);
-  if(q != nullptr) {
-    d_result = res = q->getResult();
-  }
 
-  bool isResultUnsat = res.isUnsat() || res.isEntailed();
-  bool isResultSat = res.isSat() || res.isNotEntailed();
+  bool isResultUnsat = res.isUnsat();
+  bool isResultSat = res.isSat();
 
   // dump the model/proof/unsat core if option is set
   if (status) {
     std::vector<std::unique_ptr<Command> > getterCommands;
     if (d_solver->getOptionInfo("dump-models").boolValue()
         && (isResultSat
-            || (res.isSatUnknown()
+            || (res.isUnknown()
                 && res.getUnknownExplanation() == api::Result::INCOMPLETE)))
     {
       getterCommands.emplace_back(new GetModelCommand());
@@ -162,15 +158,14 @@ bool CommandExecutor::doCommandSingleton(Command* cmd)
       getterCommands.emplace_back(new GetInstantiationsCommand());
     }
 
-    if ((d_solver->getOptionInfo("dump-unsat-cores").boolValue()
-         || d_solver->getOptionInfo("dump-unsat-cores-full").boolValue())
+    if (d_solver->getOptionInfo("dump-unsat-cores").boolValue()
         && isResultUnsat)
     {
       getterCommands.emplace_back(new GetUnsatCoreCommand());
     }
 
     if (d_solver->getOptionInfo("dump-difficulty").boolValue()
-        && (isResultUnsat || isResultSat || res.isSatUnknown()))
+        && (isResultUnsat || isResultSat || res.isUnknown()))
     {
       getterCommands.emplace_back(new GetDifficultyCommand());
     }
@@ -201,23 +196,21 @@ bool solverInvoke(api::Solver* solver,
   // print output for -o raw-benchmark
   if (solver->isOutputOn("raw-benchmark"))
   {
-    std::ostream& ss = solver->getOutput("raw-benchmark");
-    cmd->toStream(ss);
+    cmd->toStream(solver->getOutput("raw-benchmark"));
   }
 
-  if (solver->getOptionInfo("parse-only").boolValue())
+  // In parse-only mode, we do not invoke any of the commands except define-fun
+  // commands. We invoke define-fun commands because they add function names
+  // to the symbol table.
+  if (solver->getOptionInfo("parse-only").boolValue()
+      && dynamic_cast<SetBenchmarkLogicCommand*>(cmd) == nullptr
+      && dynamic_cast<DefineFunctionCommand*>(cmd) == nullptr
+      && dynamic_cast<ResetCommand*>(cmd) == nullptr)
   {
     return true;
   }
 
   cmd->invoke(solver, sm, out);
-  // ignore the error if the command-verbosity is 0 for this command
-  std::string commandName =
-      std::string("command-verbosity:") + cmd->getCommandName();
-  if (solver->getOption(commandName) == "0")
-  {
-    return true;
-  }
   return !cmd->fail();
 }
 

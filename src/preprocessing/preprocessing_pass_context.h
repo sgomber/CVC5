@@ -26,12 +26,12 @@
 #include "preprocessing/learned_literal_manager.h"
 #include "smt/env_obj.h"
 #include "theory/logic_info.h"
+#include "theory/trust_substitutions.h"
 #include "util/resource_manager.h"
 
 namespace cvc5 {
 
 class Env;
-class SolverEngine;
 class TheoryEngine;
 
 namespace theory::booleans {
@@ -49,8 +49,9 @@ class PreprocessingPassContext : protected EnvObj
  public:
   /** Constructor. */
   PreprocessingPassContext(
-      SolverEngine* smt,
       Env& env,
+      TheoryEngine* te,
+      prop::PropEngine* pe,
       theory::booleans::CircuitPropagator* circuitPropagator);
 
   /** Get the associated Environment. */
@@ -78,7 +79,11 @@ class PreprocessingPassContext : protected EnvObj
   /** Spend resource in the resource manager of the associated Env. */
   void spendResource(Resource r);
 
-  /** Get a reference to the top-level substitution map */
+  /**
+   * Get a reference to the top-level substitution map. Note that all
+   * substitutions added to this map should use the addSubstitution methods
+   * below for the purposes of proper debugging information.
+   */
   theory::TrustSubstitutionMap& getTopLevelSubstitutions() const;
 
   /** Record symbols in assertions
@@ -115,13 +120,17 @@ class PreprocessingPassContext : protected EnvObj
                        const Node& rhs,
                        PfRule id,
                        const std::vector<Node>& args);
-
-  /** The the proof node manager associated with this context, if it exists */
-  ProofNodeManager* getProofNodeManager() const;
+  /** Add top level substitutions for a substitution map */
+  void addSubstitutions(theory::TrustSubstitutionMap& tm);
 
  private:
-  /** Pointer to the SolverEngine that this context was created in. */
-  SolverEngine* d_slv;
+  /** Helper method for printing substitutions */
+  void printSubstitution(const Node& lhs, const Node& rhs) const;
+
+  /** Pointer to the theory engine associated with this context. */
+  TheoryEngine* d_theoryEngine;
+  /** Pointer to the prop engine associated with this context. */
+  prop::PropEngine* d_propEngine;
   /** Instance of the circuit propagator */
   theory::booleans::CircuitPropagator* d_circuitPropagator;
   /**

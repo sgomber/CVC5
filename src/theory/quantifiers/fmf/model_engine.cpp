@@ -57,9 +57,12 @@ bool ModelEngine::needsCheck( Theory::Effort e ) {
 
 QuantifiersModule::QEffort ModelEngine::needsModel(Theory::Effort e)
 {
-  if( options::mbqiInterleave() ){
+  if (options().quantifiers.mbqiInterleave)
+  {
     return QEFFORT_STANDARD;
-  }else{
+  }
+  else
+  {
     return QEFFORT_MODEL;
   }
 }
@@ -70,7 +73,8 @@ void ModelEngine::reset_round( Theory::Effort e ) {
 void ModelEngine::check(Theory::Effort e, QEffort quant_e)
 {
   bool doCheck = false;
-  if( options::mbqiInterleave() ){
+  if (options().quantifiers.mbqiInterleave)
+  {
     doCheck = quant_e == QEFFORT_STANDARD && d_qim.hasPendingLemma();
   }
   if( !doCheck ){
@@ -83,14 +87,14 @@ void ModelEngine::check(Theory::Effort e, QEffort quant_e)
     //the following will test that the model satisfies all asserted universal quantifiers by
     // (model-based) exhaustive instantiation.
     double clSet = 0;
-    if( Trace.isOn("model-engine") ){
+    if( TraceIsOn("model-engine") ){
       Trace("model-engine") << "---Model Engine Round---" << std::endl;
       clSet = double(clock())/double(CLOCKS_PER_SEC);
     }
     Trace("model-engine-debug") << "Check model..." << std::endl;
     d_incomplete_check = false;
     // print debug
-    if (Trace.isOn("fmf-model-complete"))
+    if (TraceIsOn("fmf-model-complete"))
     {
       Trace("fmf-model-complete") << std::endl;
       debugPrint("fmf-model-complete");
@@ -98,7 +102,7 @@ void ModelEngine::check(Theory::Effort e, QEffort quant_e)
     // successfully built an acceptable model, now check it
     addedLemmas += checkModel();
 
-    if( Trace.isOn("model-engine") ){
+    if( TraceIsOn("model-engine") ){
       double clSet2 = double(clock())/double(CLOCKS_PER_SEC);
       Trace("model-engine") << "Finished model engine, time = " << (clSet2-clSet) << std::endl;
     }
@@ -108,7 +112,7 @@ void ModelEngine::check(Theory::Effort e, QEffort quant_e)
           << "No lemmas added, incomplete = "
           << (d_incomplete_check || !d_incompleteQuants.empty()) << std::endl;
       // cvc5 will answer SAT or unknown
-      if( Trace.isOn("fmf-consistent") ){
+      if( TraceIsOn("fmf-consistent") ){
         Trace("fmf-consistent") << std::endl;
         debugPrint("fmf-consistent");
       }
@@ -131,7 +135,7 @@ bool ModelEngine::checkCompleteFor( Node q ) {
 }
 
 void ModelEngine::registerQuantifier( Node f ){
-  if( Trace.isOn("fmf-warn") ){
+  if( TraceIsOn("fmf-warn") ){
     bool canHandle = true;
     for( unsigned i=0; i<f[0].getNumChildren(); i++ ){
       TypeNode tn = f[0][i].getType();
@@ -139,7 +143,8 @@ void ModelEngine::registerQuantifier( Node f ){
         if (!d_env.isFiniteType(tn))
         {
           if( tn.isInteger() ){
-            if( !options::fmfBound() ){
+            if (!options().quantifiers.fmfBound)
+            {
               canHandle = false;
             }
           }else{
@@ -190,7 +195,7 @@ int ModelEngine::checkModel(){
   d_addedLemmas = 0;
   d_totalLemmas = 0;
   //for statistics
-  if( Trace.isOn("model-engine") ){
+  if( TraceIsOn("model-engine") ){
     for( unsigned i=0; i<fm->getNumAssertedQuantifiers(); i++ ){
       Node f = fm->getAssertedQuantifier( i );
       if (fm->isQuantifierActive(f) && shouldProcess(f))
@@ -211,9 +216,11 @@ int ModelEngine::checkModel(){
 
   Trace("model-engine-debug") << "Do exhaustive instantiation..." << std::endl;
   // FMC uses two sub-effort levels
-  int e_max = options::mbqiMode() == options::MbqiMode::FMC
-                  ? 2
-                  : (options::mbqiMode() == options::MbqiMode::TRUST ? 0 : 1);
+  int e_max =
+      options().quantifiers.mbqiMode == options::MbqiMode::FMC
+          ? 2
+          : (options().quantifiers.mbqiMode == options::MbqiMode::TRUST ? 0
+                                                                        : 1);
   for( int e=0; e<e_max; e++) {
     d_incompleteQuants.clear();
     for( unsigned i=0; i<fm->getNumAssertedQuantifiers(); i++ ){
@@ -274,7 +281,7 @@ void ModelEngine::exhaustiveInstantiate( Node f, int effort ){
     d_triedLemmas += d_builder->getNumTriedLemmas() - prev_tlem;
     d_addedLemmas += d_builder->getNumAddedLemmas() - prev_alem;
   }else{
-    if( Trace.isOn("fmf-exh-inst-debug") ){
+    if( TraceIsOn("fmf-exh-inst-debug") ){
       Trace("fmf-exh-inst-debug") << "   Instantiation Constants: ";
       for( size_t i=0; i<f[0].getNumChildren(); i++ ){
         Trace("fmf-exh-inst-debug")
@@ -292,14 +299,17 @@ void ModelEngine::exhaustiveInstantiate( Node f, int effort ){
         int triedLemmas = 0;
         int addedLemmas = 0;
         Instantiate* inst = d_qim.getInstantiate();
-        while( !riter.isFinished() && ( addedLemmas==0 || !options::fmfOneInstPerRound() ) ){
+        while (
+            !riter.isFinished()
+            && (addedLemmas == 0 || !options().quantifiers.fmfOneInstPerRound))
+        {
           //instantiation was not shown to be true, construct the match
           InstMatch m( f );
           for (unsigned i = 0; i < riter.getNumTerms(); i++)
           {
             m.set(d_qstate, i, riter.getCurrentTerm(i));
           }
-          Debug("fmf-model-eval") << "* Add instantiation " << m << std::endl;
+          Trace("fmf-model-eval") << "* Add instantiation " << m << std::endl;
           triedLemmas++;
           //add as instantiation
           if (inst->addInstantiation(f,
@@ -314,7 +324,7 @@ void ModelEngine::exhaustiveInstantiate( Node f, int effort ){
               break;
             }
           }else{
-            Debug("fmf-model-eval") << "* Failed Add instantiation " << m << std::endl;
+            Trace("fmf-model-eval") << "* Failed Add instantiation " << m << std::endl;
           }
           riter.increment();
         }
@@ -332,7 +342,7 @@ void ModelEngine::exhaustiveInstantiate( Node f, int effort ){
 }
 
 void ModelEngine::debugPrint( const char* c ){
-  if (Trace.isOn(c))
+  if (TraceIsOn(c))
   {
     Trace(c) << "Quantifiers: " << std::endl;
     FirstOrderModel* m = d_treg.getModel();
@@ -365,7 +375,7 @@ bool ModelEngine::shouldProcess(Node q)
     return false;
   }
   // if finite model finding or fmf bound is on, we process everything
-  if (options::finiteModelFind() || options::fmfBound())
+  if (options().quantifiers.finiteModelFind || options().quantifiers.fmfBound)
   {
     return true;
   }

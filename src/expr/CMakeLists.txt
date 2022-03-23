@@ -14,6 +14,9 @@
 ##
 
 libcvc5_add_sources(
+  algorithm/flatten.h
+  annotation_elim_node_converter.cpp
+  annotation_elim_node_converter.h
   array_store_all.cpp
   array_store_all.h
   ascription_type.cpp
@@ -24,12 +27,14 @@ libcvc5_add_sources(
   attribute_unique_id.h
   bound_var_manager.cpp
   bound_var_manager.h
+  cardinality_constraint.cpp
+  cardinality_constraint.h
+  codatatype_bound_variable.cpp
+  codatatype_bound_variable.h
   emptyset.cpp
   emptyset.h
   emptybag.cpp
   emptybag.h
-  expr_iomanip.cpp
-  expr_iomanip.h
   kind_map.h
   match_trie.cpp
   match_trie.h
@@ -45,12 +50,12 @@ libcvc5_add_sources(
   node_builder.h
   node_converter.cpp
   node_converter.h
-  node_manager.cpp
-  node_manager.h
   node_manager_attributes.h
   node_self_iterator.h
   node_trie.cpp
   node_trie.h
+  node_trie_algorithm.cpp
+  node_trie_algorithm.h
   node_traversal.cpp
   node_traversal.h
   node_value.cpp
@@ -60,6 +65,8 @@ libcvc5_add_sources(
   node_visitor.h
   skolem_manager.cpp
   skolem_manager.h
+  subtype_elim_node_converter.cpp
+  subtype_elim_node_converter.h
   symbol_manager.cpp
   symbol_manager.h
   symbol_table.cpp
@@ -91,8 +98,8 @@ libcvc5_add_sources(
   subs.h
   sygus_datatype.cpp
   sygus_datatype.h
-  uninterpreted_constant.cpp
-  uninterpreted_constant.h
+  variadic_trie.cpp
+  variadic_trie.h
 )
 
 libcvc5_add_sources(GENERATED
@@ -100,7 +107,10 @@ libcvc5_add_sources(GENERATED
   kind.h
   metakind.cpp
   metakind.h
+  node_manager.cpp
+  node_manager.h
   type_checker.cpp
+  type_properties.cpp
   type_properties.h
 )
 
@@ -143,6 +153,16 @@ add_custom_command(
 )
 
 add_custom_command(
+  OUTPUT type_properties.cpp
+  COMMAND
+    ${mkkind_script}
+    ${CMAKE_CURRENT_LIST_DIR}/type_properties_template.cpp
+    ${KINDS_FILES}
+    > ${CMAKE_CURRENT_BINARY_DIR}/type_properties.cpp
+  DEPENDS mkkind type_properties_template.cpp type_properties.h ${KINDS_FILES}
+)
+
+add_custom_command(
   OUTPUT metakind.h
   COMMAND
     ${mkmetakind_script}
@@ -163,6 +183,26 @@ add_custom_command(
 )
 
 add_custom_command(
+  OUTPUT node_manager.h
+  COMMAND
+    ${mkmetakind_script}
+    ${CMAKE_CURRENT_LIST_DIR}/node_manager_template.h
+    ${KINDS_FILES}
+    > ${CMAKE_CURRENT_BINARY_DIR}/node_manager.h
+  DEPENDS mkmetakind node_manager_template.h ${KINDS_FILES}
+)
+
+add_custom_command(
+  OUTPUT node_manager.cpp
+  COMMAND
+    ${mkmetakind_script}
+    ${CMAKE_CURRENT_LIST_DIR}/node_manager_template.cpp
+    ${KINDS_FILES}
+    > ${CMAKE_CURRENT_BINARY_DIR}/node_manager.cpp
+  DEPENDS mkmetakind node_manager_template.cpp node_manager.h ${KINDS_FILES}
+)
+
+add_custom_command(
   OUTPUT type_checker.cpp
   COMMAND
     ${mkexpr_script}
@@ -178,6 +218,9 @@ add_custom_target(gen-expr
     kind.h
     metakind.cpp
     metakind.h
+    node_manager.cpp
+    node_manager.h
     type_checker.cpp
+    type_properties.cpp
     type_properties.h
 )

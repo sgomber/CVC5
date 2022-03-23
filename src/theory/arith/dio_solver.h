@@ -157,7 +157,7 @@ class DioSolver : protected EnvObj
    * the maximum input constraints length than 2**MAX_GROWTH_RATE.
    */
   context::CDO<uint32_t> d_maxInputCoefficientLength;
-  static const uint32_t MAX_GROWTH_RATE = 3;
+  static constexpr uint32_t MAX_GROWTH_RATE = 3;
 
   /** Returns true if the element on the trail should be dropped.*/
   bool anyCoefficientExceedsMaximum(TrailIndex j) const;
@@ -298,7 +298,7 @@ private:
   /** Solves the index at ti for the value in minimumMonomial. */
   std::pair<SubIndex, TrailIndex> solveIndex(TrailIndex ti);
 
-  /** Prints the queue for debugging purposes to Debug("arith::dio"). */
+  /** Prints the queue for debugging purposes to Trace("arith::dio"). */
   void printQueue();
 
   /**
@@ -382,9 +382,6 @@ private:
    * Returns the SumPair in d_trail[i].d_eq with all of the fresh variables purified out.
    */
   SumPair purifyIndex(TrailIndex i);
-
-
-  void debugPrintTrail(TrailIndex i) const;
 
 public:
   bool hasMoreDecompositionLemmas() const{

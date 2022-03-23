@@ -74,7 +74,7 @@ Node DatatypesProofRuleChecker::checkInternal(PfRule id,
       return Node::null();
     }
     Node tester = utils::mkTester(t, i, dt);
-    Node ticons = Rewriter::rewrite(utils::getInstCons(t, dt, i));
+    Node ticons = utils::getInstCons(t, dt, i);
     return tester.eqNode(t.eqNode(ticons));
   }
   else if (id == PfRule::DT_COLLAPSE)
@@ -82,7 +82,7 @@ Node DatatypesProofRuleChecker::checkInternal(PfRule id,
     Assert(children.empty());
     Assert(args.size() == 1);
     Node t = args[0];
-    if (t.getKind() != kind::APPLY_SELECTOR_TOTAL
+    if (t.getKind() != kind::APPLY_SELECTOR
         || t[0].getKind() != kind::APPLY_CONSTRUCTOR)
     {
       return Node::null();
@@ -93,7 +93,7 @@ Node DatatypesProofRuleChecker::checkInternal(PfRule id,
     const DTypeConstructor& dtc = dt[constructorIndex];
     int selectorIndex = dtc.getSelectorIndexInternal(selector);
     Node r =
-        selectorIndex < 0 ? t.getType().mkGroundTerm() : t[0][selectorIndex];
+        selectorIndex < 0 ? nm->mkGroundTerm(t.getType()) : t[0][selectorIndex];
     return t.eqNode(r);
   }
   else if (id == PfRule::DT_SPLIT)

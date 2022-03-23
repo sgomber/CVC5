@@ -29,13 +29,7 @@ NullC nullStream;
 const std::string Cvc5ostream::s_tab = "  ";
 const int Cvc5ostream::s_indentIosIndex = std::ios_base::xalloc();
 
-DebugC DebugChannel(&std::cout);
 WarningC WarningChannel(&std::cerr);
-MessageC MessageChannel(&std::cout);
-NoticeC NoticeChannel(&null_os);
-ChatC ChatChannel(&null_os);
 TraceC TraceChannel(&std::cout);
-std::ostream DumpOutC::dump_cout(std::cout.rdbuf());  // copy cout stream buffer
-DumpOutC DumpOutChannel(&DumpOutC::dump_cout);
 
 }  // namespace cvc5

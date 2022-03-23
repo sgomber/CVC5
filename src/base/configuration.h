@@ -12,6 +12,10 @@
  *
  * Interface to a public class that provides compile-time information
  * about the cvc5 library.
+ *
+ * Eventually, the configuration methods will all be migrated to the
+ * cvc5::configuration namespace below. This is cleaner and avoids a gcc/10.1.0
+ * bug. See https://github.com/cvc5/cvc5/pull/7898 for details.
  */
 
 #include "cvc5_public.h"
@@ -26,6 +30,17 @@
 
 namespace cvc5 {
 
+namespace configuration {
+  static constexpr bool isStatisticsBuild()
+  {
+#ifdef CVC5_STATISTICS_ON
+    return true;
+#else
+    return false;
+#endif
+  }
+}  // namespace configuration
+
 /**
  * Represents the (static) configuration of cvc5.
  */
@@ -36,10 +51,11 @@ class CVC5_EXPORT Configuration
   Configuration();
 
   // these constants are filled in by the build system
-  static const bool IS_GIT_BUILD;
-  static const char* const GIT_BRANCH_NAME;
-  static const char* const GIT_COMMIT;
-  static const bool GIT_HAS_MODIFICATIONS;
+  static const bool GIT_BUILD;
+  static const bool CVC5_IS_RELEASE;
+  static const char* const CVC5_VERSION;
+  static const char* const CVC5_FULL_VERSION;
+  static const char* const CVC5_GIT_INFO;
 
 public:
 
@@ -47,18 +63,7 @@ public:
 
   static bool isDebugBuild();
 
-  static constexpr bool isStatisticsBuild()
-  {
-#ifdef CVC5_STATISTICS_ON
-    return true;
-#else
-    return false;
-#endif
-  }
-
   static bool isTracingBuild();
-
-  static bool isDumpingBuild();
 
   static bool isMuzzledBuild();
 
@@ -82,14 +87,6 @@ public:
 
   static std::string getVersionString();
 
-  static unsigned getVersionMajor();
-
-  static unsigned getVersionMinor();
-
-  static unsigned getVersionRelease();
-
-  static std::string getVersionExtra();
-
   static std::string copyright();
 
   static std::string about();
@@ -102,8 +99,6 @@ public:
 
   static bool isBuiltWithGlpk();
 
-  static bool isBuiltWithAbc();
-
   static bool isBuiltWithCryptominisat();
 
   static bool isBuiltWithKissat();
@@ -111,6 +106,8 @@ public:
   static bool isBuiltWithEditline();
 
   static bool isBuiltWithPoly();
+
+  static bool isBuiltWithCoCoA();
 
   /* Return a sorted array of the debug tags name */
   static const std::vector<std::string>& getDebugTags();
@@ -123,10 +120,7 @@ public:
   static bool isTraceTag(const std::string& tag);
 
   static bool isGitBuild();
-  static const char* getGitBranchName();
-  static const char* getGitCommit();
-  static bool hasGitModifications();
-  static std::string getGitId();
+  static std::string getGitInfo();
 
   static std::string getCompiler();
   static std::string getCompiledDateTime();

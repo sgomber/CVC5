@@ -121,7 +121,6 @@ Node FirstOrderModelFmc::getFunctionValue(Node op, const char* argPrefix)
     size_t ii = (ncond - 1) - i;
     Node v = odef->d_value[ii];
     Trace("fmc-model-func") << "Value is : " << v << std::endl;
-    Assert(v.isConst());
     if (curr.isNull())
     {
       Trace("fmc-model-func") << "base : " << v << std::endl;
@@ -152,7 +151,7 @@ Node FirstOrderModelFmc::getFunctionValue(Node op, const char* argPrefix)
     }
   }
   Trace("fmc-model") << "Made " << curr << " for " << op << std::endl;
-  curr = Rewriter::rewrite(curr);
+  curr = rewrite(curr);
   return nm->mkNode(LAMBDA, boundVarList, curr);
 }
 

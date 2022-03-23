@@ -15,6 +15,8 @@
 
 #include "theory/quantifiers/expr_miner.h"
 
+#include <sstream>
+
 #include "expr/skolem_manager.h"
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/term_util.h"
@@ -41,7 +43,9 @@ Node ExprMiner::convertToSkolem(Node n)
     SkolemManager* sm = nm->getSkolemManager();
     for (const Node& v : d_vars)
     {
-      Node sk = sm->mkDummySkolem("rrck", v.getType());
+      std::stringstream ss;
+      ss << "k_" << v;
+      Node sk = sm->mkDummySkolem(ss.str(), v.getType());
       d_skolems.push_back(sk);
       d_fv_to_skolem[v] = sk;
     }
@@ -53,17 +57,26 @@ Node ExprMiner::convertToSkolem(Node n)
 void ExprMiner::initializeChecker(std::unique_ptr<SolverEngine>& checker,
                                   Node query)
 {
+  initializeChecker(checker, query, options(), logicInfo());
+}
+
+void ExprMiner::initializeChecker(std::unique_ptr<SolverEngine>& checker,
+                                  Node query,
+                                  const Options& opts,
+                                  const LogicInfo& logicInfo)
+{
   Assert (!query.isNull());
-  if (Options::current().quantifiers.sygusExprMinerCheckTimeoutWasSetByUser)
+  if (options().quantifiers.sygusExprMinerCheckTimeoutWasSetByUser)
   {
     initializeSubsolver(checker,
-                        d_env,
+                        opts,
+                        logicInfo,
                         true,
-                        options::sygusExprMinerCheckTimeout());
+                        options().quantifiers.sygusExprMinerCheckTimeout);
   }
   else
   {
-    initializeSubsolver(checker, d_env);
+    initializeSubsolver(checker, opts, logicInfo);
   }
   // also set the options
   checker->setOption("sygus-rr-synth-input", "false");
@@ -76,7 +89,7 @@ void ExprMiner::initializeChecker(std::unique_ptr<SolverEngine>& checker,
 
 Result ExprMiner::doCheck(Node query)
 {
-  Node queryr = Rewriter::rewrite(query);
+  Node queryr = rewrite(query);
   if (queryr.isConst())
   {
     if (!queryr.getConst<bool>())

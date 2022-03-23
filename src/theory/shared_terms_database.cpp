@@ -52,9 +52,7 @@ void SharedTermsDatabase::setEqualityEngine(eq::EqualityEngine* ee)
     d_pfee = d_equalityEngine->getProofEqualityEngine();
     if (d_pfee == nullptr)
     {
-      ProofNodeManager* pnm = d_env.getProofNodeManager();
-      d_pfeeAlloc.reset(new eq::ProofEqEngine(
-          d_env.getContext(), d_env.getUserContext(), *ee, pnm));
+      d_pfeeAlloc = std::make_unique<eq::ProofEqEngine>(d_env, *ee);
       d_pfee = d_pfeeAlloc.get();
       d_equalityEngine->setProofEqualityEngine(d_pfee);
     }
@@ -79,7 +77,7 @@ void SharedTermsDatabase::addSharedTerm(TNode atom,
                                         TNode term,
                                         TheoryIdSet theories)
 {
-  Debug("register") << "SharedTermsDatabase::addSharedTerm(" << atom << ", "
+  Trace("register") << "SharedTermsDatabase::addSharedTerm(" << atom << ", "
                     << term << ", " << TheoryIdSetUtil::setToString(theories)
                     << ")" << std::endl;
 
@@ -156,7 +154,7 @@ TheoryIdSet SharedTermsDatabase::getNotifiedTheories(TNode term) const
 
 bool SharedTermsDatabase::propagateSharedEquality(TheoryId theory, TNode a, TNode b, bool value)
 {
-  Debug("shared-terms-database") << "SharedTermsDatabase::newEquality(" << theory << "," << a << "," << b << ", " << (value ? "true" : "false") << ")" << endl;
+  Trace("shared-terms-database") << "SharedTermsDatabase::newEquality(" << theory << "," << a << "," << b << ", " << (value ? "true" : "false") << ")" << endl;
 
   if (d_inConflict) {
     return false;
@@ -190,7 +188,7 @@ void SharedTermsDatabase::markNotified(TNode term, TheoryIdSet theories)
     return;
   }
 
-  Debug("shared-terms-database") << "SharedTermsDatabase::markNotified(" << term << ")" << endl;
+  Trace("shared-terms-database") << "SharedTermsDatabase::markNotified(" << term << ")" << endl;
 
   // First update the set of notified theories for this term
   d_alreadyNotifiedMap[term] =
@@ -248,7 +246,7 @@ theory::eq::EqualityEngine* SharedTermsDatabase::getEqualityEngine()
 void SharedTermsDatabase::assertShared(TNode n, bool polarity, TNode reason)
 {
   Assert(d_equalityEngine != nullptr);
-  Debug("shared-terms-database::assert")
+  Trace("shared-terms-database::assert")
       << "SharedTermsDatabase::assertShared(" << n << ", "
       << (polarity ? "true" : "false") << ", " << reason << ")" << endl;
   // Add it to the equality engine

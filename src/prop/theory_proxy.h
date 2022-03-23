@@ -18,17 +18,15 @@
 #ifndef CVC5__PROP__SAT_H
 #define CVC5__PROP__SAT_H
 
-// Just defining this for now, since there's no other SAT solver bindings.
-// Optional blocks below will be unconditionally included
-#define CVC5_USE_MINISAT
-
 #include <unordered_set>
 
+#include "context/cdhashset.h"
 #include "context/cdqueue.h"
 #include "expr/node.h"
 #include "proof/trust_node.h"
 #include "prop/registrar.h"
 #include "prop/sat_solver_types.h"
+#include "smt/env_obj.h"
 #include "theory/theory.h"
 #include "theory/theory_preprocessor.h"
 #include "util/resource_manager.h"
@@ -49,6 +47,7 @@ class CnfStream;
 class SatRelevancy;
 class CDCLTSatSolverInterface;
 class SkolemDefManager;
+class ZeroLevelLearner;
 
 /**
  * The proxy class that allows the SatSolver to communicate with the theories.
@@ -56,14 +55,16 @@ class SkolemDefManager;
  * It is an instance of the Registrar class, since it implements
  * preregistration.
  */
-class TheoryProxy : public Registrar
+class TheoryProxy : protected EnvObj, public Registrar
 {
+  using NodeSet = context::CDHashSet<Node>;
+
  public:
-  TheoryProxy(PropEngine* propEngine,
+  TheoryProxy(Env& env,
+              PropEngine* propEngine,
               TheoryEngine* theoryEngine,
               decision::DecisionEngine* decisionEngine,
-              SkolemDefManager* skdm,
-              Env& env);
+              SkolemDefManager* skdm);
 
   ~TheoryProxy();
 
@@ -73,8 +74,21 @@ class TheoryProxy : public Registrar
   /** Presolve, which calls presolve for the modules managed by this class */
   void presolve();
 
-  /** Notify a lemma, possibly corresponding to a skolem definition */
-  void notifyAssertion(Node lem, TNode skolem = TNode::null());
+  /**
+   * Notifies this module of the input assertions.
+   * @param assertion The preprocessed input assertions,
+   * @param skolemMap Map from indices in assertion to the Skolem they are
+   * the definition for
+   */
+  void notifyInputFormulas(const std::vector<Node>& assertions,
+                           std::unordered_map<size_t, Node>& skolemMap);
+  /**
+   * Notify a lemma or input assertion, possibly corresponding to a skolem
+   * definition.
+   */
+  void notifyAssertion(Node lem,
+                       TNode skolem = TNode::null(),
+                       bool isLemma = false);
 
   void theoryCheck(theory::Theory::Effort effort);
 
@@ -89,6 +103,9 @@ class TheoryProxy : public Registrar
   SatLiteral getNextDecisionEngineRequest(bool& stopSearch);
 
   bool theoryNeedCheck() const;
+
+  /** Is incomplete */
+  bool isIncomplete() const;
 
   /**
    * Notifies of a new variable at a decision level.
@@ -114,21 +131,16 @@ class TheoryProxy : public Registrar
    * rewrite.
    */
   TrustNode preprocessLemma(TrustNode trn,
-                            std::vector<TrustNode>& newLemmas,
-                            std::vector<Node>& newSkolems);
+                            std::vector<theory::SkolemLemma>& newLemmas);
   /**
    * Call the preprocessor on node, return trust node corresponding to the
    * rewrite.
    */
-  TrustNode preprocess(TNode node,
-                       std::vector<TrustNode>& newLemmas,
-                       std::vector<Node>& newSkolems);
+  TrustNode preprocess(TNode node, std::vector<theory::SkolemLemma>& newLemmas);
   /**
    * Remove ITEs from the node.
    */
-  TrustNode removeItes(TNode node,
-                       std::vector<TrustNode>& newLemmas,
-                       std::vector<Node>& newSkolems);
+  TrustNode removeItes(TNode node, std::vector<theory::SkolemLemma>& newLemmas);
   /**
    * Get the skolems within node and their corresponding definitions, store
    * them in sks and skAsserts respectively. Note that this method does not
@@ -142,6 +154,9 @@ class TheoryProxy : public Registrar
                   std::vector<Node>& sks);
   /** Preregister term */
   void preRegister(Node n) override;
+
+  /** Get the zero-level assertions */
+  std::vector<Node> getLearnedZeroLevelLiterals() const;
 
  private:
   /** The prop engine we are using. */
@@ -180,12 +195,12 @@ class TheoryProxy : public Registrar
   /** The skolem definition manager */
   SkolemDefManager* d_skdm;
 
-  /** Reference to the environment */
-  Env& d_env;
+  /** The zero level learner */
+  std::unique_ptr<ZeroLevelLearner> d_zll;
+
 }; /* class TheoryProxy */
 
 }  // namespace prop
-
 }  // namespace cvc5
 
-#endif /* CVC5__PROP__SAT_H */
+#endif

@@ -27,9 +27,11 @@
 #include "proof/buffered_proof_generator.h"
 #include "proof/eager_proof_generator.h"
 #include "proof/lazy_proof.h"
+#include "smt/env_obj.h"
 
 namespace cvc5 {
 
+class Env;
 class ProofNode;
 class ProofNodeManager;
 
@@ -79,22 +81,17 @@ class EqualityEngine;
  * - explain, for explaining why a literal is true in the current state.
  * Details on these methods can be found below.
  */
-class ProofEqEngine : public EagerProofGenerator
+class ProofEqEngine : protected EnvObj, public EagerProofGenerator
 {
   typedef context::CDHashSet<Node> NodeSet;
   typedef context::CDHashMap<Node, std::shared_ptr<ProofNode>> NodeProofMap;
 
  public:
   /**
-   * @param c The SAT context
-   * @param lc The context lemmas live in
+   * @param env The environment
    * @param ee The equality engine this is layered on
-   * @param pnm The proof node manager for producing proof nodes.
    */
-  ProofEqEngine(context::Context* c,
-                context::Context* lc,
-                EqualityEngine& ee,
-                ProofNodeManager* pnm);
+  ProofEqEngine(Env& env, EqualityEngine& ee);
   ~ProofEqEngine() {}
   //-------------------------- assert fact
   /**

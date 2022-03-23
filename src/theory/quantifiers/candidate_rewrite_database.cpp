@@ -17,9 +17,9 @@
 
 #include "options/base_options.h"
 #include "printer/printer.h"
-#include "smt/smt_engine_scope.h"
 #include "smt/smt_statistics_registry.h"
 #include "smt/solver_engine.h"
+#include "smt/solver_engine_scope.h"
 #include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/quantifiers/term_util.h"
@@ -42,7 +42,8 @@ CandidateRewriteDatabase::CandidateRewriteDatabase(
       d_rewAccel(rewAccel),
       d_silent(silent),
       d_filterPairs(filterPairs),
-      d_using_sygus(false)
+      d_using_sygus(false),
+      d_crewrite_filter(env)
 {
 }
 void CandidateRewriteDatabase::initialize(const std::vector<Node>& vars,
@@ -146,9 +147,10 @@ Node CandidateRewriteDatabase::addTerm(Node sol,
         initializeChecker(rrChecker, crr);
         Result r = rrChecker->checkSat();
         Trace("rr-check") << "...result : " << r << std::endl;
-        if (r.asSatisfiabilityResult().isSat() == Result::SAT)
+        if (r.getStatus() == Result::SAT)
         {
           Trace("rr-check") << "...rewrite does not hold for: " << std::endl;
+          NodeManager* nm = NodeManager::currentNM();
           is_unique_term = true;
           std::vector<Node> vars;
           d_sampler->getVariables(vars);
@@ -165,7 +167,7 @@ Node CandidateRewriteDatabase::addTerm(Node sol,
               if (itf == d_fv_to_skolem.end())
               {
                 // not in conjecture, can use arbitrary value
-                val = v.getType().mkGroundTerm();
+                val = nm->mkGroundTerm(v.getType());
               }
               else
               {
@@ -189,7 +191,7 @@ Node CandidateRewriteDatabase::addTerm(Node sol,
         }
         else
         {
-          verified = !r.asSatisfiabilityResult().isUnknown();
+          verified = !r.isUnknown();
         }
       }
       else
@@ -229,7 +231,7 @@ Node CandidateRewriteDatabase::addTerm(Node sol,
         // we count this as printed, despite not literally printing it
         rew_print = true;
         // debugging information
-        if (Trace.isOn("sygus-rr-debug"))
+        if (TraceIsOn("sygus-rr-debug"))
         {
           Trace("sygus-rr-debug") << "; candidate #1 ext-rewrites to: " << solbr
                                   << std::endl;
@@ -259,6 +261,17 @@ Node CandidateRewriteDatabase::addTerm(Node sol,
                                << std::endl;
           d_tds->registerSymBreakLemma(d_candidate, lem, ptn, sz);
         }
+      }
+      // If we failed to verify, then we return the original term. This is done
+      // so that the user of this method is not told of a rewrite rule that
+      // may not hold. Furthermore, note that the term is not added to the lazy
+      // trie in the sygus sampler. This means that the set of rewrites is not
+      // complete, as we are discarding the current solution. Ideally, we would
+      // store a list of terms (that are pairwise unknown to be equal) at each
+      // leaf of the lazy trie.
+      if (!verified)
+      {
+        eq_sol = sol;
       }
     }
     // We count this as a rewrite if we did not explicitly rule it out.

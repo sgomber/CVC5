@@ -34,7 +34,7 @@ ModelManager::ModelManager(Env& env, TheoryEngine& te, EqEngineManager& eem)
       d_modelEqualityEngine(nullptr),
       d_modelEqualityEngineAlloc(nullptr),
       d_model(new TheoryModel(
-          env, "DefaultModel", options::assignFunctionValues())),
+          env, "DefaultModel", options().theory.assignFunctionValues)),
       d_modelBuilder(nullptr),
       d_modelBuilt(false),
       d_modelBuiltSuccess(false)
@@ -94,7 +94,7 @@ bool ModelManager::buildModel()
   // now, finish building the model
   d_modelBuiltSuccess = finishBuildModel();
 
-  if (Trace.isOn("model-final"))
+  if (TraceIsOn("model-final"))
   {
     Trace("model-final") << "Final model:" << std::endl;
     Trace("model-final") << d_model->debugPrintModelEqc() << std::endl;
@@ -118,7 +118,7 @@ void ModelManager::postProcessModel(bool incomplete)
   Trace("model-builder") << "ModelManager: post-process model..." << std::endl;
   // model construction should always succeed unless lemmas were added
   AlwaysAssert(d_modelBuiltSuccess);
-  if (!options::produceModels())
+  if (!options().smt.produceModels)
   {
     return;
   }

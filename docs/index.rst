@@ -17,8 +17,12 @@ Table of Contents
    installation/installation
    binary/binary
    api/api
+   options
+   output-tags
+   proofs/proofs
+   resource-limits
+   statistics
    examples/examples
-   languages
-   theory
+   theories/theories
    references
    genindex

@@ -45,14 +45,15 @@ InstantiationEngine::InstantiationEngine(Env& env,
       d_trdb(d_env, qs, qim, qr, tr),
       d_quant_rel(nullptr)
 {
-  if (options::relevantTriggers())
+  if (options().quantifiers.relevantTriggers)
   {
     d_quant_rel.reset(new quantifiers::QuantRelevance(env));
   }
-  if (options::eMatching()) {
+  if (options().quantifiers.eMatching)
+  {
     // these are the instantiation strategies for E-matching
     // user-provided patterns
-    if (options::userPatternsQuant() != options::UserPatMode::IGNORE)
+    if (options().quantifiers.userPatternsQuant != options::UserPatMode::IGNORE)
     {
       d_isup.reset(
           new InstStrategyUserPatterns(d_env, d_trdb, qs, qim, qr, tr));
@@ -82,12 +83,12 @@ void InstantiationEngine::doInstantiationRound( Theory::Effort effort ){
   bool finished = false;
   //while unfinished, try effort level=0,1,2....
   while( !finished && e<=eLimit ){
-    Debug("inst-engine") << "IE: Prepare instantiation (" << e << ")." << std::endl;
+    Trace("inst-engine") << "IE: Prepare instantiation (" << e << ")." << std::endl;
     finished = true;
     //instantiate each quantifier
     for( unsigned i=0; i<d_quants.size(); i++ ){
       Node q = d_quants[i];
-      Debug("inst-engine-debug") << "IE: Instantiate " << q << "..." << std::endl;
+      Trace("inst-engine-debug") << "IE: Instantiate " << q << "..." << std::endl;
       //int e_use = d_quantEngine->getRelevance( q )==-1 ? e - 1 : e;
       int e_use = e;
       if( e_use>=0 ){
@@ -142,7 +143,7 @@ void InstantiationEngine::check(Theory::Effort e, QEffort quant_e)
     return;
   }
   double clSet = 0;
-  if (Trace.isOn("inst-engine"))
+  if (TraceIsOn("inst-engine"))
   {
     clSet = double(clock()) / double(CLOCKS_PER_SEC);
     Trace("inst-engine") << "---Instantiation Engine Round, effort = " << e
@@ -187,7 +188,7 @@ void InstantiationEngine::check(Theory::Effort e, QEffort quant_e)
   {
     d_quants.clear();
   }
-  if (Trace.isOn("inst-engine"))
+  if (TraceIsOn("inst-engine"))
   {
     double clSet2 = double(clock()) / double(CLOCKS_PER_SEC);
     Trace("inst-engine") << "Finished instantiation engine, time = "
@@ -202,7 +203,7 @@ bool InstantiationEngine::checkCompleteFor( Node q ) {
 
 void InstantiationEngine::checkOwnership(Node q)
 {
-  if (options::userPatternsQuant() == options::UserPatMode::STRICT
+  if (options().quantifiers.userPatternsQuant == options::UserPatMode::STRICT
       && q.getNumChildren() == 3)
   {
     //if strict triggers, take ownership of this quantified formula

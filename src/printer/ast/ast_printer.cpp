@@ -24,7 +24,6 @@
 #include "options/language.h"  // for LANG_AST
 #include "printer/let_binding.h"
 #include "smt/command.h"
-#include "smt/node_command.h"
 
 using namespace std;
 
@@ -71,7 +70,7 @@ void AstPrinter::toStream(std::ostream& out,
   if(n.getMetaKind() == kind::metakind::CONSTANT) {
     // constant
     out << ' ';
-    kind::metakind::NodeValueConstPrinter::toStream(out, n);
+    n.constToStream(out);
   }
   else if (n.isClosure())
   {
@@ -137,23 +136,37 @@ void AstPrinter::toStream(std::ostream& out, const CommandStatus* s) const
 
 void AstPrinter::toStream(std::ostream& out, const smt::Model& m) const
 {
-  out << "Model()";
+  out << "Model(" << std::endl;
+  this->Printer::toStream(out, m);
+  out << ")" << std::endl;
 }
 
 void AstPrinter::toStreamModelSort(std::ostream& out,
                                    TypeNode tn,
                                    const std::vector<Node>& elements) const
 {
-  // shouldn't be called; only the non-Command* version above should be
-  Unreachable();
+  out << "(" << tn << "(";
+  bool firstTime = true;
+  for (const Node& elem : elements)
+  {
+    if (firstTime)
+    {
+      firstTime = false;
+    }
+    else
+    {
+      out << " ";
+    }
+    out << elem;
+  }
+  out << "))" << std::endl;
 }
 
 void AstPrinter::toStreamModelTerm(std::ostream& out,
                                    const Node& n,
                                    const Node& value) const
 {
-  // shouldn't be called; only the non-Command* version above should be
-  Unreachable();
+  out << "(" << n << " " << value << ")" << std::endl;
 }
 
 void AstPrinter::toStreamCmdEmpty(std::ostream& out,

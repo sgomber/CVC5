@@ -18,8 +18,8 @@
 #include "expr/dtype.h"
 #include "expr/dtype_cons.h"
 #include "options/quantifiers_options.h"
-#include "smt/smt_engine_scope.h"
 #include "smt/solver_engine.h"
+#include "smt/solver_engine_scope.h"
 #include "theory/datatypes/datatypes_rewriter.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/quantifiers_state.h"
@@ -48,8 +48,8 @@ CandidateGeneratorQE::CandidateGeneratorQE(QuantifiersState& qs,
                                            TermRegistry& tr,
                                            Node pat)
     : CandidateGenerator(qs, tr),
-      d_term_iter(-1),
-      d_term_iter_limit(0),
+      d_termIter(0),
+      d_termIterList(nullptr),
       d_mode(cand_term_none)
 {
   d_op = d_treg.getTermDatabase()->getMatchOperator(pat);
@@ -60,11 +60,12 @@ void CandidateGeneratorQE::reset(Node eqc) { resetForOperator(eqc, d_op); }
 
 void CandidateGeneratorQE::resetForOperator(Node eqc, Node op)
 {
-  d_term_iter = 0;
+  d_termIter = 0;
   d_eqc = eqc;
   d_op = op;
-  d_term_iter_limit = d_treg.getTermDatabase()->getNumGroundTerms(d_op);
-  if( eqc.isNull() ){
+  d_termIterList = d_treg.getTermDatabase()->getGroundTermList(d_op);
+  if (eqc.isNull())
+  {
     d_mode = cand_term_db;
   }else{
     if( isExcludedEqc( eqc ) ){
@@ -104,11 +105,18 @@ Node CandidateGeneratorQE::getNextCandidate(){
 Node CandidateGeneratorQE::getNextCandidateInternal()
 {
   if( d_mode==cand_term_db ){
-    Debug("cand-gen-qe") << "...get next candidate in tbd" << std::endl;
+    if (d_termIterList == nullptr)
+    {
+      d_mode = cand_term_none;
+      return Node::null();
+    }
+    Trace("cand-gen-qe") << "...get next candidate in tbd" << std::endl;
     //get next candidate term in the uf term database
-    while( d_term_iter<d_term_iter_limit ){
-      Node n = d_treg.getTermDatabase()->getGroundTerm(d_op, d_term_iter);
-      d_term_iter++;
+    size_t tlLimit = d_termIterList->d_list.size();
+    while (d_termIter < tlLimit)
+    {
+      Node n = d_termIterList->d_list[d_termIter];
+      d_termIter++;
       if( isLegalCandidate( n ) ){
         if (d_treg.getTermDatabase()->hasTermCurrent(n))
         {
@@ -117,7 +125,7 @@ Node CandidateGeneratorQE::getNextCandidateInternal()
           }else{
             Node r = d_qs.getRepresentative(n);
             if( d_exclude_eqc.find( r )==d_exclude_eqc.end() ){
-              Debug("cand-gen-qe") << "...returning " << n << std::endl;
+              Trace("cand-gen-qe") << "...returning " << n << std::endl;
               return n;
             }
           }
@@ -125,17 +133,17 @@ Node CandidateGeneratorQE::getNextCandidateInternal()
       }
     }
   }else if( d_mode==cand_term_eqc ){
-    Debug("cand-gen-qe") << "...get next candidate in eqc" << std::endl;
+    Trace("cand-gen-qe") << "...get next candidate in eqc" << std::endl;
     while( !d_eqc_iter.isFinished() ){
       Node n = *d_eqc_iter;
       ++d_eqc_iter;
       if( isLegalOpCandidate( n ) ){
-        Debug("cand-gen-qe") << "...returning " << n << std::endl;
+        Trace("cand-gen-qe") << "...returning " << n << std::endl;
         return n;
       }
     }
   }else if( d_mode==cand_term_ident ){
-    Debug("cand-gen-qe") << "...get next candidate identity" << std::endl;
+    Trace("cand-gen-qe") << "...get next candidate identity" << std::endl;
     if (!d_eqc.isNull())
     {
       Node n = d_eqc;
@@ -243,10 +251,20 @@ CandidateGeneratorConsExpand::CandidateGeneratorConsExpand(QuantifiersState& qs,
 
 void CandidateGeneratorConsExpand::reset(Node eqc)
 {
-  d_term_iter = 0;
+  d_termIter = 0;
   if (eqc.isNull())
   {
-    d_mode = cand_term_db;
+    // generates too many instantiations at top-level when eqc is null, thus
+    // set mode to none unless option is set.
+    if (options::consExpandTriggers())
+    {
+      d_termIterList = d_treg.getTermDatabase()->getGroundTermList(d_op);
+      d_mode = cand_term_db;
+    }
+    else
+    {
+      d_mode = cand_term_none;
+    }
   }
   else
   {
@@ -273,7 +291,7 @@ Node CandidateGeneratorConsExpand::getNextCandidate()
   for (unsigned i = 0, nargs = dt[0].getNumArgs(); i < nargs; i++)
   {
     Node sel = nm->mkNode(
-        APPLY_SELECTOR_TOTAL, dt[0].getSelectorInternal(d_mpat_type, i), curr);
+        APPLY_SELECTOR, dt[0].getSelectorInternal(d_mpat_type, i), curr);
     children.push_back(sel);
   }
   return nm->mkNode(APPLY_CONSTRUCTOR, children);
@@ -298,12 +316,12 @@ CandidateGeneratorSelector::CandidateGeneratorSelector(QuantifiersState& qs,
   Trace("sel-trigger") << "Expands to: " << mpatExp << std::endl;
   if (mpatExp.getKind() == ITE)
   {
-    Assert(mpatExp[1].getKind() == APPLY_SELECTOR_TOTAL);
+    Assert(mpatExp[1].getKind() == APPLY_SELECTOR);
     Assert(mpatExp[2].getKind() == APPLY_UF);
     d_selOp = d_treg.getTermDatabase()->getMatchOperator(mpatExp[1]);
     d_ufOp = d_treg.getTermDatabase()->getMatchOperator(mpatExp[2]);
   }
-  else if (mpatExp.getKind() == APPLY_SELECTOR_TOTAL)
+  else if (mpatExp.getKind() == APPLY_SELECTOR)
   {
     // corner case of datatype with one constructor
     d_selOp = d_treg.getTermDatabase()->getMatchOperator(mpatExp);

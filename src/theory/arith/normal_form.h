@@ -292,7 +292,15 @@ public:
     static inline int cmp(const Node& n, const Node& m) {
       if ( n == m ) { return 0; }
 
-      // this is now slightly off of the old variable order.
+      // RAN < real var < int var < non-variable
+
+      bool nIsRAN = n.getKind() == Kind::REAL_ALGEBRAIC_NUMBER;
+      bool mIsRAN = m.getKind() == Kind::REAL_ALGEBRAIC_NUMBER;
+
+      if (mIsRAN != nIsRAN)
+      {
+        return nIsRAN ? -1 : 1;
+      }
 
       bool nIsInteger = n.getType().isInteger();
       bool mIsInteger = m.getType().isInteger();
@@ -334,7 +342,6 @@ public:
 
   size_t getComplexity() const;
 };/* class Variable */
-
 
 class Constant : public NodeWrapper {
 public:
@@ -473,11 +480,30 @@ private:
 
 public:
 
-  class iterator : public std::iterator<std::input_iterator_tag, Variable> {
+  class iterator {
   private:
     internal_iterator d_iter;
 
   public:
+    /* The following types are required by trait std::iterator_traits */
+
+    /** Iterator tag */
+    using iterator_category = std::forward_iterator_tag;
+
+    /** The type of the item */
+    using value_type = Variable;
+
+    /** The pointer type of the item */
+    using pointer = Variable*;
+
+    /** The reference type of the item */
+    using reference = Variable&;
+
+    /** The type returned when two iterators are subtracted */
+    using difference_type = std::ptrdiff_t;
+
+    /* End of std::iterator_traits required types */
+
     explicit iterator(internal_iterator i) : d_iter(i) {}
 
     inline Variable operator*() {
@@ -774,7 +800,7 @@ private:
   static Node makePlusNode(const std::vector<Monomial>& m) {
     Assert(m.size() >= 2);
 
-    return makeNode(kind::PLUS, m.begin(), m.end());
+    return makeNode(kind::ADD, m.begin(), m.end());
   }
 
   typedef expr::NodeSelfIterator internal_iterator;
@@ -800,11 +826,30 @@ private:
 public:
   static bool isMember(TNode n);
 
-  class iterator : public std::iterator<std::input_iterator_tag, Monomial> {
+  class iterator {
   private:
     internal_iterator d_iter;
 
   public:
+    /* The following types are required by trait std::iterator_traits */
+
+    /** Iterator tag */
+    using iterator_category = std::forward_iterator_tag;
+
+    /** The type of the item */
+    using value_type = Monomial;
+
+    /** The pointer type of the item */
+    using pointer = Monomial*;
+
+    /** The reference type of the item */
+    using reference = Monomial&;
+
+    /** The type returned when two iterators are subtracted */
+    using difference_type = std::ptrdiff_t;
+
+    /* End of std::iterator_traits required types */
+
     explicit iterator(internal_iterator i) : d_iter(i) {}
 
     inline Monomial operator*() {
@@ -887,7 +932,7 @@ public:
     if(singleton()){
       return 1;
     }else{
-      Assert(getNode().getKind() == kind::PLUS);
+      Assert(getNode().getKind() == kind::ADD);
       return getNode().getNumChildren();
     }
   }
@@ -910,13 +955,13 @@ public:
   bool variableMonomialAreStrictlyGreater(const Monomial& m) const;
 
   void printList() const {
-    if(Debug.isOn("normal-form")){
-      Debug("normal-form") << "start list" << std::endl;
+    if(TraceIsOn("normal-form")){
+      Trace("normal-form") << "start list" << std::endl;
       for(iterator i = begin(), oend = end(); i != oend; ++i) {
         const Monomial& m =*i;
         m.print();
       }
-      Debug("normal-form") << "end list" << std::endl;
+      Trace("normal-form") << "end list" << std::endl;
     }
   }
 
@@ -1044,11 +1089,16 @@ public:
   }
 
   uint32_t numMonomials() const {
-    if( getNode().getKind() == kind::PLUS ){
+    if (getNode().getKind() == kind::ADD)
+    {
       return getNode().getNumChildren();
-    }else if(isZero()){
+    }
+    else if (isZero())
+    {
       return 0;
-    }else{
+    }
+    else
+    {
       return 1;
     }
   }
@@ -1102,7 +1152,8 @@ public:
 class SumPair : public NodeWrapper {
 private:
   static Node toNode(const Polynomial& p, const Constant& c){
-    return NodeManager::currentNM()->mkNode(kind::PLUS, p.getNode(), c.getNode());
+    return NodeManager::currentNM()->mkNode(
+        kind::ADD, p.getNode(), c.getNode());
   }
 
   SumPair(TNode n) : NodeWrapper(n) { Assert(isNormalForm()); }
@@ -1121,7 +1172,8 @@ private:
   }
 
   static bool isMember(TNode n) {
-    if(n.getKind() == kind::PLUS && n.getNumChildren() == 2){
+    if (n.getKind() == kind::ADD && n.getNumChildren() == 2)
+    {
       if(Constant::isMember(n[1])){
         if(Polynomial::isMember(n[0])){
           Polynomial p = Polynomial::parsePolynomial(n[0]);
@@ -1132,7 +1184,9 @@ private:
       }else{
         return false;
       }
-    }else{
+    }
+    else
+    {
       return false;
     }
   }

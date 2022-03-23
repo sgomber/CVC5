@@ -18,6 +18,7 @@
 #include "expr/node_algorithm.h"
 #include "options/arith_options.h"
 #include "options/base_options.h"
+#include "options/datatypes_options.h"
 #include "options/quantifiers_options.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/quantifiers/first_order_model.h"
@@ -32,14 +33,12 @@ namespace cvc5 {
 namespace theory {
 namespace quantifiers {
 
-SynthVerify::SynthVerify(const Options& opts,
-                         const LogicInfo& logicInfo,
-                         TermDbSygus* tds)
-    : d_tds(tds), d_subLogicInfo(logicInfo)
+SynthVerify::SynthVerify(Env& env, TermDbSygus* tds)
+    : EnvObj(env), d_tds(tds), d_subLogicInfo(logicInfo())
 {
   // determine the options to use for the verification subsolvers we spawn
   // we start with the provided options
-  d_subOptions.copyValues(opts);
+  d_subOptions.copyValues(options());
   // limit the number of instantiation rounds on subcalls
   d_subOptions.quantifiers.instMaxRounds =
       d_subOptions.quantifiers.sygusVerifyInstMaxRounds;
@@ -54,6 +53,11 @@ SynthVerify::SynthVerify(const Options& opts,
   {
     d_subOptions.arith.nlExtTangentPlanes = true;
   }
+  // we must use the same setting for datatype selectors, since shared selectors
+  // can appear in solutions
+  d_subOptions.datatypes.dtSharedSelectors =
+      options().datatypes.dtSharedSelectors;
+  d_subOptions.datatypes.dtSharedSelectorsWasSetByUser = true;
 }
 
 SynthVerify::~SynthVerify() {}
@@ -105,11 +109,18 @@ Result SynthVerify::verify(Node query,
     }
   }
   Trace("sygus-engine") << "  *** Verify with subcall..." << std::endl;
-  Result r = checkWithSubsolver(query, vars, mvs, d_subOptions, d_subLogicInfo);
+  query = rewrite(query);
+  Result r = checkWithSubsolver(query,
+                                vars,
+                                mvs,
+                                d_subOptions,
+                                d_subLogicInfo,
+                                options().quantifiers.sygusVerifyTimeout != 0,
+                                options().quantifiers.sygusVerifyTimeout);
   Trace("sygus-engine") << "  ...got " << r << std::endl;
-  if (r.asSatisfiabilityResult().isSat() == Result::SAT)
+  if (r.getStatus() == Result::SAT)
   {
-    if (Trace.isOn("sygus-engine"))
+    if (TraceIsOn("sygus-engine"))
     {
       Trace("sygus-engine") << "  * Verification lemma failed for:\n   ";
       for (unsigned i = 0, size = vars.size(); i < size; i++)
@@ -124,9 +135,9 @@ Result SynthVerify::verify(Node query,
       Node squery =
           query.substitute(vars.begin(), vars.end(), mvs.begin(), mvs.end());
       Trace("cegqi-debug") << "...squery : " << squery << std::endl;
-      squery = Rewriter::rewrite(squery);
+      squery = rewrite(squery);
       Trace("cegqi-debug") << "...rewrites to : " << squery << std::endl;
-      Assert(options::sygusRecFun()
+      Assert(options().quantifiers.sygusRecFun
              || (squery.isConst() && squery.getConst<bool>()));
     }
   }

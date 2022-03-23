@@ -278,7 +278,8 @@ void DType::setSygus(TypeNode st, Node bvl, bool allowConst, bool allowAll)
     if (!hasConstant)
     {
       // add an arbitrary one
-      Node op = st.mkGroundTerm();
+      NodeManager* nm = NodeManager::currentNM();
+      Node op = nm->mkGroundTerm(st);
       // use same naming convention as SygusDatatype
       std::stringstream ss;
       ss << getName() << "_" << getNumConstructors() << "_" << op;
@@ -362,7 +363,7 @@ bool DType::isRecursiveSingleton(TypeNode t) const
     if (computeCardinalityRecSingleton(t, processing, d_cardUAssume[t]))
     {
       d_cardRecSingleton[t] = 1;
-      if (Trace.isOn("dt-card"))
+      if (TraceIsOn("dt-card"))
       {
         Trace("dt-card") << "DType " << getName()
                          << " is recursive singleton, dependent upon "
@@ -711,7 +712,7 @@ bool DType::hasNestedRecursion() const
   std::unordered_set<TypeNode> types;
   std::map<TypeNode, bool> processed;
   getAlienSubfieldTypes(types, processed, false);
-  if (Trace.isOn("datatypes-init"))
+  if (TraceIsOn("datatypes-init"))
   {
     Trace("datatypes-init") << "Alien subfield types: " << std::endl;
     for (const TypeNode& t : types)
@@ -866,11 +867,8 @@ Node DType::getSharedSelector(TypeNode dtt, TypeNode t, size_t index) const
   ss << "sel_" << index;
   SkolemManager* sm = nm->getSkolemManager();
   TypeNode stype = nm->mkSelectorType(dtt, t);
-  Node nindex = nm->mkConst(Rational(index));
-  s = sm->mkSkolemFunction(SkolemFunId::SHARED_SELECTOR,
-                           stype,
-                           nindex,
-                           NodeManager::SKOLEM_NO_NOTIFY);
+  Node nindex = nm->mkConstInt(Rational(index));
+  s = sm->mkSkolemFunction(SkolemFunId::SHARED_SELECTOR, stype, nindex);
   d_sharedSel[dtt][t][index] = s;
   Trace("dt-shared-sel") << "Made " << s << " of type " << dtt << " -> " << t
                          << std::endl;

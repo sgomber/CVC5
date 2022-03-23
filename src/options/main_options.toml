@@ -2,10 +2,14 @@ id     = "DRIVER"
 name   = "Driver"
 
 [[option]]
+  name       = "showVersion"
   category   = "common"
   short      = "V"
   long       = "version"
-  type       = "void"
+  type       = "bool"
+  default    = "false"
+  predicates = ["showVersion"]
+  alternate  = false
   help       = "identify this cvc5 binary"
 
 [[option]]
@@ -14,21 +18,28 @@ name   = "Driver"
   short      = "h"
   long       = "help"
   type       = "bool"
+  default    = "false"
   alternate  = false
   help       = "full command line reference"
 
 [[option]]
+  name       = "showConfiguration"
   category   = "common"
   long       = "show-config"
-  type       = "void"
-  handler    = "showConfiguration"
+  type       = "bool"
+  default    = "false"
+  predicates = ["showConfiguration"]
+  alternate  = false
   help       = "show cvc5 static configuration"
 
 [[option]]
+  name       = "showCopyright"
   category   = "common"
   long       = "copyright"
-  type       = "void"
-  handler    = "showCopyright"
+  type       = "bool"
+  default    = "false"
+  predicates = ["showCopyright"]
+  alternate  = false
   help       = "show cvc5 copyright information"
 
 [[option]]
@@ -41,17 +52,23 @@ name   = "Driver"
   help       = "seed for random number generator"
 
 [[option]]
+  name       = "showDebugTags"
   category   = "regular"
   long       = "show-debug-tags"
-  type       = "void"
-  handler    = "showDebugTags"
+  type       = "bool"
+  default    = "false"
+  predicates = ["showDebugTags"]
+  alternate  = false
   help       = "show all available tags for debugging"
 
 [[option]]
+  name       = "showTraceTags"
   category   = "regular"
   long       = "show-trace-tags"
-  type       = "void"
-  handler    = "showTraceTags"
+  type       = "bool"
+  default    = "false"
+  predicates = ["showTraceTags"]
+  alternate  = false
   help       = "show all available tags for tracing"
 
 [[option]]
@@ -67,6 +84,7 @@ name   = "Driver"
   category   = "regular"
   long       = "interactive"
   type       = "bool"
+  default    = "false"
   help       = "force interactive shell/non-interactive mode"
 
 [[option]]
@@ -74,6 +92,7 @@ name   = "Driver"
   category   = "undocumented"
   long       = "filename=FILENAME"
   type       = "std::string"
+  default    = '""'
   help       = "filename of the input"
 
 [[option]]
@@ -125,9 +144,9 @@ name   = "Driver"
   help       = "output unsat cores after every UNSAT/VALID response"
 
 [[option]]
-  name       = "dumpUnsatCoresFull"
+  name       = "printUnsatCoresFull"
   category   = "regular"
-  long       = "dump-unsat-cores-full"
+  long       = "print-unsat-cores-full"
   type       = "bool"
   default    = "false"
   help       = "dump the full unsat core, including unlabeled assertions"

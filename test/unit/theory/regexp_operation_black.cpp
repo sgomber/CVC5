@@ -20,7 +20,7 @@
 #include "api/cpp/cvc5.h"
 #include "expr/node.h"
 #include "expr/node_manager.h"
-#include "smt/smt_engine_scope.h"
+#include "smt/solver_engine_scope.h"
 #include "test_smt.h"
 #include "theory/rewriter.h"
 #include "theory/strings/regexp_entail.h"
@@ -61,7 +61,7 @@ class TestTheoryBlackRegexpOperation : public TestSmt
 
 TEST_F(TestTheoryBlackRegexpOperation, basic)
 {
-  Node sigma = d_nodeManager->mkNode(REGEXP_SIGMA);
+  Node sigma = d_nodeManager->mkNode(REGEXP_ALLCHAR);
   Node sigmaStar = d_nodeManager->mkNode(REGEXP_STAR, sigma);
   Node a = d_nodeManager->mkNode(STRING_TO_REGEXP,
                                  d_nodeManager->mkConst(String("a")));
@@ -88,7 +88,7 @@ TEST_F(TestTheoryBlackRegexpOperation, basic)
 
 TEST_F(TestTheoryBlackRegexpOperation, star_wildcards)
 {
-  Node sigma = d_nodeManager->mkNode(REGEXP_SIGMA);
+  Node sigma = d_nodeManager->mkNode(REGEXP_ALLCHAR);
   Node sigmaStar = d_nodeManager->mkNode(REGEXP_STAR, sigma);
   Node a = d_nodeManager->mkNode(STRING_TO_REGEXP,
                                  d_nodeManager->mkConst(String("a")));

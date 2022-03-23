@@ -208,9 +208,6 @@ class TheoryArrays : public Theory {
   /** Should be called to propagate the literal.  */
   bool propagateLit(TNode literal);
 
-  /** Explain why this literal is true by building an explanation */
-  void explain(TNode literal, Node& exp);
-
   /** For debugging only- checks invariants about when things are preregistered*/
   context::CDHashSet<Node> d_isPreRegistered;
 
@@ -264,7 +261,6 @@ class TheoryArrays : public Theory {
 
 
   void presolve() override;
-  void shutdown() override {}
 
   /////////////////////////////////////////////////////////////////////////////
   // MAIN SOLVER
@@ -301,7 +297,7 @@ class TheoryArrays : public Theory {
 
     bool eqNotifyTriggerPredicate(TNode predicate, bool value) override
     {
-      Debug("arrays::propagate")
+      Trace("arrays::propagate")
           << spaces(d_arrays.context()->getLevel())
           << "NotifyClass::eqNotifyTriggerPredicate(" << predicate << ", "
           << (value ? "true" : "false") << ")" << std::endl;
@@ -317,7 +313,7 @@ class TheoryArrays : public Theory {
                                      TNode t2,
                                      bool value) override
     {
-      Debug("arrays::propagate")
+      Trace("arrays::propagate")
           << spaces(d_arrays.context()->getLevel())
           << "NotifyClass::eqNotifyTriggerTermEquality(" << t1 << ", " << t2
           << ", " << (value ? "true" : "false") << ")" << std::endl;
@@ -330,7 +326,7 @@ class TheoryArrays : public Theory {
 
     void eqNotifyConstantTermMerge(TNode t1, TNode t2) override
     {
-      Debug("arrays::propagate") << spaces(d_arrays.context()->getLevel())
+      Trace("arrays::propagate") << spaces(d_arrays.context()->getLevel())
                                  << "NotifyClass::eqNotifyConstantTermMerge("
                                  << t1 << ", " << t2 << ")" << std::endl;
       d_arrays.conflict(t1, t2);
@@ -448,10 +444,6 @@ class TheoryArrays : public Theory {
   void propagateRowLemma(RowLemmaType lem);
   void queueRowLemma(RowLemmaType lem);
   bool dischargeLemmas();
-
-  std::vector<Node> d_decisions;
-  bool d_inCheckModel;
-  int d_topLevel;
 
   /**
    * The decision strategy for the theory of arrays, which calls the

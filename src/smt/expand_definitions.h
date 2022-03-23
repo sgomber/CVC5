@@ -22,16 +22,14 @@
 
 #include "expr/node.h"
 #include "proof/trust_node.h"
+#include "smt/env_obj.h"
 
 namespace cvc5 {
 
-class Env;
 class ProofNodeManager;
 class TConvProofGenerator;
 
 namespace smt {
-
-struct SmtEngineStatistics;
 
 /**
  * Module in charge of expanding definitions for an SMT engine.
@@ -39,10 +37,10 @@ struct SmtEngineStatistics;
  * Its main features is expandDefinitions(TNode, ...), which returns the
  * expanded formula of a term.
  */
-class ExpandDefs
+class ExpandDefs : protected EnvObj
 {
  public:
-  ExpandDefs(Env& env, SmtEngineStatistics& stats);
+  ExpandDefs(Env& env);
   ~ExpandDefs();
   /**
    * Expand definitions in term n. Return the expanded form of n.
@@ -53,11 +51,8 @@ class ExpandDefs
    */
   Node expandDefinitions(TNode n, std::unordered_map<Node, Node>& cache);
 
-  /**
-   * Set proof node manager, which signals this class to enable proofs using the
-   * given proof node manager.
-   */
-  void setProofNodeManager(ProofNodeManager* pnm);
+  /** Enable proofs using the proof node manager of the env. */
+  void enableProofs();
 
  private:
   /**
@@ -67,10 +62,6 @@ class ExpandDefs
   TrustNode expandDefinitions(TNode n,
                               std::unordered_map<Node, Node>& cache,
                               TConvProofGenerator* tpg);
-  /** Reference to the environment. */
-  Env& d_env;
-  /** Reference to the SMT stats */
-  SmtEngineStatistics& d_smtStats;
   /** A proof generator for the term conversion. */
   std::unique_ptr<TConvProofGenerator> d_tpg;
 };

@@ -15,6 +15,8 @@
 
 #include "theory/quantifiers/quantifiers_attributes.h"
 
+#include "expr/node_manager_attributes.h"
+#include "expr/skolem_manager.h"
 #include "options/quantifiers_options.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/quantifiers/fmf/bounded_integers.h"
@@ -113,7 +115,7 @@ Node QuantAttributes::getFunDefBody( Node q ) {
       }else if( q[1][1]==h ){
         return q[1][0];
       }
-      else if (q[1][0].getType().isReal())
+      else if (q[1][0].getType().isRealOrInt())
       {
         // solve for h in the equality
         std::map<Node, Node> msum;
@@ -195,9 +197,8 @@ void QuantAttributes::computeAttributes( Node q ) {
   {
     Node f = qa.d_fundef_f;
     if( d_fun_defs.find( f )!=d_fun_defs.end() ){
-      CVC5Message() << "Cannot define function " << f << " more than once."
-                    << std::endl;
-      AlwaysAssert(false);
+      AlwaysAssert(false) << "Cannot define function " << f
+                          << " more than once." << std::endl;
     }
     d_fun_defs[f] = true;
   }
@@ -270,13 +271,13 @@ void QuantAttributes::computeQuantAttributes( Node q, QAttributes& qa ){
           // only set the name if there is a value
           if (q[2][i].getNumChildren() > 1)
           {
-            Trace("quant-attr") << "Attribute : quantifier name : "
-                                << q[2][i][1].getConst<String>().toString()
+            std::string name;
+            q[2][i][1].getAttribute(expr::VarNameAttr(), name);
+            Trace("quant-attr") << "Attribute : quantifier name : " << name
                                 << " for " << q << std::endl;
             // assign the name to a variable with the given name (to avoid
             // enclosing the name in quotes)
-            qa.d_name = nm->mkBoundVar(q[2][i][1].getConst<String>().toString(),
-                                       nm->booleanType());
+            qa.d_name = nm->mkBoundVar(name, nm->booleanType());
           }
           else
           {
@@ -442,6 +443,18 @@ void QuantAttributes::setInstantiationLevelAttr(Node n, uint64_t level)
       setInstantiationLevelAttr(n[i], level);
     }
   }
+}
+
+Node mkNamedQuant(Kind k, Node bvl, Node body, const std::string& name)
+{
+  NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* sm = nm->getSkolemManager();
+  Node v = sm->mkDummySkolem(
+      name, nm->booleanType(), "", SkolemManager::SKOLEM_EXACT_NAME);
+  Node attr = nm->mkConst(String("qid"));
+  Node ip = nm->mkNode(INST_ATTRIBUTE, attr, v);
+  Node ipl = nm->mkNode(INST_PATTERN_LIST, ip);
+  return nm->mkNode(k, bvl, body, ipl);
 }
 
 }  // namespace quantifiers

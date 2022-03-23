@@ -22,8 +22,8 @@
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/passes/bv_gauss.h"
 #include "preprocessing/preprocessing_pass_context.h"
-#include "smt/smt_engine_scope.h"
 #include "smt/solver_engine.h"
+#include "smt/solver_engine_scope.h"
 #include "test_smt.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/rewriter.h"
@@ -46,7 +46,10 @@ class TestPPWhiteBVGauss : public TestSmt
     TestSmt::SetUp();
 
     d_preprocContext.reset(new preprocessing::PreprocessingPassContext(
-        d_slvEngine.get(), d_slvEngine->getEnv(), nullptr));
+        d_slvEngine->getEnv(),
+        d_slvEngine->getTheoryEngine(),
+        d_slvEngine->getPropEngine(),
+        nullptr));
 
     d_bv_gauss.reset(new BVGauss(d_preprocContext.get()));
 
@@ -2406,7 +2409,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_unique1)
   Node a = d_nodeManager->mkNode(
       kind::AND, d_nodeManager->mkNode(kind::AND, eq1, eq2), eq3);
 
-  AssertionPipeline apipe;
+  AssertionPipeline apipe(d_slvEngine->getEnv());
   apipe.push_back(a);
   passes::BVGauss bgauss(d_preprocContext.get(), "bv-gauss-unit");
   std::unordered_map<Node, Node> res;
@@ -2493,7 +2496,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_unique2)
   Node a = d_nodeManager->mkNode(
       kind::AND, d_nodeManager->mkNode(kind::AND, eq1, eq2), eq3);
 
-  AssertionPipeline apipe;
+  AssertionPipeline apipe(d_slvEngine->getEnv());
   apipe.push_back(a);
   apipe.push_back(eq4);
   apipe.push_back(eq5);
@@ -2545,7 +2548,7 @@ TEST_F(TestPPWhiteBVGauss, elim_rewrite_partial)
           d_p),
       d_nine);
 
-  AssertionPipeline apipe;
+  AssertionPipeline apipe(d_slvEngine->getEnv());
   apipe.push_back(eq1);
   apipe.push_back(eq2);
   passes::BVGauss bgauss(d_preprocContext.get(), "bv-gauss-unit");

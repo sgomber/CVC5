@@ -27,7 +27,7 @@
  * Our Integer implementation, e.g., is such a special case since we support
  * two different back end implementations (GMP, CLN). Be aware that they do
  * not fully agree on what is (in)valid input, which requires extra checks for
- * consistent behavior (see Solver::mkRealFromStrHelper for an example).
+ * consistent behavior (see Solver::mkRealOrIntegerFromStrHelper for example).
  */
 
 #include "api/cpp/cvc5.h"
@@ -41,6 +41,7 @@
 #include "base/modal_exception.h"
 #include "expr/array_store_all.h"
 #include "expr/ascription_type.h"
+#include "expr/cardinality_constraint.h"
 #include "expr/dtype.h"
 #include "expr/dtype_cons.h"
 #include "expr/dtype_selector.h"
@@ -52,10 +53,11 @@
 #include "expr/node_algorithm.h"
 #include "expr/node_builder.h"
 #include "expr/node_manager.h"
+#include "expr/node_manager_attributes.h"
 #include "expr/sequence.h"
 #include "expr/type_node.h"
-#include "expr/uninterpreted_constant.h"
 #include "options/base_options.h"
+#include "options/expr_options.h"
 #include "options/main_options.h"
 #include "options/option_exception.h"
 #include "options/options.h"
@@ -69,7 +71,6 @@
 #include "theory/datatypes/tuple_project_op.h"
 #include "theory/logic_info.h"
 #include "theory/theory_model.h"
-#include "util/abstract_value.h"
 #include "util/bitvector.h"
 #include "util/divisible.h"
 #include "util/floatingpoint.h"
@@ -82,6 +83,7 @@
 #include "util/statistics_stats.h"
 #include "util/statistics_value.h"
 #include "util/string.h"
+#include "util/uninterpreted_sort_value.h"
 #include "util/utility.h"
 
 namespace cvc5 {
@@ -102,284 +104,297 @@ struct APIStatistics
 /* Kind                                                                       */
 /* -------------------------------------------------------------------------- */
 
+#define KIND_ENUM(external_name, internal_name)                  \
+  {                                                              \
+    external_name, std::make_pair(internal_name, #external_name) \
+  }
+
 /* Mapping from external (API) kind to internal kind. */
-const static std::unordered_map<Kind, cvc5::Kind> s_kinds{
-    {INTERNAL_KIND, cvc5::Kind::UNDEFINED_KIND},
-    {UNDEFINED_KIND, cvc5::Kind::UNDEFINED_KIND},
-    {NULL_EXPR, cvc5::Kind::NULL_EXPR},
-    /* Builtin ------------------------------------------------------------- */
-    {UNINTERPRETED_CONSTANT, cvc5::Kind::UNINTERPRETED_CONSTANT},
-    {ABSTRACT_VALUE, cvc5::Kind::ABSTRACT_VALUE},
-    {EQUAL, cvc5::Kind::EQUAL},
-    {DISTINCT, cvc5::Kind::DISTINCT},
-    {CONSTANT, cvc5::Kind::VARIABLE},
-    {VARIABLE, cvc5::Kind::BOUND_VARIABLE},
-    {SEXPR, cvc5::Kind::SEXPR},
-    {LAMBDA, cvc5::Kind::LAMBDA},
-    {WITNESS, cvc5::Kind::WITNESS},
-    /* Boolean ------------------------------------------------------------- */
-    {CONST_BOOLEAN, cvc5::Kind::CONST_BOOLEAN},
-    {NOT, cvc5::Kind::NOT},
-    {AND, cvc5::Kind::AND},
-    {IMPLIES, cvc5::Kind::IMPLIES},
-    {OR, cvc5::Kind::OR},
-    {XOR, cvc5::Kind::XOR},
-    {ITE, cvc5::Kind::ITE},
-    {MATCH, cvc5::Kind::MATCH},
-    {MATCH_CASE, cvc5::Kind::MATCH_CASE},
-    {MATCH_BIND_CASE, cvc5::Kind::MATCH_BIND_CASE},
-    /* UF ------------------------------------------------------------------ */
-    {APPLY_UF, cvc5::Kind::APPLY_UF},
-    {CARDINALITY_CONSTRAINT, cvc5::Kind::CARDINALITY_CONSTRAINT},
-    {CARDINALITY_VALUE, cvc5::Kind::CARDINALITY_VALUE},
-    {HO_APPLY, cvc5::Kind::HO_APPLY},
-    /* Arithmetic ---------------------------------------------------------- */
-    {PLUS, cvc5::Kind::PLUS},
-    {MULT, cvc5::Kind::MULT},
-    {IAND, cvc5::Kind::IAND},
-    {POW2, cvc5::Kind::POW2},
-    {MINUS, cvc5::Kind::MINUS},
-    {UMINUS, cvc5::Kind::UMINUS},
-    {DIVISION, cvc5::Kind::DIVISION},
-    {INTS_DIVISION, cvc5::Kind::INTS_DIVISION},
-    {INTS_MODULUS, cvc5::Kind::INTS_MODULUS},
-    {ABS, cvc5::Kind::ABS},
-    {DIVISIBLE, cvc5::Kind::DIVISIBLE},
-    {POW, cvc5::Kind::POW},
-    {EXPONENTIAL, cvc5::Kind::EXPONENTIAL},
-    {SINE, cvc5::Kind::SINE},
-    {COSINE, cvc5::Kind::COSINE},
-    {TANGENT, cvc5::Kind::TANGENT},
-    {COSECANT, cvc5::Kind::COSECANT},
-    {SECANT, cvc5::Kind::SECANT},
-    {COTANGENT, cvc5::Kind::COTANGENT},
-    {ARCSINE, cvc5::Kind::ARCSINE},
-    {ARCCOSINE, cvc5::Kind::ARCCOSINE},
-    {ARCTANGENT, cvc5::Kind::ARCTANGENT},
-    {ARCCOSECANT, cvc5::Kind::ARCCOSECANT},
-    {ARCSECANT, cvc5::Kind::ARCSECANT},
-    {ARCCOTANGENT, cvc5::Kind::ARCCOTANGENT},
-    {SQRT, cvc5::Kind::SQRT},
-    {CONST_RATIONAL, cvc5::Kind::CONST_RATIONAL},
-    {LT, cvc5::Kind::LT},
-    {LEQ, cvc5::Kind::LEQ},
-    {GT, cvc5::Kind::GT},
-    {GEQ, cvc5::Kind::GEQ},
-    {IS_INTEGER, cvc5::Kind::IS_INTEGER},
-    {TO_INTEGER, cvc5::Kind::TO_INTEGER},
-    {TO_REAL, cvc5::Kind::TO_REAL},
-    {PI, cvc5::Kind::PI},
-    /* BV ------------------------------------------------------------------ */
-    {CONST_BITVECTOR, cvc5::Kind::CONST_BITVECTOR},
-    {BITVECTOR_CONCAT, cvc5::Kind::BITVECTOR_CONCAT},
-    {BITVECTOR_AND, cvc5::Kind::BITVECTOR_AND},
-    {BITVECTOR_OR, cvc5::Kind::BITVECTOR_OR},
-    {BITVECTOR_XOR, cvc5::Kind::BITVECTOR_XOR},
-    {BITVECTOR_NOT, cvc5::Kind::BITVECTOR_NOT},
-    {BITVECTOR_NAND, cvc5::Kind::BITVECTOR_NAND},
-    {BITVECTOR_NOR, cvc5::Kind::BITVECTOR_NOR},
-    {BITVECTOR_XNOR, cvc5::Kind::BITVECTOR_XNOR},
-    {BITVECTOR_COMP, cvc5::Kind::BITVECTOR_COMP},
-    {BITVECTOR_MULT, cvc5::Kind::BITVECTOR_MULT},
-    {BITVECTOR_ADD, cvc5::Kind::BITVECTOR_ADD},
-    {BITVECTOR_SUB, cvc5::Kind::BITVECTOR_SUB},
-    {BITVECTOR_NEG, cvc5::Kind::BITVECTOR_NEG},
-    {BITVECTOR_UDIV, cvc5::Kind::BITVECTOR_UDIV},
-    {BITVECTOR_UREM, cvc5::Kind::BITVECTOR_UREM},
-    {BITVECTOR_SDIV, cvc5::Kind::BITVECTOR_SDIV},
-    {BITVECTOR_SREM, cvc5::Kind::BITVECTOR_SREM},
-    {BITVECTOR_SMOD, cvc5::Kind::BITVECTOR_SMOD},
-    {BITVECTOR_SHL, cvc5::Kind::BITVECTOR_SHL},
-    {BITVECTOR_LSHR, cvc5::Kind::BITVECTOR_LSHR},
-    {BITVECTOR_ASHR, cvc5::Kind::BITVECTOR_ASHR},
-    {BITVECTOR_ULT, cvc5::Kind::BITVECTOR_ULT},
-    {BITVECTOR_ULE, cvc5::Kind::BITVECTOR_ULE},
-    {BITVECTOR_UGT, cvc5::Kind::BITVECTOR_UGT},
-    {BITVECTOR_UGE, cvc5::Kind::BITVECTOR_UGE},
-    {BITVECTOR_SLT, cvc5::Kind::BITVECTOR_SLT},
-    {BITVECTOR_SLE, cvc5::Kind::BITVECTOR_SLE},
-    {BITVECTOR_SGT, cvc5::Kind::BITVECTOR_SGT},
-    {BITVECTOR_SGE, cvc5::Kind::BITVECTOR_SGE},
-    {BITVECTOR_ULTBV, cvc5::Kind::BITVECTOR_ULTBV},
-    {BITVECTOR_SLTBV, cvc5::Kind::BITVECTOR_SLTBV},
-    {BITVECTOR_ITE, cvc5::Kind::BITVECTOR_ITE},
-    {BITVECTOR_REDOR, cvc5::Kind::BITVECTOR_REDOR},
-    {BITVECTOR_REDAND, cvc5::Kind::BITVECTOR_REDAND},
-    {BITVECTOR_EXTRACT, cvc5::Kind::BITVECTOR_EXTRACT},
-    {BITVECTOR_REPEAT, cvc5::Kind::BITVECTOR_REPEAT},
-    {BITVECTOR_ZERO_EXTEND, cvc5::Kind::BITVECTOR_ZERO_EXTEND},
-    {BITVECTOR_SIGN_EXTEND, cvc5::Kind::BITVECTOR_SIGN_EXTEND},
-    {BITVECTOR_ROTATE_LEFT, cvc5::Kind::BITVECTOR_ROTATE_LEFT},
-    {BITVECTOR_ROTATE_RIGHT, cvc5::Kind::BITVECTOR_ROTATE_RIGHT},
-    {INT_TO_BITVECTOR, cvc5::Kind::INT_TO_BITVECTOR},
-    {BITVECTOR_TO_NAT, cvc5::Kind::BITVECTOR_TO_NAT},
-    /* FP ------------------------------------------------------------------ */
-    {CONST_FLOATINGPOINT, cvc5::Kind::CONST_FLOATINGPOINT},
-    {CONST_ROUNDINGMODE, cvc5::Kind::CONST_ROUNDINGMODE},
-    {FLOATINGPOINT_FP, cvc5::Kind::FLOATINGPOINT_FP},
-    {FLOATINGPOINT_EQ, cvc5::Kind::FLOATINGPOINT_EQ},
-    {FLOATINGPOINT_ABS, cvc5::Kind::FLOATINGPOINT_ABS},
-    {FLOATINGPOINT_NEG, cvc5::Kind::FLOATINGPOINT_NEG},
-    {FLOATINGPOINT_ADD, cvc5::Kind::FLOATINGPOINT_ADD},
-    {FLOATINGPOINT_SUB, cvc5::Kind::FLOATINGPOINT_SUB},
-    {FLOATINGPOINT_MULT, cvc5::Kind::FLOATINGPOINT_MULT},
-    {FLOATINGPOINT_DIV, cvc5::Kind::FLOATINGPOINT_DIV},
-    {FLOATINGPOINT_FMA, cvc5::Kind::FLOATINGPOINT_FMA},
-    {FLOATINGPOINT_SQRT, cvc5::Kind::FLOATINGPOINT_SQRT},
-    {FLOATINGPOINT_REM, cvc5::Kind::FLOATINGPOINT_REM},
-    {FLOATINGPOINT_RTI, cvc5::Kind::FLOATINGPOINT_RTI},
-    {FLOATINGPOINT_MIN, cvc5::Kind::FLOATINGPOINT_MIN},
-    {FLOATINGPOINT_MAX, cvc5::Kind::FLOATINGPOINT_MAX},
-    {FLOATINGPOINT_LEQ, cvc5::Kind::FLOATINGPOINT_LEQ},
-    {FLOATINGPOINT_LT, cvc5::Kind::FLOATINGPOINT_LT},
-    {FLOATINGPOINT_GEQ, cvc5::Kind::FLOATINGPOINT_GEQ},
-    {FLOATINGPOINT_GT, cvc5::Kind::FLOATINGPOINT_GT},
-    {FLOATINGPOINT_ISN, cvc5::Kind::FLOATINGPOINT_ISN},
-    {FLOATINGPOINT_ISSN, cvc5::Kind::FLOATINGPOINT_ISSN},
-    {FLOATINGPOINT_ISZ, cvc5::Kind::FLOATINGPOINT_ISZ},
-    {FLOATINGPOINT_ISINF, cvc5::Kind::FLOATINGPOINT_ISINF},
-    {FLOATINGPOINT_ISNAN, cvc5::Kind::FLOATINGPOINT_ISNAN},
-    {FLOATINGPOINT_ISNEG, cvc5::Kind::FLOATINGPOINT_ISNEG},
-    {FLOATINGPOINT_ISPOS, cvc5::Kind::FLOATINGPOINT_ISPOS},
-    {FLOATINGPOINT_TO_FP_FLOATINGPOINT,
-     cvc5::Kind::FLOATINGPOINT_TO_FP_FLOATINGPOINT},
-    {FLOATINGPOINT_TO_FP_IEEE_BITVECTOR,
-     cvc5::Kind::FLOATINGPOINT_TO_FP_IEEE_BITVECTOR},
-    {FLOATINGPOINT_TO_FP_REAL, cvc5::Kind::FLOATINGPOINT_TO_FP_REAL},
-    {FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR,
-     cvc5::Kind::FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR},
-    {FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR,
-     cvc5::Kind::FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR},
-    {FLOATINGPOINT_TO_FP_GENERIC, cvc5::Kind::FLOATINGPOINT_TO_FP_GENERIC},
-    {FLOATINGPOINT_TO_UBV, cvc5::Kind::FLOATINGPOINT_TO_UBV},
-    {FLOATINGPOINT_TO_SBV, cvc5::Kind::FLOATINGPOINT_TO_SBV},
-    {FLOATINGPOINT_TO_REAL, cvc5::Kind::FLOATINGPOINT_TO_REAL},
-    /* Arrays -------------------------------------------------------------- */
-    {SELECT, cvc5::Kind::SELECT},
-    {STORE, cvc5::Kind::STORE},
-    {CONST_ARRAY, cvc5::Kind::STORE_ALL},
-    {EQ_RANGE, cvc5::Kind::EQ_RANGE},
-    /* Datatypes ----------------------------------------------------------- */
-    {APPLY_SELECTOR, cvc5::Kind::APPLY_SELECTOR},
-    {APPLY_CONSTRUCTOR, cvc5::Kind::APPLY_CONSTRUCTOR},
-    {APPLY_TESTER, cvc5::Kind::APPLY_TESTER},
-    {APPLY_UPDATER, cvc5::Kind::APPLY_UPDATER},
-    {DT_SIZE, cvc5::Kind::DT_SIZE},
-    {TUPLE_PROJECT, cvc5::Kind::TUPLE_PROJECT},
-    /* Separation Logic ---------------------------------------------------- */
-    {SEP_NIL, cvc5::Kind::SEP_NIL},
-    {SEP_EMP, cvc5::Kind::SEP_EMP},
-    {SEP_PTO, cvc5::Kind::SEP_PTO},
-    {SEP_STAR, cvc5::Kind::SEP_STAR},
-    {SEP_WAND, cvc5::Kind::SEP_WAND},
-    /* Sets ---------------------------------------------------------------- */
-    {EMPTYSET, cvc5::Kind::EMPTYSET},
-    {UNION, cvc5::Kind::UNION},
-    {INTERSECTION, cvc5::Kind::INTERSECTION},
-    {SETMINUS, cvc5::Kind::SETMINUS},
-    {SUBSET, cvc5::Kind::SUBSET},
-    {MEMBER, cvc5::Kind::MEMBER},
-    {SINGLETON, cvc5::Kind::SINGLETON},
-    {INSERT, cvc5::Kind::INSERT},
-    {CARD, cvc5::Kind::CARD},
-    {COMPLEMENT, cvc5::Kind::COMPLEMENT},
-    {UNIVERSE_SET, cvc5::Kind::UNIVERSE_SET},
-    {JOIN, cvc5::Kind::JOIN},
-    {PRODUCT, cvc5::Kind::PRODUCT},
-    {TRANSPOSE, cvc5::Kind::TRANSPOSE},
-    {TCLOSURE, cvc5::Kind::TCLOSURE},
-    {JOIN_IMAGE, cvc5::Kind::JOIN_IMAGE},
-    {IDEN, cvc5::Kind::IDEN},
-    {COMPREHENSION, cvc5::Kind::COMPREHENSION},
-    {CHOOSE, cvc5::Kind::CHOOSE},
-    {IS_SINGLETON, cvc5::Kind::IS_SINGLETON},
-    /* Bags ---------------------------------------------------------------- */
-    {UNION_MAX, cvc5::Kind::UNION_MAX},
-    {UNION_DISJOINT, cvc5::Kind::UNION_DISJOINT},
-    {INTERSECTION_MIN, cvc5::Kind::INTERSECTION_MIN},
-    {DIFFERENCE_SUBTRACT, cvc5::Kind::DIFFERENCE_SUBTRACT},
-    {DIFFERENCE_REMOVE, cvc5::Kind::DIFFERENCE_REMOVE},
-    {SUBBAG, cvc5::Kind::SUBBAG},
-    {BAG_COUNT, cvc5::Kind::BAG_COUNT},
-    {DUPLICATE_REMOVAL, cvc5::Kind::DUPLICATE_REMOVAL},
-    {MK_BAG, cvc5::Kind::MK_BAG},
-    {EMPTYBAG, cvc5::Kind::EMPTYBAG},
-    {BAG_CARD, cvc5::Kind::BAG_CARD},
-    {BAG_CHOOSE, cvc5::Kind::BAG_CHOOSE},
-    {BAG_IS_SINGLETON, cvc5::Kind::BAG_IS_SINGLETON},
-    {BAG_FROM_SET, cvc5::Kind::BAG_FROM_SET},
-    {BAG_TO_SET, cvc5::Kind::BAG_TO_SET},
-    {BAG_MAP, cvc5::Kind::BAG_MAP},
-    /* Strings ------------------------------------------------------------- */
-    {STRING_CONCAT, cvc5::Kind::STRING_CONCAT},
-    {STRING_IN_REGEXP, cvc5::Kind::STRING_IN_REGEXP},
-    {STRING_LENGTH, cvc5::Kind::STRING_LENGTH},
-    {STRING_SUBSTR, cvc5::Kind::STRING_SUBSTR},
-    {STRING_UPDATE, cvc5::Kind::STRING_UPDATE},
-    {STRING_CHARAT, cvc5::Kind::STRING_CHARAT},
-    {STRING_CONTAINS, cvc5::Kind::STRING_CONTAINS},
-    {STRING_INDEXOF, cvc5::Kind::STRING_INDEXOF},
-    {STRING_INDEXOF_RE, cvc5::Kind::STRING_INDEXOF_RE},
-    {STRING_REPLACE, cvc5::Kind::STRING_REPLACE},
-    {STRING_REPLACE_ALL, cvc5::Kind::STRING_REPLACE_ALL},
-    {STRING_REPLACE_RE, cvc5::Kind::STRING_REPLACE_RE},
-    {STRING_REPLACE_RE_ALL, cvc5::Kind::STRING_REPLACE_RE_ALL},
-    {STRING_TOLOWER, cvc5::Kind::STRING_TOLOWER},
-    {STRING_TOUPPER, cvc5::Kind::STRING_TOUPPER},
-    {STRING_REV, cvc5::Kind::STRING_REV},
-    {STRING_FROM_CODE, cvc5::Kind::STRING_FROM_CODE},
-    {STRING_TO_CODE, cvc5::Kind::STRING_TO_CODE},
-    {STRING_LT, cvc5::Kind::STRING_LT},
-    {STRING_LEQ, cvc5::Kind::STRING_LEQ},
-    {STRING_PREFIX, cvc5::Kind::STRING_PREFIX},
-    {STRING_SUFFIX, cvc5::Kind::STRING_SUFFIX},
-    {STRING_IS_DIGIT, cvc5::Kind::STRING_IS_DIGIT},
-    {STRING_FROM_INT, cvc5::Kind::STRING_ITOS},
-    {STRING_TO_INT, cvc5::Kind::STRING_STOI},
-    {CONST_STRING, cvc5::Kind::CONST_STRING},
-    {STRING_TO_REGEXP, cvc5::Kind::STRING_TO_REGEXP},
-    {REGEXP_CONCAT, cvc5::Kind::REGEXP_CONCAT},
-    {REGEXP_UNION, cvc5::Kind::REGEXP_UNION},
-    {REGEXP_INTER, cvc5::Kind::REGEXP_INTER},
-    {REGEXP_DIFF, cvc5::Kind::REGEXP_DIFF},
-    {REGEXP_STAR, cvc5::Kind::REGEXP_STAR},
-    {REGEXP_PLUS, cvc5::Kind::REGEXP_PLUS},
-    {REGEXP_OPT, cvc5::Kind::REGEXP_OPT},
-    {REGEXP_RANGE, cvc5::Kind::REGEXP_RANGE},
-    {REGEXP_REPEAT, cvc5::Kind::REGEXP_REPEAT},
-    {REGEXP_LOOP, cvc5::Kind::REGEXP_LOOP},
-    {REGEXP_EMPTY, cvc5::Kind::REGEXP_EMPTY},
-    {REGEXP_SIGMA, cvc5::Kind::REGEXP_SIGMA},
-    {REGEXP_COMPLEMENT, cvc5::Kind::REGEXP_COMPLEMENT},
-    // maps to the same kind as the string versions
-    {SEQ_CONCAT, cvc5::Kind::STRING_CONCAT},
-    {SEQ_LENGTH, cvc5::Kind::STRING_LENGTH},
-    {SEQ_EXTRACT, cvc5::Kind::STRING_SUBSTR},
-    {SEQ_UPDATE, cvc5::Kind::STRING_UPDATE},
-    {SEQ_AT, cvc5::Kind::STRING_CHARAT},
-    {SEQ_CONTAINS, cvc5::Kind::STRING_CONTAINS},
-    {SEQ_INDEXOF, cvc5::Kind::STRING_INDEXOF},
-    {SEQ_REPLACE, cvc5::Kind::STRING_REPLACE},
-    {SEQ_REPLACE_ALL, cvc5::Kind::STRING_REPLACE_ALL},
-    {SEQ_REV, cvc5::Kind::STRING_REV},
-    {SEQ_PREFIX, cvc5::Kind::STRING_PREFIX},
-    {SEQ_SUFFIX, cvc5::Kind::STRING_SUFFIX},
-    {CONST_SEQUENCE, cvc5::Kind::CONST_SEQUENCE},
-    {SEQ_UNIT, cvc5::Kind::SEQ_UNIT},
-    {SEQ_NTH, cvc5::Kind::SEQ_NTH},
-    /* Quantifiers --------------------------------------------------------- */
-    {FORALL, cvc5::Kind::FORALL},
-    {EXISTS, cvc5::Kind::EXISTS},
-    {BOUND_VAR_LIST, cvc5::Kind::BOUND_VAR_LIST},
-    {INST_PATTERN, cvc5::Kind::INST_PATTERN},
-    {INST_NO_PATTERN, cvc5::Kind::INST_NO_PATTERN},
-    {INST_POOL, cvc5::Kind::INST_POOL},
-    {INST_ADD_TO_POOL, cvc5::Kind::INST_ADD_TO_POOL},
-    {SKOLEM_ADD_TO_POOL, cvc5::Kind::SKOLEM_ADD_TO_POOL},
-    {INST_ATTRIBUTE, cvc5::Kind::INST_ATTRIBUTE},
-    {INST_PATTERN_LIST, cvc5::Kind::INST_PATTERN_LIST},
-    {LAST_KIND, cvc5::Kind::LAST_KIND},
-};
+const static std::unordered_map<Kind, std::pair<cvc5::Kind, std::string>>
+    s_kinds{
+        KIND_ENUM(INTERNAL_KIND, cvc5::Kind::UNDEFINED_KIND),
+        KIND_ENUM(UNDEFINED_KIND, cvc5::Kind::UNDEFINED_KIND),
+        KIND_ENUM(NULL_EXPR, cvc5::Kind::NULL_EXPR),
+        /* Builtin ---------------------------------------------------------- */
+        KIND_ENUM(UNINTERPRETED_SORT_VALUE,
+                  cvc5::Kind::UNINTERPRETED_SORT_VALUE),
+        KIND_ENUM(EQUAL, cvc5::Kind::EQUAL),
+        KIND_ENUM(DISTINCT, cvc5::Kind::DISTINCT),
+        KIND_ENUM(CONSTANT, cvc5::Kind::VARIABLE),
+        KIND_ENUM(VARIABLE, cvc5::Kind::BOUND_VARIABLE),
+        KIND_ENUM(SEXPR, cvc5::Kind::SEXPR),
+        KIND_ENUM(LAMBDA, cvc5::Kind::LAMBDA),
+        KIND_ENUM(WITNESS, cvc5::Kind::WITNESS),
+        /* Boolean ---------------------------------------------------------- */
+        KIND_ENUM(CONST_BOOLEAN, cvc5::Kind::CONST_BOOLEAN),
+        KIND_ENUM(NOT, cvc5::Kind::NOT),
+        KIND_ENUM(AND, cvc5::Kind::AND),
+        KIND_ENUM(IMPLIES, cvc5::Kind::IMPLIES),
+        KIND_ENUM(OR, cvc5::Kind::OR),
+        KIND_ENUM(XOR, cvc5::Kind::XOR),
+        KIND_ENUM(ITE, cvc5::Kind::ITE),
+        /* UF --------------------------------------------------------------- */
+        KIND_ENUM(APPLY_UF, cvc5::Kind::APPLY_UF),
+        KIND_ENUM(CARDINALITY_CONSTRAINT, cvc5::Kind::CARDINALITY_CONSTRAINT),
+        KIND_ENUM(HO_APPLY, cvc5::Kind::HO_APPLY),
+        /* Arithmetic ------------------------------------------------------- */
+        KIND_ENUM(ADD, cvc5::Kind::ADD),
+        KIND_ENUM(MULT, cvc5::Kind::MULT),
+        KIND_ENUM(IAND, cvc5::Kind::IAND),
+        KIND_ENUM(POW2, cvc5::Kind::POW2),
+        KIND_ENUM(SUB, cvc5::Kind::SUB),
+        KIND_ENUM(NEG, cvc5::Kind::NEG),
+        KIND_ENUM(DIVISION, cvc5::Kind::DIVISION),
+        KIND_ENUM(INTS_DIVISION, cvc5::Kind::INTS_DIVISION),
+        KIND_ENUM(INTS_MODULUS, cvc5::Kind::INTS_MODULUS),
+        KIND_ENUM(ABS, cvc5::Kind::ABS),
+        KIND_ENUM(DIVISIBLE, cvc5::Kind::DIVISIBLE),
+        KIND_ENUM(POW, cvc5::Kind::POW),
+        KIND_ENUM(EXPONENTIAL, cvc5::Kind::EXPONENTIAL),
+        KIND_ENUM(SINE, cvc5::Kind::SINE),
+        KIND_ENUM(COSINE, cvc5::Kind::COSINE),
+        KIND_ENUM(TANGENT, cvc5::Kind::TANGENT),
+        KIND_ENUM(COSECANT, cvc5::Kind::COSECANT),
+        KIND_ENUM(SECANT, cvc5::Kind::SECANT),
+        KIND_ENUM(COTANGENT, cvc5::Kind::COTANGENT),
+        KIND_ENUM(ARCSINE, cvc5::Kind::ARCSINE),
+        KIND_ENUM(ARCCOSINE, cvc5::Kind::ARCCOSINE),
+        KIND_ENUM(ARCTANGENT, cvc5::Kind::ARCTANGENT),
+        KIND_ENUM(ARCCOSECANT, cvc5::Kind::ARCCOSECANT),
+        KIND_ENUM(ARCSECANT, cvc5::Kind::ARCSECANT),
+        KIND_ENUM(ARCCOTANGENT, cvc5::Kind::ARCCOTANGENT),
+        KIND_ENUM(SQRT, cvc5::Kind::SQRT),
+        KIND_ENUM(CONST_RATIONAL, cvc5::Kind::CONST_RATIONAL),
+        KIND_ENUM(LT, cvc5::Kind::LT),
+        KIND_ENUM(LEQ, cvc5::Kind::LEQ),
+        KIND_ENUM(GT, cvc5::Kind::GT),
+        KIND_ENUM(GEQ, cvc5::Kind::GEQ),
+        KIND_ENUM(IS_INTEGER, cvc5::Kind::IS_INTEGER),
+        KIND_ENUM(TO_INTEGER, cvc5::Kind::TO_INTEGER),
+        KIND_ENUM(TO_REAL, cvc5::Kind::TO_REAL),
+        KIND_ENUM(PI, cvc5::Kind::PI),
+        /* BV --------------------------------------------------------------- */
+        KIND_ENUM(CONST_BITVECTOR, cvc5::Kind::CONST_BITVECTOR),
+        KIND_ENUM(BITVECTOR_CONCAT, cvc5::Kind::BITVECTOR_CONCAT),
+        KIND_ENUM(BITVECTOR_AND, cvc5::Kind::BITVECTOR_AND),
+        KIND_ENUM(BITVECTOR_OR, cvc5::Kind::BITVECTOR_OR),
+        KIND_ENUM(BITVECTOR_XOR, cvc5::Kind::BITVECTOR_XOR),
+        KIND_ENUM(BITVECTOR_NOT, cvc5::Kind::BITVECTOR_NOT),
+        KIND_ENUM(BITVECTOR_NAND, cvc5::Kind::BITVECTOR_NAND),
+        KIND_ENUM(BITVECTOR_NOR, cvc5::Kind::BITVECTOR_NOR),
+        KIND_ENUM(BITVECTOR_XNOR, cvc5::Kind::BITVECTOR_XNOR),
+        KIND_ENUM(BITVECTOR_COMP, cvc5::Kind::BITVECTOR_COMP),
+        KIND_ENUM(BITVECTOR_MULT, cvc5::Kind::BITVECTOR_MULT),
+        KIND_ENUM(BITVECTOR_ADD, cvc5::Kind::BITVECTOR_ADD),
+        KIND_ENUM(BITVECTOR_SUB, cvc5::Kind::BITVECTOR_SUB),
+        KIND_ENUM(BITVECTOR_NEG, cvc5::Kind::BITVECTOR_NEG),
+        KIND_ENUM(BITVECTOR_UDIV, cvc5::Kind::BITVECTOR_UDIV),
+        KIND_ENUM(BITVECTOR_UREM, cvc5::Kind::BITVECTOR_UREM),
+        KIND_ENUM(BITVECTOR_SDIV, cvc5::Kind::BITVECTOR_SDIV),
+        KIND_ENUM(BITVECTOR_SREM, cvc5::Kind::BITVECTOR_SREM),
+        KIND_ENUM(BITVECTOR_SMOD, cvc5::Kind::BITVECTOR_SMOD),
+        KIND_ENUM(BITVECTOR_SHL, cvc5::Kind::BITVECTOR_SHL),
+        KIND_ENUM(BITVECTOR_LSHR, cvc5::Kind::BITVECTOR_LSHR),
+        KIND_ENUM(BITVECTOR_ASHR, cvc5::Kind::BITVECTOR_ASHR),
+        KIND_ENUM(BITVECTOR_ULT, cvc5::Kind::BITVECTOR_ULT),
+        KIND_ENUM(BITVECTOR_ULE, cvc5::Kind::BITVECTOR_ULE),
+        KIND_ENUM(BITVECTOR_UGT, cvc5::Kind::BITVECTOR_UGT),
+        KIND_ENUM(BITVECTOR_UGE, cvc5::Kind::BITVECTOR_UGE),
+        KIND_ENUM(BITVECTOR_SLT, cvc5::Kind::BITVECTOR_SLT),
+        KIND_ENUM(BITVECTOR_SLE, cvc5::Kind::BITVECTOR_SLE),
+        KIND_ENUM(BITVECTOR_SGT, cvc5::Kind::BITVECTOR_SGT),
+        KIND_ENUM(BITVECTOR_SGE, cvc5::Kind::BITVECTOR_SGE),
+        KIND_ENUM(BITVECTOR_ULTBV, cvc5::Kind::BITVECTOR_ULTBV),
+        KIND_ENUM(BITVECTOR_SLTBV, cvc5::Kind::BITVECTOR_SLTBV),
+        KIND_ENUM(BITVECTOR_ITE, cvc5::Kind::BITVECTOR_ITE),
+        KIND_ENUM(BITVECTOR_REDOR, cvc5::Kind::BITVECTOR_REDOR),
+        KIND_ENUM(BITVECTOR_REDAND, cvc5::Kind::BITVECTOR_REDAND),
+        KIND_ENUM(BITVECTOR_EXTRACT, cvc5::Kind::BITVECTOR_EXTRACT),
+        KIND_ENUM(BITVECTOR_REPEAT, cvc5::Kind::BITVECTOR_REPEAT),
+        KIND_ENUM(BITVECTOR_ZERO_EXTEND, cvc5::Kind::BITVECTOR_ZERO_EXTEND),
+        KIND_ENUM(BITVECTOR_SIGN_EXTEND, cvc5::Kind::BITVECTOR_SIGN_EXTEND),
+        KIND_ENUM(BITVECTOR_ROTATE_LEFT, cvc5::Kind::BITVECTOR_ROTATE_LEFT),
+        KIND_ENUM(BITVECTOR_ROTATE_RIGHT, cvc5::Kind::BITVECTOR_ROTATE_RIGHT),
+        KIND_ENUM(INT_TO_BITVECTOR, cvc5::Kind::INT_TO_BITVECTOR),
+        KIND_ENUM(BITVECTOR_TO_NAT, cvc5::Kind::BITVECTOR_TO_NAT),
+        /* FP --------------------------------------------------------------- */
+        KIND_ENUM(CONST_FLOATINGPOINT, cvc5::Kind::CONST_FLOATINGPOINT),
+        KIND_ENUM(CONST_ROUNDINGMODE, cvc5::Kind::CONST_ROUNDINGMODE),
+        KIND_ENUM(FLOATINGPOINT_FP, cvc5::Kind::FLOATINGPOINT_FP),
+        KIND_ENUM(FLOATINGPOINT_EQ, cvc5::Kind::FLOATINGPOINT_EQ),
+        KIND_ENUM(FLOATINGPOINT_ABS, cvc5::Kind::FLOATINGPOINT_ABS),
+        KIND_ENUM(FLOATINGPOINT_NEG, cvc5::Kind::FLOATINGPOINT_NEG),
+        KIND_ENUM(FLOATINGPOINT_ADD, cvc5::Kind::FLOATINGPOINT_ADD),
+        KIND_ENUM(FLOATINGPOINT_SUB, cvc5::Kind::FLOATINGPOINT_SUB),
+        KIND_ENUM(FLOATINGPOINT_MULT, cvc5::Kind::FLOATINGPOINT_MULT),
+        KIND_ENUM(FLOATINGPOINT_DIV, cvc5::Kind::FLOATINGPOINT_DIV),
+        KIND_ENUM(FLOATINGPOINT_FMA, cvc5::Kind::FLOATINGPOINT_FMA),
+        KIND_ENUM(FLOATINGPOINT_SQRT, cvc5::Kind::FLOATINGPOINT_SQRT),
+        KIND_ENUM(FLOATINGPOINT_REM, cvc5::Kind::FLOATINGPOINT_REM),
+        KIND_ENUM(FLOATINGPOINT_RTI, cvc5::Kind::FLOATINGPOINT_RTI),
+        KIND_ENUM(FLOATINGPOINT_MIN, cvc5::Kind::FLOATINGPOINT_MIN),
+        KIND_ENUM(FLOATINGPOINT_MAX, cvc5::Kind::FLOATINGPOINT_MAX),
+        KIND_ENUM(FLOATINGPOINT_LEQ, cvc5::Kind::FLOATINGPOINT_LEQ),
+        KIND_ENUM(FLOATINGPOINT_LT, cvc5::Kind::FLOATINGPOINT_LT),
+        KIND_ENUM(FLOATINGPOINT_GEQ, cvc5::Kind::FLOATINGPOINT_GEQ),
+        KIND_ENUM(FLOATINGPOINT_GT, cvc5::Kind::FLOATINGPOINT_GT),
+        KIND_ENUM(FLOATINGPOINT_IS_NORMAL, cvc5::Kind::FLOATINGPOINT_IS_NORMAL),
+        KIND_ENUM(FLOATINGPOINT_IS_SUBNORMAL,
+                  cvc5::Kind::FLOATINGPOINT_IS_SUBNORMAL),
+        KIND_ENUM(FLOATINGPOINT_IS_ZERO, cvc5::Kind::FLOATINGPOINT_IS_ZERO),
+        KIND_ENUM(FLOATINGPOINT_IS_INF, cvc5::Kind::FLOATINGPOINT_IS_INF),
+        KIND_ENUM(FLOATINGPOINT_IS_NAN, cvc5::Kind::FLOATINGPOINT_IS_NAN),
+        KIND_ENUM(FLOATINGPOINT_IS_NEG, cvc5::Kind::FLOATINGPOINT_IS_NEG),
+        KIND_ENUM(FLOATINGPOINT_IS_POS, cvc5::Kind::FLOATINGPOINT_IS_POS),
+        KIND_ENUM(FLOATINGPOINT_TO_FP_FROM_FP,
+                  cvc5::Kind::FLOATINGPOINT_TO_FP_FROM_FP),
+        KIND_ENUM(FLOATINGPOINT_TO_FP_FROM_IEEE_BV,
+                  cvc5::Kind::FLOATINGPOINT_TO_FP_FROM_IEEE_BV),
+        KIND_ENUM(FLOATINGPOINT_TO_FP_FROM_REAL,
+                  cvc5::Kind::FLOATINGPOINT_TO_FP_FROM_REAL),
+        KIND_ENUM(FLOATINGPOINT_TO_FP_FROM_SBV,
+                  cvc5::Kind::FLOATINGPOINT_TO_FP_FROM_SBV),
+        KIND_ENUM(FLOATINGPOINT_TO_FP_FROM_UBV,
+                  cvc5::Kind::FLOATINGPOINT_TO_FP_FROM_UBV),
+        KIND_ENUM(FLOATINGPOINT_TO_UBV, cvc5::Kind::FLOATINGPOINT_TO_UBV),
+        KIND_ENUM(FLOATINGPOINT_TO_SBV, cvc5::Kind::FLOATINGPOINT_TO_SBV),
+        KIND_ENUM(FLOATINGPOINT_TO_REAL, cvc5::Kind::FLOATINGPOINT_TO_REAL),
+        /* Arrays ----------------------------------------------------------- */
+        KIND_ENUM(SELECT, cvc5::Kind::SELECT),
+        KIND_ENUM(STORE, cvc5::Kind::STORE),
+        KIND_ENUM(CONST_ARRAY, cvc5::Kind::STORE_ALL),
+        KIND_ENUM(EQ_RANGE, cvc5::Kind::EQ_RANGE),
+        /* Datatypes -------------------------------------------------------- */
+        KIND_ENUM(APPLY_SELECTOR, cvc5::Kind::APPLY_SELECTOR),
+        KIND_ENUM(APPLY_CONSTRUCTOR, cvc5::Kind::APPLY_CONSTRUCTOR),
+        KIND_ENUM(APPLY_TESTER, cvc5::Kind::APPLY_TESTER),
+        KIND_ENUM(APPLY_UPDATER, cvc5::Kind::APPLY_UPDATER),
+        KIND_ENUM(DT_SIZE, cvc5::Kind::DT_SIZE),
+        KIND_ENUM(MATCH, cvc5::Kind::MATCH),
+        KIND_ENUM(MATCH_CASE, cvc5::Kind::MATCH_CASE),
+        KIND_ENUM(MATCH_BIND_CASE, cvc5::Kind::MATCH_BIND_CASE),
+        KIND_ENUM(TUPLE_PROJECT, cvc5::Kind::TUPLE_PROJECT),
+        /* Separation Logic ------------------------------------------------- */
+        KIND_ENUM(SEP_NIL, cvc5::Kind::SEP_NIL),
+        KIND_ENUM(SEP_EMP, cvc5::Kind::SEP_EMP),
+        KIND_ENUM(SEP_PTO, cvc5::Kind::SEP_PTO),
+        KIND_ENUM(SEP_STAR, cvc5::Kind::SEP_STAR),
+        KIND_ENUM(SEP_WAND, cvc5::Kind::SEP_WAND),
+        /* Sets ------------------------------------------------------------- */
+        KIND_ENUM(SET_EMPTY, cvc5::Kind::SET_EMPTY),
+        KIND_ENUM(SET_UNION, cvc5::Kind::SET_UNION),
+        KIND_ENUM(SET_INTER, cvc5::Kind::SET_INTER),
+        KIND_ENUM(SET_MINUS, cvc5::Kind::SET_MINUS),
+        KIND_ENUM(SET_SUBSET, cvc5::Kind::SET_SUBSET),
+        KIND_ENUM(SET_MEMBER, cvc5::Kind::SET_MEMBER),
+        KIND_ENUM(SET_SINGLETON, cvc5::Kind::SET_SINGLETON),
+        KIND_ENUM(SET_INSERT, cvc5::Kind::SET_INSERT),
+        KIND_ENUM(SET_CARD, cvc5::Kind::SET_CARD),
+        KIND_ENUM(SET_COMPLEMENT, cvc5::Kind::SET_COMPLEMENT),
+        KIND_ENUM(SET_UNIVERSE, cvc5::Kind::SET_UNIVERSE),
+        KIND_ENUM(SET_COMPREHENSION, cvc5::Kind::SET_COMPREHENSION),
+        KIND_ENUM(SET_CHOOSE, cvc5::Kind::SET_CHOOSE),
+        KIND_ENUM(SET_IS_SINGLETON, cvc5::Kind::SET_IS_SINGLETON),
+        KIND_ENUM(SET_MAP, cvc5::Kind::SET_MAP),
+        /* Relations -------------------------------------------------------- */
+        KIND_ENUM(RELATION_JOIN, cvc5::Kind::RELATION_JOIN),
+        KIND_ENUM(RELATION_PRODUCT, cvc5::Kind::RELATION_PRODUCT),
+        KIND_ENUM(RELATION_TRANSPOSE, cvc5::Kind::RELATION_TRANSPOSE),
+        KIND_ENUM(RELATION_TCLOSURE, cvc5::Kind::RELATION_TCLOSURE),
+        KIND_ENUM(RELATION_JOIN_IMAGE, cvc5::Kind::RELATION_JOIN_IMAGE),
+        KIND_ENUM(RELATION_IDEN, cvc5::Kind::RELATION_IDEN),
+        /* Bags ------------------------------------------------------------- */
+        KIND_ENUM(BAG_UNION_MAX, cvc5::Kind::BAG_UNION_MAX),
+        KIND_ENUM(BAG_UNION_DISJOINT, cvc5::Kind::BAG_UNION_DISJOINT),
+        KIND_ENUM(BAG_INTER_MIN, cvc5::Kind::BAG_INTER_MIN),
+        KIND_ENUM(BAG_DIFFERENCE_SUBTRACT, cvc5::Kind::BAG_DIFFERENCE_SUBTRACT),
+        KIND_ENUM(BAG_DIFFERENCE_REMOVE, cvc5::Kind::BAG_DIFFERENCE_REMOVE),
+        KIND_ENUM(BAG_SUBBAG, cvc5::Kind::BAG_SUBBAG),
+        KIND_ENUM(BAG_COUNT, cvc5::Kind::BAG_COUNT),
+        KIND_ENUM(BAG_MEMBER, cvc5::Kind::BAG_MEMBER),
+        KIND_ENUM(BAG_DUPLICATE_REMOVAL, cvc5::Kind::BAG_DUPLICATE_REMOVAL),
+        KIND_ENUM(BAG_MAKE, cvc5::Kind::BAG_MAKE),
+        KIND_ENUM(BAG_EMPTY, cvc5::Kind::BAG_EMPTY),
+        KIND_ENUM(BAG_CARD, cvc5::Kind::BAG_CARD),
+        KIND_ENUM(BAG_CHOOSE, cvc5::Kind::BAG_CHOOSE),
+        KIND_ENUM(BAG_IS_SINGLETON, cvc5::Kind::BAG_IS_SINGLETON),
+        KIND_ENUM(BAG_FROM_SET, cvc5::Kind::BAG_FROM_SET),
+        KIND_ENUM(BAG_TO_SET, cvc5::Kind::BAG_TO_SET),
+        KIND_ENUM(BAG_MAP, cvc5::Kind::BAG_MAP),
+        KIND_ENUM(BAG_FILTER, cvc5::Kind::BAG_FILTER),
+        KIND_ENUM(BAG_FOLD, cvc5::Kind::BAG_FOLD),
+        KIND_ENUM(TABLE_PRODUCT, cvc5::Kind::TABLE_PRODUCT),
+        /* Strings ---------------------------------------------------------- */
+        KIND_ENUM(STRING_CONCAT, cvc5::Kind::STRING_CONCAT),
+        KIND_ENUM(STRING_IN_REGEXP, cvc5::Kind::STRING_IN_REGEXP),
+        KIND_ENUM(STRING_LENGTH, cvc5::Kind::STRING_LENGTH),
+        KIND_ENUM(STRING_SUBSTR, cvc5::Kind::STRING_SUBSTR),
+        KIND_ENUM(STRING_UPDATE, cvc5::Kind::STRING_UPDATE),
+        KIND_ENUM(STRING_CHARAT, cvc5::Kind::STRING_CHARAT),
+        KIND_ENUM(STRING_CONTAINS, cvc5::Kind::STRING_CONTAINS),
+        KIND_ENUM(STRING_INDEXOF, cvc5::Kind::STRING_INDEXOF),
+        KIND_ENUM(STRING_INDEXOF_RE, cvc5::Kind::STRING_INDEXOF_RE),
+        KIND_ENUM(STRING_REPLACE, cvc5::Kind::STRING_REPLACE),
+        KIND_ENUM(STRING_REPLACE_ALL, cvc5::Kind::STRING_REPLACE_ALL),
+        KIND_ENUM(STRING_REPLACE_RE, cvc5::Kind::STRING_REPLACE_RE),
+        KIND_ENUM(STRING_REPLACE_RE_ALL, cvc5::Kind::STRING_REPLACE_RE_ALL),
+        KIND_ENUM(STRING_TOLOWER, cvc5::Kind::STRING_TOLOWER),
+        KIND_ENUM(STRING_TOUPPER, cvc5::Kind::STRING_TOUPPER),
+        KIND_ENUM(STRING_REV, cvc5::Kind::STRING_REV),
+        KIND_ENUM(STRING_FROM_CODE, cvc5::Kind::STRING_FROM_CODE),
+        KIND_ENUM(STRING_TO_CODE, cvc5::Kind::STRING_TO_CODE),
+        KIND_ENUM(STRING_LT, cvc5::Kind::STRING_LT),
+        KIND_ENUM(STRING_LEQ, cvc5::Kind::STRING_LEQ),
+        KIND_ENUM(STRING_PREFIX, cvc5::Kind::STRING_PREFIX),
+        KIND_ENUM(STRING_SUFFIX, cvc5::Kind::STRING_SUFFIX),
+        KIND_ENUM(STRING_IS_DIGIT, cvc5::Kind::STRING_IS_DIGIT),
+        KIND_ENUM(STRING_FROM_INT, cvc5::Kind::STRING_ITOS),
+        KIND_ENUM(STRING_TO_INT, cvc5::Kind::STRING_STOI),
+        KIND_ENUM(CONST_STRING, cvc5::Kind::CONST_STRING),
+        KIND_ENUM(STRING_TO_REGEXP, cvc5::Kind::STRING_TO_REGEXP),
+        KIND_ENUM(REGEXP_CONCAT, cvc5::Kind::REGEXP_CONCAT),
+        KIND_ENUM(REGEXP_UNION, cvc5::Kind::REGEXP_UNION),
+        KIND_ENUM(REGEXP_INTER, cvc5::Kind::REGEXP_INTER),
+        KIND_ENUM(REGEXP_DIFF, cvc5::Kind::REGEXP_DIFF),
+        KIND_ENUM(REGEXP_STAR, cvc5::Kind::REGEXP_STAR),
+        KIND_ENUM(REGEXP_PLUS, cvc5::Kind::REGEXP_PLUS),
+        KIND_ENUM(REGEXP_OPT, cvc5::Kind::REGEXP_OPT),
+        KIND_ENUM(REGEXP_RANGE, cvc5::Kind::REGEXP_RANGE),
+        KIND_ENUM(REGEXP_REPEAT, cvc5::Kind::REGEXP_REPEAT),
+        KIND_ENUM(REGEXP_LOOP, cvc5::Kind::REGEXP_LOOP),
+        KIND_ENUM(REGEXP_NONE, cvc5::Kind::REGEXP_NONE),
+        KIND_ENUM(REGEXP_ALL, cvc5::Kind::REGEXP_ALL),
+        KIND_ENUM(REGEXP_ALLCHAR, cvc5::Kind::REGEXP_ALLCHAR),
+        KIND_ENUM(REGEXP_COMPLEMENT, cvc5::Kind::REGEXP_COMPLEMENT),
+        // maps to the same kind as the string versions
+        KIND_ENUM(SEQ_CONCAT, cvc5::Kind::STRING_CONCAT),
+        KIND_ENUM(SEQ_LENGTH, cvc5::Kind::STRING_LENGTH),
+        KIND_ENUM(SEQ_EXTRACT, cvc5::Kind::STRING_SUBSTR),
+        KIND_ENUM(SEQ_UPDATE, cvc5::Kind::STRING_UPDATE),
+        KIND_ENUM(SEQ_AT, cvc5::Kind::STRING_CHARAT),
+        KIND_ENUM(SEQ_CONTAINS, cvc5::Kind::STRING_CONTAINS),
+        KIND_ENUM(SEQ_INDEXOF, cvc5::Kind::STRING_INDEXOF),
+        KIND_ENUM(SEQ_REPLACE, cvc5::Kind::STRING_REPLACE),
+        KIND_ENUM(SEQ_REPLACE_ALL, cvc5::Kind::STRING_REPLACE_ALL),
+        KIND_ENUM(SEQ_REV, cvc5::Kind::STRING_REV),
+        KIND_ENUM(SEQ_PREFIX, cvc5::Kind::STRING_PREFIX),
+        KIND_ENUM(SEQ_SUFFIX, cvc5::Kind::STRING_SUFFIX),
+        KIND_ENUM(CONST_SEQUENCE, cvc5::Kind::CONST_SEQUENCE),
+        KIND_ENUM(SEQ_UNIT, cvc5::Kind::SEQ_UNIT),
+        KIND_ENUM(SEQ_NTH, cvc5::Kind::SEQ_NTH),
+        /* Quantifiers ------------------------------------------------------ */
+        KIND_ENUM(FORALL, cvc5::Kind::FORALL),
+        KIND_ENUM(EXISTS, cvc5::Kind::EXISTS),
+        KIND_ENUM(VARIABLE_LIST, cvc5::Kind::BOUND_VAR_LIST),
+        KIND_ENUM(INST_PATTERN, cvc5::Kind::INST_PATTERN),
+        KIND_ENUM(INST_NO_PATTERN, cvc5::Kind::INST_NO_PATTERN),
+        KIND_ENUM(INST_POOL, cvc5::Kind::INST_POOL),
+        KIND_ENUM(INST_ADD_TO_POOL, cvc5::Kind::INST_ADD_TO_POOL),
+        KIND_ENUM(SKOLEM_ADD_TO_POOL, cvc5::Kind::SKOLEM_ADD_TO_POOL),
+        KIND_ENUM(INST_ATTRIBUTE, cvc5::Kind::INST_ATTRIBUTE),
+        KIND_ENUM(INST_PATTERN_LIST, cvc5::Kind::INST_PATTERN_LIST),
+        KIND_ENUM(LAST_KIND, cvc5::Kind::LAST_KIND),
+    };
 
 /* Mapping from internal kind to external (API) kind. */
 const static std::unordered_map<cvc5::Kind, Kind, cvc5::kind::KindHashFunction>
@@ -387,8 +402,7 @@ const static std::unordered_map<cvc5::Kind, Kind, cvc5::kind::KindHashFunction>
         {cvc5::Kind::UNDEFINED_KIND, UNDEFINED_KIND},
         {cvc5::Kind::NULL_EXPR, NULL_EXPR},
         /* Builtin --------------------------------------------------------- */
-        {cvc5::Kind::UNINTERPRETED_CONSTANT, UNINTERPRETED_CONSTANT},
-        {cvc5::Kind::ABSTRACT_VALUE, ABSTRACT_VALUE},
+        {cvc5::Kind::UNINTERPRETED_SORT_VALUE, UNINTERPRETED_SORT_VALUE},
         {cvc5::Kind::EQUAL, EQUAL},
         {cvc5::Kind::DISTINCT, DISTINCT},
         {cvc5::Kind::VARIABLE, CONSTANT},
@@ -404,21 +418,17 @@ const static std::unordered_map<cvc5::Kind, Kind, cvc5::kind::KindHashFunction>
         {cvc5::Kind::OR, OR},
         {cvc5::Kind::XOR, XOR},
         {cvc5::Kind::ITE, ITE},
-        {cvc5::Kind::MATCH, MATCH},
-        {cvc5::Kind::MATCH_CASE, MATCH_CASE},
-        {cvc5::Kind::MATCH_BIND_CASE, MATCH_BIND_CASE},
         /* UF -------------------------------------------------------------- */
         {cvc5::Kind::APPLY_UF, APPLY_UF},
         {cvc5::Kind::CARDINALITY_CONSTRAINT, CARDINALITY_CONSTRAINT},
-        {cvc5::Kind::CARDINALITY_VALUE, CARDINALITY_VALUE},
         {cvc5::Kind::HO_APPLY, HO_APPLY},
         /* Arithmetic ------------------------------------------------------ */
-        {cvc5::Kind::PLUS, PLUS},
+        {cvc5::Kind::ADD, ADD},
         {cvc5::Kind::MULT, MULT},
         {cvc5::Kind::IAND, IAND},
         {cvc5::Kind::POW2, POW2},
-        {cvc5::Kind::MINUS, MINUS},
-        {cvc5::Kind::UMINUS, UMINUS},
+        {cvc5::Kind::SUB, SUB},
+        {cvc5::Kind::NEG, NEG},
         {cvc5::Kind::DIVISION, DIVISION},
         {cvc5::Kind::DIVISION_TOTAL, INTERNAL_KIND},
         {cvc5::Kind::INTS_DIVISION, INTS_DIVISION},
@@ -525,34 +535,32 @@ const static std::unordered_map<cvc5::Kind, Kind, cvc5::kind::KindHashFunction>
         {cvc5::Kind::FLOATINGPOINT_LT, FLOATINGPOINT_LT},
         {cvc5::Kind::FLOATINGPOINT_GEQ, FLOATINGPOINT_GEQ},
         {cvc5::Kind::FLOATINGPOINT_GT, FLOATINGPOINT_GT},
-        {cvc5::Kind::FLOATINGPOINT_ISN, FLOATINGPOINT_ISN},
-        {cvc5::Kind::FLOATINGPOINT_ISSN, FLOATINGPOINT_ISSN},
-        {cvc5::Kind::FLOATINGPOINT_ISZ, FLOATINGPOINT_ISZ},
-        {cvc5::Kind::FLOATINGPOINT_ISINF, FLOATINGPOINT_ISINF},
-        {cvc5::Kind::FLOATINGPOINT_ISNAN, FLOATINGPOINT_ISNAN},
-        {cvc5::Kind::FLOATINGPOINT_ISNEG, FLOATINGPOINT_ISNEG},
-        {cvc5::Kind::FLOATINGPOINT_ISPOS, FLOATINGPOINT_ISPOS},
-        {cvc5::Kind::FLOATINGPOINT_TO_FP_IEEE_BITVECTOR_OP,
-         FLOATINGPOINT_TO_FP_IEEE_BITVECTOR},
-        {cvc5::Kind::FLOATINGPOINT_TO_FP_IEEE_BITVECTOR,
-         FLOATINGPOINT_TO_FP_IEEE_BITVECTOR},
-        {cvc5::Kind::FLOATINGPOINT_TO_FP_FLOATINGPOINT_OP,
-         FLOATINGPOINT_TO_FP_FLOATINGPOINT},
-        {cvc5::Kind::FLOATINGPOINT_TO_FP_FLOATINGPOINT,
-         FLOATINGPOINT_TO_FP_FLOATINGPOINT},
-        {cvc5::Kind::FLOATINGPOINT_TO_FP_REAL_OP, FLOATINGPOINT_TO_FP_REAL},
-        {cvc5::Kind::FLOATINGPOINT_TO_FP_REAL, FLOATINGPOINT_TO_FP_REAL},
-        {cvc5::Kind::FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR_OP,
-         FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR},
-        {cvc5::Kind::FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR,
-         FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR},
-        {cvc5::Kind::FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR_OP,
-         FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR},
-        {cvc5::Kind::FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR,
-         FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR},
-        {cvc5::Kind::FLOATINGPOINT_TO_FP_GENERIC_OP,
-         FLOATINGPOINT_TO_FP_GENERIC},
-        {cvc5::Kind::FLOATINGPOINT_TO_FP_GENERIC, FLOATINGPOINT_TO_FP_GENERIC},
+        {cvc5::Kind::FLOATINGPOINT_IS_NORMAL, FLOATINGPOINT_IS_NORMAL},
+        {cvc5::Kind::FLOATINGPOINT_IS_SUBNORMAL, FLOATINGPOINT_IS_SUBNORMAL},
+        {cvc5::Kind::FLOATINGPOINT_IS_ZERO, FLOATINGPOINT_IS_ZERO},
+        {cvc5::Kind::FLOATINGPOINT_IS_INF, FLOATINGPOINT_IS_INF},
+        {cvc5::Kind::FLOATINGPOINT_IS_NAN, FLOATINGPOINT_IS_NAN},
+        {cvc5::Kind::FLOATINGPOINT_IS_NEG, FLOATINGPOINT_IS_NEG},
+        {cvc5::Kind::FLOATINGPOINT_IS_POS, FLOATINGPOINT_IS_POS},
+        {cvc5::Kind::FLOATINGPOINT_TO_FP_FROM_IEEE_BV_OP,
+         FLOATINGPOINT_TO_FP_FROM_IEEE_BV},
+        {cvc5::Kind::FLOATINGPOINT_TO_FP_FROM_IEEE_BV,
+         FLOATINGPOINT_TO_FP_FROM_IEEE_BV},
+        {cvc5::Kind::FLOATINGPOINT_TO_FP_FROM_FP_OP,
+         FLOATINGPOINT_TO_FP_FROM_FP},
+        {cvc5::Kind::FLOATINGPOINT_TO_FP_FROM_FP, FLOATINGPOINT_TO_FP_FROM_FP},
+        {cvc5::Kind::FLOATINGPOINT_TO_FP_FROM_REAL_OP,
+         FLOATINGPOINT_TO_FP_FROM_REAL},
+        {cvc5::Kind::FLOATINGPOINT_TO_FP_FROM_REAL,
+         FLOATINGPOINT_TO_FP_FROM_REAL},
+        {cvc5::Kind::FLOATINGPOINT_TO_FP_FROM_SBV_OP,
+         FLOATINGPOINT_TO_FP_FROM_SBV},
+        {cvc5::Kind::FLOATINGPOINT_TO_FP_FROM_SBV,
+         FLOATINGPOINT_TO_FP_FROM_SBV},
+        {cvc5::Kind::FLOATINGPOINT_TO_FP_FROM_UBV_OP,
+         FLOATINGPOINT_TO_FP_FROM_UBV},
+        {cvc5::Kind::FLOATINGPOINT_TO_FP_FROM_UBV,
+         FLOATINGPOINT_TO_FP_FROM_UBV},
         {cvc5::Kind::FLOATINGPOINT_TO_UBV_OP, FLOATINGPOINT_TO_UBV},
         {cvc5::Kind::FLOATINGPOINT_TO_UBV, FLOATINGPOINT_TO_UBV},
         {cvc5::Kind::FLOATINGPOINT_TO_UBV_TOTAL_OP, INTERNAL_KIND},
@@ -570,10 +578,12 @@ const static std::unordered_map<cvc5::Kind, Kind, cvc5::kind::KindHashFunction>
         /* Datatypes ------------------------------------------------------- */
         {cvc5::Kind::APPLY_SELECTOR, APPLY_SELECTOR},
         {cvc5::Kind::APPLY_CONSTRUCTOR, APPLY_CONSTRUCTOR},
-        {cvc5::Kind::APPLY_SELECTOR_TOTAL, INTERNAL_KIND},
         {cvc5::Kind::APPLY_TESTER, APPLY_TESTER},
         {cvc5::Kind::APPLY_UPDATER, APPLY_UPDATER},
         {cvc5::Kind::DT_SIZE, DT_SIZE},
+        {cvc5::Kind::MATCH, MATCH},
+        {cvc5::Kind::MATCH_CASE, MATCH_CASE},
+        {cvc5::Kind::MATCH_BIND_CASE, MATCH_BIND_CASE},
         {cvc5::Kind::TUPLE_PROJECT, TUPLE_PROJECT},
         {cvc5::Kind::TUPLE_PROJECT_OP, TUPLE_PROJECT},
         /* Separation Logic ------------------------------------------------ */
@@ -583,43 +593,49 @@ const static std::unordered_map<cvc5::Kind, Kind, cvc5::kind::KindHashFunction>
         {cvc5::Kind::SEP_STAR, SEP_STAR},
         {cvc5::Kind::SEP_WAND, SEP_WAND},
         /* Sets ------------------------------------------------------------ */
-        {cvc5::Kind::EMPTYSET, EMPTYSET},
-        {cvc5::Kind::UNION, UNION},
-        {cvc5::Kind::INTERSECTION, INTERSECTION},
-        {cvc5::Kind::SETMINUS, SETMINUS},
-        {cvc5::Kind::SUBSET, SUBSET},
-        {cvc5::Kind::MEMBER, MEMBER},
-        {cvc5::Kind::SINGLETON, SINGLETON},
-        {cvc5::Kind::INSERT, INSERT},
-        {cvc5::Kind::CARD, CARD},
-        {cvc5::Kind::COMPLEMENT, COMPLEMENT},
-        {cvc5::Kind::UNIVERSE_SET, UNIVERSE_SET},
-        {cvc5::Kind::JOIN, JOIN},
-        {cvc5::Kind::PRODUCT, PRODUCT},
-        {cvc5::Kind::TRANSPOSE, TRANSPOSE},
-        {cvc5::Kind::TCLOSURE, TCLOSURE},
-        {cvc5::Kind::JOIN_IMAGE, JOIN_IMAGE},
-        {cvc5::Kind::IDEN, IDEN},
-        {cvc5::Kind::COMPREHENSION, COMPREHENSION},
-        {cvc5::Kind::CHOOSE, CHOOSE},
-        {cvc5::Kind::IS_SINGLETON, IS_SINGLETON},
+        {cvc5::Kind::SET_EMPTY, SET_EMPTY},
+        {cvc5::Kind::SET_UNION, SET_UNION},
+        {cvc5::Kind::SET_INTER, SET_INTER},
+        {cvc5::Kind::SET_MINUS, SET_MINUS},
+        {cvc5::Kind::SET_SUBSET, SET_SUBSET},
+        {cvc5::Kind::SET_MEMBER, SET_MEMBER},
+        {cvc5::Kind::SET_SINGLETON, SET_SINGLETON},
+        {cvc5::Kind::SET_INSERT, SET_INSERT},
+        {cvc5::Kind::SET_CARD, SET_CARD},
+        {cvc5::Kind::SET_COMPLEMENT, SET_COMPLEMENT},
+        {cvc5::Kind::SET_UNIVERSE, SET_UNIVERSE},
+        {cvc5::Kind::SET_COMPREHENSION, SET_COMPREHENSION},
+        {cvc5::Kind::SET_CHOOSE, SET_CHOOSE},
+        {cvc5::Kind::SET_IS_SINGLETON, SET_IS_SINGLETON},
+        {cvc5::Kind::SET_MAP, SET_MAP},
+        /* Relations ------------------------------------------------------- */
+        {cvc5::Kind::RELATION_JOIN, RELATION_JOIN},
+        {cvc5::Kind::RELATION_PRODUCT, RELATION_PRODUCT},
+        {cvc5::Kind::RELATION_TRANSPOSE, RELATION_TRANSPOSE},
+        {cvc5::Kind::RELATION_TCLOSURE, RELATION_TCLOSURE},
+        {cvc5::Kind::RELATION_JOIN_IMAGE, RELATION_JOIN_IMAGE},
+        {cvc5::Kind::RELATION_IDEN, RELATION_IDEN},
         /* Bags ------------------------------------------------------------ */
-        {cvc5::Kind::UNION_MAX, UNION_MAX},
-        {cvc5::Kind::UNION_DISJOINT, UNION_DISJOINT},
-        {cvc5::Kind::INTERSECTION_MIN, INTERSECTION_MIN},
-        {cvc5::Kind::DIFFERENCE_SUBTRACT, DIFFERENCE_SUBTRACT},
-        {cvc5::Kind::DIFFERENCE_REMOVE, DIFFERENCE_REMOVE},
-        {cvc5::Kind::SUBBAG, SUBBAG},
+        {cvc5::Kind::BAG_UNION_MAX, BAG_UNION_MAX},
+        {cvc5::Kind::BAG_UNION_DISJOINT, BAG_UNION_DISJOINT},
+        {cvc5::Kind::BAG_INTER_MIN, BAG_INTER_MIN},
+        {cvc5::Kind::BAG_DIFFERENCE_SUBTRACT, BAG_DIFFERENCE_SUBTRACT},
+        {cvc5::Kind::BAG_DIFFERENCE_REMOVE, BAG_DIFFERENCE_REMOVE},
+        {cvc5::Kind::BAG_SUBBAG, BAG_SUBBAG},
         {cvc5::Kind::BAG_COUNT, BAG_COUNT},
-        {cvc5::Kind::DUPLICATE_REMOVAL, DUPLICATE_REMOVAL},
-        {cvc5::Kind::MK_BAG, MK_BAG},
-        {cvc5::Kind::EMPTYBAG, EMPTYBAG},
+        {cvc5::Kind::BAG_MEMBER, BAG_MEMBER},
+        {cvc5::Kind::BAG_DUPLICATE_REMOVAL, BAG_DUPLICATE_REMOVAL},
+        {cvc5::Kind::BAG_MAKE, BAG_MAKE},
+        {cvc5::Kind::BAG_EMPTY, BAG_EMPTY},
         {cvc5::Kind::BAG_CARD, BAG_CARD},
         {cvc5::Kind::BAG_CHOOSE, BAG_CHOOSE},
         {cvc5::Kind::BAG_IS_SINGLETON, BAG_IS_SINGLETON},
         {cvc5::Kind::BAG_FROM_SET, BAG_FROM_SET},
         {cvc5::Kind::BAG_TO_SET, BAG_TO_SET},
-        {cvc5::Kind::BAG_MAP,BAG_MAP},
+        {cvc5::Kind::BAG_MAP, BAG_MAP},
+        {cvc5::Kind::BAG_FILTER, BAG_FILTER},
+        {cvc5::Kind::BAG_FOLD, BAG_FOLD},
+        {cvc5::Kind::TABLE_PRODUCT, TABLE_PRODUCT},
         /* Strings --------------------------------------------------------- */
         {cvc5::Kind::STRING_CONCAT, STRING_CONCAT},
         {cvc5::Kind::STRING_IN_REGEXP, STRING_IN_REGEXP},
@@ -660,8 +676,9 @@ const static std::unordered_map<cvc5::Kind, Kind, cvc5::kind::KindHashFunction>
         {cvc5::Kind::REGEXP_REPEAT_OP, REGEXP_REPEAT},
         {cvc5::Kind::REGEXP_LOOP, REGEXP_LOOP},
         {cvc5::Kind::REGEXP_LOOP_OP, REGEXP_LOOP},
-        {cvc5::Kind::REGEXP_EMPTY, REGEXP_EMPTY},
-        {cvc5::Kind::REGEXP_SIGMA, REGEXP_SIGMA},
+        {cvc5::Kind::REGEXP_NONE, REGEXP_NONE},
+        {cvc5::Kind::REGEXP_ALL, REGEXP_ALL},
+        {cvc5::Kind::REGEXP_ALLCHAR, REGEXP_ALLCHAR},
         {cvc5::Kind::REGEXP_COMPLEMENT, REGEXP_COMPLEMENT},
         {cvc5::Kind::CONST_SEQUENCE, CONST_SEQUENCE},
         {cvc5::Kind::SEQ_UNIT, SEQ_UNIT},
@@ -669,7 +686,7 @@ const static std::unordered_map<cvc5::Kind, Kind, cvc5::kind::KindHashFunction>
         /* Quantifiers ----------------------------------------------------- */
         {cvc5::Kind::FORALL, FORALL},
         {cvc5::Kind::EXISTS, EXISTS},
-        {cvc5::Kind::BOUND_VAR_LIST, BOUND_VAR_LIST},
+        {cvc5::Kind::BOUND_VAR_LIST, VARIABLE_LIST},
         {cvc5::Kind::INST_PATTERN, INST_PATTERN},
         {cvc5::Kind::INST_NO_PATTERN, INST_NO_PATTERN},
         {cvc5::Kind::INST_POOL, INST_POOL},
@@ -694,12 +711,11 @@ const static std::unordered_set<Kind> s_indexed_kinds(
      FLOATINGPOINT_TO_UBV,
      FLOATINGPOINT_TO_SBV,
      BITVECTOR_EXTRACT,
-     FLOATINGPOINT_TO_FP_IEEE_BITVECTOR,
-     FLOATINGPOINT_TO_FP_FLOATINGPOINT,
-     FLOATINGPOINT_TO_FP_REAL,
-     FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR,
-     FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR,
-     FLOATINGPOINT_TO_FP_GENERIC});
+     FLOATINGPOINT_TO_FP_FROM_IEEE_BV,
+     FLOATINGPOINT_TO_FP_FROM_FP,
+     FLOATINGPOINT_TO_FP_FROM_REAL,
+     FLOATINGPOINT_TO_FP_FROM_SBV,
+     FLOATINGPOINT_TO_FP_FROM_UBV});
 
 namespace {
 
@@ -722,7 +738,7 @@ cvc5::Kind extToIntKind(cvc5::api::Kind k)
   {
     return cvc5::Kind::UNDEFINED_KIND;
   }
-  return it->second;
+  return it->second.first;
 }
 
 /** Return true if given kind is a defined external kind. */
@@ -788,24 +804,17 @@ uint32_t maxArity(Kind k)
 
 std::string kindToString(Kind k)
 {
-  return k == INTERNAL_KIND ? "INTERNAL_KIND"
-                            : cvc5::kind::kindToString(extToIntKind(k));
-}
-
-const char* toString(Kind k)
-{
-  return k == INTERNAL_KIND ? "INTERNAL_KIND"
-                            : cvc5::kind::toString(extToIntKind(k));
+  auto it = s_kinds.find(k);
+  if (it == s_kinds.end())
+  {
+    return "UNDEFINED_KIND";
+  }
+  return it->second.second;
 }
 
 std::ostream& operator<<(std::ostream& out, Kind k)
 {
-  switch (k)
-  {
-    case INTERNAL_KIND: out << "INTERNAL_KIND"; break;
-    default: out << extToIntKind(k);
-  }
-  return out;
+  return out << kindToString(k);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -856,6 +865,27 @@ class CVC5ApiRecoverableExceptionStream
   std::stringstream d_stream;
 };
 
+class CVC5ApiUnsupportedExceptionStream
+{
+ public:
+  CVC5ApiUnsupportedExceptionStream() {}
+  /* Note: This needs to be explicitly set to 'noexcept(false)' since it is
+   * a destructor that throws an exception and in C++11 all destructors
+   * default to noexcept(true) (else this triggers a call to std::terminate). */
+  ~CVC5ApiUnsupportedExceptionStream() noexcept(false)
+  {
+    if (std::uncaught_exceptions() == 0)
+    {
+      throw CVC5ApiUnsupportedException(d_stream.str());
+    }
+  }
+
+  std::ostream& ostream() { return d_stream; }
+
+ private:
+  std::stringstream d_stream;
+};
+
 #define CVC5_API_TRY_CATCH_BEGIN \
   try                            \
   {
@@ -884,43 +914,22 @@ Result::Result() : d_result(new cvc5::Result()) {}
 
 bool Result::isNull() const
 {
-  return d_result->getType() == cvc5::Result::TYPE_NONE;
+  return d_result->getStatus() == cvc5::Result::NONE;
 }
 
 bool Result::isSat(void) const
 {
-  return d_result->getType() == cvc5::Result::TYPE_SAT
-         && d_result->isSat() == cvc5::Result::SAT;
+  return d_result->getStatus() == cvc5::Result::SAT;
 }
 
 bool Result::isUnsat(void) const
 {
-  return d_result->getType() == cvc5::Result::TYPE_SAT
-         && d_result->isSat() == cvc5::Result::UNSAT;
+  return d_result->getStatus() == cvc5::Result::UNSAT;
 }
 
-bool Result::isSatUnknown(void) const
+bool Result::isUnknown(void) const
 {
-  return d_result->getType() == cvc5::Result::TYPE_SAT
-         && d_result->isSat() == cvc5::Result::SAT_UNKNOWN;
-}
-
-bool Result::isEntailed(void) const
-{
-  return d_result->getType() == cvc5::Result::TYPE_ENTAILMENT
-         && d_result->isEntailed() == cvc5::Result::ENTAILED;
-}
-
-bool Result::isNotEntailed(void) const
-{
-  return d_result->getType() == cvc5::Result::TYPE_ENTAILMENT
-         && d_result->isEntailed() == cvc5::Result::NOT_ENTAILED;
-}
-
-bool Result::isEntailmentUnknown(void) const
-{
-  return d_result->getType() == cvc5::Result::TYPE_ENTAILMENT
-         && d_result->isEntailed() == cvc5::Result::ENTAILMENT_UNKNOWN;
+  return d_result->getStatus() == cvc5::Result::UNKNOWN;
 }
 
 bool Result::operator==(const Result& r) const
@@ -935,7 +944,7 @@ bool Result::operator!=(const Result& r) const
 
 Result::UnknownExplanation Result::getUnknownExplanation(void) const
 {
-  cvc5::Result::UnknownExplanation expl = d_result->whyUnknown();
+  cvc5::Result::UnknownExplanation expl = d_result->getUnknownExplanation();
   switch (expl)
   {
     case cvc5::Result::REQUIRES_FULL_CHECK: return REQUIRES_FULL_CHECK;
@@ -1080,6 +1089,29 @@ bool Sort::operator>=(const Sort& s) const
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
   return *d_type >= *s.d_type;
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+bool Sort::hasSymbol() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_CHECK_NOT_NULL;
+  //////// all checks before this line
+  return d_type->hasAttribute(expr::VarNameAttr());
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+std::string Sort::getSymbol() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_CHECK_NOT_NULL;
+  CVC5_API_CHECK(d_type->hasAttribute(expr::VarNameAttr()))
+      << "Invalid call to '" << __PRETTY_FUNCTION__
+      << "', expected the sort to have a symbol.";
+  //////// all checks before this line
+  return d_type->getAttribute(expr::VarNameAttr());
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -1311,44 +1343,6 @@ bool Sort::isSortConstructor() const
   CVC5_API_TRY_CATCH_END;
 }
 
-bool Sort::isFirstClass() const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  //////// all checks before this line
-  return d_type->isFirstClass();
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-bool Sort::isFunctionLike() const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  //////// all checks before this line
-  return d_type->isFunctionLike();
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-bool Sort::isSubsortOf(const Sort& s) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_ARG_CHECK_SOLVER("sort", s);
-  //////// all checks before this line
-  return d_type->isSubtypeOf(*s.d_type);
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-bool Sort::isComparableTo(const Sort& s) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_ARG_CHECK_SOLVER("sort", s);
-  //////// all checks before this line
-  return d_type->isComparableTo(*s.d_type);
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
 Datatype Sort::getDatatype() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
@@ -1364,9 +1358,15 @@ Sort Sort::instantiate(const std::vector<Sort>& params) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_CHECK_NOT_NULL;
-  CVC5_API_CHECK_SORTS(params);
+  CVC5_API_CHECK_DOMAIN_SORTS(params);
   CVC5_API_CHECK(isParametricDatatype() || isSortConstructor())
       << "Expected parametric datatype or sort constructor sort.";
+  CVC5_API_CHECK(!isParametricDatatype()
+                 || d_type->getNumChildren() == params.size() + 1)
+      << "Arity mismatch for instantiated parametric datatype";
+  CVC5_API_CHECK(!isSortConstructor()
+                 || d_type->getSortConstructorArity() == params.size())
+      << "Arity mismatch for instantiated sort constructor";
   //////// all checks before this line
   std::vector<cvc5::TypeNode> tparams = sortVectorToTypeNodes(params);
   if (d_type->isDatatype())
@@ -1418,10 +1418,6 @@ std::string Sort::toString() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
-  if (d_solver != nullptr)
-  {
-    return d_type->toString();
-  }
   return d_type->toString();
   ////////
   CVC5_API_TRY_CATCH_END;
@@ -1612,17 +1608,6 @@ Sort Sort::getSequenceElementSort() const
 
 /* Uninterpreted sort -------------------------------------------------- */
 
-std::string Sort::getUninterpretedSortName() const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_CHECK_NOT_NULL;
-  CVC5_API_CHECK(isUninterpretedSort()) << "Not an uninterpreted sort.";
-  //////// all checks before this line
-  return d_type->getName();
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
 bool Sort::isUninterpretedSortParameterized() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
@@ -1658,17 +1643,6 @@ std::vector<Sort> Sort::getUninterpretedSortParamSorts() const
 
 /* Sort constructor sort ----------------------------------------------- */
 
-std::string Sort::getSortConstructorName() const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_CHECK_NOT_NULL;
-  CVC5_API_CHECK(isSortConstructor()) << "Not a sort constructor sort.";
-  //////// all checks before this line
-  return d_type->getName();
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
 size_t Sort::getSortConstructorArity() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
@@ -1682,7 +1656,7 @@ size_t Sort::getSortConstructorArity() const
 
 /* Bit-vector sort ----------------------------------------------------- */
 
-uint32_t Sort::getBVSize() const
+uint32_t Sort::getBitVectorSize() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_CHECK_NOT_NULL;
@@ -1695,7 +1669,7 @@ uint32_t Sort::getBVSize() const
 
 /* Floating-point sort ------------------------------------------------- */
 
-uint32_t Sort::getFPExponentSize() const
+uint32_t Sort::getFloatingPointExponentSize() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_CHECK_NOT_NULL;
@@ -1706,7 +1680,7 @@ uint32_t Sort::getFPExponentSize() const
   CVC5_API_TRY_CATCH_END;
 }
 
-uint32_t Sort::getFPSignificandSize() const
+uint32_t Sort::getFloatingPointSignificandSize() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_CHECK_NOT_NULL;
@@ -1736,7 +1710,7 @@ size_t Sort::getDatatypeArity() const
   CVC5_API_CHECK_NOT_NULL;
   CVC5_API_CHECK(isDatatype()) << "Not a datatype sort.";
   //////// all checks before this line
-  return d_type->getNumChildren() - 1;
+  return d_type->isParametricDatatype() ? d_type->getNumChildren() - 1 : 0;
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -1892,12 +1866,11 @@ size_t Op::getNumIndicesHelper() const
     case FLOATINGPOINT_TO_SBV: size = 1; break;
     case REGEXP_REPEAT: size = 1; break;
     case BITVECTOR_EXTRACT: size = 2; break;
-    case FLOATINGPOINT_TO_FP_IEEE_BITVECTOR: size = 2; break;
-    case FLOATINGPOINT_TO_FP_FLOATINGPOINT: size = 2; break;
-    case FLOATINGPOINT_TO_FP_REAL: size = 2; break;
-    case FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR: size = 2; break;
-    case FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR: size = 2; break;
-    case FLOATINGPOINT_TO_FP_GENERIC: size = 2; break;
+    case FLOATINGPOINT_TO_FP_FROM_IEEE_BV: size = 2; break;
+    case FLOATINGPOINT_TO_FP_FROM_FP: size = 2; break;
+    case FLOATINGPOINT_TO_FP_FROM_REAL: size = 2; break;
+    case FLOATINGPOINT_TO_FP_FROM_SBV: size = 2; break;
+    case FLOATINGPOINT_TO_FP_FROM_UBV: size = 2; break;
     case REGEXP_LOOP: size = 2; break;
     case TUPLE_PROJECT:
       size = d_node->getConst<TupleProjectOp>().getIndices().size();
@@ -1925,144 +1898,128 @@ Term Op::getIndexHelper(size_t index) const
   {
     case DIVISIBLE:
     {
-      t = d_solver->mkValHelper<Rational>(
+      t = d_solver->mkRationalValHelper(
           Rational(d_node->getConst<Divisible>().k));
       break;
     }
     case BITVECTOR_REPEAT:
     {
-      t = d_solver->mkValHelper<cvc5::Rational>(
+      t = d_solver->mkRationalValHelper(
           d_node->getConst<BitVectorRepeat>().d_repeatAmount);
       break;
     }
     case BITVECTOR_ZERO_EXTEND:
     {
-      t = d_solver->mkValHelper<cvc5::Rational>(
+      t = d_solver->mkRationalValHelper(
           d_node->getConst<BitVectorZeroExtend>().d_zeroExtendAmount);
       break;
     }
     case BITVECTOR_SIGN_EXTEND:
     {
-      t = d_solver->mkValHelper<cvc5::Rational>(
+      t = d_solver->mkRationalValHelper(
           d_node->getConst<BitVectorSignExtend>().d_signExtendAmount);
       break;
     }
     case BITVECTOR_ROTATE_LEFT:
     {
-      t = d_solver->mkValHelper<cvc5::Rational>(
+      t = d_solver->mkRationalValHelper(
           d_node->getConst<BitVectorRotateLeft>().d_rotateLeftAmount);
       break;
     }
     case BITVECTOR_ROTATE_RIGHT:
     {
-      t = d_solver->mkValHelper<cvc5::Rational>(
+      t = d_solver->mkRationalValHelper(
           d_node->getConst<BitVectorRotateRight>().d_rotateRightAmount);
       break;
     }
     case INT_TO_BITVECTOR:
     {
-      t = d_solver->mkValHelper<cvc5::Rational>(
+      t = d_solver->mkRationalValHelper(
           d_node->getConst<IntToBitVector>().d_size);
       break;
     }
     case IAND:
     {
-      t = d_solver->mkValHelper<cvc5::Rational>(
-          d_node->getConst<IntAnd>().d_size);
+      t = d_solver->mkRationalValHelper(d_node->getConst<IntAnd>().d_size);
       break;
     }
     case FLOATINGPOINT_TO_UBV:
     {
-      t = d_solver->mkValHelper<cvc5::Rational>(
+      t = d_solver->mkRationalValHelper(
           d_node->getConst<FloatingPointToUBV>().d_bv_size.d_size);
       break;
     }
     case FLOATINGPOINT_TO_SBV:
     {
-      t = d_solver->mkValHelper<cvc5::Rational>(
+      t = d_solver->mkRationalValHelper(
           d_node->getConst<FloatingPointToSBV>().d_bv_size.d_size);
       break;
     }
     case REGEXP_REPEAT:
     {
-      t = d_solver->mkValHelper<cvc5::Rational>(
+      t = d_solver->mkRationalValHelper(
           d_node->getConst<RegExpRepeat>().d_repeatAmount);
       break;
     }
     case BITVECTOR_EXTRACT:
     {
       cvc5::BitVectorExtract ext = d_node->getConst<BitVectorExtract>();
-      t = index == 0 ? d_solver->mkValHelper<cvc5::Rational>(ext.d_high)
-                     : d_solver->mkValHelper<cvc5::Rational>(ext.d_low);
+      t = index == 0 ? d_solver->mkRationalValHelper(ext.d_high)
+                     : d_solver->mkRationalValHelper(ext.d_low);
       break;
     }
-    case FLOATINGPOINT_TO_FP_IEEE_BITVECTOR:
+    case FLOATINGPOINT_TO_FP_FROM_IEEE_BV:
     {
       cvc5::FloatingPointToFPIEEEBitVector ext =
           d_node->getConst<FloatingPointToFPIEEEBitVector>();
 
-      t = index == 0 ? d_solver->mkValHelper<cvc5::Rational>(
-              ext.getSize().exponentWidth())
-                     : d_solver->mkValHelper<cvc5::Rational>(
-                         ext.getSize().significandWidth());
+      t = index == 0
+              ? d_solver->mkRationalValHelper(ext.getSize().exponentWidth())
+              : d_solver->mkRationalValHelper(ext.getSize().significandWidth());
       break;
     }
-    case FLOATINGPOINT_TO_FP_FLOATINGPOINT:
+    case FLOATINGPOINT_TO_FP_FROM_FP:
     {
       cvc5::FloatingPointToFPFloatingPoint ext =
           d_node->getConst<FloatingPointToFPFloatingPoint>();
-      t = index == 0 ? d_solver->mkValHelper<cvc5::Rational>(
-              ext.getSize().exponentWidth())
-                     : d_solver->mkValHelper<cvc5::Rational>(
-                         ext.getSize().significandWidth());
+      t = index == 0
+              ? d_solver->mkRationalValHelper(ext.getSize().exponentWidth())
+              : d_solver->mkRationalValHelper(ext.getSize().significandWidth());
       break;
     }
-    case FLOATINGPOINT_TO_FP_REAL:
+    case FLOATINGPOINT_TO_FP_FROM_REAL:
     {
       cvc5::FloatingPointToFPReal ext =
           d_node->getConst<FloatingPointToFPReal>();
 
-      t = index == 0 ? d_solver->mkValHelper<cvc5::Rational>(
-              ext.getSize().exponentWidth())
-                     : d_solver->mkValHelper<cvc5::Rational>(
-                         ext.getSize().significandWidth());
+      t = index == 0
+              ? d_solver->mkRationalValHelper(ext.getSize().exponentWidth())
+              : d_solver->mkRationalValHelper(ext.getSize().significandWidth());
       break;
     }
-    case FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR:
+    case FLOATINGPOINT_TO_FP_FROM_SBV:
     {
       cvc5::FloatingPointToFPSignedBitVector ext =
           d_node->getConst<FloatingPointToFPSignedBitVector>();
-      t = index == 0 ? d_solver->mkValHelper<cvc5::Rational>(
-              ext.getSize().exponentWidth())
-                     : d_solver->mkValHelper<cvc5::Rational>(
-                         ext.getSize().significandWidth());
+      t = index == 0
+              ? d_solver->mkRationalValHelper(ext.getSize().exponentWidth())
+              : d_solver->mkRationalValHelper(ext.getSize().significandWidth());
       break;
     }
-    case FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR:
+    case FLOATINGPOINT_TO_FP_FROM_UBV:
     {
       cvc5::FloatingPointToFPUnsignedBitVector ext =
           d_node->getConst<FloatingPointToFPUnsignedBitVector>();
-      t = index == 0 ? d_solver->mkValHelper<cvc5::Rational>(
-              ext.getSize().exponentWidth())
-                     : d_solver->mkValHelper<cvc5::Rational>(
-                         ext.getSize().significandWidth());
-      break;
-    }
-    case FLOATINGPOINT_TO_FP_GENERIC:
-    {
-      cvc5::FloatingPointToFPGeneric ext =
-          d_node->getConst<FloatingPointToFPGeneric>();
-      t = index == 0 ? d_solver->mkValHelper<cvc5::Rational>(
-              ext.getSize().exponentWidth())
-                     : d_solver->mkValHelper<cvc5::Rational>(
-                         ext.getSize().significandWidth());
+      t = index == 0
+              ? d_solver->mkRationalValHelper(ext.getSize().exponentWidth())
+              : d_solver->mkRationalValHelper(ext.getSize().significandWidth());
       break;
     }
     case REGEXP_LOOP:
     {
       cvc5::RegExpLoop ext = d_node->getConst<RegExpLoop>();
-      t = index == 0 ? d_solver->mkValHelper<cvc5::Rational>(ext.d_loopMinOcc)
-                     : d_solver->mkValHelper<cvc5::Rational>(ext.d_loopMaxOcc);
+      t = index == 0 ? d_solver->mkRationalValHelper(ext.d_loopMinOcc)
+                     : d_solver->mkRationalValHelper(ext.d_loopMaxOcc);
 
       break;
     }
@@ -2071,7 +2028,7 @@ Term Op::getIndexHelper(size_t index) const
     {
       const std::vector<uint32_t>& projectionIndices =
           d_node->getConst<TupleProjectOp>().getIndices();
-      t = d_solver->mkValHelper<cvc5::Rational>(projectionIndices[index]);
+      t = d_solver->mkRationalValHelper(projectionIndices[index]);
       break;
     }
     default:
@@ -2083,163 +2040,6 @@ Term Op::getIndexHelper(size_t index) const
 
   //////// all checks before this line
   return t;
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-template <>
-std::string Op::getIndices() const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_CHECK_NOT_NULL;
-  CVC5_API_CHECK(!d_node->isNull())
-      << "Expecting a non-null internal expression. This Op is not indexed.";
-  Kind k = intToExtKind(d_node->getKind());
-  CVC5_API_CHECK(k == DIVISIBLE) << "Can't get string index from"
-                                 << " kind " << kindToString(k);
-  //////// all checks before this line
-  return d_node->getConst<Divisible>().k.toString();
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-template <>
-uint32_t Op::getIndices() const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_CHECK_NOT_NULL;
-  CVC5_API_CHECK(!d_node->isNull())
-      << "Expecting a non-null internal expression. This Op is not indexed.";
-  //////// all checks before this line
-
-  uint32_t i = 0;
-  Kind k = intToExtKind(d_node->getKind());
-  switch (k)
-  {
-    case BITVECTOR_REPEAT:
-      i = d_node->getConst<BitVectorRepeat>().d_repeatAmount;
-      break;
-    case BITVECTOR_ZERO_EXTEND:
-      i = d_node->getConst<BitVectorZeroExtend>().d_zeroExtendAmount;
-      break;
-    case BITVECTOR_SIGN_EXTEND:
-      i = d_node->getConst<BitVectorSignExtend>().d_signExtendAmount;
-      break;
-    case BITVECTOR_ROTATE_LEFT:
-      i = d_node->getConst<BitVectorRotateLeft>().d_rotateLeftAmount;
-      break;
-    case BITVECTOR_ROTATE_RIGHT:
-      i = d_node->getConst<BitVectorRotateRight>().d_rotateRightAmount;
-      break;
-    case INT_TO_BITVECTOR: i = d_node->getConst<IntToBitVector>().d_size; break;
-    case IAND: i = d_node->getConst<IntAnd>().d_size; break;
-    case FLOATINGPOINT_TO_UBV:
-      i = d_node->getConst<FloatingPointToUBV>().d_bv_size.d_size;
-      break;
-    case FLOATINGPOINT_TO_SBV:
-      i = d_node->getConst<FloatingPointToSBV>().d_bv_size.d_size;
-      break;
-    case REGEXP_REPEAT:
-      i = d_node->getConst<RegExpRepeat>().d_repeatAmount;
-      break;
-    default:
-      CVC5_API_CHECK(false) << "Can't get uint32_t index from"
-                            << " kind " << kindToString(k);
-  }
-  return i;
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-template <>
-std::pair<uint32_t, uint32_t> Op::getIndices() const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_CHECK_NOT_NULL;
-  CVC5_API_CHECK(!d_node->isNull())
-      << "Expecting a non-null internal expression. This Op is not indexed.";
-  //////// all checks before this line
-
-  std::pair<uint32_t, uint32_t> indices;
-  Kind k = intToExtKind(d_node->getKind());
-
-  // using if/else instead of case statement because want local variables
-  if (k == BITVECTOR_EXTRACT)
-  {
-    cvc5::BitVectorExtract ext = d_node->getConst<BitVectorExtract>();
-    indices = std::make_pair(ext.d_high, ext.d_low);
-  }
-  else if (k == FLOATINGPOINT_TO_FP_IEEE_BITVECTOR)
-  {
-    cvc5::FloatingPointToFPIEEEBitVector ext =
-        d_node->getConst<FloatingPointToFPIEEEBitVector>();
-    indices = std::make_pair(ext.getSize().exponentWidth(),
-                             ext.getSize().significandWidth());
-  }
-  else if (k == FLOATINGPOINT_TO_FP_FLOATINGPOINT)
-  {
-    cvc5::FloatingPointToFPFloatingPoint ext =
-        d_node->getConst<FloatingPointToFPFloatingPoint>();
-    indices = std::make_pair(ext.getSize().exponentWidth(),
-                             ext.getSize().significandWidth());
-  }
-  else if (k == FLOATINGPOINT_TO_FP_REAL)
-  {
-    cvc5::FloatingPointToFPReal ext = d_node->getConst<FloatingPointToFPReal>();
-    indices = std::make_pair(ext.getSize().exponentWidth(),
-                             ext.getSize().significandWidth());
-  }
-  else if (k == FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR)
-  {
-    cvc5::FloatingPointToFPSignedBitVector ext =
-        d_node->getConst<FloatingPointToFPSignedBitVector>();
-    indices = std::make_pair(ext.getSize().exponentWidth(),
-                             ext.getSize().significandWidth());
-  }
-  else if (k == FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR)
-  {
-    cvc5::FloatingPointToFPUnsignedBitVector ext =
-        d_node->getConst<FloatingPointToFPUnsignedBitVector>();
-    indices = std::make_pair(ext.getSize().exponentWidth(),
-                             ext.getSize().significandWidth());
-  }
-  else if (k == FLOATINGPOINT_TO_FP_GENERIC)
-  {
-    cvc5::FloatingPointToFPGeneric ext =
-        d_node->getConst<FloatingPointToFPGeneric>();
-    indices = std::make_pair(ext.getSize().exponentWidth(),
-                             ext.getSize().significandWidth());
-  }
-  else if (k == REGEXP_LOOP)
-  {
-    cvc5::RegExpLoop ext = d_node->getConst<RegExpLoop>();
-    indices = std::make_pair(ext.d_loopMinOcc, ext.d_loopMaxOcc);
-  }
-  else
-  {
-    CVC5_API_CHECK(false) << "Can't get pair<uint32_t, uint32_t> indices from"
-                          << " kind " << kindToString(k);
-  }
-  return indices;
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-template <>
-std::vector<api::Term> Op::getIndices() const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_CHECK_NOT_NULL;
-  CVC5_API_CHECK(!d_node->isNull())
-      << "Expecting a non-null internal expression. This Op is not indexed.";
-  size_t size = getNumIndicesHelper();
-  std::vector<Term> terms(getNumIndices());
-  for (size_t i = 0; i < size; i++)
-  {
-    terms[i] = getIndexHelper(i);
-  }
-  //////// all checks before this line
-  return terms;
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -2442,8 +2242,8 @@ Term Term::substitute(const Term& term, const Term& replacement) const
   CVC5_API_CHECK_NOT_NULL;
   CVC5_API_CHECK_TERM(term);
   CVC5_API_CHECK_TERM(replacement);
-  CVC5_API_CHECK(term.getSort().isComparableTo(replacement.getSort()))
-      << "Expecting terms of comparable sort in substitute";
+  CVC5_API_CHECK(term.getSort() == replacement.getSort())
+      << "Expecting terms of the same sort in substitute";
   //////// all checks before this line
   return Term(
       d_solver,
@@ -2459,7 +2259,7 @@ Term Term::substitute(const std::vector<Term>& terms,
   CVC5_API_CHECK_NOT_NULL;
   CVC5_API_CHECK(terms.size() == replacements.size())
       << "Expecting vectors of the same arity in substitute";
-  CVC5_API_TERM_CHECK_TERMS_WITH_TERMS_COMPARABLE_TO(terms, replacements);
+  CVC5_API_TERM_CHECK_TERMS_WITH_TERMS_SORT_EQUAL_TO(terms, replacements);
   //////// all checks before this line
   std::vector<Node> nodes = Term::termVectorToNodes(terms);
   std::vector<Node> nodeReplacements = Term::termVectorToNodes(replacements);
@@ -2509,6 +2309,29 @@ Op Term::getOp() const
   // Notice this is the only case where getKindHelper is used, since the
   // cases above do not have special cases for intToExtKind.
   return Op(d_solver, getKindHelper());
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+bool Term::hasSymbol() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_CHECK_NOT_NULL;
+  //////// all checks before this line
+  return d_node->hasAttribute(expr::VarNameAttr());
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+std::string Term::getSymbol() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_CHECK_NOT_NULL;
+  CVC5_API_CHECK(d_node->hasAttribute(expr::VarNameAttr()))
+      << "Invalid call to '" << __PRETTY_FUNCTION__
+      << "', expected the term to have a symbol.";
+  //////// all checks before this line
+  return d_node->getAttribute(expr::VarNameAttr());
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -2617,10 +2440,6 @@ std::string Term::toString() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
-  if (d_solver != nullptr)
-  {
-    return d_node->toString();
-  }
   return d_node->toString();
   ////////
   CVC5_API_TRY_CATCH_END;
@@ -2805,6 +2624,17 @@ bool isUInt64(const Node& node)
 }
 }  // namespace detail
 
+int32_t Term::getRealOrIntegerValueSign() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_CHECK_NOT_NULL;
+  //////// all checks before this line
+  const Rational& r = detail::getRational(*d_node);
+  return static_cast<int32_t>(r.sgn());
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
 bool Term::isInt32Value() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
@@ -2865,7 +2695,7 @@ std::int64_t Term::getInt64Value() const
   CVC5_API_ARG_CHECK_EXPECTED(detail::isInt64(*d_node), *d_node)
       << "Term to be a 64-bit integer value when calling getInt64Value()";
   //////// all checks before this line
-  return detail::getInteger(*d_node).getLong();
+  return detail::getInteger(*d_node).getSigned64();
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -2888,7 +2718,7 @@ std::uint64_t Term::getUInt64Value() const
       << "Term to be a unsigned 64-bit integer value when calling "
          "getUInt64Value()";
   //////// all checks before this line
-  return detail::getInteger(*d_node).getUnsignedLong();
+  return detail::getInteger(*d_node).getUnsigned64();
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -2947,6 +2777,17 @@ std::vector<Node> Term::termVectorToNodes(const std::vector<Term>& terms)
   return res;
 }
 
+std::vector<Term> Term::nodeVectorToTerms(const Solver* slv,
+                                          const std::vector<Node>& nodes)
+{
+  std::vector<Term> res;
+  for (const Node& n : nodes)
+  {
+    res.push_back(Term(slv, n));
+  }
+  return res;
+}
+
 bool Term::isReal32Value() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
@@ -2986,8 +2827,8 @@ std::pair<std::int64_t, std::uint64_t> Term::getReal64Value() const
       << "Term to be a 64-bit rational value when calling getReal64Value()";
   //////// all checks before this line
   const Rational& r = detail::getRational(*d_node);
-  return std::make_pair(r.getNumerator().getLong(),
-                        r.getDenominator().getUnsignedLong());
+  return std::make_pair(r.getNumerator().getSigned64(),
+                        r.getDenominator().getUnsigned64());
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -3011,7 +2852,7 @@ std::string Term::getRealValue() const
   std::string res = rat.toString();
   if (rat.isIntegral())
   {
-    return res + ".0";
+    return res + "/1";
   }
   return res;
   ////////
@@ -3085,25 +2926,27 @@ std::string Term::getBitVectorValue(std::uint32_t base) const
   CVC5_API_TRY_CATCH_END;
 }
 
-bool Term::isAbstractValue() const
+bool Term::isUninterpretedSortValue() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_CHECK_NOT_NULL;
   //////// all checks before this line
-  return d_node->getKind() == cvc5::Kind::ABSTRACT_VALUE;
+  return d_node->getKind() == cvc5::Kind::UNINTERPRETED_SORT_VALUE;
   ////////
   CVC5_API_TRY_CATCH_END;
 }
-std::string Term::getAbstractValue() const
+std::string Term::getUninterpretedSortValue() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_CHECK_NOT_NULL;
-  CVC5_API_ARG_CHECK_EXPECTED(d_node->getKind() == cvc5::Kind::ABSTRACT_VALUE,
-                              *d_node)
+  CVC5_API_ARG_CHECK_EXPECTED(
+      d_node->getKind() == cvc5::Kind::UNINTERPRETED_SORT_VALUE, *d_node)
       << "Term to be an abstract value when calling "
-         "getAbstractValue()";
+         "getUninterpretedSortValue()";
   //////// all checks before this line
-  return d_node->getConst<AbstractValue>().getIndex().toString();
+  std::stringstream ss;
+  ss << d_node->getConst<UninterpretedSortValue>();
+  return ss.str();
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -3246,12 +3089,12 @@ void Term::collectSet(std::set<Term>& set,
                       const Solver* slv)
 {
   // We asserted that node has a set type, and node.isConst()
-  // Thus, node only contains of EMPTYSET, UNION and SINGLETON.
+  // Thus, node only contains of SET_EMPTY, SET_UNION and SET_SINGLETON.
   switch (node.getKind())
   {
-    case cvc5::Kind::EMPTYSET: break;
-    case cvc5::Kind::SINGLETON: set.emplace(Term(slv, node[0])); break;
-    case cvc5::Kind::UNION:
+    case cvc5::Kind::SET_EMPTY: break;
+    case cvc5::Kind::SET_SINGLETON: set.emplace(Term(slv, node[0])); break;
+    case cvc5::Kind::SET_UNION:
     {
       for (const auto& sub : node)
       {
@@ -3305,31 +3148,6 @@ std::vector<Term> Term::getSequenceValue() const
     res.emplace_back(Term(d_solver, node));
   }
   return res;
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-bool Term::isUninterpretedValue() const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_CHECK_NOT_NULL;
-  //////// all checks before this line
-  return d_node->getKind() == cvc5::Kind::UNINTERPRETED_CONSTANT;
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-std::pair<Sort, std::int32_t> Term::getUninterpretedValue() const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_CHECK_NOT_NULL;
-  CVC5_API_ARG_CHECK_EXPECTED(
-      d_node->getKind() == cvc5::Kind::UNINTERPRETED_CONSTANT, *d_node)
-      << "Term to be an uninterpreted value when calling "
-         "getUninterpretedValue()";
-  //////// all checks before this line
-  const auto& uc = d_node->getConst<UninterpretedConstant>();
-  return std::make_pair(Sort(d_solver, uc.getType()),
-                        uc.getIndex().toUnsignedInt());
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -3462,7 +3280,7 @@ void DatatypeConstructorDecl::addSelector(const std::string& name,
   CVC5_API_CHECK_NOT_NULL;
   CVC5_API_CHECK_SORT(sort);
   CVC5_API_ARG_CHECK_EXPECTED(!sort.isNull(), sort)
-      << "non-null range sort for selector";
+      << "non-null codomain sort for selector";
   //////// all checks before this line
   d_ctor->addArg(name, *sort.d_type);
   ////////
@@ -3514,6 +3332,11 @@ std::ostream& operator<<(std::ostream& out,
 }
 
 bool DatatypeConstructorDecl::isNullHelper() const { return d_ctor == nullptr; }
+
+bool DatatypeConstructorDecl::isResolved() const
+{
+  return d_ctor == nullptr || d_ctor->isResolved();
+}
 
 /* DatatypeDecl ------------------------------------------------------------- */
 
@@ -3676,7 +3499,7 @@ Term DatatypeSelector::getUpdaterTerm() const
   CVC5_API_TRY_CATCH_END;
 }
 
-Sort DatatypeSelector::getRangeSort() const
+Sort DatatypeSelector::getCodomainSort() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_CHECK_NOT_NULL;
@@ -3756,7 +3579,7 @@ Term DatatypeConstructor::getConstructorTerm() const
   CVC5_API_TRY_CATCH_END;
 }
 
-Term DatatypeConstructor::getSpecializedConstructorTerm(
+Term DatatypeConstructor::getInstantiatedConstructorTerm(
     const Sort& retSort) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
@@ -3767,13 +3590,7 @@ Term DatatypeConstructor::getSpecializedConstructorTerm(
       << "Cannot get specialized constructor type for non-datatype type "
       << retSort;
   //////// all checks before this line
-
-  NodeManager* nm = d_solver->getNodeManager();
-  Node ret =
-      nm->mkNode(kind::APPLY_TYPE_ASCRIPTION,
-                 nm->mkConst(AscriptionType(
-                     d_ctor->getSpecializedConstructorType(*retSort.d_type))),
-                 d_ctor->getConstructor());
+  Node ret = d_ctor->getInstantiatedConstructor(*retSort.d_type);
   (void)ret.getType(true); /* kick off type checking */
   // apply type ascription to the operator
   Term sctor = api::Term(d_solver, ret);
@@ -4067,6 +3884,18 @@ size_t Datatype::getNumConstructors() const
   CVC5_API_TRY_CATCH_END;
 }
 
+std::vector<Sort> Datatype::getParameters() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_CHECK_NOT_NULL;
+  CVC5_API_CHECK(isParametric()) << "Expected parametric datatype";
+  //////// all checks before this line
+  std::vector<cvc5::TypeNode> params = d_dtype->getParameters();
+  return Sort::typeNodeVectorToSorts(d_solver, params);
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
 bool Datatype::isParametric() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
@@ -4111,6 +3940,8 @@ bool Datatype::isFinite() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_CHECK_NOT_NULL;
+  CVC5_API_CHECK(!d_dtype->isParametric())
+      << "Invalid call to 'isFinite()', expected non-parametric Datatype";
   //////// all checks before this line
   // we assume that finite model finding is disabled by passing false as the
   // second argument
@@ -4125,15 +3956,6 @@ bool Datatype::isWellFounded() const
   CVC5_API_CHECK_NOT_NULL;
   //////// all checks before this line
   return d_dtype->isWellFounded();
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-bool Datatype::hasNestedRecursion() const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_CHECK_NOT_NULL;
-  //////// all checks before this line
-  return d_dtype->hasNestedRecursion();
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -4672,6 +4494,7 @@ void Grammar::addSygusConstructorVariables(DatatypeDecl& dt,
 
 bool Grammar::containsFreeVariables(const Term& rule) const
 {
+  // we allow the argument list and non-terminal symbols to be in scope
   std::unordered_set<TNode> scope;
 
   for (const Term& sygusVar : d_sygusVars)
@@ -4684,8 +4507,7 @@ bool Grammar::containsFreeVariables(const Term& rule) const
     scope.emplace(*ntsymbol.d_node);
   }
 
-  std::unordered_set<Node> fvs;
-  return expr::getFreeVariablesScope(*rule.d_node, fvs, scope, false);
+  return expr::hasFreeVariablesScope(*rule.d_node, scope);
 }
 
 std::ostream& operator<<(std::ostream& out, const Grammar& grammar)
@@ -4753,52 +4575,60 @@ struct Stat::StatData
   StatData() : data() {}
 };
 
+Stat::Stat() {}
 Stat::~Stat() {}
 Stat::Stat(const Stat& s)
-    : d_expert(s.d_expert),
+    : d_internal(s.d_internal),
       d_default(s.d_default),
       d_data(std::make_unique<StatData>(s.d_data->data))
 {
 }
 Stat& Stat::operator=(const Stat& s)
 {
-  d_expert = s.d_expert;
+  d_internal = s.d_internal;
+  d_default = s.d_default;
   d_data = std::make_unique<StatData>(s.d_data->data);
   return *this;
 }
 
-bool Stat::isExpert() const { return d_expert; }
+bool Stat::isInternal() const { return d_internal; }
 bool Stat::isDefault() const { return d_default; }
 
 bool Stat::isInt() const
 {
+  if (!d_data) return false;
   return std::holds_alternative<int64_t>(d_data->data);
 }
 int64_t Stat::getInt() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_RECOVERABLE_CHECK(static_cast<bool>(d_data)) << "Stat holds no value";
   CVC5_API_RECOVERABLE_CHECK(isInt()) << "Expected Stat of type int64_t.";
   return std::get<int64_t>(d_data->data);
   CVC5_API_TRY_CATCH_END;
 }
 bool Stat::isDouble() const
 {
+  if (!d_data) return false;
   return std::holds_alternative<double>(d_data->data);
 }
 double Stat::getDouble() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_RECOVERABLE_CHECK(static_cast<bool>(d_data)) << "Stat holds no value";
   CVC5_API_RECOVERABLE_CHECK(isDouble()) << "Expected Stat of type double.";
   return std::get<double>(d_data->data);
   CVC5_API_TRY_CATCH_END;
 }
 bool Stat::isString() const
 {
+  if (!d_data) return false;
   return std::holds_alternative<std::string>(d_data->data);
 }
 const std::string& Stat::getString() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_RECOVERABLE_CHECK(static_cast<bool>(d_data)) << "Stat holds no value";
   CVC5_API_RECOVERABLE_CHECK(isString())
       << "Expected Stat of type std::string.";
   return std::get<std::string>(d_data->data);
@@ -4806,19 +4636,21 @@ const std::string& Stat::getString() const
 }
 bool Stat::isHistogram() const
 {
+  if (!d_data) return false;
   return std::holds_alternative<HistogramData>(d_data->data);
 }
 const Stat::HistogramData& Stat::getHistogram() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_RECOVERABLE_CHECK(static_cast<bool>(d_data)) << "Stat holds no value";
   CVC5_API_RECOVERABLE_CHECK(isHistogram())
       << "Expected Stat of type histogram.";
   return std::get<HistogramData>(d_data->data);
   CVC5_API_TRY_CATCH_END;
 }
 
-Stat::Stat(bool expert, bool defaulted, StatData&& sd)
-    : d_expert(expert),
+Stat::Stat(bool internal, bool defaulted, StatData&& sd)
+    : d_internal(internal),
       d_default(defaulted),
       d_data(std::make_unique<StatData>(std::move(sd)))
 {
@@ -4881,9 +4713,9 @@ bool Statistics::iterator::operator!=(const Statistics::iterator& rhs) const
 }
 Statistics::iterator::iterator(Statistics::BaseType::const_iterator it,
                                const Statistics::BaseType& base,
-                               bool expert,
+                               bool internal,
                                bool defaulted)
-    : d_it(it), d_base(&base), d_showExpert(expert), d_showDefault(defaulted)
+    : d_it(it), d_base(&base), d_showInternal(internal), d_showDefault(defaulted)
 {
   while (!isVisible())
   {
@@ -4893,7 +4725,7 @@ Statistics::iterator::iterator(Statistics::BaseType::const_iterator it,
 bool Statistics::iterator::isVisible() const
 {
   if (d_it == d_base->end()) return true;
-  if (!d_showExpert && d_it->second.isExpert()) return false;
+  if (!d_showInternal && d_it->second.isInternal()) return false;
   if (!d_showDefault && d_it->second.isDefault()) return false;
   return true;
 }
@@ -4908,9 +4740,9 @@ const Stat& Statistics::get(const std::string& name)
   CVC5_API_TRY_CATCH_END;
 }
 
-Statistics::iterator Statistics::begin(bool expert, bool defaulted) const
+Statistics::iterator Statistics::begin(bool internal, bool defaulted) const
 {
-  return iterator(d_stats.begin(), d_stats, expert, defaulted);
+  return iterator(d_stats.begin(), d_stats, internal, defaulted);
 }
 Statistics::iterator Statistics::end() const
 {
@@ -4922,7 +4754,7 @@ Statistics::Statistics(const StatisticsRegistry& reg)
   for (const auto& svp : reg)
   {
     d_stats.emplace(svp.first,
-                    Stat(svp.second->d_expert,
+                    Stat(svp.second->d_internal,
                          svp.second->isDefault(),
                          svp.second->getViewer()));
   }
@@ -4963,7 +4795,7 @@ NodeManager* Solver::getNodeManager(void) const { return d_nodeMgr; }
 
 void Solver::increment_term_stats(Kind kind) const
 {
-  if constexpr (Configuration::isStatisticsBuild())
+  if constexpr (configuration::isStatisticsBuild())
   {
     d_stats->d_terms << kind;
   }
@@ -4971,7 +4803,7 @@ void Solver::increment_term_stats(Kind kind) const
 
 void Solver::increment_vars_consts_stats(const Sort& sort, bool is_var) const
 {
-  if constexpr (Configuration::isStatisticsBuild())
+  if constexpr (configuration::isStatisticsBuild())
   {
     const TypeNode tn = sort.getTypeNode();
     TypeConstant tc = tn.getKind() == cvc5::kind::TYPE_CONSTANT
@@ -4992,7 +4824,7 @@ void Solver::increment_vars_consts_stats(const Sort& sort, bool is_var) const
 /* .......................................................................... */
 
 template <typename T>
-Term Solver::mkValHelper(T t) const
+Term Solver::mkValHelper(const T& t) const
 {
   //////// all checks before this line
   Node res = getNodeManager()->mkConst(t);
@@ -5000,7 +4832,23 @@ Term Solver::mkValHelper(T t) const
   return Term(this, res);
 }
 
-Term Solver::mkRealFromStrHelper(const std::string& s) const
+Term Solver::mkRationalValHelper(const Rational& r, bool isInt) const
+{
+  //////// all checks before this line
+  NodeManager* nm = getNodeManager();
+  Node res = isInt ? nm->mkConstInt(r) : nm->mkConstReal(r);
+  (void)res.getType(true); /* kick off type checking */
+  api::Term t = Term(this, res);
+  // NOTE: this block will be eliminated when arithmetic subtyping is eliminated
+  if (!isInt)
+  {
+    t = ensureRealSort(t);
+  }
+  return t;
+}
+
+Term Solver::mkRealOrIntegerFromStrHelper(const std::string& s,
+                                          bool isInt) const
 {
   //////// all checks before this line
   try
@@ -5008,7 +4856,7 @@ Term Solver::mkRealFromStrHelper(const std::string& s) const
     cvc5::Rational r = s.find('/') != std::string::npos
                            ? cvc5::Rational(s)
                            : cvc5::Rational::fromDecimal(s);
-    return mkValHelper<cvc5::Rational>(r);
+    return mkRationalValHelper(r, isInt);
   }
   catch (const std::invalid_argument& e)
   {
@@ -5032,6 +4880,7 @@ Term Solver::mkBVFromStrHelper(uint32_t size,
                                const std::string& s,
                                uint32_t base) const
 {
+  CVC5_API_ARG_CHECK_EXPECTED(size > 0, size) << "a bit-width > 0";
   CVC5_API_ARG_CHECK_EXPECTED(!s.empty(), s) << "a non-empty string";
   CVC5_API_ARG_CHECK_EXPECTED(base == 2 || base == 10 || base == 16, base)
       << "base 2, 10, or 16";
@@ -5041,7 +4890,7 @@ Term Solver::mkBVFromStrHelper(uint32_t size,
 
   if (val.strictlyNegative())
   {
-    CVC5_API_CHECK(val >= -Integer("2", 10).pow(size - 1))
+    CVC5_API_CHECK(val >= -Integer(2).pow(size - 1))
         << "Overflow in bitvector construction (specified bitvector size "
         << size << " too small to hold value " << s << ")";
   }
@@ -5057,6 +4906,12 @@ Term Solver::mkBVFromStrHelper(uint32_t size,
 Term Solver::getValueHelper(const Term& term) const
 {
   // Note: Term is checked in the caller to avoid double checks
+  bool wasShadow = false;
+  bool freeOrShadowedVar =
+      expr::hasFreeOrShadowedVar(term.getNode(), wasShadow);
+  CVC5_API_RECOVERABLE_CHECK(!freeOrShadowedVar)
+      << "Cannot get value of term containing "
+      << (wasShadow ? "shadowed" : "free") << " variables";
   //////// all checks before this line
   Node value = d_slv->getValue(*term.d_node);
   Term res = Term(this, value);
@@ -5079,14 +4934,15 @@ Sort Solver::mkTupleSortHelper(const std::vector<Sort>& sorts) const
 
 Term Solver::mkTermFromKind(Kind kind) const
 {
-  CVC5_API_KIND_CHECK_EXPECTED(kind == PI || kind == REGEXP_EMPTY
-                                   || kind == REGEXP_SIGMA || kind == SEP_EMP,
+  CVC5_API_KIND_CHECK_EXPECTED(kind == PI || kind == REGEXP_NONE
+                                   || kind == REGEXP_ALL
+                                   || kind == REGEXP_ALLCHAR || kind == SEP_EMP,
                                kind)
-      << "PI or REGEXP_EMPTY or REGEXP_SIGMA";
+      << "PI, REGEXP_NONE, REGEXP_ALL, REGEXP_ALLCHAR or SEP_EMP";
   //////// all checks before this line
   Node res;
   cvc5::Kind k = extToIntKind(kind);
-  if (kind == REGEXP_EMPTY || kind == REGEXP_SIGMA)
+  if (kind == REGEXP_NONE || kind == REGEXP_ALL || kind == REGEXP_ALLCHAR)
   {
     Assert(isDefinedIntKind(k));
     res = d_nodeMgr->mkNode(k, std::vector<Node>());
@@ -5109,14 +4965,17 @@ Term Solver::mkTermHelper(Kind kind, const std::vector<Term>& children) const
 {
   // Note: Kind and children are checked in the caller to avoid double checks
   //////// all checks before this line
-
+  if (children.size() == 0)
+  {
+    return mkTermFromKind(kind);
+  }
   std::vector<Node> echildren = Term::termVectorToNodes(children);
   cvc5::Kind k = extToIntKind(kind);
   Node res;
   if (echildren.size() > 2)
   {
-    if (kind == INTS_DIVISION || kind == XOR || kind == MINUS
-        || kind == DIVISION || kind == HO_APPLY || kind == REGEXP_DIFF)
+    if (kind == INTS_DIVISION || kind == XOR || kind == SUB || kind == DIVISION
+        || kind == HO_APPLY || kind == REGEXP_DIFF)
     {
       // left-associative, but cvc5 internally only supports 2 args
       res = d_nodeMgr->mkLeftAssociative(k, echildren);
@@ -5148,13 +5007,14 @@ Term Solver::mkTermHelper(Kind kind, const std::vector<Term>& children) const
   else if (kind::isAssociative(k))
   {
     // associative case, same as above
+    checkMkTerm(kind, children.size());
     res = d_nodeMgr->mkAssociative(k, echildren);
   }
   else
   {
     // default case, same as above
     checkMkTerm(kind, children.size());
-    if (kind == api::SINGLETON)
+    if (kind == api::SET_SINGLETON)
     {
       // the type of the term is the same as the type of the internal node
       // see Term::getSort()
@@ -5166,7 +5026,7 @@ Term Solver::mkTermHelper(Kind kind, const std::vector<Term>& children) const
       // element type can be used safely here.
       res = getNodeManager()->mkSingleton(type, *children[0].d_node);
     }
-    else if (kind == api::MK_BAG)
+    else if (kind == api::BAG_MAKE)
     {
       // the type of the term is the same as the type of the internal node
       // see Term::getSort()
@@ -5178,6 +5038,13 @@ Term Solver::mkTermHelper(Kind kind, const std::vector<Term>& children) const
       // element type can be used safely here.
       res = getNodeManager()->mkBag(
           type, *children[0].d_node, *children[1].d_node);
+    }
+    else if (kind == api::SEQ_UNIT)
+    {
+      // the type of the term is the same as the type of the internal node
+      // see Term::getSort()
+      TypeNode type = children[0].d_node->getType();
+      res = getNodeManager()->mkSeqUnit(type, *children[0].d_node);
     }
     else
     {
@@ -5192,14 +5059,14 @@ Term Solver::mkTermHelper(Kind kind, const std::vector<Term>& children) const
 
 Term Solver::mkTermHelper(const Op& op, const std::vector<Term>& children) const
 {
-  // Note: Op and children are checked in the caller to avoid double checks
-  checkMkTerm(op.d_kind, children.size());
-  //////// all checks before this line
-
   if (!op.isIndexedHelper())
   {
     return mkTermHelper(op.d_kind, children);
   }
+
+  // Note: Op and children are checked in the caller to avoid double checks
+  checkMkTerm(op.d_kind, children.size());
+  //////// all checks before this line
 
   const cvc5::Kind int_kind = extToIntKind(op.d_kind);
   std::vector<Node> echildren = Term::termVectorToNodes(children);
@@ -5300,7 +5167,8 @@ Term Solver::ensureTermSort(const Term& term, const Sort& sort) const
     res = Term(this,
                d_nodeMgr->mkNode(extToIntKind(DIVISION),
                                  *res.d_node,
-                                 d_nodeMgr->mkConst(cvc5::Rational(1))));
+                                 d_nodeMgr->mkConst(kind::CONST_RATIONAL,
+                                                    cvc5::Rational(1))));
   }
   Assert(res.getSort() == sort);
   return res;
@@ -5361,9 +5229,37 @@ bool Solver::isValidInteger(const std::string& s) const
   return true;
 }
 
+void Solver::ensureWellFormedTerm(const Term& t) const
+{
+  // only check if option is set
+  if (d_slv->getOptions().expr.wellFormedChecking)
+  {
+    bool wasShadow = false;
+    if (expr::hasFreeOrShadowedVar(*t.d_node, wasShadow))
+    {
+      std::stringstream se;
+      se << "Cannot process term with " << (wasShadow ? "shadowed" : "free")
+         << " variable";
+      throw CVC5ApiException(se.str().c_str());
+    }
+  }
+}
+
+void Solver::ensureWellFormedTerms(const std::vector<Term>& ts) const
+{
+  // only check if option is set
+  if (d_slv->getOptions().expr.wellFormedChecking)
+  {
+    for (const Term& t : ts)
+    {
+      ensureWellFormedTerm(t);
+    }
+  }
+}
+
 void Solver::resetStatistics()
 {
-  if constexpr (Configuration::isStatisticsBuild())
+  if constexpr (configuration::isStatisticsBuild())
   {
     d_stats.reset(new APIStatistics{
         d_slv->getStatisticsRegistry().registerHistogram<TypeConstant>(
@@ -5650,6 +5546,19 @@ Sort Solver::mkUninterpretedSort(const std::string& symbol) const
   CVC5_API_TRY_CATCH_END;
 }
 
+Sort Solver::mkUnresolvedSort(const std::string& symbol, size_t arity) const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  //////// all checks before this line
+  if (arity)
+  {
+    return Sort(this, getNodeManager()->mkSortConstructor(symbol, arity));
+  }
+  return Sort(this, getNodeManager()->mkSort(symbol));
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
 Sort Solver::mkSortConstructorSort(const std::string& symbol,
                                    size_t arity) const
 {
@@ -5664,7 +5573,7 @@ Sort Solver::mkSortConstructorSort(const std::string& symbol,
 Sort Solver::mkTupleSort(const std::vector<Sort>& sorts) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_SOLVER_CHECK_SORTS_NOT_FUNCTION_LIKE(sorts);
+  CVC5_API_SOLVER_CHECK_DOMAIN_SORTS(sorts);
   //////// all checks before this line
   return mkTupleSortHelper(sorts);
   ////////
@@ -5717,7 +5626,7 @@ Term Solver::mkInteger(const std::string& s) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_ARG_CHECK_EXPECTED(isValidInteger(s), s) << " an integer ";
-  Term integer = mkRealFromStrHelper(s);
+  Term integer = mkRealOrIntegerFromStrHelper(s);
   CVC5_API_ARG_CHECK_EXPECTED(integer.getSort() == getIntegerSort(), s)
       << " a string representing an integer";
   //////// all checks before this line
@@ -5730,7 +5639,7 @@ Term Solver::mkInteger(int64_t val) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
-  Term integer = mkValHelper<cvc5::Rational>(cvc5::Rational(val));
+  Term integer = mkRationalValHelper(cvc5::Rational(val));
   Assert(integer.getSort() == getIntegerSort());
   return integer;
   ////////
@@ -5746,8 +5655,7 @@ Term Solver::mkReal(const std::string& s) const
   CVC5_API_ARG_CHECK_EXPECTED(s != ".", s)
       << "a string representing a real or rational value.";
   //////// all checks before this line
-  Term rational = mkRealFromStrHelper(s);
-  return ensureRealSort(rational);
+  return mkRealOrIntegerFromStrHelper(s, false);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -5756,8 +5664,7 @@ Term Solver::mkReal(int64_t val) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
-  Term rational = mkValHelper<cvc5::Rational>(cvc5::Rational(val));
-  return ensureRealSort(rational);
+  return mkRationalValHelper(cvc5::Rational(val), false);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -5766,30 +5673,41 @@ Term Solver::mkReal(int64_t num, int64_t den) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
-  Term rational = mkValHelper<cvc5::Rational>(cvc5::Rational(num, den));
-  return ensureRealSort(rational);
+  return mkRationalValHelper(cvc5::Rational(num, den), false);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
 
-Term Solver::mkRegexpEmpty() const
+Term Solver::mkRegexpAll() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
   Node res =
-      d_nodeMgr->mkNode(cvc5::kind::REGEXP_EMPTY, std::vector<cvc5::Node>());
+      d_nodeMgr->mkNode(cvc5::kind::REGEXP_ALL, std::vector<cvc5::Node>());
   (void)res.getType(true); /* kick off type checking */
   return Term(this, res);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
 
-Term Solver::mkRegexpSigma() const
+Term Solver::mkRegexpNone() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
   Node res =
-      d_nodeMgr->mkNode(cvc5::kind::REGEXP_SIGMA, std::vector<cvc5::Node>());
+      d_nodeMgr->mkNode(cvc5::kind::REGEXP_NONE, std::vector<cvc5::Node>());
+  (void)res.getType(true); /* kick off type checking */
+  return Term(this, res);
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+Term Solver::mkRegexpAllchar() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  //////// all checks before this line
+  Node res =
+      d_nodeMgr->mkNode(cvc5::kind::REGEXP_ALLCHAR, std::vector<cvc5::Node>());
   (void)res.getType(true); /* kick off type checking */
   return Term(this, res);
   ////////
@@ -5818,6 +5736,18 @@ Term Solver::mkEmptyBag(const Sort& sort) const
       << "bag sort associated with this solver object";
   //////// all checks before this line
   return mkValHelper<cvc5::EmptyBag>(cvc5::EmptyBag(*sort.d_type));
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+Term Solver::mkSepEmp() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  //////// all checks before this line
+  Node res = getNodeManager()->mkNullaryOperator(d_nodeMgr->booleanType(),
+                                                 cvc5::Kind::SEP_EMP);
+  (void)res.getType(true); /* kick off type checking */
+  return Term(this, res);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -5872,7 +5802,7 @@ Term Solver::mkUniverseSet(const Sort& sort) const
   //////// all checks before this line
 
   Node res = getNodeManager()->mkNullaryOperator(*sort.d_type,
-                                                 cvc5::kind::UNIVERSE_SET);
+                                                 cvc5::kind::SET_UNIVERSE);
   // TODO(#2771): Reenable?
   // (void)res->getType(true); /* kick off type checking */
   return Term(this, res);
@@ -5906,7 +5836,7 @@ Term Solver::mkConstArray(const Sort& sort, const Term& val) const
   CVC5_API_SOLVER_CHECK_SORT(sort);
   CVC5_API_SOLVER_CHECK_TERM(val);
   CVC5_API_ARG_CHECK_EXPECTED(sort.isArray(), sort) << "an array sort";
-  CVC5_API_CHECK(val.getSort().isSubsortOf(sort.getArrayElementSort()))
+  CVC5_API_CHECK(val.getSort() == sort.getArrayElementSort())
       << "Value does not match element sort";
   //////// all checks before this line
 
@@ -5924,7 +5854,7 @@ Term Solver::mkConstArray(const Sort& sort, const Term& val) const
   CVC5_API_TRY_CATCH_END;
 }
 
-Term Solver::mkPosInf(uint32_t exp, uint32_t sig) const
+Term Solver::mkFloatingPointPosInf(uint32_t exp, uint32_t sig) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
@@ -5934,7 +5864,7 @@ Term Solver::mkPosInf(uint32_t exp, uint32_t sig) const
   CVC5_API_TRY_CATCH_END;
 }
 
-Term Solver::mkNegInf(uint32_t exp, uint32_t sig) const
+Term Solver::mkFloatingPointNegInf(uint32_t exp, uint32_t sig) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
@@ -5944,7 +5874,7 @@ Term Solver::mkNegInf(uint32_t exp, uint32_t sig) const
   CVC5_API_TRY_CATCH_END;
 }
 
-Term Solver::mkNaN(uint32_t exp, uint32_t sig) const
+Term Solver::mkFloatingPointNaN(uint32_t exp, uint32_t sig) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
@@ -5954,7 +5884,7 @@ Term Solver::mkNaN(uint32_t exp, uint32_t sig) const
   CVC5_API_TRY_CATCH_END;
 }
 
-Term Solver::mkPosZero(uint32_t exp, uint32_t sig) const
+Term Solver::mkFloatingPointPosZero(uint32_t exp, uint32_t sig) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
@@ -5964,7 +5894,7 @@ Term Solver::mkPosZero(uint32_t exp, uint32_t sig) const
   CVC5_API_TRY_CATCH_END;
 }
 
-Term Solver::mkNegZero(uint32_t exp, uint32_t sig) const
+Term Solver::mkFloatingPointNegZero(uint32_t exp, uint32_t sig) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
@@ -5983,46 +5913,6 @@ Term Solver::mkRoundingMode(RoundingMode rm) const
   CVC5_API_TRY_CATCH_END;
 }
 
-Term Solver::mkUninterpretedConst(const Sort& sort, int32_t index) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_SOLVER_CHECK_SORT(sort);
-  //////// all checks before this line
-  return mkValHelper<cvc5::UninterpretedConstant>(
-      cvc5::UninterpretedConstant(*sort.d_type, index));
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-Term Solver::mkAbstractValue(const std::string& index) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_ARG_CHECK_EXPECTED(!index.empty(), index) << "a non-empty string";
-
-  cvc5::Integer idx(index, 10);
-  CVC5_API_ARG_CHECK_EXPECTED(idx > 0, index)
-      << "a string representing an integer > 0";
-  //////// all checks before this line
-  return Term(this, getNodeManager()->mkConst(cvc5::AbstractValue(idx)));
-  // do not call getType(), for abstract values, type can not be computed
-  // until it is substituted away
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-Term Solver::mkAbstractValue(uint64_t index) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_ARG_CHECK_EXPECTED(index > 0, index) << "an integer > 0";
-  //////// all checks before this line
-  return Term(this,
-              getNodeManager()->mkConst(cvc5::AbstractValue(Integer(index))));
-  // do not call getType(), for abstract values, type can not be computed
-  // until it is substituted away
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
 Term Solver::mkFloatingPoint(uint32_t exp, uint32_t sig, Term val) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
@@ -6030,14 +5920,31 @@ Term Solver::mkFloatingPoint(uint32_t exp, uint32_t sig, Term val) const
   CVC5_API_ARG_CHECK_EXPECTED(exp > 0, exp) << "a value > 0";
   CVC5_API_ARG_CHECK_EXPECTED(sig > 0, sig) << "a value > 0";
   uint32_t bw = exp + sig;
-  CVC5_API_ARG_CHECK_EXPECTED(bw == val.getSort().getBVSize(), val)
+  CVC5_API_ARG_CHECK_EXPECTED(bw == val.d_node->getType().getBitVectorSize(),
+                              val)
       << "a bit-vector constant with bit-width '" << bw << "'";
   CVC5_API_ARG_CHECK_EXPECTED(
-      val.getSort().isBitVector() && val.d_node->isConst(), val)
+      val.d_node->getType().isBitVector() && val.d_node->isConst(), val)
       << "bit-vector constant";
   //////// all checks before this line
   return mkValHelper<cvc5::FloatingPoint>(
       cvc5::FloatingPoint(exp, sig, val.d_node->getConst<BitVector>()));
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+Term Solver::mkCardinalityConstraint(const Sort& sort, uint32_t upperBound) const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_SOLVER_CHECK_SORT(sort);
+  CVC5_API_ARG_CHECK_EXPECTED(sort.isUninterpretedSort(), sort)
+      << "an uninterpreted sort";
+  CVC5_API_ARG_CHECK_EXPECTED(upperBound > 0, upperBound) << "a value > 0";
+  //////// all checks before this line
+  Node cco =
+      d_nodeMgr->mkConst(cvc5::CardinalityConstraint(*sort.d_type, upperBound));
+  Node cc = d_nodeMgr->mkNode(cvc5::Kind::CARDINALITY_CONSTRAINT, cco);
+  return Term(this, cc);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -6114,7 +6021,7 @@ DatatypeDecl Solver::mkDatatypeDecl(const std::string& name, bool isCoDatatype)
 }
 
 DatatypeDecl Solver::mkDatatypeDecl(const std::string& name,
-                                    Sort param,
+                                    const Sort& param,
                                     bool isCoDatatype)
 {
   CVC5_API_TRY_CATCH_BEGIN;
@@ -6140,56 +6047,6 @@ DatatypeDecl Solver::mkDatatypeDecl(const std::string& name,
 /* Create terms                                                               */
 /* -------------------------------------------------------------------------- */
 
-Term Solver::mkTerm(Kind kind) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_KIND_CHECK(kind);
-  //////// all checks before this line
-  return mkTermFromKind(kind);
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-Term Solver::mkTerm(Kind kind, const Term& child) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_KIND_CHECK(kind);
-  CVC5_API_SOLVER_CHECK_TERM(child);
-  //////// all checks before this line
-  return mkTermHelper(kind, std::vector<Term>{child});
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-Term Solver::mkTerm(Kind kind, const Term& child1, const Term& child2) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_KIND_CHECK(kind);
-  CVC5_API_SOLVER_CHECK_TERM(child1);
-  CVC5_API_SOLVER_CHECK_TERM(child2);
-  //////// all checks before this line
-  return mkTermHelper(kind, std::vector<Term>{child1, child2});
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-Term Solver::mkTerm(Kind kind,
-                    const Term& child1,
-                    const Term& child2,
-                    const Term& child3) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_KIND_CHECK(kind);
-  CVC5_API_SOLVER_CHECK_TERM(child1);
-  CVC5_API_SOLVER_CHECK_TERM(child2);
-  CVC5_API_SOLVER_CHECK_TERM(child3);
-  //////// all checks before this line
-  // need to use internal term call to check e.g. associative construction
-  return mkTermHelper(kind, std::vector<Term>{child1, child2, child3});
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
 Term Solver::mkTerm(Kind kind, const std::vector<Term>& children) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
@@ -6197,66 +6054,6 @@ Term Solver::mkTerm(Kind kind, const std::vector<Term>& children) const
   CVC5_API_SOLVER_CHECK_TERMS(children);
   //////// all checks before this line
   return mkTermHelper(kind, children);
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-Term Solver::mkTerm(const Op& op) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_SOLVER_CHECK_OP(op);
-  checkMkTerm(op.d_kind, 0);
-  //////// all checks before this line
-
-  if (!op.isIndexedHelper())
-  {
-    return mkTermFromKind(op.d_kind);
-  }
-
-  const cvc5::Kind int_kind = extToIntKind(op.d_kind);
-  Term res = Term(this, getNodeManager()->mkNode(int_kind, *op.d_node));
-
-  (void)res.d_node->getType(true); /* kick off type checking */
-  return res;
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-Term Solver::mkTerm(const Op& op, const Term& child) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_SOLVER_CHECK_OP(op);
-  CVC5_API_SOLVER_CHECK_TERM(child);
-  //////// all checks before this line
-  return mkTermHelper(op, std::vector<Term>{child});
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-Term Solver::mkTerm(const Op& op, const Term& child1, const Term& child2) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_SOLVER_CHECK_OP(op);
-  CVC5_API_SOLVER_CHECK_TERM(child1);
-  CVC5_API_SOLVER_CHECK_TERM(child2);
-  //////// all checks before this line
-  return mkTermHelper(op, std::vector<Term>{child1, child2});
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-Term Solver::mkTerm(const Op& op,
-                    const Term& child1,
-                    const Term& child2,
-                    const Term& child3) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_SOLVER_CHECK_OP(op);
-  CVC5_API_SOLVER_CHECK_TERM(child1);
-  CVC5_API_SOLVER_CHECK_TERM(child2);
-  CVC5_API_SOLVER_CHECK_TERM(child3);
-  //////// all checks before this line
-  return mkTermHelper(op, std::vector<Term>{child1, child2, child3});
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -6438,46 +6235,39 @@ Op Solver::mkOp(Kind kind, uint32_t arg1, uint32_t arg2) const
                     cvc5::BitVectorExtract(arg1, arg2))
                     .d_node);
       break;
-    case FLOATINGPOINT_TO_FP_IEEE_BITVECTOR:
+    case FLOATINGPOINT_TO_FP_FROM_IEEE_BV:
       res = Op(this,
                kind,
                *mkValHelper<cvc5::FloatingPointToFPIEEEBitVector>(
                     cvc5::FloatingPointToFPIEEEBitVector(arg1, arg2))
                     .d_node);
       break;
-    case FLOATINGPOINT_TO_FP_FLOATINGPOINT:
+    case FLOATINGPOINT_TO_FP_FROM_FP:
       res = Op(this,
                kind,
                *mkValHelper<cvc5::FloatingPointToFPFloatingPoint>(
                     cvc5::FloatingPointToFPFloatingPoint(arg1, arg2))
                     .d_node);
       break;
-    case FLOATINGPOINT_TO_FP_REAL:
+    case FLOATINGPOINT_TO_FP_FROM_REAL:
       res = Op(this,
                kind,
                *mkValHelper<cvc5::FloatingPointToFPReal>(
                     cvc5::FloatingPointToFPReal(arg1, arg2))
                     .d_node);
       break;
-    case FLOATINGPOINT_TO_FP_SIGNED_BITVECTOR:
+    case FLOATINGPOINT_TO_FP_FROM_SBV:
       res = Op(this,
                kind,
                *mkValHelper<cvc5::FloatingPointToFPSignedBitVector>(
                     cvc5::FloatingPointToFPSignedBitVector(arg1, arg2))
                     .d_node);
       break;
-    case FLOATINGPOINT_TO_FP_UNSIGNED_BITVECTOR:
+    case FLOATINGPOINT_TO_FP_FROM_UBV:
       res = Op(this,
                kind,
                *mkValHelper<cvc5::FloatingPointToFPUnsignedBitVector>(
                     cvc5::FloatingPointToFPUnsignedBitVector(arg1, arg2))
-                    .d_node);
-      break;
-    case FLOATINGPOINT_TO_FP_GENERIC:
-      res = Op(this,
-               kind,
-               *mkValHelper<cvc5::FloatingPointToFPGeneric>(
-                    cvc5::FloatingPointToFPGeneric(arg1, arg2))
                     .d_node);
       break;
     case REGEXP_LOOP:
@@ -6534,35 +6324,9 @@ Term Solver::simplify(const Term& term)
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_TERM(term);
   //////// all checks before this line
-  return Term(this, d_slv->simplify(*term.d_node));
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-Result Solver::checkEntailed(const Term& term) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_CHECK(!d_slv->isQueryMade()
-                 || d_slv->getOptions().base.incrementalSolving)
-      << "Cannot make multiple queries unless incremental solving is enabled "
-         "(try --incremental)";
-  CVC5_API_SOLVER_CHECK_TERM(term);
-  //////// all checks before this line
-  return d_slv->checkEntailed(*term.d_node);
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-Result Solver::checkEntailed(const std::vector<Term>& terms) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_CHECK(!d_slv->isQueryMade()
-                 || d_slv->getOptions().base.incrementalSolving)
-      << "Cannot make multiple queries unless incremental solving is enabled "
-         "(try --incremental)";
-  CVC5_API_SOLVER_CHECK_TERMS(terms);
-  //////// all checks before this line
-  return d_slv->checkEntailed(Term::termVectorToNodes(terms));
+  Term res = Term(this, d_slv->simplify(*term.d_node));
+  Assert(res.getSort().d_type->isSubtypeOf(*term.getSort().d_type));
+  return res;
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -6575,6 +6339,7 @@ void Solver::assertFormula(const Term& term) const
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_TERM(term);
   CVC5_API_SOLVER_CHECK_TERM_WITH_SORT(term, getBooleanSort());
+  ensureWellFormedTerm(term);
   //////// all checks before this line
   d_slv->assertFormula(*term.d_node);
   ////////
@@ -6602,6 +6367,7 @@ Result Solver::checkSatAssuming(const Term& assumption) const
       << "Cannot make multiple queries unless incremental solving is enabled "
          "(try --incremental)";
   CVC5_API_SOLVER_CHECK_TERM_WITH_SORT(assumption, getBooleanSort());
+  ensureWellFormedTerm(assumption);
   //////// all checks before this line
   return d_slv->checkSat(*assumption.d_node);
   ////////
@@ -6616,6 +6382,7 @@ Result Solver::checkSatAssuming(const std::vector<Term>& assumptions) const
       << "Cannot make multiple queries unless incremental solving is enabled "
          "(try --incremental)";
   CVC5_API_SOLVER_CHECK_TERMS_WITH_SORT(assumptions, getBooleanSort());
+  ensureWellFormedTerms(assumptions);
   //////// all checks before this line
   for (const Term& term : assumptions)
   {
@@ -6635,6 +6402,11 @@ Sort Solver::declareDatatype(
   CVC5_API_ARG_CHECK_EXPECTED(ctors.size() > 0, ctors)
       << "a datatype declaration with at least one constructor";
   CVC5_API_SOLVER_CHECK_DTCTORDECLS(ctors);
+  for (size_t i = 0, size = ctors.size(); i < size; i++)
+  {
+    CVC5_API_CHECK(!ctors[i].isResolved())
+        << "cannot use a constructor for multiple datatypes";
+  }
   //////// all checks before this line
   DatatypeDecl dtdecl(this, symbol);
   for (size_t i = 0, size = ctors.size(); i < size; i++)
@@ -6688,7 +6460,7 @@ Term Solver::defineFun(const std::string& symbol,
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_CODOMAIN_SORT(sort);
   CVC5_API_SOLVER_CHECK_TERM(term);
-  CVC5_API_CHECK(sort == term.getSort())
+  CVC5_API_CHECK(term.getSort() == sort)
       << "Invalid sort of function body '" << term << "', expected '" << sort
       << "'";
 
@@ -6710,37 +6482,6 @@ Term Solver::defineFun(const std::string& symbol,
 
   d_slv->defineFunction(
       *fun.d_node, Term::termVectorToNodes(bound_vars), *term.d_node, global);
-  return fun;
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-Term Solver::defineFun(const Term& fun,
-                       const std::vector<Term>& bound_vars,
-                       const Term& term,
-                       bool global) const
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_SOLVER_CHECK_TERM(fun);
-  CVC5_API_SOLVER_CHECK_TERM(term);
-  if (fun.getSort().isFunction())
-  {
-    std::vector<Sort> domain_sorts = fun.getSort().getFunctionDomainSorts();
-    CVC5_API_SOLVER_CHECK_BOUND_VARS_DEF_FUN(fun, bound_vars, domain_sorts);
-    Sort codomain = fun.getSort().getFunctionCodomainSort();
-    CVC5_API_CHECK(codomain == term.getSort())
-        << "Invalid sort of function body '" << term << "', expected '"
-        << codomain << "'";
-  }
-  else
-  {
-    CVC5_API_SOLVER_CHECK_BOUND_VARS(bound_vars);
-    CVC5_API_ARG_CHECK_EXPECTED(bound_vars.size() == 0, fun)
-        << "function or nullary symbol";
-  }
-  //////// all checks before this line
-  std::vector<Node> ebound_vars = Term::termVectorToNodes(bound_vars);
-  d_slv->defineFunction(*fun.d_node, ebound_vars, *term.d_node, global);
   return fun;
   ////////
   CVC5_API_TRY_CATCH_END;
@@ -6892,11 +6633,6 @@ void Solver::defineFunsRec(const std::vector<Term>& funs,
   CVC5_API_TRY_CATCH_END;
 }
 
-void Solver::echo(std::ostream& out, const std::string& str) const
-{
-  out << str;
-}
-
 std::vector<Term> Solver::getAssertions(void) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
@@ -6905,12 +6641,7 @@ std::vector<Term> Solver::getAssertions(void) const
   /* Can not use
    *   return std::vector<Term>(assertions.begin(), assertions.end());
    * here since constructor is private */
-  std::vector<Term> res;
-  for (const Node& e : assertions)
-  {
-    res.push_back(Term(this, e));
-  }
-  return res;
+  return Term::nodeVectorToTerms(this, assertions);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -6918,8 +6649,8 @@ std::vector<Term> Solver::getAssertions(void) const
 std::string Solver::getInfo(const std::string& flag) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_RECOVERABLE_CHECK(d_slv->isValidGetInfoFlag(flag))
-      << "Unrecognized flag for getInfo.";
+  CVC5_API_UNSUPPORTED_CHECK(d_slv->isValidGetInfoFlag(flag))
+      << "Unrecognized flag: " << flag << ".";
   //////// all checks before this line
   return d_slv->getInfo(flag);
   ////////
@@ -6928,11 +6659,14 @@ std::string Solver::getInfo(const std::string& flag) const
 
 std::string Solver::getOption(const std::string& option) const
 {
-  CVC5_API_TRY_CATCH_BEGIN;
-  //////// all checks before this line
-  return d_slv->getOption(option);
-  ////////
-  CVC5_API_TRY_CATCH_END;
+  try
+  {
+    return d_slv->getOption(option);
+  }
+  catch (OptionException& e)
+  {
+    throw CVC5ApiUnsupportedException(e.getMessage());
+  }
 }
 
 // Supports a visitor from a list of lambdas
@@ -7186,7 +6920,7 @@ std::map<Term, Term> Solver::getDifficulty() const
   CVC5_API_RECOVERABLE_CHECK(d_slv->getSmtMode() == SmtMode::UNSAT
                              || d_slv->getSmtMode() == SmtMode::SAT
                              || d_slv->getSmtMode() == SmtMode::SAT_UNKNOWN)
-      << "Cannot get difficulty unless after a UNSAT, SAT or unknown response.";
+      << "Cannot get difficulty unless after a UNSAT, SAT or UNKNOWN response.";
   //////// all checks before this line
   std::map<Term, Term> res;
   std::map<Node, Node> dmap;
@@ -7204,17 +6938,46 @@ std::string Solver::getProof(void) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_CHECK(d_slv->getOptions().smt.produceProofs)
-      << "Cannot get proof explicitly enabled (try --produce-proofs)";
+      << "Cannot get proof unless proofs are enabled (try --produce-proofs)";
   CVC5_API_RECOVERABLE_CHECK(d_slv->getSmtMode() == SmtMode::UNSAT)
       << "Cannot get proof unless in unsat mode.";
   return d_slv->getProof();
   CVC5_API_TRY_CATCH_END;
 }
 
+std::vector<Term> Solver::getLearnedLiterals(void) const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_CHECK(d_slv->getOptions().smt.produceLearnedLiterals)
+      << "Cannot get learned literals unless enabled (try "
+         "--produce-learned-literals)";
+  CVC5_API_RECOVERABLE_CHECK(d_slv->getSmtMode() == SmtMode::UNSAT
+                             || d_slv->getSmtMode() == SmtMode::SAT
+                             || d_slv->getSmtMode() == SmtMode::SAT_UNKNOWN)
+      << "Cannot get learned literals unless after a UNSAT, SAT or UNKNOWN "
+         "response.";
+  //////// all checks before this line
+  std::vector<Node> lits = d_slv->getLearnedLiterals();
+  return Term::nodeVectorToTerms(this, lits);
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
 Term Solver::getValue(const Term& term) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_RECOVERABLE_CHECK(d_slv->getOptions().smt.produceModels)
+      << "Cannot get value unless model generation is enabled "
+         "(try --produce-models)";
+  CVC5_API_RECOVERABLE_CHECK(d_slv->isSmtModeSat())
+      << "Cannot get value unless after a SAT or UNKNOWN response.";
   CVC5_API_SOLVER_CHECK_TERM(term);
+  CVC5_API_RECOVERABLE_CHECK(term.getSort().getTypeNode().isFirstClass())
+      << "Cannot get value of a term that is not first class.";
+  CVC5_API_RECOVERABLE_CHECK(!term.getSort().isDatatype()
+                             || term.getSort().getDatatype().isWellFounded())
+      << "Cannot get value of a term of non-well-founded datatype sort.";
+  ensureWellFormedTerm(term);
   //////// all checks before this line
   return getValueHelper(term);
   ////////
@@ -7228,8 +6991,17 @@ std::vector<Term> Solver::getValue(const std::vector<Term>& terms) const
       << "Cannot get value unless model generation is enabled "
          "(try --produce-models)";
   CVC5_API_RECOVERABLE_CHECK(d_slv->isSmtModeSat())
-      << "Cannot get value unless after a SAT or unknown response.";
+      << "Cannot get value unless after a SAT or UNKNOWN response.";
+  for (const Term& t : terms)
+  {
+    CVC5_API_RECOVERABLE_CHECK(t.getSort().getTypeNode().isFirstClass())
+        << "Cannot get value of a term that is not first class.";
+    CVC5_API_RECOVERABLE_CHECK(!t.getSort().isDatatype()
+                               || t.getSort().getDatatype().isWellFounded())
+        << "Cannot get value of a term of non-well-founded datatype sort.";
+  }
   CVC5_API_SOLVER_CHECK_TERMS(terms);
+  ensureWellFormedTerms(terms);
   //////// all checks before this line
 
   std::vector<Term> res;
@@ -7250,7 +7022,7 @@ std::vector<Term> Solver::getModelDomainElements(const Sort& s) const
       << "Cannot get domain elements unless model generation is enabled "
          "(try --produce-models)";
   CVC5_API_RECOVERABLE_CHECK(d_slv->isSmtModeSat())
-      << "Cannot get domain elements unless after a SAT or unknown response.";
+      << "Cannot get domain elements unless after a SAT or UNKNOWN response.";
   CVC5_API_SOLVER_CHECK_SORT(s);
   CVC5_API_RECOVERABLE_CHECK(s.isUninterpretedSort())
       << "Expecting an uninterpreted sort as argument to "
@@ -7274,7 +7046,7 @@ bool Solver::isModelCoreSymbol(const Term& v) const
       << "Cannot check if model core symbol unless model generation is enabled "
          "(try --produce-models)";
   CVC5_API_RECOVERABLE_CHECK(d_slv->isSmtModeSat())
-      << "Cannot check if model core symbol unless after a SAT or unknown "
+      << "Cannot check if model core symbol unless after a SAT or UNKNOWN "
          "response.";
   CVC5_API_SOLVER_CHECK_TERM(v);
   CVC5_API_RECOVERABLE_CHECK(v.getKind() == CONSTANT)
@@ -7293,7 +7065,7 @@ std::string Solver::getModel(const std::vector<Sort>& sorts,
       << "Cannot get model unless model generation is enabled "
          "(try --produce-models)";
   CVC5_API_RECOVERABLE_CHECK(d_slv->isSmtModeSat())
-      << "Cannot get model unless after a SAT or unknown response.";
+      << "Cannot get model unless after a SAT or UNKNOWN response.";
   CVC5_API_SOLVER_CHECK_SORTS(sorts);
   for (const Sort& s : sorts)
   {
@@ -7319,7 +7091,7 @@ Term Solver::getQuantifierElimination(const Term& q) const
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_TERM(q);
   //////// all checks before this line
-  return Term(this, d_slv->getQuantifierElimination(q.getNode(), true, true));
+  return Term(this, d_slv->getQuantifierElimination(q.getNode(), true));
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -7329,13 +7101,12 @@ Term Solver::getQuantifierEliminationDisjunct(const Term& q) const
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_TERM(q);
   //////// all checks before this line
-  return Term(this, d_slv->getQuantifierElimination(q.getNode(), false, true));
+  return Term(this, d_slv->getQuantifierElimination(q.getNode(), false));
   ////////
   CVC5_API_TRY_CATCH_END;
 }
 
-void Solver::declareSeparationHeap(const Sort& locSort,
-                                   const Sort& dataSort) const
+void Solver::declareSepHeap(const Sort& locSort, const Sort& dataSort) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_SORT(locSort);
@@ -7349,7 +7120,7 @@ void Solver::declareSeparationHeap(const Sort& locSort,
   CVC5_API_TRY_CATCH_END;
 }
 
-Term Solver::getSeparationHeap() const
+Term Solver::getValueSepHeap() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_CHECK(d_slv->getLogicInfo().isTheoryEnabled(theory::THEORY_SEP))
@@ -7359,14 +7130,14 @@ Term Solver::getSeparationHeap() const
       << "Cannot get separation heap term unless model generation is enabled "
          "(try --produce-models)";
   CVC5_API_RECOVERABLE_CHECK(d_slv->isSmtModeSat())
-      << "Can only get separtion heap term after sat or unknown response.";
+      << "Can only get separtion heap term after SAT or UNKNOWN response.";
   //////// all checks before this line
   return Term(this, d_slv->getSepHeapExpr());
   ////////
   CVC5_API_TRY_CATCH_END;
 }
 
-Term Solver::getSeparationNilTerm() const
+Term Solver::getValueSepNil() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_CHECK(d_slv->getLogicInfo().isTheoryEnabled(theory::THEORY_SEP))
@@ -7376,7 +7147,7 @@ Term Solver::getSeparationNilTerm() const
       << "Cannot get separation nil term unless model generation is enabled "
          "(try --produce-models)";
   CVC5_API_RECOVERABLE_CHECK(d_slv->isSmtModeSat())
-      << "Can only get separtion nil term after sat or unknown response.";
+      << "Can only get separtion nil term after SAT or UNKNOWN response.";
   //////// all checks before this line
   return Term(this, d_slv->getSepNilExpr());
   ////////
@@ -7416,70 +7187,93 @@ void Solver::pop(uint32_t nscopes) const
   CVC5_API_TRY_CATCH_END;
 }
 
-bool Solver::getInterpolant(const Term& conj, Term& output) const
+Term Solver::getInterpolant(const Term& conj) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_TERM(conj);
+  CVC5_API_CHECK(d_slv->getOptions().smt.produceInterpols
+                 != options::ProduceInterpols::NONE)
+      << "Cannot get interpolant unless interpolants are enabled (try "
+         "--produce-interpols=mode)";
   //////// all checks before this line
-  Node result;
-  bool success = d_slv->getInterpol(*conj.d_node, result);
-  if (success)
-  {
-    output = Term(this, result);
-  }
-  return success;
+  TypeNode nullType;
+  Node result = d_slv->getInterpolant(*conj.d_node, nullType);
+  return Term(this, result);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
 
-bool Solver::getInterpolant(const Term& conj,
-                            Grammar& grammar,
-                            Term& output) const
+Term Solver::getInterpolant(const Term& conj, Grammar& grammar) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_TERM(conj);
+  CVC5_API_CHECK(d_slv->getOptions().smt.produceInterpols
+                 != options::ProduceInterpols::NONE)
+      << "Cannot get interpolant unless interpolants are enabled (try "
+         "--produce-interpols=mode)";
   //////// all checks before this line
-  Node result;
-  bool success =
-      d_slv->getInterpol(*conj.d_node, *grammar.resolve().d_type, result);
-  if (success)
-  {
-    output = Term(this, result);
-  }
-  return success;
+  Node result = d_slv->getInterpolant(*conj.d_node, *grammar.resolve().d_type);
+  return Term(this, result);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
 
-bool Solver::getAbduct(const Term& conj, Term& output) const
+Term Solver::getInterpolantNext() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_SOLVER_CHECK_TERM(conj);
+  CVC5_API_CHECK(d_slv->getOptions().smt.produceInterpols
+                 != options::ProduceInterpols::NONE)
+      << "Cannot get interpolant unless interpolants are enabled (try "
+         "--produce-interpols=mode)";
+  CVC5_API_CHECK(d_slv->getOptions().base.incrementalSolving)
+      << "Cannot get next interpolant when not solving incrementally (try "
+         "--incremental)";
   //////// all checks before this line
-  Node result;
-  bool success = d_slv->getAbduct(*conj.d_node, result);
-  if (success)
-  {
-    output = Term(this, result);
-  }
-  return success;
+  Node result = d_slv->getInterpolantNext();
+  return Term(this, result);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
 
-bool Solver::getAbduct(const Term& conj, Grammar& grammar, Term& output) const
+Term Solver::getAbduct(const Term& conj) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_TERM(conj);
+  CVC5_API_CHECK(d_slv->getOptions().smt.produceAbducts)
+      << "Cannot get abduct unless abducts are enabled (try --produce-abducts)";
   //////// all checks before this line
-  Node result;
-  bool success =
-      d_slv->getAbduct(*conj.d_node, *grammar.resolve().d_type, result);
-  if (success)
-  {
-    output = Term(this, result);
-  }
-  return success;
+  TypeNode nullType;
+  Node result = d_slv->getAbduct(*conj.d_node, nullType);
+  return Term(this, result);
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+Term Solver::getAbduct(const Term& conj, Grammar& grammar) const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_SOLVER_CHECK_TERM(conj);
+  CVC5_API_CHECK(d_slv->getOptions().smt.produceAbducts)
+      << "Cannot get abduct unless abducts are enabled (try --produce-abducts)";
+  //////// all checks before this line
+  Node result = d_slv->getAbduct(*conj.d_node, *grammar.resolve().d_type);
+  return Term(this, result);
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+Term Solver::getAbductNext() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_CHECK(d_slv->getOptions().smt.produceAbducts)
+      << "Cannot get next abduct unless abducts are enabled (try "
+         "--produce-abducts)";
+  CVC5_API_CHECK(d_slv->getOptions().base.incrementalSolving)
+      << "Cannot get next abduct when not solving incrementally (try "
+         "--incremental)";
+  //////// all checks before this line
+  Node result = d_slv->getAbductNext();
+  return Term(this, result);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -7491,7 +7285,7 @@ void Solver::blockModel() const
       << "Cannot get value unless model generation is enabled "
          "(try --produce-models)";
   CVC5_API_RECOVERABLE_CHECK(d_slv->isSmtModeSat())
-      << "Can only block model after sat or unknown response.";
+      << "Can only block model after SAT or UNKNOWN response.";
   //////// all checks before this line
   d_slv->blockModel();
   ////////
@@ -7505,21 +7299,24 @@ void Solver::blockModelValues(const std::vector<Term>& terms) const
       << "Cannot get value unless model generation is enabled "
          "(try --produce-models)";
   CVC5_API_RECOVERABLE_CHECK(d_slv->isSmtModeSat())
-      << "Can only block model values after sat or unknown response.";
+      << "Can only block model values after SAT or UNKNOWN response.";
   CVC5_API_ARG_SIZE_CHECK_EXPECTED(!terms.empty(), terms)
       << "a non-empty set of terms";
   CVC5_API_SOLVER_CHECK_TERMS(terms);
+  ensureWellFormedTerms(terms);
   //////// all checks before this line
   d_slv->blockModelValues(Term::termVectorToNodes(terms));
   ////////
   CVC5_API_TRY_CATCH_END;
 }
 
-void Solver::printInstantiations(std::ostream& out) const
+std::string Solver::getInstantiations() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   //////// all checks before this line
-  d_slv->printInstantiations(out);
+  std::stringstream ss;
+  d_slv->printInstantiations(ss);
+  return ss.str();
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -7550,13 +7347,14 @@ void Solver::resetAssertions(void) const
 void Solver::setInfo(const std::string& keyword, const std::string& value) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_RECOVERABLE_ARG_CHECK_EXPECTED(
+  CVC5_API_UNSUPPORTED_CHECK(
       keyword == "source" || keyword == "category" || keyword == "difficulty"
-          || keyword == "filename" || keyword == "license" || keyword == "name"
-          || keyword == "notes" || keyword == "smt-lib-version"
-          || keyword == "status",
-      keyword)
-      << "'source', 'category', 'difficulty', 'filename', 'license', 'name', "
+      || keyword == "filename" || keyword == "license" || keyword == "name"
+      || keyword == "notes" || keyword == "smt-lib-version"
+      || keyword == "status")
+      << "Unrecognized keyword: " << keyword
+      << ", expected 'source', 'category', 'difficulty', "
+         "'filename', 'license', 'name', "
          "'notes', 'smt-lib-version' or 'status'";
   CVC5_API_RECOVERABLE_ARG_CHECK_EXPECTED(
       keyword != "smt-lib-version" || value == "2" || value == "2.0"
@@ -7589,6 +7387,11 @@ void Solver::setOption(const std::string& option,
                        const std::string& value) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
+  std::vector<std::string> options = options::getNames();
+  CVC5_API_UNSUPPORTED_CHECK(
+      option.find("command-verbosity") != std::string::npos
+      || std::find(options.cbegin(), options.cend(), option) != options.cend())
+      << "Unrecognized option: " << option << '.';
   static constexpr auto mutableOpts = {"diagnostic-output-channel",
                                        "print-success",
                                        "regular-output-channel",
@@ -7775,6 +7578,18 @@ Result Solver::checkSynth() const
   CVC5_API_TRY_CATCH_END;
 }
 
+Result Solver::checkSynthNext() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_CHECK(d_slv->getOptions().base.incrementalSolving)
+      << "Cannot checkSynthNext when not solving incrementally (use "
+         "--incremental)";
+  //////// all checks before this line
+  return d_slv->checkSynth(true);
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
 Term Solver::getSynthSolution(Term term) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
@@ -7848,12 +7663,12 @@ bool Solver::isOutputOn(const std::string& tag) const
 
 std::ostream& Solver::getOutput(const std::string& tag) const
 {
-  // `getOutput(tag)` may raise an `OptionException`, which we do not want to
+  // `output(tag)` may raise an `OptionException`, which we do not want to
   // forward as such. We thus do not use the standard exception handling macros
   // here but roll our own.
   try
   {
-    return d_slv->getEnv().getOutput(tag);
+    return d_slv->getEnv().output(tag);
   }
   catch (const cvc5::Exception& e)
   {

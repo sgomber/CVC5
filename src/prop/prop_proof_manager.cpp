@@ -46,7 +46,7 @@ void PropPfManager::registerAssertion(Node assertion)
   d_assertions.push_back(assertion);
 }
 
-void PropPfManager::checkProof(context::CDList<Node>* assertions)
+void PropPfManager::checkProof(const context::CDList<Node>& assertions)
 {
   Trace("sat-proof") << "PropPfManager::checkProof: Checking if resolution "
                         "proof of false is closed\n";
@@ -55,7 +55,7 @@ void PropPfManager::checkProof(context::CDList<Node>* assertions)
   // connect it with CNF proof
   d_pfpp->process(conflictProof);
   // add given assertions d_assertions
-  for (const Node& assertion : *assertions)
+  for (const Node& assertion : assertions)
   {
     d_assertions.push_back(assertion);
   }
@@ -71,7 +71,7 @@ std::shared_ptr<ProofNode> PropPfManager::getProof()
       << "PropPfManager::getProof: Getting resolution proof of false\n";
   std::shared_ptr<ProofNode> conflictProof = d_satSolver->getProof();
   Assert(conflictProof);
-  if (Trace.isOn("sat-proof"))
+  if (TraceIsOn("sat-proof"))
   {
     std::vector<Node> fassumps;
     expr::getFreeAssumptions(conflictProof.get(), fassumps);
@@ -88,7 +88,7 @@ std::shared_ptr<ProofNode> PropPfManager::getProof()
   }
   // connect it with CNF proof
   d_pfpp->process(conflictProof);
-  if (Trace.isOn("sat-proof"))
+  if (TraceIsOn("sat-proof"))
   {
     std::vector<Node> fassumps;
     expr::getFreeAssumptions(conflictProof.get(), fassumps);

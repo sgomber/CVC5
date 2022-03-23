@@ -20,15 +20,22 @@
 
 #include <memory>
 
+#include "smt/env_obj.h"
 #include "smt/expand_definitions.h"
 #include "smt/process_assertions.h"
 #include "theory/booleans/circuit_propagator.h"
 
 namespace cvc5 {
-class Env;
+
+class TheoryEngine;
+
 namespace preprocessing {
 class PreprocessingPassContext;
 }
+namespace prop {
+class PropEngine;
+}
+
 namespace smt {
 
 class AbstractValues;
@@ -43,27 +50,28 @@ class PreprocessProofGenerator;
  * (2) implementing methods for expanding and simplifying formulas. The latter
  * takes into account the substitutions inferred by this class.
  */
-class Preprocessor
+class Preprocessor : protected EnvObj
 {
  public:
-  Preprocessor(SolverEngine& smt,
-               Env& env,
-               AbstractValues& abs,
-               SmtEngineStatistics& stats);
+  Preprocessor(Env& env, AbstractValues& abs, SolverEngineStatistics& stats);
   ~Preprocessor();
   /**
    * Finish initialization
    */
-  void finishInit();
+  void finishInit(TheoryEngine* te, prop::PropEngine* pe);
   /**
    * Process the assertions that have been asserted in argument as. Returns
    * true if no conflict was discovered while preprocessing them.
+   *
+   * @param as The assertions.
    */
   bool process(Assertions& as);
   /**
    * Clear learned literals from the Boolean propagator.
    */
   void clearLearnedLiterals();
+  /** Get learned literals */
+  std::vector<Node> getLearnedLiterals() const;
   /**
    * Cleanup, which deletes the processing passes owned by this module. This
    * is required to be done explicitly so that passes are deleted before the
@@ -93,15 +101,15 @@ class Preprocessor
   /** Same as above, for a list of assertions, updating in place */
   void expandDefinitions(std::vector<Node>& ns);
   /**
-   * Set proof node manager. Enables proofs in this preprocessor.
+   * Enable proofs for this preprocessor. This must be called
+   * explicitly since we construct the preprocessor before we know
+   * whether proofs are enabled.
+   *
+   * @param pppg The preprocess proof generator of the proof manager.
    */
-  void setProofGenerator(PreprocessProofGenerator* pppg);
+  void enableProofs(PreprocessProofGenerator* pppg);
 
  private:
-  /** Reference to the parent SolverEngine */
-  SolverEngine& d_slv;
-  /** Reference to the env */
-  Env& d_env;
   /** Reference to the abstract values utility */
   AbstractValues& d_absValues;
   /**
@@ -121,8 +129,6 @@ class Preprocessor
    * passes.
    */
   ProcessAssertions d_processor;
-  /** Proof node manager */
-  ProofNodeManager* d_pnm;
 };
 
 }  // namespace smt

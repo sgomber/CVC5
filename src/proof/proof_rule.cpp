@@ -33,6 +33,7 @@ const char* toString(PfRule id)
     case PfRule::MACRO_SR_PRED_INTRO: return "MACRO_SR_PRED_INTRO";
     case PfRule::MACRO_SR_PRED_ELIM: return "MACRO_SR_PRED_ELIM";
     case PfRule::MACRO_SR_PRED_TRANSFORM: return "MACRO_SR_PRED_TRANSFORM";
+    case PfRule::ANNOTATION: return "ANNOTATION";
     case PfRule::REMOVE_TERM_FORMULA_AXIOM: return "REMOVE_TERM_FORMULA_AXIOM";
     //================================================= Trusted rules
     case PfRule::THEORY_LEMMA: return "THEORY_LEMMA";
@@ -171,6 +172,7 @@ const char* toString(PfRule id)
     case PfRule::ARITH_MULT_NEG: return "ARITH_MULT_NEG";
     case PfRule::ARITH_MULT_TANGENT: return "ARITH_MULT_TANGENT";
     case PfRule::ARITH_OP_ELIM_AXIOM: return "ARITH_OP_ELIM_AXIOM";
+    case PfRule::ARITH_POLY_NORM: return "ARITH_POLY_NORM";
     case PfRule::ARITH_TRANS_PI: return "ARITH_TRANS_PI";
     case PfRule::ARITH_TRANS_EXP_NEG: return "ARITH_TRANS_EXP_NEG";
     case PfRule::ARITH_TRANS_EXP_POSITIVITY:
@@ -198,8 +200,8 @@ const char* toString(PfRule id)
       return "ARITH_TRANS_SINE_APPROX_BELOW_NEG";
     case PfRule::ARITH_TRANS_SINE_APPROX_BELOW_POS:
       return "ARITH_TRANS_SINE_APPROX_BELOW_POS";
-    case PfRule::ARITH_NL_CAD_DIRECT: return "ARITH_NL_CAD_DIRECT";
-    case PfRule::ARITH_NL_CAD_RECURSIVE: return "ARITH_NL_CAD_RECURSIVE";
+    case PfRule::ARITH_NL_COVERING_DIRECT: return "ARITH_NL_COVERING_DIRECT";
+    case PfRule::ARITH_NL_COVERING_RECURSIVE: return "ARITH_NL_COVERING_RECURSIVE";
     //================================================= External rules
     case PfRule::LFSC_RULE: return "LFSC_RULE";
     case PfRule::ALETHE_RULE: return "ALETHE_RULE";
