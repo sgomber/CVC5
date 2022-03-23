@@ -700,7 +700,7 @@ void SatRelevancy::check(theory::Theory::Effort effort,
                          context::CDQueue<TNode>& queue)
 {
   ensureLemmasRelevant(&queue);
-  if (Trace.isOn("sat-rlv-summary"))
+  if (TraceIsOn("sat-rlv-summary"))
   {
     if (theory::Theory::fullEffort(effort))
     {
