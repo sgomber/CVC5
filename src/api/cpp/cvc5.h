@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "api/cpp/cvc5_kind.h"
+#include "api/cpp/cvc5_types.h"
 
 namespace cvc5 {
 
@@ -50,6 +51,7 @@ class Options;
 class Random;
 class Rational;
 class Result;
+class SynthResult;
 class StatisticsRegistry;
 
 namespace main {
@@ -61,6 +63,7 @@ namespace api {
 class Solver;
 class Statistics;
 struct APIStatistics;
+class Term;
 
 /* -------------------------------------------------------------------------- */
 /* Exception                                                                  */
@@ -257,7 +260,7 @@ class CVC5_EXPORT Result
   Result(const cvc5::Result& r);
 
   /**
-   * The interal result wrapped by this result.
+   * The internal result wrapped by this result.
    *
    * @note This is a ``std::shared_ptr`` rather than a ``std::unique_ptr``
    *       since ``cvc5::Result`` is not ref counted.
@@ -281,6 +284,80 @@ std::ostream& operator<<(std::ostream& out, const Result& r) CVC5_EXPORT;
  */
 std::ostream& operator<<(std::ostream& out,
                          enum Result::UnknownExplanation e) CVC5_EXPORT;
+
+/* -------------------------------------------------------------------------- */
+/* Result                                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Encapsulation of a solver synth result.
+ *
+ * This is the return value of the API methods:
+ *   - Solver::checkSynth()
+ *   - Solver::checkSynthNext()
+ *
+ * which we call synthesis queries.  This class indicates whether the
+ * synthesis query has a solution, has no solution, or is unknown.
+ */
+class CVC5_EXPORT SynthResult
+{
+  friend class Solver;
+
+ public:
+  /** Constructor. */
+  SynthResult();
+
+  /**
+   * @return true if SynthResult is null, i.e., not a SynthResult returned
+   * from a synthesis query.
+   */
+  bool isNull() const;
+
+  /**
+   * @return true if the synthesis query has a solution.
+   */
+  bool hasSolution() const;
+
+  /**
+   * @return true if the synthesis query has no solution. In this case, it
+   * was determined that there was no solution.
+   */
+  bool hasNoSolution() const;
+
+  /**
+   * @return true if the result of the synthesis query could not be determined.
+   */
+  bool isUnknown() const;
+
+  /**
+   * @return a string representation of this synthesis result.
+   */
+  std::string toString() const;
+
+ private:
+  /**
+   * Constructor.
+   * @param r the internal synth result that is to be wrapped by this synth
+   *          result
+   * @return the SynthResult
+   */
+  SynthResult(const cvc5::SynthResult& r);
+  /**
+   * The internal result wrapped by this result.
+   *
+   * @note This is a `std::shared_ptr` rather than a `std::unique_ptr`
+   *       since `cvc5::SynthResult` is not ref counted.
+   */
+  std::shared_ptr<cvc5::SynthResult> d_result;
+};
+
+/**
+ * Serialize a SynthResult to given stream.
+ * @param out the output stream
+ * @param r the result to be serialized to the given output stream
+ * @return the output stream
+ */
+std::ostream& operator<<(std::ostream& out, const SynthResult& r) CVC5_EXPORT;
 
 /* -------------------------------------------------------------------------- */
 /* Sort                                                                       */
@@ -429,16 +506,6 @@ class CVC5_EXPORT Sort
   bool isDatatype() const;
 
   /**
-   * Is this a parametric datatype sort? A parametric datatype sort is either
-   * one that is returned by a call to Solver::mkDatatypeSort() or
-   * Solver::mkDatatypeSorts() for a parametric datatype, or an instantiated
-   * datatype sort returned by Sort::instantiate() for parametric datatype
-   * sort `s`.
-   * @return true if the sort is a parametric datatype sort
-   */
-  bool isParametricDatatype() const;
-
-  /**
    * Is this a constructor sort?
    * @return true if the sort is a constructor sort
    */
@@ -482,6 +549,7 @@ class CVC5_EXPORT Sort
 
   /**
    * Is this a record sort?
+   * @warning This method is experimental and may change in future versions.
    * @return true if the sort is a record sort
    */
   bool isRecord() const;
@@ -517,10 +585,26 @@ class CVC5_EXPORT Sort
   bool isUninterpretedSort() const;
 
   /**
-   * Is this a sort constructor kind?
+   * Is this an uninterpreted sort constructor kind?
+   *
+   * An uninterpreted sort constructor has arity > 0 and can be instantiated to
+   * construct uninterpreted sorts with given sort parameters.
+   *
    * @return true if this is a sort constructor kind
    */
-  bool isSortConstructor() const;
+  bool isUninterpretedSortConstructor() const;
+
+  /**
+   * Is this an instantiated (parametric datatype or uninterpreted sort
+   * constructor) sort?
+   *
+   * An instantiated sort is a sort that has been constructed from
+   * instantiating a sort with sort arguments
+   * (see Sort::instantiate(const std::vector<Sort>&) const)).
+   *
+   * @return true if this is an instantiated sort
+   */
+  bool isInstantiated() const;
 
   /**
    * @return the underlying datatype of a datatype sort
@@ -528,16 +612,30 @@ class CVC5_EXPORT Sort
   Datatype getDatatype() const;
 
   /**
-   * Instantiate a parameterized datatype/sort sort.
-   * Create sorts parameter with Solver::mkParamSort().
+   * Instantiate a parameterized datatype sort or uninterpreted sort
+   * constructor sort.
+   *
+   * Create sort parameters with Solver::mkParamSort().
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @param params the list of sort parameters to instantiate with
+   * @return the instantiated sort
    */
   Sort instantiate(const std::vector<Sort>& params) const;
 
   /**
+   * Get the sorts used to instantiate the sort parameters of a parametric
+   * sort (parametric datatype or uninterpreted sort constructor sort,
+   * see Sort::instantiate(const std::vector<Sort>& const)).
+   *
+   * @return the sorts used to instantiate the sort parameters of a
+   *         parametric sort
+   */
+  std::vector<Sort> getInstantiatedParameters() const;
+
+  /**
    * Substitution of Sorts.
-   * @param sort the subsort to be substituted within this sort.
-   * @param replacement the sort replacing the substituted subsort.
    *
    * Note that this replacement is applied during a pre-order traversal and
    * only once to the sort. It is not run until fix point.
@@ -545,18 +643,26 @@ class CVC5_EXPORT Sort
    * For example,
    * (Array A B).substitute({A, C}, {(Array C D), (Array A B)}) will
    * return (Array (Array C D) B).
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
+   * @param sort the subsort to be substituted within this sort.
+   * @param replacement the sort replacing the substituted subsort.
    */
   Sort substitute(const Sort& sort, const Sort& replacement) const;
 
   /**
    * Simultaneous substitution of Sorts.
-   * @param sorts the subsorts to be substituted within this sort.
-   * @param replacements the sort replacing the substituted subsorts.
    *
    * Note that this replacement is applied during a pre-order traversal and
    * only once to the sort. It is not run until fix point. In the case that
    * sorts contains duplicates, the replacement earliest in the vector takes
    * priority.
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
+   * @param sorts the subsorts to be substituted within this sort.
+   * @param replacements the sort replacing the substituted subsorts.
    */
   Sort substitute(const std::vector<Sort>& sorts,
                   const std::vector<Sort>& replacements) const;
@@ -669,26 +775,16 @@ class CVC5_EXPORT Sort
   /* Uninterpreted sort -------------------------------------------------- */
 
   /**
-   * @return the name of an uninterpreted sort
-   */
-  std::string getUninterpretedSortName() const;
-
-  /**
    * @return true if an uninterpreted sort is parameterized
    */
   bool isUninterpretedSortParameterized() const;
 
-  /**
-   * @return the parameter sorts of an uninterpreted sort
-   */
-  std::vector<Sort> getUninterpretedSortParamSorts() const;
-
   /* Sort constructor sort ----------------------------------------------- */
 
   /**
-   * @return the arity of a sort constructor sort
+   * @return the arity of an uninterpreted sort constructor sort
    */
-  size_t getSortConstructorArity() const;
+  size_t getUninterpretedSortConstructorArity() const;
 
   /* Bit-vector sort ----------------------------------------------------- */
 
@@ -710,18 +806,6 @@ class CVC5_EXPORT Sort
   uint32_t getFloatingPointSignificandSize() const;
 
   /* Datatype sort ------------------------------------------------------- */
-
-  /**
-   *
-   * Return the parameters of a parametric datatype sort. If this sort is a
-   * non-instantiated parametric datatype, this returns the parameter sorts of
-   * the underlying datatype. If this sort is an instantiated parametric
-   * datatype, then this returns the sort parameters that were used to
-   * construct the sort via Sort::instantiate().
-   *
-   * @return the parameter sorts of a parametric datatype sort.
-   */
-  std::vector<Sort> getDatatypeParamSorts() const;
 
   /**
    * @return the arity of a datatype sort
@@ -987,6 +1071,7 @@ class CVC5_EXPORT Term
   friend class DatatypeSelector;
   friend class Solver;
   friend class Grammar;
+  friend class SynthResult;
   friend struct std::hash<Term>;
 
  public:
@@ -1436,6 +1521,16 @@ class CVC5_EXPORT Term
   std::vector<Term> getTupleValue() const;
 
   /**
+   * @return true if the term is a floating-point rounding mode value.
+   */
+  bool isRoundingModeValue() const;
+  /**
+   * Asserts isRoundingModeValue().
+   * @return the floating-point rounding mode value held by the term.
+   */
+  RoundingMode getRoundingModeValue() const;
+
+  /**
    * @return true if the term is the floating-point value for positive zero.
    */
   bool isFloatingPointPosZero() const;
@@ -1505,6 +1600,16 @@ class CVC5_EXPORT Term
    * @return the representation of a sequence value as a vector of terms.
    */
   std::vector<Term> getSequenceValue() const;
+
+  /**
+   * @return true if the term is a cardinality constraint
+   */
+  bool isCardinalityConstraint() const;
+  /**
+   * Asserts isCardinalityConstraint().
+   * @return the sort the cardinality constraint is for and its upper bound.
+   */
+  std::pair<Sort, uint32_t> getCardinalityConstraint() const;
 
  protected:
   /**
@@ -1960,11 +2065,13 @@ class CVC5_EXPORT DatatypeConstructor
    *
    * This method is equivalent of applying the above, where this
    * DatatypeConstructor is the one corresponding to nil, and retSort is
-   * ``(List Int)``.
+   * `(List Int)`.
    *
-   * @note the returned constructor term ``t`` is an operator, while
-   *       ``Solver::mkTerm(APPLY_CONSTRUCTOR, t)`` is used to construct the
+   * @note the returned constructor term `t` is an operator, while
+   *       `Solver::mkTerm(APPLY_CONSTRUCTOR, {t})` is used to construct the
    *       above (nullary) application of nil.
+   *
+   * @warning This method is experimental and may change in future versions.
    *
    * @param retSort the desired return sort of the constructor
    * @return the constructor term
@@ -2202,6 +2309,8 @@ class CVC5_EXPORT Datatype
    * This is a linear search through the constructors, so in case of multiple,
    * similarly-named constructors, the
    * first is returned.
+   * @param name the name of the datatype constructor
+   * @return a Term representing the datatype constructor with the given name
    */
   Term getConstructorTerm(const std::string& name) const;
 
@@ -2221,12 +2330,17 @@ class CVC5_EXPORT Datatype
   size_t getNumConstructors() const;
 
   /**
+   * @warning This method is experimental and may change in future versions.
+   *
    * @return the parameters of this datatype, if it is parametric. An exception
    * is thrown if this datatype is not parametric.
    */
   std::vector<Sort> getParameters() const;
 
-  /** @return true if this datatype is parametric */
+  /**
+   * @warning This method is experimental and may change in future versions.
+   * @return true if this datatype is parametric
+   */
   bool isParametric() const;
 
   /** @return true if this datatype corresponds to a co-datatype */
@@ -2235,7 +2349,10 @@ class CVC5_EXPORT Datatype
   /** @return true if this datatype corresponds to a tuple */
   bool isTuple() const;
 
-  /** @return true if this datatype corresponds to a record */
+  /**
+   * @warning This method is experimental and may change in future versions.
+   * @return true if this datatype corresponds to a record
+   */
   bool isRecord() const;
 
   /** @return true if this datatype is finite */
@@ -2626,75 +2743,6 @@ class CVC5_EXPORT Grammar
 std::ostream& operator<<(std::ostream& out, const Grammar& g) CVC5_EXPORT;
 
 /* -------------------------------------------------------------------------- */
-/* Rounding Mode for Floating-Points                                          */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Rounding modes for floating-point numbers.
- *
- * For many floating-point operations, infinitely precise results may not be
- * representable with the number of available bits. Thus, the results are
- * rounded in a certain way to one of the representable floating-point numbers.
- *
- * \verbatim embed:rst:leading-asterisk
- * These rounding modes directly follow the SMT-LIB theory for floating-point
- * arithmetic, which in turn is based on IEEE Standard 754 :cite:`IEEE754`.
- * The rounding modes are specified in Sections 4.3.1 and 4.3.2 of the IEEE
- * Standard 754.
- * \endverbatim
- */
-enum RoundingMode
-{
-  /**
-   * Round to the nearest even number.
-   * If the two nearest floating-point numbers bracketing an unrepresentable
-   * infinitely precise result are equally near, the one with an even least
-   * significant digit will be delivered.
-   */
-  ROUND_NEAREST_TIES_TO_EVEN,
-  /**
-   * Round towards positive infinity (+oo).
-   * The result shall be the format's floating-point number (possibly +oo)
-   * closest to and no less than the infinitely precise result.
-   */
-  ROUND_TOWARD_POSITIVE,
-  /**
-   * Round towards negative infinity (-oo).
-   * The result shall be the format's floating-point number (possibly -oo)
-   * closest to and no less than the infinitely precise result.
-   */
-  ROUND_TOWARD_NEGATIVE,
-  /**
-   * Round towards zero.
-   * The result shall be the format's floating-point number closest to and no
-   * greater in magnitude than the infinitely precise result.
-   */
-  ROUND_TOWARD_ZERO,
-  /**
-   * Round to the nearest number away from zero.
-   * If the two nearest floating-point numbers bracketing an unrepresentable
-   * infinitely precise result are equally near, the one with larger magnitude
-   * will be selected.
-   */
-  ROUND_NEAREST_TIES_TO_AWAY,
-};
-
-}  // namespace cvc5::api
-
-namespace std {
-
-/**
- * Hash function for RoundingModes.
- */
-template <>
-struct CVC5_EXPORT hash<cvc5::api::RoundingMode>
-{
-  size_t operator()(cvc5::api::RoundingMode rm) const;
-};
-}  // namespace std
-namespace cvc5::api {
-
-/* -------------------------------------------------------------------------- */
 /* Options                                                                    */
 /* -------------------------------------------------------------------------- */
 
@@ -2774,14 +2822,14 @@ struct CVC5_EXPORT OptionInfo
   /** Whether the option was explicitly set by the user */
   bool setByUser;
   /** The option value information */
-  std::variant<VoidInfo,
-               ValueInfo<bool>,
-               ValueInfo<std::string>,
-               NumberInfo<int64_t>,
-               NumberInfo<uint64_t>,
-               NumberInfo<double>,
-               ModeInfo>
-      valueInfo;
+  using OptionInfoVariant = std::variant<VoidInfo,
+                                         ValueInfo<bool>,
+                                         ValueInfo<std::string>,
+                                         NumberInfo<int64_t>,
+                                         NumberInfo<uint64_t>,
+                                         NumberInfo<double>,
+                                         ModeInfo>;
+  OptionInfoVariant valueInfo;
   /** Obtain the current value as a bool. Asserts that valueInfo holds a bool.
    */
   bool boolValue() const;
@@ -3151,6 +3199,9 @@ class CVC5_EXPORT Solver
 
   /**
    * Create a sort parameter.
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @param symbol the name of the sort
    * @return the sort parameter
    */
@@ -3165,6 +3216,9 @@ class CVC5_EXPORT Solver
 
   /**
    * Create a record sort
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @param fields the list of fields of the record
    * @return the record sort
    */
@@ -3212,12 +3266,16 @@ class CVC5_EXPORT Solver
   Sort mkUnresolvedSort(const std::string& symbol, size_t arity = 0) const;
 
   /**
-   * Create a sort constructor sort.
+   * Create an uninterpreted sort constructor sort.
+   *
+   * An uninterpreted sort constructor is an uninterpreted sort with arity > 0.
+   *
    * @param symbol the symbol of the sort
-   * @param arity the arity of the sort
-   * @return the sort constructor sort
+   * @param arity the arity of the sort (must be > 0)
+   * @return the uninterpreted sort constructor sort
    */
-  Sort mkSortConstructorSort(const std::string& symbol, size_t arity) const;
+  Sort mkUninterpretedSortConstructorSort(const std::string& symbol,
+                                          size_t arity) const;
 
   /**
    * Create a tuple sort.
@@ -3261,69 +3319,48 @@ class CVC5_EXPORT Solver
   /* .................................................................... */
 
   /**
-   * Create an operator for a builtin Kind.
+   * Create operator of Kind:
+   *   - #BITVECTOR_EXTRACT
+   *   - #BITVECTOR_REPEAT
+   *   - #BITVECTOR_ROTATE_LEFT
+   *   - #BITVECTOR_ROTATE_RIGHT
+   *   - #BITVECTOR_SIGN_EXTEND
+   *   - #BITVECTOR_ZERO_EXTEND
+   *   - #DIVISIBLE
+   *   - #FLOATINGPOINT_TO_FP_FROM_FP
+   *   - #FLOATINGPOINT_TO_FP_FROM_IEEE_BV
+   *   - #FLOATINGPOINT_TO_FP_FROM_REAL
+   *   - #FLOATINGPOINT_TO_FP_FROM_SBV
+   *   - #FLOATINGPOINT_TO_FP_FROM_UBV
+   *   - #FLOATINGPOINT_TO_SBV
+   *   - #FLOATINGPOINT_TO_UBV
+   *   - #INT_TO_BITVECTOR
+   *   - #TUPLE_PROJECT
    *
-   * The Kind may not be the Kind for an indexed operator
-   * (e.g. BITVECTOR_EXTRACT).
+   * See cvc5::api::Kind for a description of the parameters.
+   * @param kind the kind of the operator
+   * @param args the arguments (indices) of the operator
    *
-   * @note In this case, the ``Op`` simply wraps the ``Kind``.  The Kind can be
-   *       used in ``Solver::mkTerm`` directly without creating an ``Op`` first.
-   * @param kind the kind to wrap
+   * @note If ``args`` is empty, the Op simply wraps the cvc5::api::Kind.  The
+   * Kind can be used in Solver::mkTerm directly without creating an Op
+   * first.
    */
-  Op mkOp(Kind kind) const;
+  Op mkOp(Kind kind, const std::vector<uint32_t>& args = {}) const;
+
+#ifndef DOXYGEN_SKIP
+  // Overload is only used to disambiguate the std::vector and std::string
+  // overloads.
+  Op mkOp(Kind kind, const std::initializer_list<uint32_t>& args) const;
+#endif
 
   /**
    * Create operator of kind:
    *   - DIVISIBLE (to support arbitrary precision integers)
-   * See enum Kind for a description of the parameters.
+   * See cvc5::api::Kind for a description of the parameters.
    * @param kind the kind of the operator
    * @param arg the string argument to this operator
    */
   Op mkOp(Kind kind, const std::string& arg) const;
-
-  /**
-   * Create operator of kind:
-   *   - DIVISIBLE
-   *   - BITVECTOR_REPEAT
-   *   - BITVECTOR_ZERO_EXTEND
-   *   - BITVECTOR_SIGN_EXTEND
-   *   - BITVECTOR_ROTATE_LEFT
-   *   - BITVECTOR_ROTATE_RIGHT
-   *   - INT_TO_BITVECTOR
-   *   - FLOATINGPOINT_TO_UBV
-   *   - FLOATINGPOINT_TO_UBV_TOTAL
-   *   - FLOATINGPOINT_TO_SBV
-   *   - FLOATINGPOINT_TO_SBV_TOTAL
-   *   - TUPLE_UPDATE
-   * See enum Kind for a description of the parameters.
-   * @param kind the kind of the operator
-   * @param arg the uint32_t argument to this operator
-   */
-  Op mkOp(Kind kind, uint32_t arg) const;
-
-  /**
-   * Create operator of Kind:
-   *   - BITVECTOR_EXTRACT
-   *   - FLOATINGPOINT_TO_FP_FROM_IEEE_BV
-   *   - FLOATINGPOINT_TO_FP_FROM_FP
-   *   - FLOATINGPOINT_TO_FP_FROM_REAL
-   *   - FLOATINGPOINT_TO_FP_FROM_SBV
-   *   - FLOATINGPOINT_TO_FP_FROM_UBV
-   * See enum Kind for a description of the parameters.
-   * @param kind the kind of the operator
-   * @param arg1 the first uint32_t argument to this operator
-   * @param arg2 the second uint32_t argument to this operator
-   */
-  Op mkOp(Kind kind, uint32_t arg1, uint32_t arg2) const;
-
-  /**
-   * Create operator of Kind:
-   *   - TUPLE_PROJECT
-   * See enum Kind for a description of the parameters.
-   * @param kind the kind of the operator
-   * @param args the arguments (indices) of the operator
-   */
-  Op mkOp(Kind kind, const std::vector<uint32_t>& args) const;
 
   /* .................................................................... */
   /* Create Constants                                                     */
@@ -3425,12 +3462,18 @@ class CVC5_EXPORT Solver
 
   /**
    * Create a separation logic empty term.
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @return the separation logic empty term
    */
   Term mkSepEmp() const;
 
   /**
    * Create a separation logic nil term.
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @param sort the sort of the nil term
    * @return the separation logic nil term
    */
@@ -3558,6 +3601,9 @@ class CVC5_EXPORT Solver
 
   /**
    * Create a cardinality constraint for an uninterpreted sort.
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @param sort the sort the cardinality constraint is for
    * @param upperBound the upper bound on the cardinality of the sort
    * @return the cardinality constraint
@@ -3607,6 +3653,11 @@ class CVC5_EXPORT Solver
   /* Create datatype constructor declarations                             */
   /* .................................................................... */
 
+  /**
+   * Create a datatype constructor declaration.
+   * @param name the name of the datatype constructor
+   * @return the DatatypeConstructorDecl
+   */
   DatatypeConstructorDecl mkDatatypeConstructorDecl(const std::string& name);
 
   /* .................................................................... */
@@ -3655,6 +3706,9 @@ class CVC5_EXPORT Solver
    * the SAT Engine in the simplification, but uses the current
    * definitions, assertions, and the current partial model, if one
    * has been constructed.  It also involves theory normalization.
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @param t the formula to simplify
    * @return the simplified formula
    */
@@ -3770,6 +3824,11 @@ class CVC5_EXPORT Solver
    *
    *     (declare-sort <symbol> <numeral>)
    * \endverbatim
+   *
+   * @note This corresponds to mkUninterpretedSort(const std::string&) const if
+   *       arity = 0, and to
+   *       mkUninterpretedSortConstructorSort(const std::string&, size_t arity) const
+   *       if arity > 0.
    *
    * @param symbol the name of the sort
    * @param arity the arity of the sort
@@ -3992,6 +4051,8 @@ class CVC5_EXPORT Solver
    * Get a difficulty estimate for an asserted formula. This method is
    * intended to be called immediately after any response to a checkSat.
    *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @return a map from (a subset of) the input assertions to a real value that
    *         is an estimate of how difficult each assertion was to solve.
    *         Unmentioned assertions can be assumed to have zero difficulty.
@@ -4012,16 +4073,20 @@ class CVC5_EXPORT Solver
    * :ref:`produce-proofs <lbl-option-produce-proofs>`.
    * \endverbatim
    *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @return a string representing the proof, according to the value of
    * proof-format-mode.
    */
   std::string getProof() const;
 
   /**
-   * Get learned literals
+   * Get a list of learned literals that are entailed by the current set of
+   * assertions.
    *
-   * @return a list of literals that were learned at top-level. In other words,
-   * these are literals that are entailed by the current set of assertions.
+   * @warning This method is experimental and may change in future versions.
+   *
+   * @return a list of literals that were learned at top-level.
    */
   std::vector<Term> getLearnedLiterals() const;
 
@@ -4075,6 +4140,8 @@ class CVC5_EXPORT Solver
    * \verbatim embed:rst:inline :ref:`model-cores <lbl-option-model-cores>`
    * \endverbatim has been set.
    *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @param v The term in question
    * @return true if v is a model core symbol
    */
@@ -4093,6 +4160,8 @@ class CVC5_EXPORT Solver
    * Requires to enable option
    * :ref:`produce-models <lbl-option-produce-models>`.
    * \endverbatim
+   *
+   * @warning This method is experimental and may change in future versions.
    *
    * @param sorts The list of uninterpreted sorts that should be printed in the
    * model.
@@ -4114,10 +4183,10 @@ class CVC5_EXPORT Solver
    *     (get-qe <q>)
    * \endverbatim
    *
-   * Requires a logic that supports quantifier elimination. Currently, the only
-   * logics supported by quantifier elimination is LRA and LIA.
+   * @note Quantifier Elimination is is only complete for logics such as LRA,
+   * LIA and BV.
    *
-   * @note Quantifier Elimination is is only complete for LRA and LIA.
+   * @warning This method is experimental and may change in future versions.
    *
    * @param q a quantified formula of the form
    *          @f$Q\bar{x}_1... Q\bar{x}_n. P( x_1...x_i, y_1...y_j)@f$
@@ -4145,8 +4214,11 @@ class CVC5_EXPORT Solver
    *     (get-qe-disjunct <q>)
    * \endverbatim
    *
-   * Requires a logic that supports quantifier elimination. Currently, the only
-   * logics supported by quantifier elimination is LRA and LIA.
+   * @note Quantifier Elimination is is only complete for logics such as LRA,
+   * LIA and BV.
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @param q a quantified formula of the form
    *          @f$Q\bar{x}_1... Q\bar{x}_n. P( x_1...x_i, y_1...y_j)@f$
    *          where
@@ -4182,6 +4254,9 @@ class CVC5_EXPORT Solver
    * When using separation logic, this sets the location sort and the
    * datatype sort to the given ones. This method should be invoked exactly
    * once, before any separation logic constraints are provided.
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @param locSort The location sort of the heap
    * @param dataSort The data sort of the heap
    */
@@ -4189,18 +4264,27 @@ class CVC5_EXPORT Solver
 
   /**
    * When using separation logic, obtain the term for the heap.
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @return The term for the heap
    */
   Term getValueSepHeap() const;
 
   /**
    * When using separation logic, obtain the term for nil.
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @return The term for nil
    */
   Term getValueSepNil() const;
 
   /**
    * Declare a symbolic pool of terms with the given initial value.
+   *
+   * For details on how pools are used to specify instructions for quantifier
+   * instantiation, see documentation for the #INST_POOL kind.
    *
    * SMT-LIB:
    *
@@ -4210,9 +4294,12 @@ class CVC5_EXPORT Solver
    *     (declare-pool <symbol> <sort> ( <term>* ))
    * \endverbatim
    *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @param symbol The name of the pool
    * @param sort The sort of the elements of the pool.
    * @param initValue The initial value of the pool
+   * @return The pool symbol
    */
   Term declarePool(const std::string& symbol,
                    const Sort& sort,
@@ -4287,12 +4374,13 @@ class CVC5_EXPORT Solver
    * \verbatim embed:rst:leading-asterisk
    * .. code:: smtlib
    *
-   *     (get-interpol <conj>)
+   *     (get-interpolant <conj>)
    *
    * Requires option
-   * :ref:`produce-interpols <lbl-option-produce-interpols>` to be set to a
-   * mode different from `none`.
-   * \endverbatim
+   * :ref:`produce-interpolants <lbl-option-produce-interpolants>` to be set to
+   * a mode different from `none`. \endverbatim
+   *
+   * @warning This method is experimental and may change in future versions.
    *
    * @param conj the conjecture term
    * @return a Term I such that A->I and I->B are valid, where A is the
@@ -4309,12 +4397,13 @@ class CVC5_EXPORT Solver
    * \verbatim embed:rst:leading-asterisk
    * .. code:: smtlib
    *
-   *     (get-interpol <conj> <grammar>)
+   *     (get-interpolant <conj> <grammar>)
    *
    * Requires option
-   * :ref:`produce-interpols <lbl-option-produce-interpols>` to be set to a
-   * mode different from `none`.
-   * \endverbatim
+   * :ref:`produce-interpolants <lbl-option-produce-interpolants>` to be set to
+   * a mode different from `none`. \endverbatim
+   *
+   * @warning This method is experimental and may change in future versions.
    *
    * @param conj the conjecture term
    * @param grammar the grammar for the interpolant I
@@ -4326,7 +4415,7 @@ class CVC5_EXPORT Solver
 
   /**
    * Get the next interpolant. Can only be called immediately after a successful
-   * call to get-interpol or get-interpol-next. Is guaranteed to produce a
+   * call to get-interpolant or get-interpolant-next. Is guaranteed to produce a
    * syntactically different interpolant wrt the last returned interpolant if
    * successful.
    *
@@ -4335,12 +4424,13 @@ class CVC5_EXPORT Solver
    * \verbatim embed:rst:leading-asterisk
    * .. code:: smtlib
    *
-   *     (get-interpol-next)
+   *     (get-interpolant-next)
    *
    * Requires to enable incremental mode, and option
-   * :ref:`produce-interpols <lbl-option-produce-interpols>` to be set to a
-   * mode different from `none`.
-   * \endverbatim
+   * :ref:`produce-interpolants <lbl-option-produce-interpolants>` to be set to
+   * a mode different from `none`. \endverbatim
+   *
+   * @warning This method is experimental and may change in future versions.
    *
    * @return a Term I such that A->I and I->B are valid, where A is the
    *         current set of assertions and B is given in the input by conj
@@ -4361,6 +4451,8 @@ class CVC5_EXPORT Solver
    * Requires to enable option
    * :ref:`produce-abducts <lbl-option-produce-abducts>`.
    * \endverbatim
+   *
+   * @warning This method is experimental and may change in future versions.
    *
    * @param conj the conjecture term
    * @return a term @f$C@f$ such that @f$(A \wedge C)@f$ is satisfiable,
@@ -4384,6 +4476,9 @@ class CVC5_EXPORT Solver
    * Requires to enable option
    * :ref:`produce-abducts <lbl-option-produce-abducts>`.
    * \endverbatim
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
    *
    * @param conj the conjecture term
    * @param grammar the grammar for the abduct @f$C@f$
@@ -4410,6 +4505,8 @@ class CVC5_EXPORT Solver
    * :ref:`produce-abducts <lbl-option-produce-abducts>`.
    * \endverbatim
    *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @return a term C such that @f$(A \wedge C)@f$ is satisfiable, and
    *        @f$(A \wedge \neg B \wedge C)@f$ is unsatisfiable, where @f$A@f$ is
    *        the current set of assertions and @f$B@f$ is given in the input by
@@ -4435,6 +4532,8 @@ class CVC5_EXPORT Solver
    * :ref:`block-models <lbl-option-block-models>`.
    * to a mode other than ``none``.
    * \endverbatim
+   *
+   * @warning This method is experimental and may change in future versions.
    */
   void blockModel() const;
 
@@ -4453,10 +4552,14 @@ class CVC5_EXPORT Solver
    * :ref:`produce-models <lbl-option-produce-models>`.
    * 'produce-models'.
    * \endverbatim
+   *
+   * @warning This method is experimental and may change in future versions.
    */
   void blockModelValues(const std::vector<Term>& terms) const;
 
   /**
+   * @warning This method is experimental and may change in future versions.
+   *
    * @return a string that contains information about all instantiations made by
    * the quantifiers module.
    */
@@ -4539,17 +4642,6 @@ class CVC5_EXPORT Solver
   void setOption(const std::string& option, const std::string& value) const;
 
   /**
-   * If needed, convert this term to a given sort.
-   *
-   * @note The sort of the term must be convertible into the target sort.
-   *       Currently only Int to Real conversions are supported.
-   * @param t the term
-   * @param s the target sort
-   * @return the term wrapped into a sort conversion if needed
-   */
-  Term ensureTermSort(const Term& t, const Sort& s) const;
-
-  /**
    * Append \p symbol to the current list of universal variables.
    *
    * SyGuS v2:
@@ -4564,8 +4656,8 @@ class CVC5_EXPORT Solver
    * @param symbol the name of the universal variable
    * @return the universal variable
    */
-  Term mkSygusVar(const Sort& sort,
-                  const std::string& symbol = std::string()) const;
+  Term declareSygusVar(const Sort& sort,
+                       const std::string& symbol = std::string()) const;
 
   /**
    * Create a Sygus grammar. The first non-terminal is treated as the starting
@@ -4720,10 +4812,12 @@ class CVC5_EXPORT Solver
    *     (check-synth)
    * \endverbatim
    *
-   * @return the result of the check, which is unsat if the check succeeded,
-   * in which case solutions are available via getSynthSolutions.
+   * @return the result of the check, which is "solution" if the check found a
+   *         solution in which case solutions are available via
+   *         getSynthSolutions, "no solution" if it was determined there is no
+   *         solution, or "unknown" otherwise.
    */
-  Result checkSynth() const;
+  SynthResult checkSynth() const;
 
   /**
    * Try to find a next solution for the synthesis conjecture corresponding to
@@ -4739,10 +4833,12 @@ class CVC5_EXPORT Solver
    *     (check-synth-next)
    * \endverbatim
    *
-   * @return the result of the check, which is unsat if the check succeeded,
-   * in which case solutions are available via getSynthSolutions.
+   * @return the result of the check, which is "solution" if the check found a
+   *         solution in which case solutions are available via
+   *         getSynthSolutions, "no solution" if it was determined there is no
+   *         solution, or "unknown" otherwise.
    */
-  Result checkSynthNext() const;
+  SynthResult checkSynthNext() const;
 
   /**
    * Get the synthesis solution of the given term. This method should be called
@@ -4761,23 +4857,26 @@ class CVC5_EXPORT Solver
   std::vector<Term> getSynthSolutions(const std::vector<Term>& terms) const;
 
   /**
-   * Returns a snapshot of the current state of the statistic values of this
+   * Get a snapshot of the current state of the statistic values of this
    * solver. The returned object is completely decoupled from the solver and
    * will not change when the solver is used again.
+   * @return A snapshot of the current state of the statistic values
    */
   Statistics getStatistics() const;
 
   /**
-   * Whether the output stream for the given tag is enabled. Tags can be enabled
-   * with the `output` option (and `-o <tag>` on the command line). Raises an
-   * exception when an invalid tag is given.
+   * Determione the output stream for the given tag is enabled. Tags can be
+   * enabled with the `output` option (and `-o <tag>` on the command line).
+   * Raises an exception when an invalid tag is given.
+   * @return True if the given tag is enabled
    */
   bool isOutputOn(const std::string& tag) const;
 
   /**
-   * Returns an output stream for the given tag. Tags can be enabled with the
+   * Get an output stream for the given tag. Tags can be enabled with the
    * `output` option (and `-o <tag>` on the command line). Raises an exception
    * when an invalid tag is given.
+   * @return The output stream
    */
   std::ostream& getOutput(const std::string& tag) const;
 
@@ -4795,6 +4894,9 @@ class CVC5_EXPORT Solver
 
   /** Helper to check for API misuse in mkOp functions. */
   void checkMkTerm(Kind kind, uint32_t nchildren) const;
+  /** Helper for creating operators. */
+  template <typename T>
+  Op mkOpHelper(Kind kind, const T& t) const;
   /** Helper for mk-functions that call d_nodeMgr->mkConst(). */
   template <typename T>
   Term mkValHelper(const T& t) const;
@@ -4890,6 +4992,18 @@ class CVC5_EXPORT Solver
 
   /** Check whether string s is a valid decimal integer. */
   bool isValidInteger(const std::string& s) const;
+
+  /**
+   * If needed, convert this term to a given sort.
+   * 
+   * The sort of the term must be convertible into the target sort.
+   * Currently only Int to Real conversions are supported.
+   *
+   * @param t the term
+   * @param s the target sort
+   * @return the term wrapped into a sort conversion if needed
+   */
+  Term ensureTermSort(const Term& t, const Sort& s) const;
 
   /**
    * Check that the given term is a valid closed term, which can be used as an

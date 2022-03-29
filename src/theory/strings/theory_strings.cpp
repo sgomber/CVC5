@@ -82,7 +82,10 @@ TheoryStrings::TheoryStrings(Env& env, OutputChannel& out, Valuation valuation)
           env, d_state, d_im, d_termReg, d_csolver, d_esolver, d_extTheory),
       d_rsolver(
           env, d_state, d_im, d_termReg, d_csolver, d_esolver, d_statistics),
-      d_regexp_elim(options().strings.regExpElimAgg, d_pnm, userContext()),
+      d_regexp_elim(
+          options().strings.regExpElim == options::RegExpElimMode::AGG,
+          d_pnm,
+          userContext()),
       d_stringsFmf(env, valuation, d_termReg),
       d_strat(d_env),
       d_absModelCounter(0),
@@ -153,8 +156,8 @@ void TheoryStrings::finishInit()
   d_equalityEngine->addFunctionKind(kind::STRING_REPLACE_RE, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_REPLACE_RE_ALL, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_REPLACE_ALL, eagerEval);
-  d_equalityEngine->addFunctionKind(kind::STRING_TOLOWER, eagerEval);
-  d_equalityEngine->addFunctionKind(kind::STRING_TOUPPER, eagerEval);
+  d_equalityEngine->addFunctionKind(kind::STRING_TO_LOWER, eagerEval);
+  d_equalityEngine->addFunctionKind(kind::STRING_TO_UPPER, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_REV, eagerEval);
 
   // memberships are not relevant for model building
@@ -1174,7 +1177,8 @@ TrustNode TheoryStrings::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
   }
   TrustNode ret;
   Node atomRet = atom;
-  if (options().strings.regExpElim && atom.getKind() == STRING_IN_REGEXP)
+  if (options().strings.regExpElim != options::RegExpElimMode::OFF
+      && atom.getKind() == STRING_IN_REGEXP)
   {
     // aggressive elimination of regular expression membership
     ret = d_regexp_elim.eliminateTrusted(atomRet);
