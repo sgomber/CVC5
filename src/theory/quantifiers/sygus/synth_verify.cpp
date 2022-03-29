@@ -90,9 +90,9 @@ Result SynthVerify::verify(Node query,
     finished = true;
     Trace("sygus-engine") << "  ...got " << r << std::endl;
     // we try to learn models for "sat" and "unknown" here
-    if (r.asSatisfiabilityResult().isSat() != Result::UNSAT)
+    if (r.getStatus() != Result::UNSAT)
     {
-      if (Trace.isOn("sygus-engine"))
+      if (TraceIsOn("sygus-engine"))
       {
         Trace("sygus-engine") << "  * Verification lemma failed for:\n   ";
         for (unsigned i = 0, size = vars.size(); i < size; i++)
@@ -132,7 +132,7 @@ Result SynthVerify::verify(Node query,
           else
           {
             Assert(!options().quantifiers.sygusRecFun
-                   || r.asSatisfiabilityResult().isSat() == Result::SAT_UNKNOWN)
+                   || r.getStatus() == Result::UNKNOWN)
                 << "Expected model from verification step to satisfy query";
           }
         }

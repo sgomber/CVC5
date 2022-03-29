@@ -87,7 +87,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e)
 
   double clSet = 0;
   d_checkedAllOracles = false;
-  if (Trace.isOn("oracle-engine"))
+  if (TraceIsOn("oracle-engine"))
   {
     clSet = double(clock()) / double(CLOCKS_PER_SEC);
     Trace("oracle-engine") << "---Oracle Engine Round, effort = " << e << "---"
@@ -159,7 +159,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e)
   d_checkedAllOracles = true;
   // general SMTO: call constraint generators and assumption generators here
 
-  if (Trace.isOn("oracle-engine"))
+  if (TraceIsOn("oracle-engine"))
   {
     double clSet2 = double(clock()) / double(CLOCKS_PER_SEC);
     Trace("oracle-engine") << "Finished oracle engine, time = "
