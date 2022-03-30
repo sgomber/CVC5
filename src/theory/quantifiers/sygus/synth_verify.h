@@ -25,7 +25,7 @@
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "util/result.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
@@ -64,6 +64,6 @@ class SynthVerify : protected EnvObj
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif

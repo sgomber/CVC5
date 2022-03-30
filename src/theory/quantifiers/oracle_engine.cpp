@@ -27,7 +27,7 @@
 using namespace cvc5::kind;
 using namespace cvc5::context;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
@@ -267,4 +267,4 @@ bool OracleEngine::getOracleInterface(Node q,
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

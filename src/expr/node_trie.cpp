@@ -15,7 +15,7 @@
 
 #include "expr/node_trie.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 template <bool ref_count>
 NodeTemplate<ref_count> NodeTemplateTrie<ref_count>::existsTerm(
@@ -91,6 +91,7 @@ template void NodeTemplateTrie<false>::debugPrint(const char* c,
 template void NodeTemplateTrie<true>::debugPrint(const char* c,
                                                  unsigned depth) const;
 
+
 template <bool ref_count>
 std::vector<Node> NodeTemplateTrie<ref_count>::getLeaves(size_t depth) const
 {
@@ -123,4 +124,4 @@ template std::vector<Node> NodeTemplateTrie<false>::getLeaves(
 template std::vector<Node> NodeTemplateTrie<true>::getLeaves(
     size_t depth) const;
 
-}  // namespace cvc5
+}  // namespace cvc5::internal

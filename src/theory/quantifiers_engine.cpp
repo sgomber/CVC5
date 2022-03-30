@@ -39,9 +39,9 @@
 #include "theory/theory_engine.h"
 
 using namespace std;
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 
 QuantifiersEngine::QuantifiersEngine(
@@ -712,4 +712,4 @@ std::vector<Node> QuantifiersEngine::getOracleFuns() const
 }
 
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

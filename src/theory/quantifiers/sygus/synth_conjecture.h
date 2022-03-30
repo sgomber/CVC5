@@ -36,7 +36,7 @@
 #include "theory/quantifiers/sygus/synth_verify.h"
 #include "theory/quantifiers/sygus/template_infer.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
@@ -362,6 +362,6 @@ class SynthConjecture : protected EnvObj
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif
