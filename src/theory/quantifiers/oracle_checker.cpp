@@ -20,7 +20,7 @@
 #include "smt/env.h"
 #include "theory/rewriter.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
@@ -135,4 +135,4 @@ const std::map<Node, Node>& OracleChecker::getOracleCalls(Node f) const
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

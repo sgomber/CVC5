@@ -22,7 +22,7 @@
 #include "base/exception.h"
 #include "cvc5_export.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 class SystemException : public cvc5::Exception
 {
@@ -39,6 +39,6 @@ class SystemException : public cvc5::Exception
   SystemException(const char* msg) : Exception(msg) {}
 }; /* class SystemException */
 
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__SYSTEM_EXCEPTION_H */

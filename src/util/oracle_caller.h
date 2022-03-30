@@ -21,7 +21,7 @@
 #include "expr/node.h"
 #include "expr/node_trie.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 class OracleCaller
 {
@@ -64,6 +64,6 @@ class OracleCaller
   std::map<Node, Node> d_cachedResults;
 };
 
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /*CVC5__UTIL__ORACLE_CALLER_H*/

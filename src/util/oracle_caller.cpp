@@ -24,7 +24,7 @@
 #include "util/rational.h"
 #include "util/run.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 bool OracleCaller::callOracle(const Node fapp, Node& res, int& runResult)
 {
@@ -109,4 +109,4 @@ const std::map<Node, Node>& OracleCaller::getCachedResults() const
   return d_cachedResults;
 }
 
-}  // namespace cvc5
+}  // namespace cvc5::internal
