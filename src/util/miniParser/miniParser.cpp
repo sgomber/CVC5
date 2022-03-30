@@ -22,7 +22,7 @@
 #include "util/floatingpoint.h"
 #include "util/rational.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 inline bool has_prefix(const std::string& s, const std::string& prefix)
 {
@@ -322,4 +322,4 @@ void mini_parsert::setup_expressions()
   // expressions["fp"] = [this] { return function_application_fp(operands()); };
 }
 
-};  // namespace cvc5
+};  // namespace cvc5::internal

@@ -20,7 +20,7 @@
 
 #include "base/exception.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 class tokenizert
 {
@@ -85,6 +85,6 @@ class tokenizert
   void get_token_from_stream();
 };
 
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif  // CVC5__UTIL__MINIPARSER_TOKENIZER_H

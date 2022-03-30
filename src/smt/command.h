@@ -457,22 +457,22 @@ class CVC5_EXPORT DeclarePoolCommand : public DeclarationDefinitionCommand
 class CVC5_EXPORT DeclareOracleFunCommand : public Command
 {
  public:
-  DeclareOracleFunCommand(api::Term func);
-  DeclareOracleFunCommand(api::Term func, const std::string& binName);
-  api::Term getFunction() const;
+  DeclareOracleFunCommand(Term func);
+  DeclareOracleFunCommand(Term func, const std::string& binName);
+  Term getFunction() const;
   const std::string& getBinaryName() const;
 
-  void invoke(api::Solver* solver, SymbolManager* sm) override;
+  void invoke(Solver* solver, SymbolManager* sm) override;
   Command* clone() const override;
   std::string getCommandName() const override;
   void toStream(std::ostream& out,
                 int toDepth = -1,
                 size_t dag = 1,
-                Language language = Language::LANG_AUTO) const override;
+                internal::Language language = internal::Language::LANG_AUTO) const override;
 
  protected:
   /** The oracle function */
-  api::Term d_func;
+  Term d_func;
   /** The binary name, or "" if none is provided */
   std::string d_binName;
 }; /* class DeclareOracleFunCommand */
@@ -480,34 +480,34 @@ class CVC5_EXPORT DeclareOracleFunCommand : public Command
 class CVC5_EXPORT DefineOracleInterfaceCommand : public Command
 {
  public:
-  DefineOracleInterfaceCommand(const std::vector<api::Term>& inputs,
-                               const std::vector<api::Term>& outputs,
-                               api::Term assume,
-                               api::Term constraint,
+  DefineOracleInterfaceCommand(const std::vector<Term>& inputs,
+                               const std::vector<Term>& outputs,
+                               Term assume,
+                               Term constraint,
                                const std::string& binName);
-  const std::vector<api::Term>& getInputs() const;
-  const std::vector<api::Term>& getOutputs() const;
-  api::Term getAssume() const;
-  api::Term getConstraint() const;
+  const std::vector<Term>& getInputs() const;
+  const std::vector<Term>& getOutputs() const;
+  Term getAssume() const;
+  Term getConstraint() const;
   const std::string& getBinaryName() const;
 
-  void invoke(api::Solver* solver, SymbolManager* sm) override;
+  void invoke(Solver* solver, SymbolManager* sm) override;
   Command* clone() const override;
   std::string getCommandName() const override;
   void toStream(std::ostream& out,
                 int toDepth = -1,
                 size_t dag = 1,
-                Language language = Language::LANG_AUTO) const override;
+                internal::Language language = internal::Language::LANG_AUTO) const override;
 
  protected:
   /** The input arguments for the interface we are defining */
-  std::vector<api::Term> d_inputs;
+  std::vector<Term> d_inputs;
   /** The output arguments for the interface we are defining */
-  std::vector<api::Term> d_outputs;
+  std::vector<Term> d_outputs;
   /** The formula corresponding to the assumption generator */
-  api::Term d_assume;
+  Term d_assume;
   /** The formula corresponding to the constraint generator */
-  api::Term d_constraint;
+  Term d_constraint;
   /** The name of the binary */
   std::string d_binName;
 }; /* class DefineOracleInterfaceCommand */

@@ -24,7 +24,7 @@
 #include "expr/node.h"
 #include "tokenizer.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 class mini_parsert
 {
@@ -56,5 +56,5 @@ class mini_parsert
   // Node function_application_fp(std::vector<Node> ops);
 };
 
-}  // namespace cvc5
+}  // namespace cvc5::internal
 #endif  // CVC5__UTIL__MINIPARSER_MINIPARSER_H

@@ -7210,13 +7210,13 @@ Term Solver::declareOracleFunHelper(const std::string& symbol,
                                     const Sort& sort,
                                     const std::string& binName) const
 {
-  TypeNode type = *sort.d_type;
+  internal::TypeNode type = *sort.d_type;
   if (!sorts.empty())
   {
-    std::vector<TypeNode> types = Sort::sortVectorToTypeNodes(sorts);
+    std::vector<internal::TypeNode> types = Sort::sortVectorToTypeNodes(sorts);
     type = d_nodeMgr->mkFunctionType(types, type);
   }
-  Node fun = d_nodeMgr->mkVar(symbol, type);
+  internal::Node fun = d_nodeMgr->mkVar(symbol, type);
   d_slv->declareOracleFun(fun, binName);
   return Term(this, fun);
 }
@@ -7234,8 +7234,8 @@ void Solver::defineOracleInterface(const std::vector<Term>& inputs,
   CVC5_API_SOLVER_CHECK_TERM(constraint);
   CVC5_API_ARG_CHECK_EXPECTED(binName != "", binName);
   //////// all checks before this line
-  std::vector<Node> inputn = Term::termVectorToNodes(inputs);
-  std::vector<Node> outputn = Term::termVectorToNodes(outputs);
+  std::vector<internal::Node> inputn = Term::termVectorToNodes(inputs);
+  std::vector<internal::Node> outputn = Term::termVectorToNodes(outputs);
   d_slv->defineOracleInterface(
       inputn, outputn, *assume.d_node, *constraint.d_node, binName);
   ////////

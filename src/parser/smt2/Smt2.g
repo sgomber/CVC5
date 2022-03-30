@@ -1056,7 +1056,7 @@ extendedCommand[std::unique_ptr<cvc5::Command>* cmd]
     sortSymbol[t,CHECK_DECLARED]
     ( symbol[binName,CHECK_NONE,SYM_VARIABLE]? )
     {
-      api::Term func;
+      Term func;
       if (binName!="")
       {
         func = SOLVER->declareOracleFun(name, sorts, t, binName);
@@ -1089,8 +1089,8 @@ extendedCommand[std::unique_ptr<cvc5::Command>* cmd]
       {
         PARSER_STATE->popScope();
       }
-      api::Term assume = isAssume ? e : SOLVER->mkTrue();
-      api::Term constraint = isAssume ? SOLVER->mkTrue() : e;
+      Term assume = isAssume ? e : SOLVER->mkTrue();
+      Term constraint = isAssume ? SOLVER->mkTrue() : e;
       cmd->reset(new DefineOracleInterfaceCommand(terms,
                                                   terms2,
                                                   assume,

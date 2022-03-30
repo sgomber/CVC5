@@ -1173,23 +1173,23 @@ void DeclarePoolCommand::toStream(std::ostream& out,
 /* class DeclareOracleFunCommand */
 /* -------------------------------------------------------------------------- */
 
-DeclareOracleFunCommand::DeclareOracleFunCommand(api::Term func)
+DeclareOracleFunCommand::DeclareOracleFunCommand(Term func)
     : d_func(func), d_binName("")
 {
 }
-DeclareOracleFunCommand::DeclareOracleFunCommand(api::Term func,
+DeclareOracleFunCommand::DeclareOracleFunCommand(Term func,
                                                  const std::string& binName)
     : d_func(func), d_binName(binName)
 {
 }
 
-api::Term DeclareOracleFunCommand::getFunction() const { return d_func; }
+Term DeclareOracleFunCommand::getFunction() const { return d_func; }
 const std::string& DeclareOracleFunCommand::getBinaryName() const
 {
   return d_binName;
 }
 
-void DeclareOracleFunCommand::invoke(api::Solver* solver, SymbolManager* sm)
+void DeclareOracleFunCommand::invoke(Solver* solver, SymbolManager* sm)
 {
   // Notice that the oracle function is already declared by the parser so that
   // the symbol is bound eagerly.
@@ -1223,10 +1223,10 @@ void DeclareOracleFunCommand::toStream(std::ostream& out,
 /* -------------------------------------------------------------------------- */
 
 DefineOracleInterfaceCommand::DefineOracleInterfaceCommand(
-    const std::vector<api::Term>& inputs,
-    const std::vector<api::Term>& outputs,
-    api::Term assume,
-    api::Term constraint,
+    const std::vector<Term>& inputs,
+    const std::vector<Term>& outputs,
+    Term assume,
+    Term constraint,
     const std::string& binName)
     : d_inputs(inputs),
       d_outputs(outputs),
@@ -1236,17 +1236,17 @@ DefineOracleInterfaceCommand::DefineOracleInterfaceCommand(
 {
 }
 
-const std::vector<api::Term>& DefineOracleInterfaceCommand::getInputs() const
+const std::vector<Term>& DefineOracleInterfaceCommand::getInputs() const
 {
   return d_inputs;
 }
-const std::vector<api::Term>& DefineOracleInterfaceCommand::getOutputs() const
+const std::vector<Term>& DefineOracleInterfaceCommand::getOutputs() const
 {
   return d_outputs;
 }
 
-api::Term DefineOracleInterfaceCommand::getAssume() const { return d_assume; }
-api::Term DefineOracleInterfaceCommand::getConstraint() const
+Term DefineOracleInterfaceCommand::getAssume() const { return d_assume; }
+Term DefineOracleInterfaceCommand::getConstraint() const
 {
   return d_constraint;
 }
@@ -1254,7 +1254,7 @@ const std::string& DefineOracleInterfaceCommand::getBinaryName() const
 {
   return d_binName;
 }
-void DefineOracleInterfaceCommand::invoke(api::Solver* solver,
+void DefineOracleInterfaceCommand::invoke(Solver* solver,
                                           SymbolManager* sm)
 {
   try

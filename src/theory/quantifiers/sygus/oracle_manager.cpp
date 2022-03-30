@@ -15,7 +15,7 @@
 
 #include "theory/quantifiers/sygus/oracle_manager.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
@@ -23,4 +23,4 @@ OracleManager::OracleManager(OracleChecker& oc) : d_oc(oc) {}
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

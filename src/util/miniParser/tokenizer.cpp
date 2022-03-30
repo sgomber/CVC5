@@ -19,7 +19,7 @@
 
 #include "parser/parser_exception.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 bool tokenizert::is_simple_symbol_character(char ch)
 {
@@ -320,4 +320,4 @@ void tokenizert::get_token_from_stream()
   token = END_OF_FILE;
 }
 
-}  // namespace cvc5
+}  // namespace cvc5::internal
