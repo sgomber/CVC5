@@ -2703,6 +2703,7 @@ set(regress_1_tests
   regress1/sygus/issue3634.smt2
   regress1/sygus/issue3635.smt2
   regress1/sygus/issue3644.smt2
+  regress1/sygus/issue3646-4-arrays.smt2
   regress1/sygus/issue3649.sy
   regress1/sygus/issue3802-default-consts.sy
   regress1/sygus/issue3839-cond-rewrite.smt2
