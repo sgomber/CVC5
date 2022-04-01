@@ -1097,9 +1097,13 @@ extendedCommand[std::unique_ptr<cvc5::Command>* cmd]
                                                   constraint,
                                                   binName));
     }
-  | BLOCK_MODEL_TOK { PARSER_STATE->checkThatLogicIsSet(); }
-    { cmd->reset(new BlockModelCommand()); }
-
+  | BLOCK_MODEL_TOK KEYWORD { PARSER_STATE->checkThatLogicIsSet(); }
+    {
+      modes::BlockModelsMode mode =
+        PARSER_STATE->getBlockModelsMode(
+          AntlrInput::tokenText($KEYWORD).c_str() + 1);
+      cmd->reset(new BlockModelCommand(mode));
+    }
   | BLOCK_MODEL_VALUES_TOK { PARSER_STATE->checkThatLogicIsSet(); }
     ( LPAREN_TOK termList[terms,e] RPAREN_TOK
       { cmd->reset(new BlockModelValuesCommand(terms)); }
