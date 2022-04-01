@@ -173,7 +173,7 @@ CardinalityClass TypeNode::getCardinalityClass()
       // else, function types whose range type is INFINITE, ONE, or
       // INTERPRETED_ONE have the same cardinality class as their range.
     }
-    else if (isConstructor())
+    else if (isDatatypeConstructor())
     {
       // notice that we require computing the cardinality class of the
       // constructor type, which is equivalent to asking how many
@@ -321,9 +321,9 @@ bool TypeNode::isComparableTo(TypeNode t) const {
   return false;
 }
 
-TypeNode TypeNode::getTesterDomainType() const
+TypeNode TypeNode::getDatatypeTesterDomainType() const
 {
-  Assert(isTester());
+  Assert(isDatatypeTester());
   return (*this)[0];
 }
 
@@ -342,19 +342,24 @@ TypeNode TypeNode::getBaseType() const {
     for(size_t i = 1; i < getNumChildren(); ++i) {
       v.push_back((*this)[i].getBaseType());
     }
-    return (*this)[0].getDType().getTypeNode().instantiateParametricDatatype(v);
+    return (*this)[0].getDType().getTypeNode().instantiate(v);
   }
   return *this;
 }
 
 std::vector<TypeNode> TypeNode::getArgTypes() const {
   vector<TypeNode> args;
-  if(isTester()) {
+  if (isDatatypeTester())
+  {
     Assert(getNumChildren() == 1);
     args.push_back((*this)[0]);
-  } else {
-    Assert(isFunction() || isConstructor() || isSelector());
-    for(unsigned i = 0, i_end = getNumChildren() - 1; i < i_end; ++i) {
+  }
+  else
+  {
+    Assert(isFunction() || isDatatypeConstructor() || isDatatypeSelector()
+           || isDatatypeUpdater());
+    for (uint32_t i = 0, i_end = getNumChildren() - 1; i < i_end; ++i)
+    {
       args.push_back((*this)[i]);
     }
   }
@@ -422,26 +427,34 @@ bool TypeNode::isInstantiatedDatatype() const {
   return true;
 }
 
-bool TypeNode::isInstantiated() const
+bool TypeNode::isInstantiatedUninterpretedSort() const
 {
-  return isInstantiatedDatatype()
-         || (isUninterpretedSort() && getNumChildren() > 0);
+  return isUninterpretedSort() && getNumChildren() > 0;
 }
 
-TypeNode TypeNode::instantiateParametricDatatype(
-    const std::vector<TypeNode>& params) const
+bool TypeNode::isInstantiated() const
 {
-  AssertArgument(getKind() == kind::PARAMETRIC_DATATYPE, *this);
-  AssertArgument(params.size() == getNumChildren() - 1, *this);
+  return isInstantiatedDatatype() || isInstantiatedUninterpretedSort();
+}
+
+TypeNode TypeNode::instantiate(const std::vector<TypeNode>& params) const
+{
   NodeManager* nm = NodeManager::currentNM();
-  TypeNode cons = nm->mkTypeConst((*this)[0].getConst<DatatypeIndexConstant>());
-  std::vector<TypeNode> paramsNodes;
-  paramsNodes.push_back(cons);
-  for (const TypeNode& t : params)
+  if (getKind() == kind::PARAMETRIC_DATATYPE)
   {
-    paramsNodes.push_back(t);
+    Assert(params.size() == getNumChildren() - 1);
+    TypeNode cons =
+        nm->mkTypeConst((*this)[0].getConst<DatatypeIndexConstant>());
+    std::vector<TypeNode> paramsNodes;
+    paramsNodes.push_back(cons);
+    for (const TypeNode& t : params)
+    {
+      paramsNodes.push_back(t);
+    }
+    return nm->mkTypeNode(kind::PARAMETRIC_DATATYPE, paramsNodes);
   }
-  return nm->mkTypeNode(kind::PARAMETRIC_DATATYPE, paramsNodes);
+  Assert(isUninterpretedSortConstructor());
+  return nm->mkSort(*this, params);
 }
 
 uint64_t TypeNode::getUninterpretedSortConstructorArity() const
@@ -457,18 +470,19 @@ std::string TypeNode::getName() const
   return getAttribute(expr::VarNameAttr());
 }
 
-TypeNode TypeNode::instantiateSortConstructor(
-    const std::vector<TypeNode>& params) const
+TypeNode TypeNode::getUninterpretedSortConstructor() const
 {
-  Assert(isUninterpretedSortConstructor());
-  return NodeManager::currentNM()->mkSort(*this, params);
+  Assert(isInstantiatedUninterpretedSort());
+  NodeBuilder nb(kind::SORT_TYPE);
+  nb << NodeManager::operatorFromType(*this);
+  return nb.constructTypeNode();
 }
 
-/** Is this an instantiated datatype parameter */
-bool TypeNode::isParameterInstantiatedDatatype(unsigned n) const {
-  AssertArgument(getKind() == kind::PARAMETRIC_DATATYPE, *this);
+bool TypeNode::isParameterInstantiatedDatatype(size_t n) const
+{
+  Assert(getKind() == kind::PARAMETRIC_DATATYPE);
   const DType& dt = (*this)[0].getDType();
-  AssertArgument(n < dt.getNumParameters(), *this);
+  Assert(n < dt.getNumParameters());
   return dt.getParameter(n) != (*this)[n + 1];
 }
 
@@ -601,16 +615,25 @@ bool TypeNode::isParametricDatatype() const
   return getKind() == kind::PARAMETRIC_DATATYPE;
 }
 
-bool TypeNode::isConstructor() const
+bool TypeNode::isDatatypeConstructor() const
 {
   return getKind() == kind::CONSTRUCTOR_TYPE;
 }
 
-bool TypeNode::isSelector() const { return getKind() == kind::SELECTOR_TYPE; }
+bool TypeNode::isDatatypeSelector() const
+{
+  return getKind() == kind::SELECTOR_TYPE;
+}
 
-bool TypeNode::isTester() const { return getKind() == kind::TESTER_TYPE; }
+bool TypeNode::isDatatypeTester() const
+{
+  return getKind() == kind::TESTER_TYPE;
+}
 
-bool TypeNode::isUpdater() const { return getKind() == kind::UPDATER_TYPE; }
+bool TypeNode::isDatatypeUpdater() const
+{
+  return getKind() == kind::UPDATER_TYPE;
+}
 
 bool TypeNode::isCodatatype() const
 {
@@ -672,11 +695,12 @@ uint32_t TypeNode::getBitVectorSize() const
 
 TypeNode TypeNode::getRangeType() const
 {
-  if (isTester())
+  if (isDatatypeTester())
   {
     return NodeManager::currentNM()->booleanType();
   }
-  Assert(isFunction() || isConstructor() || isSelector())
+  Assert(isFunction() || isDatatypeConstructor() || isDatatypeSelector()
+         || isDatatypeUpdater())
       << "Cannot get range type of " << *this;
   return (*this)[getNumChildren() - 1];
 }
