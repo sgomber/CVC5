@@ -27,18 +27,18 @@ namespace cvc5::internal {
 class AbstractType
 {
  public:
-  AbstractType(kind::Kind k);
+  AbstractType(Kind k);
   AbstractType(const AbstractType& op);
 
   /** return the kind of the current object */
-  kind::Kind getKind() const;
+  Kind getKind() const;
 
   bool operator==(const AbstractType& op) const;
 
  private:
   AbstractType();
   /** a kind */
-  kind::Kind d_kind;
+  Kind d_kind;
 }; /* class AbstractType */
 
 std::ostream& operator<<(std::ostream& out, const AbstractType& op);

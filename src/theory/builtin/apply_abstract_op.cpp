@@ -26,10 +26,10 @@ std::ostream& operator<<(std::ostream& out, const ApplyAbstractOp& op)
 
 size_t ApplyAbstractOpHashFunction::operator()(const ApplyAbstractOp& op) const
 {
-  return kind::KindHashFunction(op.getKind());
+  return kind::KindHashFunction()(op.getKind());
 }
 
-ApplyAbstractOp::ApplyAbstractOp(kind::Kind k) : d_kind(k) {}
+ApplyAbstractOp::ApplyAbstractOp(Kind k) : d_kind(k) {}
 
 ApplyAbstractOp::ApplyAbstractOp(const ApplyAbstractOp& op)
     : d_kind(op.getKind())

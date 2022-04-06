@@ -64,6 +64,12 @@ class SortProperties
   static Node mkGroundTerm(TypeNode type);
 };
 
+class ApplyAbstractTypeRule
+{
+ public:
+  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+};
+
 }  // namespace builtin
 }  // namespace theory
 }  // namespace cvc5::internal

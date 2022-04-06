@@ -18,6 +18,7 @@
 #include "expr/attribute.h"
 #include "expr/skolem_manager.h"
 #include "util/uninterpreted_sort_value.h"
+#include "theory/builtin/abstract_type_checker.h"
 
 namespace cvc5::internal {
 namespace theory {
@@ -157,6 +158,11 @@ Node SortProperties::mkGroundTerm(TypeNode type)
       "groundTerm", type, "a ground term created for type " + type.toString());
   type.setAttribute(gta, k);
   return k;
+}
+
+TypeNode ApplyAbstractTypeRule::computeType(NodeManager* nodeManager, TNode n, bool check)
+{
+  return AbstractTypeChecker::compute(n, check);
 }
 
 }  // namespace builtin

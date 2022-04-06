@@ -317,7 +317,7 @@ constant ABSTRACT_TYPE \
   struct \
   AbstractTypeKind \
   ::cvc5::internal::AbstractTypeKindHashFunction \
-  "util/abstract_type.h" \
+  "theory/builtin/abstract_type.h" \
   "abstract type"
 cardinality ABSTRACT_TYPE "Cardinality(Cardinality::INTEGERS)"
 
@@ -329,5 +329,8 @@ constant APPLY_ABSTRACT_OP \
   "operator for abstract applications; payload is an instance of the cvc5::internal::ApplyAbstractOp class"
 parameterized APPLY_ABSTRACT APPLY_ABSTRACT_OP 0:  \
 "constructs an abstract application"
+
+typerule APPLY_ABSTRACT_OP   "SimpleTypeRule<RBuiltinOperator>"
+typerule APPLY_ABSTRACT      ::cvc5::internal::theory::builtin::ApplyAbstractTypeRule
 
 endtheory

@@ -10,45 +10,29 @@
  * directory for licensing information.
  * ****************************************************************************
  *
- * A class for singleton operator for sets.
+ * Implements the type checker for APPLY_ABSTRACT
  */
 
 #include "cvc5_public.h"
 
-#ifndef CVC5__THEORY__BUILTIN__APPLY_ABSTRACT_OP_H
-#define CVC5__THEORY__BUILTIN__APPLY_ABSTRACT_OP_H
+#ifndef CVC5__THEORY__BUILTIN__ABSTRACT_TYPE_CHECKER_H
+#define CVC5__THEORY__BUILTIN__ABSTRACT_TYPE_CHECKER_H
 
-#include "expr/kind.h"
+#include "theory/builtin/apply_abstract_op.h"
+#include "expr/type_node.h"
 
 namespace cvc5::internal {
 
 /**
  */
-class ApplyAbstractOp
+class AbstractTypeChecker
 {
  public:
-  ApplyAbstractOp(Kind k);
-  ApplyAbstractOp(const ApplyAbstractOp& op);
-
-  /** return the kind of the current object */
-  Kind getKind() const;
-
-  bool operator==(const ApplyAbstractOp& op) const;
-
+  /** type check */
+  static TypeNode compute(TNode n, bool check);
  private:
-  ApplyAbstractOp();
-  /** a kind */
-  Kind d_kind;
-};
-
-std::ostream& operator<<(std::ostream& out, const ApplyAbstractOp& op);
-
-/**
- * Hash function for the ApplyAbstractOp objects.
- */
-struct ApplyAbstractOpHashFunction
-{
-  size_t operator()(const ApplyAbstractOp& op) const;
+  /** Type check */
+  static TypeNode computeInternal(const ApplyAbstractOp& aao, const std::vector<TypeNode>& childTypes);
 };
 
 }  // namespace cvc5::internal
