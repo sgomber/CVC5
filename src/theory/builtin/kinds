@@ -312,4 +312,13 @@ typerule WITNESS ::cvc5::internal::theory::builtin::WitnessTypeRule
 
 variable RAW_SYMBOL "a variable that is not quoted in the smt2 printer (internal only)"
 
+constant APPLY_ABSTRACT_OP \
+  class \
+  ApplyAbstractOp \
+  ::cvc5::internal::ApplyAbstractOpHashFunction \
+  "theory/builtin/apply_abstract_op.h" \
+  "operator for abstract applications; payload is an instance of the cvc5::internal::ApplyAbstractOp class"
+parameterized APPLY_ABSTRACT APPLY_ABSTRACT_OP 0:  \
+"constructs an abstract application"
+
 endtheory
