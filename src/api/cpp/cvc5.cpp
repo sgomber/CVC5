@@ -397,8 +397,7 @@ const static std::unordered_map<Kind, std::pair<internal::Kind, std::string>>
         KIND_ENUM(SKOLEM_ADD_TO_POOL, internal::Kind::SKOLEM_ADD_TO_POOL),
         KIND_ENUM(INST_ATTRIBUTE, internal::Kind::INST_ATTRIBUTE),
         KIND_ENUM(INST_PATTERN_LIST, internal::Kind::INST_PATTERN_LIST),
-        /* Sorts -------------------------------------------------------------
-         */
+        /* Sorts ------------------------------------------------------------ */
         KIND_ENUM(ABSTRACT_SORT, internal::Kind::ABSTRACT_TYPE),
         KIND_ENUM(ARRAY_SORT, internal::Kind::ARRAY_TYPE),
         KIND_ENUM(BAG_SORT, internal::Kind::BAG_TYPE),
@@ -712,6 +711,16 @@ const static std::unordered_map<internal::Kind,
         {internal::Kind::SKOLEM_ADD_TO_POOL, SKOLEM_ADD_TO_POOL},
         {internal::Kind::INST_ATTRIBUTE, INST_ATTRIBUTE},
         {internal::Kind::INST_PATTERN_LIST, INST_PATTERN_LIST},
+        /* Sorts ------------------------------------------------------------ */
+        {internal::Kind::ABSTRACT_TYPE, ABSTRACT_SORT},
+        {internal::Kind::ARRAY_TYPE, ARRAY_SORT},
+        {internal::Kind::BAG_TYPE, BAG_SORT},
+        {internal::Kind::BITVECTOR_TYPE, BITVECTOR_SORT},
+        {internal::Kind::DATATYPE_TYPE, DATATYPE_SORT},
+        {internal::Kind::FLOATINGPOINT_TYPE, FLOATINGPOINT_SORT},
+        {internal::Kind::FUNCTION_TYPE, FUNCTION_SORT},
+        {internal::Kind::SEQUENCE_TYPE, SEQUENCE_SORT},
+        {internal::Kind::SET_TYPE, SET_SORT},
         /* ----------------------------------------------------------------- */
         {internal::Kind::LAST_KIND, LAST_KIND},
     };
