@@ -33,6 +33,7 @@
 #include "theory/bags/bag_make_op.h"
 #include "theory/builtin/abstract_type.h"
 #include "theory/builtin/apply_abstract_op.h"
+#include "theory/builtin/abstract_type_checker.h"
 #include "theory/sets/singleton_op.h"
 #include "theory/strings/seq_unit_op.h"
 #include "util/bitvector.h"
@@ -1166,20 +1167,16 @@ Node NodeManager::mkBag(const TypeNode& t, const TNode n, const TNode m)
 
 Node NodeManager::mkAbstractNode(Kind k, const std::vector<Node>& children)
 {
-  // never do this for BOUND_VAR_LIST
-  if (k != kind::BOUND_VAR_LIST)
+  AbstractTypeChecker atc;
+  // if it would be assigned an abstract type, use APPLY_ABSTRACT
+  TypeNode atn = atc.computeAbstractApp(k, children, false);
+  if (!atn.isNull())
   {
-    for (const Node& n : children)
-    {
-      if (n.getType().isAbstract())
-      {
-        Node op = mkConst(ApplyAbstractOp(k));
-        std::vector<Node> achildren;
-        achildren.push_back(op);
-        achildren.insert(achildren.end(), children.begin(), children.end());
-        return mkNode(kind::APPLY_ABSTRACT, achildren);
-      }
-    }
+    Node op = mkConst(ApplyAbstractOp(k));
+    std::vector<Node> achildren;
+    achildren.push_back(op);
+    achildren.insert(achildren.end(), children.begin(), children.end());
+    return mkNode(kind::APPLY_ABSTRACT, achildren);
   }
   // otherwise, it is concrete
   return mkNode(k, children);

@@ -23,17 +23,27 @@ TypeNode AbstractTypeChecker::compute(TNode n, bool check)
 {
   Assert(n.getKind() == APPLY_ABSTRACT);
   const ApplyAbstractOp& aao = n.getOperator().getConst<ApplyAbstractOp>();
-  std::vector<TypeNode> childrenTypes;
-  for (const Node& nc : n)
-  {
-    childrenTypes.push_back(nc.getType(check));
-  }
-  return computeInternal(aao, childrenTypes);
+  std::vector<Node> children(n.begin(),n.end());
+  return computeAbstractApp(aao.getKind(), children, check);
 }
 
-TypeNode AbstractTypeChecker::computeInternal(
-    const ApplyAbstractOp& aao, const std::vector<TypeNode>& childTypes)
+TypeNode AbstractTypeChecker::computeAbstractApp(
+    Kind k, const std::vector<Node>& children, bool check)
 {
+  std::vector<TypeNode> childrenTypes;
+  bool hasAbstract = false;
+  for (const Node& nc : children)
+  {
+    TypeNode nct = nc.getType(check);
+    childrenTypes.push_back(nct);
+    Assert (!nct.isNull());
+    hasAbstract = hasAbstract || nct.isAbstract();
+  }
+  if (!hasAbstract)
+  {
+    // there are no abstract children, should not use APPLY_ABSTRACT
+    return TypeNode::null();
+  }
   Kind ak = UNDEFINED_KIND;
 
   // TODO: more precise type rules?

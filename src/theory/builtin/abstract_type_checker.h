@@ -31,10 +31,13 @@ class AbstractTypeChecker
   /** type check */
   static TypeNode compute(TNode n, bool check);
 
- private:
-  /** Type check */
-  static TypeNode computeInternal(const ApplyAbstractOp& aao,
-                                  const std::vector<TypeNode>& childTypes);
+  /**
+   * Type check the type of
+   *   (APPLY_ABSTRACT (APPLY_ABSTRACT_OP k) children)
+   * Return the null type node if it does not type check.
+   */
+  static TypeNode computeAbstractApp(Kind k,
+                                  const std::vector<Node>& children, bool check);
 };
 
 }  // namespace cvc5::internal
