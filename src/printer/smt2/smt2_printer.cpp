@@ -43,6 +43,8 @@
 #include "smt/command.h"
 #include "smt_util/boolean_simplification.h"
 #include "theory/arrays/theory_arrays_rewriter.h"
+#include "theory/builtin/abstract_type.h"
+#include "theory/builtin/apply_abstract_op.h"
 #include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/datatypes/tuple_project_op.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
@@ -193,7 +195,7 @@ void Smt2Printer::toStream(std::ostream& out,
       Kind atk = at.getKind();
       out << "?";
       // note that the fully abstract type is printed simply as "?", not "?Abstract"
-      if (at!=kind::ABSTRACT_TYPE)
+      if (atk!=kind::ABSTRACT_TYPE)
       {
         out << smtKindString(atk, d_variant);
       }
@@ -949,6 +951,12 @@ void Smt2Printer::toStream(std::ostream& out,
     }
     out << ')';
     return;
+  }
+  case kind::APPLY_ABSTRACT:
+  {
+    const ApplyAbstractOp& aao = n.getOperator().getConst<ApplyAbstractOp>();
+    out << smtKindString(aao.getKind(), d_variant) << " ";
+    break;
   }
   case kind::INST_PATTERN:
   case kind::INST_NO_PATTERN:
