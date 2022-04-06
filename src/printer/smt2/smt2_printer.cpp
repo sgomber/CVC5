@@ -187,6 +187,18 @@ void Smt2Printer::toStream(std::ostream& out,
         n.constToStream(out);
       }
       break;
+    case kind::ABSTRACT_TYPE:
+    {
+      const AbstractType& at = n.getConst<AbstractType>();
+      Kind atk = at.getKind();
+      out << "?";
+      // note that the fully abstract type is printed simply as "?", not "?Abstract"
+      if (at!=kind::ABSTRACT_TYPE)
+      {
+        out << smtKindString(atk, d_variant);
+      }
+      break;
+    }
     case kind::BITVECTOR_TYPE:
       out << "(_ BitVec " << n.getConst<BitVectorSize>().d_size << ")";
       break;
