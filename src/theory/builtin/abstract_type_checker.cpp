@@ -19,7 +19,7 @@ namespace cvc5::internal {
 
 TypeNode AbstractTypeChecker::compute(TNode n, bool check)
 {
-  Assert (n.getKind()==kind::APPLY_ABSTRACT);
+  Assert(n.getKind() == kind::APPLY_ABSTRACT);
   const ApplyAbstractOp& aao = n.getOperator.getConst<ApplyAbstractOp>();
   std::vector<TypeNode> childrenTypes;
   for (const Node& nc : n)
@@ -29,11 +29,11 @@ TypeNode AbstractTypeChecker::compute(TNode n, bool check)
   return computeInternal(aao, childrenTypes);
 }
 
-TypeNode AbstractTypeChecker::computeInternal(const ApplyAbstractOp& aao, const std::vector<TypeNode>& childTypes)
+TypeNode AbstractTypeChecker::computeInternal(
+    const ApplyAbstractOp& aao, const std::vector<TypeNode>& childTypes)
 {
   TypeNode ret;
-  
-  
+
   return ret;
 }
 

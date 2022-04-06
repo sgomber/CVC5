@@ -17,8 +17,8 @@
 
 #include "expr/attribute.h"
 #include "expr/skolem_manager.h"
-#include "util/uninterpreted_sort_value.h"
 #include "theory/builtin/abstract_type_checker.h"
+#include "util/uninterpreted_sort_value.h"
 
 namespace cvc5::internal {
 namespace theory {
@@ -160,7 +160,9 @@ Node SortProperties::mkGroundTerm(TypeNode type)
   return k;
 }
 
-TypeNode ApplyAbstractTypeRule::computeType(NodeManager* nodeManager, TNode n, bool check)
+TypeNode ApplyAbstractTypeRule::computeType(NodeManager* nodeManager,
+                                            TNode n,
+                                            bool check)
 {
   return AbstractTypeChecker::compute(n, check);
 }

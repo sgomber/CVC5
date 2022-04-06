@@ -18,8 +18,8 @@
 #ifndef CVC5__THEORY__BUILTIN__ABSTRACT_TYPE_CHECKER_H
 #define CVC5__THEORY__BUILTIN__ABSTRACT_TYPE_CHECKER_H
 
-#include "theory/builtin/apply_abstract_op.h"
 #include "expr/type_node.h"
+#include "theory/builtin/apply_abstract_op.h"
 
 namespace cvc5::internal {
 
@@ -30,9 +30,11 @@ class AbstractTypeChecker
  public:
   /** type check */
   static TypeNode compute(TNode n, bool check);
+
  private:
   /** Type check */
-  static TypeNode computeInternal(const ApplyAbstractOp& aao, const std::vector<TypeNode>& childTypes);
+  static TypeNode computeInternal(const ApplyAbstractOp& aao,
+                                  const std::vector<TypeNode>& childTypes);
 };
 
 }  // namespace cvc5::internal
