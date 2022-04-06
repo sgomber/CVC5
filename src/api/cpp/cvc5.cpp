@@ -397,7 +397,8 @@ const static std::unordered_map<Kind, std::pair<internal::Kind, std::string>>
         KIND_ENUM(SKOLEM_ADD_TO_POOL, internal::Kind::SKOLEM_ADD_TO_POOL),
         KIND_ENUM(INST_ATTRIBUTE, internal::Kind::INST_ATTRIBUTE),
         KIND_ENUM(INST_PATTERN_LIST, internal::Kind::INST_PATTERN_LIST),
-        /* Sorts ------------------------------------------------------------- */  
+        /* Sorts -------------------------------------------------------------
+         */
         KIND_ENUM(ABSTRACT_SORT, internal::Kind::ABSTRACT_TYPE),
         KIND_ENUM(ARRAY_SORT, internal::Kind::ARRAY_TYPE),
         KIND_ENUM(BAG_SORT, internal::Kind::BAG_TYPE),
@@ -1791,18 +1792,17 @@ Kind Sort::getKind() const
   CVC5_API_CHECK_NOT_NULL;
   //////// all checks before this line
   internal::Kind tk = d_type->getKind();
-  if (tk==internal::kind::TYPE_CONSTANT)
+  if (tk == internal::kind::TYPE_CONSTANT)
   {
-    switch(d_type->getConst<internal::TypeConstant>()) {
+    switch (d_type->getConst<internal::TypeConstant>())
+    {
       case internal::BOOLEAN_TYPE: return BOOLEAN_SORT; break;
-    case internal::REAL_TYPE: return REAL_SORT; break;
-    case internal::INTEGER_TYPE: return INTEGER_SORT; break;
-    case internal::STRING_TYPE: return STRING_SORT; break;
-    case internal::REGEXP_TYPE: return REGLAN_SORT; break;
-    case internal::ROUNDINGMODE_TYPE: return ROUNDINGMODE_SORT; break;
-    default:
-      return INTERNAL_KIND;
-      break;
+      case internal::REAL_TYPE: return REAL_SORT; break;
+      case internal::INTEGER_TYPE: return INTEGER_SORT; break;
+      case internal::STRING_TYPE: return STRING_SORT; break;
+      case internal::REGEXP_TYPE: return REGLAN_SORT; break;
+      case internal::ROUNDINGMODE_TYPE: return ROUNDINGMODE_SORT; break;
+      default: return INTERNAL_KIND; break;
     }
   }
   return intToExtKind(tk);

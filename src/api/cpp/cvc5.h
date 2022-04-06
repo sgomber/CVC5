@@ -823,7 +823,7 @@ class CVC5_EXPORT Sort
   std::vector<Sort> getTupleSorts() const;
 
   /* --------------------------------------------------------------------- */
-  
+
   /**
    * @return The kind of the sort.
    */
