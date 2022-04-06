@@ -28,7 +28,7 @@ namespace cvc5::internal {
 class AbstractTypeChecker
 {
  public:
-  /** 
+  /**
    * return true if k is an abstractable sort kind, i.e. a valid argument to
    * mkAbstractType.
    */
