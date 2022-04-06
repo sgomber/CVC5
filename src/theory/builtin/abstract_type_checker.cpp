@@ -19,6 +19,12 @@ using namespace cvc5::internal::kind;
 
 namespace cvc5::internal {
 
+bool AbstractTypeChecker::canAbstractSortKind(Kind k)
+{
+  return k == ABSTRACT_TYPE || k==ARRAY_TYPE || k==BAG_TYPE
+  || k==BITVECTOR_TYPE || k==DATATYPE_TYPE  || k==FLOATINGPOINT_TYPE || k==FUNCTION_TYPE || k==SEQUENCE_TYPE || k==SET_TYPE;
+}
+
 TypeNode AbstractTypeChecker::compute(TNode n, bool check)
 {
   Assert(n.getKind() == APPLY_ABSTRACT);

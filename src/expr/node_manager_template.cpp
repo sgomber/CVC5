@@ -561,6 +561,12 @@ TypeNode NodeManager::mkSequenceType(TypeNode elementType)
 
 TypeNode NodeManager::mkAbstractType(Kind k)
 {
+  if (!AbstractTypeChecker::canAbstractSortKind(k))
+  {
+    std::stringstream ss;
+    ss << "Cannot construct abstract type for kind " << k;
+    throw Exception(ss.str());
+  }
   return mkTypeConst<AbstractType>(AbstractType(k));
 }
 
@@ -1167,9 +1173,8 @@ Node NodeManager::mkBag(const TypeNode& t, const TNode n, const TNode m)
 
 Node NodeManager::mkAbstractNode(Kind k, const std::vector<Node>& children)
 {
-  AbstractTypeChecker atc;
   // if it would be assigned an abstract type, use APPLY_ABSTRACT
-  TypeNode atn = atc.computeAbstractApp(k, children, false);
+  TypeNode atn = AbstractTypeChecker::computeAbstractApp(k, children, false);
   if (!atn.isNull())
   {
     Node op = mkConst(ApplyAbstractOp(k));
