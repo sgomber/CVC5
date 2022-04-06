@@ -23,7 +23,7 @@ TypeNode AbstractTypeChecker::compute(TNode n, bool check)
 {
   Assert(n.getKind() == APPLY_ABSTRACT);
   const ApplyAbstractOp& aao = n.getOperator().getConst<ApplyAbstractOp>();
-  std::vector<Node> children(n.begin(),n.end());
+  std::vector<Node> children(n.begin(), n.end());
   return computeAbstractApp(aao.getKind(), children, check);
 }
 
@@ -36,7 +36,7 @@ TypeNode AbstractTypeChecker::computeAbstractApp(
   {
     TypeNode nct = nc.getType(check);
     childrenTypes.push_back(nct);
-    Assert (!nct.isNull());
+    Assert(!nct.isNull());
     hasAbstract = hasAbstract || nct.isAbstract();
   }
   if (!hasAbstract)

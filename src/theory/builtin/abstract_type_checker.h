@@ -37,7 +37,8 @@ class AbstractTypeChecker
    * Return the null type node if it does not type check.
    */
   static TypeNode computeAbstractApp(Kind k,
-                                  const std::vector<Node>& children, bool check);
+                                     const std::vector<Node>& children,
+                                     bool check);
 };
 
 }  // namespace cvc5::internal
