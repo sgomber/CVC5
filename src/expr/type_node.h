@@ -475,7 +475,7 @@ private:
 
   /** Is this a Sequence type? */
   bool isSequence() const;
-  
+
   /** Is this an abstract type? */
   bool isAbstract() const;
 

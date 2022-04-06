@@ -33,7 +33,7 @@ TypeNode AbstractTypeChecker::computeInternal(
     const ApplyAbstractOp& aao, const std::vector<TypeNode>& childTypes)
 {
   Kind ak = ABSTRACT_TYPE;
-  
+
   // TODO: more precise type rules?
 
   return NodeManager::currentNM()->mkAbstractType(ak);

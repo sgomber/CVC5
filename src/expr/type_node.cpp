@@ -22,8 +22,8 @@
 #include "expr/type_properties.h"
 #include "options/base_options.h"
 #include "options/quantifiers_options.h"
-#include "theory/type_enumerator.h"
 #include "theory/builtin/abstract_type.h"
+#include "theory/type_enumerator.h"
 #include "util/bitvector.h"
 #include "util/cardinality.h"
 
@@ -659,14 +659,11 @@ bool TypeNode::isSygusDatatype() const
   return false;
 }
 
-bool TypeNode::isAbstract() const
-{
-  return getKind() == kind::ABSTRACT_TYPE;
-}
+bool TypeNode::isAbstract() const { return getKind() == kind::ABSTRACT_TYPE; }
 
 Kind TypeNode::getAbstractKind() const
 {
-  Assert (isAbstract());
+  Assert(isAbstract());
   const AbstractType& ak = getConst<AbstractType>();
   return ak.getKind();
 }
