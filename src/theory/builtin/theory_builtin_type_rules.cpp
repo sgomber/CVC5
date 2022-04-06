@@ -169,8 +169,7 @@ TypeNode ApplyAbstractTypeRule::computeType(NodeManager* nodeManager,
   if (tn.isNull())
   {
     throw TypeCheckingExceptionPrivate(
-        n,
-        "failed to type check abstract application");
+        n, "failed to type check abstract application");
   }
   return tn;
 }

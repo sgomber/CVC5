@@ -31,8 +31,8 @@
 #include "expr/type_checker.h"
 #include "expr/type_properties.h"
 #include "theory/bags/bag_make_op.h"
-#include "theory/builtin/apply_abstract_op.h"
 #include "theory/builtin/abstract_type.h"
+#include "theory/builtin/apply_abstract_op.h"
 #include "theory/sets/singleton_op.h"
 #include "theory/strings/seq_unit_op.h"
 #include "util/bitvector.h"
@@ -1167,7 +1167,7 @@ Node NodeManager::mkBag(const TypeNode& t, const TNode n, const TNode m)
 Node NodeManager::mkAbstractNode(Kind k, const std::vector<Node>& children)
 {
   // never do this for BOUND_VAR_LIST
-  if (k!=kind::BOUND_VAR_LIST)
+  if (k != kind::BOUND_VAR_LIST)
   {
     for (const Node& n : children)
     {

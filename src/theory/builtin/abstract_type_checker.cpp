@@ -37,9 +37,8 @@ TypeNode AbstractTypeChecker::computeInternal(
   Kind ak = UNDEFINED_KIND;
 
   // TODO: more precise type rules?
-  
-  
-  if (ak==UNDEFINED_KIND)
+
+  if (ak == UNDEFINED_KIND)
   {
     return TypeNode::null();
   }
