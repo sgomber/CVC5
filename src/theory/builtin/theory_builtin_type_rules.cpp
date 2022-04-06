@@ -164,6 +164,7 @@ TypeNode ApplyAbstractTypeRule::computeType(NodeManager* nodeManager,
                                             TNode n,
                                             bool check)
 {
+  // call the abstract type checker utility
   return AbstractTypeChecker::compute(n, check);
 }
 

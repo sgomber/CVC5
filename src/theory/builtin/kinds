@@ -315,8 +315,8 @@ variable RAW_SYMBOL "a variable that is not quoted in the smt2 printer (internal
 
 constant ABSTRACT_TYPE \
   struct \
-  AbstractTypeKind \
-  ::cvc5::internal::AbstractTypeKindHashFunction \
+  AbstractType \
+  ::cvc5::internal::AbstractTypeHashFunction \
   "theory/builtin/abstract_type.h" \
   "abstract type"
 cardinality ABSTRACT_TYPE "Cardinality(Cardinality::INTEGERS)"
