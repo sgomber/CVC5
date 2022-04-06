@@ -39,7 +39,7 @@ static TheoryId theoryOf(TNode node) {
   if (node.getKind() == kind::EQUAL)
   {
     // Equality is owned by the theory that owns the domain
-    return Theory::theoryOf(node[0].getType());
+    return THEORY_BUILTIN;
   }
   // Regular nodes are owned by the kind
   return kindToTheoryId(node.getKind());
