@@ -33,6 +33,8 @@
 #include "theory/bags/bag_make_op.h"
 #include "theory/sets/singleton_op.h"
 #include "theory/strings/seq_unit_op.h"
+#include "theory/builtin/apply_abstract_op.h"
+#include "theory/builtin/apply_type.h"
 #include "util/bitvector.h"
 #include "util/poly_util.h"
 #include "util/rational.h"
@@ -554,6 +556,11 @@ TypeNode NodeManager::mkSequenceType(TypeNode elementType)
   CheckArgument(
       !elementType.isNull(), elementType, "unexpected NULL element type");
   return mkTypeNode(kind::SEQUENCE_TYPE, elementType);
+}
+
+TypeNode NodeManager::mkAbstractType(Kind k)
+{
+  return mkTypeConst<AbstractType>(AbstractType(k));
 }
 
 TypeNode NodeManager::mkDatatypeType(DType& datatype, uint32_t flags)
@@ -1155,6 +1162,23 @@ Node NodeManager::mkBag(const TypeNode& t, const TNode n, const TNode m)
   Node op = mkConst(BagMakeOp(t));
   Node bag = mkNode(kind::BAG_MAKE, op, n, m);
   return bag;
+}
+
+Node NodeManager::mkAbstractNode(Kind k, const std::vector<Node>& children)
+{
+  for (const Node& n : children)
+  {
+    if (n.getType().isAbstract())
+    {
+      Node op = mkConst(ApplyAbstractOp(k));
+      std::vector<Node> achildren;
+      achildren.push_back(op);
+      achildren.insert(achildren.end(), children.begin(), children.end());
+      return mkNode(kind::APPLY_ABSTRACT, achildren);
+    }
+  }
+  // otherwise, it is concrete
+  return mkNode(k, children);
 }
 
 Node NodeManager::mkUninterpretedSortValue(const TypeNode& type)

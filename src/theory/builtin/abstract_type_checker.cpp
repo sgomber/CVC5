@@ -32,9 +32,11 @@ TypeNode AbstractTypeChecker::compute(TNode n, bool check)
 TypeNode AbstractTypeChecker::computeInternal(
     const ApplyAbstractOp& aao, const std::vector<TypeNode>& childTypes)
 {
-  TypeNode ret;
+  Kind ak = ABSTRACT_TYPE;
+  
+  // TODO: more precise type rules?
 
-  return ret;
+  return NodeManager::currentNM()->mkAbstractType(ak);
 }
 
 }  // namespace cvc5::internal

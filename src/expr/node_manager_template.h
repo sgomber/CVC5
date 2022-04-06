@@ -491,6 +491,9 @@ class NodeManager
 
   /** Make the type of sequences with the given parameterization */
   TypeNode mkSequenceType(TypeNode elementType);
+  
+  /** Make the abstract type with the given kind */
+  TypeNode mkAbstractType(Kind k);
 
   /** Make a type representing the given datatype. */
   TypeNode mkDatatypeType(DType& datatype, uint32_t flags = DATATYPE_FLAG_NONE);
@@ -689,6 +692,15 @@ class NodeManager
    */
   Node mkBag(const TypeNode& t, const TNode n, const TNode m);
 
+  /**
+   * Make abstract node, returns a term of kind APPLY_ABSTRACT if any
+   * child has abstract type.
+   * @param k The kind to apply
+   * @param children The children of the application 
+   * @return the (possibly) abstract application
+   */
+  Node mkAbstractNode(Kind k, const std::vector<Node>& children);
+   
   /**
    * Create a constant of type T.  It will have the appropriate
    * CONST_* kind defined for T.

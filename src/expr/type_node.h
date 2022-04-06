@@ -475,6 +475,9 @@ private:
 
   /** Is this a Sequence type? */
   bool isSequence() const;
+  
+  /** Is this an abstract type? */
+  bool isAbstract() const;
 
   /** Get the index type (for array types) */
   TypeNode getArrayIndexType() const;
@@ -502,6 +505,10 @@ private:
 
   /** Get the element type (for sequence types) */
   TypeNode getSequenceElementType() const;
+
+  /** Get the abstract kind (for abstract types) */
+  Kind getAbstractKind() const;
+
   /**
    * Is this a function type?  Function-like things (e.g. datatype
    * selectors) that aren't actually functions are NOT considered
