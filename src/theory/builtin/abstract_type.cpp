@@ -29,15 +29,9 @@ size_t AbstractTypeHashFunction::operator()(const AbstractType& op) const
   return kind::KindHashFunction(op.getKind());
 }
 
-AbstractType::AbstractType(kind::Kind k)
-    : d_kind(k)
-{
-}
+AbstractType::AbstractType(kind::Kind k) : d_kind(k) {}
 
-AbstractType::AbstractType(const AbstractType& op)
-    : d_kind(op.getKind())
-{
-}
+AbstractType::AbstractType(const AbstractType& op) : d_kind(op.getKind()) {}
 
 Kind AbstractType::getKind() const { return d_kind; }
 
