@@ -15,8 +15,8 @@
 
 #include "cvc5_public.h"
 
-#ifndef CVC5__THEORY__BUILTIN__APPLY_ABSTRACT_OP_H
-#define CVC5__THEORY__BUILTIN__APPLY_ABSTRACT_OP_H
+#ifndef CVC5__THEORY__BUILTIN__ABSTRACT_TYPE_H
+#define CVC5__THEORY__BUILTIN__ABSTRACT_TYPE_H
 
 #include "expr/kind.h"
 
@@ -24,32 +24,32 @@ namespace cvc5::internal {
 
 /**
  */
-class ApplyAbstractOp
+class AbstractType
 {
  public:
-  ApplyAbstractOp(kind::Kind k);
-  ApplyAbstractOp(const ApplyAbstractOp& op);
+  AbstractType(kind::Kind k);
+  AbstractType(const AbstractType& op);
 
   /** return the kind of the current object */
   kind::Kind getKind() const;
 
-  bool operator==(const ApplyAbstractOp& op) const;
+  bool operator==(const AbstractType& op) const;
 
  private:
-  ApplyAbstractOp();
+  AbstractType();
   /** a kind */
   kind::Kind d_kind;
-}; /* class ApplyAbstractOp */
+}; /* class AbstractType */
 
-std::ostream& operator<<(std::ostream& out, const ApplyAbstractOp& op);
+std::ostream& operator<<(std::ostream& out, const AbstractType& op);
 
 /**
- * Hash function for the ApplyAbstractOp objects.
+ * Hash function for the AbstractType objects.
  */
-struct ApplyAbstractOpHashFunction
+struct AbstractTypeHashFunction
 {
-  size_t operator()(const ApplyAbstractOp& op) const;
-}; /* struct ApplyAbstractOpHashFunction */
+  size_t operator()(const AbstractType& op) const;
+}; /* struct AbstractTypeHashFunction */
 
 }  // namespace cvc5::internal
 

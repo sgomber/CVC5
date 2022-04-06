@@ -13,35 +13,35 @@
  * A class for singleton operator for sets.
  */
 
-#include "theory/builtin/apply_abstract_op.h"
+#include "theory/builtin/abstract_type.h"
 
 #include <iostream>
 
 namespace cvc5::internal {
 
-std::ostream& operator<<(std::ostream& out, const ApplyAbstractOp& op)
+std::ostream& operator<<(std::ostream& out, const AbstractType& op)
 {
-  return out << "(ApplyAbstractOp " << op.getKind() << ')';
+  return out << "(AbstractType " << op.getKind() << ')';
 }
 
-size_t ApplyAbstractOpHashFunction::operator()(const ApplyAbstractOp& op) const
+size_t AbstractTypeHashFunction::operator()(const AbstractType& op) const
 {
   return kind::KindHashFunction(op.getKind());
 }
 
-ApplyAbstractOp::ApplyAbstractOp(kind::Kind k)
+AbstractType::AbstractType(kind::Kind k)
     : d_kind(k)
 {
 }
 
-ApplyAbstractOp::ApplyAbstractOp(const ApplyAbstractOp& op)
+AbstractType::AbstractType(const AbstractType& op)
     : d_kind(op.getKind())
 {
 }
 
-Kind ApplyAbstractOp::getKind() const { return d_kind; }
+Kind AbstractType::getKind() const { return d_kind; }
 
-bool ApplyAbstractOp::operator==(const ApplyAbstractOp& op) const
+bool AbstractType::operator==(const AbstractType& op) const
 {
   return getKind() == op.getKind();
 }
