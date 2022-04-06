@@ -822,6 +822,13 @@ class CVC5_EXPORT Sort
    */
   std::vector<Sort> getTupleSorts() const;
 
+  /* --------------------------------------------------------------------- */
+  
+  /**
+   * @return The kind of the sort.
+   */
+  Kind getKind() const;
+
  private:
   /** @return The internal wrapped TypeNode of this sort. */
   const internal::TypeNode& getTypeNode(void) const;
@@ -3391,6 +3398,13 @@ class CVC5_EXPORT Solver
    * @return The sequence sort.
    */
   Sort mkSequenceSort(const Sort& elemSort) const;
+
+  /**
+   * Create an abstract sort.
+   * @param k The kind of the abstract sort
+   * @return The abstract sort.
+   */
+  Sort mkAbstractSort(Kind k) const;
 
   /**
    * Create an uninterpreted sort.
