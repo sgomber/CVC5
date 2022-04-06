@@ -15,11 +15,13 @@
 
 #include "theory/builtin/abstract_type_checker.h"
 
+using namespace cvc5::internal::kind;
+
 namespace cvc5::internal {
 
 TypeNode AbstractTypeChecker::compute(TNode n, bool check)
 {
-  Assert(n.getKind() == kind::APPLY_ABSTRACT);
+  Assert(n.getKind() == APPLY_ABSTRACT);
   const ApplyAbstractOp& aao = n.getOperator().getConst<ApplyAbstractOp>();
   std::vector<TypeNode> childrenTypes;
   for (const Node& nc : n)
@@ -32,10 +34,15 @@ TypeNode AbstractTypeChecker::compute(TNode n, bool check)
 TypeNode AbstractTypeChecker::computeInternal(
     const ApplyAbstractOp& aao, const std::vector<TypeNode>& childTypes)
 {
-  Kind ak = ABSTRACT_TYPE;
+  Kind ak = UNDEFINED_KIND;
 
   // TODO: more precise type rules?
-
+  
+  
+  if (ak==UNDEFINED_KIND)
+  {
+    return TypeNode::null();
+  }
   return NodeManager::currentNM()->mkAbstractType(ak);
 }
 

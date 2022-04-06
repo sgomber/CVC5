@@ -165,7 +165,14 @@ TypeNode ApplyAbstractTypeRule::computeType(NodeManager* nodeManager,
                                             bool check)
 {
   // call the abstract type checker utility
-  return AbstractTypeChecker::compute(n, check);
+  TypeNode tn = AbstractTypeChecker::compute(n, check);
+  if (tn.isNull())
+  {
+    throw TypeCheckingExceptionPrivate(
+        n,
+        "failed to type check abstract application");
+  }
+  return tn;
 }
 
 }  // namespace builtin

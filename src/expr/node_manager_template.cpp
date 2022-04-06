@@ -32,7 +32,7 @@
 #include "expr/type_properties.h"
 #include "theory/bags/bag_make_op.h"
 #include "theory/builtin/apply_abstract_op.h"
-#include "theory/builtin/apply_type.h"
+#include "theory/builtin/abstract_type.h"
 #include "theory/sets/singleton_op.h"
 #include "theory/strings/seq_unit_op.h"
 #include "util/bitvector.h"
@@ -1166,15 +1166,19 @@ Node NodeManager::mkBag(const TypeNode& t, const TNode n, const TNode m)
 
 Node NodeManager::mkAbstractNode(Kind k, const std::vector<Node>& children)
 {
-  for (const Node& n : children)
+  // never do this for BOUND_VAR_LIST
+  if (k!=kind::BOUND_VAR_LIST)
   {
-    if (n.getType().isAbstract())
+    for (const Node& n : children)
     {
-      Node op = mkConst(ApplyAbstractOp(k));
-      std::vector<Node> achildren;
-      achildren.push_back(op);
-      achildren.insert(achildren.end(), children.begin(), children.end());
-      return mkNode(kind::APPLY_ABSTRACT, achildren);
+      if (n.getType().isAbstract())
+      {
+        Node op = mkConst(ApplyAbstractOp(k));
+        std::vector<Node> achildren;
+        achildren.push_back(op);
+        achildren.insert(achildren.end(), children.begin(), children.end());
+        return mkNode(kind::APPLY_ABSTRACT, achildren);
+      }
     }
   }
   // otherwise, it is concrete
