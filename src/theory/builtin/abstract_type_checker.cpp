@@ -31,13 +31,22 @@ TypeNode AbstractTypeChecker::computeAbstractApp(
     Kind k, const std::vector<Node>& children, bool check)
 {
   std::vector<TypeNode> childrenTypes;
+  std::vector<Kind> ctks;
   bool hasAbstract = false;
   for (const Node& nc : children)
   {
     TypeNode nct = nc.getType(check);
     childrenTypes.push_back(nct);
     Assert(!nct.isNull());
-    hasAbstract = hasAbstract || nct.isAbstract();
+    if (nct.isAbstract())
+    {
+      hasAbstract = true;
+      ctks.push_back(nct.getAbstractKind());
+    }
+    else
+    {
+      ctks.push_back(nct.getKind());
+    }
   }
   if (!hasAbstract)
   {
@@ -46,7 +55,7 @@ TypeNode AbstractTypeChecker::computeAbstractApp(
   }
   Kind ak = UNDEFINED_KIND;
 
-  // TODO: more precise type rules?
+  // TODO: abstract type rules
 
   if (ak == UNDEFINED_KIND)
   {
