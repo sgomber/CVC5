@@ -111,12 +111,17 @@ Result SynthVerify::verify(Node query,
         Trace("cegqi-debug") << "...squery : " << squery << std::endl;
         squery = d_tds->rewriteNode(squery);
         Trace("cegqi-debug") << "...rewrites to : " << squery << std::endl;
-        // if the query did not simplify to true, then either:
-        // (1) we are using oracles and the value for an oracle function was
-        // not what we expected.
-        // (2) something unexpected went wrong (for debugging).
         if (!squery.isConst() || !squery.getConst<bool>())
         {
+          if (squery.isConst())
+          {
+            // simplified to false, the result should have been unknown, or
+            // else this indicates a check-model failure.
+            Assert(r.getStatus() == Result::UNKNOWN)
+                << "Expected model from verification step to satisfy query";
+          }
+          // If the query did not simplify to true, then it may be that the
+          // value for an oracle function was not what we expected.
           if (options().quantifiers.oracles)
           {
             // In this case, we reconstruct the query, which may include more
@@ -128,12 +133,6 @@ Result SynthVerify::verify(Node query,
               queryp = nextQueryp;
               finished = false;
             }
-          }
-          else
-          {
-            Assert(!options().quantifiers.sygusRecFun
-                   || r.getStatus() == Result::UNKNOWN)
-                << "Expected model from verification step to satisfy query";
           }
         }
       }
