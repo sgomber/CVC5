@@ -91,6 +91,7 @@ template void NodeTemplateTrie<false>::debugPrint(const char* c,
 template void NodeTemplateTrie<true>::debugPrint(const char* c,
                                                  unsigned depth) const;
 
+
 template <bool ref_count>
 std::vector<Node> NodeTemplateTrie<ref_count>::getLeaves(size_t depth) const
 {
