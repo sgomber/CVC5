@@ -292,6 +292,12 @@ class Smt2Printer : public cvc5::internal::Printer
                 TNode n,
                 int toDepth,
                 LetBinding* lbind = nullptr) const;
+  /**
+   * Prints a type as part of e.g. a declare-fun command. This prints either
+   * `() T` if the type T is not a function, or `(T1 ... Tn) Tr` if T is
+   * a function type with argument types T1 ... Tn and return Tr.
+   */
+  void toStreamDeclareType(std::ostream& out, TypeNode tn) const;
   /** To stream type node, which ensures tn is printed in smt2 format */
   void toStreamType(std::ostream& out, TypeNode tn) const;
   /**

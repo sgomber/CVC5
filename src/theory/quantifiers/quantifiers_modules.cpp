@@ -117,7 +117,7 @@ void QuantifiersModules::initialize(Env& env,
     d_sygus_inst.reset(new SygusInst(env, qs, qim, qr, tr));
     modules.push_back(d_sygus_inst.get());
   }
-  if (options::oracles())
+  if (options.quantifiers.oracles)
   {
     d_oracleEngine.reset(new OracleEngine(env, qs, qim, qr, tr));
     modules.push_back(d_oracleEngine.get());

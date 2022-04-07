@@ -4449,10 +4449,24 @@ class CVC5_EXPORT Solver
                    const Sort& sort,
                    const std::vector<Term>& initValue) const;
   /**
-   * Declare an oracle function.
-   * \verbatim
+   * Declare an oracle function that does not have an associated executable
+   * binary.
+   *
+   * Oracle functions have a different semantics with respect to ordinary
+   * declared functions. In particular, for an input to be satisfiable,
+   * its oracle functions are implicitly universally quantified.
+   *
+   * Oracle functions typically should be used in oracle interfaces
+   * (Solver::defineOracleInterface).
+   *
+   * \verbatim embed:rst:leading-asterisk
+   * .. code:: smtlib
+   * 
    * ( declare-oracle-fun <symbol> ( <sort>* ) <sort> )
    * \endverbatim
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @param symbol The name of the pool
    * @param sorts the sorts of the parameters to this function
    * @param sort the sort of the return value of this function
@@ -4462,10 +4476,19 @@ class CVC5_EXPORT Solver
                         const std::vector<Sort>& sorts,
                         const Sort& sort) const;
   /**
-   * Declare an oracle function with reference to a binary name.
-   * \verbatim
-   * ( declare-oracle-fun <symbol> ( <sort>* ) <sort> )
+   * Declare an oracle function with reference to a executable binary name.
+   * 
+   * As described above, oracle function symbols have a different semantics
+   * with respect to ordinary declared functions.
+   *
+   * \verbatim embed:rst:leading-asterisk
+   * .. code:: smtlib
+   * 
+   * ( declare-oracle-fun <symbol> ( <sort>* ) <sort> <symbol> )
    * \endverbatim
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
    * @param symbol The name of the pool
    * @param sorts The sorts of the parameters to this function
    * @param sort The sort of the return value of this function
@@ -4479,10 +4502,14 @@ class CVC5_EXPORT Solver
                         const std::string& binName) const;
   /**
    * Define an oracle interface.
-   * \verbatim
+   *
+   * \verbatim embed:rst:leading-asterisk
+   * .. code:: smtlib
+   *
    * ( oracle-assume ( <sorted_var>* ) ( <sorted_var>* ) )
    * ( oracle-constraint <symbol> ( <sorted_var>* ) ( <sorted_var>* ) )
    * \endverbatim
+   * 
    * @param inputs The inputs to the oracle interface
    * @param outputs The inputs to the oracle interface
    * @param assume The assumption of the oracle interface
