@@ -1658,24 +1658,15 @@ void Smt2Printer::toStreamCmdDefineFunctionRec(
       }
       out << "(";
     }
-    out << funcs[i] << " (";
+    out << funcs[i] << " ";
     // print its type signature
-    vector<Node>::const_iterator itf = formals[i].cbegin();
-    while (itf != formals[i].cend())
-    {
-      out << "(" << (*itf) << " " << (*itf).getType() << ")";
-      ++itf;
-      if (itf != formals[i].cend())
-      {
-        out << " ";
-      }
-    }
+    toStreamSortedVarList(out, formals[i]);
     TypeNode type = funcs[i].getType();
     if (type.isFunction())
     {
       type = type.getRangeType();
     }
-    out << ") " << type;
+    out << " " << type;
     if (funcs.size() > 1)
     {
       out << ")";
