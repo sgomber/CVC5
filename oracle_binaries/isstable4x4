@@ -1,4 +1,0 @@
-echo isstable_exec4 "$1" "$2" "$3" "$4" >> isstable4_oracle_log.file
-isstable_exec4 "$1" "$2" "$3" "$4"  > isstable4_result.file 2>&1
-cat isstable4_result.file
-
