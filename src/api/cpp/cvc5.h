@@ -4461,7 +4461,7 @@ class CVC5_EXPORT Solver
    *
    * \verbatim embed:rst:leading-asterisk
    * .. code:: smtlib
-   * 
+   *
    * ( declare-oracle-fun <symbol> ( <sort>* ) <sort> )
    * \endverbatim
    *
@@ -4477,13 +4477,13 @@ class CVC5_EXPORT Solver
                         const Sort& sort) const;
   /**
    * Declare an oracle function with reference to a executable binary name.
-   * 
+   *
    * As described above, oracle function symbols have a different semantics
    * with respect to ordinary declared functions.
    *
    * \verbatim embed:rst:leading-asterisk
    * .. code:: smtlib
-   * 
+   *
    * ( declare-oracle-fun <symbol> ( <sort>* ) <sort> <symbol> )
    * \endverbatim
    *
@@ -4509,7 +4509,7 @@ class CVC5_EXPORT Solver
    * ( oracle-assume ( <sorted_var>* ) ( <sorted_var>* ) )
    * ( oracle-constraint <symbol> ( <sorted_var>* ) ( <sorted_var>* ) )
    * \endverbatim
-   * 
+   *
    * @param inputs The inputs to the oracle interface
    * @param outputs The inputs to the oracle interface
    * @param assume The assumption of the oracle interface

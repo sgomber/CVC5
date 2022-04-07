@@ -1319,8 +1319,6 @@ std::string Smt2Printer::smtKindStringOf(const Node& n, Variant v)
   return smtKindString(k, v);
 }
 
-
-
 void Smt2Printer::toStreamDeclareType(std::ostream& out, TypeNode tn) const
 {
   out << "(";

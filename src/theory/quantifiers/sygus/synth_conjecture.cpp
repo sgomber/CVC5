@@ -58,8 +58,9 @@ SynthConjecture::SynthConjecture(Env& env,
       d_treg(tr),
       d_stats(s),
       d_tds(tr.getTermDatabaseSygus()),
-      d_oman(options().quantifiers.oracles ? new OracleManager(*tr.getOracleChecker())
-                                : nullptr),
+      d_oman(options().quantifiers.oracles
+                 ? new OracleManager(*tr.getOracleChecker())
+                 : nullptr),
       d_verify(env, d_tds),
       d_hasSolution(false),
       d_computedSolution(false),
