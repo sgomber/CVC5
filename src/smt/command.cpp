@@ -1254,8 +1254,7 @@ const std::string& DefineOracleInterfaceCommand::getBinaryName() const
 {
   return d_binName;
 }
-void DefineOracleInterfaceCommand::invoke(Solver* solver,
-                                          SymbolManager* sm)
+void DefineOracleInterfaceCommand::invoke(Solver* solver, SymbolManager* sm)
 {
   try
   {

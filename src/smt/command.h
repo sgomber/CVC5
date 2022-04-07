@@ -468,7 +468,8 @@ class CVC5_EXPORT DeclareOracleFunCommand : public Command
   void toStream(std::ostream& out,
                 int toDepth = -1,
                 size_t dag = 1,
-                internal::Language language = internal::Language::LANG_AUTO) const override;
+                internal::Language language =
+                    internal::Language::LANG_AUTO) const override;
 
  protected:
   /** The oracle function */
@@ -497,7 +498,8 @@ class CVC5_EXPORT DefineOracleInterfaceCommand : public Command
   void toStream(std::ostream& out,
                 int toDepth = -1,
                 size_t dag = 1,
-                internal::Language language = internal::Language::LANG_AUTO) const override;
+                internal::Language language =
+                    internal::Language::LANG_AUTO) const override;
 
  protected:
   /** The input arguments for the interface we are defining */
