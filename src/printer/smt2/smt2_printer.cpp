@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -943,7 +943,11 @@ void Smt2Printer::toStream(std::ostream& out,
   case kind::INST_PATTERN_LIST: break;
   default:
     // by default, print the kind using the smtKindString utility
-    out << smtKindString(k, d_variant) << " ";
+    out << smtKindString(k, d_variant);
+    if (n.getNumChildren() > 0)
+    {
+      out << " ";
+    }
     break;
   }
   if( n.getMetaKind() == kind::metakind::PARAMETERIZED &&
