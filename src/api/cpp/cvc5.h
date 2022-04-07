@@ -4484,8 +4484,13 @@ class CVC5_EXPORT Solver
    * \verbatim embed:rst:leading-asterisk
    * .. code:: smtlib
    *
-   * ( declare-oracle-fun <symbol> ( <sort>* ) <sort> <symbol> )
+   * (declare-oracle-fun <sym> (<sort>*) <sort> <sym>)
    * \endverbatim
+   *
+   * Note that this command is equivalent to calling the variant of
+   * declareOracleFun having no binary name, and subsequently calling
+   * defineOracleInterface with inputs {i1, ..., in}, outputs {o},
+   * assume (= (f i1 ... in) o), constraint null, and the given binary name.
    *
    * @warning This method is experimental and may change in future versions.
    *
@@ -4506,9 +4511,11 @@ class CVC5_EXPORT Solver
    * \verbatim embed:rst:leading-asterisk
    * .. code:: smtlib
    *
-   * ( oracle-assume ( <sorted_var>* ) ( <sorted_var>* ) )
-   * ( oracle-constraint <symbol> ( <sorted_var>* ) ( <sorted_var>* ) )
+   * (oracle-assume (<sorted_var>*) ( <sorted_var>*) <term> <sym>)
+   * (oracle-constraint <sym> (<sorted_var>*) (<sorted_var>*) <term> <sym>)
    * \endverbatim
+   *
+   * @warning This method is experimental and may change in future versions.
    *
    * @param inputs The inputs to the oracle interface
    * @param outputs The inputs to the oracle interface

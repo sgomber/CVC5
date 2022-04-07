@@ -1579,7 +1579,29 @@ void Smt2Printer::toStreamCmdDefineOracleInterface(
     Node constraint,
     const std::string& binName) const
 {
-  // TODO
+  Node body;
+  // at the moment, assume or constraint should be true
+  if (constraint.isConst() && constraint.getConst<bool>())
+  {
+    out << "(oracle-assume";
+    body = assume;
+  }
+  else if (assume.isConst() && assume.getConst<bool>())
+  {
+    out << "(oracle-constraint";
+    body = constraint;
+  }
+  else
+  {
+    Assert(false) << "Expected constraint or assume to be true";
+    Printer::toStreamCmdDefineOracleInterface(out, inputs, outputs, assume, constraint, binName);
+    return;
+  }
+  out << " ";
+  toStreamSortedVarList(out, inputs);
+  out << " ";
+  toStreamSortedVarList(out, outputs);
+  out << " " << body << " " << binName << ")";
 }
 
 void Smt2Printer::toStreamCmdDeclarePool(
@@ -1605,25 +1627,9 @@ void Smt2Printer::toStreamCmdDefineFunction(std::ostream& out,
                                             TypeNode range,
                                             Node formula) const
 {
-  out << "(define-fun " << cvc5::internal::quoteSymbol(id) << " (";
-  if (!formals.empty())
-  {
-    vector<Node>::const_iterator i = formals.cbegin();
-    for (;;)
-    {
-      out << "(" << (*i) << " " << (*i).getType() << ")";
-      ++i;
-      if (i != formals.cend())
-      {
-        out << " ";
-      }
-      else
-      {
-        break;
-      }
-    }
-  }
-  out << ") " << range << ' ' << formula << ')' << std::endl;
+  out << "(define-fun " << cvc5::internal::quoteSymbol(id) << " ";
+  toStreamSortedVarList(out, formals);
+  out << " " << range << ' ' << formula << ')' << std::endl;
 }
 
 void Smt2Printer::toStreamCmdDefineFunctionRec(
@@ -1696,6 +1702,20 @@ void Smt2Printer::toStreamCmdDefineFunctionRec(
     out << ")";
   }
   out << ")" << std::endl;
+}
+
+void Smt2Printer::toStreamSortedVarList(std::ostream& out, const std::vector<Node>& vars) const
+{
+  out << "(";
+  for (size_t i=0, nvars = vars.size(); i<nvars; i++)
+  {
+    out << "(" << vars[i] << " " << vars[i].getType() << ")";
+    if (i+1<nvars)
+    {
+      out << " ";
+    }
+  }
+  out << ")";
 }
 
 void Smt2Printer::toStreamCmdDeclareType(std::ostream& out,
@@ -1998,20 +2018,9 @@ void Smt2Printer::toStreamCmdSynthFun(std::ostream& out,
                                       bool isInv,
                                       TypeNode sygusType) const
 {
-  out << '(' << (isInv ? "synth-inv " : "synth-fun ") << f << ' ' << '(';
-  if (!vars.empty())
-  {
-    // print variable list
-    std::vector<Node>::const_iterator i = vars.cbegin(), i_end = vars.cend();
-    out << '(' << *i << ' ' << i->getType() << ')';
-    ++i;
-    while (i != i_end)
-    {
-      out << " (" << *i << ' ' << i->getType() << ')';
-      ++i;
-    }
-  }
-  out << ')';
+  out << '(' << (isInv ? "synth-inv " : "synth-fun ") << f << ' ';
+  // print variable list
+  toStreamSortedVarList(out, vars);
   // if not invariant-to-synthesize, print return type
   if (!isInv)
   {
