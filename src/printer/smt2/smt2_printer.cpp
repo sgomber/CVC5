@@ -1594,7 +1594,8 @@ void Smt2Printer::toStreamCmdDefineOracleInterface(
   else
   {
     Assert(false) << "Expected constraint or assume to be true";
-    Printer::toStreamCmdDefineOracleInterface(out, inputs, outputs, assume, constraint, binName);
+    Printer::toStreamCmdDefineOracleInterface(
+        out, inputs, outputs, assume, constraint, binName);
     return;
   }
   out << " ";
@@ -1695,13 +1696,14 @@ void Smt2Printer::toStreamCmdDefineFunctionRec(
   out << ")" << std::endl;
 }
 
-void Smt2Printer::toStreamSortedVarList(std::ostream& out, const std::vector<Node>& vars) const
+void Smt2Printer::toStreamSortedVarList(std::ostream& out,
+                                        const std::vector<Node>& vars) const
 {
   out << "(";
-  for (size_t i=0, nvars = vars.size(); i<nvars; i++)
+  for (size_t i = 0, nvars = vars.size(); i < nvars; i++)
   {
     out << "(" << vars[i] << " " << vars[i].getType() << ")";
-    if (i+1<nvars)
+    if (i + 1 < nvars)
     {
       out << " ";
     }
