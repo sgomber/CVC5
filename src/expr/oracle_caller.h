@@ -15,8 +15,8 @@
 
 #include "cvc5_private.h"
 
-#ifndef CVC5__UTIL__ORACLE_CALLER_H
-#define CVC5__UTIL__ORACLE_CALLER_H
+#ifndef CVC5__EXPR__ORACLE_CALLER_H
+#define CVC5__EXPR__ORACLE_CALLER_H
 
 #include "expr/node.h"
 #include "expr/node_trie.h"
@@ -26,7 +26,7 @@ namespace cvc5::internal {
 class OracleCaller
 {
  public:
-  OracleCaller(const Node oracleInterfaceNode)
+  OracleCaller(const Node& oracleInterfaceNode)
       : d_binaryName(getBinaryNameFor(oracleInterfaceNode)){};
 
   ~OracleCaller() {}
@@ -44,10 +44,10 @@ class OracleCaller
    * If this method returns true, then runResult is set to the result returned
    * from executing the binary.
    */
-  bool callOracle(Node fapp, Node& res, int& runResult);
+  bool callOracle(const Node& fapp, Node& res, int& runResult);
 
   /** get binary from oracle interface */
-  static std::string getBinaryNameFor(const Node n);
+  static std::string getBinaryNameFor(const Node& n);
 
   /** get binary from oracle interface */
   std::string getBinaryName() { return d_binaryName; }

@@ -42,8 +42,6 @@ libcvc5_add_sources(
   iand.h
   index.cpp
   index.h
-  oracle_caller.cpp
-  oracle_caller.h
   ostream_util.cpp
   ostream_util.h
   poly_util.cpp

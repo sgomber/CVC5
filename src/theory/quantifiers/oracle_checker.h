@@ -22,7 +22,7 @@
 
 #include "expr/node.h"
 #include "expr/node_converter.h"
-#include "util/oracle_caller.h"
+#include "expr/oracle_caller.h"
 
 namespace cvc5::internal {
 

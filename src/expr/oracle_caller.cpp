@@ -13,7 +13,7 @@
  * Oracle caller
  */
 
-#include "util/oracle_caller.h"
+#include "expr/oracle_caller.h"
 
 #include <sstream>
 
@@ -26,7 +26,7 @@
 
 namespace cvc5::internal {
 
-bool OracleCaller::callOracle(const Node fapp, Node& res, int& runResult)
+bool OracleCaller::callOracle(const Node& fapp, Node& res, int& runResult)
 {
   std::map<Node, Node>::iterator it = d_cachedResults.find(fapp);
   if (it != d_cachedResults.end())
@@ -78,7 +78,7 @@ bool OracleCaller::isOracleFunction(Node f)
   return f.hasAttribute(theory::OracleInterfaceAttribute());
 }
 
-std::string OracleCaller::getBinaryNameFor(const Node n)
+std::string OracleCaller::getBinaryNameFor(const Node& n)
 {
   // oracle functions have no children
   if (n.isVar())
