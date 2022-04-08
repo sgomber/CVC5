@@ -43,7 +43,6 @@ namespace quantifiers {
 class CegGrammarConstructor;
 class SygusPbe;
 class SygusStatistics;
-class OracleManager;
 class EnumValueManager;
 
 /** a synthesis conjecture
@@ -185,8 +184,6 @@ class SynthConjecture : protected EnvObj
   SygusStatistics& d_stats;
   /** term database sygus of d_qe */
   TermDbSygus* d_tds;
-  /** The oracle manager */
-  std::unique_ptr<OracleManager> d_oman;
   /** The synthesis verify utility */
   SynthVerify d_verify;
   /** The feasible guard. */

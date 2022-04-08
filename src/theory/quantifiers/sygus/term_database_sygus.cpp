@@ -739,7 +739,7 @@ SygusTypeInfo& TermDbSygus::getTypeInfo(TypeNode tn)
 
 Node TermDbSygus::rewriteNode(Node n) const
 {
-  Trace("ajr-temp") << "Rewrite node: " << n << std::endl;
+  Trace("sygus-rewrite") << "Rewrite node: " << n << std::endl;
   Node res;
   if (options().datatypes.sygusRewriter == options::SygusRewriterMode::EXTENDED)
   {
@@ -749,7 +749,7 @@ Node TermDbSygus::rewriteNode(Node n) const
   {
     res = rewrite(n);
   }
-  Trace("ajr-temp") << "Rewrite node post-rewrite: " << res << std::endl;
+  Trace("sygus-rewrite") << "Rewrite node post-rewrite: " << res << std::endl;
   if (res.isConst())
   {
     // constant, we are done
@@ -770,13 +770,14 @@ Node TermDbSygus::rewriteNode(Node n) const
       // we reached the limit of evaluations. In this case, we revert to the
       // result of rewriting in the return statement below.
     }
+    Trace("sygus-rewrite") << "Rewrite node post-rec-fun: " << res << std::endl;
   }
   if (d_ochecker != nullptr)
   {
     // evaluate oracles
     res = d_ochecker->evaluate(res);
+    Trace("sygus-rewrite") << "Rewrite node post-oracles: " << res << std::endl;
   }
-  Trace("ajr-temp") << "Rewrite node post-oracles: " << res << std::endl;
   return res;
 }
 
