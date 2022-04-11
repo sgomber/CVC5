@@ -78,6 +78,7 @@ class Smt2Printer : public cvc5::internal::Printer
   void toStreamCmdDeclareOracleFun(std::ostream& out,
                                    Node fun,
                                    const std::string& binName) const override;
+
   /** Print declare-oracle-fun command */
   void toStreamCmdDefineOracleInterface(
       std::ostream& out,
@@ -86,6 +87,7 @@ class Smt2Printer : public cvc5::internal::Printer
       Node assume,
       Node constraint,
       const std::string& binName) const override;
+
   /** Print declare-pool command */
   void toStreamCmdDeclarePool(std::ostream& out,
                                       const std::string& id,

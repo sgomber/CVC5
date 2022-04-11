@@ -15,6 +15,7 @@
 
 #include "theory/quantifiers/oracle_engine.h"
 
+#include "expr/attribute.h"
 #include "expr/skolem_manager.h"
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/first_order_model.h"
@@ -57,11 +58,6 @@ OracleEngine::OracleEngine(Env& env,
 }
 
 void OracleEngine::presolve() {}
-
-// do this to play nicely
-// bool InstantiationEngine::needsCheck( Theory::Effort e ){
-//   return d_qstate.getInstWhenNeedsCheck(e);
-// }
 
 bool OracleEngine::needsCheck(Theory::Effort e)
 {
@@ -202,7 +198,6 @@ std::string OracleEngine::identify() const
 
 void OracleEngine::declareOracleFun(Node f, const std::string& binName)
 {
-  // TODO: set attribute propper;y
   OracleInterfaceAttribute oia;
   f.setAttribute(oia, binName);
   d_oracleFuns.push_back(f);
@@ -249,6 +244,7 @@ Node OracleEngine::mkOracleInterface(const std::vector<Node>& inputs,
   Node body = nm->mkNode(ORACLE_FORMULA_GEN, assume, constraint);
   return nm->mkNode(FORALL, bvl, body, ipl);
 }
+
 bool OracleEngine::getOracleInterface(Node q,
                                       std::vector<Node>& inputs,
                                       std::vector<Node>& outputs,
