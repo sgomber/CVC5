@@ -25,11 +25,15 @@ namespace cvc5::internal {
 
 /**
  * This class manages the calls to an (external) binary for a single oracle
- * function symbol.
+ * function symbol or oracle interface quantified formula.
  */
 class OracleCaller
 {
  public:
+   /**
+    * @param oracleInterfaceNode The oracle function symbol or oracle interface
+    * quantified formula.
+    */
   OracleCaller(const Node& oracleInterfaceNode);
 
   ~OracleCaller() {}
@@ -44,13 +48,16 @@ class OracleCaller
    */
   bool callOracle(const Node& fapp, Node& res, int& runResult);
 
-  /** get binary from oracle interface */
+  /** Get the binary name for this oracle caller */
   std::string getBinaryName() const;
 
-  /** get cached results */
+  /** Get cached results for this oracle caller */
   const std::map<Node, Node>& getCachedResults() const;
 
-  /** get binary from oracle interface */
+  /**
+   * Get binary from an oracle function, or an oracle interface quantified
+   * formula.
+   */
   static std::string getBinaryNameFor(const Node& n);
 
   /** is f an oracle function? */
