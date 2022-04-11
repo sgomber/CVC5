@@ -19,13 +19,15 @@
 
 #include "options/base_options.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
-#include "util/bitvector.h"
 #include "util/miniParser/miniParser.h"
 #include "util/rational.h"
 #include "util/run.h"
 
 namespace cvc5::internal {
 
+OracleCaller::OracleCaller(const Node& oracleInterfaceNode)
+      : d_binaryName(getBinaryNameFor(oracleInterfaceNode)){}
+      
 bool OracleCaller::callOracle(const Node& fapp, Node& res, int& runResult)
 {
   std::map<Node, Node>::iterator it = d_cachedResults.find(fapp);
@@ -37,21 +39,21 @@ bool OracleCaller::callOracle(const Node& fapp, Node& res, int& runResult)
     // don't bother setting runResult
     return false;
   }
-  std::vector<std::string> string_args;
-  string_args.push_back(d_binaryName);
+  std::vector<std::string> sargs;
+  sargs.push_back(d_binaryName);
 
   Trace("oracle-calls") << "Call oracle " << fapp << std::endl;
   for (const Node& arg : fapp)
   {
     std::ostringstream oss;
     oss << arg;
-    string_args.push_back(oss.str());
+    sargs.push_back(oss.str());
   }
 
   // run the oracle binary
   std::ostringstream stdout_stream;
 
-  runResult = run(d_binaryName, string_args, "", stdout_stream, "");
+  runResult = run(d_binaryName, sargs, "", stdout_stream, "");
 
   // we assume that the oracle returns the result in SMT-LIB format
   std::istringstream oracle_response_istream(stdout_stream.str());
@@ -78,6 +80,8 @@ bool OracleCaller::isOracleFunction(Node f)
   return f.hasAttribute(theory::OracleInterfaceAttribute());
 }
 
+std::string OracleCaller::getBinaryName() const { return d_binaryName; }
+
 std::string OracleCaller::getBinaryNameFor(const Node& n)
 {
   // oracle functions have no children
@@ -97,10 +101,7 @@ std::string OracleCaller::getBinaryNameFor(const Node& n)
       }
     }
   }
-  else
-  {
-    Assert(false) << "Unexpected node for binary name " << n;
-  }
+  Assert(false) << "Unexpected node for binary name " << n;
   return "";
 }
 

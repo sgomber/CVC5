@@ -23,18 +23,16 @@
 
 namespace cvc5::internal {
 
+/**
+ * This class manages the calls to an (external) binary for a single oracle
+ * function symbol.
+ */
 class OracleCaller
 {
  public:
-  OracleCaller(const Node& oracleInterfaceNode)
-      : d_binaryName(getBinaryNameFor(oracleInterfaceNode)){};
+  OracleCaller(const Node& oracleInterfaceNode);
 
   ~OracleCaller() {}
-  /** functions for minimal parsing. These will be removed */
-  Node get_hex_numeral(std::string in);
-  Node get_dec_numeral(std::string in);
-  Node get_bin_numeral(std::string in);
-  Node responseParser(std::string& in);
 
   /**
    * Call an oracle with a set of arguments, store in result res.
@@ -47,20 +45,24 @@ class OracleCaller
   bool callOracle(const Node& fapp, Node& res, int& runResult);
 
   /** get binary from oracle interface */
-  static std::string getBinaryNameFor(const Node& n);
+  std::string getBinaryName() const;
 
+  /** get cached results */
+  const std::map<Node, Node>& getCachedResults() const;
+  
   /** get binary from oracle interface */
-  std::string getBinaryName() { return d_binaryName; }
+  static std::string getBinaryNameFor(const Node& n);
 
   /** is f an oracle function? */
   static bool isOracleFunction(Node f);
 
-  /** get cached results */
-  const std::map<Node, Node>& getCachedResults() const;
-
  private:
   /** name of binary */
   std::string d_binaryName;
+  /** 
+   * The cached results, mapping (APPLY_UF) applications of the oracle
+   * function to the parsed output of the binary.
+   */
   std::map<Node, Node> d_cachedResults;
 };
 
