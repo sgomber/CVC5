@@ -25,22 +25,18 @@ namespace theory {
 namespace quantifiers {
 
 bool OracleChecker::checkConsistent(
-    const std::vector<std::pair<Node, Node> >& ioPairs,
+  Node app, Node val,
     std::vector<Node>& lemmas)
 {
-  bool consistent = true;
-  NodeManager* nm = NodeManager::currentNM();
-  for (const auto& ioPair : ioPairs)
+  Node result = evaluateApp(app);
+  if (result != val)
   {
-    Node result = evaluateApp(ioPair.first);
-    if (result != ioPair.second)
-    {
-      Node lemma = nm->mkNode(kind::EQUAL, result, ioPair.first);
-      lemmas.push_back(lemma);
-      consistent = false;
-    }
+    NodeManager* nm = NodeManager::currentNM();
+    Node lemma = nm->mkNode(kind::EQUAL, result, app);
+    lemmas.push_back(lemma);
+    return false;
   }
-  return consistent;
+  return true;
 }
 
 Node OracleChecker::evaluateApp(Node app)

@@ -109,29 +109,27 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e)
   // iterate over oracle functions
   for (const Node& f : d_oracleFuns)
   {
-    std::vector<std::pair<Node, Node> > ioPairs;
     TNodeTrie* tat = termDatabase->getTermArgTrie(f);
-    if (tat)
+    if (!tat)
     {
-      std::vector<Node> apps = tat->getLeaves(f.getType().getArgTypes().size());
-      Trace("oracle-calls") << "Oracle fun " << f << " with " << apps.size()
-                            << " applications." << std::endl;
-      for (const auto& fapp : apps)
+      continue;
+    }
+    std::vector<Node> apps = tat->getLeaves(f.getType().getArgTypes().size());
+    Trace("oracle-calls") << "Oracle fun " << f << " with " << apps.size()
+                          << " applications." << std::endl;
+    for (const auto& fapp : apps)
+    {
+      std::vector<Node> arguments;
+      arguments.push_back(f);
+      // evaluate arguments
+      for (const auto& arg : fapp)
       {
-        std::vector<Node> arguments;
-        arguments.push_back(f);
-        // evaluate arguments
-        for (const auto& arg : fapp)
-        {
-          arguments.push_back(fm->getValue(arg));
-        }
-        // call oracle
-        Node fapp_with_values = nm->mkNode(APPLY_UF, arguments);
-        Node predictedResponse = eq->getRepresentative(fapp);
-        ioPairs.push_back(
-            std::pair<Node, Node>(fapp_with_values, predictedResponse));
+        arguments.push_back(fm->getValue(arg));
       }
-      if (!d_ochecker->checkConsistent(ioPairs, learned_lemmas))
+      // call oracle
+      Node fapp_with_values = nm->mkNode(APPLY_UF, arguments);
+      Node predictedResponse = eq->getRepresentative(fapp);
+      if (!d_ochecker->checkConsistent(fapp_with_values, predictedResponse, learned_lemmas))
       {
         allFappsConsistent = false;
       }

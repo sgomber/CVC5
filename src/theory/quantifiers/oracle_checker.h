@@ -23,47 +23,57 @@
 #include "expr/node.h"
 #include "expr/node_converter.h"
 #include "expr/oracle_caller.h"
+#include "smt/env_obj.h"
 
 namespace cvc5::internal {
-
-class Env;
-
 namespace theory {
 namespace quantifiers {
 
 /**
- * Oracle checker, maintains callers for all oracle functions.
+ * Oracle checker.
+ *
+ * This maintains callers for all oracle functions, and can be used to evaluate
+ * a term that contains oracle functions.
  */
-class OracleChecker : public NodeConverter
+class OracleChecker : protected EnvObj, public NodeConverter
 {
  public:
-  OracleChecker(Env& env) : d_env(env) {}
+  OracleChecker(Env& env) : EnvObj(env) {}
   ~OracleChecker() {}
 
-  /** check predicted ioPairs are consistent with oracles, generate lemmas if
-   * not **/
-  bool checkConsistent(const std::vector<std::pair<Node, Node> >& ioPairs,
+  /** 
+   * Check predicted io pair is consistent, generate a lemma if
+   * not. This is used to check whether a definition of an oracle function
+   * is consistent in the model.
+   *
+   * For example, calling this method with app = f(c) and val = d will
+   * check whether we have evalauted the oracle associated with f on input
+   * c. If not, we invoke the oracle; otherwise we retrieve its cached value.
+   * If this output d' is not d, then this method adds d' = f(c) to lemmas.
+   */
+  bool checkConsistent(Node app, Node val,
                        std::vector<Node>& lemmas);
   /**
-   * Evaluate an oracle application
+   * Evaluate an oracle application. Given input f(c), where f is an oracle
+   * function symbol, this returns the result of invoking the oracle associated
+   * with f. This may either correspond to a cached value, or otherwise will
+   * invoke the oracle.
    */
   Node evaluateApp(Node app);
 
-  /** Evaluate all oracle function applications to constants */
+  /** Evaluate all oracle function applications (recursively) in n. */
   Node evaluate(Node n);
 
-  /** Has oracles */
+  /** Has oracles? Have we invoked any oracle calls */
   bool hasOracles() const;
-  /** Has oracle calls */
+  /** Has oracle calls for oracle function symbol f. */
   bool hasOracleCalls(Node f) const;
-  /** Get cached results */
+  /** Get the cached results for oracle function symbol f */
   const std::map<Node, Node>& getOracleCalls(Node f) const;
 
  private:
   /** Call back to convert */
   Node postConvert(Node n) override;
-  /** Reference to the env */
-  Env& d_env;
   /** map of oracle interface nodes to oracle callers **/
   std::map<Node, OracleCaller> d_callers;
 };

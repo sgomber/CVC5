@@ -1053,7 +1053,7 @@ extendedCommand[std::unique_ptr<cvc5::Command>* cmd]
     symbol[name,CHECK_NONE,SYM_VARIABLE]
     { PARSER_STATE->checkUserSymbol(name); }
     LPAREN_TOK sortList[sorts] RPAREN_TOK
-    sortSymbol[t,CHECK_DECLARED]
+    sortSymbol[t]
     ( symbol[binName,CHECK_NONE,SYM_VARIABLE]? )
     {
       Term func;
