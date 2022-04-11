@@ -24,9 +24,9 @@ namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
-bool OracleChecker::checkConsistent(
-  Node app, Node val,
-    std::vector<Node>& lemmas)
+bool OracleChecker::checkConsistent(Node app,
+                                    Node val,
+                                    std::vector<Node>& lemmas)
 {
   Node result = evaluateApp(app);
   if (result != val)

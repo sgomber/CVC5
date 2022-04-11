@@ -41,7 +41,7 @@ class OracleChecker : protected EnvObj, public NodeConverter
   OracleChecker(Env& env) : EnvObj(env) {}
   ~OracleChecker() {}
 
-  /** 
+  /**
    * Check predicted io pair is consistent, generate a lemma if
    * not. This is used to check whether a definition of an oracle function
    * is consistent in the model.
@@ -51,8 +51,7 @@ class OracleChecker : protected EnvObj, public NodeConverter
    * c. If not, we invoke the oracle; otherwise we retrieve its cached value.
    * If this output d' is not d, then this method adds d' = f(c) to lemmas.
    */
-  bool checkConsistent(Node app, Node val,
-                       std::vector<Node>& lemmas);
+  bool checkConsistent(Node app, Node val, std::vector<Node>& lemmas);
   /**
    * Evaluate an oracle application. Given input f(c), where f is an oracle
    * function symbol, this returns the result of invoking the oracle associated

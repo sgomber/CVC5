@@ -129,7 +129,8 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e)
       // call oracle
       Node fapp_with_values = nm->mkNode(APPLY_UF, arguments);
       Node predictedResponse = eq->getRepresentative(fapp);
-      if (!d_ochecker->checkConsistent(fapp_with_values, predictedResponse, learned_lemmas))
+      if (!d_ochecker->checkConsistent(
+              fapp_with_values, predictedResponse, learned_lemmas))
       {
         allFappsConsistent = false;
       }
