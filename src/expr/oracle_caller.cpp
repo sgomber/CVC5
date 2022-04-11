@@ -26,8 +26,10 @@
 namespace cvc5::internal {
 
 OracleCaller::OracleCaller(const Node& oracleInterfaceNode)
-      : d_binaryName(getBinaryNameFor(oracleInterfaceNode)){}
-      
+    : d_binaryName(getBinaryNameFor(oracleInterfaceNode))
+{
+}
+
 bool OracleCaller::callOracle(const Node& fapp, Node& res, int& runResult)
 {
   std::map<Node, Node>::iterator it = d_cachedResults.find(fapp);

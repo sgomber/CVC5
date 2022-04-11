@@ -49,7 +49,7 @@ class OracleCaller
 
   /** get cached results */
   const std::map<Node, Node>& getCachedResults() const;
-  
+
   /** get binary from oracle interface */
   static std::string getBinaryNameFor(const Node& n);
 
@@ -59,7 +59,7 @@ class OracleCaller
  private:
   /** name of binary */
   std::string d_binaryName;
-  /** 
+  /**
    * The cached results, mapping (APPLY_UF) applications of the oracle
    * function to the parsed output of the binary.
    */
