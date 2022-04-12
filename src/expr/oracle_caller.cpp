@@ -41,6 +41,8 @@ bool OracleCaller::callOracle(const Node& fapp, Node& res, int& runResult)
     // don't bother setting runResult
     return false;
   }
+  Assert(fapp.getKind() == kind::APPLY_UF);
+  Assert(getBinaryNameFor(fapp.getOperator()) == d_binaryName);
   std::vector<std::string> sargs;
   sargs.push_back(d_binaryName);
 
@@ -52,12 +54,12 @@ bool OracleCaller::callOracle(const Node& fapp, Node& res, int& runResult)
     sargs.push_back(oss.str());
   }
 
-  // run the oracle binary
+  // Run the oracle binary for `sargs`, which indicates a list of
+  // smt2 terms as strings.
   std::ostringstream stdout_stream;
 
   runResult = run(d_binaryName, sargs, "", stdout_stream, "");
 
-  // we assume that the oracle returns the result in SMT-LIB format
   std::istringstream oracle_response_istream(stdout_stream.str());
 
   // // we assume that an oracle has a return code of 0 or 10.
@@ -69,7 +71,9 @@ bool OracleCaller::callOracle(const Node& fapp, Node& res, int& runResult)
   //   AlwaysAssert(run_result == 0 || run_result == 10);
   // }
 
-  // parse response into a Node
+  // Parse response from the binary into a Node. The response from the binary
+  // should be a string that can be parsed as a (tuple of) terms in the smt2
+  // format.
   Node response = mini_parsert(oracle_response_istream).expression();
   Trace("oracle-calls") << "response node " << response << std::endl;
   d_cachedResults[fapp] = response;
