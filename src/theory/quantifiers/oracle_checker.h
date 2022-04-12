@@ -33,7 +33,12 @@ namespace quantifiers {
  * Oracle checker.
  *
  * This maintains callers for all oracle functions, and can be used to evaluate
- * a term that contains oracle functions.
+ * terms that contain oracle functions.
+ * 
+ * For example, if f is an oracle function, where evaluating the oracle
+ * f on 4 returns 5, and evaluating on 7 returns 10, this class acts as a
+ * node converter that may transform:
+ *   f(f(4)+2) ---> f(5+2) ---> f(7) ---> 10
  */
 class OracleChecker : protected EnvObj, public NodeConverter
 {
@@ -60,7 +65,10 @@ class OracleChecker : protected EnvObj, public NodeConverter
    */
   Node evaluateApp(Node app);
 
-  /** Evaluate all oracle function applications (recursively) in n. */
+  /** 
+   * Evaluate all oracle function applications (recursively) in n. This is an
+   * alias for convert.
+   */
   Node evaluate(Node n);
 
   /** Has oracles? Have we invoked any oracle calls */
@@ -71,7 +79,10 @@ class OracleChecker : protected EnvObj, public NodeConverter
   const std::map<Node, Node>& getOracleCalls(Node f) const;
 
  private:
-  /** Call back to convert */
+  /**
+   * Call back to convert, which evaluates oracle function applications and
+   * rewrites all other nodes.
+   */
   Node postConvert(Node n) override;
   /** map of oracle interface nodes to oracle callers **/
   std::map<Node, OracleCaller> d_callers;

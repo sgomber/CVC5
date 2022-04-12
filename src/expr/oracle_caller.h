@@ -30,28 +30,17 @@ namespace cvc5::internal {
 class OracleCaller
 {
  public:
-<<<<<<< HEAD
-   /**
-    * @param oracleInterfaceNode The oracle function symbol or oracle interface
-    * quantified formula.
-    */
-=======
   /**
    * @param oracleInterfaceNode The oracle function symbol or oracle interface
    * quantified formula.
    */
->>>>>>> 0dff5a6cbccb75c2ef1247243c30c0979d3d7617
   OracleCaller(const Node& oracleInterfaceNode);
 
   ~OracleCaller() {}
 
   /**
-<<<<<<< HEAD
-   * Call an oracle with a set of arguments, store in result res.
-=======
    * Call an oracle with a set of arguments given as children of the application
    * fapp. Store in result res.
->>>>>>> 0dff5a6cbccb75c2ef1247243c30c0979d3d7617
    *
    * Return true if the call was made, and false if it was already cached.
    *
