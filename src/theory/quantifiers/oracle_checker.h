@@ -34,7 +34,7 @@ namespace quantifiers {
  *
  * This maintains callers for all oracle functions, and can be used to evaluate
  * terms that contain oracle functions.
- * 
+ *
  * For example, if f is an oracle function, where evaluating the oracle
  * f on 4 returns 5, and evaluating on 7 returns 10, this class acts as a
  * node converter that may transform:
@@ -65,7 +65,7 @@ class OracleChecker : protected EnvObj, public NodeConverter
    */
   Node evaluateApp(Node app);
 
-  /** 
+  /**
    * Evaluate all oracle function applications (recursively) in n. This is an
    * alias for convert.
    */
