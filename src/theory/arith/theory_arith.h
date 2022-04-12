@@ -141,6 +141,10 @@ class TheoryArith : public Theory {
    * false otherwise.
    */
   bool sanityCheckIntegerModel();
+  /**
+   * Convert to arith private
+   */
+  Node convertToArithPrivate(TNode n);
 
   /** Get the proof equality engine */
   eq::ProofEqEngine* getProofEqEngine();

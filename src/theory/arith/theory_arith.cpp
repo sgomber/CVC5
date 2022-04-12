@@ -119,7 +119,20 @@ void TheoryArith::preRegisterTerm(TNode n)
   {
     d_nonlinearExtension->preRegisterTerm(n);
   }
-  d_internal->preRegisterTerm(n);
+  Node np = convertToArithPrivate(n);
+  d_internal->preRegisterTerm(np);
+}
+
+Node TheoryArith::convertToArithPrivate(TNode n)
+{
+  bool pol = n.getKind()!=kind::NOT;
+  Node atom = pol ? n : n[0];
+  if (atom.getKind()==kind::EQUAL)
+  {
+    Node ret = ArithRewriter::rewriteEquality(atom);
+    return pol ? ret : ret.notNode();
+  }
+  return n;
 }
 
 void TheoryArith::notifySharedTerm(TNode n) { d_internal->notifySharedTerm(n); }
@@ -240,7 +253,8 @@ bool TheoryArith::preNotifyFact(
     ret = d_eqSolver->preNotifyFact(atom, pol, fact, isPrereg, isInternal);
   }
   // we also always also notify the internal solver
-  d_internal->preNotifyFact(atom, pol, fact);
+  Node factp = convertToArithPrivate(fact);
+  d_internal->preNotifyFact(atom, pol, factp);
   return ret;
 }
 
@@ -263,7 +277,8 @@ TrustNode TheoryArith::explain(TNode n)
       return texp;
     }
   }
-  return d_internal->explain(n);
+  Node np = convertToArithPrivate(n);
+  return d_internal->explain(np);
 }
 
 void TheoryArith::propagate(Effort e) {

@@ -13,7 +13,6 @@
  * Rewriter for the theory of arithmetic.
  *
  * This rewrites to the normal form for arithmetic.
- * See theory/arith/normal_form.h for more information.
  */
 
 #include "cvc5_private.h"
@@ -42,6 +41,8 @@ class ArithRewriter : public TheoryRewriter
    */
   TrustNode expandDefinition(Node node) override;
 
+  /** Rewrite the equality */
+  static Node rewriteEquality(TNode eq);
  private:
   /** preRewrite for atoms */
   static RewriteResponse preRewriteAtom(TNode t);

@@ -28,7 +28,6 @@
 #include "smt/logic_exception.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/arith/arith_utilities.h"
-#include "theory/arith/normal_form.h"
 #include "theory/arith/operator_elim.h"
 #include "theory/arith/rewriter/addition.h"
 #include "theory/arith/rewriter/node_utils.h"
@@ -113,6 +112,22 @@ RewriteResponse ArithRewriter::preRewriteAtom(TNode atom)
   }
 
   return RewriteResponse(REWRITE_DONE, atom);
+}
+
+Node ArithRewriter::rewriteEquality(TNode eq)
+{
+  Assert (eq.getKind()==kind::EQUAL);
+  TNode left = eq[0];
+  TNode right = eq[1];
+  rewriter::Sum sum;
+  rewriter::addToSum(sum, left);
+  rewriter::addToSum(sum, right);
+  // Now we have (sum <kind> 0)
+  if (rewriter::isIntegral(sum))
+  {
+    return rewriter::buildIntegerEquality(std::move(sum));
+  }
+  return rewriter::buildRealEquality(std::move(sum));
 }
 
 RewriteResponse ArithRewriter::postRewriteAtom(TNode atom)
