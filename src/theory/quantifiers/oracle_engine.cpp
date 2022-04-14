@@ -270,13 +270,13 @@ bool OracleEngine::getOracleInterface(Node q,
   if (qa.isOracleInterface(q))
   {
     // fill in data
-    Assert (q[1].getKind()==ORACLE_FORMULA_GEN);
+    Assert(q[1].getKind() == ORACLE_FORMULA_GEN);
     assume = q[1][0];
     constraint = q[1][0];
-    Assert (q.getNumChildren()==3);
-    Assert (q[2].getNumChildren()==1);
+    Assert(q.getNumChildren() == 3);
+    Assert(q[2].getNumChildren() == 1);
     OracleInterfaceAttribute oia;
-    Assert (q[2][0].hasAttribute(oia));
+    Assert(q[2][0].hasAttribute(oia));
     binName = q[2][0].getAttribute(oia);
     return true;
   }

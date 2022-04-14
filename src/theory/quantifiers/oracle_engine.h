@@ -89,7 +89,7 @@ class OracleEngine : public QuantifiersModule
                                 Node assume,
                                 Node constraint,
                                 const std::string& binName);
-  /** 
+  /**
    * Get oracle interface, returns true if q is an oracle interface quantifier
    * (constructed by the above method). Obtains the arguments for which q is
    * constructed.
