@@ -104,7 +104,7 @@ class OracleEngine : public QuantifiersModule
   context::CDList<Node> d_oracleFuns;
   /** Pointer to the oracle checker */
   OracleChecker* d_ochecker;
-  /** 
+  /**
    * In a given instantiation round, did consistency checks pass for all
    * oracle interface quantified formulas?
    */
