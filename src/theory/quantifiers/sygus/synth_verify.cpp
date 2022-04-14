@@ -109,30 +109,35 @@ Result SynthVerify::verify(Node query,
         Node squery =
             query.substitute(vars.begin(), vars.end(), mvs.begin(), mvs.end());
         Trace("cegqi-debug") << "...squery : " << squery << std::endl;
+        // Rewrite the node. Notice that if squery contains oracle function
+        // symbols, then this may trigger new calls to oracles.
         squery = d_tds->rewriteNode(squery);
         Trace("cegqi-debug") << "...rewrites to : " << squery << std::endl;
         if (!squery.isConst() || !squery.getConst<bool>())
         {
-          if (squery.isConst())
-          {
-            // simplified to false, the result should have been unknown, or
-            // else this indicates a check-model failure.
-            Assert(r.getStatus() == Result::UNKNOWN)
-                << "Expected model from verification step to satisfy query";
-          }
           // If the query did not simplify to true, then it may be that the
           // value for an oracle function was not what we expected.
           if (options().quantifiers.oracles)
           {
             // In this case, we reconstruct the query, which may include more
-            // information about oracles than we had previously. We rerun the
-            // satisfiability check above.
+            // information about oracles than we had previously, due to the
+            // call to rewriteNode above. We rerun the satisfiability check
+            // above, which now may conjoin more I/O pairs to the preprocessed
+            // query.
             Node nextQueryp = preprocessQueryInternal(query);
             if (nextQueryp != queryp)
             {
               queryp = nextQueryp;
               finished = false;
             }
+          }
+          else if (squery.isConst())
+          {
+            // simplified to false, the result should have been unknown, or
+            // else this indicates a check-model failure. We check this only
+            // if oracles are disabled.
+            Assert(r.getStatus() == Result::UNKNOWN)
+                << "Expected model from verification step to satisfy query";
           }
         }
       }
