@@ -104,8 +104,11 @@ class OracleEngine : public QuantifiersModule
   context::CDList<Node> d_oracleFuns;
   /** Pointer to the oracle checker */
   OracleChecker* d_ochecker;
-  bool d_consistencyCheckPassed = false;
-  bool d_checkedAllOracles = false;
+  /** 
+   * In a given instantiation round, did consistency checks pass for all
+   * oracle interface quantified formulas?
+   */
+  bool d_consistencyCheckPassed;
 };
 
 }  // namespace quantifiers

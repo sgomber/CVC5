@@ -52,7 +52,8 @@ OracleEngine::OracleEngine(Env& env,
                            TermRegistry& tr)
     : QuantifiersModule(env, qs, qim, qr, tr),
       d_oracleFuns(userContext()),
-      d_ochecker(tr.getOracleChecker())
+      d_ochecker(tr.getOracleChecker()),
+      d_consistencyCheckPassed(false)
 {
   Assert(d_ochecker != nullptr);
 }
@@ -70,7 +71,10 @@ OracleEngine::QEffort OracleEngine::needsModel(Theory::Effort e)
   return QEFFORT_MODEL;
 }
 
-void OracleEngine::reset_round(Theory::Effort e) {}
+void OracleEngine::reset_round(Theory::Effort e)
+{
+  d_consistencyCheckPassed = false;
+}
 
 void OracleEngine::registerQuantifier(Node q) {}
 
@@ -82,7 +86,6 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e)
   }
 
   double clSet = 0;
-  d_checkedAllOracles = false;
   if (TraceIsOn("oracle-engine"))
   {
     clSet = double(clock()) / double(CLOCKS_PER_SEC);
@@ -145,13 +148,12 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e)
   }
   else
   {
-    for (const auto& l : learned_lemmas)
+    for (const Node& l : learned_lemmas)
     {
       Trace("oracle-engine-state") << "adding lemma " << l << std::endl;
       d_qim.lemma(l, InferenceId::QUANTIFIERS_ORACLE_INTERFACE);
     }
   }
-  d_checkedAllOracles = true;
   // general SMTO: call constraint generators and assumption generators here
 
   if (TraceIsOn("oracle-engine"))
@@ -168,15 +170,10 @@ bool OracleEngine::checkCompleteFor(Node q)
   {
     return false;
   }
-  // TODO: true if oracle consistency check works
-  if (d_consistencyCheckPassed)
-  {
-    Trace("oracle-engine-state") << q << " is complete" << std::endl;
-  }
-  else
-  {
-    Trace("oracle-engine-state") << q << " is incomplete" << std::endl;
-  }
+  // Only true if oracle consistency check was successful. Notice that
+  // we can say true for *all* oracle interface quantified formulas in the
+  // case that the consistency check passed. In particular, the invocation
+  // of oracle interfaces does not need to be complete.
   return d_consistencyCheckPassed;
 }
 
@@ -186,7 +183,7 @@ void OracleEngine::checkOwnership(Node q)
   QuantAttributes& qa = d_qreg.getQuantAttributes();
   if (qa.isOracleInterface(q))
   {
-    d_qreg.setOwner(q, this, 2);
+    d_qreg.setOwner(q, this);
   }
 }
 
