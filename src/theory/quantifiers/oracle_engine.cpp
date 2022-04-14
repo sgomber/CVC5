@@ -119,13 +119,13 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e)
   // (3) We currently ignore oracle interface quantified formulas that are
   // not associated with oracle functions.
   //
-  // The current design choices above are due to the fact that are support is
+  // The current design choices above are due to the fact that our support is
   // limited to "definitional SMTO" (see Polgreen et al 2022). In particular,
   // we only support oracles that define I/O equalities for oracle functions
   // only. The net effect of this class hence is to check the consistency of
   // oracle functions, and allow "sat" or otherwise add a lemma with id
   // QUANTIFIERS_ORACLE_INTERFACE.
-  std::vector<Node> learned_lemmas;
+  std::vector<Node> learnedLemmas;
   bool allFappsConsistent = true;
   // iterate over oracle functions
   for (const Node& f : d_oracleFuns)
@@ -148,10 +148,10 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e)
         arguments.push_back(fm->getValue(arg));
       }
       // call oracle
-      Node fapp_with_values = nm->mkNode(APPLY_UF, arguments);
+      Node fappWithValues = nm->mkNode(APPLY_UF, arguments);
       Node predictedResponse = eq->getRepresentative(fapp);
       if (!d_ochecker->checkConsistent(
-              fapp_with_values, predictedResponse, learned_lemmas))
+              fappWithValues, predictedResponse, learnedLemmas))
       {
         allFappsConsistent = false;
       }
@@ -166,7 +166,7 @@ void OracleEngine::check(Theory::Effort e, QEffort quant_e)
   }
   else
   {
-    for (const Node& l : learned_lemmas)
+    for (const Node& l : learnedLemmas)
     {
       Trace("oracle-engine-state") << "adding lemma " << l << std::endl;
       d_qim.lemma(l, InferenceId::QUANTIFIERS_ORACLE_INTERFACE);
@@ -199,9 +199,39 @@ void OracleEngine::checkOwnership(Node q)
 {
   // take ownership of quantified formulas that are oracle interfaces
   QuantAttributes& qa = d_qreg.getQuantAttributes();
-  if (qa.isOracleInterface(q))
+  if (!qa.isOracleInterface(q))
   {
-    d_qreg.setOwner(q, this);
+    return;
+  }
+  d_qreg.setOwner(q, this);
+  // We expect oracle interfaces to be limited to definitional SMTO currently.
+  if (Configuration::isAssertionBuild())
+  {
+    std::vector<Node> inputs, outputs;
+    Node assume, constraint;
+    std::string binName;
+    getOracleInterface(q, inputs, outputs, assume, constraint, binName);
+    Assert(constraint.isConst() && constraint.getConst<bool>())
+        << "Unhandled oracle constraint " << q;
+    CVC5_UNUSED bool isOracleFun = false;
+    if (OracleCaller::isOracleFunctionApp(assume))
+    {
+      // predicate case
+      isOracleFun = true;
+    }
+    else if (assume.getKind() == EQUAL)
+    {
+      for (size_t i = 0; i < 2; i++)
+      {
+        if (OracleCaller::isOracleFunctionApp(assume[i])
+            && assume[1 - i].isConst())
+        {
+          isOracleFun = true;
+        }
+      }
+    }
+    Assert(isOracleFun)
+        << "Non-definitional oracle interface quantified formula " << q;
   }
 }
 
@@ -264,12 +294,25 @@ bool OracleEngine::getOracleInterface(Node q,
                                       std::vector<Node>& outputs,
                                       Node& assume,
                                       Node& constraint,
-                                      std::string& binName)
+                                      std::string& binName) const
 {
   QuantAttributes& qa = d_qreg.getQuantAttributes();
   if (qa.isOracleInterface(q))
   {
     // fill in data
+    OracleInputVarAttribute oiva;
+    for (const Node& v : q[0])
+    {
+      if (v.hasAttribute(oiva))
+      {
+        inputs.push_back(v);
+      }
+      else
+      {
+        Assert(v.hasAttribute(OracleOutputVarAttribute()));
+        outputs.push_back(v);
+      }
+    }
     Assert(q[1].getKind() == ORACLE_FORMULA_GEN);
     assume = q[1][0];
     constraint = q[1][0];
