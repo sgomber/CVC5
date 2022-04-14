@@ -269,7 +269,15 @@ bool OracleEngine::getOracleInterface(Node q,
   QuantAttributes& qa = d_qreg.getQuantAttributes();
   if (qa.isOracleInterface(q))
   {
-    // TODO: fill in data
+    // fill in data
+    Assert (q[1].getKind()==ORACLE_FORMULA_GEN);
+    assume = q[1][0];
+    constraint = q[1][0];
+    Assert (q.getNumChildren()==3);
+    Assert (q[2].getNumChildren()==1);
+    OracleInterfaceAttribute oia;
+    Assert (q[2][0].hasAttribute(oia));
+    binName = q[2][0].getAttribute(oia);
     return true;
   }
   return false;
