@@ -174,7 +174,11 @@ Node SynthVerify::preprocessQueryInternal(Node query)
         {
           qconj.push_back(q);
         }
-        // get the relevant cached oracle calls
+        // Get the relevant cached oracle calls.
+        // In contrast to the presentation in Polgreen et al VMCAI 2022,
+        // we do not use SMTO as a subsolver for SyMO here. Instead, we
+        // conjoin the set of I/O pairs known about each oracle function
+        // to the query.
         if (ochecker != nullptr && ochecker->hasOracleCalls(f))
         {
           const std::map<Node, Node>& ocalls = ochecker->getOracleCalls(f);
