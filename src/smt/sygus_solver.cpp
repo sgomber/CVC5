@@ -212,19 +212,13 @@ SynthResult SygusSolver::checkSynth(Assertions& as, bool isNext)
       Node bodyAssump = nm->mkAnd(listToVector(d_sygusAssumps));
       body = nm->mkNode(IMPLIES, bodyAssump, body);
     }
-    // get the oracle functions from the SMT solver
-    QuantifiersEngine* qe = d_smtSolver.getQuantifiersEngine();
-    std::vector<Node> ofuns = qe->getOracleFuns();
+    body = body.notNode();
     Trace("smt") << "...constructed sygus constraint " << body << std::endl;
-    if (!d_sygusVars.empty() || !ofuns.empty())
+    if (!d_sygusVars.empty())
     {
-      body = quantifiers::SygusUtils::mkSygusBody(
-          listToVector(d_sygusVars), body, ofuns);
+      Node boundVars = nm->mkNode(BOUND_VAR_LIST, listToVector(d_sygusVars));
+      body = nm->mkNode(EXISTS, boundVars, body);
       Trace("smt") << "...constructed exists " << body << std::endl;
-    }
-    else
-    {
-      body = body.notNode();
     }
     if (!d_sygusFunSymbols.empty())
     {
