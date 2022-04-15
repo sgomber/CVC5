@@ -465,18 +465,18 @@ class CVC5_EXPORT SolverEngine
   /**
    * Add an oracle function to the state, also adds an oracle interface
    * defining it, when binName is not "".
-   * 
+   *
    * @param var The oracle function
    * @param binName The name of the binary, if one exists
    */
   void declareOracleFun(Node var, const std::string& binName = "");
-  /** 
+  /**
    * This defines an oracle interface, i.e. a way of generating new
    * assumptions and constraints based on calls to external oracles.
    * Correponds to the oracle commands:
    * (oracle-assume (<sorted_var>*) ( <sorted_var>*) <term> <sym>)
    * (oracle-constraint <sym> (<sorted_var>*) (<sorted_var>*) <term> <sym>)
-   * 
+   *
    * @param input The inputs of the interface, whose types correspond to the
    * expected input argument format of the oracle
    * @param outputs The outputs of the interface, which correspond to the
@@ -484,7 +484,7 @@ class CVC5_EXPORT SolverEngine
    * @param assume The assumption the interface generates
    * @param constraint The constraint the interface generates
    * @param binName The name of the external binary to call
-   * 
+   *
    * This adds the corresponding oracle interface quantified formula as a
    * top-level assertion.
    */
