@@ -123,18 +123,6 @@ void TheoryArith::preRegisterTerm(TNode n)
   d_internal->preRegisterTerm(np);
 }
 
-Node TheoryArith::convertToArithPrivate(TNode n)
-{
-  bool pol = n.getKind()!=kind::NOT;
-  Node atom = pol ? n : n[0];
-  if (atom.getKind()==kind::EQUAL)
-  {
-    Node ret = ArithRewriter::rewriteEquality(atom);
-    return pol ? ret : ret.notNode();
-  }
-  return n;
-}
-
 void TheoryArith::notifySharedTerm(TNode n) { d_internal->notifySharedTerm(n); }
 
 TrustNode TheoryArith::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
@@ -256,6 +244,7 @@ bool TheoryArith::preNotifyFact(
   }
   // we also always also notify the internal solver
   Node factp = convertToArithPrivate(fact);
+  Trace("arith-check") << "Prenotify fact " << factp << " from " << fact << std::endl;
   d_internal->preNotifyFact(atom, pol, factp);
   return ret;
 }
@@ -280,6 +269,7 @@ TrustNode TheoryArith::explain(TNode n)
     }
   }
   Node np = convertToArithPrivate(n);
+  Trace("arith-check") << "Explain " << np << " from " << n << std::endl;
   return d_internal->explain(np);
 }
 

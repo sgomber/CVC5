@@ -338,6 +338,11 @@ Node negateProofLiteral(TNode n);
  */
 Node multConstants(const Node& c1, const Node& c2);
 
+/**
+  * Convert to arith private
+  */
+Node convertToArithPrivate(TNode n);
+  
 }  // namespace arith
 }  // namespace theory
 }  // namespace cvc5::internal

@@ -14,6 +14,7 @@
  */
 
 #include "arith_utilities.h"
+#include "theory/arith/arith_rewriter.h"
 
 #include <cmath>
 
@@ -333,6 +334,19 @@ Node multConstants(const Node& c1, const Node& c2)
   Assert(tn.isRealOrInt());
   return nm->mkConstRealOrInt(
       tn, Rational(c1.getConst<Rational>() * c2.getConst<Rational>()));
+}
+
+Node convertToArithPrivate(TNode n)
+{
+  bool pol = n.getKind()!=kind::NOT;
+  Node atom = pol ? n : n[0];
+  if (atom.getKind()==kind::EQUAL)
+  {
+    Node ret = ArithRewriter::rewriteEquality(atom);
+    ret = ArithRewriter::rewriteEquality(ret);
+    return pol ? ret : ret.notNode();
+  }
+  return n;
 }
 
 }  // namespace arith
