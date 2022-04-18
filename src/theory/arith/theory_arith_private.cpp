@@ -3610,6 +3610,7 @@ TrustNode TheoryArithPrivate::explain(TNode n)
       exp = d_congruenceManager.explain(n);
     }
   }else{
+    Assert (d_cmEnabled);
     Assert(d_congruenceManager.canExplain(n));
     Trace("arith::explain") << "dm explanation" << n << endl;
     exp = d_congruenceManager.explain(n);

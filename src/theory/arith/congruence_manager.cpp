@@ -31,6 +31,7 @@
 #include "theory/rewriter.h"
 #include "theory/uf/equality_engine.h"
 #include "theory/uf/proof_equality_engine.h"
+#include "theory/arith/arith_rewriter.h"
 
 using namespace cvc5::internal::kind;
 
@@ -358,7 +359,7 @@ bool ArithCongruenceManager::propagate(TNode x){
     return true;
   }
 
-  Node rewritten = rewrite(x);
+  Node rewritten = x.getKind()==EQUAL ? ArithRewriter::rewriteEquality(x) : rewrite(x);
 
   //Need to still propagate this!
   if(rewritten.getKind() == kind::CONST_BOOLEAN){

@@ -17,6 +17,7 @@
 
 #include "smt/env.h"
 #include "theory/arith/normal_form.h"
+#include "theory/arith/arith_rewriter.h"
 #include "theory/rewriter.h"
 
 using namespace cvc5::internal::kind;
@@ -62,6 +63,10 @@ bool BoundInference::add(const Node& n, bool onlyVariables)
     return false;
   }
   // Parse the node as a comparison
+  if (tmp.getKind()== kind::EQUAL)
+  {
+    tmp = ArithRewriter::rewriteEquality(tmp);
+  }
   auto comp = Comparison::parseNormalForm(tmp);
   auto dec = comp.decompose(true);
   if (onlyVariables && !std::get<0>(dec).isVariable())

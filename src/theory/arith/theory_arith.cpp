@@ -159,7 +159,9 @@ TrustNode TheoryArith::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
 Theory::PPAssertStatus TheoryArith::ppAssert(
     TrustNode tin, TrustSubstitutionMap& outSubstitutions)
 {
-  return d_internal->ppAssert(tin, outSubstitutions);
+  Node np = convertToArithPrivate(tin.getNode());
+  TrustNode tinr = TrustNode::mkTrustLemma(np, nullptr);
+  return d_internal->ppAssert(tinr, outSubstitutions);
 }
 
 void TheoryArith::ppStaticLearn(TNode n, NodeBuilder& learned)
