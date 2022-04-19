@@ -301,6 +301,12 @@ class Instantiate : public QuantifiersUtil
   Statistics d_statistics;
 
  private:
+  bool addInstantiationInternal(Node q,
+                        std::vector<Node>& terms,
+                        InferenceId id,
+                        Node pfArg,
+                        bool mkRep,
+                        bool doVts);
   /** record instantiation, return true if it was not a duplicate */
   bool recordInstantiationInternal(Node q, const std::vector<Node>& terms);
   /** remove instantiation from the cache */

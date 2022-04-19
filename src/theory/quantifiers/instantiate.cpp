@@ -105,6 +105,23 @@ bool Instantiate::addInstantiation(Node q,
                                    bool mkRep,
                                    bool doVts)
 {
+  if (options().quantifiers.instTrackFailMask)
+  {
+    // track the fail mask
+    std::vector<bool> failMask;
+    return addInstantiationExpFail(q, terms, failMask, id, pfArg, mkRep, doVts, true);
+  }
+  // otherwise, just add the instantiation
+  return addInstantiationInternal(q, terms, id, pfArg, mkRep, doVts);
+}
+
+bool Instantiate::addInstantiationInternal(Node q,
+                                   std::vector<Node>& terms,
+                                   InferenceId id,
+                                   Node pfArg,
+                                   bool mkRep,
+                                   bool doVts)
+{
   // For resource-limiting (also does a time check).
   d_qim.safePoint(Resource::QuantifierStep);
   Assert(!d_qstate.isInConflict());
@@ -417,9 +434,13 @@ bool Instantiate::addInstantiationExpFail(Node q,
                                           bool doVts,
                                           bool expFull)
 {
-  if (addInstantiation(q, terms, id, pfArg, mkRep, doVts))
+  if (addInstantiationInternal(q, terms, id, pfArg, mkRep, doVts))
   {
     return true;
+  }
+  if (options().quantifiers.instTrackFailMask)
+  {
+    expFull = true;
   }
   size_t tsize = terms.size();
   failMask.resize(tsize, true);
@@ -493,9 +514,9 @@ bool Instantiate::addInstantiationExpFail(Node q,
       }
     }
   }
-  if (generalized)
+  if (options().quantifiers.instTrackFailMask && generalized)
   {
-    // learn
+    // if we generalized and the option is set, learn the fail mask
     for (Node& t : terms)
     {
       t = d_qstate.getRepresentative(t);
