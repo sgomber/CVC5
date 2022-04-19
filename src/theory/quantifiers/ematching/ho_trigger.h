@@ -162,6 +162,11 @@ class HigherOrderTrigger : public Trigger
    * TODO: we may eliminate this based on how github issue #1115 is resolved.
    */
   uint64_t addHoTypeMatchPredicateLemmas();
+  /**
+   * Since this class tries instantiations beyond what is literally in m, we
+   * always return true.
+   */
+  bool isFeasibleInstantiation(const std::vector<Node>& m) override;
   /** send instantiation
    *
   * Sends an instantiation that is equivalent to m via
