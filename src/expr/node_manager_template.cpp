@@ -567,6 +567,30 @@ TypeNode NodeManager::mkAbstractType(Kind k)
     ss << "Cannot construct abstract type for kind " << k;
     throw Exception(ss.str());
   }
+  if (k==kind::ARRAY_TYPE)
+  {
+    // ?Array -> (Array ? ?)
+    TypeNode a = mkAbstractType(kind::ABSTRACT_TYPE);
+    return mkArrayType(a, a);
+  }
+  else if (k==kind::SET_TYPE)
+  {
+    // ?Set -> (Set ?)
+    TypeNode a = mkAbstractType(kind::ABSTRACT_TYPE);
+    return mkSetType(a);
+  }
+  else if (k==kind::BAG_TYPE)
+  {
+    // ?Bag -> (Bag ?)
+    TypeNode a = mkAbstractType(kind::ABSTRACT_TYPE);
+    return mkBagType(a);
+  }
+  else if (k==kind::SEQUENCE_TYPE)
+  {
+    // ?Seq -> (Seq ?)
+    TypeNode a = mkAbstractType(kind::ABSTRACT_TYPE);
+    return mkSequenceType(a);
+  }
   return mkTypeConst<AbstractType>(AbstractType(k));
 }
 
