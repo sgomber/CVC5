@@ -31,6 +31,7 @@
 #include "theory/quantifiers/term_pools.h"
 #include "theory/quantifiers/term_registry.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/quantifiers/instantiate.h"
 #include "util/statistics_stats.h"
 
 namespace cvc5::internal {
@@ -363,7 +364,7 @@ bool TermTupleEnumeratorBase::nextCombination()
     }
     std::vector<Node> tti;
     next(tti);
-    if (!d_disabledCombinations.find(tti, d_changePrefix))
+    if (d_env->d_inst->feasibleInstantiation(d_quantifier, tti, d_changePrefix))
     {
       return true;  // current combination vetted by disabled combinations
     }
@@ -508,9 +509,8 @@ class TermTupleEnumeratorPool : public TermTupleEnumeratorBase
  public:
   TermTupleEnumeratorPool(Node quantifier,
                           const TermTupleEnumeratorEnv* env,
-                          TermPools* tp,
                           Node pool)
-      : TermTupleEnumeratorBase(quantifier, env), d_tp(tp), d_pool(pool)
+      : TermTupleEnumeratorBase(quantifier, env), d_tp(env->d_tr->getTermPools()), d_pool(pool)
   {
     Assert(d_pool.getKind() == kind::INST_POOL);
   }
@@ -556,10 +556,10 @@ TermTupleEnumeratorInterface* mkTermTupleEnumeratorRd(
 }
 
 TermTupleEnumeratorInterface* mkTermTupleEnumeratorPool(
-    Node q, const TermTupleEnumeratorEnv* env, TermPools* tp, Node pool)
+    Node q, const TermTupleEnumeratorEnv* env, Node pool)
 {
   return static_cast<TermTupleEnumeratorInterface*>(
-      new TermTupleEnumeratorPool(q, env, tp, pool));
+      new TermTupleEnumeratorPool(q, env, pool));
 }
 
 }  // namespace quantifiers
