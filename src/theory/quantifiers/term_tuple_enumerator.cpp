@@ -26,12 +26,12 @@
 #include "options/quantifiers_options.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/quantifiers/index_trie.h"
+#include "theory/quantifiers/instantiate.h"
 #include "theory/quantifiers/quant_module.h"
 #include "theory/quantifiers/relevant_domain.h"
 #include "theory/quantifiers/term_pools.h"
 #include "theory/quantifiers/term_registry.h"
 #include "theory/quantifiers/term_util.h"
-#include "theory/quantifiers/instantiate.h"
 #include "util/statistics_stats.h"
 
 namespace cvc5::internal {
@@ -510,7 +510,9 @@ class TermTupleEnumeratorPool : public TermTupleEnumeratorBase
   TermTupleEnumeratorPool(Node quantifier,
                           const TermTupleEnumeratorEnv* env,
                           Node pool)
-      : TermTupleEnumeratorBase(quantifier, env), d_tp(env->d_tr->getTermPools()), d_pool(pool)
+      : TermTupleEnumeratorBase(quantifier, env),
+        d_tp(env->d_tr->getTermPools()),
+        d_pool(pool)
   {
     Assert(d_pool.getKind() == kind::INST_POOL);
   }
