@@ -202,8 +202,8 @@ class Instantiate : public QuantifiersUtil
    * for quantified formula q.
    */
   bool isFeasibleInstantiation(Node q,
-                             const std::vector<Node>& terms,
-                             size_t& nonBlankLength);
+                               const std::vector<Node>& terms,
+                               size_t& nonBlankLength);
   /** record instantiation
    *
    * Explicitly record that q has been instantiated with terms, with virtual

@@ -174,7 +174,8 @@ uint64_t Trigger::addInstantiations()
 bool Trigger::isFeasibleInstantiation(const std::vector<Node>& m)
 {
   size_t nonBlankLength;
-  return d_qim.getInstantiate()->isFeasibleInstantiation(d_quant, m, nonBlankLength);
+  return d_qim.getInstantiate()->isFeasibleInstantiation(
+      d_quant, m, nonBlankLength);
 }
 
 bool Trigger::sendInstantiation(std::vector<Node>& m, InferenceId id)

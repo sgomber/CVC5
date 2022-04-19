@@ -160,7 +160,7 @@ bool Instantiate::addInstantiationInternal(Node q,
     }
 #ifdef CVC5_ASSERTIONS
     bool bad_inst = false;
-    Assert (!expr::hasFreeVar(terms[i]));
+    Assert(!expr::hasFreeVar(terms[i]));
     if (TermUtil::containsUninterpretedConstant(terms[i]))
     {
       Trace("inst") << "***& inst contains uninterpreted constant : "
@@ -417,8 +417,8 @@ bool Instantiate::addInstantiationInternal(Node q,
 }
 
 bool Instantiate::isFeasibleInstantiation(Node q,
-                                        const std::vector<Node>& terms,
-                                        size_t& nonBlankLength)
+                                          const std::vector<Node>& terms,
+                                          size_t& nonBlankLength)
 {
   std::map<Node, IndexTrie>::iterator it = d_failMasks.find(q);
   if (it == d_failMasks.end())
