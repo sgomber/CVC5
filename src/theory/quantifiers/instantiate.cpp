@@ -76,6 +76,7 @@ bool Instantiate::reset(Theory::Effort e)
   // clear explicitly recorded instantiations
   d_recordedInst.clear();
   d_instDebugTemp.clear();
+  d_failMasks.clear();
   return true;
 }
 
@@ -394,6 +395,19 @@ bool Instantiate::addInstantiation(Node q,
   return true;
 }
 
+bool Instantiate::feasibleInstantiation(Node q,
+                                        const std::vector<Node>& terms,
+                                        size_t& nonBlankLength)
+{
+  std::map<Node, IndexTrie>::iterator it = d_failMasks.find(q);
+  if (it==d_failMasks.end())
+  {
+    // we have not learned anything
+    return true;
+  }
+  return !it->second.find(terms, nonBlankLength);
+}
+
 bool Instantiate::addInstantiationExpFail(Node q,
                                           std::vector<Node>& terms,
                                           std::vector<bool>& failMask,
@@ -429,6 +443,7 @@ bool Instantiate::addInstantiationExpFail(Node q,
   Node nulln;
   Node ibody = getInstantiation(q, vars, terms, idNone, nulln, doVts);
   ibody = rewrite(ibody);
+  bool generalized = false;
   for (size_t i = 0; i < tsize; i++)
   {
     // process consecutively in reverse order, which is important since we use
@@ -465,6 +480,7 @@ bool Instantiate::addInstantiationExpFail(Node q,
     {
       // if we still fail, we are not critical
       failMask[ii] = false;
+      generalized = true;
     }
     else
     {
@@ -476,6 +492,15 @@ bool Instantiate::addInstantiationExpFail(Node q,
         break;
       }
     }
+  }
+  if (generalized)
+  {
+    // learn
+    for (Node& t : terms)
+    {
+      t = d_qstate.getRepresentative(t);
+    }
+    d_failMasks[q].add(failMask, terms);
   }
   if (TraceIsOn("inst-exp-fail"))
   {

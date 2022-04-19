@@ -26,6 +26,7 @@
 #include "theory/inference_id.h"
 #include "theory/quantifiers/inst_match_trie.h"
 #include "theory/quantifiers/quant_util.h"
+#include "theory/quantifiers/index_trie.h"
 #include "util/statistics_stats.h"
 
 namespace cvc5::internal {
@@ -195,6 +196,9 @@ class Instantiate : public QuantifiersUtil
                                bool mkRep = false,
                                bool doVts = false,
                                bool expFull = true);
+  bool feasibleInstantiation(Node q,
+                        const std::vector<Node>& terms,
+                             size_t& nonBlankLength);
   /** record instantiation
    *
    * Explicitly record that q has been instantiated with terms, with virtual
@@ -352,6 +356,10 @@ class Instantiate : public QuantifiersUtil
    * A CDProof storing instantiation steps.
    */
   std::unique_ptr<CDProof> d_pfInst;
+  /**
+   * Current fail mask for each quantified formula
+   */
+  std::map<Node, IndexTrie> d_failMasks;
 };
 
 }  // namespace quantifiers

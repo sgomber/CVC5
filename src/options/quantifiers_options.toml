@@ -740,6 +740,14 @@ name   = "Quantifiers"
   default    = "true"
   help       = "do not consider instances of quantified formulas that are currently entailed"
 
+[[option]]
+  name       = "instTrackFailMask"
+  category   = "regular"
+  long       = "inst-track-fail-mask"
+  type       = "bool"
+  default    = "true"
+  help       = "automatically track fail masks for instantiations"
+
 ### Induction options
 
 [[option]]

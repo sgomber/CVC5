@@ -62,7 +62,7 @@ class IndexTrie
   /*  Construct the trie,  if the argument ignoreFullySpecified is true,
    *  the data structure will  store only data structure containing at least
    *  one blank. */
-  IndexTrie(bool ignoreFullySpecified)
+  IndexTrie(bool ignoreFullySpecified = true)
       : d_ignoreFullySpecified(ignoreFullySpecified),
         d_root(new IndexTrieNode())
   {
