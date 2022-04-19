@@ -264,9 +264,10 @@ bool TypeNode::isClosedEnumerable()
 
 bool TypeNode::isFirstClass() const
 {
-  return getKind() != kind::CONSTRUCTOR_TYPE && getKind() != kind::SELECTOR_TYPE
-         && getKind() != kind::TESTER_TYPE && getKind() != kind::UPDATER_TYPE
-         && (getKind() != kind::TYPE_CONSTANT
+  Kind k = getKind();
+  return k != kind::CONSTRUCTOR_TYPE && k != kind::SELECTOR_TYPE
+         && k != kind::TESTER_TYPE && k != kind::UPDATER_TYPE && k != kind::ABSTRACT_TYPE
+         && (k != kind::TYPE_CONSTANT
              || (getConst<TypeConstant>() != REGEXP_TYPE
                  && getConst<TypeConstant>() != SEXPR_TYPE));
 }
@@ -282,41 +283,59 @@ bool TypeNode::isStringLike() const { return isString() || isSequence(); }
 bool TypeNode::isRealOrInt() const { return isReal(); }
 
 bool TypeNode::isSubtypeOf(TypeNode t) const {
-  if(*this == t) {
+  if(*this == t) 
+  {
     return true;
+  }
+  if (t.isAbstract())
+  {
+    Kind tak = t.getAbstractKind();
+    if (tak == kind::ABSTRACT_TYPE)
+    {
+      // everything is subtype of the fully abstract type
+      return true;
+    }
+    // ABSTRACT_TYPE{k} is a subtype of types with kind k
+    return getKind() == tak;
   }
   if (isInteger())
   {
     return t.isReal();
   }
-  if (isFunction() && t.isFunction())
+  Kind k = getKind();
+  if (k == kind::TYPE_CONSTANT || k!=t.getKind())
+  {
+    // different kinds, or distinct constants
+    return false;
+  }
+  size_t nchild = getNumChildren();
+  if (nchild==0 || nchild!=t.getNumChildren())
+  {
+    // different arities
+    return false;
+  }
+  // special case: allow subtyping for range types of functions
+  if (k == kind::FUNCTION_TYPE)
   {
     if (!getRangeType().isSubtypeOf(t.getRangeType()))
     {
       // range is not subtype, return false
       return false;
     }
-    // must have equal arguments
-    std::vector<TypeNode> t0a = getArgTypes();
-    std::vector<TypeNode> t1a = t.getArgTypes();
-    if (t0a.size() != t1a.size())
+    // only check the arguments
+    nchild = nchild-1;
+  }
+  for (size_t i = 0; i < nchild; i++)
+  {
+    TypeNode c = (*this)[i];
+    TypeNode tc = t[i];
+    if (c!=tc)
     {
-      // different arities
+      // disequal component type
       return false;
     }
-    for (size_t i = 0, nargs = t0a.size(); i < nargs; i++)
-    {
-      if (t0a[i] != t1a[i])
-      {
-        // an argument is different
-        return false;
-      }
-    }
-    return true;
   }
-  // this should only return true for types T1, T2 where we handle equalities between T1 and T2
-  // (more cases go here, if we want to support such cases)
-  return false;
+  return true;
 }
 
 bool TypeNode::isComparableTo(TypeNode t) const {
