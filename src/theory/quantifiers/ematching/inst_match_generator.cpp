@@ -410,6 +410,12 @@ int InstMatchGenerator::getMatch(Node f, Node t, InstMatch& m)
       }
     }
   }
+  // if we set any variable above, check whether we are still a feasible
+  // instantiation
+  if (success && !prev.empty() && !m.isComplete())
+  {
+    success = isFeasibleInstantiation(m.d_vals);
+  }
   int ret_val = -1;
   if (success)
   {

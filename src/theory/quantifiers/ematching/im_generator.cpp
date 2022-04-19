@@ -32,6 +32,11 @@ IMGenerator::IMGenerator(Env& env, Trigger* tparent)
 {
 }
 
+bool IMGenerator::isFeasibleInstantiation(const std::vector<Node>& m)
+{
+  return d_tparent->isFeasibleInstantiation(m);
+}
+
 bool IMGenerator::sendInstantiation(InstMatch& m, InferenceId id)
 {
   return d_tparent->sendInstantiation(m, id);

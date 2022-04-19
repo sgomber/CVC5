@@ -100,6 +100,8 @@ class IMGenerator : protected EnvObj
   virtual int getActiveScore() { return 0; }
 
  protected:
+  /** is feasible instantiation */
+  bool isFeasibleInstantiation(const std::vector<Node>& m);
   /** send instantiation
    *
    * This method sends instantiation, specified by m, to the parent trigger

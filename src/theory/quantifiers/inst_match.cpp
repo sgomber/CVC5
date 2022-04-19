@@ -52,8 +52,8 @@ void InstMatch::debugPrint( const char* c ){
   }
 }
 
-bool InstMatch::isComplete() {
-  for (Node& v : d_vals)
+bool InstMatch::isComplete() const {
+  for (const Node& v : d_vals)
   {
     if (v.isNull())
     {
@@ -63,8 +63,8 @@ bool InstMatch::isComplete() {
   return true;
 }
 
-bool InstMatch::empty() {
-  for (Node& v : d_vals)
+bool InstMatch::empty() const {
+  for (const Node& v : d_vals)
   {
     if (!v.isNull())
     {

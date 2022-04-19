@@ -51,9 +51,9 @@ public:
    */
   void add(InstMatch& m);
   /** is this complete, i.e. are all fields non-null? */
-  bool isComplete();
+  bool isComplete() const;
   /** is this empty, i.e. are all fields the null node? */
-  bool empty();
+  bool empty() const;
   /** clear the instantiation, i.e. set all fields to the null node */
   void clear();
   /** debug print method */
