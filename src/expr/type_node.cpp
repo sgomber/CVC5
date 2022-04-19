@@ -266,7 +266,8 @@ bool TypeNode::isFirstClass() const
 {
   Kind k = getKind();
   return k != kind::CONSTRUCTOR_TYPE && k != kind::SELECTOR_TYPE
-         && k != kind::TESTER_TYPE && k != kind::UPDATER_TYPE && k != kind::ABSTRACT_TYPE
+         && k != kind::TESTER_TYPE && k != kind::UPDATER_TYPE
+         && k != kind::ABSTRACT_TYPE
          && (k != kind::TYPE_CONSTANT
              || (getConst<TypeConstant>() != REGEXP_TYPE
                  && getConst<TypeConstant>() != SEXPR_TYPE));
@@ -283,7 +284,7 @@ bool TypeNode::isStringLike() const { return isString() || isSequence(); }
 bool TypeNode::isRealOrInt() const { return isReal(); }
 
 bool TypeNode::isSubtypeOf(TypeNode t) const {
-  if(*this == t) 
+  if (*this == t)
   {
     return true;
   }
@@ -303,13 +304,13 @@ bool TypeNode::isSubtypeOf(TypeNode t) const {
     return t.isReal();
   }
   Kind k = getKind();
-  if (k == kind::TYPE_CONSTANT || k!=t.getKind())
+  if (k == kind::TYPE_CONSTANT || k != t.getKind())
   {
     // different kinds, or distinct constants
     return false;
   }
   size_t nchild = getNumChildren();
-  if (nchild==0 || nchild!=t.getNumChildren())
+  if (nchild == 0 || nchild != t.getNumChildren())
   {
     // different arities
     return false;
@@ -323,13 +324,13 @@ bool TypeNode::isSubtypeOf(TypeNode t) const {
       return false;
     }
     // only check the arguments
-    nchild = nchild-1;
+    nchild = nchild - 1;
   }
   for (size_t i = 0; i < nchild; i++)
   {
     TypeNode c = (*this)[i];
     TypeNode tc = t[i];
-    if (c!=tc)
+    if (c != tc)
     {
       // disequal component type
       return false;
@@ -339,7 +340,7 @@ bool TypeNode::isSubtypeOf(TypeNode t) const {
 }
 
 bool TypeNode::isComparableTo(TypeNode t) const {
-  if(*this == t)
+  if (*this == t)
   {
     return true;
   }
@@ -511,7 +512,7 @@ bool TypeNode::isParameterInstantiatedDatatype(size_t n) const
 }
 
 TypeNode TypeNode::leastCommonTypeNode(TypeNode t0, TypeNode t1){
-  if (t0==t1)
+  if (t0 == t1)
   {
     return t0;
   }
