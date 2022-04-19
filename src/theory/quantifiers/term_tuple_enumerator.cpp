@@ -273,7 +273,9 @@ void TermTupleEnumeratorBase::failureReason(const std::vector<bool>& mask)
   {
     traceMaskedVector("inst-alg", "failureReason", mask, d_termIndex);
   }
-  d_disabledCombinations.add(mask, d_termIndex);  // record failure
+  std::vector<Node> tti;
+  next(tti);
+  d_disabledCombinations.add(mask, tti);  // record failure
   // update change prefix accordingly
   for (d_changePrefix = mask.size();
        d_changePrefix && !mask[d_changePrefix - 1];
@@ -356,7 +358,9 @@ bool TermTupleEnumeratorBase::nextCombination()
     {
       return false;  // ran out of combinations
     }
-    if (!d_disabledCombinations.find(d_termIndex, d_changePrefix))
+    std::vector<Node> tti;
+    next(tti);
+    if (!d_disabledCombinations.find(tti, d_changePrefix))
     {
       return true;  // current combination vetted by disabled combinations
     }

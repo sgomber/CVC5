@@ -21,7 +21,7 @@ namespace theory {
 namespace quantifiers {
 
 void IndexTrie::add(const std::vector<bool>& mask,
-                    const std::vector<size_t>& values)
+                    const std::vector<Node>& values)
 {
   const size_t cardinality = std::count(mask.begin(), mask.end(), true);
   if (d_ignoreFullySpecified && cardinality == mask.size())
@@ -48,7 +48,7 @@ void IndexTrie::freeRec(IndexTrieNode* n)
 
 bool IndexTrie::findRec(const IndexTrieNode* n,
                         size_t index,
-                        const std::vector<size_t>& members,
+                        const std::vector<Node>& members,
                         size_t& nonBlankLength) const
 {
   if (!n || index >= members.size())
@@ -75,7 +75,7 @@ IndexTrieNode* IndexTrie::addRec(IndexTrieNode* n,
                                  size_t index,
                                  size_t cardinality,
                                  const std::vector<bool>& mask,
-                                 const std::vector<size_t>& values)
+                                 const std::vector<Node>& values)
 {
   if (!n)
   {
