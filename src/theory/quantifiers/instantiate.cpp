@@ -109,18 +109,19 @@ bool Instantiate::addInstantiation(Node q,
   {
     // track the fail mask
     std::vector<bool> failMask;
-    return addInstantiationExpFail(q, terms, failMask, id, pfArg, mkRep, doVts, true);
+    return addInstantiationExpFail(
+        q, terms, failMask, id, pfArg, mkRep, doVts, true);
   }
   // otherwise, just add the instantiation
   return addInstantiationInternal(q, terms, id, pfArg, mkRep, doVts);
 }
 
 bool Instantiate::addInstantiationInternal(Node q,
-                                   std::vector<Node>& terms,
-                                   InferenceId id,
-                                   Node pfArg,
-                                   bool mkRep,
-                                   bool doVts)
+                                           std::vector<Node>& terms,
+                                           InferenceId id,
+                                           Node pfArg,
+                                           bool mkRep,
+                                           bool doVts)
 {
   // For resource-limiting (also does a time check).
   d_qim.safePoint(Resource::QuantifierStep);
@@ -417,7 +418,7 @@ bool Instantiate::feasibleInstantiation(Node q,
                                         size_t& nonBlankLength)
 {
   std::map<Node, IndexTrie>::iterator it = d_failMasks.find(q);
-  if (it==d_failMasks.end())
+  if (it == d_failMasks.end())
   {
     // we have not learned anything
     return true;

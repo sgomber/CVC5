@@ -24,9 +24,9 @@
 #include "expr/node.h"
 #include "proof/proof.h"
 #include "theory/inference_id.h"
+#include "theory/quantifiers/index_trie.h"
 #include "theory/quantifiers/inst_match_trie.h"
 #include "theory/quantifiers/quant_util.h"
-#include "theory/quantifiers/index_trie.h"
 #include "util/statistics_stats.h"
 
 namespace cvc5::internal {
@@ -197,7 +197,7 @@ class Instantiate : public QuantifiersUtil
                                bool doVts = false,
                                bool expFull = true);
   bool feasibleInstantiation(Node q,
-                        const std::vector<Node>& terms,
+                             const std::vector<Node>& terms,
                              size_t& nonBlankLength);
   /** record instantiation
    *
@@ -302,11 +302,11 @@ class Instantiate : public QuantifiersUtil
 
  private:
   bool addInstantiationInternal(Node q,
-                        std::vector<Node>& terms,
-                        InferenceId id,
-                        Node pfArg,
-                        bool mkRep,
-                        bool doVts);
+                                std::vector<Node>& terms,
+                                InferenceId id,
+                                Node pfArg,
+                                bool mkRep,
+                                bool doVts);
   /** record instantiation, return true if it was not a duplicate */
   bool recordInstantiationInternal(Node q, const std::vector<Node>& terms);
   /** remove instantiation from the cache */

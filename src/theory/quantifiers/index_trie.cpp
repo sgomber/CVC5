@@ -96,7 +96,7 @@ IndexTrieNode* IndexTrie::addRec(IndexTrieNode* n,
     return n;
   }
   Assert(cardinality);
-  Assert (!values[index].isNull());
+  Assert(!values[index].isNull());
   for (auto& edge : n->d_children)
   {
     if (edge.first == values[index])
