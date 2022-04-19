@@ -203,7 +203,6 @@ bool InstStrategyEnum::process(Node quantifier, bool fullEffort, bool isRd)
       return false;
     }
     enumerator->next(terms);
-    Trace("ajr-temp") << "next enum: " << terms << std::endl;
     // try instantiation
     failMask.clear();
     /* if (ie->addInstantiation(quantifier, terms)) */
