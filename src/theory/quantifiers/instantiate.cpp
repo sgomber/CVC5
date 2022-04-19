@@ -423,7 +423,12 @@ bool Instantiate::feasibleInstantiation(Node q,
     // we have not learned anything
     return true;
   }
-  return !it->second.find(terms, nonBlankLength);
+  std::vector<Node> rterms;
+  for (const Node& t : terms)
+  {
+    rterms.push_back(d_qstate.getRepresentative(t));
+  }
+  return !it->second.find(rterms, nonBlankLength);
 }
 
 bool Instantiate::addInstantiationExpFail(Node q,
@@ -515,14 +520,15 @@ bool Instantiate::addInstantiationExpFail(Node q,
       }
     }
   }
-  if (options().quantifiers.instTrackFailMask && generalized)
+  if (generalized)
   {
     // if we generalized and the option is set, learn the fail mask
-    for (Node& t : terms)
+    std::vector<Node> rterms;
+    for (const Node& t : terms)
     {
-      t = d_qstate.getRepresentative(t);
+      rterms.push_back(d_qstate.getRepresentative(t));
     }
-    d_failMasks[q].add(failMask, terms);
+    d_failMasks[q].add(failMask, rterms);
   }
   if (TraceIsOn("inst-exp-fail"))
   {
