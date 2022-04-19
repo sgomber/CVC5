@@ -42,6 +42,7 @@
 #include "proof/unsat_core.h"
 #include "smt/command.h"
 #include "smt_util/boolean_simplification.h"
+#include "theory/bags/table_project_op.h"
 #include "theory/arrays/theory_arrays_rewriter.h"
 #include "theory/builtin/abstract_type.h"
 #include "theory/builtin/apply_abstract_op.h"
@@ -807,6 +808,21 @@ void Smt2Printer::toStream(std::ostream& out,
     }
     return;
   }
+  case kind::TABLE_PROJECT:
+  {
+    TableProjectOp op = n.getOperator().getConst<TableProjectOp>();
+    if (op.getIndices().empty())
+    {
+      // e.g. (table.project A)
+      out << "table.project " << n[0] << ")";
+    }
+    else
+    {
+      // e.g. ((_ table.project 2 4 4) A)
+      out << "(_ table.project" << op << ") " << n[0] << ")";
+    }
+    return;
+  }
   case kind::CONSTRUCTOR_TYPE:
   {
     out << n[n.getNumChildren()-1];
@@ -1189,6 +1205,7 @@ std::string Smt2Printer::smtKindString(Kind k, Variant v)
   case kind::BAG_FILTER: return "bag.filter";
   case kind::BAG_FOLD: return "bag.fold";
   case kind::TABLE_PRODUCT: return "table.product";
+  case kind::TABLE_PROJECT: return "table.project";
 
     // fp theory
   case kind::FLOATINGPOINT_FP: return "fp";
