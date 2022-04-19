@@ -153,6 +153,8 @@ class Trigger : protected EnvObj
   void debugPrint(const char* c) const;
 
  protected:
+  /** is feasible instantiation */
+  bool isFeasibleInstantiation(const std::vector<Node>& m);
   /** add an instantiation (called by InstMatchGenerator)
    *
    * This calls Instantiate::addInstantiation(...) for instantiations

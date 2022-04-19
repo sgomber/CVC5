@@ -105,12 +105,14 @@ bool Instantiate::addInstantiation(Node q,
                                    bool mkRep,
                                    bool doVts)
 {
-  if (options().quantifiers.instTrackFailMask)
+  if (options().quantifiers.instTrackFailMasks)
   {
+    // must copy since terms are destructively updated
+    std::vector<Node> iterms(terms.begin(), terms.end());
     // track the fail mask
     std::vector<bool> failMask;
     return addInstantiationExpFail(
-        q, terms, failMask, id, pfArg, mkRep, doVts, true);
+        q, iterms, failMask, id, pfArg, mkRep, doVts, true);
   }
   // otherwise, just add the instantiation
   return addInstantiationInternal(q, terms, id, pfArg, mkRep, doVts);
@@ -158,6 +160,7 @@ bool Instantiate::addInstantiationInternal(Node q,
     }
 #ifdef CVC5_ASSERTIONS
     bool bad_inst = false;
+    Assert (!expr::hasFreeVar(terms[i]));
     if (TermUtil::containsUninterpretedConstant(terms[i]))
     {
       Trace("inst") << "***& inst contains uninterpreted constant : "
@@ -413,7 +416,7 @@ bool Instantiate::addInstantiationInternal(Node q,
   return true;
 }
 
-bool Instantiate::feasibleInstantiation(Node q,
+bool Instantiate::isFeasibleInstantiation(Node q,
                                         const std::vector<Node>& terms,
                                         size_t& nonBlankLength)
 {
@@ -444,7 +447,7 @@ bool Instantiate::addInstantiationExpFail(Node q,
   {
     return true;
   }
-  if (options().quantifiers.instTrackFailMask)
+  if (options().quantifiers.instTrackFailMasks)
   {
     expFull = true;
   }

@@ -196,7 +196,12 @@ class Instantiate : public QuantifiersUtil
                                bool mkRep = false,
                                bool doVts = false,
                                bool expFull = true);
-  bool feasibleInstantiation(Node q,
+  /**
+   * Return true if the class of instantiation specified by terms (which may
+   * contain null to denote unspecified) is feasible as an instantiation
+   * for quantified formula q.
+   */
+  bool isFeasibleInstantiation(Node q,
                              const std::vector<Node>& terms,
                              size_t& nonBlankLength);
   /** record instantiation
