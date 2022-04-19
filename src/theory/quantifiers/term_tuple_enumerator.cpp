@@ -167,7 +167,9 @@ class TermTupleEnumeratorBasic : public TermTupleEnumeratorBase
   TermTupleEnumeratorBasic(Node quantifier,
                            const TermTupleEnumeratorEnv* env,
                            QuantifiersState& qs)
-      : TermTupleEnumeratorBase(quantifier, env), d_qs(qs), d_tdb(env->d_tr->getTermDatabase())
+      : TermTupleEnumeratorBase(quantifier, env),
+        d_qs(qs),
+        d_tdb(env->d_tr->getTermDatabase())
   {
   }
 
@@ -289,9 +291,10 @@ void TermTupleEnumeratorBase::next(/*out*/ std::vector<Node>& terms)
   terms.resize(d_variableCount);
   for (size_t variableIx = 0; variableIx < d_variableCount; variableIx++)
   {
-    const Node t = d_termsSizes[variableIx] == 0
-                       ? d_env->d_tr->getTermForType(d_quantifier[0][variableIx].getType())
-                       : getTerm(variableIx, d_termIndex[variableIx]);
+    const Node t =
+        d_termsSizes[variableIx] == 0
+            ? d_env->d_tr->getTermForType(d_quantifier[0][variableIx].getType())
+            : getTerm(variableIx, d_termIndex[variableIx]);
     terms[variableIx] = t;
     Trace("inst-alg-rd") << t << "  ";
     Assert(!t.isNull()

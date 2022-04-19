@@ -67,9 +67,9 @@ struct TermTupleEnumeratorEnv
   /** Whether we increase tuples based on sum instead of max (see below) */
   bool d_increaseSum;
   /** Instantiate utility */
-  Instantiate * d_inst;
+  Instantiate* d_inst;
   /** Term registry */
-  TermRegistry * d_tr;
+  TermRegistry* d_tr;
 };
 
 /**  A function to construct a tuple enumerator.
@@ -92,9 +92,7 @@ struct TermTupleEnumeratorEnv
  * duplicates modulo equality.
  */
 TermTupleEnumeratorInterface* mkTermTupleEnumerator(
-    Node q,
-    const TermTupleEnumeratorEnv* env,
-    QuantifiersState& qs);
+    Node q, const TermTupleEnumeratorEnv* env, QuantifiersState& qs);
 /** Same as above, but draws terms from the relevant domain utility (rd). */
 TermTupleEnumeratorInterface* mkTermTupleEnumeratorRd(
     Node q, const TermTupleEnumeratorEnv* env, RelevantDomain* rd);

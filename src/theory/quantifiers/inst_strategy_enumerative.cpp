@@ -192,8 +192,7 @@ bool InstStrategyEnum::process(Node quantifier, bool fullEffort, bool isRd)
   // based on the flag isRd.
   std::unique_ptr<TermTupleEnumeratorInterface> enumerator(
       isRd ? mkTermTupleEnumeratorRd(quantifier, &ttec, d_rd)
-           : mkTermTupleEnumerator(
-                 quantifier, &ttec, d_qstate));
+           : mkTermTupleEnumerator(quantifier, &ttec, d_qstate));
   std::vector<Node> terms;
   std::vector<bool> failMask;
   for (enumerator->init(); enumerator->hasNext();)
