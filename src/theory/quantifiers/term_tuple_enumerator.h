@@ -24,9 +24,10 @@ namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
+class Instantiate;
 class TermPools;
 class QuantifiersState;
-class TermDb;
+class TermRegistry;
 class RelevantDomain;
 
 /**  Interface for enumeration of tuples of terms.
@@ -65,6 +66,10 @@ struct TermTupleEnumeratorEnv
   bool d_fullEffort;
   /** Whether we increase tuples based on sum instead of max (see below) */
   bool d_increaseSum;
+  /** Instantiate utility */
+  Instantiate * d_inst;
+  /** Term registry */
+  TermRegistry * d_tr;
 };
 
 /**  A function to construct a tuple enumerator.
@@ -89,8 +94,7 @@ struct TermTupleEnumeratorEnv
 TermTupleEnumeratorInterface* mkTermTupleEnumerator(
     Node q,
     const TermTupleEnumeratorEnv* env,
-    QuantifiersState& qs,
-    TermDb* td);
+    QuantifiersState& qs);
 /** Same as above, but draws terms from the relevant domain utility (rd). */
 TermTupleEnumeratorInterface* mkTermTupleEnumeratorRd(
     Node q, const TermTupleEnumeratorEnv* env, RelevantDomain* rd);

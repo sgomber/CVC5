@@ -166,9 +166,8 @@ class TermTupleEnumeratorBasic : public TermTupleEnumeratorBase
  public:
   TermTupleEnumeratorBasic(Node quantifier,
                            const TermTupleEnumeratorEnv* env,
-                           QuantifiersState& qs,
-                           TermDb* td)
-      : TermTupleEnumeratorBase(quantifier, env), d_qs(qs), d_tdb(td)
+                           QuantifiersState& qs)
+      : TermTupleEnumeratorBase(quantifier, env), d_qs(qs), d_tdb(env->d_tr->getTermDatabase())
   {
   }
 
@@ -275,6 +274,7 @@ void TermTupleEnumeratorBase::failureReason(const std::vector<bool>& mask)
   }
   std::vector<Node> tti;
   next(tti);
+  Trace("ajr-temp") << "Bad inst: " << tti << std::endl;
   d_disabledCombinations.add(mask, tti);  // record failure
   // update change prefix accordingly
   for (d_changePrefix = mask.size();
@@ -290,12 +290,12 @@ void TermTupleEnumeratorBase::next(/*out*/ std::vector<Node>& terms)
   for (size_t variableIx = 0; variableIx < d_variableCount; variableIx++)
   {
     const Node t = d_termsSizes[variableIx] == 0
-                       ? Node::null()
+                       ? d_env->d_tr->getTermForType(d_quantifier[0][variableIx].getType())
                        : getTerm(variableIx, d_termIndex[variableIx]);
     terms[variableIx] = t;
     Trace("inst-alg-rd") << t << "  ";
-    Assert(t.isNull()
-           || t.getType().isComparableTo(d_quantifier[0][variableIx].getType()))
+    Assert(!t.isNull()
+           && t.getType().isComparableTo(d_quantifier[0][variableIx].getType()))
         << "Bad type: " << t << " " << t.getType() << " "
         << d_quantifier[0][variableIx].getType();
   }
@@ -540,10 +540,10 @@ class TermTupleEnumeratorPool : public TermTupleEnumeratorBase
 };
 
 TermTupleEnumeratorInterface* mkTermTupleEnumerator(
-    Node q, const TermTupleEnumeratorEnv* env, QuantifiersState& qs, TermDb* td)
+    Node q, const TermTupleEnumeratorEnv* env, QuantifiersState& qs)
 {
   return static_cast<TermTupleEnumeratorInterface*>(
-      new TermTupleEnumeratorBasic(q, env, qs, td));
+      new TermTupleEnumeratorBasic(q, env, qs));
 }
 TermTupleEnumeratorInterface* mkTermTupleEnumeratorRd(
     Node q, const TermTupleEnumeratorEnv* env, RelevantDomain* rd)
