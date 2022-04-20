@@ -476,7 +476,7 @@ class CVC5_EXPORT DeclareOracleFunCommand : public Command
   Term d_func;
   /** The binary name, or "" if none is provided */
   std::string d_binName;
-}; /* class DeclareOracleFunCommand */
+};
 
 class CVC5_EXPORT DefineOracleInterfaceCommand : public Command
 {
@@ -512,7 +512,7 @@ class CVC5_EXPORT DefineOracleInterfaceCommand : public Command
   Term d_constraint;
   /** The name of the binary */
   std::string d_binName;
-}; /* class DefineOracleInterfaceCommand */
+};
 
 class CVC5_EXPORT DeclareSortCommand : public DeclarationDefinitionCommand
 {

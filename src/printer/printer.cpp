@@ -220,6 +220,7 @@ void Printer::toStreamCmdDeclareOracleFun(std::ostream& out,
 {
   printUnknownCommand(out, "declare-oracle-fun");
 }
+
 void Printer::toStreamCmdDefineOracleInterface(std::ostream& out,
                                                const std::vector<Node>& inputs,
                                                const std::vector<Node>& outputs,
