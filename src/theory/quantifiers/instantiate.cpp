@@ -480,7 +480,7 @@ bool Instantiate::addInstantiationExpFail(Node q,
   bool generalized = false;
   for (size_t i = 0; i < tsize; i++)
   {
-    if (subs.size()==1)
+    if (subs.size() == 1)
     {
       // will never succeed with empty substitution
       break;
