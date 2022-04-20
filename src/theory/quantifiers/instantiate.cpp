@@ -432,7 +432,8 @@ bool Instantiate::isFeasibleInstantiation(Node q,
     rterms.push_back(d_qstate.getRepresentative(t));
   }
   bool ret = !it->second.find(rterms, nonBlankLength);
-  Trace("inst-exp-fail") << "isFeasibleInstantiation returns " << ret << " for " << q << ", " << terms << std::endl;
+  Trace("inst-exp-fail") << "isFeasibleInstantiation returns " << ret << " for "
+                         << q << ", " << terms << std::endl;
   return ret;
 }
 
@@ -531,9 +532,12 @@ bool Instantiate::addInstantiationExpFail(Node q,
     std::vector<Node> rterms;
     for (const Node& t : terms)
     {
-      rterms.push_back(t.getKind()==BOUND_VARIABLE ? Node::null() : Node(d_qstate.getRepresentative(t)));
+      rterms.push_back(t.getKind() == BOUND_VARIABLE
+                           ? Node::null()
+                           : Node(d_qstate.getRepresentative(t)));
     }
-    Trace("inst-exp-fail") << "add fail mask: " << q << ", " << rterms << std::endl;
+    Trace("inst-exp-fail") << "add fail mask: " << q << ", " << rterms
+                           << std::endl;
     d_failMasks[q].add(failMask, rterms);
   }
   if (TraceIsOn("inst-exp-fail"))
