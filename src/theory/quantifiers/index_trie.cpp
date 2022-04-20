@@ -59,10 +59,15 @@ bool IndexTrie::findRec(const IndexTrieNode* n,
   {
     return true;  // found in the blank branch
   }
+  if (members[index].isNull())
+  {
+    // null is interpreted as "any", must find in the blank branch
+    return false;
+  }
   nonBlankLength = index + 1;
   for (const auto& c : n->d_children)
   {
-    if ((members[index].isNull() || c.first == members[index])
+    if (c.first == members[index]
         && findRec(c.second, index + 1, members, nonBlankLength))
     {
       return true;  // found in the matching subtree
