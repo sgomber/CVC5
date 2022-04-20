@@ -480,6 +480,11 @@ bool Instantiate::addInstantiationExpFail(Node q,
   bool generalized = false;
   for (size_t i = 0; i < tsize; i++)
   {
+    if (subs.size()==1)
+    {
+      // will never succeed with empty substitution
+      break;
+    }
     // process consecutively in reverse order, which is important since we use
     // the fail mask for incrementing in a lexicographic order
     size_t ii = (tsize - 1) - i;
@@ -487,11 +492,6 @@ bool Instantiate::addInstantiationExpFail(Node q,
     Node prev = terms[ii];
     terms[ii] = vars[ii];
     subs.erase(vars[ii]);
-    if (subs.empty())
-    {
-      // will never succeed with empty substitution
-      break;
-    }
     Trace("inst-exp-fail") << "- revert " << ii << std::endl;
     // check whether we are still redundant
     bool success = false;
