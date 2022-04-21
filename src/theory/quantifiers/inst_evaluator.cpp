@@ -15,11 +15,13 @@
 
 #include "theory/quantifiers/inst_evaluator.h"
 
+#include "expr/node_algorithm.h"
+
 namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
-InstEvaluator::InstEvaluator(Node q) : d_quant(q)
+InstEvaluator::InstEvaluator(Node q) : d_quant(q), d_currFeasible(true)
 {
   Assert (q.getKind()==kind::FORALL);
 }
@@ -27,7 +29,7 @@ InstEvaluator::InstEvaluator(Node q) : d_quant(q)
 bool InstEvaluator::initialize()
 {
   Assert (d_evalBody.empty());
-  d_currInfeasible = false;
+  Assert (d_currFeasible);
   d_currVar = TNode::null();
   d_currSubs = TNode::null();
   // convert and push the body
@@ -38,7 +40,6 @@ bool InstEvaluator::push(TNode v, TNode s)
 {
   Assert (!d_evalBody.empty());
   Assert (d_evalBody.size()<=d_quant[0].getNumChildren());
-  Assert (d_quant[0][d_evalBody.size()-1] == v);
   Node curr = d_evalBody.back();
   d_currVar = v;
   d_currSubs = s;
@@ -48,8 +49,10 @@ bool InstEvaluator::push(TNode v, TNode s)
 bool InstEvaluator::convertAndPush(Node body)
 {
   Node cbody = convert(body);
-  if (d_currInfeasible)
+  if (!d_currFeasible)
   {
+    // do not push, and reset the flag
+    d_currFeasible = true;
     return false;
   }
   d_evalBody.push_back(cbody);
@@ -64,22 +67,26 @@ void InstEvaluator::pop()
 
 bool InstEvaluator::shouldTraverse(Node n)
 {
-  if (d_currInfeasible)
+  if (!d_currFeasible)
   {
     // don't traverse further if already infeasible
     return false;
   }
-  // never traverse ground terms, unless we are initializing?
+  // optimization: never traverse ground terms, unless we are initializing?
+  if (!d_currVar.isNull() && !expr::hasBoundVar(n))
+  {
+    return false;
+  }
   return true;
 }
 
 Node InstEvaluator::postConvert(Node n)
 {
-  if (d_currInfeasible)
+  if (!d_currFeasible)
   {
     return n;
   }
-  Node neval = evaluateInternal(n, d_currVar, d_currSubs, d_currInfeasible);
+  Node neval = evaluateInternal(n, d_currVar, d_currSubs, d_currFeasible);
   return neval;
 }
 

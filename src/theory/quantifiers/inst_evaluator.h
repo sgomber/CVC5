@@ -29,6 +29,9 @@ namespace quantifiers {
 
 /**
  * Inst evaluator
+ *
+ * Incrementally maintains the state of the rewritten form of the quantified
+ * formula.
  */
 class InstEvaluator : public NodeConverter
 {
@@ -51,12 +54,12 @@ protected:
    * Evaluate internal
    * 
    * This method should return the evaluation of n { v -> s }, and set
-   * the infeasible flag to true if the instantiation is infeasible.
+   * the feasible flag to false if the instantiation is infeasible.
    * 
    * It may be the case that v and s are null, in which case we are
    * initializing.
    */
-  virtual Node evaluateInternal(Node n, TNode v, TNode s, bool& infeasible) = 0;
+  virtual Node evaluateInternal(Node n, TNode v, TNode s, bool& feasible) = 0;
   /** The quantified formula */
   Node d_quant;
   /** The stack of the evaluated body */
@@ -64,8 +67,8 @@ protected:
   /** The current substitution */
   TNode d_currVar;
   TNode d_currSubs;
-  /** currently infeasible */
-  bool d_currInfeasible;
+  /** currently feasible */
+  bool d_currFeasible;
 };
 
 
