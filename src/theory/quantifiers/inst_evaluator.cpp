@@ -49,7 +49,7 @@ bool InstEvaluator::push(TNode v, TNode s)
 bool InstEvaluator::convertAndPush(Node body)
 {
   Node cbody = convert(body);
-  if (!d_currFeasible)
+  if (!d_currFeasible || !isFeasibleBody(cbody))
   {
     // do not push, and reset the flag
     d_currFeasible = true;

@@ -60,6 +60,10 @@ protected:
    * initializing.
    */
   virtual Node evaluateInternal(Node n, TNode v, TNode s, bool& feasible) = 0;
+  /**
+   * Check whether the entire body is feasible.
+   */
+  virtual bool isFeasibleBody(Node n) = 0;
   /** The quantified formula */
   Node d_quant;
   /** The stack of the evaluated body */
@@ -70,7 +74,6 @@ protected:
   /** currently feasible */
   bool d_currFeasible;
 };
-
 
 }  // namespace quantifiers
 }  // namespace theory
