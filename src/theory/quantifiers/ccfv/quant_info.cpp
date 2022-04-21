@@ -20,9 +20,9 @@
 #include "theory/quantifiers/ematching/trigger_term_info.h"
 #include "theory/quantifiers/term_database.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 namespace ccfv {

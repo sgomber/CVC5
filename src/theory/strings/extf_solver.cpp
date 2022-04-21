@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Gereon Kremer, Andres Noetzli
+ *   Andrew Reynolds, Andres Noetzli, Gereon Kremer
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -16,6 +16,7 @@
 #include "theory/strings/extf_solver.h"
 
 #include "options/strings_options.h"
+#include "theory/strings/array_solver.h"
 #include "theory/strings/sequences_rewriter.h"
 #include "theory/strings/theory_strings_preprocess.h"
 #include "theory/strings/theory_strings_utils.h"
@@ -23,9 +24,9 @@
 
 using namespace std;
 using namespace cvc5::context;
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
@@ -66,8 +67,8 @@ ExtfSolver::ExtfSolver(Env& env,
   d_extt.addFunctionKind(kind::STRING_IN_REGEXP);
   d_extt.addFunctionKind(kind::STRING_LEQ);
   d_extt.addFunctionKind(kind::STRING_TO_CODE);
-  d_extt.addFunctionKind(kind::STRING_TOLOWER);
-  d_extt.addFunctionKind(kind::STRING_TOUPPER);
+  d_extt.addFunctionKind(kind::STRING_TO_LOWER);
+  d_extt.addFunctionKind(kind::STRING_TO_UPPER);
   d_extt.addFunctionKind(kind::STRING_REV);
   d_extt.addFunctionKind(kind::SEQ_UNIT);
   d_extt.addFunctionKind(kind::SEQ_NTH);
@@ -157,10 +158,28 @@ bool ExtfSolver::doReduction(int effort, Node n)
     // asserted (pol=0).
     return false;
   }
-  else if (effort != 2)
+  else
   {
-    // all other operators reduce at level 2
-    return false;
+    if (options().strings.seqArray != options::SeqArrayMode::NONE)
+    {
+      if (k == SEQ_NTH)
+      {
+        // don't need to reduce seq.nth when sequence update solver is used
+        return false;
+      }
+      else if ((k == STRING_UPDATE || k == STRING_SUBSTR)
+               && d_termReg.isHandledUpdate(n))
+      {
+        // don't need to reduce certain seq.update
+        // don't need to reduce certain seq.extract with length 1
+        return false;
+      }
+    }
+    if (effort != 2)
+    {
+      // all other operators reduce at level 2
+      return false;
+    }
   }
   Node c_n = pol == -1 ? n.negate() : n;
   Trace("strings-process-debug")
@@ -194,7 +213,7 @@ bool ExtfSolver::doReduction(int effort, Node n)
            || k == STRING_STOI || k == STRING_REPLACE || k == STRING_REPLACE_ALL
            || k == SEQ_NTH || k == STRING_REPLACE_RE
            || k == STRING_REPLACE_RE_ALL || k == STRING_LEQ
-           || k == STRING_TOLOWER || k == STRING_TOUPPER || k == STRING_REV)
+           || k == STRING_TO_LOWER || k == STRING_TO_UPPER || k == STRING_REV)
         << "Unknown reduction: " << k;
     std::vector<Node> new_nodes;
     Node res = d_preproc.simplify(n, new_nodes);
@@ -275,6 +294,11 @@ void ExtfSolver::checkExtfEval(int effort)
     // value, say in this example that (str.replace x "A" "B") != "B".
     std::vector<Node> exp;
     std::vector<Node> schildren;
+    // seq.unit is parameterized
+    if (n.getMetaKind() == metakind::PARAMETERIZED)
+    {
+      schildren.push_back(n.getOperator());
+    }
     bool schanged = false;
     for (const Node& nc : n)
     {
@@ -373,15 +397,7 @@ void ExtfSolver::checkExtfEval(int effort)
             {
               if (n.getType().isBoolean())
               {
-                if (d_state.areEqual(n, nrc == d_true ? d_false : d_true))
-                {
-                  einfo.d_exp.push_back(nrc == d_true ? n.negate() : n);
-                  conc = d_false;
-                }
-                else
-                {
-                  conc = nrc == d_true ? n : n.negate();
-                }
+                conc = nrc == d_true ? n : n.negate();
               }
               else
               {
@@ -458,7 +474,7 @@ void ExtfSolver::checkExtfEval(int effort)
       {
         checkExtfInference(n, to_reduce, einfo, effort);
       }
-      if (Trace.isOn("strings-extf-list"))
+      if (TraceIsOn("strings-extf-list"))
       {
         Trace("strings-extf-list") << "  * " << to_reduce;
         if (!einfo.d_const.isNull())
@@ -779,4 +795,4 @@ std::string ExtfSolver::debugPrintModel()
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

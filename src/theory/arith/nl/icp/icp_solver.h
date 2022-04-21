@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Gereon Kremer, Andres Noetzli
+ *   Gereon Kremer, Aina Niemetz, Andrew Reynolds
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -30,7 +30,7 @@
 #include "theory/arith/nl/icp/intersection.h"
 #include "theory/arith/nl/poly_conversion.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace arith {
 
@@ -86,12 +86,12 @@ class ICPSolver : protected EnvObj
     std::vector<Node> d_conflict;
 
     /** Initialized the variable bounds with a variable mapper */
-    ICPState(VariableMapper& vm) {}
+    ICPState(Env& env, VariableMapper& vm) : d_bounds(env) {}
 
     /** Reset this state */
     void reset()
     {
-      d_bounds = BoundInference();
+      d_bounds.reset();
       d_candidates.clear();
       d_assignment.clear();
       d_origins = ContractionOriginManager();
@@ -156,6 +156,6 @@ class ICPSolver : protected EnvObj
 }  // namespace nl
 }  // namespace arith
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif

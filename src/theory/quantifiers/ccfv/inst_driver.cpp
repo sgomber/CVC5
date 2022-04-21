@@ -22,9 +22,9 @@
 #include "theory/quantifiers/term_registry.h"
 #include "theory/uf/equality_engine.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 namespace ccfv {
@@ -223,7 +223,7 @@ void InstDriver::resetSearchLevels(const std::vector<TNode>& quants)
     sl.second.d_firstTimePost = true;
   }
 
-  if (Trace.isOn("ccfv-search-levels"))
+  if (TraceIsOn("ccfv-search-levels"))
   {
     for (std::pair<const size_t, SearchLevel>& sl : d_levels)
     {
@@ -318,7 +318,7 @@ void InstDriver::initializeLevel(size_t level)
     FreeVarInfo& fi = d_state.getFreeVarInfo(v);
     fi.resetLevel();
   }
-  if (Trace.isOn("ccfv-search-debug"))
+  if (TraceIsOn("ccfv-search-debug"))
   {
     Trace("ccfv-search-debug") << d_state.toStringDebugSearch() << std::endl;
   }
@@ -424,7 +424,7 @@ bool InstDriver::pushLevel(size_t level)
 
   context()->push();
   // assign each variable
-  if (Trace.isOn("ccfv-search"))
+  if (TraceIsOn("ccfv-search"))
   {
     Trace("ccfv-search") << "assign:";
     for (size_t i = 0, nvars = slevel.d_varsToAssign.size(); i < nvars; i++)
@@ -471,7 +471,7 @@ bool InstDriver::pushLevel(size_t level)
       Trace("ccfv-search") << "...finished after assignment" << std::endl;
       return true;
     }
-    if (Trace.isOn("ccfv-matching-debug"))
+    if (TraceIsOn("ccfv-matching-debug"))
     {
       Trace("ccfv-matching-debug") << "E-graph after assignment:" << std::endl;
       Trace("ccfv-matching-debug")

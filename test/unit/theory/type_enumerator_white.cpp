@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Aina Niemetz, Andrew Reynolds, Morgan Deters
+ *   Aina Niemetz, Andres Noetzli, Andrew Reynolds
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -22,14 +22,14 @@
 #include "expr/dtype.h"
 #include "expr/kind.h"
 #include "expr/type_node.h"
-#include "expr/uninterpreted_constant.h"
 #include "options/language.h"
 #include "test_smt.h"
 #include "theory/type_enumerator.h"
 #include "util/bitvector.h"
 #include "util/rational.h"
+#include "util/uninterpreted_sort_value.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 using namespace theory;
 using namespace kind;
@@ -61,13 +61,13 @@ TEST_F(TestTheoryWhiteTypeEnumerator, uf)
   TypeNode sort = d_nodeManager->mkSort("T");
   TypeNode sort2 = d_nodeManager->mkSort("U");
   TypeEnumerator te(sort);
-  ASSERT_EQ(*te, d_nodeManager->mkConst(UninterpretedConstant(sort, 0)));
+  ASSERT_EQ(*te, d_nodeManager->mkConst(UninterpretedSortValue(sort, 0)));
   for (size_t i = 1; i < 100; ++i)
   {
-    ASSERT_NE(*te, d_nodeManager->mkConst(UninterpretedConstant(sort, i)));
-    ASSERT_NE(*te, d_nodeManager->mkConst(UninterpretedConstant(sort2, i)));
-    ASSERT_EQ(*++te, d_nodeManager->mkConst(UninterpretedConstant(sort, i)));
-    ASSERT_NE(*te, d_nodeManager->mkConst(UninterpretedConstant(sort, i + 2)));
+    ASSERT_NE(*te, d_nodeManager->mkConst(UninterpretedSortValue(sort, i)));
+    ASSERT_NE(*te, d_nodeManager->mkConst(UninterpretedSortValue(sort2, i)));
+    ASSERT_EQ(*++te, d_nodeManager->mkConst(UninterpretedSortValue(sort, i)));
+    ASSERT_NE(*te, d_nodeManager->mkConst(UninterpretedSortValue(sort, i + 2)));
   }
 }
 
@@ -336,4 +336,4 @@ TEST_F(TestTheoryWhiteTypeEnumerator, bv)
   ASSERT_THROW(*++te, NoMoreValuesException);
 }
 }  // namespace test
-}  // namespace cvc5
+}  // namespace cvc5::internal

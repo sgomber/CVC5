@@ -1,10 +1,10 @@
 ###############################################################################
 # Top contributors (to current version):
-#   Andres Noetzli, Aina Niemetz, Mathias Preiner
+#   Mudathir Mohamed, Aina Niemetz, Mathias Preiner
 #
 # This file is part of the cvc5 project.
 #
-# Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+# Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
 # in the top-level source directory and their institutional affiliations.
 # All rights reserved.  See the file COPYING in the top-level source
 # directory for licensing information.
@@ -14,21 +14,27 @@
 ##
 
 set(EXAMPLES_API_JAVA
-  ## disabled until bindings for the new API are in place (issue #2284)
-  # BitVectors
-  # BitVectorsAndArrays
-  # CVC5Streams
-  # Combination
-  # Datatypes
-  # Exceptions
-  # FloatingPointArith
-  # HelloWorld
-  # LinearArith
-  # PipedInput
-  # Relations
-  # Statistics
-  # Strings
-  # UnsatCores
+   Bags
+   BitVectors
+   BitVectorsAndArrays
+   Combination
+   Datatypes
+   Exceptions
+   Extract
+   FloatingPointArith
+   HelloWorld
+   LinearArith
+   QuickStart
+   Relations
+   Sequences
+   Sets
+   Statistics
+   Strings
+   SygusFun
+   SygusGrammar
+   SygusInv
+   Transcendentals
+   UnsatCores
 )
 
 foreach(example ${EXAMPLES_API_JAVA})
@@ -47,4 +53,6 @@ foreach(example ${EXAMPLES_API_JAVA})
         ${example}
   )
   set_tests_properties(${EXAMPLE_TEST_NAME} PROPERTIES SKIP_RETURN_CODE 77)
+  set_tests_properties(${EXAMPLE_TEST_NAME} PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${JNI_LIBRARIES_PATHS}")
 endforeach()

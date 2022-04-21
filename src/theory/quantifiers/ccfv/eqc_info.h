@@ -24,7 +24,7 @@
 #include "context/cdo.h"
 #include "expr/node.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 namespace ccfv {

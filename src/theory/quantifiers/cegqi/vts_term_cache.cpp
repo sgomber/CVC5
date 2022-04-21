@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Andres Noetzli, Tianyi Liang
+ *   Andrew Reynolds, Andres Noetzli, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -22,15 +22,15 @@
 #include "theory/rewriter.h"
 #include "util/rational.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
-VtsTermCache::VtsTermCache(QuantifiersInferenceManager& qim) : d_qim(qim)
+VtsTermCache::VtsTermCache(Env& env, QuantifiersInferenceManager& qim)
+    : EnvObj(env), d_qim(qim)
 {
-  d_zero = NodeManager::currentNM()->mkConst(CONST_RATIONAL, Rational(0));
 }
 
 void VtsTermCache::getVtsTerms(std::vector<Node>& t,
@@ -70,7 +70,8 @@ Node VtsTermCache::getVtsDelta(bool isFree, bool create)
           sm->mkDummySkolem("delta_free",
                             nm->realType(),
                             "free delta for virtual term substitution");
-      Node delta_lem = nm->mkNode(GT, d_vts_delta_free, d_zero);
+      Node zero = nm->mkConstReal(Rational(0));
+      Node delta_lem = nm->mkNode(GT, d_vts_delta_free, zero);
       d_qim.lemma(delta_lem, InferenceId::QUANTIFIERS_CEGQI_VTS_LB_DELTA);
     }
     if (d_vts_delta.isNull())
@@ -155,7 +156,7 @@ Node VtsTermCache::rewriteVtsSymbols(Node n)
                            subs_lhs.end(),
                            subs_rhs.begin(),
                            subs_rhs.end());
-          n = Rewriter::rewrite(n);
+          n = rewrite(n);
           // may have cancelled
           if (!expr::hasSubterm(n, rew_vts_inf))
           {
@@ -176,7 +177,7 @@ Node VtsTermCache::rewriteVtsSymbols(Node n)
       std::map<Node, Node> msum;
       if (ArithMSum::getMonomialSumLit(n, msum))
       {
-        if (Trace.isOn("quant-vts-debug"))
+        if (TraceIsOn("quant-vts-debug"))
         {
           Trace("quant-vts-debug") << "VTS got monomial sum : " << std::endl;
           ArithMSum::debugPrintMonomialSum(msum, "quant-vts-debug");
@@ -215,13 +216,17 @@ Node VtsTermCache::rewriteVtsSymbols(Node n)
               {
                 nlit = nm->mkConst(false);
               }
-              else if (res == 1)
-              {
-                nlit = nm->mkNode(GEQ, d_zero, slv);
-              }
               else
               {
-                nlit = nm->mkNode(GT, slv, d_zero);
+                Node zero = nm->mkConstRealOrInt(slv.getType(), Rational(0));
+                if (res == 1)
+                {
+                  nlit = nm->mkNode(GEQ, zero, slv);
+                }
+                else
+                {
+                  nlit = nm->mkNode(GT, slv, zero);
+                }
               }
             }
           }
@@ -301,4 +306,4 @@ bool VtsTermCache::containsVtsInfinity(Node n, bool isFree)
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

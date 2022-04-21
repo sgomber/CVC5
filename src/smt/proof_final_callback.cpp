@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Haniel Barbosa, Aina Niemetz
+ *   Andrew Reynolds, Gereon Kremer, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -22,10 +22,10 @@
 #include "theory/builtin/proof_checker.h"
 #include "theory/theory_id.h"
 
-using namespace cvc5::kind;
-using namespace cvc5::theory;
+using namespace cvc5::internal::kind;
+using namespace cvc5::internal::theory;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace smt {
 
 ProofFinalCallback::ProofFinalCallback(ProofNodeManager* pnm)
@@ -34,6 +34,9 @@ ProofFinalCallback::ProofFinalCallback(ProofNodeManager* pnm)
       d_instRuleIds(
           smtStatisticsRegistry().registerHistogram<theory::InferenceId>(
               "finalProof::instRuleId")),
+      d_annotationRuleIds(
+          smtStatisticsRegistry().registerHistogram<theory::InferenceId>(
+              "finalProof::annotationRuleId")),
       d_totalRuleCount(
           smtStatisticsRegistry().registerInt("finalProof::totalRuleCount")),
       d_minPedanticLevel(
@@ -96,6 +99,39 @@ bool ProofFinalCallback::shouldUpdate(std::shared_ptr<ProofNode> pn,
       }
     }
   }
+  else if (r == PfRule::ANNOTATION)
+  {
+    // we currently assume the annotation is a single inference id
+    const std::vector<Node>& args = pn->getArguments();
+    if (args.size() > 0)
+    {
+      InferenceId id;
+      if (getInferenceId(args[0], id))
+      {
+        d_annotationRuleIds << id;
+        // Use e.g. `--check-proofs --proof-annotate -t im-pf` to see a list of
+        // inference that appear in the final proof.
+        Trace("im-pf") << "(inference-pf " << id << " " << pn->getResult()
+                       << ")" << std::endl;
+        Trace("im-pf-assert")
+            << "(assert " << pn->getResult() << ") ; " << id << std::endl;
+      }
+    }
+  }
+  // print for debugging
+  if (TraceIsOn("final-pf-hole"))
+  {
+    // currently only track theory rewrites
+    if (r == PfRule::THEORY_REWRITE)
+    {
+      const std::vector<Node>& args = pn->getArguments();
+      Node eq = args[0];
+      TheoryId tid = THEORY_BUILTIN;
+      builtin::BuiltinProofRuleChecker::getTheoryId(args[1], tid);
+      Trace("final-pf-hole") << "hole " << r << " " << tid << " : " << eq[0]
+                             << " ---> " << eq[1] << std::endl;
+    }
+  }
   return false;
 }
 
@@ -110,4 +146,4 @@ bool ProofFinalCallback::wasPedanticFailure(std::ostream& out) const
 }
 
 }  // namespace smt
-}  // namespace cvc5
+}  // namespace cvc5::internal

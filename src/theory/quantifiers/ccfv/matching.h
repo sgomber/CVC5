@@ -21,7 +21,7 @@
 #include "theory/quantifiers/ccfv/match_pat_info.h"
 #include "theory/quantifiers/ccfv/state.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 

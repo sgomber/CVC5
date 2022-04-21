@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -26,7 +26,7 @@
 #include "theory/inference_id.h"
 #include "util/statistics_stats.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace smt {
 
 /** Final callback class, for stats and pedantic checking */
@@ -54,6 +54,11 @@ class ProofFinalCallback : public ProofNodeUpdaterCallback
    * marked with the given inference id.
    */
   HistogramStat<theory::InferenceId> d_instRuleIds;
+  /**
+   * Counts number of postprocessed proof nodes of rule ANNOTATION that were
+   * marked with the given inference id.
+   */
+  HistogramStat<theory::InferenceId> d_annotationRuleIds;
   /** Total number of postprocessed rule applications */
   IntStat d_totalRuleCount;
   /** The minimum pedantic level of any rule encountered */
@@ -69,6 +74,6 @@ class ProofFinalCallback : public ProofNodeUpdaterCallback
 };
 
 }  // namespace smt
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif

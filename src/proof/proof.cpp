@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Aina Niemetz
+ *   Andrew Reynolds, Mathias Preiner, Haniel Barbosa
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -19,9 +19,9 @@
 #include "proof/proof_node.h"
 #include "proof/proof_node_manager.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 CDProof::CDProof(ProofNodeManager* pnm,
                  context::Context* c,
@@ -408,6 +408,8 @@ bool CDProof::hasStep(Node fact)
   return false;
 }
 
+size_t CDProof::getNumProofNodes() const { return d_nodes.size(); }
+
 ProofNodeManager* CDProof::getManager() const { return d_manager; }
 
 bool CDProof::shouldOverwrite(ProofNode* pn, PfRule newId, CDPOverwrite opol)
@@ -483,4 +485,4 @@ Node CDProof::getSymmFact(TNode f)
 
 std::string CDProof::identify() const { return d_name; }
 
-}  // namespace cvc5
+}  // namespace cvc5::internal

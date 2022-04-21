@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 ###############################################################################
 # Top contributors (to current version):
-#   Mathias Preiner, Everett Maus
+#   Gereon Kremer, Mathias Preiner, Andres Noetzli
 #
 # This file is part of the cvc5 project.
 #
-# Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+# Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
 # in the top-level source directory and their institutional affiliations.
 # All rights reserved.  See the file COPYING in the top-level source
 # directory for licensing information.
@@ -185,6 +185,9 @@ class Option(object):
             self.names.add(self.long_name)
         if self.alias:
             self.names.update(self.alias)
+        if self.mode:
+            self.mode_name = { k: v[0]['name'] for k,v in self.mode.items() }
+            self.mode_help = { k: v[0].get('help', None) for k,v in self.mode.items() }
 
     def __lt__(self, other):
         if self.long_name and other.long_name:
@@ -206,7 +209,7 @@ class Option(object):
 
 def generate_holder_fwd_decls(modules):
     """Render forward declaration of holder structs"""
-    return concat_format('  struct Holder{id_cap};', modules)
+    return concat_format('  struct Holder{id_cap}; // include "{header}" if this is an incomplete type', modules)
 
 
 def generate_holder_mem_decls(modules):
@@ -287,16 +290,13 @@ def generate_get_impl(modules):
             ret = '{{ std::stringstream s; s << options.{}.{}; return s.str(); }}'.format(
                 module.id, option.name)
         res.append('if ({}) {}'.format(cond, ret))
-    return '\n  '.join(res)
+    return '\n    '.join(res)
 
 
 def _set_handlers(option):
     """Render handler call for options::set()."""
     if option.handler:
-        if option.type == 'void':
-            return 'opts.handler().{}(name)'.format(option.handler)
-        else:
-            return 'opts.handler().{}(name, optionarg)'.format(option.handler)
+        return 'opts.handler().{}(name, optionarg)'.format(option.handler)
     elif option.mode:
         return 'stringTo{}(optionarg)'.format(option.type)
     return 'handlers::handleOption<{}>(name, optionarg)'.format(option.type)
@@ -304,9 +304,6 @@ def _set_handlers(option):
 
 def _set_predicates(option):
     """Render predicate calls for options::set()."""
-    if option.type == 'void':
-        return []
-    assert option.type != 'void'
     res = []
     if option.minimum:
         res.append(
@@ -317,18 +314,9 @@ def _set_predicates(option):
             'opts.handler().checkMaximum(name, value, static_cast<{}>({}));'
             .format(option.type, option.maximum))
     res += [
-        'opts.handler().{}(name, value);'.format(x)
-        for x in option.predicates
+        'opts.handler().{}(name, value);'.format(x) for x in option.predicates
     ]
     return res
-
-
-TPL_SET = '''    opts.{module}.{name} = {handler};
-    opts.{module}.{name}WasSetByUser = true;'''
-TPL_SET_PRED = '''    auto value = {handler};
-    {predicates}
-    opts.{module}.{name} = value;
-    opts.{module}.{name}WasSetByUser = true;'''
 
 
 def generate_set_impl(modules):
@@ -338,31 +326,19 @@ def generate_set_impl(modules):
         if not option.long:
             continue
         cond = ' || '.join(['name == "{}"'.format(x) for x in option.names])
-        predicates = _set_predicates(option)
         if res:
-            res.append('  }} else if ({}) {{'.format(cond))
+            res.append('}} else if ({}) {{'.format(cond))
         else:
             res.append('if ({}) {{'.format(cond))
-        if option.name and not (option.handler and option.mode):
-            if predicates:
-                res.append(
-                    TPL_SET_PRED.format(module=module.id,
-                                        name=option.name,
-                                        handler=_set_handlers(option),
-                                        predicates='\n    '.join(predicates)))
-            else:
-                res.append(
-                    TPL_SET.format(module=module.id,
-                                   name=option.name,
-                                   handler=_set_handlers(option)))
-        elif option.handler:
-            h = '  opts.handler().{handler}(name'
-            if option.type not in ['bool', 'void']:
-                h += ', optionarg'
-            h += ');'
-            res.append(
-                h.format(handler=option.handler, smtname=option.long_name))
-    return '\n'.join(res)
+        res.append('  auto value = {};'.format(_set_handlers(option)))
+        for pred in _set_predicates(option):
+            res.append('  {}'.format(pred))
+        if option.name:
+            res.append('  opts.{module}.{name} = value;'.format(
+                module=module.id, name=option.name))
+            res.append('  opts.{module}.{name}WasSetByUser = true;'.format(
+                module=module.id, name=option.name))
+    return '\n    '.join(res)
 
 
 def generate_getinfo_impl(modules):
@@ -431,7 +407,7 @@ def generate_module_mode_decl(module):
     """Generates the declarations of mode enums and utility functions."""
     res = []
     for option in module.options:
-        if option.name is None or not option.mode:
+        if not option.mode:
             continue
         values = list(option.mode.keys())
         res.append(
@@ -523,12 +499,12 @@ def generate_module_mode_impl(module):
     """Generates the declarations of mode enums and utility functions."""
     res = []
     for option in module.options:
-        if option.name is None or not option.mode:
+        if not option.mode:
             continue
         cases = [
             'case {type}::{enum}: return os << "{name}";'.format(
                 type=option.type, enum=enum, name=info[0]['name'])
-            for enum,info in option.mode.items()
+            for enum, info in option.mode.items()
         ]
         res.append(
             TPL_MODE_STREAM_OPERATOR.format(type=option.type,
@@ -566,7 +542,7 @@ def generate_module_mode_impl(module):
 def _add_cmdoption(option, name, opts, next_id):
     fmt = {
         'name': name,
-        'arg': 'no' if option.type in ['bool', 'void'] else 'required',
+        'arg': 'no' if option.type == 'bool' else 'required',
         'next_id': next_id
     }
     opts.append(
@@ -590,7 +566,7 @@ def generate_parsing(modules):
             needs_impl = True
             code.append("case '{0}': // -{0}".format(option.short))
             short += option.short
-            if option.type not in ['bool', 'void']:
+            if option.type != 'bool':
                 short += ':'
         if option.long:  # long option
             needs_impl = True
@@ -608,9 +584,6 @@ def generate_parsing(modules):
             # there is some way to call it, add call to solver.setOption()
             if option.type == 'bool':
                 code.append('  solver.setOption("{}", "true"); break;'.format(
-                    option.long_name))
-            elif option.type == 'void':
-                code.append('  solver.setOption("{}", ""); break;'.format(
                     option.long_name))
             else:
                 code.append(
@@ -713,78 +686,82 @@ def generate_cli_help(modules):
 
 def _sphinx_help_add(module, option, common, others):
     """Analyze an option and add it to either common or others."""
-    names = []
-    if option.long:
-        if option.long_opt:
-            names.append('--{}={}'.format(option.long_name, option.long_opt))
-        else:
-            names.append('--{}'.format(option.long_name))
-
-    if option.alias:
-        if option.long_opt:
-            names.extend(
-                ['--{}={}'.format(a, option.long_opt) for a in option.alias])
-        else:
-            names.extend(['--{}'.format(a) for a in option.alias])
-
-    if option.short:
-        if option.long_opt:
-            names.append('-{} {}'.format(option.short, option.long_opt))
-        else:
-            names.append('-{}'.format(option.short))
-
-    modes = None
-    if option.mode:
-        modes = {}
-        for _, data in option.mode.items():
-            assert len(data) == 1
-            modes[data[0]['name']] = data[0].get('help', '')
-
-    data = {
-        'long_name': option.long_name,
-        'name': names,
-        'help': option.help,
-        'expert': option.category == 'expert',
-        'alternate': option.alternate,
-        'help_mode': option.help_mode,
-        'modes': modes,
-    }
-
     if option.category == 'common':
-        common.append(data)
+        common.append(option)
     else:
         if module.name not in others:
             others[module.name] = []
-        others[module.name].append(data)
+        others[module.name].append(option)
 
 
 def _sphinx_help_render_option(res, opt):
     """Render an option to be displayed with sphinx."""
-    indent = ' ' * 4
-    desc = '``{}``'
-    if opt['alternate']:
-        desc += ' (also ``--no-*``)'
-    val = indent + '{}'
+    names = []
+    if opt.short:
+        names.append(opt.short)
+    names.append(opt.long_name)
+    if opt.alias:
+        names.extend(opt.alias)
 
-    res.append('.. _lbl-option-{}:'.format(opt['long_name']))
+    data = {
+        'names': ' | '.join(names),
+        'alternate': '',
+        'type': '',
+        'default': '',
+    }
+
+    if opt.alternate:
+        data['alternate'] = ' (also ``--no-*``)'
+
+    if opt.type == 'bool':
+        data['type'] = 'type ``bool``'
+    elif opt.type == 'std::string':
+        data['type'] = 'type ``string``'
+    elif is_numeric_cpp_type(opt.type):
+        data['type'] = 'type ``{}``'.format(opt.type)
+        if opt.minimum and opt.maximum:
+            data['type'] += ', ``{} <= {} <= {}``'.format(
+                opt.minimum, opt.long_opt, opt.maximum)
+        elif opt.minimum:
+            data['type'] += ', ``{} <= {}``'.format(opt.minimum, opt.long_opt)
+        elif opt.maximum:
+            data['type'] += ', ``{} <= {}``'.format(opt.long_opt, opt.maximum)
+    elif opt.mode:
+        data['type'] = '``' + ' | '.join(opt.mode_name.values()) + '``'
+    else:
+        data['type'] = 'custom ``{}``'.format(opt.type)
+
+    if opt.default:
+        if opt.mode:
+            data['default'] = ', default ``{}``'.format(
+                opt.mode_name[opt.default])
+        else:
+            data['default'] = ', default ``{}``'.format(opt.default)
+
+    desc = '``{names}`` [{type}{default}]{alternate}'.format(**data)
+
+    res.append('.. _lbl-option-{}:'.format(opt.long_name))
     res.append('')
-    if opt['expert']:
+    if opt.category == 'expert':
         res.append('.. rst-class:: expert-option simple')
         res.append('')
-        desc += '\n{0}.. rst-class:: float-right\n\n{0}**[experts only]**\n'.format(indent)
+        desc += '''
+    .. rst-class:: float-right
 
-    res.append(desc.format(' | '.join(opt['name'])))
-    res.append(val.format(opt['help']))
+    **[experts only]**
+'''
 
-    if opt['modes']:
-        res.append(val.format(''))
-        res.append(val.format(opt['help_mode']))
-        res.append(val.format(''))
-        for k, v in opt['modes'].items():
-            if v == '':
-                continue
-            res.append(val.format(':{}: {}'.format(k, v)))
-    res.append(indent)
+    res.append(desc)
+    res.append('    ' + opt.help.replace("*", "\\*"))
+
+    if opt.mode:
+        res.append('    ')
+        res.append('    ' + opt.help_mode)
+        res.append('    ')
+        for m in opt.mode.keys():
+            if opt.mode_help[m]:
+                res.append('    :``{}``: {}'.format(opt.mode_name[m], opt.mode_help[m]))
+    res.append('    ')
 
 
 def generate_sphinx_help(modules):
@@ -824,24 +801,24 @@ def generate_sphinx_help(modules):
 def generate_sphinx_output_tags(modules, src_dir, build_dir):
     """Render help for the --output option for sphinx."""
     base = next(filter(lambda m: m.id == 'base', modules))
-    opt = next(filter(lambda o: o.name == 'outputTag', base.options))
+    opt = next(filter(lambda o: o.long == 'output=TAG', base.options))
 
     # The programoutput extension has weird semantics about the cwd:
     # https://sphinxcontrib-programoutput.readthedocs.io/en/latest/#usage
     cwd = '/' + os.path.relpath(build_dir, src_dir)
 
     res = []
-    for name,info in opt.mode.items():
+    for name, info in opt.mode.items():
         info = info[0]
         if 'description' not in info:
             continue
-        res.append('{} (``-o {}``)'.format(name, info['name']))
+        res.append(opt.mode_name[name])
         res.append('~' * len(res[-1]))
         res.append('')
         res.append(info['description'])
         if 'example-file' in info:
             res.append('')
-            res.append('.. command-output:: bin/cvc5 -o {} ../test/regress/{}'.format(info['name'], info['example-file']))
+            res.append('.. command-output:: bin/cvc5 -o {} ../test/regress/cli/{}'.format(info['name'], info['example-file']))
             res.append('  :cwd: {}'.format(cwd))
         res.append('')
         res.append('')
@@ -998,13 +975,15 @@ class Checker:
             self.perr('has aliases but no long', option=o)
         if o.alternate and o.type != 'bool':
             self.perr('is alternate but not bool', option=o)
+        if o.name and o.default is None:
+            self.perr('has no default', option=o)
         if o.long:
             self.__check_option_long(o, o.long_name)
             if o.alternate:
                 self.__check_option_long(o, 'no-' + o.long_name)
-            if o.type in ['bool', 'void'] and '=' in o.long:
-                self.perr('must not have an argument description', option=o)
-            if o.type not in ['bool', 'void'] and not '=' in o.long:
+            if o.type == 'bool' and '=' in o.long:
+                self.perr('bool options must not have an argument description', option=o)
+            if o.type != 'bool' and not '=' in o.long:
                 self.perr("needs argument description ('{}=...')",
                           o.long,
                           option=o)

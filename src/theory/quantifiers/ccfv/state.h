@@ -29,7 +29,7 @@
 #include "theory/quantifiers/ccfv/pattern_term_info.h"
 #include "theory/quantifiers/ccfv/quant_info.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 namespace expr {
 class TermCanonize;

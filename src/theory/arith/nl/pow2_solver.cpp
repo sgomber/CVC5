@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Makai Mann, Gereon Kremer
+ *   Yoni Zohar, Andres Noetzli, Andrew Reynolds
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -26,9 +26,9 @@
 #include "theory/rewriter.h"
 #include "util/bitvector.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace arith {
 namespace nl {
@@ -42,9 +42,9 @@ Pow2Solver::Pow2Solver(Env& env,
   NodeManager* nm = NodeManager::currentNM();
   d_false = nm->mkConst(false);
   d_true = nm->mkConst(true);
-  d_zero = nm->mkConst(CONST_RATIONAL, Rational(0));
-  d_one = nm->mkConst(CONST_RATIONAL, Rational(1));
-  d_two = nm->mkConst(CONST_RATIONAL, Rational(2));
+  d_zero = nm->mkConstInt(Rational(0));
+  d_one = nm->mkConstInt(Rational(1));
+  d_two = nm->mkConstInt(Rational(2));
 }
 
 Pow2Solver::~Pow2Solver() {}
@@ -120,7 +120,7 @@ void Pow2Solver::checkFullRefine()
     Node valPow2xAbstract = d_model.computeAbstractModelValue(n);
     Node valPow2xConcrete = d_model.computeConcreteModelValue(n);
     Node valXConcrete = d_model.computeConcreteModelValue(n[0]);
-    if (Trace.isOn("pow2-check"))
+    if (TraceIsOn("pow2-check"))
     {
       Trace("pow2-check") << "* " << i << ", value = " << valPow2xAbstract
                           << std::endl;
@@ -190,11 +190,10 @@ Node Pow2Solver::valueBasedLemma(Node i)
   Node valC = nm->mkNode(POW2, valX);
   valC = rewrite(valC);
 
-  Node lem = nm->mkNode(IMPLIES, x.eqNode(valX), i.eqNode(valC));
-  return lem;
+  return nm->mkNode(IMPLIES, x.eqNode(valX), i.eqNode(valC));
 }
 
 }  // namespace nl
 }  // namespace arith
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

@@ -1,10 +1,10 @@
 ###############################################################################
 # Top contributors (to current version):
-#   Yoni Zohar, Aina Niemetz, Mathias Preiner
+#   Yoni Zohar, Aina Niemetz
 #
 # This file is part of the cvc5 project.
 #
-# Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+# Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
 # in the top-level source directory and their institutional affiliations.
 # All rights reserved.  See the file COPYING in the top-level source
 # directory for licensing information.
@@ -33,3 +33,7 @@ cvc5_add_python_api_test(pyapi_boilerplate boilerplate.py)
 cvc5_add_python_api_test(pyapi_issue4889 issue4889.py)
 cvc5_add_python_api_test(pyapi_issue5074 issue5074.py)
 cvc5_add_python_api_test(pyapi_issue6111 issue6111.py)
+cvc5_add_python_api_test(pyapi_proj-issue306 proj-issue306.py)
+cvc5_add_python_api_test(pyapi_reset_assertions reset_assertions.py)
+cvc5_add_python_api_test(pyapi_sep_log_api sep_log_api.py)
+cvc5_add_python_api_test(pyapi_two_solvers two_solvers.py)

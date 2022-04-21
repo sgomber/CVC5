@@ -223,8 +223,10 @@ Building the API documentation of cvc5 requires the following dependencies:
 
 - `Doxygen <https://www.doxygen.nl>`_
 - `Sphinx <https://www.sphinx-doc.org>`_,
+  `sphinx-rtd-theme <https://sphinx-rtd-theme.readthedocs.io/>`_,
   `sphinx-tabs <https://sphinx-tabs.readthedocs.io/>`_,
-  `sphinxcontrib-bibtex <https://sphinxcontrib-bibtex.readthedocs.io>`_
+  `sphinxcontrib-bibtex <https://sphinxcontrib-bibtex.readthedocs.io>`_,
+  `sphinxcontrib-programoutput <https://sphinxcontrib-programoutput.readthedocs.io>`_
 - `Breathe <https://breathe.readthedocs.io>`_
 
 To build the documentation, configure cvc5 with ``./configure.sh --docs`` and
@@ -400,7 +402,7 @@ linked LGPL libraries perform the following steps:
 
 .. code::
   
-  wget https://github.com/CVC4/CVC4/archive/<commit-sha>.tar.gz
+  wget https://github.com/cvc5/cvc5/archive/<commit-sha>.tar.gz
 
 4. Extract the source code
 

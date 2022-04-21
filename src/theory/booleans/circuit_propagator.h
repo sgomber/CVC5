@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Morgan Deters, Aina Niemetz, Gereon Kremer
+ *   Morgan Deters, Aina Niemetz, Dejan Jovanovic
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -31,7 +31,7 @@
 #include "proof/trust_node.h"
 #include "smt/env_obj.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 class ProofGenerator;
 class ProofNode;
@@ -78,16 +78,9 @@ class CircuitPropagator : protected EnvObj
   }
 
   // Use custom context to ensure propagator is reset after use
-  void initialize() { d_context.push(); }
-
-  void setNeedsFinish(bool value) { d_needsFinish = value; }
-
-  bool getNeedsFinish() { return d_needsFinish; }
+  void initialize();
 
   std::vector<TrustNode>& getLearnedLiterals() { return d_learnedLiterals; }
-
-  /** Finish the computation and pop the internal context */
-  void finish();
 
   /** Assert for propagation */
   void assertTrue(TNode assertion);
@@ -134,14 +127,12 @@ class CircuitPropagator : protected EnvObj
     return false;
   }
   /**
-   * Set proof node manager, context and parent proof generator.
+   * Enable proofs based on context and parent proof generator.
    *
    * If parent is non-null, then it is responsible for the proofs provided
    * to this class.
    */
-  void setProof(ProofNodeManager* pnm,
-                context::Context* ctx,
-                ProofGenerator* defParent);
+  void enableProofs(context::Context* ctx, ProofGenerator* defParent);
 
  private:
   /** A context-notify object that clears out stale data. */
@@ -270,6 +261,6 @@ class CircuitPropagator : protected EnvObj
 
 }  // namespace booleans
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__THEORY__BOOLEANS__CIRCUIT_PROPAGATOR_H */

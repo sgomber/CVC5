@@ -26,7 +26,7 @@
 #include "theory/quantifiers/ccfv/state.h"
 #include "theory/quantifiers/quant_module.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 namespace ccfv {

@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Aina Niemetz
+ *   Aina Niemetz, Andres Noetzli, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -14,13 +14,13 @@
  */
 
 #include "expr/array_store_all.h"
-#include "expr/uninterpreted_constant.h"
 #include "test_smt.h"
 #include "util/rational.h"
+#include "util/uninterpreted_sort_value.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace test {
 
 class TestUtilWhiteArrayStoreAll : public TestSmt
@@ -34,7 +34,7 @@ TEST_F(TestUtilWhiteArrayStoreAll, store_all)
                                            d_nodeManager->realType()),
                 d_nodeManager->mkConst(CONST_RATIONAL, Rational(9, 2)));
   ArrayStoreAll(d_nodeManager->mkArrayType(d_nodeManager->mkSort("U"), usort),
-                d_nodeManager->mkConst(UninterpretedConstant(usort, 0)));
+                d_nodeManager->mkConst(UninterpretedSortValue(usort, 0)));
   ArrayStoreAll(d_nodeManager->mkArrayType(d_nodeManager->mkBitVectorType(8),
                                            d_nodeManager->realType()),
                 d_nodeManager->mkConst(CONST_RATIONAL, Rational(0)));
@@ -46,7 +46,7 @@ TEST_F(TestUtilWhiteArrayStoreAll, store_all)
 TEST_F(TestUtilWhiteArrayStoreAll, type_errors)
 {
   ASSERT_THROW(ArrayStoreAll(d_nodeManager->integerType(),
-                             d_nodeManager->mkConst(UninterpretedConstant(
+                             d_nodeManager->mkConst(UninterpretedSortValue(
                                  d_nodeManager->mkSort("U"), 0))),
                IllegalArgumentException);
   ASSERT_THROW(
@@ -74,10 +74,10 @@ TEST_F(TestUtilWhiteArrayStoreAll, const_error)
   ASSERT_THROW(
       ArrayStoreAll(d_nodeManager->integerType(),
                     d_nodeManager->mkNode(
-                        kind::PLUS,
+                        kind::ADD,
                         d_nodeManager->mkConst(CONST_RATIONAL, Rational(1)),
                         d_nodeManager->mkConst(CONST_RATIONAL, Rational(0)))),
       IllegalArgumentException);
 }
 }  // namespace test
-}  // namespace cvc5
+}  // namespace cvc5::internal

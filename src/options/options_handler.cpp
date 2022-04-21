@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Aina Niemetz, Tim King, Mathias Preiner
+ *   Gereon Kremer, Aina Niemetz, Tim King
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -18,6 +18,7 @@
 #include <cerrno>
 #include <iostream>
 #include <ostream>
+#include <regex>
 #include <string>
 
 #include "base/check.h"
@@ -33,21 +34,22 @@
 #include "options/decision_options.h"
 #include "options/io_utils.h"
 #include "options/language.h"
+#include "options/main_options.h"
 #include "options/option_exception.h"
 #include "options/smt_options.h"
 #include "options/theory_options.h"
 #include "smt/command.h"
 #include "util/didyoumean.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace options {
 
 // helper functions
 namespace {
 
-static void printTags(const std::vector<std::string>& tags)
+void printTags(const std::vector<std::string>& tags)
 {
-  std::cout << "available tags:";
+  std::cout << "available tags:" << std::endl;
   for (const auto& t : tags)
   {
     std::cout << "  " << t << std::endl;
@@ -65,15 +67,48 @@ std::string suggestTags(const std::vector<std::string>& validTags,
   return didYouMean.getMatchAsString(inputTag);
 }
 
+/**
+ * Select all tags from validTags that match the given (globbing) pattern.
+ * The pattern may contain `*` as wildcards. These are internally converted to
+ * `.*` and matched using std::regex. If no wildcards are present, regular
+ * string comparisons are used.
+ */
+std::vector<std::string> selectTags(const std::vector<std::string>& validTags, std::string pattern)
+{
+  bool isRegex = false;
+  size_t pos = 0;
+  while ((pos = pattern.find('*', pos)) != std::string::npos)
+  {
+    pattern.replace(pos, 1, ".*");
+    pos += 2;
+    isRegex = true;
+  }
+  std::vector<std::string> results;
+  if (isRegex)
+  {
+    std::regex re(pattern);
+    std::copy_if(validTags.begin(), validTags.end(), std::back_inserter(results),
+      [&re](const auto& tag){ return std::regex_match(tag, re); }
+    );
+  }
+  else
+  {
+    if (std::find(validTags.begin(), validTags.end(), pattern) != validTags.end())
+    {
+      results.emplace_back(pattern);
+    }
+  }
+  return results;
+}
+
 }  // namespace
 
 OptionsHandler::OptionsHandler(Options* options) : d_options(options) { }
 
 void OptionsHandler::setErrStream(const std::string& flag, const ManagedErr& me)
 {
-  Debug.setStream(me);
   Warning.setStream(me);
-  Trace.setStream(me);
+  TraceChannel.setStream(me);
 }
 
 Language OptionsHandler::stringToLanguage(const std::string& flag,
@@ -96,8 +131,7 @@ Languages currently supported as arguments to the --output-lang option:
   tptp                           TPTP format
   ast                            internal format (simple syntax trees)
 )FOOBAR" << std::endl;
-    std::exit(1);
-    return Language::LANG_AUTO;
+    throw OptionException("help is not a valid language");
   }
 
   try
@@ -130,25 +164,24 @@ void OptionsHandler::applyOutputLanguage(const std::string& flag, Language lang)
 void OptionsHandler::setVerbosity(const std::string& flag, int value)
 {
   if(Configuration::isMuzzledBuild()) {
-    DebugChannel.setStream(&cvc5::null_os);
-    TraceChannel.setStream(&cvc5::null_os);
-    WarningChannel.setStream(&cvc5::null_os);
+    TraceChannel.setStream(&cvc5::internal::null_os);
+    WarningChannel.setStream(&cvc5::internal::null_os);
   } else {
     if(value < 0) {
-      WarningChannel.setStream(&cvc5::null_os);
+      WarningChannel.setStream(&cvc5::internal::null_os);
     } else {
       WarningChannel.setStream(&std::cerr);
     }
   }
 }
 
-void OptionsHandler::decreaseVerbosity(const std::string& flag)
+void OptionsHandler::decreaseVerbosity(const std::string& flag, bool value)
 {
   d_options->base.verbosity -= 1;
   setVerbosity(flag, d_options->base.verbosity);
 }
 
-void OptionsHandler::increaseVerbosity(const std::string& flag)
+void OptionsHandler::increaseVerbosity(const std::string& flag, bool value)
 {
   d_options->base.verbosity += 1;
   setVerbosity(flag, d_options->base.verbosity);
@@ -170,7 +203,7 @@ void OptionsHandler::setStats(const std::string& flag, bool value)
   {
     d_options->base.statisticsAll = false;
     d_options->base.statisticsEveryQuery = false;
-    d_options->base.statisticsExpert = false;
+    d_options->base.statisticsInternal = false;
   }
 }
 
@@ -199,19 +232,24 @@ void OptionsHandler::enableTraceTag(const std::string& flag,
   {
     throw OptionException("trace tags not available in non-tracing builds");
   }
-  else if(!Configuration::isTraceTag(optarg.c_str()))
+  auto tags = selectTags(Configuration::getTraceTags(), optarg);
+  if (tags.empty())
   {
     if (optarg == "help")
     {
-      printTags(Configuration::getTraceTags());
-      std::exit(0);
+      d_options->driver.showTraceTags = true;
+      showTraceTags("", true);
+      return;
     }
 
     throw OptionException(
-        std::string("trace tag ") + optarg + std::string(" not available.")
+        std::string("no trace tag matching ") + optarg + std::string(" was found.")
         + suggestTags(Configuration::getTraceTags(), optarg, {}));
   }
-  Trace.on(optarg);
+  for (const auto& tag: tags)
+  {
+    TraceChannel.on(tag);
+  }
 }
 
 void OptionsHandler::enableDebugTag(const std::string& flag,
@@ -226,13 +264,13 @@ void OptionsHandler::enableDebugTag(const std::string& flag,
     throw OptionException("debug tags not available in non-tracing builds");
   }
 
-  if (!Configuration::isDebugTag(optarg.c_str())
-      && !Configuration::isTraceTag(optarg.c_str()))
+  if (!Configuration::isDebugTag(optarg) && !Configuration::isTraceTag(optarg))
   {
     if (optarg == "help")
     {
-      printTags(Configuration::getDebugTags());
-      std::exit(0);
+      d_options->driver.showDebugTags = true;
+      showDebugTags("", true);
+      return;
     }
 
     throw OptionException(std::string("debug tag ") + optarg
@@ -241,14 +279,13 @@ void OptionsHandler::enableDebugTag(const std::string& flag,
                                         optarg,
                                         Configuration::getTraceTags()));
   }
-  Debug.on(optarg);
-  Trace.on(optarg);
+  TraceChannel.on(optarg);
 }
 
 void OptionsHandler::enableOutputTag(const std::string& flag,
-                                     const std::string& optarg)
+                                     OutputTag optarg)
 {
-  size_t tagid = static_cast<size_t>(stringToOutputTag(optarg));
+  size_t tagid = static_cast<size_t>(optarg);
   Assert(d_options->base.outputTagHolder.size() > tagid)
       << "Output tag is larger than the bitset that holds it.";
   d_options->base.outputTagHolder.set(tagid);
@@ -256,10 +293,9 @@ void OptionsHandler::enableOutputTag(const std::string& flag,
 
 void OptionsHandler::setPrintSuccess(const std::string& flag, bool value)
 {
-  Debug.getStream() << Command::printsuccess(value);
-  Trace.getStream() << Command::printsuccess(value);
-  Warning.getStream() << Command::printsuccess(value);
-  *d_options->base.out << Command::printsuccess(value);
+  TraceChannel.getStream() << cvc5::Command::printsuccess(value);
+  Warning.getStream() << cvc5::Command::printsuccess(value);
+  *d_options->base.out << cvc5::Command::printsuccess(value);
 }
 
 void OptionsHandler::setResourceWeight(const std::string& flag,
@@ -321,33 +357,17 @@ void OptionsHandler::checkBvSatSolver(const std::string& flag, SatSolverMode m)
   }
 }
 
-void OptionsHandler::setBitblastAig(const std::string& flag, bool arg)
-{
-  if(arg) {
-    if (d_options->bv.bitblastModeWasSetByUser) {
-      if (d_options->bv.bitblastMode != options::BitblastMode::EAGER)
-      {
-        throw OptionException("bitblast-aig must be used with eager bitblaster");
-      }
-    } else {
-      d_options->bv.bitblastMode = options::BitblastMode::EAGER;
-    }
-  }
-}
-
 void OptionsHandler::setDefaultExprDepth(const std::string& flag, int64_t depth)
 {
   ioutils::setDefaultNodeDepth(depth);
-  ioutils::applyNodeDepth(Debug.getStream(), depth);
-  ioutils::applyNodeDepth(Trace.getStream(), depth);
+  ioutils::applyNodeDepth(TraceChannel.getStream(), depth);
   ioutils::applyNodeDepth(Warning.getStream(), depth);
 }
 
 void OptionsHandler::setDefaultDagThresh(const std::string& flag, int64_t dag)
 {
   ioutils::setDefaultDagThresh(dag);
-  ioutils::applyDagThresh(Debug.getStream(), dag);
-  ioutils::applyDagThresh(Trace.getStream(), dag);
+  ioutils::applyDagThresh(TraceChannel.getStream(), dag);
   ioutils::applyDagThresh(Warning.getStream(), dag);
 }
 
@@ -364,8 +384,9 @@ static void print_config_cond(const char* str, bool cond = false)
   print_config(str, cond ? "yes" : "no");
 }
 
-void OptionsHandler::showConfiguration(const std::string& flag)
+void OptionsHandler::showConfiguration(const std::string& flag, bool value)
 {
+  if (!value) return;
   std::cout << Configuration::about() << std::endl;
 
   print_config("version", Configuration::getVersionString());
@@ -387,7 +408,7 @@ void OptionsHandler::showConfiguration(const std::string& flag)
   std::cout << std::endl;
 
   print_config_cond("debug code", Configuration::isDebugBuild());
-  print_config_cond("statistics", Configuration::isStatisticsBuild());
+  print_config_cond("statistics", configuration::isStatisticsBuild());
   print_config_cond("tracing", Configuration::isTracingBuild());
   print_config_cond("muzzled", Configuration::isMuzzledBuild());
   print_config_cond("assertions", Configuration::isAssertionBuild());
@@ -406,25 +427,25 @@ void OptionsHandler::showConfiguration(const std::string& flag)
   print_config_cond("gmp", Configuration::isBuiltWithGmp());
   print_config_cond("kissat", Configuration::isBuiltWithKissat());
   print_config_cond("poly", Configuration::isBuiltWithPoly());
+  print_config_cond("cocoa", Configuration::isBuiltWithCoCoA());
   print_config_cond("editline", Configuration::isBuiltWithEditline());
-
-  std::exit(0);
 }
 
-void OptionsHandler::showCopyright(const std::string& flag)
+void OptionsHandler::showCopyright(const std::string& flag, bool value)
 {
+  if (!value) return;
   std::cout << Configuration::copyright() << std::endl;
-  std::exit(0);
 }
 
-void OptionsHandler::showVersion(const std::string& flag)
+void OptionsHandler::showVersion(const std::string& flag, bool value)
 {
+  if (!value) return;
   d_options->base.out << Configuration::about() << std::endl;
-  std::exit(0);
 }
 
-void OptionsHandler::showDebugTags(const std::string& flag)
+void OptionsHandler::showDebugTags(const std::string& flag, bool value)
 {
+  if (!value) return;
   if (!Configuration::isDebugBuild())
   {
     throw OptionException("debug tags not available in non-debug builds");
@@ -434,18 +455,17 @@ void OptionsHandler::showDebugTags(const std::string& flag)
     throw OptionException("debug tags not available in non-tracing builds");
   }
   printTags(Configuration::getDebugTags());
-  std::exit(0);
 }
 
-void OptionsHandler::showTraceTags(const std::string& flag)
+void OptionsHandler::showTraceTags(const std::string& flag, bool value)
 {
+  if (!value) return;
   if (!Configuration::isTracingBuild())
   {
     throw OptionException("trace tags not available in non-tracing build");
   }
   printTags(Configuration::getTraceTags());
-  std::exit(0);
 }
 
 }  // namespace options
-}  // namespace cvc5
+}  // namespace cvc5::internal

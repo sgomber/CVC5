@@ -20,9 +20,9 @@
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers/term_registry.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 namespace ccfv {
@@ -54,7 +54,7 @@ void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e)
     return;
   }
   double clSet = 0;
-  if (Trace.isOn("ccfv-engine"))
+  if (TraceIsOn("ccfv-engine"))
   {
     clSet = double(clock()) / double(CLOCKS_PER_SEC);
     Trace("ccfv-engine")
@@ -78,7 +78,7 @@ void CongruenceClosureFv::check(Theory::Effort e, QEffort quant_e)
     d_driver.check(quants);
   }
 
-  if (Trace.isOn("ccfv-engine"))
+  if (TraceIsOn("ccfv-engine"))
   {
     double clSet2 = double(clock()) / double(CLOCKS_PER_SEC);
     Trace("ccfv-engine") << "Finished ccfv, time = " << (clSet2 - clSet);

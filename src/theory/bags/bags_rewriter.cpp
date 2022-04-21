@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Mudathir Mohamed, Gereon Kremer, Aina Niemetz
+ *   Mudathir Mohamed, Andrew Reynolds, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -16,13 +16,14 @@
 #include "theory/bags/bags_rewriter.h"
 
 #include "expr/emptybag.h"
-#include "theory/bags/normal_form.h"
+#include "theory/bags/bags_utils.h"
+#include "theory/rewriter.h"
 #include "util/rational.h"
 #include "util/statistics_registry.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace bags {
 
@@ -41,12 +42,12 @@ BagsRewriteResponse::BagsRewriteResponse(const BagsRewriteResponse& r)
 {
 }
 
-BagsRewriter::BagsRewriter(HistogramStat<Rewrite>* statistics)
-    : d_statistics(statistics)
+BagsRewriter::BagsRewriter(Rewriter* r, HistogramStat<Rewrite>* statistics)
+    : d_rewriter(r), d_statistics(statistics)
 {
   d_nm = NodeManager::currentNM();
-  d_zero = d_nm->mkConst(CONST_RATIONAL, Rational(0));
-  d_one = d_nm->mkConst(CONST_RATIONAL, Rational(1));
+  d_zero = d_nm->mkConstInt(Rational(0));
+  d_one = d_nm->mkConstInt(Rational(1));
 }
 
 RewriteResponse BagsRewriter::postRewrite(TNode n)
@@ -65,9 +66,9 @@ RewriteResponse BagsRewriter::postRewrite(TNode n)
   {
     response = rewriteChoose(n);
   }
-  else if (NormalForm::areChildrenConstants(n))
+  else if (BagsUtils::areChildrenConstants(n))
   {
-    Node value = NormalForm::evaluate(n);
+    Node value = BagsUtils::evaluate(n);
     response = BagsRewriteResponse(value, Rewrite::CONSTANT_EVALUATION);
   }
   else
@@ -90,6 +91,10 @@ RewriteResponse BagsRewriter::postRewrite(TNode n)
       case BAG_FROM_SET: response = rewriteFromSet(n); break;
       case BAG_TO_SET: response = rewriteToSet(n); break;
       case BAG_MAP: response = postRewriteMap(n); break;
+      case BAG_FILTER: response = postRewriteFilter(n); break;
+      case BAG_FOLD: response = postRewriteFold(n); break;
+      case BAG_PARTITION: response = postRewritePartition(n); break;
+      case TABLE_PRODUCT: response = postRewriteProduct(n); break;
       default: response = BagsRewriteResponse(n, Rewrite::NONE); break;
     }
   }
@@ -116,6 +121,7 @@ RewriteResponse BagsRewriter::preRewrite(TNode n)
   {
     case EQUAL: response = preRewriteEqual(n); break;
     case BAG_SUBBAG: response = rewriteSubBag(n); break;
+    case BAG_MEMBER: response = rewriteMember(n); break;
     default: response = BagsRewriteResponse(n, Rewrite::NONE);
   }
 
@@ -155,6 +161,16 @@ BagsRewriteResponse BagsRewriter::rewriteSubBag(const TNode& n) const
   return BagsRewriteResponse(equal, Rewrite::SUB_BAG);
 }
 
+BagsRewriteResponse BagsRewriter::rewriteMember(const TNode& n) const
+{
+  Assert(n.getKind() == BAG_MEMBER);
+
+  // - (bag.member x A) = (>= (bag.count x A) 1)
+  Node count = d_nm->mkNode(BAG_COUNT, n[0], n[1]);
+  Node geq = d_nm->mkNode(GEQ, count, d_one);
+  return BagsRewriteResponse(geq, Rewrite::MEMBER);
+}
+
 BagsRewriteResponse BagsRewriter::rewriteMakeBag(const TNode& n) const
 {
   Assert(n.getKind() == BAG_MAKE);
@@ -176,13 +192,12 @@ BagsRewriteResponse BagsRewriter::rewriteBagCount(const TNode& n) const
     // (bag.count x bag.empty) = 0
     return BagsRewriteResponse(d_zero, Rewrite::COUNT_EMPTY);
   }
-  if (n[1].getKind() == BAG_MAKE && n[0] == n[1][0])
+  if (n[1].getKind() == BAG_MAKE && n[0] == n[1][0] && n[1][1].isConst()
+      && n[1][1].getConst<Rational>() > Rational(0))
   {
-    // (bag.count x (bag x c)) = (ite (>= c 1) c 0)
+    // (bag.count x (bag x c)) = c, c > 0 is a constant
     Node c = n[1][1];
-    Node geq = d_nm->mkNode(GEQ, c, d_one);
-    Node ite = d_nm->mkNode(ITE, geq, c, d_zero);
-    return BagsRewriteResponse(ite, Rewrite::COUNT_BAG_MAKE);
+    return BagsRewriteResponse(c, Rewrite::COUNT_BAG_MAKE);
   }
   return BagsRewriteResponse(n, Rewrite::NONE);
 }
@@ -441,14 +456,6 @@ BagsRewriteResponse BagsRewriter::rewriteCard(const TNode& n) const
     return BagsRewriteResponse(n[0][1], Rewrite::CARD_BAG_MAKE);
   }
 
-  if (n[0].getKind() == BAG_UNION_DISJOINT)
-  {
-    // (bag.card (bag.union-disjoint A B)) = (+ (bag.card A) (bag.card B))
-    Node A = d_nm->mkNode(BAG_CARD, n[0][0]);
-    Node B = d_nm->mkNode(BAG_CARD, n[0][1]);
-    Node plus = d_nm->mkNode(PLUS, A, B);
-    return BagsRewriteResponse(plus, Rewrite::CARD_DISJOINT);
-  }
   return BagsRewriteResponse(n, Rewrite::NONE);
 }
 
@@ -522,7 +529,7 @@ BagsRewriteResponse BagsRewriter::postRewriteMap(const TNode& n) const
   {
     // (bag.map f (as bag.empty (Bag T1)) = (as bag.empty (Bag T2))
     // (bag.map f (bag "a" 3)) = (bag (f "a") 3)
-    std::map<Node, Rational> elements = NormalForm::getBagElements(n[1]);
+    std::map<Node, Rational> elements = BagsUtils::getBagElements(n[1]);
     std::map<Node, Rational> mappedElements;
     std::map<Node, Rational>::iterator it = elements.begin();
     while (it != elements.end())
@@ -532,7 +539,7 @@ BagsRewriteResponse BagsRewriter::postRewriteMap(const TNode& n) const
       ++it;
     }
     TypeNode t = d_nm->mkBagType(n[0].getType().getRangeType());
-    Node ret = NormalForm::constructConstantBagFromElements(t, mappedElements);
+    Node ret = BagsUtils::constructConstantBagFromElements(t, mappedElements);
     return BagsRewriteResponse(ret, Rewrite::MAP_CONST);
   }
   Kind k = n[1].getKind();
@@ -560,6 +567,117 @@ BagsRewriteResponse BagsRewriter::postRewriteMap(const TNode& n) const
     default: return BagsRewriteResponse(n, Rewrite::NONE);
   }
 }
+
+BagsRewriteResponse BagsRewriter::postRewriteFilter(const TNode& n) const
+{
+  Assert(n.getKind() == kind::BAG_FILTER);
+  Node P = n[0];
+  Node A = n[1];
+  TypeNode t = A.getType();
+  if (A.isConst())
+  {
+    // (bag.filter p (as bag.empty (Bag T)) = (as bag.empty (Bag T))
+    // (bag.filter p (bag "a" 3) ((bag "b" 2))) =
+    //   (bag.union_disjoint
+    //     (ite (p "a") (bag "a" 3) (as bag.empty (Bag T)))
+    //     (ite (p "b") (bag "b" 2) (as bag.empty (Bag T)))
+
+    Node ret = BagsUtils::evaluateBagFilter(n);
+    return BagsRewriteResponse(ret, Rewrite::FILTER_CONST);
+  }
+  Kind k = A.getKind();
+  switch (k)
+  {
+    case BAG_MAKE:
+    {
+      // (bag.filter p (bag x y)) = (ite (p x) (bag x y) (as bag.empty (Bag T)))
+      Node empty = d_nm->mkConst(EmptyBag(t));
+      Node pOfe = d_nm->mkNode(APPLY_UF, P, A[0]);
+      Node ret = d_nm->mkNode(ITE, pOfe, A, empty);
+      return BagsRewriteResponse(ret, Rewrite::FILTER_BAG_MAKE);
+    }
+
+    case BAG_UNION_DISJOINT:
+    {
+      // (bag.filter p (bag.union_disjoint A B)) =
+      //    (bag.union_disjoint (bag.filter p A) (bag.filter p B))
+      Node a = d_nm->mkNode(BAG_FILTER, n[0], n[1][0]);
+      Node b = d_nm->mkNode(BAG_FILTER, n[0], n[1][1]);
+      Node ret = d_nm->mkNode(BAG_UNION_DISJOINT, a, b);
+      return BagsRewriteResponse(ret, Rewrite::FILTER_UNION_DISJOINT);
+    }
+
+    default: return BagsRewriteResponse(n, Rewrite::NONE);
+  }
+}
+
+BagsRewriteResponse BagsRewriter::postRewriteFold(const TNode& n) const
+{
+  Assert(n.getKind() == kind::BAG_FOLD);
+  Node f = n[0];
+  Node t = n[1];
+  Node bag = n[2];
+  if (bag.isConst())
+  {
+    Node value = BagsUtils::evaluateBagFold(n);
+    return BagsRewriteResponse(value, Rewrite::FOLD_CONST);
+  }
+  Kind k = bag.getKind();
+  switch (k)
+  {
+    case BAG_MAKE:
+    {
+      if (bag[1].isConst() && bag[1].getConst<Rational>() > Rational(0))
+      {
+        // (bag.fold f t (bag x n)) = (f t ... (f t (f t x))) n times, n > 0
+        Node value = BagsUtils::evaluateBagFold(n);
+        return BagsRewriteResponse(value, Rewrite::FOLD_BAG);
+      }
+      break;
+    }
+    case BAG_UNION_DISJOINT:
+    {
+      // (bag.fold f t (bag.union_disjoint A B)) =
+      //       (bag.fold f (bag.fold f t A) B) where A < B to break symmetry
+      Node A = bag[0] < bag[1] ? bag[0] : bag[1];
+      Node B = bag[0] < bag[1] ? bag[1] : bag[0];
+      Node foldA = d_nm->mkNode(BAG_FOLD, f, t, A);
+      Node fold = d_nm->mkNode(BAG_FOLD, f, foldA, B);
+      return BagsRewriteResponse(fold, Rewrite::FOLD_UNION_DISJOINT);
+    }
+    default: return BagsRewriteResponse(n, Rewrite::NONE);
+  }
+  return BagsRewriteResponse(n, Rewrite::NONE);
+}
+
+BagsRewriteResponse BagsRewriter::postRewritePartition(const TNode& n) const
+{
+  Assert(n.getKind() == kind::BAG_PARTITION);
+  if (n[1].isConst())
+  {
+    Node ret = BagsUtils::evaluateBagPartition(d_rewriter, n);
+    if (ret != n)
+    {
+      return BagsRewriteResponse(ret, Rewrite::PARTITION_CONST);
+    }
+  }
+
+  return BagsRewriteResponse(n, Rewrite::NONE);
+}
+
+BagsRewriteResponse BagsRewriter::postRewriteProduct(const TNode& n) const
+{
+  Assert(n.getKind() == TABLE_PRODUCT);
+  TypeNode tableType = n.getType();
+  Node empty = d_nm->mkConst(EmptyBag(tableType));
+  if (n[0].getKind() == BAG_EMPTY || n[1].getKind() == BAG_EMPTY)
+  {
+    return BagsRewriteResponse(empty, Rewrite::PRODUCT_EMPTY);
+  }
+
+  return BagsRewriteResponse(n, Rewrite::NONE);
+}
+
 }  // namespace bags
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

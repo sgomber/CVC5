@@ -20,9 +20,9 @@
 #include "theory/quantifiers/quantifiers_state.h"
 #include "theory/uf/equality_engine_iterator.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 namespace ccfv {
@@ -54,7 +54,7 @@ void State::resetRound(size_t nquant)
   d_notifyActive = true;
   // reset the search state
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
-  if (Trace.isOn("ccfv-matching"))
+  if (TraceIsOn("ccfv-matching"))
   {
     Trace("ccfv-matching") << "E-graph:" << std::endl;
     Trace("ccfv-matching") << ee->debugPrintEqc() << std::endl;

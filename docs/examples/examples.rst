@@ -8,10 +8,10 @@ input mechanisms.
 
 
 .. toctree::
-    :maxdepth: 2
 
     helloworld
     exceptions
+    bags
     bitvectors
     bitvectors_and_arrays
     extract

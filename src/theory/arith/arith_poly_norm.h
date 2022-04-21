@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds
+ *   Andrew Reynolds, Aina Niemetz
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -23,7 +23,7 @@
 #include "expr/node.h"
 #include "util/rational.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace arith {
 
@@ -40,7 +40,7 @@ class PolyNorm
    */
   void addMonomial(TNode x, const Rational& c, bool isNeg = false);
   /**
-   * Multiply this polynomial by the monomial x*c, where c is a CONST_RATIONAL.
+   * Multiply this polynomial by the monomial x*c, where c is a constant.
    * If x is null, then x*c is treated as c.
    */
   void multiplyMonomial(TNode x, const Rational& c);
@@ -58,7 +58,7 @@ class PolyNorm
   bool isEqual(const PolyNorm& p) const;
   /**
    * Make polynomial from real term n. This method normalizes applications
-   * of operators PLUS, MINUS, UMINUS, MULT, and NONLINEAR_MULT only.
+   * of operators ADD, SUB, NEG, MULT, and NONLINEAR_MULT only.
    */
   static PolyNorm mkPolyNorm(TNode n);
   /** Do a and b normalize to the same polynomial? */
@@ -78,6 +78,6 @@ class PolyNorm
 
 }  // namespace arith
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__THEORY__ARITH__POLY_NORM_H */
