@@ -67,6 +67,15 @@ class NodeConverter
    */
   virtual Node preConvert(Node n);
   /**
+   * For an optimized version of post-convert, this is called when we are
+   * reconstructing the converted form of a Node whose kind is k and whose
+   * (converted) children are children.
+   *
+   * This method must return a non-null node, by default it returns
+   * NodeManager::mkNode(k, children).
+   */
+  virtual Node postReconstruct(Kind k, const std::vector<Node>& children);
+  /**
    * Run the conversion for post-order traversal, where notice n is a term
    * of the form:
    *   (f i_1 ... i_m)

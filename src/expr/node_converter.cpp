@@ -30,7 +30,6 @@ Node NodeConverter::convert(Node n)
     return n;
   }
   Trace("nconv-debug") << "NodeConverter::convert: " << n << std::endl;
-  NodeManager* nm = NodeManager::currentNM();
   std::unordered_map<Node, Node>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
@@ -111,7 +110,7 @@ Node NodeConverter::convert(Node n)
         }
         if (childChanged)
         {
-          ret = nm->mkNode(ret.getKind(), children);
+          ret = postReconstruct(ret.getKind(), children);
           Trace("nconv-debug2") << "..from children changed " << cur << " into "
                                 << ret << std::endl;
         }
@@ -252,6 +251,10 @@ void NodeConverter::addToTypeCache(TypeNode cur, TypeNode ret)
 }
 
 Node NodeConverter::preConvert(Node n) { return Node::null(); }
+Node NodeConverter::postReconstruct(Kind k, const std::vector<Node>& children)
+{
+  return NodeManager::currentNM()->mkNode(k, children);
+}
 Node NodeConverter::postConvert(Node n) { return Node::null(); }
 
 TypeNode NodeConverter::preConvertType(TypeNode tn) { return TypeNode::null(); }
