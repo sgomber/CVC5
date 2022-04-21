@@ -72,11 +72,12 @@ bool InstEvaluator::shouldTraverse(Node n)
     // don't traverse further if already infeasible
     return false;
   }
-  // optimization: never traverse ground terms, unless we are initializing?
+  // optimization: never traverse ground terms, unless we are initializing
   if (!d_currVar.isNull() && !expr::hasBoundVar(n))
   {
     return false;
   }
+  // TODO: could cache the subterms that contain d_currVar?
   return true;
 }
 
