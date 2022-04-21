@@ -80,14 +80,24 @@ bool InstEvaluator::shouldTraverse(Node n)
   return true;
 }
 
-Node InstEvaluator::postConvert(Node n)
+Node InstEvaluator::postReconstruct(Node cur, const std::vector<Node>& children, bool childChanged)
 {
-  if (!d_currFeasible)
+  if (cur==d_currVar)
   {
-    return n;
+  // apply the substitution
+    return d_currSubs;
   }
-  Node neval = evaluateInternal(n, d_currVar, d_currSubs, d_currFeasible);
-  return neval;
+  if (d_currFeasible)
+  {
+    if (d_currVar.isNull() || childChanged)
+    {
+      // evaluate
+      Node neval = evaluateInternal(cur, children, d_currFeasible);
+      return neval;
+    }
+  }
+  // otherwise, just use the default  (TODO: or return null?)
+  return NodeConverter::postReconstruct(cur, children, childChanged);
 }
 
 }  // namespace quantifiers

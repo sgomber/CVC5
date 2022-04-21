@@ -108,12 +108,8 @@ Node NodeConverter::convert(Node n)
           childChanged = childChanged || cn != it->second;
           children.push_back(it->second);
         }
-        if (childChanged)
-        {
-          ret = postReconstruct(ret.getKind(), children);
-          Trace("nconv-debug2") << "..from children changed " << cur << " into "
-                                << ret << std::endl;
-        }
+        // call post-reconstruct
+        ret = postReconstruct(cur, children, childChanged);
         // run the callback for the current application
         Node cret = postConvert(ret);
         if (!cret.isNull() && ret != cret)
@@ -251,10 +247,16 @@ void NodeConverter::addToTypeCache(TypeNode cur, TypeNode ret)
 }
 
 Node NodeConverter::preConvert(Node n) { return Node::null(); }
-Node NodeConverter::postReconstruct(Kind k, const std::vector<Node>& children)
+
+Node NodeConverter::postReconstruct(Node cur, const std::vector<Node>& children, bool childChanged)
 {
-  return NodeManager::currentNM()->mkNode(k, children);
+  if (childChanged)
+  {
+    return NodeManager::currentNM()->mkNode(cur.getKind(), children);
+  }
+  return cur;
 }
+
 Node NodeConverter::postConvert(Node n) { return Node::null(); }
 
 TypeNode NodeConverter::preConvertType(TypeNode tn) { return TypeNode::null(); }

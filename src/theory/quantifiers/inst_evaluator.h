@@ -48,18 +48,17 @@ protected:
   bool convertAndPush(Node body);
   /** Should we traverse n? */
   bool shouldTraverse(Node n) override;
-  /** Post convert */
-  Node postConvert(Node n) override;
+  /** Post reconstruct */
+  Node postReconstruct(Node cur, const std::vector<Node>& children, bool childChanged) override;
   /** 
    * Evaluate internal
    * 
-   * This method should return the evaluation of n { v -> s }, and set
-   * the feasible flag to false if the instantiation is infeasible.
-   * 
-   * It may be the case that v and s are null, in which case we are
-   * initializing.
+   * This method should return the evaluation of cur' { v -> s }, and set
+   * the feasible flag to false if using this subterm in an instantiation is
+   * infeasible, where cur' is cur with its children replaced by the vector
+   * children.
    */
-  virtual Node evaluateInternal(Node n, TNode v, TNode s, bool& feasible) = 0;
+  virtual Node evaluateInternal(Node cur, const std::vector<Node>& children, bool& feasible) = 0;
   /**
    * Check whether the entire body is feasible.
    */

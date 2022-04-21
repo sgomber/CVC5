@@ -68,13 +68,16 @@ class NodeConverter
   virtual Node preConvert(Node n);
   /**
    * For an optimized version of post-convert, this is called when we are
-   * reconstructing the converted form of a Node whose kind is k and whose
-   * (converted) children are children.
+   * reconstructing the converted form of cur (converted) children are children.
+   * The flag childChanged indicates whether any of the children are modified.
+   * If not, then this method may return cur itself if no further conversion is
+   * requested.
    *
    * This method must return a non-null node, by default it returns
-   * NodeManager::mkNode(k, children).
+   * NodeManager::mkNode(cur.getKind(), children), or cur if childChanged is 
+   * false.
    */
-  virtual Node postReconstruct(Kind k, const std::vector<Node>& children);
+  virtual Node postReconstruct(Node cur, const std::vector<Node>& children, bool childChanged);
   /**
    * Run the conversion for post-order traversal, where notice n is a term
    * of the form:
