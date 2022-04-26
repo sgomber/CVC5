@@ -40,10 +40,9 @@ class ArithRewriter : public TheoryRewriter
    * the given node.
    */
   TrustNode expandDefinition(Node node) override;
-
-  /** Rewrite the equality */
-  static Node rewriteEquality(TNode left, TNode right);
  private:
+  /** postRewrite for EQUAL */
+  static RewriteResponse postRewriteEqual(TNode t);
   /** preRewrite for atoms */
   static RewriteResponse preRewriteAtom(TNode t);
   /** postRewrite for atoms */

@@ -41,7 +41,7 @@ inline bool isAtom(TNode n)
   {
     case Kind::LT:
     case Kind::LEQ:
-    case Kind::EQUAL:
+    case Kind::ARITH_EQ:
     case Kind::GEQ:
     case Kind::GT:
     case Kind::IS_INTEGER:

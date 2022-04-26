@@ -50,6 +50,10 @@ ArithRewriter::ArithRewriter(OperatorElim& oe) : d_opElim(oe) {}
 RewriteResponse ArithRewriter::preRewrite(TNode t)
 {
   Trace("arith-rewriter") << "preRewrite(" << t << ")" << std::endl;
+  if (t.getKind()==EQUAL)
+  {
+    return RewriteResponse(REWRITE_DONE, t);
+  }
   if (rewriter::isAtom(t))
   {
     auto res = preRewriteAtom(t);
@@ -64,7 +68,11 @@ RewriteResponse ArithRewriter::preRewrite(TNode t)
 
 RewriteResponse ArithRewriter::postRewrite(TNode t)
 {
-  Trace("arith-rewriter") << "postRewrite(" << t << ")" << std::endl;
+  Trace("arith-rewriter") << "postRewrite(" << t << ")" << std::endl; 
+  if (t.getKind()==EQUAL)
+  {
+    return postRewriteEqual(t);
+  }
   if (rewriter::isAtom(t))
   {
     auto res = postRewriteAtom(t);
@@ -75,6 +83,28 @@ RewriteResponse ArithRewriter::postRewrite(TNode t)
   auto res = postRewriteTerm(t);
   Trace("arith-rewriter") << res.d_status << " -> " << res.d_node << std::endl;
   return res;
+}
+
+RewriteResponse ArithRewriter::postRewriteEqual(TNode t)
+{
+  Assert (t.getKind()==EQUAL);
+  if (t[0] == t[1])
+  {
+    return RewriteResponse(REWRITE_DONE,
+                            NodeManager::currentNM()->mkConst(true));
+  }
+  else if (t[0].isConst() && t[1].isConst())
+  {
+    return RewriteResponse(REWRITE_DONE,
+                            NodeManager::currentNM()->mkConst(false));
+  }
+  if (t[0] > t[1])
+  {
+    Node nt =
+        NodeManager::currentNM()->mkNode(EQUAL, t[1], t[0]);
+    return RewriteResponse(REWRITE_DONE, nt);
+  }
+  return RewriteResponse(REWRITE_DONE, t);
 }
 
 RewriteResponse ArithRewriter::preRewriteAtom(TNode atom)
@@ -343,19 +373,6 @@ RewriteResponse ArithRewriter::postRewriteTerm(TNode t){
       Unreachable();
     }
   }
-}
-
-Node ArithRewriter::rewriteEquality(TNode left, TNode right)
-{
-  rewriter::Sum sum;
-  rewriter::addToSum(sum, left);
-  rewriter::addToSum(sum, right);
-  // Now we have (sum <kind> 0)
-  if (rewriter::isIntegral(sum))
-  {
-    return rewriter::buildIntegerEquality(std::move(sum));
-  }
-  return rewriter::buildRealEquality(std::move(sum));
 }
 
 RewriteResponse ArithRewriter::rewriteRAN(TNode t)
