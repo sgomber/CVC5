@@ -108,8 +108,8 @@ void ArithStaticLearner::process(TNode n,
       break;
     }
 
-    if(n[0].getKind() != ARITH_EQ &&
-       isRelationOperator(n[0].getKind())  ){
+    if (n[0].getKind() != ARITH_EQ && isRelationOperator(n[0].getKind()))
+    {
       iteMinMax(n, learned);
     }
 

@@ -719,8 +719,8 @@ SumPair Comparison::toSumPair() const {
         return SumPair(-p, c);
       }
     }
-  case kind::ARITH_EQ:
-  case kind::DISTINCT:
+    case kind::ARITH_EQ:
+    case kind::DISTINCT:
     {
       Polynomial left = getLeft();
       Polynomial right = getRight();
@@ -758,8 +758,8 @@ Polynomial Comparison::normalizedVariablePart() const {
         return -p;
       }
     }
-  case kind::ARITH_EQ:
-  case kind::DISTINCT:
+    case kind::ARITH_EQ:
+    case kind::DISTINCT:
     {
       Polynomial left = getLeft();
       Polynomial right = getRight();
@@ -798,8 +798,8 @@ DeltaRational Comparison::normalizedDeltaRational() const {
         return DeltaRational(-q, -delta);
       }
     }
-  case kind::ARITH_EQ:
-  case kind::DISTINCT:
+    case kind::ARITH_EQ:
+    case kind::DISTINCT:
     {
       Polynomial right = getRight();
       Monomial firstRight = right.getHead();
@@ -914,8 +914,7 @@ Node Comparison::toNode(Kind k, const Polynomial& l, const Polynomial& r) {
     return toNode(kind::GEQ, r, l).notNode();
   case kind::LT:
     return toNode(kind::GT, r, l).notNode();
-  case kind::DISTINCT:
-    return toNode(kind::ARITH_EQ, r, l).notNode();
+  case kind::DISTINCT: return toNode(kind::ARITH_EQ, r, l).notNode();
   default:
     Unreachable();
   }
@@ -1004,8 +1003,7 @@ bool Comparison::isNormalForm() const {
     return isNormalGT();
   case kind::GEQ:
     return isNormalGEQ();
-  case kind::ARITH_EQ:
-    return isNormalEquality();
+  case kind::ARITH_EQ: return isNormalEquality();
   case kind::LT:
     return isNormalLT();
   case kind::LEQ:
@@ -1304,7 +1302,9 @@ Node Comparison::mkIntEquality(const Polynomial& p){
 Comparison Comparison::mkComparison(Kind k, const Polynomial& l, const Polynomial& r){
 
   //Make this special case fast for sharing!
-  if((k == kind::ARITH_EQ || k == kind::DISTINCT) && l.isVarList() && r.isVarList()){
+  if ((k == kind::ARITH_EQ || k == kind::DISTINCT) && l.isVarList()
+      && r.isVarList())
+  {
     VarList vLeft = l.asVarList();
     VarList vRight = r.asVarList();
 
@@ -1312,7 +1312,8 @@ Comparison Comparison::mkComparison(Kind k, const Polynomial& l, const Polynomia
       // return true for equalities and false for disequalities
       return Comparison(k == kind::ARITH_EQ);
     }else{
-      Node eqNode = vLeft < vRight ? toNode( kind::ARITH_EQ, l, r) : toNode( kind::ARITH_EQ, r, l);
+      Node eqNode = vLeft < vRight ? toNode(kind::ARITH_EQ, l, r)
+                                   : toNode(kind::ARITH_EQ, r, l);
       Node forK = (k == kind::DISTINCT) ? eqNode.notNode() : eqNode;
       return Comparison(forK);
     }
@@ -1327,10 +1328,10 @@ Comparison Comparison::mkComparison(Kind k, const Polynomial& l, const Polynomia
     Node result = Node::null();
     bool isInteger = diff.allIntegralVariables();
     switch(k){
-    case kind::ARITH_EQ:
-      result = isInteger ? mkIntEquality(diff) : mkRatEquality(diff);
-      break;
-    case kind::DISTINCT:
+      case kind::ARITH_EQ:
+        result = isInteger ? mkIntEquality(diff) : mkRatEquality(diff);
+        break;
+      case kind::DISTINCT:
       {
         Node eq = isInteger ? mkIntEquality(diff) : mkRatEquality(diff);
         result = eq.notNode();
@@ -1377,8 +1378,7 @@ Kind Comparison::comparisonKind(TNode literal){
   case kind::CONST_BOOLEAN:
   case kind::GT:
   case kind::GEQ:
-  case kind::ARITH_EQ:
-    return literal.getKind();
+  case kind::ARITH_EQ: return literal.getKind();
   case  kind::NOT:
     {
       TNode negatedAtom = literal[0];
@@ -1387,8 +1387,7 @@ Kind Comparison::comparisonKind(TNode literal){
         return kind::LEQ;
       case kind::GEQ: //(not (GEQ x c)) <=> (LT x c)
         return kind::LT;
-      case kind::ARITH_EQ:
-        return kind::DISTINCT;
+      case kind::ARITH_EQ: return kind::DISTINCT;
       default:
         return  kind::UNDEFINED_KIND;
       }

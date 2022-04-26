@@ -15,10 +15,10 @@
 
 #include "arith_utilities.h"
 
+#include <cmath>
+
 #include "smt/env.h"
 #include "theory/rewriter.h"
-
-#include <cmath>
 
 using namespace cvc5::internal::kind;
 
@@ -357,14 +357,14 @@ Node multConstants(const Node& c1, const Node& c2)
 Node convertToArithPrivate(Env& env, TNode n)
 {
   Kind k = n.getKind();
-  if (k==kind::TO_REAL)
+  if (k == kind::TO_REAL)
   {
-    Assert (n[0].getKind()!=kind::TO_REAL);
+    Assert(n[0].getKind() != kind::TO_REAL);
     return n[0];
   }
-  bool pol = k!=kind::NOT;
+  bool pol = k != kind::NOT;
   TNode atom = pol ? n : n[0];
-  if (atom.getKind()==kind::EQUAL)
+  if (atom.getKind() == kind::EQUAL)
   {
     TNode left = n[0].getKind() == kind::TO_REAL ? n[0][0] : n[0];
     TNode right = n[1].getKind() == kind::TO_REAL ? n[1][0] : n[1];

@@ -50,7 +50,7 @@ ArithRewriter::ArithRewriter(OperatorElim& oe) : d_opElim(oe) {}
 RewriteResponse ArithRewriter::preRewrite(TNode t)
 {
   Trace("arith-rewriter") << "preRewrite(" << t << ")" << std::endl;
-  if (t.getKind()==EQUAL)
+  if (t.getKind() == EQUAL)
   {
     return RewriteResponse(REWRITE_DONE, t);
   }
@@ -68,8 +68,8 @@ RewriteResponse ArithRewriter::preRewrite(TNode t)
 
 RewriteResponse ArithRewriter::postRewrite(TNode t)
 {
-  Trace("arith-rewriter") << "postRewrite(" << t << ")" << std::endl; 
-  if (t.getKind()==EQUAL)
+  Trace("arith-rewriter") << "postRewrite(" << t << ")" << std::endl;
+  if (t.getKind() == EQUAL)
   {
     return postRewriteEqual(t);
   }
@@ -87,21 +87,20 @@ RewriteResponse ArithRewriter::postRewrite(TNode t)
 
 RewriteResponse ArithRewriter::postRewriteEqual(TNode t)
 {
-  Assert (t.getKind()==EQUAL);
+  Assert(t.getKind() == EQUAL);
   if (t[0] == t[1])
   {
     return RewriteResponse(REWRITE_DONE,
-                            NodeManager::currentNM()->mkConst(true));
+                           NodeManager::currentNM()->mkConst(true));
   }
   else if (t[0].isConst() && t[1].isConst())
   {
     return RewriteResponse(REWRITE_DONE,
-                            NodeManager::currentNM()->mkConst(false));
+                           NodeManager::currentNM()->mkConst(false));
   }
   if (t[0] > t[1])
   {
-    Node nt =
-        NodeManager::currentNM()->mkNode(EQUAL, t[1], t[0]);
+    Node nt = NodeManager::currentNM()->mkNode(EQUAL, t[1], t[0]);
     return RewriteResponse(REWRITE_DONE, nt);
   }
   return RewriteResponse(REWRITE_DONE, t);
@@ -184,7 +183,7 @@ RewriteResponse ArithRewriter::postRewriteAtom(TNode atom)
   Kind kind = atom.getKind();
   TNode left = atom[0];
   TNode right = atom[1];
-  Assert(kind==kind::EQUAL || isRelationOperator(kind));
+  Assert(kind == kind::EQUAL || isRelationOperator(kind));
 
   if (auto response = rewriter::tryEvaluateRelation(kind, left, right);
       response)

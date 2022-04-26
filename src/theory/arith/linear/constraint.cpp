@@ -97,11 +97,9 @@ ConstraintType Constraint::constraintTypeOfComparison(const Comparison& cmp){
         return UpperBound; // (> (-x) c)
       }
     }
-  case ARITH_EQ:
-    return Equality;
-  case DISTINCT:
-    return Disequality;
-  default: Unhandled() << k;
+    case ARITH_EQ: return Equality;
+    case DISTINCT: return Disequality;
+    default: Unhandled() << k;
   }
 }
 
@@ -657,7 +655,8 @@ bool Constraint::sanityChecking(Node n) const {
   Comparison cmp = Comparison::parseNormalForm(n);
   Kind k = cmp.comparisonKind();
   Polynomial pleft = cmp.normalizedVariablePart();
-  Assert(k == ARITH_EQ || k == DISTINCT || pleft.leadingCoefficientIsPositive());
+  Assert(k == ARITH_EQ || k == DISTINCT
+         || pleft.leadingCoefficientIsPositive());
   Assert(k != ARITH_EQ || Monomial::isMember(n[0]));
   Assert(k != DISTINCT || Monomial::isMember(n[0][0]));
 
@@ -685,8 +684,7 @@ bool Constraint::sanityChecking(Node n) const {
     case UpperBound:
       //Be overapproximate
       return k == GT || k == GEQ ||k == LT || k == LEQ;
-    case Equality:
-      return k == ARITH_EQ;
+    case Equality: return k == ARITH_EQ;
     case Disequality:
       return k == DISTINCT;
     default:

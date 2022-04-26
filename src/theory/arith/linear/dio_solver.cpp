@@ -113,7 +113,8 @@ Node DioSolver::nextPureSubstitution(){
   Polynomial p = sp.getPolynomial();
   Constant c = -sp.getConstant();
   Polynomial cancelV = p + Polynomial::mkPolynomial(v);
-  Node eq = NodeManager::currentNM()->mkNode(kind::ARITH_EQ, v.getNode(), cancelV.getNode());
+  Node eq = NodeManager::currentNM()->mkNode(
+      kind::ARITH_EQ, v.getNode(), cancelV.getNode());
   return eq;
 }
 

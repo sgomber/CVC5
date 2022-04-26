@@ -955,8 +955,9 @@ Theory::PPAssertStatus TheoryArithPrivate::ppAssert(
   Rational minConstant = 0;
   Node minMonomial;
   Node minVar;
-  if (in.getKind() == kind::ARITH_EQ &&
-      Theory::theoryOf(in[0].getType()) == THEORY_ARITH) {
+  if (in.getKind() == kind::ARITH_EQ
+      && Theory::theoryOf(in[0].getType()) == THEORY_ARITH)
+  {
     Comparison cmp = Comparison::parseNormalForm(in);
 
     Polynomial left = cmp.getLeft();
@@ -4600,8 +4601,8 @@ std::pair<bool, Node> TheoryArithPrivate::entailmentCheck(TNode lit)
 
   int negPrim = -primDir;
 
-  int secDir = (k == ARITH_EQ || k == DISTINCT) ? negPrim: 0;
-  int negSecDir = (k == ARITH_EQ || k == DISTINCT) ? primDir: 0;
+  int secDir = (k == ARITH_EQ || k == DISTINCT) ? negPrim : 0;
+  int negSecDir = (k == ARITH_EQ || k == DISTINCT) ? primDir : 0;
 
   // primDir*[lm*( lp )] k primDir*[ [rm*( rp )] + sep ]
   // primDir*[lm*( lp ) - rm*( rp ) ] k primDir*sep
@@ -4898,7 +4899,6 @@ bool TheoryArithPrivate::decomposeLiteral(Node lit, Kind& k, int& dir, Rational&
                          << "  right:" << rc << " + " << rm << "*(" <<  rp << ") : " << right << endl
                          << "  diff: " << dc << " + " << dm << "*("<< dp <<"): " << diff << endl
                          << "  sep: " << sep << endl;
-
 
   // k in LT, LEQ, ARITH_EQ, DISARITH_EQ
   // [dir*lm*( lp ) + dir*lc] k [dir*rm*( rp ) + dir*rc]
