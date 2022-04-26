@@ -431,7 +431,8 @@ RewriteResponse ArithRewriter::postRewritePlus(TNode t)
   {
     rewriter::addToSum(sum, child);
   }
-  return RewriteResponse(REWRITE_DONE, rewriter::collectSum(sum, t.getType()));
+  Node sum = rewriter::collectSum(sum, t.getType());
+  return RewriteResponse(REWRITE_DONE, sum);
 }
 
 RewriteResponse ArithRewriter::preRewriteMult(TNode node)
@@ -585,23 +586,6 @@ RewriteResponse ArithRewriter::rewriteToReal(TNode t)
   {
     const Rational& rat = t[0].getConst<Rational>();
     return RewriteResponse(REWRITE_DONE, nm->mkConstReal(rat));
-  }
-  // distribute over ADD, MULT, NONLINEAR_MULT
-  Kind k = t[0].getKind();
-  if (k == Kind::ADD || k == Kind::MULT || k == Kind::NONLINEAR_MULT)
-  {
-    std::vector<Node> children;
-    for (const Node& tc : t[0])
-    {
-      Node tcc = tc;
-      if (!tcc.getType().isReal())
-      {
-        tcc = nm->mkNode(Kind::TO_REAL, tcc);
-      }
-      children.push_back(tcc);
-    }
-    Node ret = nm->mkNode(k, children);
-    return RewriteResponse(REWRITE_AGAIN_FULL, ret);
   }
   return RewriteResponse(REWRITE_DONE, t);
 }

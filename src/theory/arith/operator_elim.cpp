@@ -92,21 +92,21 @@ Node OperatorElim::eliminateOperators(Node node,
         // not eliminating total operators
         return node;
       }
-      // FIXME: lose connection between v and vreal????
       // node[0] - 1 < toIntSkolem <= node[0]
       // -1 < toIntSkolem - node[0] <= 0
       // 0 <= node[0] - toIntSkolem < 1
       Node pterm = nm->mkNode(TO_INTEGER, node[0]);
       Node v = sm->mkPurifySkolem(
           pterm, "toInt", "a conversion of a Real term to its Integer part");
-      Node vreal = v;  // nm->mkNode(TO_REAL, v);
       Node one = nm->mkConstReal(Rational(1));
       Node zero = nm->mkConstReal(Rational(0));
-      Node diff = nm->mkNode(SUB, node[0], vreal);
+      Node diff = nm->mkNode(SUB, node[0], v);
       Node lem = mkInRange(diff, zero, one);
       lems.push_back(mkSkolemLemma(lem, v));
       if (k == IS_INTEGER)
       {
+        // must use TO_REAL here
+        Node vreal = nm->mkNode(TO_REAL, v);
         return nm->mkNode(EQUAL, node[0], vreal);
       }
       Assert(k == TO_INTEGER);
