@@ -14,7 +14,9 @@
  */
 
 #include "arith_utilities.h"
-#include "theory/arith/arith_rewriter.h"
+
+#include "smt/env.h"
+#include "theory/rewriter.h"
 
 #include <cmath>
 
@@ -352,7 +354,7 @@ Node multConstants(const Node& c1, const Node& c2)
       tn, Rational(c1.getConst<Rational>() * c2.getConst<Rational>()));
 }
 
-Node convertToArithPrivate(TNode n)
+Node convertToArithPrivate(Env& env, TNode n)
 {
   Kind k = n.getKind();
   if (k==kind::TO_REAL)
@@ -364,13 +366,10 @@ Node convertToArithPrivate(TNode n)
   TNode atom = pol ? n : n[0];
   if (atom.getKind()==kind::EQUAL)
   {
-    std::vector<TNode> children;
-    for (TNode nc : n)
-    {
-      TNode ncc = nc.getKind() == kind::TO_REAL ? nc[0] : n;
-      children.push_back(ncc);
-    }
-    Node ret = NodeManager::currentNM()->mkNode(kind::ARITH_EQ, children);
+    TNode left = n[0].getKind() == kind::TO_REAL ? n[0][0] : n[0];
+    TNode right = n[1].getKind() == kind::TO_REAL ? n[1][0] : n[1];
+    Node ret = NodeManager::currentNM()->mkNode(kind::ARITH_EQ, left, right);
+    ret = env.getRewriter()->rewrite(ret);
     return pol ? ret : ret.notNode();
   }
   return n;

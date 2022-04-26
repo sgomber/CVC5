@@ -345,11 +345,8 @@ RewriteResponse ArithRewriter::postRewriteTerm(TNode t){
   }
 }
 
-Node ArithRewriter::rewriteEquality(TNode eq)
+Node ArithRewriter::rewriteEquality(TNode left, TNode right)
 {
-  Assert (eq.getKind()==kind::EQUAL);
-  TNode left = eq[0];
-  TNode right = eq[1];
   rewriter::Sum sum;
   rewriter::addToSum(sum, left);
   rewriter::addToSum(sum, right);

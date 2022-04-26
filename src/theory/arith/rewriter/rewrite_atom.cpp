@@ -37,6 +37,7 @@ bool evaluateRelation(Kind rel, const L& l, const R& r)
     case Kind::LT: return l < r;
     case Kind::LEQ: return l <= r;
     case Kind::EQUAL: return l == r;
+    case Kind::ARITH_EQ: return l == r;
     case Kind::DISTINCT: return l != r;
     case Kind::GEQ: return l >= r;
     case Kind::GT: return l > r;
@@ -295,7 +296,7 @@ Node buildIntegerEquality(Sum&& sum)
   Trace("arith-rewriter::debug")
       << "\tbuilding " << left << " = " << sum << std::endl;
 
-  return buildRelation(Kind::EQUAL, left, collectSum(sum, left.getType()));
+  return buildRelation(Kind::ARITH_EQ, left, collectSum(sum, left.getType()));
 }
 
 Node buildRealEquality(Sum&& sum)
@@ -314,7 +315,7 @@ Node buildRealEquality(Sum&& sum)
   {
     s.second = s.second / lcoeff;
   }
-  return buildRelation(Kind::EQUAL, lterm.first, collectSum(sum, rtype));
+  return buildRelation(Kind::ARITH_EQ, lterm.first, collectSum(sum, rtype));
 }
 
 Node buildIntegerInequality(Sum&& sum, Kind k)

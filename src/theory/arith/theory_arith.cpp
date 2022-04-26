@@ -118,7 +118,8 @@ void TheoryArith::preRegisterTerm(TNode n)
   {
     d_nonlinearExtension->preRegisterTerm(n);
   }
-  d_internal->preRegisterTerm(n);
+  Node np = convertToArithPrivate(d_env, n);
+  d_internal->preRegisterTerm(np);
 }
 
 void TheoryArith::notifySharedTerm(TNode n) { d_internal->notifySharedTerm(n); }
@@ -145,7 +146,9 @@ TrustNode TheoryArith::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
 Theory::PPAssertStatus TheoryArith::ppAssert(
     TrustNode tin, TrustSubstitutionMap& outSubstitutions)
 {
-  return d_internal->ppAssert(tin, outSubstitutions);
+  Node np = convertToArithPrivate(d_env, tin.getNode());
+  TrustNode tinr = TrustNode::mkTrustLemma(np, nullptr);
+  return d_internal->ppAssert(tinr, outSubstitutions);
 }
 
 void TheoryArith::ppStaticLearn(TNode n, NodeBuilder& learned)
@@ -239,7 +242,8 @@ bool TheoryArith::preNotifyFact(
     ret = d_eqSolver->preNotifyFact(atom, pol, fact, isPrereg, isInternal);
   }
   // we also always also notify the internal solver
-  d_internal->preNotifyFact(atom, pol, fact);
+  Node factp = convertToArithPrivate(d_env, fact);
+  d_internal->preNotifyFact(atom, pol, factp);
   return ret;
 }
 

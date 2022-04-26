@@ -42,7 +42,7 @@ class ArithRewriter : public TheoryRewriter
   TrustNode expandDefinition(Node node) override;
 
   /** Rewrite the equality */
-  static Node rewriteEquality(TNode eq);
+  static Node rewriteEquality(TNode left, TNode right);
  private:
   /** preRewrite for atoms */
   static RewriteResponse preRewriteAtom(TNode t);

@@ -30,6 +30,9 @@
 #include "util/rational.h"
 
 namespace cvc5::internal {
+
+class Env;
+
 namespace theory {
 namespace arith {
 
@@ -346,7 +349,7 @@ Node multConstants(const Node& c1, const Node& c2);
 /**
   * Convert to arith private
   */
-Node convertToArithPrivate(TNode n);
+Node convertToArithPrivate(Env& env, TNode n);
 Node convertFromArithPrivate(TNode n);
   
 }  // namespace arith
