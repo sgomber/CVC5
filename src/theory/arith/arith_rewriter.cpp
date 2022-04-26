@@ -154,7 +154,7 @@ RewriteResponse ArithRewriter::postRewriteAtom(TNode atom)
   Kind kind = atom.getKind();
   TNode left = atom[0];
   TNode right = atom[1];
-  Assert(isRelationOperator(kind));
+  Assert(kind==kind::EQUAL || isRelationOperator(kind));
 
   if (auto response = rewriter::tryEvaluateRelation(kind, left, right);
       response)
@@ -345,6 +345,22 @@ RewriteResponse ArithRewriter::postRewriteTerm(TNode t){
   }
 }
 
+Node ArithRewriter::rewriteEquality(TNode eq)
+{
+  Assert (eq.getKind()==kind::EQUAL);
+  TNode left = eq[0];
+  TNode right = eq[1];
+  rewriter::Sum sum;
+  rewriter::addToSum(sum, left);
+  rewriter::addToSum(sum, right);
+  // Now we have (sum <kind> 0)
+  if (rewriter::isIntegral(sum))
+  {
+    return rewriter::buildIntegerEquality(std::move(sum));
+  }
+  return rewriter::buildRealEquality(std::move(sum));
+}
+
 RewriteResponse ArithRewriter::rewriteRAN(TNode t)
 {
   Assert(rewriter::isRAN(t));
@@ -431,8 +447,7 @@ RewriteResponse ArithRewriter::postRewritePlus(TNode t)
   {
     rewriter::addToSum(sum, child);
   }
-  Node sum = rewriter::collectSum(sum, t.getType());
-  return RewriteResponse(REWRITE_DONE, sum);
+  return RewriteResponse(REWRITE_DONE, rewriter::collectSum(sum, t.getType()));
 }
 
 RewriteResponse ArithRewriter::preRewriteMult(TNode node)

@@ -719,7 +719,7 @@ SumPair Comparison::toSumPair() const {
         return SumPair(-p, c);
       }
     }
-  case kind::EQUAL:
+  case kind::ARITH_EQ:
   case kind::DISTINCT:
     {
       Polynomial left = getLeft();
@@ -758,7 +758,7 @@ Polynomial Comparison::normalizedVariablePart() const {
         return -p;
       }
     }
-  case kind::EQUAL:
+  case kind::ARITH_EQ:
   case kind::DISTINCT:
     {
       Polynomial left = getLeft();
@@ -798,7 +798,7 @@ DeltaRational Comparison::normalizedDeltaRational() const {
         return DeltaRational(-q, -delta);
       }
     }
-  case kind::EQUAL:
+  case kind::ARITH_EQ:
   case kind::DISTINCT:
     {
       Polynomial right = getRight();
@@ -838,8 +838,8 @@ std::tuple<Polynomial, Kind, Constant> Comparison::decompose(
     {
       case kind::LEQ: rel = Kind::GT; break;
       case kind::LT: rel = Kind::GEQ; break;
-      case kind::EQUAL: rel = Kind::DISTINCT; break;
-      case kind::DISTINCT: rel = Kind::EQUAL; break;
+      case kind::ARITH_EQ: rel = Kind::DISTINCT; break;
+      case kind::DISTINCT: rel = Kind::ARITH_EQ; break;
       case kind::GEQ: rel = Kind::LT; break;
       case kind::GT: rel = Kind::LEQ; break;
       default:
@@ -872,7 +872,7 @@ std::tuple<Polynomial, Kind, Constant> Comparison::decompose(
       {
         case kind::LEQ: rel = Kind::GEQ; break;
         case kind::LT: rel = Kind::GT; break;
-        case kind::EQUAL: break;
+        case kind::ARITH_EQ: break;
         case kind::DISTINCT: break;
         case kind::GEQ: rel = Kind::LEQ; break;
         case kind::GT: rel = Kind::LT; break;
@@ -907,7 +907,7 @@ Node Comparison::toNode(Kind k, const Polynomial& l, const Polynomial& r) {
   Assert(isRelationOperator(k));
   switch(k) {
   case kind::GEQ:
-  case kind::EQUAL:
+  case kind::ARITH_EQ:
   case kind::GT:
     return NodeManager::currentNM()->mkNode(k, l.getNode(), r.getNode());
   case kind::LEQ:
@@ -915,7 +915,7 @@ Node Comparison::toNode(Kind k, const Polynomial& l, const Polynomial& r) {
   case kind::LT:
     return toNode(kind::GT, r, l).notNode();
   case kind::DISTINCT:
-    return toNode(kind::EQUAL, r, l).notNode();
+    return toNode(kind::ARITH_EQ, r, l).notNode();
   default:
     Unreachable();
   }
@@ -935,7 +935,7 @@ size_t Comparison::getComplexity() const{
   case kind::LT:
   case kind::LEQ:
   case kind::DISTINCT:
-  case kind::EQUAL:
+  case kind::ARITH_EQ:
   case kind::GT:
   case kind::GEQ:
     return getLeft().getComplexity() +  getRight().getComplexity();
@@ -952,7 +952,7 @@ Polynomial Comparison::getLeft() const {
   case kind::DISTINCT:
     left = getNode()[0][0];
     break;
-  case kind::EQUAL:
+  case kind::ARITH_EQ:
   case kind::GT:
   case kind::GEQ:
     left = getNode()[0];
@@ -971,7 +971,7 @@ Polynomial Comparison::getRight() const {
   case kind::DISTINCT:
     right = getNode()[0][1];
     break;
-  case kind::EQUAL:
+  case kind::ARITH_EQ:
   case kind::GT:
   case kind::GEQ:
     right = getNode()[1];
@@ -1004,7 +1004,7 @@ bool Comparison::isNormalForm() const {
     return isNormalGT();
   case kind::GEQ:
     return isNormalGEQ();
-  case kind::EQUAL:
+  case kind::ARITH_EQ:
     return isNormalEquality();
   case kind::LT:
     return isNormalLT();
@@ -1157,7 +1157,7 @@ bool Comparison::isNormalEqualityOrDisequality() const {
 
 /** This must be (= qvarlist qpolynomial) or (= zmonomial zpolynomial)*/
 bool Comparison::isNormalEquality() const {
-  Assert(getNode().getKind() == kind::EQUAL);
+  Assert(getNode().getKind() == kind::ARITH_EQ);
   return Theory::theoryOf(getNode()[0].getType()) == THEORY_ARITH &&
          isNormalEqualityOrDisequality();
 }
@@ -1168,7 +1168,7 @@ bool Comparison::isNormalEquality() const {
  */
 bool Comparison::isNormalDistinct() const {
   Assert(getNode().getKind() == kind::NOT);
-  Assert(getNode()[0].getKind() == kind::EQUAL);
+  Assert(getNode()[0].getKind() == kind::ARITH_EQ);
 
   return Theory::theoryOf(getNode()[0][0].getType()) == THEORY_ARITH &&
          isNormalEqualityOrDisequality();
@@ -1184,7 +1184,7 @@ Node Comparison::mkRatEquality(const Polynomial& p){
   Polynomial newRight = (p - minimalVList) * coeffInv;
   Polynomial newLeft(Monomial::mkMonomial(minimalVList.getVarList()));
 
-  return toNode(kind::EQUAL, newLeft, newRight);
+  return toNode(kind::ARITH_EQ, newLeft, newRight);
 }
 
 Node Comparison::mkRatInequality(Kind k, const Polynomial& p){
@@ -1295,7 +1295,7 @@ Node Comparison::mkIntEquality(const Polynomial& p){
     Polynomial newLeft  = mIsPositive ? m  : -m;
 
     Assert(newRight.isIntegral());
-    return toNode(kind::EQUAL, newLeft, newRight);
+    return toNode(kind::ARITH_EQ, newLeft, newRight);
   }else{
     return mkBoolNode(false);
   }
@@ -1304,15 +1304,15 @@ Node Comparison::mkIntEquality(const Polynomial& p){
 Comparison Comparison::mkComparison(Kind k, const Polynomial& l, const Polynomial& r){
 
   //Make this special case fast for sharing!
-  if((k == kind::EQUAL || k == kind::DISTINCT) && l.isVarList() && r.isVarList()){
+  if((k == kind::ARITH_EQ || k == kind::DISTINCT) && l.isVarList() && r.isVarList()){
     VarList vLeft = l.asVarList();
     VarList vRight = r.asVarList();
 
     if(vLeft == vRight){
       // return true for equalities and false for disequalities
-      return Comparison(k == kind::EQUAL);
+      return Comparison(k == kind::ARITH_EQ);
     }else{
-      Node eqNode = vLeft < vRight ? toNode( kind::EQUAL, l, r) : toNode( kind::EQUAL, r, l);
+      Node eqNode = vLeft < vRight ? toNode( kind::ARITH_EQ, l, r) : toNode( kind::ARITH_EQ, r, l);
       Node forK = (k == kind::DISTINCT) ? eqNode.notNode() : eqNode;
       return Comparison(forK);
     }
@@ -1327,7 +1327,7 @@ Comparison Comparison::mkComparison(Kind k, const Polynomial& l, const Polynomia
     Node result = Node::null();
     bool isInteger = diff.allIntegralVariables();
     switch(k){
-    case kind::EQUAL:
+    case kind::ARITH_EQ:
       result = isInteger ? mkIntEquality(diff) : mkRatEquality(diff);
       break;
     case kind::DISTINCT:
@@ -1377,7 +1377,7 @@ Kind Comparison::comparisonKind(TNode literal){
   case kind::CONST_BOOLEAN:
   case kind::GT:
   case kind::GEQ:
-  case kind::EQUAL:
+  case kind::ARITH_EQ:
     return literal.getKind();
   case  kind::NOT:
     {
@@ -1387,7 +1387,7 @@ Kind Comparison::comparisonKind(TNode literal){
         return kind::LEQ;
       case kind::GEQ: //(not (GEQ x c)) <=> (LT x c)
         return kind::LT;
-      case kind::EQUAL:
+      case kind::ARITH_EQ:
         return kind::DISTINCT;
       default:
         return  kind::UNDEFINED_KIND;
@@ -1404,8 +1404,8 @@ Node Polynomial::makeAbsCondition(Variable v, Polynomial p){
 
   Polynomial varp = Polynomial::mkPolynomial(v);
   Comparison pLeq0 = Comparison::mkComparison(kind::LEQ, p, zerop);
-  Comparison negP = Comparison::mkComparison(kind::EQUAL, varp, -p);
-  Comparison posP = Comparison::mkComparison(kind::EQUAL, varp, p);
+  Comparison negP = Comparison::mkComparison(kind::ARITH_EQ, varp, -p);
+  Comparison posP = Comparison::mkComparison(kind::ARITH_EQ, varp, p);
 
   Node absCnd = (pLeq0.getNode()).iteNode(negP.getNode(), posP.getNode());
   return absCnd;

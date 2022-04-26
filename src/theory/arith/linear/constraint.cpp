@@ -97,7 +97,7 @@ ConstraintType Constraint::constraintTypeOfComparison(const Comparison& cmp){
         return UpperBound; // (> (-x) c)
       }
     }
-  case EQUAL:
+  case ARITH_EQ:
     return Equality;
   case DISTINCT:
     return Disequality;
@@ -657,8 +657,8 @@ bool Constraint::sanityChecking(Node n) const {
   Comparison cmp = Comparison::parseNormalForm(n);
   Kind k = cmp.comparisonKind();
   Polynomial pleft = cmp.normalizedVariablePart();
-  Assert(k == EQUAL || k == DISTINCT || pleft.leadingCoefficientIsPositive());
-  Assert(k != EQUAL || Monomial::isMember(n[0]));
+  Assert(k == ARITH_EQ || k == DISTINCT || pleft.leadingCoefficientIsPositive());
+  Assert(k != ARITH_EQ || Monomial::isMember(n[0]));
   Assert(k != DISTINCT || Monomial::isMember(n[0][0]));
 
   TNode left = pleft.getNode();
@@ -686,7 +686,7 @@ bool Constraint::sanityChecking(Node n) const {
       //Be overapproximate
       return k == GT || k == GEQ ||k == LT || k == LEQ;
     case Equality:
-      return k == EQUAL;
+      return k == ARITH_EQ;
     case Disequality:
       return k == DISTINCT;
     default:
@@ -1100,7 +1100,7 @@ TrustNode Constraint::split()
   ConstraintP diseq = isEq ? d_negation : this;
 
   TNode eqNode = eq->getLiteral();
-  Assert(eqNode.getKind() == kind::EQUAL);
+  Assert(eqNode.getKind() == kind::ARITH_EQ);
   TNode lhs = eqNode[0];
   TNode rhs = eqNode[1];
 
@@ -2076,12 +2076,12 @@ Node Constraint::getProofLiteral() const
     }
     case ConstraintType::Equality:
     {
-      cmp = Kind::EQUAL;
+      cmp = Kind::ARITH_EQ;
       break;
     }
     case ConstraintType::Disequality:
     {
-      cmp = Kind::EQUAL;
+      cmp = Kind::ARITH_EQ;
       neg = true;
       break;
     }

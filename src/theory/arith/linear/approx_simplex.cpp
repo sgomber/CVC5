@@ -371,7 +371,7 @@ Kind glpk_type_to_kind(int glpk_cut_type){
   switch(glpk_cut_type){
   case GLP_LO: return kind::GEQ;
   case GLP_UP: return kind::LEQ;
-  case GLP_FX: return kind::EQUAL;
+  case GLP_FX: return kind::ARITH_EQ;
   case GLP_DB:
   case GLP_FR:
   default:     return kind::UNDEFINED_KIND;

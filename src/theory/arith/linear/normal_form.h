@@ -1369,9 +1369,9 @@ public:
    * Given a literal to TheoryArith return a single kind to
    * to indicate its underlying structure.
    * The function returns the following in each case:
-   * - (K left right)           -> K where is either EQUAL, GT, or GEQ
+   * - (K left right)           -> K where is either ARITH_EQ, GT, or GEQ
    * - (CONST_BOOLEAN b)        -> CONST_BOOLEAN
-   * - (NOT (EQUAL left right)) -> DISTINCT
+   * - (NOT (ARITH_EQ left right)) -> DISTINCT
    * - (NOT (GT left right))    -> LEQ
    * - (NOT (GEQ left right))   -> LT
    * If none of these match, it returns UNDEFINED_KIND.

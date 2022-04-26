@@ -955,7 +955,7 @@ Theory::PPAssertStatus TheoryArithPrivate::ppAssert(
   Rational minConstant = 0;
   Node minMonomial;
   Node minVar;
-  if (in.getKind() == kind::EQUAL &&
+  if (in.getKind() == kind::ARITH_EQ &&
       Theory::theoryOf(in[0].getType()) == THEORY_ARITH) {
     Comparison cmp = Comparison::parseNormalForm(in);
 
@@ -1334,7 +1334,7 @@ ArithVar TheoryArithPrivate::determineArithVar(TNode assertion) const{
 
 
 bool TheoryArithPrivate::canSafelyAvoidEqualitySetup(TNode equality){
-  Assert(equality.getKind() == EQUAL);
+  Assert(equality.getKind() == ARITH_EQ);
   return d_partialModel.hasArithVar(equality[0]);
 }
 
@@ -1346,7 +1346,7 @@ Comparison TheoryArithPrivate::mkIntegerEqualityFromAssignment(ArithVar v){
 
   TNode var = d_partialModel.asNode(v);
   Polynomial varAsPolynomial = Polynomial::parsePolynomial(var);
-  return Comparison::mkComparison(EQUAL, varAsPolynomial, betaAsPolynomial);
+  return Comparison::mkComparison(ARITH_EQ, varAsPolynomial, betaAsPolynomial);
 }
 
 TrustNode TheoryArithPrivate::dioCutting()
@@ -1459,7 +1459,7 @@ Node TheoryArithPrivate::callDioSolver(){
       Assert(!eq.getNode().getConst<bool>());
 
       //This should be handled by the normal form earlier in the case of equality
-      Assert(orig.getKind() != EQUAL);
+      Assert(orig.getKind() != ARITH_EQ);
       return orig;
     }else{
       Trace("dio::push") << "dio::push " << v << " " << eq.getNode() << " with reason " << orig << endl;
@@ -1475,7 +1475,7 @@ ConstraintP TheoryArithPrivate::constraintFromFactQueue(TNode assertion)
   Kind simpleKind = Comparison::comparisonKind(assertion);
   ConstraintP constraint = d_constraintDatabase.lookup(assertion);
   if(constraint == NullConstraint){
-    Assert(simpleKind == EQUAL || simpleKind == DISTINCT);
+    Assert(simpleKind == ARITH_EQ || simpleKind == DISTINCT);
     bool isDistinct = simpleKind == DISTINCT;
     Node eq = (simpleKind == DISTINCT) ? assertion[0] : assertion;
     Assert(!isSetup(eq));
@@ -3018,7 +3018,7 @@ bool TheoryArithPrivate::hasFreshArithLiteral(Node n) const{
   case kind::GT:
   case kind::LT:
     return !isSatLiteral(n);
-  case kind::EQUAL:
+  case kind::ARITH_EQ:
     if (n[0].getType().isRealOrInt())
     {
       return !isSatLiteral(n);
@@ -4010,10 +4010,10 @@ void TheoryArithPrivate::presolve(){
     switch (options().arith.arithUnateLemmaMode)
     {
       case options::ArithUnateLemmaMode::NO: break;
-      case options::ArithUnateLemmaMode::INEQUALITY:
+      case options::ArithUnateLemmaMode::INARITH_EQITY:
         d_constraintDatabase.outputUnateInequalityLemmas(lemmas);
         break;
-      case options::ArithUnateLemmaMode::EQUALITY:
+      case options::ArithUnateLemmaMode::ARITH_EQITY:
         d_constraintDatabase.outputUnateEqualityLemmas(lemmas);
         break;
       case options::ArithUnateLemmaMode::ALL:
@@ -4035,18 +4035,18 @@ void TheoryArithPrivate::presolve(){
 EqualityStatus TheoryArithPrivate::getEqualityStatus(TNode a, TNode b) {
   if (d_qflraStatus == Result::UNKNOWN)
   {
-    return EQUALITY_UNKNOWN;
+    return ARITH_EQITY_UNKNOWN;
   }else{
     try {
       if (getDeltaValue(a) == getDeltaValue(b)) {
-        return EQUALITY_TRUE_IN_MODEL;
+        return ARITH_EQITY_TRUE_IN_MODEL;
       } else {
-        return EQUALITY_FALSE_IN_MODEL;
+        return ARITH_EQITY_FALSE_IN_MODEL;
       }
     } catch (DeltaRationalException& dr) {
-      return EQUALITY_UNKNOWN;
+      return ARITH_EQITY_UNKNOWN;
     } catch (ModelException& me) {
-      return EQUALITY_UNKNOWN;
+      return ARITH_EQITY_UNKNOWN;
     }
   }
 }
@@ -4600,8 +4600,8 @@ std::pair<bool, Node> TheoryArithPrivate::entailmentCheck(TNode lit)
 
   int negPrim = -primDir;
 
-  int secDir = (k == EQUAL || k == DISTINCT) ? negPrim: 0;
-  int negSecDir = (k == EQUAL || k == DISTINCT) ? primDir: 0;
+  int secDir = (k == ARITH_EQ || k == DISTINCT) ? negPrim: 0;
+  int negSecDir = (k == ARITH_EQ || k == DISTINCT) ? primDir: 0;
 
   // primDir*[lm*( lp )] k primDir*[ [rm*( rp )] + sep ]
   // primDir*[lm*( lp ) - rm*( rp ) ] k primDir*sep
@@ -4697,7 +4697,7 @@ std::pair<bool, Node> TheoryArithPrivate::entailmentCheck(TNode lit)
         }
       }
       break;
-    case EQUAL:
+    case ARITH_EQ:
       if(!bestPrimDiff.first.isNull() && !bestSecDiff.first.isNull()){
         // Is primDir [dm * dp] == primDir * sep entailed?
         // Iff [dm * dp] == sep entailed?
@@ -4727,7 +4727,7 @@ std::pair<bool, Node> TheoryArithPrivate::entailmentCheck(TNode lit)
         }
       }
       // intentionally fall through to DISTINCT case!
-      // entailments of negations are eager exit cases for EQUAL
+      // entailments of negations are eager exit cases for ARITH_EQ
       CVC5_FALLTHROUGH;
     case DISTINCT:
       if(!bestPrimDiff.first.isNull()){
@@ -4738,7 +4738,7 @@ std::pair<bool, Node> TheoryArithPrivate::entailmentCheck(TNode lit)
           if(k == DISTINCT){
             return make_pair(true, bestPrimDiff.first);
           }else{
-            Assert(k == EQUAL);
+            Assert(k == ARITH_EQ);
             return make_pair(false, Node::null());
           }
         }
@@ -4753,7 +4753,7 @@ std::pair<bool, Node> TheoryArithPrivate::entailmentCheck(TNode lit)
           if(k == DISTINCT){
             return make_pair(true, bestSecDiff.first);
           }else{
-            Assert(k == EQUAL);
+            Assert(k == ARITH_EQ);
             return make_pair(false, Node::null());
           }
         }
@@ -4900,7 +4900,7 @@ bool TheoryArithPrivate::decomposeLiteral(Node lit, Kind& k, int& dir, Rational&
                          << "  sep: " << sep << endl;
 
 
-  // k in LT, LEQ, EQUAL, DISEQUAL
+  // k in LT, LEQ, ARITH_EQ, DISARITH_EQ
   // [dir*lm*( lp ) + dir*lc] k [dir*rm*( rp ) + dir*rc]
   Rational change = rc - lc;
   Assert(change == (-dc));
@@ -4912,7 +4912,7 @@ bool TheoryArithPrivate::decomposeLiteral(Node lit, Kind& k, int& dir, Rational&
     sep = DeltaRational(change);
     k = normKind;
   }
-  // k in LEQ, EQUAL, DISEQUAL
+  // k in LEQ, ARITH_EQ, DISARITH_EQ
   // dir*lm*( lp ) k [dir*rm*( rp )] + dir*(sep + d * delta)
   return true;
 }

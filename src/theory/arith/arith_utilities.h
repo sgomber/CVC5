@@ -53,7 +53,7 @@ inline bool isRelationOperator(Kind k){
   switch(k){
   case LT:
   case LEQ:
-  case EQUAL:
+  case ARITH_EQ:
   case GEQ:
   case GT:
     return true;
@@ -76,6 +76,7 @@ inline Kind reverseRelationKind(Kind k){
   case LT:    return GT;
   case LEQ:   return GEQ;
   case EQUAL: return EQUAL;
+  case ARITH_EQ: return ARITH_EQ;
   case GEQ:   return LEQ;
   case GT:    return LT;
 
@@ -342,6 +343,12 @@ Node negateProofLiteral(TNode n);
  */
 Node multConstants(const Node& c1, const Node& c2);
 
+/**
+  * Convert to arith private
+  */
+Node convertToArithPrivate(TNode n);
+Node convertFromArithPrivate(TNode n);
+  
 }  // namespace arith
 }  // namespace theory
 }  // namespace cvc5::internal

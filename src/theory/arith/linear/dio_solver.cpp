@@ -113,7 +113,7 @@ Node DioSolver::nextPureSubstitution(){
   Polynomial p = sp.getPolynomial();
   Constant c = -sp.getConstant();
   Polynomial cancelV = p + Polynomial::mkPolynomial(v);
-  Node eq = NodeManager::currentNM()->mkNode(kind::EQUAL, v.getNode(), cancelV.getNode());
+  Node eq = NodeManager::currentNM()->mkNode(kind::ARITH_EQ, v.getNode(), cancelV.getNode());
   return eq;
 }
 
@@ -134,7 +134,7 @@ bool DioSolver::debugEqualityInInputEquations(Node eq){
 void DioSolver::pushInputConstraint(const Comparison& eq, Node reason){
   Assert(!debugEqualityInInputEquations(reason));
   Assert(eq.debugIsIntegral());
-  Assert(eq.getNode().getKind() == kind::EQUAL);
+  Assert(eq.getNode().getKind() == kind::ARITH_EQ);
 
   SumPair sp = eq.toSumPair();
   if(sp.isNonlinear()){
