@@ -4010,10 +4010,10 @@ void TheoryArithPrivate::presolve(){
     switch (options().arith.arithUnateLemmaMode)
     {
       case options::ArithUnateLemmaMode::NO: break;
-      case options::ArithUnateLemmaMode::INARITH_EQITY:
+      case options::ArithUnateLemmaMode::INEQUALITY:
         d_constraintDatabase.outputUnateInequalityLemmas(lemmas);
         break;
-      case options::ArithUnateLemmaMode::ARITH_EQITY:
+      case options::ArithUnateLemmaMode::EQUALITY:
         d_constraintDatabase.outputUnateEqualityLemmas(lemmas);
         break;
       case options::ArithUnateLemmaMode::ALL:
@@ -4035,18 +4035,18 @@ void TheoryArithPrivate::presolve(){
 EqualityStatus TheoryArithPrivate::getEqualityStatus(TNode a, TNode b) {
   if (d_qflraStatus == Result::UNKNOWN)
   {
-    return ARITH_EQITY_UNKNOWN;
+    return EQUALITY_UNKNOWN;
   }else{
     try {
       if (getDeltaValue(a) == getDeltaValue(b)) {
-        return ARITH_EQITY_TRUE_IN_MODEL;
+        return EQUALITY_TRUE_IN_MODEL;
       } else {
-        return ARITH_EQITY_FALSE_IN_MODEL;
+        return EQUALITY_FALSE_IN_MODEL;
       }
     } catch (DeltaRationalException& dr) {
-      return ARITH_EQITY_UNKNOWN;
+      return EQUALITY_UNKNOWN;
     } catch (ModelException& me) {
-      return ARITH_EQITY_UNKNOWN;
+      return EQUALITY_UNKNOWN;
     }
   }
 }
