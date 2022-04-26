@@ -1721,11 +1721,6 @@ class CVC5_EXPORT Term
   Kind getKindHelper() const;
 
   /**
-   * @return True if the current term is a constant integer that is casted into
-   *         real using the operator CAST_TO_REAL, and returns false otherwise
-   */
-  bool isCastedReal() const;
-  /**
    * The internal node wrapped by this term.
    * @note This is a ``std::shared_ptr`` rather than a ``std::unique_ptr`` to
    *       avoid overhead due to memory allocation (``internal::Node`` is

@@ -276,14 +276,15 @@ bool TypeNode::isWellFounded() const {
 
 bool TypeNode::isStringLike() const { return isString() || isSequence(); }
 
-// !!! Note that this will change to isReal() || isInteger() when subtyping is
-// eliminated
-bool TypeNode::isRealOrInt() const { return isReal(); }
+bool TypeNode::isRealOrInt() const { return isReal() || isInteger(); }
 
 bool TypeNode::isSubtypeOf(TypeNode t) const {
   if(*this == t) {
     return true;
   }
+#if 1  // no-subtypes
+  return false;
+#endif
   if (isInteger())
   {
     return t.isReal();
@@ -323,7 +324,28 @@ bool TypeNode::isComparableTo(TypeNode t) const {
   {
     return true;
   }
+#if 1  // no-subtypes
+  return false;
+#endif
   return isSubtypeOf(t) || t.isSubtypeOf(*this);
+}
+
+bool TypeNode::isInteger() const
+{
+  return (getKind() == kind::TYPE_CONSTANT
+          && getConst<TypeConstant>() == INTEGER_TYPE);
+}
+
+bool TypeNode::isReal() const
+{
+#if 1  // no-subtypes
+  return (getKind() == kind::TYPE_CONSTANT
+          && getConst<TypeConstant>() == REAL_TYPE);
+#else
+  return (getKind() == kind::TYPE_CONSTANT
+          && getConst<TypeConstant>() == REAL_TYPE)
+         || isInteger();
+#endif
 }
 
 TypeNode TypeNode::getDatatypeTesterDomainType() const
@@ -500,6 +522,9 @@ TypeNode TypeNode::leastCommonTypeNode(TypeNode t0, TypeNode t1){
   {
     return t0;
   }
+#if 1  // no-subtypes
+  return TypeNode();
+#endif
   if (t0.isSubtypeOf(t1))
   {
     return t1;

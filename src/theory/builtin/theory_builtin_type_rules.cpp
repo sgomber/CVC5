@@ -36,6 +36,7 @@ TypeNode EqualityTypeRule::computeType(NodeManager* nodeManager,
 
     if (TypeNode::leastCommonTypeNode(lhsType, rhsType).isNull())
     {
+      Assert(false) << "Bad equality " << n;
       std::stringstream ss;
       ss << "Subexpressions must have a common base type:" << std::endl;
       ss << "Equation: " << n << std::endl;

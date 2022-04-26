@@ -909,6 +909,13 @@ enum Kind : int32_t
    *
    *   - Solver::mkInteger(const std::string&) const
    *   - Solver::mkInteger(int64_t) const
+   */
+  CONST_INTEGER,
+  /**
+   * Multiple-precision rational constant.
+   *
+   * - Create Term of this Kind with:
+   *
    *   - Solver::mkReal(const std::string&) const
    *   - Solver::mkReal(int64_t) const
    *   - Solver::mkReal(int64_t, int64_t) const

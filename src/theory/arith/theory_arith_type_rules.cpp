@@ -25,6 +25,23 @@ TypeNode ArithConstantTypeRule::computeType(NodeManager* nodeManager,
                                             TNode n,
                                             bool check)
 {
+#if 1  // no-subtypes
+  if (n.getKind() == kind::CONST_RATIONAL)
+  {
+    return nodeManager->realType();
+  }
+  Assert(n.getKind() == kind::CONST_INTEGER);
+  if (check)
+  {
+    if (!n.getConst<Rational>().isIntegral())
+    {
+      Assert(false) << "Bad integer: " << n;
+      throw TypeCheckingExceptionPrivate(
+          n, "making an integer constant from a non-integral rational");
+    }
+  }
+  return nodeManager->integerType();
+#else
   Assert(n.getKind() == kind::CONST_RATIONAL);
   if (n.getConst<Rational>().isIntegral())
   {
@@ -34,6 +51,7 @@ TypeNode ArithConstantTypeRule::computeType(NodeManager* nodeManager,
   {
     return nodeManager->realType();
   }
+#endif
 }
 
 TypeNode ArithRealAlgebraicNumberOpTypeRule::computeType(
@@ -56,8 +74,9 @@ TypeNode ArithOperatorTypeRule::computeType(NodeManager* nodeManager,
   TypeNode realType = nodeManager->realType();
   TNode::iterator child_it = n.begin();
   TNode::iterator child_it_end = n.end();
-  bool isInteger = true;
   Kind k = n.getKind();
+  TypeNode currType;
+  bool isInteger = true;
   for (; child_it != child_it_end; ++child_it)
   {
     TypeNode childType = (*child_it).getType(check);
@@ -82,15 +101,15 @@ TypeNode ArithOperatorTypeRule::computeType(NodeManager* nodeManager,
       }
     }
   }
+  bool isDivision = k == kind::DIVISION || k == kind::DIVISION_TOTAL;
+  currType = (isInteger && !isDivision ? integerType : realType);
   switch (k)
   {
-    case kind::TO_REAL:
-    case kind::CAST_TO_REAL: return realType;
+    case kind::TO_REAL: return realType;
     case kind::TO_INTEGER: return integerType;
     default:
     {
-      bool isDivision = k == kind::DIVISION || k == kind::DIVISION_TOTAL;
-      return (isInteger && !isDivision ? integerType : realType);
+      return currType;
     }
   }
 }
@@ -102,17 +121,14 @@ TypeNode ArithRelationTypeRule::computeType(NodeManager* nodeManager,
   if (check)
   {
     Assert(n.getNumChildren() == 2);
-    TypeNode t1 = n[0].getType(check);
-    if (!t1.isRealOrInt())
+    for (const Node& nc : n)
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting an arithmetic term for arithmetic relation");
-    }
-    TypeNode t2 = n[1].getType(check);
-    if (!t1.isComparableTo(t2))
-    {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting arithmetic terms of comparable type");
+      TypeNode t1 = nc.getType(check);
+      if (!t1.isRealOrInt())
+      {
+        throw TypeCheckingExceptionPrivate(
+            n, "expecting an arithmetic term for arithmetic relation");
+      }
     }
   }
   return nodeManager->booleanType();
@@ -162,6 +178,7 @@ TypeNode IAndTypeRule::computeType(NodeManager* nodeManager,
     TypeNode arg2 = n[1].getType(check);
     if (!arg1.isInteger() || !arg2.isInteger())
     {
+      Assert(false) << "Bad IAND " << n;
       throw TypeCheckingExceptionPrivate(n, "expecting integer terms");
     }
   }

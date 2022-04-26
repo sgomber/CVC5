@@ -245,6 +245,12 @@ void Smt2Printer::toStream(std::ostream& out,
       break;
     case kind::CONST_RATIONAL: {
       const Rational& r = n.getConst<Rational>();
+      toStreamRational(out, r, true, d_variant);
+      break;
+    }
+    case kind::CONST_INTEGER:
+    {
+      const Rational& r = n.getConst<Rational>();
       toStreamRational(out, r, false, d_variant);
       break;
     }
@@ -494,11 +500,6 @@ void Smt2Printer::toStream(std::ostream& out,
   if (k == kind::APPLY_TYPE_ASCRIPTION)
   {
     force_nt = n.getOperator().getConst<AscriptionType>().getType();
-    type_asc_arg = n[0];
-  }
-  else if (k == kind::CAST_TO_REAL)
-  {
-    force_nt = nm->realType();
     type_asc_arg = n[0];
   }
   if (!type_asc_arg.isNull())
@@ -1010,17 +1011,7 @@ void Smt2Printer::toStreamCastToType(std::ostream& out,
                                      int toDepth,
                                      TypeNode tn) const
 {
-  Node nasc;
-  if (n.getType().isInteger() && !tn.isInteger())
-  {
-    Assert(tn.isReal());
-    // probably due to subtyping integers and reals, cast it
-    nasc = NodeManager::currentNM()->mkNode(kind::CAST_TO_REAL, n);
-  }
-  else
-  {
-    nasc = n;
-  }
+  Node nasc = n;
   toStream(out, nasc, toDepth);
 }
 
