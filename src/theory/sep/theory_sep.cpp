@@ -289,7 +289,7 @@ bool TheorySep::preNotifyFact(
   {
     NodeManager* nm = NodeManager::currentNM();
     // (SEP_LABEL (sep.pto x y) L) => L = (set.singleton x)
-    Node s = nm->mkSingleton(slbl.getType().getSetElementType(), atom[0]);
+    Node s = nm->mkSingleton(slbl.getType().getSetElementType(), satom[0]);
     Node eq = slbl.eqNode(s);
     std::vector<Node> exp;
     exp.push_back(fact);
@@ -1344,7 +1344,7 @@ Node TheorySep::applyLabel( Node n, Node lbl, std::map< Node, Node >& visited ) 
   NodeManager* nm = NodeManager::currentNM();
   Kind k = n.getKind();
   std::map<Node, Node>::iterator it = visited.find(n);
-  if (it == visited.end())
+  if (it != visited.end())
   {
     return it->second;
   }
@@ -1356,7 +1356,7 @@ Node TheorySep::applyLabel( Node n, Node lbl, std::map< Node, Node >& visited ) 
   else if (k == kind::SEP_EMP)
   {
     // (SEP_LABEL sep.emp L) is the same as (= L set.empty)
-    ret = lbl.eqNode(nm->mkConst(EmptySet(lbl.getType().getSetElementType())));
+    ret = lbl.eqNode(nm->mkConst(EmptySet(lbl.getType())));
   }
   else if (n.getType().isBoolean() && n.getNumChildren() > 0)
   {
@@ -1377,6 +1377,10 @@ Node TheorySep::applyLabel( Node n, Node lbl, std::map< Node, Node >& visited ) 
     {
       ret = nm->mkNode(n.getKind(), children);
     }
+  }
+  else
+  {
+    ret = n;
   }
   visited[n] = ret;
   return ret;
