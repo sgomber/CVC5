@@ -294,6 +294,7 @@ bool TheorySep::preNotifyFact(
     std::vector<Node> exp;
     exp.push_back(fact);
     sendLemma(exp, eq, InferenceId::SEP_PTO_PROP);
+    return false;
   }
   // assert to equality if non-spatial or a labelled pto
   if (!isSpatial)
