@@ -285,8 +285,19 @@ bool TheorySep::preNotifyFact(
       d_spatial_assertions.push_back(fact);
     }
   }
+  if (!slbl.isNull() && satom.getKind() == SEP_PTO)
+  {
+    NodeManager * nm = NodeManager::currentNM();
+    // (SEP_LABEL (sep.pto x y) L) => L = (set.singleton x)
+    Node s = nm->mkSingleton(slbl.getType().getSetElementType(),
+                             atom[0]);
+    Node eq = slbl.eqNode(s);
+    std::vector<Node> exp;
+    exp.push_back(fact);
+    sendLemma( exp, eq, InferenceId::SEP_PTO_PROP);
+  }
   // assert to equality if non-spatial or a labelled pto
-  if (!isSpatial || (!slbl.isNull() && satom.getKind() == SEP_PTO))
+  if (!isSpatial)
   {
     return false;
   }
@@ -1330,33 +1341,40 @@ Node TheorySep::getLabel( Node atom, int child, Node lbl ) {
 
 Node TheorySep::applyLabel( Node n, Node lbl, std::map< Node, Node >& visited ) {
   Assert(n.getKind() != kind::SEP_LABEL);
-  if( n.getKind()==kind::SEP_STAR || n.getKind()==kind::SEP_WAND || n.getKind()==kind::SEP_PTO || n.getKind()==kind::SEP_EMP ){
-    return NodeManager::currentNM()->mkNode( kind::SEP_LABEL, n, lbl );
-  }else if( !n.getType().isBoolean() || n.getNumChildren()==0 ){
-    return n;
-  }else{
-    std::map< Node, Node >::iterator it = visited.find( n );
-    if( it==visited.end() ){
-      std::vector< Node > children;
-      if (n.getMetaKind() == kind::metakind::PARAMETERIZED) {
-        children.push_back( n.getOperator() );
-      }
-      bool childChanged = false;
-      for( unsigned i=0; i<n.getNumChildren(); i++ ){
-        Node aln = applyLabel( n[i], lbl, visited );
-        children.push_back( aln );
-        childChanged = childChanged || aln!=n[i];
-      }
-      Node ret = n;
-      if( childChanged ){
-        ret = NodeManager::currentNM()->mkNode( n.getKind(), children );
-      }
-      visited[n] = ret;
-      return ret;
-    }else{
-      return it->second;
+  NodeManager * nm = NodeManager::currentNM();
+  Kind k = n.getKind();
+  std::map< Node, Node >::iterator it = visited.find( n );
+  if( it==visited.end() ){
+    return it->second;
+  }
+  Node ret;
+  if( k==kind::SEP_STAR || k==kind::SEP_WAND || k==kind::SEP_PTO)
+  {
+    ret = nm->mkNode( kind::SEP_LABEL, n, lbl );
+  }
+  else if (k==kind::SEP_EMP)
+  {
+    // (SEP_LABEL sep.emp L) is the same as (= L set.empty)
+    ret = lbl.eqNode(nm->mkConst(EmptySet(lbl.getType().getSetElementType())));
+  }
+  else if( n.getType().isBoolean() && n.getNumChildren()>0 ){
+    ret = n;
+    std::vector< Node > children;
+    if (n.getMetaKind() == kind::metakind::PARAMETERIZED) {
+      children.push_back( n.getOperator() );
+    }
+    bool childChanged = false;
+    for( unsigned i=0; i<n.getNumChildren(); i++ ){
+      Node aln = applyLabel( n[i], lbl, visited );
+      children.push_back( aln );
+      childChanged = childChanged || aln!=n[i];
+    }
+    if( childChanged ){
+      ret = NodeManager::currentNM()->mkNode( n.getKind(), children );
     }
   }
+  visited[n] = ret;
+  return ret;
 }
 
 Node TheorySep::instantiateLabel(Node n,
@@ -1664,10 +1682,7 @@ void TheorySep::eqNotifyMerge(TNode t1, TNode t2)
   if( e2 && ( !e2->d_pto.get().isNull() || e2->d_has_neg_pto.get() ) ){
     HeapAssertInfo * e1 = getOrMakeEqcInfo( t1, true );
     if( !e2->d_pto.get().isNull() ){
-      if( !e1->d_pto.get().isNull() ){
-        Trace("sep-pto-debug") << "While merging " << t1 << " " << t2 << ", merge pto." << std::endl;
-        mergePto( e1->d_pto.get(), e2->d_pto.get() );
-      }else{
+      if( e1->d_pto.get().isNull() ){
         e1->d_pto.set( e2->d_pto.get() );
       }
     }
@@ -1703,8 +1718,7 @@ void TheorySep::addPto( HeapAssertInfo * ei, Node ei_n, Node p, bool polarity ) 
   Trace("sep-pto") << "Add pto " << p << ", pol = " << polarity << " to eqc " << ei_n << std::endl;
   if( !ei->d_pto.get().isNull() ){
     if( polarity ){
-      Trace("sep-pto-debug") << "...eqc " << ei_n << " already has pto " << ei->d_pto.get() << ", merge." << std::endl;
-      mergePto( ei->d_pto.get(), p );
+      Trace("sep-pto-debug") << "...eqc " << ei_n << " already has pto " << ei->d_pto.get() << std::endl;
     }else{
       Node pb = ei->d_pto.get();
       Trace("sep-pto") << "Process positive/negated pto " << " " << pb << " " << p << std::endl;
@@ -1742,23 +1756,6 @@ void TheorySep::addPto( HeapAssertInfo * ei, Node ei_n, Node p, bool polarity ) 
     }else{
       ei->d_has_neg_pto.set( true );
     }
-  }
-}
-
-void TheorySep::mergePto( Node p1, Node p2 ) {
-  Trace("sep-lemma-debug") << "Merge pto " << p1 << " " << p2 << std::endl;
-  Assert(p1.getKind() == kind::SEP_LABEL && p1[0].getKind() == kind::SEP_PTO);
-  Assert(p2.getKind() == kind::SEP_LABEL && p2[0].getKind() == kind::SEP_PTO);
-  if( !areEqual( p1[0][1], p2[0][1] ) ){
-    std::vector< Node > exp;
-    if( p1[1]!=p2[1] ){
-      Assert(areEqual(p1[1], p2[1]));
-      exp.push_back( p1[1].eqNode( p2[1] ) );
-    }
-    exp.push_back( p1 );
-    exp.push_back( p2 );
-    //enforces injectiveness of pto : (pto x y) ^ (pto y w) ^ x = y => y = w
-    sendLemma( exp, p1[0][1].eqNode( p2[0][1] ), InferenceId::SEP_PTO_PROP);
   }
 }
 

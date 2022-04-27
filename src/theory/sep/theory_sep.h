@@ -284,6 +284,9 @@ class TheorySep : public Theory {
   Node getNilRef( TypeNode tn );
   void setNilRef( TypeNode tn, Node n );
   Node getLabel( Node atom, int child, Node lbl );
+  /**
+   * Apply label lbl to all top-level spatial assertions, recursively, in n.
+   */
   Node applyLabel( Node n, Node lbl, std::map< Node, Node >& visited );
   void getLabelChildren( Node atom, Node lbl, std::vector< Node >& children, std::vector< Node >& labels );
 
@@ -305,7 +308,6 @@ class TheorySep : public Theory {
   void debugPrintHeap( HeapInfo& heap, const char * c );
   void validatePto( HeapAssertInfo * ei, Node ei_n );
   void addPto( HeapAssertInfo * ei, Node ei_n, Node p, bool polarity );
-  void mergePto( Node p1, Node p2 );
   void computeLabelModel( Node lbl );
   Node instantiateLabel(Node n,
                         Node o_lbl,
