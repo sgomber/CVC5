@@ -17,9 +17,9 @@
 
 #include <cmath>
 
+#include "expr/attribute.h"
 #include "smt/env.h"
 #include "theory/rewriter.h"
-#include "expr/attribute.h"
 
 using namespace cvc5::internal::kind;
 
@@ -382,7 +382,7 @@ Node convertToArithPrivate(Env& env, TNode n)
       return n.getAttribute(tpa);
     }
     Node cn = convertToArithPrivate(env, n[0]);
-    if (cn!=n)
+    if (cn != n)
     {
       ret = cn.notNode();
     }
@@ -409,7 +409,6 @@ Node convertToArithPrivate(Env& env, TNode n)
   }
   return n;
 }
-
 
 Node convertFromArithPrivate(TNode n)
 {
