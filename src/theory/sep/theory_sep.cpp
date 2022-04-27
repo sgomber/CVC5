@@ -1682,7 +1682,10 @@ void TheorySep::eqNotifyMerge(TNode t1, TNode t2)
   if( e2 && ( !e2->d_pto.get().isNull() || e2->d_has_neg_pto.get() ) ){
     HeapAssertInfo * e1 = getOrMakeEqcInfo( t1, true );
     if( !e2->d_pto.get().isNull() ){
-      if( e1->d_pto.get().isNull() ){
+      if( !e1->d_pto.get().isNull() ){
+        Trace("sep-pto-debug") << "While merging " << t1 << " " << t2 << ", merge pto." << std::endl;
+        mergePto( e1->d_pto.get(), e2->d_pto.get() );
+      }else{
         e1->d_pto.set( e2->d_pto.get() );
       }
     }
@@ -1718,7 +1721,8 @@ void TheorySep::addPto( HeapAssertInfo * ei, Node ei_n, Node p, bool polarity ) 
   Trace("sep-pto") << "Add pto " << p << ", pol = " << polarity << " to eqc " << ei_n << std::endl;
   if( !ei->d_pto.get().isNull() ){
     if( polarity ){
-      Trace("sep-pto-debug") << "...eqc " << ei_n << " already has pto " << ei->d_pto.get() << std::endl;
+      Trace("sep-pto-debug") << "...eqc " << ei_n << " already has pto " << ei->d_pto.get() << ", merge." << std::endl;
+      mergePto( ei->d_pto.get(), p );
     }else{
       Node pb = ei->d_pto.get();
       Trace("sep-pto") << "Process positive/negated pto " << " " << pb << " " << p << std::endl;
@@ -1756,6 +1760,23 @@ void TheorySep::addPto( HeapAssertInfo * ei, Node ei_n, Node p, bool polarity ) 
     }else{
       ei->d_has_neg_pto.set( true );
     }
+  }
+}
+
+void TheorySep::mergePto( Node p1, Node p2 ) {
+  Trace("sep-lemma-debug") << "Merge pto " << p1 << " " << p2 << std::endl;
+  Assert(p1.getKind() == kind::SEP_LABEL && p1[0].getKind() == kind::SEP_PTO);
+  Assert(p2.getKind() == kind::SEP_LABEL && p2[0].getKind() == kind::SEP_PTO);
+  if( !areEqual( p1[0][1], p2[0][1] ) ){
+    std::vector< Node > exp;
+    if( p1[1]!=p2[1] ){
+      Assert(areEqual(p1[1], p2[1]));
+      exp.push_back( p1[1].eqNode( p2[1] ) );
+    }
+    exp.push_back( p1 );
+    exp.push_back( p2 );
+    //enforces injectiveness of pto : (pto x y) ^ (pto y w) ^ x = y => y = w
+    sendLemma( exp, p1[0][1].eqNode( p2[0][1] ), InferenceId::SEP_PTO_PROP);
   }
 }
 
