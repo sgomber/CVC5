@@ -97,7 +97,7 @@ class ArithRewriter : public TheoryRewriter
   /** return rewrite */
   static RewriteResponse returnRewrite(TNode t, Node ret, Rewrite r);
   /** Remove TO_REAL children */
-  TNode removeToReal(TNode t);
+  static TNode removeToReal(TNode t);
   /** The operator elimination utility */
   OperatorElim& d_opElim;
 }; /* class ArithRewriter */
