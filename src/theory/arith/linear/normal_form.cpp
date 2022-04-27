@@ -220,7 +220,8 @@ VarList VarList::operator*(const VarList& other) const {
 }
 
 bool Monomial::isMember(TNode n){
-  if(n.getKind() == kind::CONST_RATIONAL) {
+  Kind k = n.getKind();
+  if(k == kind::CONST_RATIONAL || k == kind::CONST_INTEGER) {
     return true;
   } else if(multStructured(n)) {
     return VarList::isMember(n[1]);
@@ -249,7 +250,8 @@ Monomial Monomial::mkMonomial(const VarList& vl) {
 }
 
 Monomial Monomial::parseMonomial(Node n) {
-  if(n.getKind() == kind::CONST_RATIONAL) {
+  Kind k = n.getKind();
+  if(k == kind::CONST_RATIONAL || k == kind::CONST_INTEGER) {
     return Monomial(Constant(n));
   } else if(multStructured(n)) {
     return Monomial::mkMonomial(Constant(n[0]),VarList::parseVarList(n[1]));
@@ -921,11 +923,13 @@ Node Comparison::toNode(Kind k, const Polynomial& l, const Polynomial& r) {
 }
 
 bool Comparison::rightIsConstant() const {
+  Kind k;
   if(getNode().getKind() == kind::NOT){
-    return getNode()[0][1].getKind() == kind::CONST_RATIONAL;
+    k = getNode()[0][1].getKind();
   }else{
-    return getNode()[1].getKind() == kind::CONST_RATIONAL;
+    k = getNode()[1].getKind();
   }
+  return k == kind::CONST_RATIONAL || k == kind::CONST_INTEGER;
 }
 
 size_t Comparison::getComplexity() const{

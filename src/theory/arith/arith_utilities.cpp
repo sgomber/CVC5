@@ -399,7 +399,6 @@ Node convertToArithPrivate(Env& env, TNode n)
     FromPrivateAttribute fpa;
     ret.setAttribute(fpa, n);
   }
-  ToPrivateAttribute tpa;
   n.setAttribute(tpa, ret);
   return ret;
 }
