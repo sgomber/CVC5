@@ -308,6 +308,7 @@ class TheorySep : public Theory {
   void debugPrintHeap( HeapInfo& heap, const char * c );
   void validatePto( HeapAssertInfo * ei, Node ei_n );
   void addPto( HeapAssertInfo * ei, Node ei_n, Node p, bool polarity );
+  void mergePto( Node p1, Node p2 );
   void computeLabelModel( Node lbl );
   Node instantiateLabel(Node n,
                         Node o_lbl,

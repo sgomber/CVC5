@@ -1366,15 +1366,15 @@ Node TheorySep::applyLabel( Node n, Node lbl, std::map< Node, Node >& visited ) 
       children.push_back(n.getOperator());
     }
     bool childChanged = false;
-    for (unsigned i = 0; i < n.getNumChildren(); i++)
+    for (const Node& nc : n)
     {
-      Node aln = applyLabel(n[i], lbl, visited);
+      Node aln = applyLabel(nc, lbl, visited);
       children.push_back(aln);
-      childChanged = childChanged || aln != n[i];
+      childChanged = childChanged || aln != nc;
     }
     if (childChanged)
     {
-      ret = NodeManager::currentNM()->mkNode(n.getKind(), children);
+      ret = nm->mkNode(n.getKind(), children);
     }
   }
   visited[n] = ret;
