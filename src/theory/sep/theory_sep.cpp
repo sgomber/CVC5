@@ -295,8 +295,10 @@ bool TheorySep::preNotifyFact(
       Node eq = slbl.eqNode(s);
       TrustNode trn =
           d_im.mkLemmaExp(eq, PfRule::THEORY_INFERENCE, {fact}, {fact}, {eq});
-      d_im.addPendingLemma(
-          trn.getNode(), InferenceId::SEP_POS_PTO_SINGLETON, LemmaProperty::NONE, trn.getGenerator());
+      d_im.addPendingLemma(trn.getNode(),
+                           InferenceId::SEP_POS_PTO_SINGLETON,
+                           LemmaProperty::NONE,
+                           trn.getGenerator());
     }
     return false;
   }
@@ -1781,7 +1783,7 @@ void TheorySep::mergePto( Node p1, Node p2 ) {
   Assert(p1.getKind() == kind::SEP_LABEL && p1[0].getKind() == kind::SEP_PTO);
   Assert(p2.getKind() == kind::SEP_LABEL && p2[0].getKind() == kind::SEP_PTO);
   // should have the same label
-  Assert (p1[1]==p2[1]);
+  Assert(p1[1] == p2[1]);
   if( !areEqual( p1[0][1], p2[0][1] ) ){
     std::vector< Node > exp;
     if( p1[1]!=p2[1] ){
