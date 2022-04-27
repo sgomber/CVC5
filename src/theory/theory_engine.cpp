@@ -273,6 +273,7 @@ TheoryEngine::~TheoryEngine() {
 
 void TheoryEngine::interrupt() { d_interrupted = true; }
 void TheoryEngine::preRegister(TNode preprocessed) {
+  Assert (preprocessed.getKind()!=kind::ARITH_EQ);
   Trace("theory") << "TheoryEngine::preRegister( " << preprocessed << ")"
                   << std::endl;
   d_preregisterQueue.push(preprocessed);

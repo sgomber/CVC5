@@ -36,7 +36,6 @@ bool evaluateRelation(Kind rel, const L& l, const R& r)
   {
     case Kind::LT: return l < r;
     case Kind::LEQ: return l <= r;
-    case Kind::EQUAL: return l == r;
     case Kind::ARITH_EQ: return l == r;
     case Kind::DISTINCT: return l != r;
     case Kind::GEQ: return l >= r;
@@ -235,7 +234,7 @@ std::optional<bool> tryEvaluateRelationReflexive(TNode atom)
     {
       case Kind::LT: return false;
       case Kind::LEQ: return true;
-      case Kind::EQUAL: return true;
+      case Kind::ARITH_EQ: return true;
       case Kind::DISTINCT: return false;
       case Kind::GEQ: return true;
       case Kind::GT: return false;
@@ -308,7 +307,7 @@ Node buildRealEquality(Sum&& sum)
   if (isZero(lterm.second))
   {
     return buildRelation(
-        Kind::EQUAL, mkConst(Rational(0), rtype), collectSum(sum, rtype));
+        Kind::ARITH_EQ, mkConst(Rational(0), rtype), collectSum(sum, rtype));
   }
   RealAlgebraicNumber lcoeff = -lterm.second;
   for (auto& s : sum)

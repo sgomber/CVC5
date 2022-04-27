@@ -181,8 +181,8 @@ RewriteResponse ArithRewriter::postRewriteAtom(TNode atom)
 
   // left |><| right
   Kind kind = atom.getKind();
-  TNode left = atom[0];
-  TNode right = atom[1];
+  TNode left = removeToReal(atom[0]);
+  TNode right = removeToReal(atom[1]);
   Assert(kind == kind::EQUAL || isRelationOperator(kind));
 
   if (auto response = rewriter::tryEvaluateRelation(kind, left, right);
@@ -458,9 +458,10 @@ RewriteResponse ArithRewriter::postRewritePlus(TNode t)
   rewriter::Sum sum;
   for (const auto& child : children)
   {
-    rewriter::addToSum(sum, child);
+    rewriter::addToSum(sum, removeToReal(child));
   }
-  return RewriteResponse(REWRITE_DONE, rewriter::collectSum(sum, t.getType()));
+  Node retSum = rewriter::collectSum(sum, t.getType());
+  return RewriteResponse(REWRITE_DONE, retSum);
 }
 
 RewriteResponse ArithRewriter::preRewriteMult(TNode node)
@@ -485,6 +486,12 @@ RewriteResponse ArithRewriter::postRewriteMult(TNode t){
   if (auto res = rewriter::getZeroChild(children); res)
   {
     return RewriteResponse(REWRITE_DONE, *res);
+  }
+  
+  // remove TO_REAL
+  for (TNode& tc : children)
+  {
+    tc = removeToReal(tc);
   }
 
   // Distribute over addition
@@ -1117,6 +1124,11 @@ TrustNode ArithRewriter::expandDefinition(Node node)
   TrustNode ret = d_opElim.eliminate(node, lems, true);
   Assert(lems.empty());
   return ret;
+}
+
+TNode ArithRewriter::removeToReal(TNode t)
+{
+  return t.getKind()==kind::TO_REAL ? t[0] : t;
 }
 
 RewriteResponse ArithRewriter::returnRewrite(TNode t, Node ret, Rewrite r)
