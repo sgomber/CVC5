@@ -394,7 +394,7 @@ Node convertToArithPrivate(Env& env, TNode n)
     ret = NodeManager::currentNM()->mkNode(kind::ARITH_EQ, left, right);
     ret = env.getRewriter()->rewrite(ret);
   }
-  if (ret!=n)
+  if (ret != n)
   {
     FromPrivateAttribute fpa;
     ret.setAttribute(fpa, n);

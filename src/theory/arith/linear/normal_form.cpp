@@ -221,11 +221,16 @@ VarList VarList::operator*(const VarList& other) const {
 
 bool Monomial::isMember(TNode n){
   Kind k = n.getKind();
-  if(k == kind::CONST_RATIONAL || k == kind::CONST_INTEGER) {
+  if (k == kind::CONST_RATIONAL || k == kind::CONST_INTEGER)
+  {
     return true;
-  } else if(multStructured(n)) {
+  }
+  else if (multStructured(n))
+  {
     return VarList::isMember(n[1]);
-  } else {
+  }
+  else
+  {
     return VarList::isMember(n);
   }
 }
@@ -251,11 +256,16 @@ Monomial Monomial::mkMonomial(const VarList& vl) {
 
 Monomial Monomial::parseMonomial(Node n) {
   Kind k = n.getKind();
-  if(k == kind::CONST_RATIONAL || k == kind::CONST_INTEGER) {
+  if (k == kind::CONST_RATIONAL || k == kind::CONST_INTEGER)
+  {
     return Monomial(Constant(n));
-  } else if(multStructured(n)) {
+  }
+  else if (multStructured(n))
+  {
     return Monomial::mkMonomial(Constant(n[0]),VarList::parseVarList(n[1]));
-  } else {
+  }
+  else
+  {
     return Monomial(VarList::parseVarList(n));
   }
 }
