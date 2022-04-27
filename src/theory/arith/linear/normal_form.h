@@ -794,7 +794,7 @@ private:
   bool d_singleton;
 
   Polynomial(TNode n) : NodeWrapper(n), d_singleton(Monomial::isMember(n)) {
-    Assert(isMember(getNode()));
+    Assert(isMember(getNode())) << "Bad polynomial member " << n;
   }
 
   static Node makePlusNode(const std::vector<Monomial>& m) {

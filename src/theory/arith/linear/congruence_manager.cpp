@@ -136,7 +136,7 @@ ArithCongruenceManager::ArithCongruenceNotify::ArithCongruenceNotify(ArithCongru
 bool ArithCongruenceManager::ArithCongruenceNotify::eqNotifyTriggerPredicate(
     TNode predicate, bool value)
 {
-  Assert(predicate.getKind() == kind::ARITH_EQ);
+  Assert(predicate.getKind() == kind::EQUAL);
   Trace("arith::congruences")
       << "ArithCongruenceNotify::eqNotifyTriggerPredicate(" << predicate << ", "
       << (value ? "true" : "false") << ")" << std::endl;
@@ -552,7 +552,7 @@ void ArithCongruenceManager::assertLitToEqualityEngine(
 {
   bool isEquality = lit.getKind() != Kind::NOT;
   Node eq = isEquality ? lit : lit[0];
-  Assert(eq.getKind() == Kind::ARITH_EQ);
+  Assert(eq.getKind() == Kind::EQUAL);
 
   Trace("arith-ee") << "Assert to Eq " << lit << ", reason " << reason
                     << std::endl;
@@ -599,7 +599,7 @@ void ArithCongruenceManager::assertionToEqualityEngine(
   Assert(isWatchedVariable(s));
 
   TNode eq = d_watchedEqualities[s];
-  Assert(eq.getKind() == kind::ARITH_EQ);
+  Assert(eq.getKind() == kind::EQUAL);
 
   Node lit = isEquality ? Node(eq) : eq.notNode();
   Trace("arith-ee") << "Assert to Eq " << eq << ", pol " << isEquality

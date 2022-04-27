@@ -25,6 +25,7 @@
 #include "theory/arith/inference_manager.h"
 #include "theory/arith/pp_rewrite_eq.h"
 #include "theory/theory.h"
+#include "theory/arith/linear_converter.h"
 
 namespace cvc5::internal {
 namespace theory {
@@ -144,6 +145,14 @@ class TheoryArith : public Theory {
    * false otherwise.
    */
   bool sanityCheckIntegerModel();
+  /**
+   * Send a lemma from the linear solver
+   */
+  void trustedConflictFromPrivate(const TrustNode& tconf,
+                    InferenceId id);
+  bool trustedLemmaFromPrivate(const TrustNode& tlem,
+                    InferenceId id);
+  void propagateFromPrivate(TNode lit);
 
   /** Get the proof equality engine */
   eq::ProofEqEngine* getProofEqEngine();
@@ -185,7 +194,8 @@ class TheoryArith : public Theory {
   std::map<Node, Node> d_arithModelCache;
   /** Is the above map computed? */
   bool d_arithModelCacheSet;
-
+  /** From arith private converter */
+  FromArithPrivateConverter d_faConverter;
 };/* class TheoryArith */
 
 }  // namespace arith

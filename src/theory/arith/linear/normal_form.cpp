@@ -711,7 +711,7 @@ SumPair SumPair::mkSumPair(const Polynomial& p){
   }
 }
 
-Comparison::Comparison(TNode n) : NodeWrapper(n) { Assert(isNormalForm()); }
+Comparison::Comparison(TNode n) : NodeWrapper(n) { Assert(isNormalForm()) << "Bad comparison normal form: " << n; }
 
 SumPair Comparison::toSumPair() const {
   Kind cmpKind = comparisonKind();
@@ -1120,16 +1120,19 @@ bool Comparison::isNormalEqualityOrDisequality() const {
   if(pleft.numMonomials() == 1){
     Monomial mleft = pleft.getHead();
     if(mleft.isConstant()){
+      Trace("nf::tmp") << "left const" << endl;
       return false;
     }else{
       Polynomial pright = getRight();
       if(allIntegralVariables()){
         const Rational& lcoeff = mleft.getConstant().getValue();
         if(pright.isConstant()){
+          Trace("nf::tmp") << "right constant " << pright.isIntegral() << " " << lcoeff.isOne() << std::endl;
           return pright.isIntegral() && lcoeff.isOne();
         }
         Polynomial varRight = pright.containsConstant() ? pright.getTail() : pright;
         if(lcoeff.sgn() <= 0){
+          Trace("nf::tmp") << "coeff sign neg" << endl;
           return false;
         }else{
           Integer lcm = lcoeff.getDenominator().lcm(varRight.denominatorLCM());
@@ -1158,11 +1161,13 @@ bool Comparison::isNormalEqualityOrDisequality() const {
             << endl;
           return pright.variableMonomialAreStrictlyGreater(mleft);
         }else{
+          Trace("nf::tmp") << "coeff left one" << endl;
           return false;
         }
       }
     }
   }else{
+    Trace("nf::tmp") << "wrong monomials" << endl;
     return false;
   }
 }

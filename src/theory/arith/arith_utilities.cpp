@@ -17,10 +17,6 @@
 
 #include <cmath>
 
-#include "expr/attribute.h"
-#include "smt/env.h"
-#include "theory/rewriter.h"
-
 using namespace cvc5::internal::kind;
 
 namespace cvc5::internal {
@@ -353,64 +349,6 @@ Node multConstants(const Node& c1, const Node& c2)
   Assert(tn.isRealOrInt());
   return nm->mkConstRealOrInt(
       tn, Rational(c1.getConst<Rational>() * c2.getConst<Rational>()));
-}
-
-struct ToPrivateAttributeId
-{
-};
-typedef expr::Attribute<ToPrivateAttributeId, Node> ToPrivateAttribute;
-
-struct FromPrivateAttributeId
-{
-};
-typedef expr::Attribute<FromPrivateAttributeId, Node> FromPrivateAttribute;
-
-Node convertToArithPrivate(Env& env, TNode n)
-{
-  ToPrivateAttribute tpa;
-  if (n.hasAttribute(tpa))
-  {
-    return n.getAttribute(tpa);
-  }
-  Node ret = n;
-  Kind k = n.getKind();
-  if (k == kind::TO_REAL)
-  {
-    Assert(n[0].getKind() != kind::TO_REAL);
-    ret = n[0];
-  }
-  else if (k == kind::NOT)
-  {
-    Node cn = convertToArithPrivate(env, n[0]);
-    if (cn != n)
-    {
-      ret = cn.notNode();
-    }
-  }
-  if (k == kind::EQUAL)
-  {
-    TNode left = n[0].getKind() == kind::TO_REAL ? n[0][0] : n[0];
-    TNode right = n[1].getKind() == kind::TO_REAL ? n[1][0] : n[1];
-    ret = NodeManager::currentNM()->mkNode(kind::ARITH_EQ, left, right);
-    ret = env.getRewriter()->rewrite(ret);
-  }
-  if (ret != n)
-  {
-    FromPrivateAttribute fpa;
-    ret.setAttribute(fpa, n);
-  }
-  n.setAttribute(tpa, ret);
-  return ret;
-}
-
-Node convertFromArithPrivate(TNode n)
-{
-  FromPrivateAttribute fpa;
-  if (n.hasAttribute(fpa))
-  {
-    return n.getAttribute(fpa);
-  }
-  return n;
 }
 
 }  // namespace arith

@@ -49,7 +49,8 @@ TheoryArith::TheoryArith(Env& env, OutputChannel& out, Valuation valuation)
       d_opElim(d_env),
       d_arithPreproc(env, d_astate, d_im, d_pnm, d_opElim),
       d_rewriter(d_opElim),
-      d_arithModelCacheSet(false)
+      d_arithModelCacheSet(false),
+      d_faConverter(env)
 {
   // currently a cyclic dependency to TheoryArithPrivate
   d_astate.setParent(d_internal);
@@ -430,6 +431,27 @@ bool TheoryArith::sanityCheckIntegerModel()
         << "Bad assignment from TheoryArithPrivate::collectModelValues, and no "
           "branching lemma was sent";
     return false;
+}
+
+
+void TheoryArith::trustedConflictFromPrivate(const TrustNode& tconf,
+                  InferenceId id)
+{
+  // TODO: convert from private
+  d_im.trustedConflict(tconf, id);
+}
+
+bool TheoryArith::trustedLemmaFromPrivate(const TrustNode& tlem,
+                  InferenceId id)
+{
+  // TODO: convert from private
+  return d_im.trustedLemma(tlem, id);
+}
+
+void TheoryArith::propagateFromPrivate(TNode lit)
+{
+  // TODO: convert from private
+  d_im.propagateLit(lit);
 }
 
 }  // namespace arith
