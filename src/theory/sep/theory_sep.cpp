@@ -287,14 +287,13 @@ bool TheorySep::preNotifyFact(
   }
   if (!slbl.isNull() && satom.getKind() == SEP_PTO)
   {
-    NodeManager * nm = NodeManager::currentNM();
+    NodeManager* nm = NodeManager::currentNM();
     // (SEP_LABEL (sep.pto x y) L) => L = (set.singleton x)
-    Node s = nm->mkSingleton(slbl.getType().getSetElementType(),
-                             atom[0]);
+    Node s = nm->mkSingleton(slbl.getType().getSetElementType(), atom[0]);
     Node eq = slbl.eqNode(s);
     std::vector<Node> exp;
     exp.push_back(fact);
-    sendLemma( exp, eq, InferenceId::SEP_PTO_PROP);
+    sendLemma(exp, eq, InferenceId::SEP_PTO_PROP);
   }
   // assert to equality if non-spatial or a labelled pto
   if (!isSpatial)
@@ -1341,36 +1340,41 @@ Node TheorySep::getLabel( Node atom, int child, Node lbl ) {
 
 Node TheorySep::applyLabel( Node n, Node lbl, std::map< Node, Node >& visited ) {
   Assert(n.getKind() != kind::SEP_LABEL);
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   Kind k = n.getKind();
-  std::map< Node, Node >::iterator it = visited.find( n );
-  if( it==visited.end() ){
+  std::map<Node, Node>::iterator it = visited.find(n);
+  if (it == visited.end())
+  {
     return it->second;
   }
   Node ret;
-  if( k==kind::SEP_STAR || k==kind::SEP_WAND || k==kind::SEP_PTO)
+  if (k == kind::SEP_STAR || k == kind::SEP_WAND || k == kind::SEP_PTO)
   {
-    ret = nm->mkNode( kind::SEP_LABEL, n, lbl );
+    ret = nm->mkNode(kind::SEP_LABEL, n, lbl);
   }
-  else if (k==kind::SEP_EMP)
+  else if (k == kind::SEP_EMP)
   {
     // (SEP_LABEL sep.emp L) is the same as (= L set.empty)
     ret = lbl.eqNode(nm->mkConst(EmptySet(lbl.getType().getSetElementType())));
   }
-  else if( n.getType().isBoolean() && n.getNumChildren()>0 ){
+  else if (n.getType().isBoolean() && n.getNumChildren() > 0)
+  {
     ret = n;
-    std::vector< Node > children;
-    if (n.getMetaKind() == kind::metakind::PARAMETERIZED) {
-      children.push_back( n.getOperator() );
+    std::vector<Node> children;
+    if (n.getMetaKind() == kind::metakind::PARAMETERIZED)
+    {
+      children.push_back(n.getOperator());
     }
     bool childChanged = false;
-    for( unsigned i=0; i<n.getNumChildren(); i++ ){
-      Node aln = applyLabel( n[i], lbl, visited );
-      children.push_back( aln );
-      childChanged = childChanged || aln!=n[i];
+    for (unsigned i = 0; i < n.getNumChildren(); i++)
+    {
+      Node aln = applyLabel(n[i], lbl, visited);
+      children.push_back(aln);
+      childChanged = childChanged || aln != n[i];
     }
-    if( childChanged ){
-      ret = NodeManager::currentNM()->mkNode( n.getKind(), children );
+    if (childChanged)
+    {
+      ret = NodeManager::currentNM()->mkNode(n.getKind(), children);
     }
   }
   visited[n] = ret;
