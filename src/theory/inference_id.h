@@ -94,6 +94,8 @@ enum class InferenceId
   // variables in a model, but those variables are inconsistent with assignments
   // from another theory
   ARITH_SPLIT_FOR_NL_MODEL,
+  // an equality that can be rewritten to false by the ARITH_EQ rewriter
+  ARITH_EQ_REWRITE_CONF,
   //-------------------- preprocessing
   // equivalence of term and its preprocessed form
   ARITH_PP_ELIM_OPERATORS,

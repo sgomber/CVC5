@@ -136,6 +136,12 @@ TrustNode TheoryArith::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
   Kind k = atom.getKind();
   if (k == kind::EQUAL)
   {
+    // in rare cases, an equality may rewrite to a constant
+    Node ret = convertToArithPrivate(d_env, atom);
+    if (ret.isConst())
+    {
+      return TrustNode::mkTrustRewrite(atom, ret);
+    }
     return d_ppre.ppRewriteEq(atom);
   }
   else if (k == kind::ARITH_EQ)
@@ -249,12 +255,23 @@ bool TheoryArith::preNotifyFact(
   bool ret = true;
   if (d_eqSolver != nullptr)
   {
+    // we keep the non-private form of fact for the equality solver
     // the equality solver may indicate ret = false, after which the assertion
     // will be asserted to the equality engine in the default way.
     ret = d_eqSolver->preNotifyFact(atom, pol, fact, isPrereg, isInternal);
   }
   // we also always also notify the internal solver
   Node factp = convertToArithPrivate(d_env, fact);
+  if (factp.isConst())
+  {
+    if (!factp.getConst<bool>())
+    {
+      // immediate unit conflict
+      d_im.conflict(fact, InferenceId::ARITH_EQ_REWRITE_CONF);
+    }
+    // otherwise, the constraint is trivial by rewriting
+    return true;
+  }
   d_internal->preNotifyFact(factp);
   return ret;
 }
@@ -451,20 +468,24 @@ bool TheoryArith::sanityCheckIntegerModel()
 void TheoryArith::trustedConflictFromPrivate(const TrustNode& tconf,
                                              InferenceId id)
 {
+  Trace("arith-private") << "Conflict " << tconf.getProven() << " " << id << std::endl;
   // TODO: convert from private
   d_im.trustedConflict(tconf, id);
 }
 
 bool TheoryArith::trustedLemmaFromPrivate(const TrustNode& tlem, InferenceId id)
 {
+  Trace("arith-private") << "Lemma " << tlem.getProven() << " " << id << std::endl;
   // TODO: convert from private
   return d_im.trustedLemma(tlem, id);
 }
 
 void TheoryArith::propagateFromPrivate(TNode lit)
 {
-  // TODO: convert from private
-  d_im.propagateLit(lit);
+  // convert from private, non-env version
+  Node flit = convertFromArithPrivate(lit);
+  Trace("arith-private") << "Propagate " << flit << " (from " << lit << ")" << std::endl;
+  d_im.propagateLit(flit);
 }
 
 }  // namespace arith

@@ -1476,7 +1476,7 @@ ConstraintP TheoryArithPrivate::constraintFromFactQueue(TNode assertion)
   Kind simpleKind = Comparison::comparisonKind(assertion);
   ConstraintP constraint = d_constraintDatabase.lookup(assertion);
   if(constraint == NullConstraint){
-    Assert(simpleKind == ARITH_EQ || simpleKind == DISTINCT);
+    Assert(simpleKind == ARITH_EQ || simpleKind == DISTINCT) << "Bad kind from " << assertion;
     bool isDistinct = simpleKind == DISTINCT;
     Node eq = (simpleKind == DISTINCT) ? assertion[0] : assertion;
     Assert(!isSetup(eq));
