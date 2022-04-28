@@ -468,14 +468,16 @@ bool TheoryArith::sanityCheckIntegerModel()
 void TheoryArith::trustedConflictFromPrivate(const TrustNode& tconf,
                                              InferenceId id)
 {
-  Trace("arith-private") << "Conflict " << tconf.getProven() << " " << id << std::endl;
+  Trace("arith-private") << "Conflict " << tconf.getProven() << " " << id
+                         << std::endl;
   // TODO: convert from private
   d_im.trustedConflict(tconf, id);
 }
 
 bool TheoryArith::trustedLemmaFromPrivate(const TrustNode& tlem, InferenceId id)
 {
-  Trace("arith-private") << "Lemma " << tlem.getProven() << " " << id << std::endl;
+  Trace("arith-private") << "Lemma " << tlem.getProven() << " " << id
+                         << std::endl;
   // TODO: convert from private
   return d_im.trustedLemma(tlem, id);
 }
@@ -484,7 +486,8 @@ void TheoryArith::propagateFromPrivate(TNode lit)
 {
   // convert from private, non-env version
   Node flit = convertFromArithPrivate(lit);
-  Trace("arith-private") << "Propagate " << flit << " (from " << lit << ")" << std::endl;
+  Trace("arith-private") << "Propagate " << flit << " (from " << lit << ")"
+                         << std::endl;
   d_im.propagateLit(flit);
 }
 
