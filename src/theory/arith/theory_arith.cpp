@@ -255,7 +255,7 @@ bool TheoryArith::preNotifyFact(
   }
   // we also always also notify the internal solver
   Node factp = convertToArithPrivate(d_env, fact);
-  d_internal->preNotifyFact(atom, pol, factp);
+  d_internal->preNotifyFact(factp);
   return ret;
 }
 
@@ -278,7 +278,8 @@ TrustNode TheoryArith::explain(TNode n)
       return texp;
     }
   }
-  return d_internal->explain(n);
+  Node np = convertToArithPrivate(d_env, n);
+  return d_internal->explain(np);
 }
 
 void TheoryArith::propagate(Effort e) {

@@ -587,7 +587,7 @@ RewriteResponse ArithRewriter::rewriteDiv(TNode t, bool pre)
   if (rewriter::isRAN(right))
   {
     const RealAlgebraicNumber& den = rewriter::getRAN(right);
-    // mkConst returns Real always
+    // mkConst is applied to RAN in this block, which are always Real
     if (left.isConst())
     {
       return RewriteResponse(
