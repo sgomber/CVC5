@@ -123,16 +123,26 @@ void TheoryArith::preRegisterTerm(TNode n)
   d_internal->preRegisterTerm(np);
 }
 
-void TheoryArith::notifySharedTerm(TNode n) { d_internal->notifySharedTerm(n); }
+void TheoryArith::notifySharedTerm(TNode n) { 
+  n = n.getKind()==kind::TO_REAL ? n[0] : n;
+  d_internal->notifySharedTerm(n);
+}
 
 TrustNode TheoryArith::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
 {
   CodeTimer timer(d_ppRewriteTimer, /* allow_reentrant = */ true);
   Trace("arith::preprocess") << "arith::preprocess() : " << atom << endl;
-
-  if (atom.getKind() == kind::EQUAL)
+  Kind k = atom.getKind();
+  if (k == kind::EQUAL)
   {
     return d_ppre.ppRewriteEq(atom);
+  }
+  else if (k == kind::ARITH_EQ)
+  {
+    // ARITH_EQ should be replaced by equality
+    Node ret = convertFromArithPrivate(d_env, atom);
+    Assert (ret!=atom);
+    return TrustNode::mkTrustRewrite(atom, ret);
   }
   Assert(d_env.theoryOf(atom) == THEORY_ARITH);
   // Eliminate operators. Notice we must do this here since other
@@ -339,6 +349,8 @@ void TheoryArith::presolve(){
 
 EqualityStatus TheoryArith::getEqualityStatus(TNode a, TNode b) {
   Trace("arith") << "TheoryArith::getEqualityStatus(" << a << ", " << b << ")" << std::endl;
+  a = a.getKind()==kind::TO_REAL ? a[0] : a;
+  b = b.getKind()==kind::TO_REAL ? b[0] : b;
   if (a == b)
   {
     return EQUALITY_TRUE_IN_MODEL;
@@ -367,7 +379,8 @@ Node TheoryArith::getModelValue(TNode var) {
 
 std::pair<bool, Node> TheoryArith::entailmentCheck(TNode lit)
 {
-  return d_internal->entailmentCheck(lit);
+  Node litp = convertToArithPrivate(d_env, lit);
+  return d_internal->entailmentCheck(litp);
 }
 
 eq::ProofEqEngine* TheoryArith::getProofEqEngine()

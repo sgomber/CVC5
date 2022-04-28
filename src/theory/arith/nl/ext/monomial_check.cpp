@@ -717,23 +717,23 @@ void MonomialCheck::assignOrderIds(std::vector<Node>& vars,
 }
 Node MonomialCheck::mkLit(Node a, Node b, int status, bool isAbsolute) const
 {
-  Assert(a.getType().isComparableTo(b.getType()));
+  NodeManager* nm = NodeManager::currentNM();
   if (status == 0)
   {
-    Node a_eq_b = a.eqNode(b);
+    Node a_eq_b = nm->mkNode(Kind::ARITH_EQ, a, b);
     if (!isAbsolute)
     {
       return a_eq_b;
     }
-    Node negate_b = NodeManager::currentNM()->mkNode(Kind::NEG, b);
-    return a_eq_b.orNode(a.eqNode(negate_b));
+    Node negate_b = nm->mkNode(Kind::NEG, b);
+    Node a_eq_negb = nm->mkNode(Kind::ARITH_EQ, a, negate_b);
+    return nm->mkNode(Kind::OR, a_eq_b, a_eq_negb);
   }
   else if (status < 0)
   {
     return mkLit(b, a, -status);
   }
   Assert(status == 1 || status == 2);
-  NodeManager* nm = NodeManager::currentNM();
   Kind greater_op = status == 1 ? Kind::GEQ : Kind::GT;
   if (!isAbsolute)
   {

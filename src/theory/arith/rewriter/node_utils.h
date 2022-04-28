@@ -92,32 +92,28 @@ inline Node mkConst(const Integer& value)
   return NodeManager::currentNM()->mkConstInt(value);
 }
 /** Create an integer or rational constant node */
-inline Node mkConst(const Rational& value, const TypeNode& tn)
+inline Node mkConst(const Rational& value)
 {
-  if (tn.isInteger())
-  {
-    return NodeManager::currentNM()->mkConstInt(value);
-  }
+  // always make real
   return NodeManager::currentNM()->mkConstReal(value);
 }
 /** Create a real algebraic number node */
-inline Node mkConst(const RealAlgebraicNumber& value, const TypeNode& tn)
+inline Node mkConst(const RealAlgebraicNumber& value)
 {
   if (value.isRational())
   {
-    return mkConst(value.toRational(), tn);
+    return mkConst(value.toRational());
   }
   return NodeManager::currentNM()->mkRealAlgebraicNumber(value);
 }
 
 /** Make a nonlinear multiplication from the given factors */
-inline Node mkNonlinearMult(const std::vector<Node>& factors,
-                            const TypeNode& tn)
+inline Node mkNonlinearMult(const std::vector<Node>& factors)
 {
   auto* nm = NodeManager::currentNM();
   switch (factors.size())
   {
-    case 0: return mkConst(Rational(1), tn);
+    case 0: return mkConst(Rational(1));
     case 1: return factors[0];
     default: return nm->mkNode(Kind::NONLINEAR_MULT, factors);
   }
@@ -155,8 +151,7 @@ Node mkMultTerm(const RealAlgebraicNumber& multiplicity, TNode monomial);
  *
  */
 Node mkMultTerm(const RealAlgebraicNumber& multiplicity,
-                std::vector<Node>&& monomial,
-                const TypeNode& tn);
+                std::vector<Node>&& monomial);
 
 }  // namespace rewriter
 }  // namespace arith

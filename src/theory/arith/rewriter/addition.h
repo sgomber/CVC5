@@ -74,7 +74,7 @@ void addToSum(Sum& sum, TNode n, bool negate = false);
  * Evaluates the sum object (mapping monomials to their multiplicities) into a
  * single node (of kind `ADD`, unless the sum has less than two summands).
  */
-Node collectSum(const Sum& sum, const TypeNode& tn);
+Node collectSum(const Sum& sum);
 
 /**
  * Distribute a multiplication over one or more additions. The multiplication
@@ -89,8 +89,7 @@ Node collectSum(const Sum& sum, const TypeNode& tn);
  * monomials or products. This allows to combine summands with identical
  * monomials immediately and avoid a potential blow-up.
  */
-Node distributeMultiplication(const std::vector<TNode>& factors,
-                              const TypeNode& tn);
+Node distributeMultiplication(const std::vector<TNode>& factors);
 
 }  // namespace rewriter
 }  // namespace arith

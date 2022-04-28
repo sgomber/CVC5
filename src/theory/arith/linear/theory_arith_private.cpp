@@ -4902,7 +4902,7 @@ bool TheoryArithPrivate::decomposeLiteral(Node lit, Kind& k, int& dir, Rational&
                          << "  diff: " << dc << " + " << dm << "*("<< dp <<"): " << diff << endl
                          << "  sep: " << sep << endl;
 
-  // k in LT, LEQ, ARITH_EQ, DISARITH_EQ
+  // k in LT, LEQ, ARITH_EQ, DISEQUALITY
   // [dir*lm*( lp ) + dir*lc] k [dir*rm*( rp ) + dir*rc]
   Rational change = rc - lc;
   Assert(change == (-dc));
@@ -4914,7 +4914,7 @@ bool TheoryArithPrivate::decomposeLiteral(Node lit, Kind& k, int& dir, Rational&
     sep = DeltaRational(change);
     k = normKind;
   }
-  // k in LEQ, ARITH_EQ, DISARITH_EQ
+  // k in LEQ, ARITH_EQ, DISEQUALITY
   // dir*lm*( lp ) k [dir*rm*( rp )] + dir*(sep + d * delta)
   return true;
 }

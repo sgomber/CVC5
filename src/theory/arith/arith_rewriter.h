@@ -98,6 +98,8 @@ class ArithRewriter : public TheoryRewriter
   static RewriteResponse returnRewrite(TNode t, Node ret, Rewrite r);
   /** Remove TO_REAL children */
   static TNode removeToReal(TNode t);
+  /** Add TO_REAL if necessary */
+  static Node addToReal(TypeNode tn, TNode t);
   /** The operator elimination utility */
   OperatorElim& d_opElim;
 }; /* class ArithRewriter */

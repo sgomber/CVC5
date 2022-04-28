@@ -653,6 +653,7 @@ bool Polynomial::isMember(TNode n) {
     Node::iterator currIter = n.begin(), end = n.end();
     Node prev = *currIter;
     if(!Monomial::isMember(prev)){
+      Trace("nf::tmp") << "Non-monomial: " << prev << std::endl;
       return false;
     }
 
@@ -661,10 +662,12 @@ bool Polynomial::isMember(TNode n) {
     for(; currIter != end; ++currIter){
       Node curr = *currIter;
       if(!Monomial::isMember(curr)){
+        Trace("nf::tmp") << "Non-monomial: " << curr << std::endl;
         return false;
       }
       Monomial mcurr = Monomial::parseMonomial(curr);
       if(!(mprev < mcurr)){
+        Trace("nf::tmp") << "Non-sort polynomial" << std::endl;
         return false;
       }
       mprev = mcurr;
@@ -673,6 +676,7 @@ bool Polynomial::isMember(TNode n) {
   }
   else
   {
+    Trace("nf::tmp") << "Non-add" << std::endl;
     return false;
   }
 }

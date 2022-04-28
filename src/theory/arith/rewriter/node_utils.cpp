@@ -27,28 +27,26 @@ Node mkMultTerm(const Rational& multiplicity, TNode monomial)
 {
   if (monomial.isConst())
   {
-    return mkConst(multiplicity * monomial.getConst<Rational>(),
-                   monomial.getType());
+    return mkConst(multiplicity * monomial.getConst<Rational>());
   }
   if (isOne(multiplicity))
   {
     return monomial;
   }
   return NodeManager::currentNM()->mkNode(
-      Kind::MULT, mkConst(multiplicity, monomial.getType()), monomial);
+      Kind::MULT, mkConst(multiplicity), monomial);
 }
 
 Node mkMultTerm(const RealAlgebraicNumber& multiplicity, TNode monomial)
 {
-  TypeNode mtn = monomial.getType();
-  Node mterm = mkConst(multiplicity, mtn);
+  Node mterm = mkConst(multiplicity);
   if (mterm.isConst())
   {
     return mkMultTerm(mterm.getConst<Rational>(), monomial);
   }
   if (monomial.isConst())
   {
-    return mkConst(multiplicity * monomial.getConst<Rational>(), mtn);
+    return mkConst(multiplicity * monomial.getConst<Rational>());
   }
   std::vector<Node> prod;
   prod.emplace_back(mterm);
@@ -65,10 +63,9 @@ Node mkMultTerm(const RealAlgebraicNumber& multiplicity, TNode monomial)
 }
 
 Node mkMultTerm(const RealAlgebraicNumber& multiplicity,
-                std::vector<Node>&& monomial,
-                const TypeNode& tn)
+                std::vector<Node>&& monomial)
 {
-  Node mterm = mkConst(multiplicity, tn);
+  Node mterm = mkConst(multiplicity);
   if (monomial.empty())
   {
     return mterm;
@@ -77,7 +74,7 @@ Node mkMultTerm(const RealAlgebraicNumber& multiplicity,
   {
     std::sort(monomial.begin(), monomial.end(), rewriter::LeafNodeComparator());
     return mkMultTerm(mterm.getConst<Rational>(),
-                      mkNonlinearMult(monomial, tn));
+                      mkNonlinearMult(monomial));
   }
   monomial.emplace_back(mterm);
   std::sort(monomial.begin(), monomial.end(), rewriter::LeafNodeComparator());
