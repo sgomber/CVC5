@@ -507,15 +507,17 @@ Node TheoryArith::convertFromPrivate(TNode n)
 void TheoryArith::trustedConflictFromPrivate(const TrustNode& tconf,
                                              InferenceId id)
 {
-  Trace("arith-private") << "Conflict " << tconf.getProven() << " " << id
-                         << std::endl;
   // convert from private
   Node conf = tconf.getNode();
   Node fconf = convertFromPrivate(conf);
   if (!fconf.isNull())
   {
+    Trace("arith-private") << "Conflict " << fconf << " (from " << tconf.getProven() << ") " << id
+                          << std::endl;
     return d_im.conflict(fconf, id);
   }
+  Trace("arith-private") << "Conflict (no-convert) " << tconf.getProven() << " " << id
+                         << std::endl;
   d_im.trustedConflict(tconf, id);
 }
 
