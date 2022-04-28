@@ -17,8 +17,8 @@
 
 #include "smt/env.h"
 #include "theory/arith/linear/normal_form.h"
-#include "theory/rewriter.h"
 #include "theory/arith/linear_converter.h"
+#include "theory/rewriter.h"
 
 using namespace cvc5::internal::kind;
 

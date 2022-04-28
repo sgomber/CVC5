@@ -477,14 +477,14 @@ bool TheoryArith::sanityCheckIntegerModel()
 Node TheoryArith::convertFromPrivate(TNode n)
 {
   // convert from private
-  if (n.getKind()==AND)
+  if (n.getKind() == AND)
   {
     std::vector<Node> children;
     bool childChanged = false;
     for (const Node& cn : n)
     {
       Node fcn = convertFromArithPrivate(cn);
-      childChanged = childChanged || fcn!=cn;
+      childChanged = childChanged || fcn != cn;
       children.push_back(fcn);
     }
     if (childChanged)
@@ -495,7 +495,7 @@ Node TheoryArith::convertFromPrivate(TNode n)
   else
   {
     Node fn = convertFromArithPrivate(n);
-    if (fn!=n)
+    if (fn != n)
     {
       return fn;
     }
