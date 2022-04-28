@@ -715,7 +715,10 @@ SumPair SumPair::mkSumPair(const Polynomial& p){
   }
 }
 
-Comparison::Comparison(TNode n) : NodeWrapper(n) { Assert(isNormalForm()) << "Bad comparison normal form: " << n; }
+Comparison::Comparison(TNode n) : NodeWrapper(n)
+{
+  Assert(isNormalForm()) << "Bad comparison normal form: " << n;
+}
 
 SumPair Comparison::toSumPair() const {
   Kind cmpKind = comparisonKind();
@@ -1131,7 +1134,8 @@ bool Comparison::isNormalEqualityOrDisequality() const {
       if(allIntegralVariables()){
         const Rational& lcoeff = mleft.getConstant().getValue();
         if(pright.isConstant()){
-          Trace("nf::tmp") << "right constant " << pright.isIntegral() << " " << lcoeff.isOne() << std::endl;
+          Trace("nf::tmp") << "right constant " << pright.isIntegral() << " "
+                           << lcoeff.isOne() << std::endl;
           return pright.isIntegral() && lcoeff.isOne();
         }
         Polynomial varRight = pright.containsConstant() ? pright.getTail() : pright;

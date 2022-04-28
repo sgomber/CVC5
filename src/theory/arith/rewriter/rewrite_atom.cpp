@@ -304,8 +304,7 @@ Node buildRealEquality(Sum&& sum)
   auto lterm = removeLTerm(sum);
   if (isZero(lterm.second))
   {
-    return buildRelation(
-        Kind::ARITH_EQ, mkConst(Rational(0)), collectSum(sum));
+    return buildRelation(Kind::ARITH_EQ, mkConst(Rational(0)), collectSum(sum));
   }
   RealAlgebraicNumber lcoeff = -lterm.second;
   for (auto& s : sum)
@@ -339,8 +338,7 @@ Node buildIntegerInequality(Sum&& sum, Kind k)
     rhs = rhs.ceiling();
   }
   auto* nm = NodeManager::currentNM();
-  return buildRelation(
-      Kind::GEQ, collectSum(sum), nm->mkConstInt(rhs), negate);
+  return buildRelation(Kind::GEQ, collectSum(sum), nm->mkConstInt(rhs), negate);
 }
 
 Node buildRealInequality(Sum&& sum, Kind k)

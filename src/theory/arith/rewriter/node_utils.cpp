@@ -73,8 +73,7 @@ Node mkMultTerm(const RealAlgebraicNumber& multiplicity,
   if (mterm.isConst())
   {
     std::sort(monomial.begin(), monomial.end(), rewriter::LeafNodeComparator());
-    return mkMultTerm(mterm.getConst<Rational>(),
-                      mkNonlinearMult(monomial));
+    return mkMultTerm(mterm.getConst<Rational>(), mkNonlinearMult(monomial));
   }
   monomial.emplace_back(mterm);
   std::sort(monomial.begin(), monomial.end(), rewriter::LeafNodeComparator());

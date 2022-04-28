@@ -348,16 +348,18 @@ class Constant : public NodeWrapper {
 public:
  Constant(Node n) : NodeWrapper(n) { Assert(isMember(getNode())); }
 
- static bool isMember(Node n) { 
+ static bool isMember(Node n)
+ {
    Kind k = n.getKind();
-   return k == kind::CONST_RATIONAL || k == kind::CONST_INTEGER; 
-}
+   return k == kind::CONST_RATIONAL || k == kind::CONST_INTEGER;
+ }
 
  bool isNormalForm() { return isMember(getNode()); }
 
  static Constant mkConstant(Node n)
  {
-   Assert(n.getKind() == kind::CONST_RATIONAL || n.getKind() == kind::CONST_INTEGER);
+   Assert(n.getKind() == kind::CONST_RATIONAL
+          || n.getKind() == kind::CONST_INTEGER);
    return Constant(n);
  }
 
@@ -637,9 +639,8 @@ private:
   }
 
   static bool multStructured(Node n) {
-    return n.getKind() ==  kind::MULT &&
-      n[0].isConst() &&
-      n.getNumChildren() == 2;
+    return n.getKind() == kind::MULT && n[0].isConst()
+           && n.getNumChildren() == 2;
   }
 
   Monomial(const Constant& c):

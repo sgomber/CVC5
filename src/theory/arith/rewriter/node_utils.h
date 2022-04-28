@@ -30,10 +30,9 @@ namespace arith {
 namespace rewriter {
 
 /**
- * Check whether the node is an arithmetic atom, that is one of LT, LEQ, ARITH_EQ,
- * GEQ, GT, IS_INTEGER, DIVISIBLE.
- * Note that DISTINCT somehow belongs to this list, but should already be
- * eliminated at this point.
+ * Check whether the node is an arithmetic atom, that is one of LT, LEQ,
+ * ARITH_EQ, GEQ, GT, IS_INTEGER, DIVISIBLE. Note that DISTINCT somehow belongs
+ * to this list, but should already be eliminated at this point.
  */
 inline bool isAtom(TNode n)
 {

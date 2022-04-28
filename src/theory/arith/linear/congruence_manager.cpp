@@ -27,11 +27,11 @@
 #include "theory/arith/arith_utilities.h"
 #include "theory/arith/linear/constraint.h"
 #include "theory/arith/linear/partial_model.h"
+#include "theory/arith/linear_converter.h"
 #include "theory/ee_setup_info.h"
 #include "theory/rewriter.h"
 #include "theory/uf/equality_engine.h"
 #include "theory/uf/proof_equality_engine.h"
-#include "theory/arith/linear_converter.h"
 
 using namespace cvc5::internal::kind;
 
@@ -390,7 +390,7 @@ bool ArithCongruenceManager::propagate(TNode x){
   }
 
   Assert(rewritten.getKind() != kind::CONST_BOOLEAN);
-  
+
   rewritten = convertToArithPrivate(d_env, rewritten);
 
   ConstraintP c = d_constraintDatabase.lookup(rewritten);

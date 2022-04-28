@@ -172,7 +172,7 @@ inline Kind negateKind(Kind k){
   case kind::GT:       return kind::LEQ;
   case kind::LEQ:      return kind::GT;
   case kind::GEQ:      return kind::LT;
-  case kind::ARITH_EQ:    return kind::DISTINCT;
+  case kind::ARITH_EQ: return kind::DISTINCT;
   case kind::DISTINCT: return kind::ARITH_EQ;
   default:
     return kind::UNDEFINED_KIND;
