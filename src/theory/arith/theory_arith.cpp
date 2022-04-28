@@ -262,6 +262,8 @@ bool TheoryArith::preNotifyFact(
   }
   // we also always also notify the internal solver
   Node factp = convertToArithPrivate(d_env, fact);
+  // in rare cases, the fact may rewrite to a constant here, e.g.
+  //   (= (+ 1 x) x) --> false
   if (factp.isConst())
   {
     if (!factp.getConst<bool>())
@@ -269,7 +271,8 @@ bool TheoryArith::preNotifyFact(
       // immediate unit conflict
       d_im.conflict(fact, InferenceId::ARITH_EQ_REWRITE_CONF);
     }
-    // otherwise, the constraint is trivial by rewriting
+    // otherwise, the constraint is trivial by rewriting, do not inform
+    // the linear solver
     return true;
   }
   d_internal->preNotifyFact(factp);
@@ -296,7 +299,13 @@ TrustNode TheoryArith::explain(TNode n)
     }
   }
   Node np = convertToArithPrivate(d_env, n);
-  return d_internal->explain(np);
+  TrustNode exp = d_internal->explain(np);
+  Node fexp = convertFromArithPrivate(exp.getNode());
+  if (!fexp.isNull())
+  {
+    return TrustNode::mkTrustPropExp(n, fexp);
+  }
+  return exp;
 }
 
 void TheoryArith::propagate(Effort e) {
@@ -465,12 +474,48 @@ bool TheoryArith::sanityCheckIntegerModel()
     return false;
 }
 
+Node TheoryArith::convertFromPrivate(TNode n)
+{
+  // convert from private
+  if (n.getKind()==AND)
+  {
+    std::vector<Node> children;
+    bool childChanged = false;
+    for (const Node& cn : n)
+    {
+      Node fcn = convertFromArithPrivate(cn);
+      childChanged = childChanged || fcn!=cn;
+      children.push_back(fcn);
+    }
+    if (childChanged)
+    {
+      return NodeManager::currentNM()->mkAnd(children);
+    }
+  }
+  else
+  {
+    Node fn = convertFromArithPrivate(n);
+    if (fn!=n)
+    {
+      return fn;
+    }
+  }
+  // otherwise, no change needed
+  return Node::null();
+}
+
 void TheoryArith::trustedConflictFromPrivate(const TrustNode& tconf,
                                              InferenceId id)
 {
   Trace("arith-private") << "Conflict " << tconf.getProven() << " " << id
                          << std::endl;
-  // TODO: convert from private
+  // convert from private
+  Node conf = tconf.getNode();
+  Node fconf = convertFromPrivate(conf);
+  if (!fconf.isNull())
+  {
+    return d_im.conflict(fconf, id);
+  }
   d_im.trustedConflict(tconf, id);
 }
 
@@ -478,7 +523,7 @@ bool TheoryArith::trustedLemmaFromPrivate(const TrustNode& tlem, InferenceId id)
 {
   Trace("arith-private") << "Lemma " << tlem.getProven() << " " << id
                          << std::endl;
-  // TODO: convert from private
+  // TODO: convert from private?
   return d_im.trustedLemma(tlem, id);
 }
 

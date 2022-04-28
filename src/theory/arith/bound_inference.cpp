@@ -18,6 +18,7 @@
 #include "smt/env.h"
 #include "theory/arith/linear/normal_form.h"
 #include "theory/rewriter.h"
+#include "theory/arith/linear_converter.h"
 
 using namespace cvc5::internal::kind;
 
@@ -57,6 +58,7 @@ const std::map<Node, Bounds>& BoundInference::get() const { return d_bounds; }
 bool BoundInference::add(const Node& n, bool onlyVariables)
 {
   Node tmp = rewrite(n);
+  tmp = convertToArithPrivate(d_env, tmp);
   if (tmp.getKind() == Kind::CONST_BOOLEAN)
   {
     return false;
@@ -104,7 +106,7 @@ bool BoundInference::add(const Node& n, bool onlyVariables)
   {
     case Kind::LEQ: update_upper_bound(n, lhs, bound, false); break;
     case Kind::LT: update_upper_bound(n, lhs, bound, true); break;
-    case Kind::EQUAL:
+    case Kind::ARITH_EQ:
       update_lower_bound(n, lhs, bound, false);
       update_upper_bound(n, lhs, bound, false);
       break;

@@ -151,6 +151,8 @@ class TheoryArith : public Theory {
   void trustedConflictFromPrivate(const TrustNode& tconf, InferenceId id);
   bool trustedLemmaFromPrivate(const TrustNode& tlem, InferenceId id);
   void propagateFromPrivate(TNode lit);
+  /** For explanations, conflicts */
+  Node convertFromPrivate(TNode n);
 
   /** Get the proof equality engine */
   eq::ProofEqEngine* getProofEqEngine();
