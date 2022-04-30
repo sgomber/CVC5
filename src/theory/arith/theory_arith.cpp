@@ -397,6 +397,7 @@ EqualityStatus TheoryArith::getEqualityStatus(TNode a, TNode b) {
 }
 
 Node TheoryArith::getModelValue(TNode var) {
+  var = var.getKind() == kind::TO_REAL ? var[0] : var;
   std::map<Node, Node>::iterator it = d_arithModelCache.find(var);
   if (it != d_arithModelCache.end())
   {
