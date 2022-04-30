@@ -108,7 +108,7 @@ void ArithStaticLearner::process(TNode n,
       break;
     }
 
-    if (n[0].getKind() != ARITH_EQ && isRelationOperator(n[0].getKind()))
+    if (n[0].getKind() != EQUAL && isRelationOperator(n[0].getKind()))
     {
       iteMinMax(n, learned);
     }
@@ -133,7 +133,7 @@ void ArithStaticLearner::process(TNode n,
 void ArithStaticLearner::iteMinMax(TNode n, NodeBuilder& learned)
 {
   Assert(n.getKind() == kind::ITE);
-  Assert(n[0].getKind() != ARITH_EQ);
+  Assert(n[0].getKind() != EQUAL);
   Assert(isRelationOperator(n[0].getKind()));
 
   TNode c = n[0];
