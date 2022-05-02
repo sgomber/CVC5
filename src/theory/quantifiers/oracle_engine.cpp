@@ -240,10 +240,8 @@ std::string OracleEngine::identify() const
   return std::string("OracleEngine");
 }
 
-void OracleEngine::declareOracleFun(Node f, const std::string& binName)
+void OracleEngine::declareOracleFun(Node f)
 {
-  OracleInterfaceAttribute oia;
-  f.setAttribute(oia, binName);
   d_oracleFuns.push_back(f);
 }
 
@@ -271,6 +269,35 @@ Node OracleEngine::mkOracleInterface(const std::vector<Node>& inputs,
   Node oiVar = sm->mkDummySkolem("oracle-interface", nm->booleanType());
   oiVar.setAttribute(oia, binName);
   Node ipl = nm->mkNode(INST_PATTERN_LIST, nm->mkNode(INST_ATTRIBUTE, oiVar));
+  std::vector<Node> vars;
+  OracleInputVarAttribute oiva;
+  for (Node v : inputs)
+  {
+    v.setAttribute(oiva, true);
+    vars.push_back(v);
+  }
+  OracleOutputVarAttribute oova;
+  for (Node v : outputs)
+  {
+    v.setAttribute(oova, true);
+    vars.push_back(v);
+  }
+  Node bvl = nm->mkNode(BOUND_VAR_LIST, vars);
+  Node body = nm->mkNode(ORACLE_FORMULA_GEN, assume, constraint);
+  return nm->mkNode(FORALL, bvl, body, ipl);
+}
+
+Node OracleEngine::mkOracleInterface(const std::vector<Node>& inputs,
+                                const std::vector<Node>& outputs,
+                                Node assume,
+                                Node constraint,
+                                Node oracleNode)
+{
+  Assert(!assume.isNull());
+  Assert(!constraint.isNull());
+  Assert (oracleNode.getKind()==ORACLE);
+  NodeManager* nm = NodeManager::currentNM();
+  Node ipl = nm->mkNode(INST_PATTERN_LIST, nm->mkNode(INST_ATTRIBUTE, oracleNode));
   std::vector<Node> vars;
   OracleInputVarAttribute oiva;
   for (Node v : inputs)
@@ -321,6 +348,42 @@ bool OracleEngine::getOracleInterface(Node q,
     OracleInterfaceAttribute oia;
     Assert(q[2][0].hasAttribute(oia));
     binName = q[2][0].getAttribute(oia);
+    return true;
+  }
+  return false;
+}
+
+bool OracleEngine::getOracleInterface(Node q,
+                                      std::vector<Node>& inputs,
+                                      std::vector<Node>& outputs,
+                                      Node& assume,
+                                      Node& constraint,
+                                      Node& oracleNode) const
+{
+  QuantAttributes& qa = d_qreg.getQuantAttributes();
+  if (qa.isOracleInterface(q))
+  {
+    // fill in data
+    OracleInputVarAttribute oiva;
+    for (const Node& v : q[0])
+    {
+      if (v.hasAttribute(oiva))
+      {
+        inputs.push_back(v);
+      }
+      else
+      {
+        Assert(v.hasAttribute(OracleOutputVarAttribute()));
+        outputs.push_back(v);
+      }
+    }
+    Assert(q[1].getKind() == ORACLE_FORMULA_GEN);
+    assume = q[1][0];
+    constraint = q[1][0];
+    Assert(q.getNumChildren() == 3);
+    Assert(q[2].getNumChildren() == 1);
+    Assert(q[2][0].getKind()== ORACLE);
+    oracleNode = q[2][0];
     return true;
   }
   return false;

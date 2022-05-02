@@ -950,7 +950,11 @@ void SolverEngine::declareOracleFun(Node var, const std::string& binName)
   finishInit();
   d_state->doPendingPops();
   QuantifiersEngine* qe = getAvailableQuantifiersEngine("declareOracleFun");
-  qe->declareOracleFun(var, binName);
+  
+  theory::OracleInterfaceAttribute oia;
+  var.setAttribute(oia, binName);
+  
+  qe->declareOracleFun(var);
   if (binName != "")
   {
     NodeManager* nm = d_env->getNodeManager();
@@ -986,6 +990,38 @@ void SolverEngine::declareOracleFun(Node var, const std::string& binName)
 void SolverEngine::declareOracleFun(
     Node var, std::function<std::vector<Node>(const std::vector<Node>&)> fn)
 {
+  finishInit();
+  d_state->doPendingPops();
+  QuantifiersEngine* qe = getAvailableQuantifiersEngine("declareOracleFun");
+  qe->declareOracleFun(var);
+  NodeManager* nm = d_env->getNodeManager();
+  std::vector<Node> inputs;
+  std::vector<Node> outputs;
+  TypeNode tn = var.getType();
+  Node app;
+  if (tn.isFunction())
+  {
+    const std::vector<TypeNode>& argTypes = tn.getArgTypes();
+    for (const TypeNode& t : argTypes)
+    {
+      inputs.push_back(nm->mkBoundVar(t));
+    }
+    outputs.push_back(nm->mkBoundVar(tn.getRangeType()));
+    std::vector<Node> appc;
+    appc.push_back(var);
+    appc.insert(appc.end(), inputs.begin(), inputs.end());
+    app = nm->mkNode(kind::APPLY_UF, appc);
+  }
+  else
+  {
+    outputs.push_back(nm->mkBoundVar(tn.getRangeType()));
+    app = var;
+  }
+  // makes equality assumption
+  Node assume = nm->mkNode(kind::EQUAL, app, outputs[0]);
+  Node constraint = nm->mkConst(true);
+  defineOracleInterface(inputs, outputs, assume, constraint, fn);
+  
 }
 
 void SolverEngine::defineOracleInterface(const std::vector<Node>& inputs,
@@ -1011,12 +1047,11 @@ void SolverEngine::defineOracleInterface(
 {
   finishInit();
   d_state->doPendingPops();
-  /*
   // make the quantified formula corresponding to the oracle interface
+  Node oracleNode = NodeManager::currentNM()->mkOracle(fn);
   Node q = quantifiers::OracleEngine::mkOracleInterface(
-      inputs, outputs, assume, constraint, fn);
+      inputs, outputs, assume, constraint, oracleNode);
   assertFormula(q);
-  */
 }
 
 Node SolverEngine::simplify(const Node& ex)

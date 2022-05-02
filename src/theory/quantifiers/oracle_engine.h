@@ -79,7 +79,7 @@ class OracleEngine : public QuantifiersModule
   std::string identify() const override;
 
   /** Declare oracle fun */
-  void declareOracleFun(Node f, const std::string& binName);
+  void declareOracleFun(Node f);
   /** Get the list of all declared oracle functions */
   std::vector<Node> getOracleFuns() const;
 
@@ -89,6 +89,11 @@ class OracleEngine : public QuantifiersModule
                                 Node assume,
                                 Node constraint,
                                 const std::string& binName);
+  static Node mkOracleInterface(const std::vector<Node>& inputs,
+                                const std::vector<Node>& outputs,
+                                Node assume,
+                                Node constraint,
+                                Node oracleNode);
   /**
    * Get oracle interface, returns true if q is an oracle interface quantifier
    * (constructed by the above method). Obtains the arguments for which q is
@@ -100,6 +105,12 @@ class OracleEngine : public QuantifiersModule
                           Node& assume,
                           Node& constraint,
                           std::string& binName) const;
+  bool getOracleInterface(Node q,
+                          std::vector<Node>& inputs,
+                          std::vector<Node>& outputs,
+                          Node& assume,
+                          Node& constraint,
+                          Node& oracleNode) const;
 
  private:
   /** The oracle functions (user-context dependent) */
