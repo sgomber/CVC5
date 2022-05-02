@@ -36,6 +36,9 @@ namespace attr {
   struct TupleDatatypeTag
   {
   };
+  struct OracleIndexTag
+  {
+  };
   }  // namespace attr
 
 typedef Attribute<attr::VarNameTag, std::string> VarNameAttr;
@@ -50,6 +53,10 @@ using UnresolvedDatatypeAttr =
 /** Mapping tuples to their datatype type encoding */
 using TupleDatatypeAttr =
     expr::Attribute<expr::attr::TupleDatatypeTag, TypeNode>;
+
+/** Mapping oracle constant nodes to the index of their oracle in the node manager */
+using OracleIndexAttr =
+    expr::Attribute<expr::attr::OracleIndexTag, uint64_t>;
 
 }  // namespace expr
 }  // namespace cvc5::internal

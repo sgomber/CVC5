@@ -62,6 +62,7 @@ libcvc5_add_sources(
   node_value.h
   oracle_caller.cpp
   oracle_caller.h
+  oracle.h
   sequence.cpp
   sequence.h
   node_visitor.h
