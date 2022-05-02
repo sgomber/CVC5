@@ -69,6 +69,7 @@
 #include "util/resource_manager.h"
 #include "util/sexpr.h"
 #include "util/statistics_registry.h"
+#include "expr/oracle_binary_caller.h"
 
 // required for hacks related to old proofs for unsat cores
 #include "base/configuration.h"
@@ -982,6 +983,11 @@ void SolverEngine::declareOracleFun(Node var, const std::string& binName)
   }
 }
 
+void SolverEngine::declareOracleFun(Node var, std::function<std::vector<Node>(const std::vector<Node>&)> fn)
+{
+  
+}
+
 void SolverEngine::defineOracleInterface(const std::vector<Node>& inputs,
                                          const std::vector<Node>& outputs,
                                          Node assume,
@@ -994,6 +1000,22 @@ void SolverEngine::defineOracleInterface(const std::vector<Node>& inputs,
   Node q = quantifiers::OracleEngine::mkOracleInterface(
       inputs, outputs, assume, constraint, binName);
   assertFormula(q);
+}
+
+void SolverEngine::defineOracleInterface(const std::vector<Node>& inputs,
+                                         const std::vector<Node>& outputs,
+                                         Node assume,
+                                         Node constraint,
+                                         std::function<std::vector<Node>(const std::vector<Node>&)> fn)
+{
+  finishInit();
+  d_state->doPendingPops();
+  /*
+  // make the quantified formula corresponding to the oracle interface
+  Node q = quantifiers::OracleEngine::mkOracleInterface(
+      inputs, outputs, assume, constraint, fn);
+  assertFormula(q);
+  */
 }
 
 Node SolverEngine::simplify(const Node& ex)
@@ -1986,5 +2008,16 @@ ResourceManager* SolverEngine::getResourceManager() const
 const Printer& SolverEngine::getPrinter() const { return d_env->getPrinter(); }
 
 theory::Rewriter* SolverEngine::getRewriter() { return d_env->getRewriter(); }
+
+OracleBinaryCaller& SolverEngine::getOracleBinaryCaller(const std::string& name)
+{
+  std::map<std::string, std::unique_ptr<OracleBinaryCaller> >::iterator it = d_oracleBinCalls.find(name);
+  if (it!=d_oracleBinCalls.end())
+  {
+    return *it->second.get();
+  }
+  d_oracleBinCalls[name].reset(new OracleBinaryCaller(name));
+  return *d_oracleBinCalls[name].get();
+}
 
 }  // namespace cvc5::internal
