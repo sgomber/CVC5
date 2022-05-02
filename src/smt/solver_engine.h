@@ -478,7 +478,8 @@ class CVC5_EXPORT SolverEngine
    * @param var The oracle function symbol
    * @param fn The method for the oracle
    */
-  void declareOracleFun(Node var, std::function<std::vector<Node>(const std::vector<Node>&)> fn);
+  void declareOracleFun(
+      Node var, std::function<std::vector<Node>(const std::vector<Node>&)> fn);
   /**
    * This defines an oracle interface, i.e. a way of generating new
    * assumptions and constraints based on calls to external oracles.
@@ -502,11 +503,12 @@ class CVC5_EXPORT SolverEngine
                              Node assume,
                              Node constraint,
                              const std::string& binName);
-  void defineOracleInterface(const std::vector<Node>& inputs,
-                             const std::vector<Node>& outputs,
-                             Node assume,
-                             Node constraint,
-                             std::function<std::vector<Node>(const std::vector<Node>&)> fn);
+  void defineOracleInterface(
+      const std::vector<Node>& inputs,
+      const std::vector<Node>& outputs,
+      Node assume,
+      Node constraint,
+      std::function<std::vector<Node>(const std::vector<Node>&)> fn);
   /**
    * Simplify a formula without doing "much" work.  Does not involve
    * the SAT Engine in the simplification, but uses the current
@@ -1168,7 +1170,7 @@ class CVC5_EXPORT SolverEngine
   /** get the oracle binary caller */
   OracleBinaryCaller& getOracleBinaryCaller(const std::string& name);
   /** Map binary names to oracle binary callers */
-  std::map<std::string, std::unique_ptr<OracleBinaryCaller> > d_oracleBinCalls;
+  std::map<std::string, std::unique_ptr<OracleBinaryCaller>> d_oracleBinCalls;
 }; /* class SolverEngine */
 
 /* -------------------------------------------------------------------------- */
