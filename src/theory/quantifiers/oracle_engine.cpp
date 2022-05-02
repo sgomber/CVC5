@@ -240,10 +240,7 @@ std::string OracleEngine::identify() const
   return std::string("OracleEngine");
 }
 
-void OracleEngine::declareOracleFun(Node f)
-{
-  d_oracleFuns.push_back(f);
-}
+void OracleEngine::declareOracleFun(Node f) { d_oracleFuns.push_back(f); }
 
 std::vector<Node> OracleEngine::getOracleFuns() const
 {
@@ -288,16 +285,17 @@ Node OracleEngine::mkOracleInterface(const std::vector<Node>& inputs,
 }
 
 Node OracleEngine::mkOracleInterface(const std::vector<Node>& inputs,
-                                const std::vector<Node>& outputs,
-                                Node assume,
-                                Node constraint,
-                                Node oracleNode)
+                                     const std::vector<Node>& outputs,
+                                     Node assume,
+                                     Node constraint,
+                                     Node oracleNode)
 {
   Assert(!assume.isNull());
   Assert(!constraint.isNull());
-  Assert (oracleNode.getKind()==ORACLE);
+  Assert(oracleNode.getKind() == ORACLE);
   NodeManager* nm = NodeManager::currentNM();
-  Node ipl = nm->mkNode(INST_PATTERN_LIST, nm->mkNode(INST_ATTRIBUTE, oracleNode));
+  Node ipl =
+      nm->mkNode(INST_PATTERN_LIST, nm->mkNode(INST_ATTRIBUTE, oracleNode));
   std::vector<Node> vars;
   OracleInputVarAttribute oiva;
   for (Node v : inputs)
@@ -382,7 +380,7 @@ bool OracleEngine::getOracleInterface(Node q,
     constraint = q[1][0];
     Assert(q.getNumChildren() == 3);
     Assert(q[2].getNumChildren() == 1);
-    Assert(q[2][0].getKind()== ORACLE);
+    Assert(q[2][0].getKind() == ORACLE);
     oracleNode = q[2][0];
     return true;
   }

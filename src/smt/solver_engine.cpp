@@ -950,10 +950,10 @@ void SolverEngine::declareOracleFun(Node var, const std::string& binName)
   finishInit();
   d_state->doPendingPops();
   QuantifiersEngine* qe = getAvailableQuantifiersEngine("declareOracleFun");
-  
+
   theory::OracleInterfaceAttribute oia;
   var.setAttribute(oia, binName);
-  
+
   qe->declareOracleFun(var);
   if (binName != "")
   {
@@ -1021,7 +1021,6 @@ void SolverEngine::declareOracleFun(
   Node assume = nm->mkNode(kind::EQUAL, app, outputs[0]);
   Node constraint = nm->mkConst(true);
   defineOracleInterface(inputs, outputs, assume, constraint, fn);
-  
 }
 
 void SolverEngine::defineOracleInterface(const std::vector<Node>& inputs,
