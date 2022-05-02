@@ -19,6 +19,7 @@
 #define CVC5__EXPR__ORACLE_H
 
 #include <vector>
+
 #include "expr/node.h"
 
 namespace cvc5::internal {
@@ -31,16 +32,22 @@ class Oracle
  public:
   /**
    */
-  Oracle(std::function<std::vector<Node>(const std::vector<Node>&)> fn) : d_fn(fn){}
+  Oracle(std::function<std::vector<Node>(const std::vector<Node>&)> fn)
+      : d_fn(fn)
+  {
+  }
 
   ~Oracle() {}
-  
+
   /** Get the function for this oracle */
-  std::function<std::vector<Node>(const std::vector<Node>&)> getFunction() const { return d_fn; }
+  std::function<std::vector<Node>(const std::vector<Node>&)> getFunction() const
+  {
+    return d_fn;
+  }
 
  private:
-   /** The function for this oracle */
-   std::function<std::vector<Node>(const std::vector<Node>&)> d_fn;
+  /** The function for this oracle */
+  std::function<std::vector<Node>(const std::vector<Node>&)> d_fn;
 };
 
 }  // namespace cvc5::internal

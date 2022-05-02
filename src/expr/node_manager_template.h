@@ -742,10 +742,10 @@ class NodeManager
 
   /** Make an oracle node */
   Node mkOracle(std::function<std::vector<Node>(const std::vector<Node>&)> fn);
-  
+
   /** Get the oracle for an oracle node */
   const Oracle& getOracleFor(const Node& n) const;
-  
+
  private:
   /**
    * Make a set of types representing the given datatypes, which may
@@ -1041,7 +1041,7 @@ class NodeManager
 
   /** A list of oracles owned by this node manager */
   std::vector<std::unique_ptr<Oracle>> d_oracles;
-  
+
   TupleTypeCache d_tt_cache;
   RecTypeCache d_rt_cache;
 }; /* class NodeManager */

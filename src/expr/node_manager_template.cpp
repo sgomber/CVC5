@@ -946,7 +946,8 @@ TypeNode NodeManager::mkUnresolvedDatatypeSort(const std::string& name,
   return usort;
 }
 
-Node NodeManager::mkOracle(std::function<std::vector<Node>(const std::vector<Node>&)> fn)
+Node NodeManager::mkOracle(
+    std::function<std::vector<Node>(const std::vector<Node>&)> fn)
 {
   Node n = NodeBuilder(this, kind::ORACLE);
   n.setAttribute(TypeAttr(), builtinOperatorType());
@@ -958,7 +959,7 @@ Node NodeManager::mkOracle(std::function<std::vector<Node>(const std::vector<Nod
 
 const Oracle& NodeManager::getOracleFor(const Node& n) const
 {
-  Assert (n.getKind()==kind::ORACLE);
+  Assert(n.getKind() == kind::ORACLE);
   size_t index = n.getAttribute(OracleIndexAttr());
   Assert(index < d_oracles.size());
   return *d_oracles[index];

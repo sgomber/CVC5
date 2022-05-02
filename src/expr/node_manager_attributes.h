@@ -54,9 +54,9 @@ using UnresolvedDatatypeAttr =
 using TupleDatatypeAttr =
     expr::Attribute<expr::attr::TupleDatatypeTag, TypeNode>;
 
-/** Mapping oracle constant nodes to the index of their oracle in the node manager */
-using OracleIndexAttr =
-    expr::Attribute<expr::attr::OracleIndexTag, uint64_t>;
+/** Mapping oracle constant nodes to the index of their oracle in the node
+ * manager */
+using OracleIndexAttr = expr::Attribute<expr::attr::OracleIndexTag, uint64_t>;
 
 }  // namespace expr
 }  // namespace cvc5::internal
