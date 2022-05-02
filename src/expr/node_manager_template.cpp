@@ -110,11 +110,10 @@ NodeManager::NodeManager()
     : d_skManager(new SkolemManager),
       d_bvManager(new BoundVarManager),
       d_initialized(false),
-      next_id(0),
+      d_nextId(0),
       d_attrManager(new expr::attr::AttributeManager()),
       d_nodeUnderDeletion(nullptr),
-      d_inReclaimZombies(false),
-      d_abstractValueCount(0)
+      d_inReclaimZombies(false)
 {
 }
 
@@ -301,6 +300,25 @@ NodeManager::~NodeManager()
   // defensive coding, in case destruction-order issues pop up (they often do)
   delete d_attrManager;
   d_attrManager = NULL;
+}
+
+const DType& NodeManager::getDTypeFor(TypeNode tn) const
+{
+  Kind k = tn.getKind();
+  if (k == kind::DATATYPE_TYPE)
+  {
+    DatatypeIndexConstant dic = tn.getConst<DatatypeIndexConstant>();
+    return getDTypeForIndex(dic.getIndex());
+  }
+  else if (k == kind::TUPLE_TYPE)
+  {
+    // lookup its datatype encoding
+    TypeNode dtt = getAttribute(tn, expr::TupleDatatypeAttr());
+    Assert(!dtt.isNull());
+    return getDTypeFor(dtt);
+  }
+  Assert(k == kind::PARAMETRIC_DATATYPE);
+  return getDTypeFor(tn[0]);
 }
 
 const DType& NodeManager::getDTypeForIndex(size_t index) const
@@ -556,19 +574,19 @@ TypeNode NodeManager::mkSequenceType(TypeNode elementType)
   return mkTypeNode(kind::SEQUENCE_TYPE, elementType);
 }
 
-TypeNode NodeManager::mkDatatypeType(DType& datatype, uint32_t flags)
+TypeNode NodeManager::mkDatatypeType(DType& datatype)
 {
   // Not worth a special implementation; this doesn't need to be fast
   // code anyway.
   std::vector<DType> datatypes;
   datatypes.push_back(datatype);
-  std::vector<TypeNode> result = mkMutualDatatypeTypes(datatypes, flags);
+  std::vector<TypeNode> result = mkMutualDatatypeTypes(datatypes);
   Assert(result.size() == 1);
   return result.front();
 }
 
 std::vector<TypeNode> NodeManager::mkMutualDatatypeTypes(
-    const std::vector<DType>& datatypes, uint32_t flags)
+    const std::vector<DType>& datatypes)
 {
   std::set<TypeNode> unresolvedTypes;
   // scan the list of datatypes to find unresolved datatypes
@@ -576,13 +594,12 @@ std::vector<TypeNode> NodeManager::mkMutualDatatypeTypes(
   {
     dt.collectUnresolvedDatatypeTypes(unresolvedTypes);
   }
-  return mkMutualDatatypeTypesInternal(datatypes, unresolvedTypes, flags);
+  return mkMutualDatatypeTypesInternal(datatypes, unresolvedTypes);
 }
 
 std::vector<TypeNode> NodeManager::mkMutualDatatypeTypesInternal(
     const std::vector<DType>& datatypes,
-    const std::set<TypeNode>& unresolvedTypes,
-    uint32_t flags)
+    const std::set<TypeNode>& unresolvedTypes)
 {
   std::map<std::string, TypeNode> nameResolutions;
   std::vector<TypeNode> dtts;
@@ -601,6 +618,22 @@ std::vector<TypeNode> NodeManager::mkMutualDatatypeTypesInternal(
     if (dtp->getNumParameters() == 0)
     {
       typeNode = mkTypeConst(DatatypeIndexConstant(index));
+      // if the datatype is a tuple, the type will be (TUPLE_TYPE ...)
+      if (dt.isTuple())
+      {
+        TypeNode dtt = typeNode;
+        const DTypeConstructor& dc = dt[0];
+        std::vector<TypeNode> tupleTypes;
+        for (size_t i = 0, nargs = dc.getNumArgs(); i < nargs; i++)
+        {
+          // selector should be initialized to the range type, it is not null
+          // or unresolved since tuples are not recursive
+          tupleTypes.push_back(dc[i].getType());
+        }
+        // Set its datatype representation
+        typeNode = mkTypeNode(kind::TUPLE_TYPE, tupleTypes);
+        typeNode.setAttribute(expr::TupleDatatypeAttr(), dtt);
+      }
     }
     else
     {
@@ -742,9 +775,8 @@ TypeNode NodeManager::mkDatatypeUpdateType(TypeNode domain, TypeNode range)
   return mkTypeNode(kind::UPDATER_TYPE, domain, range);
 }
 
-TypeNode NodeManager::TupleTypeCache::getTupleType(NodeManager* nm,
-                                                   std::vector<TypeNode>& types,
-                                                   unsigned index)
+TypeNode NodeManager::TupleTypeCache::getTupleType(
+    NodeManager* nm, const std::vector<TypeNode>& types, unsigned index)
 {
   if (index == types.size())
   {
@@ -752,7 +784,8 @@ TypeNode NodeManager::TupleTypeCache::getTupleType(NodeManager* nm,
     {
       std::stringstream sst;
       sst << "__cvc5_tuple";
-      for (unsigned i = 0; i < types.size(); ++i)
+      size_t ntypes = types.size();
+      for (size_t i = 0; i < ntypes; ++i)
       {
         sst << "_" << types[i];
       }
@@ -762,7 +795,7 @@ TypeNode NodeManager::TupleTypeCache::getTupleType(NodeManager* nm,
       ssc << sst.str() << "_ctor";
       std::shared_ptr<DTypeConstructor> c =
           std::make_shared<DTypeConstructor>(ssc.str());
-      for (unsigned i = 0; i < types.size(); ++i)
+      for (size_t i = 0; i < ntypes; ++i)
       {
         std::stringstream ss;
         ss << sst.str() << "_stor_" << i;
@@ -770,6 +803,7 @@ TypeNode NodeManager::TupleTypeCache::getTupleType(NodeManager* nm,
       }
       dt.addConstructor(c);
       d_data = nm->mkDatatypeType(dt);
+      Assert(d_data.isTuple());
       Trace("tuprec-debug") << "Return type : " << d_data << std::endl;
     }
     return d_data;
@@ -806,6 +840,7 @@ TypeNode NodeManager::RecTypeCache::getRecordType(NodeManager* nm,
       }
       dt.addConstructor(c);
       d_data = nm->mkDatatypeType(dt);
+      Assert(d_data.isRecord());
       Trace("tuprec-debug") << "Return type : " << d_data << std::endl;
     }
     return d_data;
@@ -849,18 +884,7 @@ TypeNode NodeManager::mkFunctionType(const std::vector<TypeNode>& argTypes,
 
 TypeNode NodeManager::mkTupleType(const std::vector<TypeNode>& types)
 {
-  std::vector<TypeNode> ts;
-  Trace("tuprec-debug") << "Make tuple type : ";
-  for (unsigned i = 0; i < types.size(); ++i)
-  {
-    CheckArgument(!types[i].isFunctionLike(),
-                  types,
-                  "cannot put function-like types in tuples");
-    ts.push_back(types[i]);
-    Trace("tuprec-debug") << types[i] << " ";
-  }
-  Trace("tuprec-debug") << std::endl;
-  return d_tt_cache.getTupleType(this, ts);
+  return d_tt_cache.getTupleType(this, types);
 }
 
 TypeNode NodeManager::mkRecordType(const Record& rec)
@@ -868,36 +892,15 @@ TypeNode NodeManager::mkRecordType(const Record& rec)
   return d_rt_cache.getRecordType(this, rec);
 }
 
-void NodeManager::reclaimAllZombies() { reclaimZombiesUntil(0u); }
-
-/** Reclaim zombies while there are more than k nodes in the pool (if
- * possible).*/
-void NodeManager::reclaimZombiesUntil(uint32_t k)
-{
-  if (safeToReclaimZombies())
-  {
-    while (poolSize() >= k && !d_zombies.empty())
-    {
-      reclaimZombies();
-    }
-  }
-}
-
-size_t NodeManager::poolSize() const { return d_nodeValuePool.size(); }
-
 TypeNode NodeManager::mkSort()
 {
   NodeBuilder nb(this, kind::SORT_TYPE);
-  Node sortTag = NodeBuilder(this, kind::SORT_TAG);
-  nb << sortTag;
   return nb.constructTypeNode();
 }
 
 TypeNode NodeManager::mkSort(const std::string& name)
 {
   NodeBuilder nb(this, kind::SORT_TYPE);
-  Node sortTag = NodeBuilder(this, kind::SORT_TAG);
-  nb << sortTag;
   TypeNode tn = nb.constructTypeNode();
   setAttribute(tn, expr::VarNameAttr(), name);
   return tn;
@@ -913,25 +916,19 @@ TypeNode NodeManager::mkSort(TypeNode constructor,
   Assert(hasAttribute(constructor.d_nv, expr::SortArityAttr())
          && hasAttribute(constructor.d_nv, expr::VarNameAttr()))
       << "expected a sort constructor";
-  std::string name = getAttribute(constructor.d_nv, expr::VarNameAttr());
   Assert(getAttribute(constructor.d_nv, expr::SortArityAttr())
          == children.size())
       << "arity mismatch in application of sort constructor";
-  NodeBuilder nb(this, kind::SORT_TYPE);
-  Node sortTag = Node(constructor.d_nv->d_children[0]);
-  nb << sortTag;
+  NodeBuilder nb(this, kind::INSTANTIATED_SORT_TYPE);
+  nb << constructor;
   nb.append(children);
-  TypeNode type = nb.constructTypeNode();
-  setAttribute(type, expr::VarNameAttr(), name);
-  return type;
+  return nb.constructTypeNode();
 }
 
 TypeNode NodeManager::mkSortConstructor(const std::string& name, size_t arity)
 {
   Assert(arity > 0);
   NodeBuilder nb(this, kind::SORT_TYPE);
-  Node sortTag = NodeBuilder(this, kind::SORT_TAG);
-  nb << sortTag;
   TypeNode type = nb.constructTypeNode();
   setAttribute(type, expr::VarNameAttr(), name);
   setAttribute(type, expr::SortArityAttr(), arity);
@@ -1157,12 +1154,6 @@ Node NodeManager::mkBag(const TypeNode& t, const TNode n, const TNode m)
   return bag;
 }
 
-Node NodeManager::mkUninterpretedSortValue(const TypeNode& type)
-{
-  Node n = mkConst(UninterpretedSortValue(type, ++d_abstractValueCount));
-  return n;
-}
-
 bool NodeManager::hasOperator(Kind k)
 {
   switch (kind::MetaKind mk = kind::metaKindOf(k))
@@ -1228,7 +1219,7 @@ NodeClass NodeManager::mkConstInternal(Kind k, const T& val)
 
   nv->d_nchildren = 0;
   nv->d_kind = k;
-  nv->d_id = next_id++;  // FIXME multithreading
+  nv->d_id = d_nextId++;
   nv->d_rc = 0;
 
   new (&nv->d_children) T(val);
@@ -1265,11 +1256,6 @@ void NodeManager::deleteAttributes(
     const std::vector<const expr::attr::AttributeUniqueId*>& ids)
 {
   d_attrManager->deleteAttributes(ids);
-}
-
-void NodeManager::debugHook(int debugFlag)
-{
-  // For debugging purposes only, DO NOT CHECK IN ANY CODE!
 }
 
 Kind NodeManager::getKindForFunction(TNode fun)
@@ -1324,25 +1310,36 @@ Node NodeManager::mkConstReal(const Rational& r)
 Node NodeManager::mkConstInt(const Rational& r)
 {
   // !!!! Note will update to CONST_INTEGER.
+  Assert(r.isIntegral());
   return mkConst(kind::CONST_RATIONAL, r);
+}
+
+Node NodeManager::mkConstRealOrInt(const Rational& r)
+{
+  if (r.isIntegral())
+  {
+    return mkConstInt(r);
+  }
+  return mkConstReal(r);
 }
 
 Node NodeManager::mkConstRealOrInt(const TypeNode& tn, const Rational& r)
 {
   Assert(tn.isRealOrInt()) << "Expected real or int for mkConstRealOrInt, got "
                            << tn;
-  if (tn.isReal())
+  if (tn.isInteger())
   {
-    return mkConstReal(r);
+    return mkConstInt(r);
   }
-  return mkConstInt(r);
+  return mkConstReal(r);
 }
 
 Node NodeManager::mkRealAlgebraicNumber(const RealAlgebraicNumber& ran)
 {
   if (ran.isRational())
   {
-    return mkConstReal(ran.toRational());
+    // may generate an integer it is it integral
+    return mkConstRealOrInt(ran.toRational());
   }
   // Creating this node may refine the ran to the point where isRational returns
   // true
@@ -1354,7 +1351,8 @@ Node NodeManager::mkRealAlgebraicNumber(const RealAlgebraicNumber& ran)
     const RealAlgebraicNumber& cur = inner.getConst<RealAlgebraicNumber>();
     if (cur.isRational())
     {
-      return mkConstReal(cur.toRational());
+      // may generate an integer it is it integral
+      return mkConstRealOrInt(cur.toRational());
     }
     if (cur == ran) break;
     inner = mkConst(Kind::REAL_ALGEBRAIC_NUMBER_OP, cur);
