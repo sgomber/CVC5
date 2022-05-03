@@ -88,23 +88,12 @@ class OracleEngine : public QuantifiersModule
                                 const std::vector<Node>& outputs,
                                 Node assume,
                                 Node constraint,
-                                const std::string& binName);
-  static Node mkOracleInterface(const std::vector<Node>& inputs,
-                                const std::vector<Node>& outputs,
-                                Node assume,
-                                Node constraint,
                                 Node oracleNode);
   /**
    * Get oracle interface, returns true if q is an oracle interface quantifier
    * (constructed by the above method). Obtains the arguments for which q is
    * constructed.
    */
-  bool getOracleInterface(Node q,
-                          std::vector<Node>& inputs,
-                          std::vector<Node>& outputs,
-                          Node& assume,
-                          Node& constraint,
-                          std::string& binName) const;
   bool getOracleInterface(Node q,
                           std::vector<Node>& inputs,
                           std::vector<Node>& outputs,

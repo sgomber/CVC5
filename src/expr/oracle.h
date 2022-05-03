@@ -30,21 +30,22 @@ namespace cvc5::internal {
 class Oracle
 {
  public:
-  /**
-   */
+  /** Construct an oracle whose implementation is the given function. */
   Oracle(std::function<std::vector<Node>(const std::vector<Node>&)> fn)
       : d_fn(fn)
   {
   }
-
   ~Oracle() {}
-
+  /** Run the function on the given input */
+  std::vector<Node> run(const std::vector<Node>& input) const
+  {
+    return d_fn(input);
+  }
   /** Get the function for this oracle */
   std::function<std::vector<Node>(const std::vector<Node>&)> getFunction() const
   {
     return d_fn;
   }
-
  private:
   /** The function for this oracle */
   std::function<std::vector<Node>(const std::vector<Node>&)> d_fn;

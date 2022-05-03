@@ -1064,7 +1064,13 @@ class CVC5_EXPORT SolverEngine
   void debugCheckFunctionBody(Node formula,
                               const std::vector<Node>& formals,
                               Node func);
-
+  /** Define oracle interface internal */
+  void defineOracleInterfaceInternal(
+      const std::vector<Node>& inputs,
+      const std::vector<Node>& outputs,
+      Node assume,
+      Node constraint,
+      Node o);
   /**
    * Helper method to obtain both the heap and nil from the solver. Returns a
    * std::pair where the first element is the heap expression and the second
@@ -1167,6 +1173,8 @@ class CVC5_EXPORT SolverEngine
    */
   std::unique_ptr<smt::SolverEngineScope> d_scope;
   //!!!!!!!! temporary
+  /** get the oracle for binary name */
+  Node getOracleNode(const std::string& name);
   /** get the oracle binary caller */
   OracleBinaryCaller& getOracleBinaryCaller(const std::string& name);
   /** Map binary names to oracle binary callers */
