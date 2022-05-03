@@ -286,7 +286,7 @@ void ArithCongruenceManager::watchedVariableCannotBeZero(ConstraintCP c){
 }
 
 
-bool ArithCongruenceManager::propagate(TNode x){
+bool ArithCongruenceManager::propagate(TNode x, TNode xorig){
   Trace("arith::congruenceManager")<< "ArithCongruenceManager::propagate("<<x<<")"<<std::endl;
   if(inConflict()){
     return true;
@@ -303,7 +303,7 @@ bool ArithCongruenceManager::propagate(TNode x){
     }else{
       // x rewrites to false.
       ++(d_statistics.d_conflicts);
-      TrustNode trn = explainInternal(x);
+      TrustNode trn = explainInternal(xorig);
       Node conf = flattenAnd(trn.getNode());
       Trace("arith::congruenceManager") << "rewritten to false "<<x<<" with explanation "<< conf << std::endl;
       if (isProofEnabled())
@@ -340,7 +340,7 @@ bool ArithCongruenceManager::propagate(TNode x){
                                    << c->negationHasProof() << std::endl;
 
   if(c->negationHasProof()){
-    TrustNode texpC = explainInternal(x);
+    TrustNode texpC = explainInternal(xorig);
     Node expC = texpC.getNode();
     ConstraintCP negC = c->getNegation();
     Node neg = Constraint::externalExplainByAssertions({negC});
@@ -417,6 +417,7 @@ void ArithCongruenceManager::enqueueIntoNB(const std::set<TNode> s,
 
 TrustNode ArithCongruenceManager::explainInternal(TNode internal)
 {
+  Assert (internal.getKind()!=kind::ARITH_EQ);
   if (isProofEnabled())
   {
     return d_pfee->explain(internal);

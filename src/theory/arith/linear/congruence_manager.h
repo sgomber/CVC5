@@ -147,7 +147,7 @@ class ArithCongruenceManager : protected EnvObj
   /**
    * Propagate. Called when the equality engine has inferred literal x.
    */
-  bool propagate(TNode x);
+  bool propagate(TNode x, TNode xorig);
 
  private:
   Node externalToInternal(TNode n) const;

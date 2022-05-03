@@ -17,6 +17,7 @@
 
 #include "theory/arith/inference_manager.h"
 #include "theory/arith/linear/congruence_manager.h"
+#include "theory/arith/linear_converter.h"
 
 using namespace cvc5::internal::kind;
 
@@ -93,8 +94,9 @@ bool EqualitySolver::propagateLit(Node lit)
 {
   if (d_acm != nullptr)
   {
+    Node litp = convertToArithPrivate(d_env, lit);
     // if we are using the congruence manager, notify it
-    return d_acm->propagate(lit);
+    return d_acm->propagate(litp, lit);
   }
   // if we've already propagated, ignore
   if (d_aim.hasPropagated(lit))
@@ -113,7 +115,8 @@ void EqualitySolver::conflictEqConstantMerge(TNode a, TNode b)
   {
     // if we are using the congruence manager, notify it
     Node eq = a.eqNode(b);
-    d_acm->propagate(eq);
+    Node eqp = convertToArithPrivate(d_env, eq);
+    d_acm->propagate(eqp, eq);
     return;
   }
   d_aim.conflictEqConstantMerge(a, b);
