@@ -743,7 +743,7 @@ class NodeManager
   TypeNode mkUnresolvedDatatypeSort(const std::string& name, size_t arity = 0);
 
   /** Make an oracle node */
-  Node mkOracle(std::function<std::vector<Node>(const std::vector<Node>&)> fn);
+  Node mkOracle(Oracle& o);
 
   /** Get the oracle for an oracle node */
   const Oracle& getOracleFor(const Node& n) const;

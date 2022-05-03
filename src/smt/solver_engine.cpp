@@ -990,7 +990,8 @@ void SolverEngine::declareOracleFun(
   // no constraints
   Node constraint = nm->mkConst(true);
   // make the oracle constant which carries the method implementation
-  Node o = NodeManager::currentNM()->mkOracle(fn);
+  Oracle oracle(fn);
+  Node o = NodeManager::currentNM()->mkOracle(oracle);
   // set the attribute, which ensures we remember the method implementation for
   // the oracle function
   var.setAttribute(theory::OracleInterfaceAttribute(), o);
@@ -1021,7 +1022,8 @@ void SolverEngine::defineOracleInterface(
   finishInit();
   d_state->doPendingPops();
   // make the oracle constant
-  Node o = NodeManager::currentNM()->mkOracle(fn);
+  Oracle oracle(fn);
+  Node o = NodeManager::currentNM()->mkOracle(oracle);
   // define the oracle interface
   defineOracleInterfaceInternal(inputs, outputs, assume, constraint, o);
 }
@@ -2034,11 +2036,12 @@ theory::Rewriter* SolverEngine::getRewriter() { return d_env->getRewriter(); }
 Node SolverEngine::getOracleNode(const std::string& name)
 {
   OracleBinaryCaller& obc = getOracleBinaryCaller(name);
-  Node oc = NodeManager::currentNM()->mkOracle(
+  Oracle oracle(
       [&](const std::vector<internal::Node> nodes) {
         return obc.runOracle(nodes);
       });
-  return oc;
+  Node o = NodeManager::currentNM()->mkOracle(oracle);
+  return o;
 }
 
 OracleBinaryCaller& SolverEngine::getOracleBinaryCaller(const std::string& name)
