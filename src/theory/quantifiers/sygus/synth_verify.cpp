@@ -186,11 +186,12 @@ Node SynthVerify::preprocessQueryInternal(Node query)
         // to the query.
         if (ochecker != nullptr && ochecker->hasOracleCalls(f))
         {
-          const std::map<Node, std::vector<Node>>& ocalls = ochecker->getOracleCalls(f);
+          const std::map<Node, std::vector<Node>>& ocalls =
+              ochecker->getOracleCalls(f);
           for (const std::pair<const Node, std::vector<Node>>& oc : ocalls)
           {
             // we ignore calls that had a size other than one
-            if (oc.second.size()==1)
+            if (oc.second.size() == 1)
             {
               qconj.push_back(oc.first.eqNode(oc.second[0]));
             }

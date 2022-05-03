@@ -950,8 +950,7 @@ void SolverEngine::declareOracleFun(Node var, const std::string& binName)
   finishInit();
   d_state->doPendingPops();
   OracleBinaryCaller& obc = getOracleBinaryCaller(binName);
-  declareOracleFun(var,
-  [&](const std::vector<internal::Node> nodes) {
+  declareOracleFun(var, [&](const std::vector<internal::Node> nodes) {
     return obc.runOracle(nodes);
   });
 }
@@ -992,7 +991,8 @@ void SolverEngine::declareOracleFun(
   Node constraint = nm->mkConst(true);
   // make the oracle constant which carries the method implementation
   Node o = NodeManager::currentNM()->mkOracle(fn);
-  // set the attribute, which ensures we remember the method implementation for the oracle function
+  // set the attribute, which ensures we remember the method implementation for
+  // the oracle function
   var.setAttribute(theory::OracleInterfaceAttribute(), o);
   // define the oracle interface
   defineOracleInterfaceInternal(inputs, outputs, assume, constraint, o);
@@ -2035,9 +2035,9 @@ Node SolverEngine::getOracleNode(const std::string& name)
 {
   OracleBinaryCaller& obc = getOracleBinaryCaller(name);
   Node oc = NodeManager::currentNM()->mkOracle(
-  [&](const std::vector<internal::Node> nodes) {
-    return obc.runOracle(nodes);
-  });
+      [&](const std::vector<internal::Node> nodes) {
+        return obc.runOracle(nodes);
+      });
   return oc;
 }
 

@@ -1065,12 +1065,11 @@ class CVC5_EXPORT SolverEngine
                               const std::vector<Node>& formals,
                               Node func);
   /** Define oracle interface internal */
-  void defineOracleInterfaceInternal(
-      const std::vector<Node>& inputs,
-      const std::vector<Node>& outputs,
-      Node assume,
-      Node constraint,
-      Node o);
+  void defineOracleInterfaceInternal(const std::vector<Node>& inputs,
+                                     const std::vector<Node>& outputs,
+                                     Node assume,
+                                     Node constraint,
+                                     Node o);
   /**
    * Helper method to obtain both the heap and nil from the solver. Returns a
    * std::pair where the first element is the heap expression and the second

@@ -46,6 +46,7 @@ class Oracle
   {
     return d_fn;
   }
+
  private:
   /** The function for this oracle */
   std::function<std::vector<Node>(const std::vector<Node>&)> d_fn;

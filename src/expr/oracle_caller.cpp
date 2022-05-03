@@ -26,14 +26,15 @@
 namespace cvc5::internal {
 
 OracleCaller::OracleCaller(const Node& n)
-    : d_oracleNode(getOracleFor(n)), d_oracle(NodeManager::currentNM()->getOracleFor(d_oracleNode))
+    : d_oracleNode(getOracleFor(n)),
+      d_oracle(NodeManager::currentNM()->getOracleFor(d_oracleNode))
 {
-  Assert (!d_oracleNode.isNull());
+  Assert(!d_oracleNode.isNull());
 }
 
 bool OracleCaller::callOracle(const Node& fapp, std::vector<Node>& res)
 {
-  std::map<Node, std::vector<Node> >::iterator it = d_cachedResults.find(fapp);
+  std::map<Node, std::vector<Node>>::iterator it = d_cachedResults.find(fapp);
   if (it != d_cachedResults.end())
   {
     Trace("oracle-calls") << "Using cached oracle result for " << fapp
@@ -79,7 +80,7 @@ Node OracleCaller::getOracleFor(const Node& n)
   {
     Assert(isOracleFunction(n));
     Node o = n.getAttribute(theory::OracleInterfaceAttribute());
-    Assert (o.getKind() == kind::ORACLE);
+    Assert(o.getKind() == kind::ORACLE);
     return o;
   }
   else if (n.getKind() == kind::FORALL)
@@ -87,7 +88,7 @@ Node OracleCaller::getOracleFor(const Node& n)
     // oracle interfaces have children, and the attribute is stored in 2nd child
     for (const Node& v : n[2][0])
     {
-      if (v.getKind()==kind::ORACLE)
+      if (v.getKind() == kind::ORACLE)
       {
         return v;
       }

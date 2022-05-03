@@ -26,11 +26,12 @@ namespace cvc5::internal {
 //!!!!!!!!!!!! TEMPORARY
 class OracleBinaryCaller
 {
-public:
-  OracleBinaryCaller(std::string binName) : d_binaryName(binName){}
+ public:
+  OracleBinaryCaller(std::string binName) : d_binaryName(binName) {}
   /** Run */
   std::vector<Node> runOracle(const std::vector<Node>& input);
-private:
+
+ private:
   /** binary name */
   std::string d_binaryName;
 };

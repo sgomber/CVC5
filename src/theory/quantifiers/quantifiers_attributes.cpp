@@ -260,7 +260,7 @@ void QuantAttributes::computeQuantAttributes( Node q, QAttributes& qa ){
           qa.d_sygus = true;
         }
         // oracles are specified by a distinguished variable kind
-        if (avar.getKind()==kind::ORACLE)
+        if (avar.getKind() == kind::ORACLE)
         {
           qa.d_oracle = avar;
           Trace("quant-attr")

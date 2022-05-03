@@ -63,6 +63,7 @@ class OracleCaller
    * or null otherwise.
    */
   static Node getOracleFor(const Node& n);
+
  private:
   /** The oracle node */
   Node d_oracleNode;
