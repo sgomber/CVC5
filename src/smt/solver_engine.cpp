@@ -2036,10 +2036,9 @@ theory::Rewriter* SolverEngine::getRewriter() { return d_env->getRewriter(); }
 Node SolverEngine::getOracleNode(const std::string& name)
 {
   OracleBinaryCaller& obc = getOracleBinaryCaller(name);
-  Oracle oracle(
-      [&](const std::vector<internal::Node> nodes) {
-        return obc.runOracle(nodes);
-      });
+  Oracle oracle([&](const std::vector<internal::Node> nodes) {
+    return obc.runOracle(nodes);
+  });
   Node o = NodeManager::currentNM()->mkOracle(oracle);
   return o;
 }
