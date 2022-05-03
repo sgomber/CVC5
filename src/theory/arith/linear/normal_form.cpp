@@ -29,8 +29,10 @@ namespace cvc5::internal {
 namespace theory {
 namespace arith::linear {
 
-Constant Constant::mkConstant(const Rational& rat) {
-  return Constant(mkRationalNode(rat));
+Constant Constant::mkConstant(const Rational& rat)
+{
+  NodeManager* nm = NodeManager::currentNM();
+  return Constant(nm->mkConstReal(rat));
 }
 
 size_t Variable::getComplexity() const{
@@ -229,10 +231,7 @@ bool Monomial::isMember(TNode n){
   {
     return VarList::isMember(n[1]);
   }
-  else
-  {
-    return VarList::isMember(n);
-  }
+  return VarList::isMember(n);
 }
 
 Monomial Monomial::mkMonomial(const Constant& c, const VarList& vl) {
@@ -264,10 +263,7 @@ Monomial Monomial::parseMonomial(Node n) {
   {
     return Monomial::mkMonomial(Constant(n[0]),VarList::parseVarList(n[1]));
   }
-  else
-  {
-    return Monomial(VarList::parseVarList(n));
-  }
+  return Monomial(VarList::parseVarList(n));
 }
 Monomial Monomial::operator*(const Rational& q) const {
   if(q.isZero()){

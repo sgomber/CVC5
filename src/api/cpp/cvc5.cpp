@@ -1917,6 +1917,9 @@ size_t Op::getNumIndicesHelper() const
     case TUPLE_PROJECT:
       size = d_node->getConst<internal::TupleProjectOp>().getIndices().size();
       break;
+    case TABLE_PROJECT:
+      size = d_node->getConst<internal::TableProjectOp>().getIndices().size();
+      break;
     default: CVC5_API_CHECK(false) << "Unhandled kind " << kindToString(k);
   }
   return size;
@@ -2601,6 +2604,7 @@ const internal::Rational& getRational(const internal::Node& node)
 {
   switch (node.getKind())
   {
+
     case internal::Kind::CONST_RATIONAL:
     case internal::Kind::CONST_INTEGER:
       return node.getConst<internal::Rational>();
@@ -2645,11 +2649,7 @@ bool isReal64(const internal::Node& node)
 
 bool isInteger(const internal::Node& node)
 {
-#if 1  // no-subtypes
   return node.getKind() == internal::Kind::CONST_INTEGER;
-#endif
-  return node.getKind() == internal::Kind::CONST_RATIONAL
-         && node.getConst<internal::Rational>().isIntegral();
 }
 bool isInt32(const internal::Node& node)
 {
@@ -4192,6 +4192,11 @@ bool Datatype::const_iterator::operator!=(
 
 bool Datatype::isNullHelper() const { return d_dtype == nullptr; }
 
+std::ostream& operator<<(std::ostream& out, const Datatype& dtype)
+{
+  return out << dtype.toString();
+}
+
 /* -------------------------------------------------------------------------- */
 /* Grammar                                                                    */
 /* -------------------------------------------------------------------------- */
@@ -5218,12 +5223,10 @@ Term Solver::ensureTermSort(const Term& term, const Sort& sort) const
     // constructors. We do this cast using division with 1. This has the
     // advantage wrt using TO_REAL since (constant) division is always included
     // in the theory.
-    res = Term(
-        this,
-        d_nodeMgr->mkNode(extToIntKind(DIVISION),
-                          *res.d_node,
-                          d_nodeMgr->mkConst(internal::kind::CONST_RATIONAL,
-                                             internal::Rational(1))));
+    res = Term(this,
+               d_nodeMgr->mkNode(extToIntKind(DIVISION),
+                                 *res.d_node,
+                                 d_nodeMgr->mkConstInt(internal::Rational(1))));
   }
   Assert(res.getSort() == sort);
   return res;
