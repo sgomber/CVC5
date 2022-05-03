@@ -40,7 +40,7 @@ std::vector<Node> OracleBinaryCaller::runOracle(const std::vector<Node>& input)
   // smt2 terms as strings.
   std::ostringstream stdout_stream;
 
-  int runResult = run(d_binaryName, sargs, "", stdout_stream, "");
+  run(d_binaryName, sargs, "", stdout_stream, "");
 
   std::istringstream oracle_response_istream(stdout_stream.str());
 
