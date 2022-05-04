@@ -36,6 +36,12 @@ namespace attr {
   struct TupleDatatypeTag
   {
   };
+<<<<<<< HEAD
+=======
+  struct DatatypeIndexTag
+  {
+  };
+>>>>>>> 7fa4709c891bcdf5aa1d3ed4b001d0628bbc17be
   struct OracleIndexTag
   {
   };
@@ -54,6 +60,12 @@ using UnresolvedDatatypeAttr =
 using TupleDatatypeAttr =
     expr::Attribute<expr::attr::TupleDatatypeTag, TypeNode>;
 
+<<<<<<< HEAD
+=======
+/** Mapping datatype types to the index of their datatype in node manager */
+using DatatypeIndexAttr = Attribute<attr::DatatypeIndexTag, uint64_t>;
+
+>>>>>>> 7fa4709c891bcdf5aa1d3ed4b001d0628bbc17be
 /** Mapping oracle constant nodes to the index of their oracle in the node
  * manager */
 using OracleIndexAttr = expr::Attribute<expr::attr::OracleIndexTag, uint64_t>;

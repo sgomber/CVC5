@@ -21,7 +21,6 @@
 #include "base/listener.h"
 #include "expr/attribute.h"
 #include "expr/bound_var_manager.h"
-#include "expr/datatype_index.h"
 #include "expr/dtype.h"
 #include "expr/dtype_cons.h"
 #include "expr/metakind.h"
@@ -309,8 +308,8 @@ const DType& NodeManager::getDTypeFor(TypeNode tn) const
   Kind k = tn.getKind();
   if (k == kind::DATATYPE_TYPE)
   {
-    DatatypeIndexConstant dic = tn.getConst<DatatypeIndexConstant>();
-    return getDTypeForIndex(dic.getIndex());
+    size_t index = tn.getAttribute(DatatypeIndexAttr());
+    return getDTypeForIndex(index);
   }
   else if (k == kind::TUPLE_TYPE)
   {
@@ -321,6 +320,11 @@ const DType& NodeManager::getDTypeFor(TypeNode tn) const
   }
   Assert(k == kind::PARAMETRIC_DATATYPE);
   return getDTypeFor(tn[0]);
+}
+
+const DType& NodeManager::getDTypeFor(Node n) const
+{
+  return getDTypeFor(TypeNode(n.d_nv));
 }
 
 const DType& NodeManager::getDTypeForIndex(size_t index) const
@@ -611,15 +615,18 @@ std::vector<TypeNode> NodeManager::mkMutualDatatypeTypesInternal(
   // simple self- and mutual-recursion, for example in the definition
   // "nat = succ(pred:nat) | zero", a named resolution can handle the
   // pred selector.
+  DatatypeIndexAttr dia;
   for (const DType& dt : datatypes)
   {
     uint32_t index = d_dtypes.size();
     d_dtypes.push_back(std::unique_ptr<DType>(new DType(dt)));
     DType* dtp = d_dtypes.back().get();
-    TypeNode typeNode;
+
+    NodeBuilder dtnb(this, kind::DATATYPE_TYPE);
+    TypeNode typeNode = dtnb.constructTypeNode();
+    typeNode.setAttribute(dia, index);
     if (dtp->getNumParameters() == 0)
     {
-      typeNode = mkTypeConst(DatatypeIndexConstant(index));
       // if the datatype is a tuple, the type will be (TUPLE_TYPE ...)
       if (dt.isTuple())
       {
@@ -639,14 +646,13 @@ std::vector<TypeNode> NodeManager::mkMutualDatatypeTypesInternal(
     }
     else
     {
-      TypeNode cons = mkTypeConst(DatatypeIndexConstant(index));
+      TypeNode cons = typeNode;
       std::vector<TypeNode> params;
       params.push_back(cons);
       for (uint32_t ip = 0; ip < dtp->getNumParameters(); ++ip)
       {
         params.push_back(dtp->getParameter(ip));
       }
-
       typeNode = mkTypeNode(kind::PARAMETRIC_DATATYPE, params);
     }
     if (nameResolutions.find(dtp->getName()) != nameResolutions.end())
@@ -946,14 +952,14 @@ TypeNode NodeManager::mkUnresolvedDatatypeSort(const std::string& name,
   return usort;
 }
 
-Node NodeManager::mkOracle(
-    std::function<std::vector<Node>(const std::vector<Node>&)> fn)
+Node NodeManager::mkOracle(Oracle& o)
 {
   Node n = NodeBuilder(this, kind::ORACLE);
   n.setAttribute(TypeAttr(), builtinOperatorType());
   n.setAttribute(TypeCheckedAttr(), true);
   n.setAttribute(OracleIndexAttr(), d_oracles.size());
-  d_oracles.push_back(std::unique_ptr<Oracle>(new Oracle(fn)));
+  // we allocate a new oracle, to take ownership
+  d_oracles.push_back(std::unique_ptr<Oracle>(new Oracle(o.getFunction())));
   return n;
 }
 
@@ -1325,6 +1331,7 @@ Node NodeManager::mkNode(TNode opNode, std::initializer_list<TNode> children)
 
 Node NodeManager::mkConstReal(const Rational& r)
 {
+  // works with (r.isIntegral() ? kind::CONST_INTEGER : kind::CONST_RATIONAL)
   return mkConst(kind::CONST_RATIONAL, r);
 }
 

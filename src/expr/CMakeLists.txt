@@ -62,6 +62,7 @@ libcvc5_add_sources(
   node_value.h
   oracle_binary_caller.cpp
   oracle_binary_caller.h
+  oracle.h
   oracle_caller.cpp
   oracle_caller.h
   oracle.h
@@ -89,8 +90,6 @@ libcvc5_add_sources(
   type_matcher.h
   type_node.cpp
   type_node.h
-  datatype_index.h
-  datatype_index.cpp
   dtype.h
   dtype.cpp
   dtype_cons.h
