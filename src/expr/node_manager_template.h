@@ -742,15 +742,11 @@ class NodeManager
   /** Make an unresolved datatype sort */
   TypeNode mkUnresolvedDatatypeSort(const std::string& name, size_t arity = 0);
 
-<<<<<<< HEAD
   /**
    * Make an oracle node. This returns a constant of kind ORACLE that stores
    * the given method in an Oracle object. This Oracle can later be obtained by
    * getOracleFor below.
    */
-=======
-  /** Make an oracle node */
->>>>>>> d658e0e07af5bf0565283300d6f3e2da869a4a54
   Node mkOracle(Oracle& o);
 
   /**
