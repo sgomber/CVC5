@@ -15,13 +15,7 @@
 
 #include "expr/oracle_caller.h"
 
-#include <sstream>
-
-#include "options/base_options.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
-#include "util/miniParser/miniParser.h"
-#include "util/rational.h"
-#include "util/run.h"
 
 namespace cvc5::internal {
 
@@ -94,7 +88,7 @@ Node OracleCaller::getOracleFor(const Node& n)
       }
     }
   }
-  Assert(false) << "Unexpected node for binary name " << n;
+  Assert(false) << "Unexpected node for oracle " << n;
   return Node::null();
 }
 
