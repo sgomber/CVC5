@@ -90,8 +90,9 @@ bool ProofPostprocessCallback::update(Node res,
                                       CDProof* cdp,
                                       bool& continueUpdate)
 {
-  Trace("smt-proof-pp-debug") << "- Post process " << id << " " << children
-                              << " / " << args << " / result = " << res << std::endl;
+  Trace("smt-proof-pp-debug")
+      << "- Post process " << id << " " << children << " / " << args
+      << " / result = " << res << std::endl;
 
   if (id == PfRule::ASSUME)
   {
@@ -878,7 +879,8 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
       // apply the current substitution to the range
       if (!vvec.empty() && ida == MethodId::SBA_SEQUENTIAL)
       {
-        Node vs = var.substitute(vvec.begin(), vvec.end(), svec.begin(), svec.end());
+        Node vs =
+            var.substitute(vvec.begin(), vvec.end(), svec.begin(), svec.end());
         Node ss =
             subs.substitute(vvec.begin(), vvec.end(), svec.begin(), svec.end());
         if (vs != var || ss != subs)
@@ -906,7 +908,7 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
           std::shared_ptr<ProofNode> pfn;
           std::vector<Node> transChildren;
           // get the proof for the update to the current substitution
-          if (var!=vs)
+          if (var != vs)
           {
             Node veqss = var.eqNode(vs);
             pfn = tcg.getProofFor(veqss);
@@ -922,7 +924,7 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
           Node veqs = addProofForSubsStep(var, subs, childFrom, pf.get());
           transChildren.push_back(veqs);
           // get the proof for the update to the current substitution
-          if (subs!=ss)
+          if (subs != ss)
           {
             Node seqss = subs.eqNode(ss);
             pfn = tcg.getProofFor(seqss);
@@ -931,7 +933,7 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
             pf->addProof(pfn);
             transChildren.push_back(seqss);
           }
-          Assert (transChildren.size()>=2);
+          Assert(transChildren.size() >= 2);
           // transitivity
           pf->addStep(vs.eqNode(ss), PfRule::TRANS, transChildren, {});
           // add to the substitution
@@ -979,10 +981,11 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
     // substitution.
     if (pfn == nullptr)
     {
-      Trace("smt-proof-pp-debug") << "resort to TRUST_SUBS, from " << ida << std::endl
-                << eq << std::endl
-                << eqq << std::endl
-                << "from " << children << " applied to " << t << std::endl;
+      Trace("smt-proof-pp-debug")
+          << "resort to TRUST_SUBS, from " << ida << std::endl
+          << eq << std::endl
+          << eqq << std::endl
+          << "from " << children << " applied to " << t << std::endl;
       cdp->addStep(eqq, PfRule::TRUST_SUBS, {}, {eqq});
     }
     else
