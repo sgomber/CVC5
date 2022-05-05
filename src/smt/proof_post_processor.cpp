@@ -91,7 +91,7 @@ bool ProofPostprocessCallback::update(Node res,
                                       bool& continueUpdate)
 {
   Trace("smt-proof-pp-debug") << "- Post process " << id << " " << children
-                              << " / " << args << std::endl;
+                              << " / " << args << " / result = " << res << std::endl;
 
   if (id == PfRule::ASSUME)
   {
@@ -878,12 +878,13 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
       // apply the current substitution to the range
       if (!vvec.empty() && ida == MethodId::SBA_SEQUENTIAL)
       {
+        Node vs = var.substitute(vvec.begin(), vvec.end(), svec.begin(), svec.end());
         Node ss =
             subs.substitute(vvec.begin(), vvec.end(), svec.begin(), svec.end());
-        if (ss != subs)
+        if (vs != var || ss != subs)
         {
           Trace("smt-proof-pp-debug")
-              << "......updated to " << var << " -> " << ss
+              << "......updated to " << vs << " -> " << ss
               << " based on previous substitution" << std::endl;
           // make the proof for the tranitivity step
           std::shared_ptr<CDProof> pf = std::make_shared<CDProof>(d_pnm);
@@ -902,21 +903,39 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
             // substitutions are pre-rewrites
             tcg.addRewriteStep(vvec[j], svec[j], pgs[j], true);
           }
+          std::shared_ptr<ProofNode> pfn;
+          std::vector<Node> transChildren;
           // get the proof for the update to the current substitution
-          Node seqss = subs.eqNode(ss);
-          std::shared_ptr<ProofNode> pfn = tcg.getProofFor(seqss);
-          Assert(pfn != nullptr);
-          // add the proof
-          pf->addProof(pfn);
+          if (var!=vs)
+          {
+            Node veqss = var.eqNode(vs);
+            pfn = tcg.getProofFor(veqss);
+            Assert(pfn != nullptr);
+            // add the proof
+            pf->addProof(pfn);
+            transChildren.push_back(vs.eqNode(var));
+          }
           // get proof for childFrom from cdp
           pfn = cdp->getProofFor(childFrom);
           pf->addProof(pfn);
           // ensure we have a proof of var = subs
           Node veqs = addProofForSubsStep(var, subs, childFrom, pf.get());
+          transChildren.push_back(veqs);
+          // get the proof for the update to the current substitution
+          if (subs!=ss)
+          {
+            Node seqss = subs.eqNode(ss);
+            pfn = tcg.getProofFor(seqss);
+            Assert(pfn != nullptr);
+            // add the proof
+            pf->addProof(pfn);
+            transChildren.push_back(seqss);
+          }
+          Assert (transChildren.size()>=2);
           // transitivity
-          pf->addStep(var.eqNode(ss), PfRule::TRANS, {veqs, seqss}, {});
+          pf->addStep(vs.eqNode(ss), PfRule::TRANS, transChildren, {});
           // add to the substitution
-          vvec.push_back(var);
+          vvec.push_back(vs);
           svec.push_back(ss);
           pgs.push_back(pf.get());
           continue;
@@ -941,7 +960,7 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
                              "SUBS_TConvProofGenerator",
                              nullptr,
                              true);
-    for (unsigned j = 0, nvars = vvec.size(); j < nvars; j++)
+    for (size_t j = 0, nvars = vvec.size(); j < nvars; j++)
     {
       // substitutions are pre-rewrites
       tcpg.addRewriteStep(vvec[j], svec[j], pgs[j], true);
@@ -960,7 +979,7 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
     // substitution.
     if (pfn == nullptr)
     {
-      warning() << "resort to TRUST_SUBS" << std::endl
+      Trace("smt-proof-pp-debug") << "resort to TRUST_SUBS, from " << ida << std::endl
                 << eq << std::endl
                 << eqq << std::endl
                 << "from " << children << " applied to " << t << std::endl;
