@@ -900,14 +900,14 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
                                   nullptr,
                                   true);
           // add previous rewrite steps
-          for (unsigned j = 0, nvars = vvec.size(); j < nvars; j++)
+          for (size_t j = 0, nvars = vvec.size(); j < nvars; j++)
           {
             // substitutions are pre-rewrites
             tcg.addRewriteStep(vvec[j], svec[j], pgs[j], true);
           }
           std::shared_ptr<ProofNode> pfn;
           std::vector<Node> transChildren;
-          // get the proof for the update to the current substitution
+          // get the proof for the update to the domain of the current subs
           if (var != vs)
           {
             Node veqss = var.eqNode(vs);
@@ -923,7 +923,7 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
           // ensure we have a proof of var = subs
           Node veqs = addProofForSubsStep(var, subs, childFrom, pf.get());
           transChildren.push_back(veqs);
-          // get the proof for the update to the current substitution
+          // get the proof for the update to the range of the current subs
           if (subs != ss)
           {
             Node seqss = subs.eqNode(ss);
@@ -990,6 +990,7 @@ Node ProofPostprocessCallback::expandMacros(PfRule id,
     }
     else
     {
+      Trace("smt-proof-pp-debug") << "Successfully proved " << eq << " by SUBS" << std::endl;
       cdp->addProof(pfn);
     }
     return eqq;
