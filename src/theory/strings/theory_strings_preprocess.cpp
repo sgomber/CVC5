@@ -866,15 +866,15 @@ Node StringsPreprocess::reduce(Node t,
     Node offset =
         nm->mkConstInt(Rational(t.getKind() == STRING_TO_UPPER ? -32 : 32));
 
-    Node res = nm->mkNode(
+    Node resIte = nm->mkNode(
         ITE,
         nm->mkNode(AND, nm->mkNode(LEQ, lb, ci), nm->mkNode(LEQ, ci, ub)),
-        nm->mkNode(ADD, ci, offset),
-        ci);
+        ri.eqNode(nm->mkNode(ADD, ci, offset)),
+        ri.eqNode(ci));
 
     Node bound =
         nm->mkNode(AND, nm->mkNode(LEQ, zero, i), nm->mkNode(LT, i, lenr));
-    Node body = nm->mkNode(OR, bound.negate(), ri.eqNode(res));
+    Node body = nm->mkNode(OR, bound.negate(), resIte);
     Node rangeA = utils::mkForallInternal(bvi, body);
 
     // upper 65 ... 90

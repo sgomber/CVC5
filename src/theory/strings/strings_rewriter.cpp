@@ -192,6 +192,13 @@ Node StringsRewriter::rewriteStrConvert(Node node)
     Node retNode = concatBuilder.constructNode();
     return returnRewrite(node, retNode, Rewrite::STR_CONV_MINSCOPE_CONCAT);
   }
+  /*
+  else if (node[0].getKind() == STRING_SUBSTR)
+  {
+    Node retNode = nm->mkNode(STRING_SUBSTR, nm->mkNode(nk, node[0][0]), node[0][1], node[0][2]);
+    return returnRewrite(node, retNode, Rewrite::STR_CONV_MINSCOPE_CONCAT);
+  }
+  */
   else if (node[0].getKind() == STRING_TO_LOWER
            || node[0].getKind() == STRING_TO_UPPER)
   {
