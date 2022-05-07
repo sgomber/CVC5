@@ -20,6 +20,7 @@
 #include "proof/eager_proof_generator.h"
 #include "smt/smt_statistics_registry.h"
 #include "smt/solver_engine_scope.h"
+#include "expr/skolem_manager.h"
 #include "theory/builtin/proof_checker.h"
 #include "theory/inference_id_proof_annotator.h"
 #include "theory/output_channel.h"
@@ -286,7 +287,8 @@ bool TheoryInferenceManager::trustedLemma(const TrustNode& tlem,
       << "Must provide an inference id for lemma";
   d_lemmaIdStats << id;
   resourceManager()->spendResource(id);
-  Trace("im") << "(lemma " << id << " " << tlem.getProven() << ")" << std::endl;
+  SkolemManager * sm = NodeManager::currentNM()->getSkolemManager();
+  Trace("im") << "(lemma " << id << " " << sm->getOriginalForm(tlem.getProven()) << ")" << std::endl;
   // shouldn't send trivially true or false lemmas
   Assert(!rewrite(tlem.getProven()).isConst());
   d_numCurrentLemmas++;
@@ -421,9 +423,12 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
   d_factIdStats << iid;
   resourceManager()->spendResource(iid);
   // make the node corresponding to the explanation
-  Node expn = NodeManager::currentNM()->mkAnd(exp);
-  Trace("im") << "(fact " << iid << " " << (pol ? Node(atom) : atom.notNode())
-              << " " << expn << ")" << std::endl;
+  NodeManager * nm = NodeManager::currentNM();
+  Node expn = nm->mkAnd(exp);
+  Node conc = (pol ? Node(atom) : atom.notNode());
+  SkolemManager * sm = nm->getSkolemManager();
+  Trace("im") << "(fact " << iid << " " << sm->getOriginalForm(conc)
+              << " " << sm->getOriginalForm(expn) << ")" << std::endl;
   // call the pre-notify fact method with preReg = false, isInternal = true
   if (d_theory.preNotifyFact(atom, pol, expn, false, true))
   {
@@ -433,7 +438,7 @@ bool TheoryInferenceManager::processInternalFact(TNode atom,
   }
   Assert(d_ee != nullptr);
   Trace("infer-manager") << "TheoryInferenceManager::assertInternalFact: "
-                         << (pol ? Node(atom) : atom.notNode()) << " from "
+                         << conc << " from "
                          << expn << " / " << iid << " " << id << std::endl;
   if (Configuration::isAssertionBuild())
   {
