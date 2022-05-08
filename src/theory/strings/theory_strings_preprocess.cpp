@@ -856,8 +856,10 @@ Node StringsPreprocess::reduce(Node t,
     Node i = SkolemCache::mkIndexVar(t);
     Node bvi = nm->mkNode(BOUND_VAR_LIST, i);
 
-    Node ci = nm->mkNode(STRING_TO_CODE, nm->mkNode(STRING_SUBSTR, x, i, one));
-    Node ri = nm->mkNode(STRING_TO_CODE, nm->mkNode(STRING_SUBSTR, r, i, one));
+    Node xati = nm->mkNode(STRING_SUBSTR, nm->mkNode(STRING_SUBSTR, x, i, nm->mkNode(SUB, lenx, i)), zero, one);
+    Node rati = nm->mkNode(STRING_SUBSTR, nm->mkNode(STRING_SUBSTR, r, i, nm->mkNode(SUB, lenx, i)), zero, one);
+    Node ci = nm->mkNode(STRING_TO_CODE, xati);
+    Node ri = nm->mkNode(STRING_TO_CODE, rati);
 
     Node lb =
         nm->mkConstInt(Rational(t.getKind() == STRING_TO_UPPER ? 97 : 65));

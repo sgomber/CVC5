@@ -1922,6 +1922,9 @@ Node SequencesRewriter::rewriteSubstr(Node node)
       }
     }
   }
+  
+  // TODO: All str.substr should either be a suffix or prefix
+  // (str.substr x n m) ---> (str.substr (str.substr x n (- (str.len x) n)) 0 m)
 
   std::vector<Node> n1;
   utils::getConcat(node[0], n1);
