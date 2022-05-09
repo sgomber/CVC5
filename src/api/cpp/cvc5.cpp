@@ -7175,11 +7175,11 @@ Term Solver::declareOracleFun(const std::string& symbol,
   CVC5_API_TRY_CATCH_END;
 }
 
-
-Term Solver::declareOracleFun(const std::string& symbol,
-                      const std::vector<Sort>& sorts,
-                      const Sort& sort,
-                      std::function<Term(const std::vector<Term>&)> fn) const
+Term Solver::declareOracleFun(
+    const std::string& symbol,
+    const std::vector<Sort>& sorts,
+    const Sort& sort,
+    std::function<Term(const std::vector<Term>&)> fn) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_DOMAIN_SORTS(sorts);
