@@ -954,18 +954,11 @@ extendedCommand[std::unique_ptr<cvc5::Command>* cmd]
     sortSymbol[t]
     ( symbol[binName,CHECK_NONE,SYM_VARIABLE]? )
     {
-      Term func;
-      if (binName!="")
+      if (!sorts.empty())
       {
-        func = SOLVER->declareOracleFun(name, sorts, t, binName);
+        t = PARSER_STATE->mkFlatFunctionType(sorts, t);
       }
-      else
-      {
-        func = SOLVER->declareOracleFun(name, sorts, t);
-      }
-      // eagerly bind the symbol
-      PARSER_STATE->defineVar(name, func);
-      cmd->reset(new DeclareOracleFunCommand(func, binName));
+      cmd->reset(new DeclareOracleFunCommand(name, t, binName));
     }
   | ( ORACLE_ASSUME { isAssume = true; } | 
       ORACLE_CONSTRAINT { isAssume = false; } 
