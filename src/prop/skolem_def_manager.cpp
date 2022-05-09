@@ -172,13 +172,9 @@ void SkolemDefManager::getSkolems(TNode n, std::unordered_set<Node>& skolems)
     if (it == visited.end())
     {
       visited.insert(cur);
-      if (cur.isVar())
+      if (d_skDefs.find(cur) != d_skDefs.end())
       {
-        if (d_skDefs.find(cur) != d_skDefs.end())
-        {
-          skolems.insert(cur);
-        }
-        continue;
+        skolems.insert(cur);
       }
       if (cur.getMetaKind() == kind::metakind::PARAMETERIZED)
       {
