@@ -23,7 +23,8 @@
 
 namespace cvc5::internal {
 
-std::vector<Node> OracleBinaryCallerInternal::runOracle(const std::vector<Node>& input)
+std::vector<Node> OracleBinaryCallerInternal::runOracle(
+    const std::vector<Node>& input)
 {
   std::vector<std::string> sargs;
   sargs.push_back(d_binaryName);

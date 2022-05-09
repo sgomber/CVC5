@@ -93,7 +93,9 @@ class SymbolManager::Implementation
   /** Get the name of the last abduct-to-synthesize */
   const std::string& getLastSynthName() const;
   /** get the oracle binary caller */
-  OracleBinaryCaller& getOracleBinaryCaller(Solver* slv, const std::string& name);
+  OracleBinaryCaller& getOracleBinaryCaller(Solver* slv,
+                                            const std::string& name);
+
  private:
   /** The context manager for the scope maps. */
   Context d_context;
@@ -280,7 +282,8 @@ const std::string& SymbolManager::Implementation::getLastSynthName() const
   return d_lastSynthName.get();
 }
 
-OracleBinaryCaller& SymbolManager::Implementation::getOracleBinaryCaller(Solver * slv, const std::string& name)
+OracleBinaryCaller& SymbolManager::Implementation::getOracleBinaryCaller(
+    Solver* slv, const std::string& name)
 {
   std::map<std::string, std::unique_ptr<OracleBinaryCaller>>::iterator it =
       d_oracleBinCalls.find(name);
@@ -437,7 +440,8 @@ const std::string& SymbolManager::getLastSynthName() const
   return d_implementation->getLastSynthName();
 }
 
-OracleBinaryCaller& SymbolManager::getOracleBinaryCaller(const std::string& name)
+OracleBinaryCaller& SymbolManager::getOracleBinaryCaller(
+    const std::string& name)
 {
   return d_implementation->getOracleBinaryCaller(d_solver, name);
 }

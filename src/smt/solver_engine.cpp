@@ -2043,10 +2043,11 @@ Node SolverEngine::getOracleNode(const std::string& name)
   return o;
 }
 
-OracleBinaryCallerInternal& SolverEngine::getOracleBinaryCallerInternal(const std::string& name)
+OracleBinaryCallerInternal& SolverEngine::getOracleBinaryCallerInternal(
+    const std::string& name)
 {
-  std::map<std::string, std::unique_ptr<OracleBinaryCallerInternal>>::iterator it =
-      d_oracleBinCalls.find(name);
+  std::map<std::string, std::unique_ptr<OracleBinaryCallerInternal>>::iterator
+      it = d_oracleBinCalls.find(name);
   if (it != d_oracleBinCalls.end())
   {
     return *it->second.get();

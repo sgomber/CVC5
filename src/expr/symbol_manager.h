@@ -175,6 +175,7 @@ class CVC5_EXPORT SymbolManager
   const std::string& getLastSynthName() const;
   /** get the oracle binary caller */
   OracleBinaryCaller& getOracleBinaryCaller(const std::string& name);
+
  private:
   /** The API Solver object. */
   cvc5::Solver* d_solver;

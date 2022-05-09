@@ -26,17 +26,20 @@ namespace cvc5 {
 class OracleBinaryCaller
 {
  public:
-  OracleBinaryCaller(Solver * slv, std::string binName) : d_slv(slv), d_binaryName(binName) {}
+  OracleBinaryCaller(Solver* slv, std::string binName)
+      : d_slv(slv), d_binaryName(binName)
+  {
+  }
   /** Run */
   std::vector<Term> runOracle(const std::vector<Term>& input);
 
  private:
   /** pointer to solver */
-  Solver * d_slv;
+  Solver* d_slv;
   /** binary name */
   std::string d_binaryName;
 };
 
-}  // namespace cvc5::internal
+}  // namespace cvc5
 
 #endif /*CVC5__UTIL__ORACLE_CALLER_H*/

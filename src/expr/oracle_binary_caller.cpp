@@ -47,7 +47,8 @@ std::vector<Term> OracleBinaryCaller::runOracle(const std::vector<Term>& input)
   // Parse response from the binary into a Node. The response from the binary
   // should be a string that can be parsed as a (tuple of) terms in the smt2
   // format.
-  internal::Node response = internal::mini_parsert(oracle_response_istream).expression();
+  internal::Node response =
+      internal::mini_parsert(oracle_response_istream).expression();
 
   std::vector<Term> output = Term::nodeVectorToTerms(d_slv, {response});
   return output;

@@ -1175,9 +1175,11 @@ class CVC5_EXPORT SolverEngine
   /** get the oracle for binary name */
   Node getOracleNode(const std::string& name);
   /** get the oracle binary caller */
-  OracleBinaryCallerInternal& getOracleBinaryCallerInternal(const std::string& name);
+  OracleBinaryCallerInternal& getOracleBinaryCallerInternal(
+      const std::string& name);
   /** Map binary names to oracle binary callers */
-  std::map<std::string, std::unique_ptr<OracleBinaryCallerInternal>> d_oracleBinCalls;
+  std::map<std::string, std::unique_ptr<OracleBinaryCallerInternal>>
+      d_oracleBinCalls;
 }; /* class SolverEngine */
 
 /* -------------------------------------------------------------------------- */
