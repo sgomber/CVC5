@@ -20,7 +20,7 @@ namespace prop {
 
 SkolemDefManager::SkolemDefManager(context::Context* context,
                                    context::UserContext* userContext)
-    : d_skDefs(userContext), d_skActive(context), d_hasSkolems(userContext)
+    : d_skDefs(userContext), d_skActive(context), d_hasSkolems(userContext), d_skDefMap(userContext), d_assertedTerms(context)
 {
 }
 
@@ -175,6 +175,49 @@ void SkolemDefManager::getSkolems(TNode n, std::unordered_set<Node>& skolems)
       if (d_skDefs.find(cur) != d_skDefs.end())
       {
         skolems.insert(cur);
+      }
+      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED)
+      {
+        visit.push_back(cur.getOperator());
+      }
+      visit.insert(visit.end(), cur.begin(), cur.end());
+    }
+  } while (!visit.empty());
+}
+
+SkolemDefManager::LemmaList* SkolemDefManager::getLemmaList(const Node& n) const
+{
+  NodeLemmaListMap::const_iterator it = d_skDefMap.find(n);
+  if (it!=d_skDefMap.end())
+  {
+    return it->second.get();
+  }
+  return nullptr;
+}
+
+void SkolemDefManager::getSkolems2(TNode n, std::vector<Node>& skl)
+{
+  NodeSet::const_iterator it;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do
+  {
+    cur = visit.back();
+    visit.pop_back();
+    it = d_assertedTerms.find(cur);
+    if (it == d_assertedTerms.end())
+    {
+      d_assertedTerms.insert(cur);
+      // if it has a lemma list, add it
+      LemmaList* ll = getLemmaList(cur);
+      if (ll!=nullptr)
+      {
+        NodeList& llist = ll->d_lemmas;
+        for (const Node& lem : llist)
+        {
+          skl.push_back(lem);
+        }
       }
       if (cur.getMetaKind() == kind::metakind::PARAMETERIZED)
       {

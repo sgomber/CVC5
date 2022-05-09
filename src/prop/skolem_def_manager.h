@@ -25,6 +25,7 @@
 #include "context/cdhashmap.h"
 #include "context/cdhashset.h"
 #include "context/cdinsert_hashmap.h"
+#include "context/cdlist.h"
 #include "context/context.h"
 #include "expr/node.h"
 
@@ -45,6 +46,7 @@ class SkolemDefManager
   using NodeNodeMap = context::CDInsertHashMap<Node, Node>;
   using NodeBoolMap = context::CDHashMap<Node, bool>;
   using NodeSet = context::CDHashSet<Node>;
+  using NodeList = context::CDList<Node>;
 
  public:
   SkolemDefManager(context::Context* context,
@@ -92,12 +94,28 @@ class SkolemDefManager
   bool hasSkolems(TNode n);
 
  private:
+  class LemmaList
+  {
+  public:
+    LemmaList(context::UserContext* u) : d_lemmas(u) {}
+    NodeList d_lemmas;
+  };
+  using NodeLemmaListMap = context::CDHashMap<Node, std::shared_ptr<LemmaList>>;
+  /** get lemma list for node n */
+  LemmaList* getLemmaList(const Node& n) const;
+  /** get skolems */
+  void getSkolems2(TNode n, std::vector<Node>& skl);
   /** skolems to definitions (user-context dependent) */
   NodeNodeMap d_skDefs;
   /** set of active skolems (SAT-context dependent) */
   NodeSet d_skActive;
   /** Cache for hasSkolems */
   NodeBoolMap d_hasSkolems;
+  //---------------- new
+  /** Lemma list */
+  NodeLemmaListMap d_skDefMap;
+  /** set of asserted terms */
+  NodeSet d_assertedTerms;
 };
 
 }  // namespace prop
