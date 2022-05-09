@@ -1035,9 +1035,11 @@ void SolverEngine::defineOracleInterfaceInternal(
     Node constraint,
     Node o)
 {
+  Assert (o.getKind()==kind::ORACLE);
   // make the oracle interface quantified formula
   Node q = quantifiers::OracleEngine::mkOracleInterface(
       inputs, outputs, assume, constraint, o);
+  Trace("ajr-temp") << q << std::endl;
   // assert it
   assertFormula(q);
 }

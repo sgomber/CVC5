@@ -39,6 +39,7 @@
 #include "smt/model.h"
 #include "util/smt2_quote_string.h"
 #include "util/utility.h"
+#include "expr/oracle_binary_caller.h"
 
 using namespace std;
 
@@ -1203,9 +1204,6 @@ const std::string& DeclareOracleFunCommand::getBinaryName() const
 
 void DeclareOracleFunCommand::invoke(Solver* solver, SymbolManager* sm)
 {
-  // Notice that the oracle function is already declared by the parser so that
-  // the symbol is bound eagerly.
-  // mark that it will be printed in the model
   std::vector<Sort> args;
   Sort ret;
   if (d_sort.isFunction())
@@ -1218,11 +1216,15 @@ void DeclareOracleFunCommand::invoke(Solver* solver, SymbolManager* sm)
     ret = d_sort;
   }
   Term fun = solver->declareOracleFun(d_id, args, ret, d_binName);
-  // bind the symbol
-  if (!sm->getSymbolTable()->bind(d_id, fun))
-  {
-    // fail
-  }
+  /*
+  OracleBinaryCaller& obc = sm->getOracleBinaryCaller(d_binName);
+  Term fun = solver->declareOracleFun(d_id, args, ret, [&](const std::vector<Term>& input) {
+    return obc.runOracleSingleOut(input);
+  });
+  */
+  // bind the symbol for the parser
+  sm->getSymbolTable()->bind(d_id, fun);
+  // mark that it will be printed in the model
   sm->addModelDeclarationTerm(fun);
   d_commandStatus = CommandSuccess::instance();
 }

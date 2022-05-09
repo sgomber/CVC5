@@ -32,6 +32,8 @@ class OracleBinaryCaller
   }
   /** Run */
   std::vector<Term> runOracle(const std::vector<Term>& input);
+  /** Run, single return version */
+  Term runOracleSingleOut(const std::vector<Term>& input);
 
  private:
   /** pointer to solver */

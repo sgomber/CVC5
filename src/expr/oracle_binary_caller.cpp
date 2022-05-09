@@ -54,4 +54,11 @@ std::vector<Term> OracleBinaryCaller::runOracle(const std::vector<Term>& input)
   return output;
 }
 
+Term OracleBinaryCaller::runOracleSingleOut(const std::vector<Term>& input)
+{
+  // currently safe because the above assumes a single output
+  std::vector<Term> output = runOracle(input);
+  return output[0];
+}
+
 }  // namespace cvc5
