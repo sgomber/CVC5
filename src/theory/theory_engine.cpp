@@ -1290,7 +1290,8 @@ void TheoryEngine::lemma(TrustNode tlemma,
 {
   // For resource-limiting (also does a time check).
   // spendResource();
-  Assert(tlemma.getKind() == TrustNodeKind::LEMMA || tlemma.getKind()==TrustNodeKind::SKOLEM_LEMMA
+  Assert(tlemma.getKind() == TrustNodeKind::LEMMA
+         || tlemma.getKind() == TrustNodeKind::SKOLEM_LEMMA
          || tlemma.getKind() == TrustNodeKind::CONFLICT);
   // get the node
   Node node = tlemma.getNode();
@@ -1311,7 +1312,7 @@ void TheoryEngine::lemma(TrustNode tlemma,
       Node tidn = builtin::BuiltinProofRuleChecker::mkTheoryIdNode(from);
       d_lazyProof->addStep(lemma, PfRule::THEORY_LEMMA, {}, {lemma, tidn});
       // update the trust node
-      if (tlemma.getKind()==TrustNodeKind::SKOLEM_LEMMA)
+      if (tlemma.getKind() == TrustNodeKind::SKOLEM_LEMMA)
       {
         Node k = tlemma.getSkolemForLemma();
         tlemma = TrustNode::mkTrustSkolemLemma(lemma, k, d_lazyProof.get());
