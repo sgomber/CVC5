@@ -7175,6 +7175,35 @@ Term Solver::declareOracleFun(const std::string& symbol,
   CVC5_API_TRY_CATCH_END;
 }
 
+
+Term Solver::declareOracleFun(const std::string& symbol,
+                      const std::vector<Sort>& sorts,
+                      const Sort& sort,
+                      std::function<Term(const std::vector<Term>&)> fn) const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_SOLVER_CHECK_DOMAIN_SORTS(sorts);
+  CVC5_API_SOLVER_CHECK_CODOMAIN_SORT(sort);
+  //////// all checks before this line
+  internal::TypeNode type = *sort.d_type;
+  if (!sorts.empty())
+  {
+    std::vector<internal::TypeNode> types = Sort::sortVectorToTypeNodes(sorts);
+    type = d_nodeMgr->mkFunctionType(types, type);
+  }
+  internal::Node fun = d_nodeMgr->mkVar(symbol, type);
+  // Wrap the terms-to-term function so that it is nodes-to-nodes. Note we
+  // make the method return a vector of size one to conform to the interface
+  // at the SolverEngine level.
+  d_slv->declareOracleFun(fun, [&](const std::vector<internal::Node> nodes) {
+    std::vector<Term> terms = Term::nodeVectorToTerms(this, nodes);
+    return Term::termVectorToNodes({fn(terms)});
+  });
+  return Term(this, fun);
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
 Term Solver::declareOracleFunHelper(const std::string& symbol,
                                     const std::vector<Sort>& sorts,
                                     const Sort& sort,
