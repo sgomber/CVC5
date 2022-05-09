@@ -100,7 +100,7 @@ class Printer
   /** Print declare-oracle-fun command */
   virtual void toStreamCmdDeclareOracleFun(std::ostream& out,
                                            const std::string& id,
-                                             TypeNode type,
+                                           TypeNode type,
                                            const std::string& binName) const;
   /** Print declare-oracle-fun command */
   virtual void toStreamCmdDefineOracleInterface(

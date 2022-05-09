@@ -1177,16 +1177,22 @@ void DeclarePoolCommand::toStream(std::ostream& out,
 /* class DeclareOracleFunCommand */
 /* -------------------------------------------------------------------------- */
 
-DeclareOracleFunCommand::DeclareOracleFunCommand(const std::string& id, Sort sort)
+DeclareOracleFunCommand::DeclareOracleFunCommand(const std::string& id,
+                                                 Sort sort)
     : d_id(id), d_sort(sort), d_binName("")
 {
 }
-DeclareOracleFunCommand::DeclareOracleFunCommand(const std::string& id, Sort sort, const std::string& binName)
+DeclareOracleFunCommand::DeclareOracleFunCommand(const std::string& id,
+                                                 Sort sort,
+                                                 const std::string& binName)
     : d_id(id), d_sort(sort), d_binName(binName)
 {
 }
 
-const std::string& DeclareOracleFunCommand::getIdentifier() const { return d_id; }
+const std::string& DeclareOracleFunCommand::getIdentifier() const
+{
+  return d_id;
+}
 
 Sort DeclareOracleFunCommand::getSort() const { return d_sort; }
 
@@ -1223,7 +1229,8 @@ void DeclareOracleFunCommand::invoke(Solver* solver, SymbolManager* sm)
 
 Command* DeclareOracleFunCommand::clone() const
 {
-  DeclareOracleFunCommand* dfc = new DeclareOracleFunCommand(d_id, d_sort, d_binName);
+  DeclareOracleFunCommand* dfc =
+      new DeclareOracleFunCommand(d_id, d_sort, d_binName);
   return dfc;
 }
 

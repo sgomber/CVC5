@@ -468,7 +468,9 @@ class CVC5_EXPORT DeclareOracleFunCommand : public Command
 {
  public:
   DeclareOracleFunCommand(const std::string& id, Sort sort);
-  DeclareOracleFunCommand(const std::string& id, Sort sort, const std::string& binName);
+  DeclareOracleFunCommand(const std::string& id,
+                          Sort sort,
+                          const std::string& binName);
   const std::string& getIdentifier() const;
   Sort getSort() const;
   const std::string& getBinaryName() const;

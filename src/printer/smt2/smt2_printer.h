@@ -77,7 +77,7 @@ class Smt2Printer : public cvc5::internal::Printer
   /** Print declare-oracle-fun command */
   void toStreamCmdDeclareOracleFun(std::ostream& out,
                                    const std::string& id,
-                                             TypeNode type,
+                                   TypeNode type,
                                    const std::string& binName) const override;
 
   /** Print declare-oracle-fun command */
