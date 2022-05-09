@@ -55,7 +55,7 @@ TrustNode TrustNode::mkTrustLemma(Node lem, ProofGenerator* g)
 
 TrustNode TrustNode::mkTrustSkolemLemma(Node lem, Node k, ProofGenerator* g)
 {
-  Node lkey = NodeManager::currentNM()->mkNode(SEXPR, lem, k);
+  Node lkey = NodeManager::currentNM()->mkNode(kind::SEXPR, lem, k);
   // if a generator is provided, should confirm that it can prove it
   Assert(g == nullptr || g->hasProofFor(lem));
   return TrustNode(TrustNodeKind::SKOLEM_LEMMA, lkey, g);
