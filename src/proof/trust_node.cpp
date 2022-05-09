@@ -111,8 +111,8 @@ Node TrustNode::getNode() const
 }
 
 Node TrustNode::getProven() const
-{ 
-  if (d_tnk==TrustNodeKind::SKOLEM_LEMMA)
+{
+  if (d_tnk == TrustNodeKind::SKOLEM_LEMMA)
   {
     return d_proven[0];
   }
@@ -121,7 +121,7 @@ Node TrustNode::getProven() const
 
 Node TrustNode::getSkolemForLemma() const
 {
-  Assert (d_tnk==TrustNodeKind::SKOLEM_LEMMA);
+  Assert(d_tnk == TrustNodeKind::SKOLEM_LEMMA);
   return d_proven[1];
 }
 

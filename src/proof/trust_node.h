@@ -86,7 +86,9 @@ class TrustNode
   /** Make a proven node for lemma */
   static TrustNode mkTrustLemma(Node lem, ProofGenerator* g = nullptr);
   /** Make a proven node for lemma */
-  static TrustNode mkTrustSkolemLemma(Node lem, Node k, ProofGenerator* g = nullptr);
+  static TrustNode mkTrustSkolemLemma(Node lem,
+                                      Node k,
+                                      ProofGenerator* g = nullptr);
   /** Make a proven node for explanation of propagated literal */
   static TrustNode mkTrustPropExp(TNode lit,
                                   Node exp,
