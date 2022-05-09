@@ -36,6 +36,7 @@
 namespace cvc5 {
 
 class Command;
+class OracleBinaryCaller;
 
 namespace main {
 class CommandExecutor;
@@ -1064,6 +1065,7 @@ namespace cvc5 {
 class CVC5_EXPORT Term
 {
   friend class cvc5::Command;
+  friend class cvc5::OracleBinaryCaller;
   friend class Datatype;
   friend class DatatypeConstructor;
   friend class DatatypeSelector;

@@ -19,6 +19,7 @@
 #include "context/cdhashset.h"
 #include "context/cdlist.h"
 #include "context/cdo.h"
+#include "expr/oracle_binary_caller.h"
 
 using namespace cvc5::context;
 
@@ -91,7 +92,8 @@ class SymbolManager::Implementation
   void setLastSynthName(const std::string& name);
   /** Get the name of the last abduct-to-synthesize */
   const std::string& getLastSynthName() const;
-
+  /** get the oracle binary caller */
+  OracleBinaryCaller& getOracleBinaryCaller(Solver* slv, const std::string& name);
  private:
   /** The context manager for the scope maps. */
   Context d_context;
@@ -111,6 +113,9 @@ class SymbolManager::Implementation
   CDO<bool> d_hasPushedScope;
   /** The last abduct or interpolant to synthesize name */
   CDO<std::string> d_lastSynthName;
+  //!!!!!!!! temporary
+  /** Map binary names to oracle binary callers */
+  std::map<std::string, std::unique_ptr<OracleBinaryCaller>> d_oracleBinCalls;
 };
 
 NamingResult SymbolManager::Implementation::setExpressionName(
@@ -275,6 +280,18 @@ const std::string& SymbolManager::Implementation::getLastSynthName() const
   return d_lastSynthName.get();
 }
 
+OracleBinaryCaller& SymbolManager::Implementation::getOracleBinaryCaller(Solver * slv, const std::string& name)
+{
+  std::map<std::string, std::unique_ptr<OracleBinaryCaller>>::iterator it =
+      d_oracleBinCalls.find(name);
+  if (it != d_oracleBinCalls.end())
+  {
+    return *it->second.get();
+  }
+  d_oracleBinCalls[name].reset(new OracleBinaryCaller(slv, name));
+  return *d_oracleBinCalls[name].get();
+}
+
 void SymbolManager::Implementation::reset()
 {
   Trace("sym-manager") << "SymbolManager: reset" << std::endl;
@@ -418,6 +435,11 @@ void SymbolManager::setLastSynthName(const std::string& name)
 const std::string& SymbolManager::getLastSynthName() const
 {
   return d_implementation->getLastSynthName();
+}
+
+OracleBinaryCaller& SymbolManager::getOracleBinaryCaller(const std::string& name)
+{
+  return d_implementation->getOracleBinaryCaller(d_solver, name);
 }
 
 void SymbolManager::reset()

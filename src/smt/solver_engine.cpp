@@ -23,7 +23,7 @@
 #include "expr/bound_var_manager.h"
 #include "expr/node.h"
 #include "expr/node_algorithm.h"
-#include "expr/oracle_binary_caller.h"
+#include "expr/oracle_binary_caller_internal.h"
 #include "options/base_options.h"
 #include "options/expr_options.h"
 #include "options/language.h"
@@ -949,7 +949,7 @@ void SolverEngine::declareOracleFun(Node var, const std::string& binName)
 {
   finishInit();
   d_state->doPendingPops();
-  OracleBinaryCaller& obc = getOracleBinaryCaller(binName);
+  OracleBinaryCallerInternal& obc = getOracleBinaryCallerInternal(binName);
   declareOracleFun(var, [&](const std::vector<internal::Node> nodes) {
     return obc.runOracle(nodes);
   });
@@ -2035,7 +2035,7 @@ theory::Rewriter* SolverEngine::getRewriter() { return d_env->getRewriter(); }
 
 Node SolverEngine::getOracleNode(const std::string& name)
 {
-  OracleBinaryCaller& obc = getOracleBinaryCaller(name);
+  OracleBinaryCallerInternal& obc = getOracleBinaryCallerInternal(name);
   Oracle oracle([&](const std::vector<internal::Node> nodes) {
     return obc.runOracle(nodes);
   });
@@ -2043,15 +2043,15 @@ Node SolverEngine::getOracleNode(const std::string& name)
   return o;
 }
 
-OracleBinaryCaller& SolverEngine::getOracleBinaryCaller(const std::string& name)
+OracleBinaryCallerInternal& SolverEngine::getOracleBinaryCallerInternal(const std::string& name)
 {
-  std::map<std::string, std::unique_ptr<OracleBinaryCaller>>::iterator it =
+  std::map<std::string, std::unique_ptr<OracleBinaryCallerInternal>>::iterator it =
       d_oracleBinCalls.find(name);
   if (it != d_oracleBinCalls.end())
   {
     return *it->second.get();
   }
-  d_oracleBinCalls[name].reset(new OracleBinaryCaller(name));
+  d_oracleBinCalls[name].reset(new OracleBinaryCallerInternal(name));
   return *d_oracleBinCalls[name].get();
 }
 

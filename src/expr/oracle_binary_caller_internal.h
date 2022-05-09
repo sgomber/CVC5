@@ -13,26 +13,24 @@
  * Oracle caller
  */
 
-#include "cvc5_public.h"
+#include "cvc5_private.h"
 
-#ifndef CVC5__EXPR__ORACLE_BINARY_CALLER_H
-#define CVC5__EXPR__ORACLE_BINARY_CALLER_H
+#ifndef CVC5__EXPR__ORACLE_BINARY_CALLER_INTERNAL_H
+#define CVC5__EXPR__ORACLE_BINARY_CALLER_INTERNAL_H
 
-#include "api/cpp/cvc5.h"
+#include "expr/node.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 //!!!!!!!!!!!! TEMPORARY
-class OracleBinaryCaller
+class OracleBinaryCallerInternal
 {
  public:
-  OracleBinaryCaller(Solver * slv, std::string binName) : d_slv(slv), d_binaryName(binName) {}
+  OracleBinaryCallerInternal(std::string binName) : d_binaryName(binName) {}
   /** Run */
-  std::vector<Term> runOracle(const std::vector<Term>& input);
+  std::vector<Node> runOracle(const std::vector<Node>& input);
 
  private:
-  /** pointer to solver */
-  Solver * d_slv;
   /** binary name */
   std::string d_binaryName;
 };

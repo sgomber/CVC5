@@ -13,7 +13,7 @@
  * Oracle caller
  */
 
-#include "expr/oracle_binary_caller.h"
+#include "expr/oracle_binary_caller_internal.h"
 
 #include <sstream>
 
@@ -21,15 +21,15 @@
 #include "util/miniParser/miniParser.h"
 #include "util/run.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
-std::vector<Term> OracleBinaryCaller::runOracle(const std::vector<Term>& input)
+std::vector<Node> OracleBinaryCallerInternal::runOracle(const std::vector<Node>& input)
 {
   std::vector<std::string> sargs;
   sargs.push_back(d_binaryName);
 
   Trace("oracle-calls") << "Call oracle " << input << std::endl;
-  for (const Term& arg : input)
+  for (const Node& arg : input)
   {
     std::ostringstream oss;
     oss << arg;
@@ -47,10 +47,11 @@ std::vector<Term> OracleBinaryCaller::runOracle(const std::vector<Term>& input)
   // Parse response from the binary into a Node. The response from the binary
   // should be a string that can be parsed as a (tuple of) terms in the smt2
   // format.
-  internal::Node response = internal::mini_parsert(oracle_response_istream).expression();
+  Node response = mini_parsert(oracle_response_istream).expression();
 
-  std::vector<Term> output = Term::nodeVectorToTerms(d_slv, {response});
+  std::vector<Node> output;
+  output.push_back(response);
   return output;
 }
 
-}  // namespace cvc5
+}  // namespace cvc5::internal

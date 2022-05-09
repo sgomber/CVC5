@@ -28,6 +28,8 @@
 
 namespace cvc5 {
 
+class OracleBinaryCaller;
+
 /** Represents the result of a call to `setExpressionName()`. */
 enum class NamingResult
 {
@@ -171,7 +173,8 @@ class CVC5_EXPORT SymbolManager
   void setLastSynthName(const std::string& name);
   /** Get the name of the last abduct or interpolant to synthesize */
   const std::string& getLastSynthName() const;
-
+  /** get the oracle binary caller */
+  OracleBinaryCaller& getOracleBinaryCaller(const std::string& name);
  private:
   /** The API Solver object. */
   cvc5::Solver* d_solver;
