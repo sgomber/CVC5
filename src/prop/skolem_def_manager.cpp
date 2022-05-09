@@ -20,7 +20,8 @@ namespace prop {
 
 SkolemDefManager::SkolemDefManager(context::Context* context,
                                    context::UserContext* userContext)
-    : d_skDefs(userContext),
+    : d_userContext(userContext),
+      d_skDefs(userContext),
       d_skActive(context),
       d_hasSkolems(userContext),
       d_skDefMap(userContext),
@@ -46,6 +47,25 @@ void SkolemDefManager::notifySkolemDefinition(TNode skolem, Node def)
   }
 }
 
+bool SkolemDefManager::notifySkolemDefinition2(TNode t, Node def)
+{
+  NodeLemmaListMap::const_iterator it = d_skDefMap.find(t);
+  LemmaList * ll;
+  if (it == d_skDefMap.end())
+  {
+    std::shared_ptr<LemmaList> lls = std::make_shared<LemmaList>(d_userContext);
+    d_skDefMap[t] = lls;
+    ll = lls.get();
+  }
+  else
+  {
+    ll = it->second.get();
+  }
+  ll->d_lemmas.push_back(def);
+  // return true if t is already asserted
+  return d_assertedTerms.find(t)!=d_assertedTerms.end();
+}
+
 TNode SkolemDefManager::getDefinitionForSkolem(TNode skolem) const
 {
   NodeNodeMap::const_iterator it = d_skDefs.find(skolem);
@@ -54,8 +74,7 @@ TNode SkolemDefManager::getDefinitionForSkolem(TNode skolem) const
 }
 
 void SkolemDefManager::notifyAsserted(TNode literal,
-                                      std::vector<TNode>& activatedSkolems,
-                                      bool useDefs)
+                                      std::vector<TNode>& activatedDefs)
 {
   std::unordered_set<Node> skolems;
   getSkolems(literal, skolems);
@@ -70,18 +89,10 @@ void SkolemDefManager::notifyAsserted(TNode literal,
     }
     d_skActive.insert(k);
     Trace("sk-defs") << "...activate " << k << std::endl;
-    if (useDefs)
-    {
-      // add its definition to the activated list
-      NodeNodeMap::const_iterator it = d_skDefs.find(k);
-      Assert(it != d_skDefs.end());
-      activatedSkolems.push_back(it->second);
-    }
-    else
-    {
-      // add to the activated list
-      activatedSkolems.push_back(k);
-    }
+    // add its definition to the activated list
+    NodeNodeMap::const_iterator it = d_skDefs.find(k);
+    Assert(it != d_skDefs.end());
+    activatedDefs.push_back(it->second);
   }
 }
 
@@ -199,12 +210,12 @@ SkolemDefManager::LemmaList* SkolemDefManager::getLemmaList(const Node& n) const
   return nullptr;
 }
 
-void SkolemDefManager::getSkolems2(TNode n, std::vector<Node>& skl)
+void SkolemDefManager::notifyAsserted2(TNode literal, std::vector<TNode>& activatedDefs)
 {
   NodeSet::const_iterator it;
   std::vector<TNode> visit;
   TNode cur;
-  visit.push_back(n);
+  visit.push_back(literal);
   do
   {
     cur = visit.back();
@@ -220,7 +231,7 @@ void SkolemDefManager::getSkolems2(TNode n, std::vector<Node>& skl)
         NodeList& llist = ll->d_lemmas;
         for (const Node& lem : llist)
         {
-          skl.push_back(lem);
+          activatedDefs.push_back(lem);
         }
       }
       if (cur.getMetaKind() == kind::metakind::PARAMETERIZED)

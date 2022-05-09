@@ -60,6 +60,11 @@ class SkolemDefManager
    */
   void notifySkolemDefinition(TNode k, Node def);
   /**
+   * Return true if t is already active, in which case def should be notified
+   * immediately.
+   */
+  bool notifySkolemDefinition2(TNode t, Node def);
+  /**
    * Get skolem definition for k, where k must be a skolem having a definition
    * managed by this class.
    */
@@ -70,13 +75,12 @@ class SkolemDefManager
    * is active in the SAT context if it appears in an asserted literal.
    *
    * @param literal The literal that became asserted
-   * @param activatedSkolems The list to add skolems to
-   * @param useDefs If this flag is true, we add the skolem definition for
-   * skolems to activatedSkolems instead of the skolem itself.
+   * @param activatedDefs The list to add skolem definitions to
    */
   void notifyAsserted(TNode literal,
-                      std::vector<TNode>& activatedSkolems,
-                      bool useDefs = false);
+                      std::vector<TNode>& activatedDefs);
+  void notifyAsserted2(TNode literal,
+                      std::vector<TNode>& activatedDefs);
 
   /**
    * Get the set of skolems maintained by this class that occur in node n,
@@ -103,8 +107,8 @@ class SkolemDefManager
   using NodeLemmaListMap = context::CDHashMap<Node, std::shared_ptr<LemmaList>>;
   /** get lemma list for node n */
   LemmaList* getLemmaList(const Node& n) const;
-  /** get skolems */
-  void getSkolems2(TNode n, std::vector<Node>& skl);
+  /** User context */
+  context::UserContext* d_userContext;
   /** skolems to definitions (user-context dependent) */
   NodeNodeMap d_skDefs;
   /** set of active skolems (SAT-context dependent) */
