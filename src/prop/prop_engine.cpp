@@ -300,7 +300,7 @@ void PropEngine::assertLemmasInternal(
     {
       // get the skolem for the lemma if it exists
       Node k;
-      if (trn.getKind()==TrustNodeKind::SKOLEM_LEMMA)
+      if (trn.getKind() == TrustNodeKind::SKOLEM_LEMMA)
       {
         k = trn.getSkolemForLemma();
       }

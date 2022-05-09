@@ -20,7 +20,11 @@ namespace prop {
 
 SkolemDefManager::SkolemDefManager(context::Context* context,
                                    context::UserContext* userContext)
-    : d_skDefs(userContext), d_skActive(context), d_hasSkolems(userContext), d_skDefMap(userContext), d_assertedTerms(context)
+    : d_skDefs(userContext),
+      d_skActive(context),
+      d_hasSkolems(userContext),
+      d_skDefMap(userContext),
+      d_assertedTerms(context)
 {
 }
 
@@ -188,7 +192,7 @@ void SkolemDefManager::getSkolems(TNode n, std::unordered_set<Node>& skolems)
 SkolemDefManager::LemmaList* SkolemDefManager::getLemmaList(const Node& n) const
 {
   NodeLemmaListMap::const_iterator it = d_skDefMap.find(n);
-  if (it!=d_skDefMap.end())
+  if (it != d_skDefMap.end())
   {
     return it->second.get();
   }
@@ -211,7 +215,7 @@ void SkolemDefManager::getSkolems2(TNode n, std::vector<Node>& skl)
       d_assertedTerms.insert(cur);
       // if it has a lemma list, add it
       LemmaList* ll = getLemmaList(cur);
-      if (ll!=nullptr)
+      if (ll != nullptr)
       {
         NodeList& llist = ll->d_lemmas;
         for (const Node& lem : llist)

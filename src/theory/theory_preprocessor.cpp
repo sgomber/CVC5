@@ -209,7 +209,7 @@ TrustNode TheoryPreprocessor::preprocessLemmaInternal(
     }
   }
   // keep the skolem if applicable
-  if (node.getKind()==TrustNodeKind::SKOLEM_LEMMA)
+  if (node.getKind() == TrustNodeKind::SKOLEM_LEMMA)
   {
     Node k = node.getSkolemForLemma();
     return TrustNode::mkTrustSkolemLemma(lemmap, k, d_lp.get());

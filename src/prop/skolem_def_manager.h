@@ -96,7 +96,7 @@ class SkolemDefManager
  private:
   class LemmaList
   {
-  public:
+   public:
     LemmaList(context::UserContext* u) : d_lemmas(u) {}
     NodeList d_lemmas;
   };
