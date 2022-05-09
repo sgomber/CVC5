@@ -50,7 +50,7 @@ void SkolemDefManager::notifySkolemDefinition(TNode skolem, Node def)
 bool SkolemDefManager::notifySkolemDefinition2(TNode t, Node def)
 {
   NodeLemmaListMap::const_iterator it = d_skDefMap.find(t);
-  LemmaList * ll;
+  LemmaList* ll;
   if (it == d_skDefMap.end())
   {
     std::shared_ptr<LemmaList> lls = std::make_shared<LemmaList>(d_userContext);
@@ -63,7 +63,7 @@ bool SkolemDefManager::notifySkolemDefinition2(TNode t, Node def)
   }
   ll->d_lemmas.push_back(def);
   // return true if t is already asserted
-  return d_assertedTerms.find(t)!=d_assertedTerms.end();
+  return d_assertedTerms.find(t) != d_assertedTerms.end();
 }
 
 TNode SkolemDefManager::getDefinitionForSkolem(TNode skolem) const
@@ -210,7 +210,8 @@ SkolemDefManager::LemmaList* SkolemDefManager::getLemmaList(const Node& n) const
   return nullptr;
 }
 
-void SkolemDefManager::notifyAsserted2(TNode literal, std::vector<TNode>& activatedDefs)
+void SkolemDefManager::notifyAsserted2(TNode literal,
+                                       std::vector<TNode>& activatedDefs)
 {
   NodeSet::const_iterator it;
   std::vector<TNode> visit;
