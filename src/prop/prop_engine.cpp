@@ -298,6 +298,12 @@ void PropEngine::assertLemmasInternal(
     // also add to the decision engine, where notice we don't need proofs
     if (!trn.isNull())
     {
+      // get the skolem for the lemma if it exists
+      Node k;
+      if (trn.getKind()==TrustNodeKind::SKOLEM_LEMMA)
+      {
+        k = trn.getSkolemForLemma();
+      }
       // notify the theory proxy of the lemma
       d_theoryProxy->notifyAssertion(trn.getProven(), TNode::null(), true);
     }

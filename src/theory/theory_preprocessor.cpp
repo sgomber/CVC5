@@ -208,6 +208,12 @@ TrustNode TheoryPreprocessor::preprocessLemmaInternal(
       d_lp->addStep(lemmap, PfRule::EQ_RESOLVE, pfChildren, {});
     }
   }
+  // keep the skolem if applicable
+  if (node.getKind()==TrustNodeKind::SKOLEM_LEMMA)
+  {
+    Node k = node.getSkolemForLemma();
+    return TrustNode::mkTrustSkolemLemma(lemmap, k, d_lp.get());
+  }
   return TrustNode::mkTrustLemma(lemmap, d_lp.get());
 }
 

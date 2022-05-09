@@ -1293,8 +1293,7 @@ void TheoryEngine::lemma(TrustNode tlemma,
   Assert(tlemma.getKind() == TrustNodeKind::LEMMA
          || tlemma.getKind() == TrustNodeKind::SKOLEM_LEMMA
          || tlemma.getKind() == TrustNodeKind::CONFLICT);
-  // get the node
-  Node node = tlemma.getNode();
+  // get what was proven
   Node lemma = tlemma.getProven();
 
   Assert(!expr::hasFreeVar(lemma));
@@ -1311,16 +1310,8 @@ void TheoryEngine::lemma(TrustNode tlemma,
       // add theory lemma step to proof
       Node tidn = builtin::BuiltinProofRuleChecker::mkTheoryIdNode(from);
       d_lazyProof->addStep(lemma, PfRule::THEORY_LEMMA, {}, {lemma, tidn});
-      // update the trust node
-      if (tlemma.getKind() == TrustNodeKind::SKOLEM_LEMMA)
-      {
-        Node k = tlemma.getSkolemForLemma();
-        tlemma = TrustNode::mkTrustSkolemLemma(lemma, k, d_lazyProof.get());
-      }
-      else
-      {
-        tlemma = TrustNode::mkTrustLemma(lemma, d_lazyProof.get());
-      }
+      // update the trust node, preserve the skolem if it is a skolem lemma
+      tlemma = TrustNode::mkReplaceGenTrustNode(tlemma, d_lazyProof.get());
     }
     // ensure closed
     tlemma.debugCheckClosed("te-proof-debug", "TheoryEngine::lemma_initial");
