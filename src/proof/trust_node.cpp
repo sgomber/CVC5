@@ -48,10 +48,17 @@ TrustNode TrustNode::mkTrustConflict(Node conf, ProofGenerator* g)
 
 TrustNode TrustNode::mkTrustLemma(Node lem, ProofGenerator* g)
 {
-  Node lkey = getLemmaProven(lem);
   // if a generator is provided, should confirm that it can prove it
-  Assert(g == nullptr || g->hasProofFor(lkey));
-  return TrustNode(TrustNodeKind::LEMMA, lkey, g);
+  Assert(g == nullptr || g->hasProofFor(lem));
+  return TrustNode(TrustNodeKind::LEMMA, lem, g);
+}
+
+TrustNode TrustNode::mkTrustSkolemLemma(Node lem, Node k, ProofGenerator* g)
+{
+  Node lkey = NodeManager::currentNM()->mkNode(SEXPR, lem, k);
+  // if a generator is provided, should confirm that it can prove it
+  Assert(g == nullptr || g->hasProofFor(lem));
+  return TrustNode(TrustNodeKind::SKOLEM_LEMMA, lkey, g);
 }
 
 TrustNode TrustNode::mkTrustPropExp(TNode lit, Node exp, ProofGenerator* g)
@@ -97,12 +104,26 @@ Node TrustNode::getNode() const
     // the node of the rewrite is the right hand side of EQUAL
     case TrustNodeKind::REWRITE: return d_proven[1];
     // the node of an explained propagation is the antecendant of an IMPLIES
-    // the node of a conflict is underneath a NOT
+    // the node of a conflict is underneath a NOT, or the first child
+    // of an SEXPR
     default: return d_proven[0];
   }
 }
 
-Node TrustNode::getProven() const { return d_proven; }
+Node TrustNode::getProven() const
+{ 
+  if (d_tnk==TrustNodeKind::SKOLEM_LEMMA)
+  {
+    return d_proven[0];
+  }
+  return d_proven;
+}
+
+Node TrustNode::getSkolemForLemma() const
+{
+  Assert (d_tnk==TrustNodeKind::SKOLEM_LEMMA);
+  return d_proven[1];
+}
 
 ProofGenerator* TrustNode::getGenerator() const { return d_gen; }
 
