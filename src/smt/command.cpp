@@ -27,6 +27,7 @@
 #include "base/modal_exception.h"
 #include "base/output.h"
 #include "expr/node.h"
+#include "expr/oracle_binary_caller.h"
 #include "expr/symbol_manager.h"
 #include "expr/type_node.h"
 #include "options/io_utils.h"
@@ -39,7 +40,6 @@
 #include "smt/model.h"
 #include "util/smt2_quote_string.h"
 #include "util/utility.h"
-#include "expr/oracle_binary_caller.h"
 
 using namespace std;
 
@@ -1218,8 +1218,8 @@ void DeclareOracleFunCommand::invoke(Solver* solver, SymbolManager* sm)
   Term fun = solver->declareOracleFun(d_id, args, ret, d_binName);
   /*
   OracleBinaryCaller& obc = sm->getOracleBinaryCaller(d_binName);
-  Term fun = solver->declareOracleFun(d_id, args, ret, [&](const std::vector<Term>& input) {
-    return obc.runOracleSingleOut(input);
+  Term fun = solver->declareOracleFun(d_id, args, ret, [&](const
+  std::vector<Term>& input) { return obc.runOracleSingleOut(input);
   });
   */
   // bind the symbol for the parser

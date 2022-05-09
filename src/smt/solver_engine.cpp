@@ -1035,7 +1035,7 @@ void SolverEngine::defineOracleInterfaceInternal(
     Node constraint,
     Node o)
 {
-  Assert (o.getKind()==kind::ORACLE);
+  Assert(o.getKind() == kind::ORACLE);
   // make the oracle interface quantified formula
   Node q = quantifiers::OracleEngine::mkOracleInterface(
       inputs, outputs, assume, constraint, o);

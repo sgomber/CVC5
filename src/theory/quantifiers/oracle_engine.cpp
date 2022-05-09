@@ -215,8 +215,7 @@ void OracleEngine::checkOwnership(Node q)
     }
     else
     {
-      Assert(outputs.size()==1)
-          << "Unhandled oracle constraint " << q;
+      Assert(outputs.size() == 1) << "Unhandled oracle constraint " << q;
       Assert(constraint.isConst() && constraint.getConst<bool>())
           << "Unhandled oracle constraint " << q;
     }
@@ -226,7 +225,7 @@ void OracleEngine::checkOwnership(Node q)
       for (size_t i = 0; i < 2; i++)
       {
         if (OracleCaller::isOracleFunctionApp(assume[i])
-            && assume[1 - i]==outputs[0])
+            && assume[1 - i] == outputs[0])
         {
           isOracleFun = true;
         }
