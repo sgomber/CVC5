@@ -56,7 +56,7 @@ class SkolemDefManager
    * Notify skolem definition. This is called when a lemma def is added to the
    * SAT solver that corresponds to the skolem definition for skolem k.
    */
-  void notifySkolemDefinition(TNode k, Node def);
+  bool notifySkolemDefinition(TNode k, Node def);
   /**
    * Get skolem definition for k, where k must be a skolem having a definition
    * managed by this class.
@@ -73,8 +73,7 @@ class SkolemDefManager
    * skolems to activatedSkolems instead of the skolem itself.
    */
   void notifyAsserted(TNode literal,
-                      std::vector<TNode>& activatedSkolems,
-                      bool useDefs = false);
+                      std::vector<TNode>& activatedSkolems);
 
   /**
    * Get the set of skolems maintained by this class that occur in node n,
@@ -98,6 +97,8 @@ class SkolemDefManager
   NodeSet d_skActive;
   /** Cache for hasSkolems */
   NodeBoolMap d_hasSkolems;
+  /** set of asserted terms */
+  NodeSet d_assertedTerms;
 };
 
 }  // namespace prop

@@ -20,13 +20,13 @@ namespace prop {
 
 SkolemDefManager::SkolemDefManager(context::Context* context,
                                    context::UserContext* userContext)
-    : d_skDefs(userContext), d_skActive(context), d_hasSkolems(userContext)
+    : d_skDefs(userContext), d_skActive(context), d_hasSkolems(userContext), d_assertedTerms(userContext)
 {
 }
 
 SkolemDefManager::~SkolemDefManager() {}
 
-void SkolemDefManager::notifySkolemDefinition(TNode skolem, Node def)
+bool SkolemDefManager::notifySkolemDefinition(TNode skolem, Node def)
 {
   // Notice that skolem may have kind SKOLEM or BOOLEAN_TERM_VARIABLE
   Trace("sk-defs") << "notifySkolemDefinition: " << def << " for " << skolem
@@ -35,11 +35,10 @@ void SkolemDefManager::notifySkolemDefinition(TNode skolem, Node def)
   // equivalent up to purification
   if (d_skDefs.find(skolem) == d_skDefs.end())
   {
-    // should not have already computed whether the skolem has skolems, or else
-    // our computation of hasSkolems is wrong after adding this definition
-    Assert(d_hasSkolems.find(skolem) == d_hasSkolems.end());
     d_skDefs.insert(skolem, def);
   }
+  // check if the skolem is already asserted
+  return d_assertedTerms.find(skolem)!=d_assertedTerms.end();
 }
 
 TNode SkolemDefManager::getDefinitionForSkolem(TNode skolem) const
@@ -50,35 +49,34 @@ TNode SkolemDefManager::getDefinitionForSkolem(TNode skolem) const
 }
 
 void SkolemDefManager::notifyAsserted(TNode literal,
-                                      std::vector<TNode>& activatedSkolems,
-                                      bool useDefs)
+                                      std::vector<TNode>& activatedDefs)
 {
-  std::unordered_set<Node> skolems;
-  getSkolems(literal, skolems);
-  Trace("sk-defs") << "notifyAsserted: " << literal << " has skolems "
-                   << skolems << std::endl;
-  for (const Node& k : skolems)
+  NodeNodeMap::const_iterator its;
+  NodeSet::const_iterator it;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(literal);
+  do
   {
-    if (d_skActive.find(k) != d_skActive.end())
+    cur = visit.back();
+    visit.pop_back();
+    it = d_assertedTerms.find(cur);
+    if (it == d_assertedTerms.end())
     {
-      // already active
-      continue;
+      d_assertedTerms.insert(cur);
+      // if it has a lemma list, add it
+      its = d_skDefs.find(cur);
+      if (its != d_skDefs.end())
+      {
+        activatedDefs.push_back(its->second);
+      }
+      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED)
+      {
+        visit.push_back(cur.getOperator());
+      }
+      visit.insert(visit.end(), cur.begin(), cur.end());
     }
-    d_skActive.insert(k);
-    Trace("sk-defs") << "...activate " << k << std::endl;
-    if (useDefs)
-    {
-      // add its definition to the activated list
-      NodeNodeMap::const_iterator it = d_skDefs.find(k);
-      Assert(it != d_skDefs.end());
-      activatedSkolems.push_back(it->second);
-    }
-    else
-    {
-      // add to the activated list
-      activatedSkolems.push_back(k);
-    }
-  }
+  } while (!visit.empty());
 }
 
 bool SkolemDefManager::hasSkolems(TNode n)
