@@ -209,10 +209,10 @@ TrustNode TheoryPreprocessor::preprocessLemmaInternal(
     }
   }
   // keep the skolem if applicable
-  if (node.getKind() == TrustNodeKind::SKOLEM_LEMMA)
+  if (node.getKind() == TrustNodeKind::ACTIVE_LEMMA)
   {
-    Node k = node.getSkolemForLemma();
-    return TrustNode::mkTrustSkolemLemma(lemmap, k, d_lp.get());
+    Node t = node.getTermForActiveLemma();
+    return TrustNode::mkTrustActiveLemma(lemmap, t, d_lp.get());
   }
   return TrustNode::mkTrustLemma(lemmap, d_lp.get());
 }

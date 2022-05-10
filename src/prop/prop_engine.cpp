@@ -299,10 +299,10 @@ void PropEngine::assertLemmasInternal(
     if (!trn.isNull())
     {
       // get the skolem for the lemma if it exists
-      Node k;
-      if (trn.getKind() == TrustNodeKind::SKOLEM_LEMMA)
+      Node t;
+      if (trn.getKind() == TrustNodeKind::ACTIVE_LEMMA)
       {
-        k = trn.getSkolemForLemma();
+        t = trn.getSkolemForLemma();
       }
       // notify the theory proxy of the lemma
       d_theoryProxy->notifyAssertion(trn.getProven(), TNode::null(), true);

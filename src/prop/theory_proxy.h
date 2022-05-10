@@ -87,10 +87,10 @@ class TheoryProxy : protected EnvObj, public Registrar
                            std::unordered_map<size_t, Node>& skolemMap);
   /**
    * Notify a lemma or input assertion, possibly corresponding to a skolem
-   * definition.
+   * definition or active lemma.
    */
   void notifyAssertion(Node lem,
-                       TNode skolem = TNode::null(),
+                       TNode t = TNode::null(),
                        bool isLemma = false);
 
   void theoryCheck(theory::Theory::Effort effort);

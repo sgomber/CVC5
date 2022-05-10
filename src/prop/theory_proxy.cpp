@@ -117,16 +117,16 @@ void TheoryProxy::notifyInputFormulas(
   }
 }
 
-void TheoryProxy::notifyAssertion(Node a, TNode skolem, bool isLemma)
+void TheoryProxy::notifyAssertion(Node a, TNode t, bool isLemma)
 {
-  if (skolem.isNull())
+  if (t.isNull())
   {
     d_decisionEngine->addAssertion(a, isLemma);
   }
   else
   {
-    d_skdm->notifySkolemDefinition(skolem, a);
-    d_decisionEngine->addSkolemDefinition(a, skolem, isLemma);
+    d_skdm->notifySkolemDefinition(t, a);
+    d_decisionEngine->addSkolemDefinition(a, t, isLemma);
   }
 }
 

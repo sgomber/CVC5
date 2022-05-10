@@ -53,12 +53,12 @@ TrustNode TrustNode::mkTrustLemma(Node lem, ProofGenerator* g)
   return TrustNode(TrustNodeKind::LEMMA, lem, g);
 }
 
-TrustNode TrustNode::mkTrustSkolemLemma(Node lem, Node k, ProofGenerator* g)
+TrustNode TrustNode::mkTrustActiveLemma(Node lem, Node t, ProofGenerator* g)
 {
-  Node lkey = NodeManager::currentNM()->mkNode(kind::SEXPR, lem, k);
+  Node lkey = NodeManager::currentNM()->mkNode(kind::SEXPR, lem, t);
   // if a generator is provided, should confirm that it can prove it
   Assert(g == nullptr || g->hasProofFor(lem));
-  return TrustNode(TrustNodeKind::SKOLEM_LEMMA, lkey, g);
+  return TrustNode(TrustNodeKind::ACTIVE_LEMMA, lkey, g);
 }
 
 TrustNode TrustNode::mkTrustPropExp(TNode lit, Node exp, ProofGenerator* g)
@@ -112,16 +112,16 @@ Node TrustNode::getNode() const
 
 Node TrustNode::getProven() const
 {
-  if (d_tnk == TrustNodeKind::SKOLEM_LEMMA)
+  if (d_tnk == TrustNodeKind::ACTIVE_LEMMA)
   {
     return d_proven[0];
   }
   return d_proven;
 }
 
-Node TrustNode::getSkolemForLemma() const
+Node TrustNode::getTermForActiveLemma() const
 {
-  Assert(d_tnk == TrustNodeKind::SKOLEM_LEMMA);
+  Assert(d_tnk == TrustNodeKind::ACTIVE_LEMMA);
   return d_proven[1];
 }
 

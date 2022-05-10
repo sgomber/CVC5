@@ -30,7 +30,7 @@ enum class TrustNodeKind : uint32_t
 {
   CONFLICT,
   LEMMA,
-  SKOLEM_LEMMA,
+  ACTIVE_LEMMA,
   PROP_EXP,
   REWRITE,
   INVALID
@@ -86,8 +86,8 @@ class TrustNode
   /** Make a proven node for lemma */
   static TrustNode mkTrustLemma(Node lem, ProofGenerator* g = nullptr);
   /** Make a proven node for lemma */
-  static TrustNode mkTrustSkolemLemma(Node lem,
-                                      Node k,
+  static TrustNode mkTrustActiveLemma(Node lem,
+                                      Node t,
                                       ProofGenerator* g = nullptr);
   /** Make a proven node for explanation of propagated literal */
   static TrustNode mkTrustPropExp(TNode lit,
@@ -132,9 +132,9 @@ class TrustNode
    */
   Node getProven() const;
   /**
-   * Get skolem for lemma
+   * Get term for active lemma
    */
-  Node getSkolemForLemma() const;
+  Node getTermForActiveLemma() const;
   /** get generator */
   ProofGenerator* getGenerator() const;
   /** is null? */
