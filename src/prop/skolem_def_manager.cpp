@@ -85,6 +85,7 @@ void SkolemDefManager::notifyAsserted(TNode literal,
 {
   if (options().prop.activeLemmas)
   {
+    // use alternative implementation
     notifyAssertedActive(literal, activatedDefs);
     return;
   }
@@ -223,7 +224,7 @@ SkolemDefManager::LemmaList* SkolemDefManager::getLemmaList(const Node& n) const
 }
 
 void SkolemDefManager::notifyAssertedActive(TNode literal,
-                                       std::vector<TNode>& activatedDefs)
+                                            std::vector<TNode>& activatedDefs)
 {
   NodeSet::const_iterator it;
   std::vector<TNode> visit;

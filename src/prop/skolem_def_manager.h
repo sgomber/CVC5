@@ -61,10 +61,10 @@ class SkolemDefManager : protected EnvObj
    */
   void notifySkolemDefinition(TNode k, Node def);
   /**
-   * Return true if t is already active, in which case def should be notified
+   * Return true if t is already active, in which case lem should be notified
    * immediately.
    */
-  bool notifyActiveLemma(TNode t, Node def);
+  bool notifyActiveLemma(TNode t, Node lem);
   /**
    * Get skolem definition for k, where k must be a skolem having a definition
    * managed by this class.

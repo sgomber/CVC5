@@ -22,6 +22,7 @@
 #include "expr/node_algorithm.h"
 #include "options/base_options.h"
 #include "options/decision_options.h"
+#include "options/prop_options.h"
 #include "options/smt_options.h"
 #include "prop/cnf_stream.h"
 #include "prop/prop_engine.h"
@@ -117,17 +118,35 @@ void TheoryProxy::notifyInputFormulas(
   }
 }
 
-void TheoryProxy::notifyAssertion(Node a, TNode t, bool isLemma)
+void TheoryProxy::notifyAssertion(Node a, TNode k, bool isLemma)
 {
-  if (t.isNull())
+  if (k.isNull())
   {
     d_decisionEngine->addAssertion(a, isLemma);
   }
   else
   {
-    d_skdm->notifySkolemDefinition(t, a);
-    d_decisionEngine->addSkolemDefinition(a, t, isLemma);
+    d_skdm->notifySkolemDefinition(k, a);
+    d_decisionEngine->addSkolemDefinition(a, k, isLemma);
   }
+}
+
+void TheoryProxy::notifyActiveLemma(Node lem, TNode t)
+{
+  Assert (!t.isNull());
+  if (!options().prop.activeLemmas)
+  {
+    notifyAssertion(lem, TNode::null(), true);
+    return;
+  }
+  if (d_skdm->notifyActiveLemma(t, lem))
+  {
+    // notify active already
+    std::vector<TNode> activeLem;
+    activeLem.push_back(lem);
+    d_decisionEngine->notifyActiveSkolemDefs(activeLem);
+  }
+  d_decisionEngine->addSkolemDefinition(lem, t, true);
 }
 
 void TheoryProxy::variableNotify(SatVariable var) {

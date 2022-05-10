@@ -90,8 +90,10 @@ class TheoryProxy : protected EnvObj, public Registrar
    * definition or active lemma.
    */
   void notifyAssertion(Node lem,
-                       TNode t = TNode::null(),
+                       TNode k = TNode::null(),
                        bool isLemma = false);
+  void notifyActiveLemma(Node lem,
+                       TNode t = TNode::null());
 
   void theoryCheck(theory::Theory::Effort effort);
 
