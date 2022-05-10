@@ -46,6 +46,7 @@ void SkolemDefManager::notifySkolemDefinition(TNode skolem, Node def)
     Assert(d_hasSkolems.find(skolem) == d_hasSkolems.end());
     d_skDefs.insert(skolem, def);
   }
+  // it is also an active lemma
   if (options().prop.activeLemmas)
   {
     notifyActiveLemma(skolem, def);
@@ -54,6 +55,7 @@ void SkolemDefManager::notifySkolemDefinition(TNode skolem, Node def)
 
 bool SkolemDefManager::notifyActiveLemma(TNode t, Node def)
 {
+  Assert (options().prop.activeLemmas);
   NodeLemmaListMap::const_iterator it = d_activeLems.find(t);
   LemmaList* ll;
   if (it == d_activeLems.end())

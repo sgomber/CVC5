@@ -302,7 +302,7 @@ void PropEngine::assertLemmasInternal(
       Node t;
       if (trn.getKind() == TrustNodeKind::ACTIVE_LEMMA)
       {
-        t = trn.getSkolemForLemma();
+        t = trn.getTermForActiveLemma();
       }
       // notify the theory proxy of the lemma
       d_theoryProxy->notifyAssertion(trn.getProven(), TNode::null(), true);
