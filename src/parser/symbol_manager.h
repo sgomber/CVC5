@@ -15,8 +15,8 @@
 
 #include "cvc5_public.h"
 
-#ifndef CVC5__EXPR__SYMBOL_MANAGER_H
-#define CVC5__EXPR__SYMBOL_MANAGER_H
+#ifndef CVC5__PARSER__SYMBOL_MANAGER_H
+#define CVC5__PARSER__SYMBOL_MANAGER_H
 
 #include <map>
 #include <memory>
@@ -24,7 +24,7 @@
 
 #include "api/cpp/cvc5.h"
 #include "cvc5_export.h"
-#include "expr/symbol_table.h"
+#include "parser/symbol_table.h"
 
 namespace cvc5 {
 
@@ -191,4 +191,4 @@ class CVC5_EXPORT SymbolManager
 
 }  // namespace cvc5
 
-#endif /* CVC5__EXPR__SYMBOL_MANAGER_H */
+#endif /* CVC5__PARSER__SYMBOL_MANAGER_H */

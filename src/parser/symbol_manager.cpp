@@ -13,7 +13,7 @@
  * The symbol manager.
  */
 
-#include "expr/symbol_manager.h"
+#include "parser/symbol_manager.h"
 
 #include "context/cdhashmap.h"
 #include "context/cdhashset.h"

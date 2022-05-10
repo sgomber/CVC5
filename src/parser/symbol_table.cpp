@@ -14,7 +14,7 @@
  * (implementation).
  */
 
-#include "expr/symbol_table.h"
+#include "parser/symbol_table.h"
 
 #include <ostream>
 #include <string>
