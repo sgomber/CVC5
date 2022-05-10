@@ -341,6 +341,7 @@ void TermRegistry::registerTerm(Node n, int effort)
   }
   if (!regTermLem.isNull())
   {
+    regTermLem = TrustNode::mkTrustActiveLemma(regTermLem.getProven(), n, regTermLem.getGenerator());
     Trace("strings-lemma") << "Strings::Lemma REG-TERM : " << regTermLem
                            << std::endl;
     Trace("strings-assert")

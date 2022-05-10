@@ -135,7 +135,7 @@ void EngineOutputChannel::trustedLemma(TrustNode plem, LemmaProperty p)
 {
   Trace("theory::lemma") << "EngineOutputChannel<" << d_theory
                          << ">::trustedLemma(" << plem << ")" << std::endl;
-  Assert(plem.getKind() == TrustNodeKind::LEMMA);
+  Assert(plem.getKind() == TrustNodeKind::LEMMA || plem.getKind() == TrustNodeKind::ACTIVE_LEMMA);
   if (plem.getGenerator() != nullptr)
   {
     ++d_statistics.trustedLemmas;

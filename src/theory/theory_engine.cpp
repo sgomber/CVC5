@@ -1291,7 +1291,7 @@ void TheoryEngine::lemma(TrustNode tlemma,
   // For resource-limiting (also does a time check).
   // spendResource();
   Assert(tlemma.getKind() == TrustNodeKind::LEMMA
-         || tlemma.getKind() == TrustNodeKind::SKOLEM_LEMMA
+         || tlemma.getKind() == TrustNodeKind::ACTIVE_LEMMA
          || tlemma.getKind() == TrustNodeKind::CONFLICT);
   // get what was proven
   Node lemma = tlemma.getProven();

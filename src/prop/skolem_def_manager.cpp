@@ -53,8 +53,10 @@ void SkolemDefManager::notifySkolemDefinition(TNode skolem, Node def)
   }
 }
 
-bool SkolemDefManager::notifyActiveLemma(TNode t, Node def)
+bool SkolemDefManager::notifyActiveLemma(TNode t, Node lem)
 {
+  Trace("sk-defs") << "notifyActiveLemma: " << lem << " for " << t
+                   << std::endl;
   Assert (options().prop.activeLemmas);
   NodeLemmaListMap::const_iterator it = d_activeLems.find(t);
   LemmaList* ll;
@@ -68,7 +70,7 @@ bool SkolemDefManager::notifyActiveLemma(TNode t, Node def)
   {
     ll = it->second.get();
   }
-  ll->d_lemmas.push_back(def);
+  ll->d_lemmas.push_back(lem);
   // return true if t is already asserted
   return d_assertedTerms.find(t) != d_assertedTerms.end();
 }
@@ -91,7 +93,7 @@ void SkolemDefManager::notifyAsserted(TNode literal,
   }
   std::unordered_set<Node> skolems;
   getSkolems(literal, skolems);
-  Trace("sk-defs") << "notifyAsserted: " << literal << " has skolems "
+  Trace("sk-defs-debug") << "notifyAsserted: " << literal << " has skolems "
                    << skolems << std::endl;
   for (const Node& k : skolems)
   {
