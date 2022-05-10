@@ -36,9 +36,10 @@ bool SkolemDefManager::notifySkolemDefinition(TNode skolem, Node def)
   if (d_skDefs.find(skolem) == d_skDefs.end())
   {
     d_skDefs.insert(skolem, def);
+    // check if the skolem is already asserted
+    return d_assertedTerms.find(skolem)!=d_assertedTerms.end();
   }
-  // check if the skolem is already asserted
-  return d_assertedTerms.find(skolem)!=d_assertedTerms.end();
+  return false;
 }
 
 TNode SkolemDefManager::getDefinitionForSkolem(TNode skolem) const
