@@ -15,17 +15,18 @@
 
 #include "prop/skolem_def_manager.h"
 
+#include "options/prop_options.h"
+
 namespace cvc5::internal {
 namespace prop {
 
-SkolemDefManager::SkolemDefManager(context::Context* context,
-                                   context::UserContext* userContext)
-    : d_userContext(userContext),
-      d_skDefs(userContext),
-      d_skActive(context),
-      d_hasSkolems(userContext),
-      d_skDefMap(userContext),
-      d_assertedTerms(context)
+SkolemDefManager::SkolemDefManager(Env& env)
+    : EnvObj(env),
+      d_skDefs(userContext()),
+      d_skActive(context()),
+      d_hasSkolems(userContext()),
+      d_activeLems(userContext()),
+      d_assertedTerms(context())
 {
 }
 
@@ -45,16 +46,20 @@ void SkolemDefManager::notifySkolemDefinition(TNode skolem, Node def)
     Assert(d_hasSkolems.find(skolem) == d_hasSkolems.end());
     d_skDefs.insert(skolem, def);
   }
+  if (options().prop.activeLemmas)
+  {
+    notifyActiveLemma(skolem, def);
+  }
 }
 
-bool SkolemDefManager::notifySkolemDefinition2(TNode t, Node def)
+bool SkolemDefManager::notifyActiveLemma(TNode t, Node def)
 {
-  NodeLemmaListMap::const_iterator it = d_skDefMap.find(t);
+  NodeLemmaListMap::const_iterator it = d_activeLems.find(t);
   LemmaList* ll;
-  if (it == d_skDefMap.end())
+  if (it == d_activeLems.end())
   {
-    std::shared_ptr<LemmaList> lls = std::make_shared<LemmaList>(d_userContext);
-    d_skDefMap[t] = lls;
+    std::shared_ptr<LemmaList> lls = std::make_shared<LemmaList>(userContext());
+    d_activeLems[t] = lls;
     ll = lls.get();
   }
   else
@@ -76,6 +81,11 @@ TNode SkolemDefManager::getDefinitionForSkolem(TNode skolem) const
 void SkolemDefManager::notifyAsserted(TNode literal,
                                       std::vector<TNode>& activatedDefs)
 {
+  if (options().prop.activeLemmas)
+  {
+    notifyAssertedActive(literal, activatedDefs);
+    return;
+  }
   std::unordered_set<Node> skolems;
   getSkolems(literal, skolems);
   Trace("sk-defs") << "notifyAsserted: " << literal << " has skolems "
@@ -202,15 +212,15 @@ void SkolemDefManager::getSkolems(TNode n, std::unordered_set<Node>& skolems)
 
 SkolemDefManager::LemmaList* SkolemDefManager::getLemmaList(const Node& n) const
 {
-  NodeLemmaListMap::const_iterator it = d_skDefMap.find(n);
-  if (it != d_skDefMap.end())
+  NodeLemmaListMap::const_iterator it = d_activeLems.find(n);
+  if (it != d_activeLems.end())
   {
     return it->second.get();
   }
   return nullptr;
 }
 
-void SkolemDefManager::notifyAsserted2(TNode literal,
+void SkolemDefManager::notifyAssertedActive(TNode literal,
                                        std::vector<TNode>& activatedDefs)
 {
   NodeSet::const_iterator it;

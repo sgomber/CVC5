@@ -80,3 +80,11 @@ name   = "SAT Layer"
   type       = "bool"
   default    = "false"
   help       = "instead of solving minisat dumps the asserted clauses in Dimacs format"
+
+[[option]]
+  name       = "activeLemmas"
+  category   = "expert"
+  long       = "active-lemmas"
+  type       = "bool"
+  default    = "false"
+  help       = "use active lemmas"

@@ -22,6 +22,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "smt/env_obj.h"
+
 #include "context/cdhashmap.h"
 #include "context/cdhashset.h"
 #include "context/cdinsert_hashmap.h"
@@ -41,7 +43,7 @@ namespace prop {
  * It also has utilities for tracking (in a SAT-context-dependent manner) which
  * skolems are "active", e.g. appear in any asserted literal.
  */
-class SkolemDefManager
+class SkolemDefManager : protected EnvObj
 {
   using NodeNodeMap = context::CDInsertHashMap<Node, Node>;
   using NodeBoolMap = context::CDHashMap<Node, bool>;
@@ -49,8 +51,7 @@ class SkolemDefManager
   using NodeList = context::CDList<Node>;
 
  public:
-  SkolemDefManager(context::Context* context,
-                   context::UserContext* userContext);
+  SkolemDefManager(Env& env);
 
   ~SkolemDefManager();
 
@@ -63,7 +64,7 @@ class SkolemDefManager
    * Return true if t is already active, in which case def should be notified
    * immediately.
    */
-  bool notifySkolemDefinition2(TNode t, Node def);
+  bool notifyActiveLemma(TNode t, Node def);
   /**
    * Get skolem definition for k, where k must be a skolem having a definition
    * managed by this class.
@@ -78,7 +79,6 @@ class SkolemDefManager
    * @param activatedDefs The list to add skolem definitions to
    */
   void notifyAsserted(TNode literal, std::vector<TNode>& activatedDefs);
-  void notifyAsserted2(TNode literal, std::vector<TNode>& activatedDefs);
 
   /**
    * Get the set of skolems maintained by this class that occur in node n,
@@ -105,17 +105,16 @@ class SkolemDefManager
   using NodeLemmaListMap = context::CDHashMap<Node, std::shared_ptr<LemmaList>>;
   /** get lemma list for node n */
   LemmaList* getLemmaList(const Node& n) const;
-  /** User context */
-  context::UserContext* d_userContext;
+  /** */
+  void notifyAssertedActive(TNode literal, std::vector<TNode>& activatedDefs);
   /** skolems to definitions (user-context dependent) */
   NodeNodeMap d_skDefs;
   /** set of active skolems (SAT-context dependent) */
   NodeSet d_skActive;
   /** Cache for hasSkolems */
   NodeBoolMap d_hasSkolems;
-  //---------------- new
-  /** Lemma list */
-  NodeLemmaListMap d_skDefMap;
+  /** Maps terms to lemma list they activate */
+  NodeLemmaListMap d_activeLems;
   /** set of asserted terms */
   NodeSet d_assertedTerms;
 };

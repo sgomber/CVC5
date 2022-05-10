@@ -69,7 +69,7 @@ PropEngine::PropEngine(Env& env, TheoryEngine* te)
     : EnvObj(env),
       d_inCheckSat(false),
       d_theoryEngine(te),
-      d_skdm(new SkolemDefManager(d_env.getContext(), d_env.getUserContext())),
+      d_skdm(new SkolemDefManager(env)),
       d_theoryProxy(nullptr),
       d_satSolver(nullptr),
       d_cnfStream(nullptr),
