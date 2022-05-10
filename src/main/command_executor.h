@@ -20,7 +20,7 @@
 #include <string>
 
 #include "api/cpp/cvc5.h"
-#include "expr/symbol_manager.h"
+#include "parser/symbol_manager.h"
 
 namespace cvc5 {
 
