@@ -125,7 +125,12 @@ void TheoryProxy::notifyAssertion(Node a, TNode skolem, bool isLemma)
   }
   else
   {
-    d_skdm->notifySkolemDefinition(skolem, a);
+    if (d_skdm->notifySkolemDefinition(skolem, a))
+    {
+      std::vector<TNode> activeLem;
+      activeLem.push_back(a);
+      d_decisionEngine->notifyActiveSkolemDefs(activeLem);
+    }
     d_decisionEngine->addSkolemDefinition(a, skolem, isLemma);
   }
 }
@@ -161,7 +166,7 @@ void TheoryProxy::theoryCheck(theory::Theory::Effort effort) {
       // Assertion makes all skolems in assertion active,
       // which triggers their definitions to becoming active.
       std::vector<TNode> activeSkolemDefs;
-      d_skdm->notifyAsserted(assertion, activeSkolemDefs, true);
+      d_skdm->notifyAsserted(assertion, activeSkolemDefs);
       // notify the decision engine of the skolem definitions that have become
       // active due to the assertion.
       d_decisionEngine->notifyActiveSkolemDefs(activeSkolemDefs);
