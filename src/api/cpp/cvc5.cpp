@@ -88,6 +88,7 @@
 #include "util/synth_result.h"
 #include "util/uninterpreted_sort_value.h"
 #include "util/utility.h"
+#include "expr/oracle_binary_caller.h"
 
 namespace cvc5 {
 
@@ -7149,7 +7150,7 @@ Term Solver::declarePool(const std::string& symbol,
 
 Term Solver::declareOracleFun(const std::string& symbol,
                               const std::vector<Sort>& sorts,
-                              const Sort& sort) const
+                              const Sort& sort)
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_DOMAIN_SORTS(sorts);
@@ -7163,7 +7164,7 @@ Term Solver::declareOracleFun(const std::string& symbol,
 Term Solver::declareOracleFun(const std::string& symbol,
                               const std::vector<Sort>& sorts,
                               const Sort& sort,
-                              const std::string& binName) const
+                              const std::string& binName)
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_DOMAIN_SORTS(sorts);
@@ -7171,6 +7172,12 @@ Term Solver::declareOracleFun(const std::string& symbol,
   CVC5_API_ARG_CHECK_EXPECTED(binName != "", binName);
   //////// all checks before this line
   return declareOracleFunHelper(symbol, sorts, sort, binName);
+  OracleBinaryCaller& obc = getOracleBinaryCaller(binName);
+  return declareOracleFun(symbol, sorts, sort, [&](const
+  std::vector<Term>& input) {
+    std::cout << "Run the oracle binary caller" << std::endl;
+    return obc.runOracle(input);
+  });
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -7179,7 +7186,7 @@ Term Solver::declareOracleFun(
     const std::string& symbol,
     const std::vector<Sort>& sorts,
     const Sort& sort,
-    std::function<Term(const std::vector<Term>&)> fn) const
+    std::function<std::vector<Term>(const std::vector<Term>&)> fn) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_DOMAIN_SORTS(sorts);
@@ -7196,8 +7203,12 @@ Term Solver::declareOracleFun(
   // make the method return a vector of size one to conform to the interface
   // at the SolverEngine level.
   d_slv->declareOracleFun(fun, [&](const std::vector<internal::Node> nodes) {
+    std::cout << "Convert to terms" << std::endl;
     std::vector<Term> terms = Term::nodeVectorToTerms(this, nodes);
-    return Term::termVectorToNodes({fn(terms)});
+    std::cout << "Call on " << terms << std::endl;
+    std::vector<Term> output = fn(terms);
+    std::cout << "Convert back " << output << std::endl;
+    return Term::termVectorToNodes(output);
   });
   return Term(this, fun);
   ////////
@@ -7736,6 +7747,18 @@ std::vector<Term> Solver::getSynthSolutions(
   return synthSolution;
   ////////
   CVC5_API_TRY_CATCH_END;
+}
+
+OracleBinaryCaller& Solver::getOracleBinaryCaller(const std::string& name)
+{
+  std::map<std::string, std::unique_ptr<OracleBinaryCaller>>::iterator it =
+      d_oracleBinCalls.find(name);
+  if (it != d_oracleBinCalls.end())
+  {
+    return *it->second.get();
+  }
+  d_oracleBinCalls[name].reset(new OracleBinaryCaller(this, name));
+  return *d_oracleBinCalls[name].get();
 }
 
 Statistics Solver::getStatistics() const

@@ -28,7 +28,7 @@ std::vector<Term> OracleBinaryCaller::runOracle(const std::vector<Term>& input)
   std::vector<std::string> sargs;
   sargs.push_back(d_binaryName);
 
-  Trace("oracle-calls") << "Call oracle " << input << std::endl;
+  std::cout << "Call oracle " << input << std::endl;
   for (const Term& arg : input)
   {
     std::ostringstream oss;

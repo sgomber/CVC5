@@ -4461,7 +4461,7 @@ class CVC5_EXPORT Solver
    */
   Term declareOracleFun(const std::string& symbol,
                         const std::vector<Sort>& sorts,
-                        const Sort& sort) const;
+                        const Sort& sort);
   /**
    * Declare an oracle function with reference to a executable binary name.
    *
@@ -4491,7 +4491,7 @@ class CVC5_EXPORT Solver
   Term declareOracleFun(const std::string& symbol,
                         const std::vector<Sort>& sorts,
                         const Sort& sort,
-                        const std::string& binName) const;
+                        const std::string& binName);
   /**
    * Declare an oracle function with reference to an implementation.
    *
@@ -4521,7 +4521,7 @@ class CVC5_EXPORT Solver
   Term declareOracleFun(const std::string& symbol,
                         const std::vector<Sort>& sorts,
                         const Sort& sort,
-                        std::function<Term(const std::vector<Term>&)> fn) const;
+                        std::function<std::vector<Term>(const std::vector<Term>&)> fn) const;
   /**
    * Define an oracle interface.
    *
@@ -5152,6 +5152,8 @@ class CVC5_EXPORT Solver
    */
   Term mkTermHelper(const Op& op, const std::vector<Term>& children) const;
 
+  /** get the oracle binary caller */
+  OracleBinaryCaller& getOracleBinaryCaller(const std::string& name);
   /**
    * Synthesize n-ary function following specified syntactic constraints.
    *
@@ -5216,6 +5218,8 @@ class CVC5_EXPORT Solver
   std::unique_ptr<internal::SolverEngine> d_slv;
   /** The random number generator of this solver. */
   std::unique_ptr<internal::Random> d_rng;
+  /** Map binary names to oracle binary callers */
+  std::map<std::string, std::unique_ptr<OracleBinaryCaller>> d_oracleBinCalls;
 };
 
 }  // namespace cvc5
