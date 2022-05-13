@@ -38,11 +38,10 @@ TheoryBags::TheoryBags(Env& env, OutputChannel& out, Valuation valuation)
       d_ig(&d_state, &d_im),
       d_notify(*this, d_im),
       d_statistics(),
-      d_rewriter(&d_statistics.d_rewrites),
+      d_rewriter(env.getRewriter(), &d_statistics.d_rewrites),
       d_termReg(env, d_state, d_im),
       d_solver(env, d_state, d_im, d_termReg),
-      d_cardSolver(env, d_state, d_im),
-      d_bagReduction(env)
+      d_cardSolver(env, d_state, d_im)
 {
   // use the official theory state and inference manager objects
   d_theoryState = &d_state;
@@ -80,8 +79,11 @@ void TheoryBags::finishInit()
   d_equalityEngine->addFunctionKind(BAG_CARD);
   d_equalityEngine->addFunctionKind(BAG_FROM_SET);
   d_equalityEngine->addFunctionKind(BAG_TO_SET);
+  d_equalityEngine->addFunctionKind(BAG_PARTITION);
   d_equalityEngine->addFunctionKind(TABLE_PRODUCT);
   d_equalityEngine->addFunctionKind(TABLE_PROJECT);
+  d_equalityEngine->addFunctionKind(TABLE_AGGREGATE);
+  d_equalityEngine->addFunctionKind(TABLE_JOIN);
 }
 
 TrustNode TheoryBags::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
@@ -94,13 +96,19 @@ TrustNode TheoryBags::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
     case kind::BAG_FOLD:
     {
       std::vector<Node> asserts;
-      Node ret = d_bagReduction.reduceFoldOperator(atom, asserts);
+      Node ret = BagReduction::reduceFoldOperator(atom, asserts);
       NodeManager* nm = NodeManager::currentNM();
       Node andNode = nm->mkNode(AND, asserts);
       d_im.lemma(andNode, InferenceId::BAGS_FOLD);
       Trace("bags::ppr") << "reduce(" << atom << ") = " << ret
                          << " such that:" << std::endl
                          << andNode << std::endl;
+      return TrustNode::mkTrustRewrite(atom, ret, nullptr);
+    }
+    case kind::TABLE_AGGREGATE:
+    {
+      Node ret = BagReduction::reduceAggregateOperator(atom);
+      Trace("bags::ppr") << "reduce(" << atom << ") = " << ret << std::endl;
       return TrustNode::mkTrustRewrite(atom, ret, nullptr);
     }
     default: return TrustNode::null();
@@ -455,6 +463,7 @@ void TheoryBags::preRegisterTerm(TNode n)
     case BAG_FROM_SET:
     case BAG_TO_SET:
     case BAG_IS_SINGLETON:
+    case BAG_PARTITION:
     case TABLE_PROJECT:
     {
       std::stringstream ss;
