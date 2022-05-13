@@ -583,7 +583,6 @@ TypeNode NodeManager::mkSequenceType(TypeNode elementType)
   return mkTypeNode(kind::SEQUENCE_TYPE, elementType);
 }
 
-<<<<<<< HEAD
 TypeNode NodeManager::mkAbstractType(Kind k)
 {
   if (!AbstractTypeChecker::canAbstractSortKind(k))
@@ -619,10 +618,7 @@ TypeNode NodeManager::mkAbstractType(Kind k)
   return mkTypeConst<AbstractType>(AbstractType(k));
 }
 
-TypeNode NodeManager::mkDatatypeType(DType& datatype, uint32_t flags)
-=======
 TypeNode NodeManager::mkDatatypeType(DType& datatype)
->>>>>>> e8eebe0aaea199f8bd7ae8ef3348ca2985b20b59
 {
   // Not worth a special implementation; this doesn't need to be fast
   // code anyway.
@@ -1237,12 +1233,6 @@ Node NodeManager::mkAbstractNode(Kind k, const std::vector<Node>& children)
   }
   // otherwise, it is concrete
   return mkNode(k, children);
-}
-
-Node NodeManager::mkUninterpretedSortValue(const TypeNode& type)
-{
-  Node n = mkConst(UninterpretedSortValue(type, ++d_abstractValueCount));
-  return n;
 }
 
 bool NodeManager::hasOperator(Kind k)
