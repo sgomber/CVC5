@@ -34,6 +34,7 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
   d_propEngine->assertInputFormulas(assertions, skolemMap);
   return d_propEngine->checkSat();
 
+  size_t indexCheck = 0;
   size_t asize = assertions.size();
   Result r;
   std::unordered_set<size_t> assertionsAdded;
@@ -48,8 +49,40 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
     }
     theory::TheoryModel* tm = d_theoryEngine->getBuiltModel();
     // otherwise, get an arbitrary assertion that is not satisfied
+    bool bestIndexSet = false;
     size_t bestIndex = 0;
-
+    size_t indexCheckEnd = indexCheck;
+    do
+    {
+      if (assertionsAdded.find(indexCheck)==assertionsAdded.end())
+      {
+        Node val = tm->getValue(assertions[indexCheck]);
+        if (val.isConst())
+        {
+          if (!val.getConst<bool>())
+          {
+            bestIndexSet = true;
+            bestIndex = indexCheck;
+            break;
+          }
+        }
+        else if (!bestIndexSet)
+        {
+          // assertion is unknown, keep it unless we find a better one
+          bestIndexSet = true;
+          bestIndex = indexCheck;
+        }
+      }
+      indexCheck = (indexCheck+1==asize ? 0 : indexCheck+1);
+    }
+    while (indexCheck!=indexCheckEnd);
+    
+    if (!bestIndexSet && r.getStatus()==Result::SAT)
+    {
+      // current model satisfies all assertions
+      return r;
+    }
+    // add the best index
     assertionsAdded.insert(bestIndex);
     // add the single assertion
     std::vector<Node> newAssertion = {assertions[bestIndex]};
