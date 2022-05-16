@@ -500,7 +500,7 @@ void SetDefaults::setDefaultsPost(const LogicInfo& logic, Options& opts) const
 
   // cases where we need produce models
   if (!opts.smt.produceModels
-      && (opts.smt.produceAssignments || usesSygus(opts)))
+      && (opts.smt.produceAssignments || usesSygus(opts) || opts.smt.smtLazyAssert))
   {
     verbose(1) << "SolverEngine: turning on produce-models" << std::endl;
     opts.writeSmt().produceModels = true;
