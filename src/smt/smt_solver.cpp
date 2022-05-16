@@ -86,6 +86,7 @@ void SmtSolver::resetAssertions()
 {
   // Create new PropEngine
   resetPropEngine();
+  d_theoryEngine->setPropEngine(getPropEngine());
   // Notice that we do not reset TheoryEngine, nor does it require calling
   // finishInit again. In particular, TheoryEngine::finishInit does not
   // depend on knowing the associated PropEngine.
