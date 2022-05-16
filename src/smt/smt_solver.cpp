@@ -19,6 +19,7 @@
 #include "options/main_options.h"
 #include "options/smt_options.h"
 #include "prop/prop_engine.h"
+#include "prop/lazy_prop_engine.h"
 #include "smt/assertions.h"
 #include "smt/env.h"
 #include "smt/logic_exception.h"
@@ -70,11 +71,7 @@ void SmtSolver::finishInit()
     d_theoryEngine->initializeProofChecker(pnm->getChecker());
   }
   Trace("smt-debug") << "Making prop engine..." << std::endl;
-  /* force destruction of referenced PropEngine to enforce that statistics
-   * are unregistered by the obsolete PropEngine object before registered
-   * again by the new PropEngine object */
-  d_propEngine.reset(nullptr);
-  d_propEngine.reset(new prop::PropEngine(d_env, d_theoryEngine.get()));
+  resetPropEngine();
 
   Trace("smt-debug") << "Setting up theory engine..." << std::endl;
   d_theoryEngine->setPropEngine(getPropEngine());
@@ -87,13 +84,8 @@ void SmtSolver::finishInit()
 
 void SmtSolver::resetAssertions()
 {
-  /* Create new PropEngine.
-   * First force destruction of referenced PropEngine to enforce that
-   * statistics are unregistered by the obsolete PropEngine object before
-   * registered again by the new PropEngine object */
-  d_propEngine.reset(nullptr);
-  d_propEngine.reset(new prop::PropEngine(d_env, d_theoryEngine.get()));
-  d_theoryEngine->setPropEngine(getPropEngine());
+  // Create new PropEngine
+  resetPropEngine();
   // Notice that we do not reset TheoryEngine, nor does it require calling
   // finishInit again. In particular, TheoryEngine::finishInit does not
   // depend on knowing the associated PropEngine.
@@ -151,6 +143,7 @@ Result SmtSolver::checkSatisfiability(Assertions& as,
       Trace("smt") << "SmtSolver::check(): running check" << endl;
       if (options().smt.smtLazyAssert)
       {
+        result = d_lazyPropEngine->checkSat(d_ppAssertions, d_ppSkolemMap);
       }
       else
       {
@@ -337,6 +330,20 @@ void SmtSolver::deepRestart(Assertions& asr, const std::vector<Node>& zll)
 bool SmtSolver::trackPreprocessedAsserts() const
 {
   return options().smt.deepRestartMode != options::DeepRestartMode::NONE || options().smt.smtLazyAssert;
+}
+
+void SmtSolver::resetPropEngine()
+{
+  /* force destruction of referenced PropEngine to enforce that statistics
+   * are unregistered by the obsolete PropEngine object before registered
+   * again by the new PropEngine object */
+  d_lazyPropEngine.reset(nullptr);
+  d_propEngine.reset(nullptr);
+  d_propEngine.reset(new prop::PropEngine(d_env, d_theoryEngine.get()));
+  if (options().smt.smtLazyAssert)
+  {
+    d_lazyPropEngine.reset(new prop::LazyPropEngine(d_env, d_propEngine.get()));
+  }
 }
 
 TheoryEngine* SmtSolver::getTheoryEngine() { return d_theoryEngine.get(); }

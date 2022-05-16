@@ -36,6 +36,7 @@ class ResourceManager;
 class ProofNodeManager;
 
 namespace prop {
+class LazyPropEngine;
 class PropEngine;
 }
 
@@ -129,6 +130,8 @@ class SmtSolver : protected EnvObj
  private:
   /** Whether we track preprocessed assertions */
   bool trackPreprocessedAsserts() const;
+  /** Reset the prop engine, assumes theory engine is reset */
+  void resetPropEngine();
   /** The preprocessor of this SMT solver */
   Preprocessor d_pp;
   /** Reference to the statistics of SolverEngine */
@@ -145,7 +148,7 @@ class SmtSolver : protected EnvObj
   /** All learned literals, used for debugging */
   std::unordered_set<Node> d_allLearnedLits;
   /** The lazy assertion solver */
-  std::unordered_set<LazyPropEngine> d_lazyPropEngine;
+  std::unordered_set<prop::LazyPropEngine> d_lazyPropEngine;
 };
 
 }  // namespace smt

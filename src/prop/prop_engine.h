@@ -17,8 +17,8 @@
 
 #include "cvc5_private.h"
 
-#ifndef CVC5__PROP_ENGINE_H
-#define CVC5__PROP_ENGINE_H
+#ifndef CVC5__PROP__PROP_ENGINE_H
+#define CVC5__PROP__PROP_ENGINE_H
 
 #include "api/cpp/cvc5_types.h"
 #include "context/cdlist.h"
