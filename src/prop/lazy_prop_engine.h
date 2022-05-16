@@ -23,6 +23,9 @@
 #include "util/result.h"
 
 namespace cvc5::internal {
+
+class TheoryEngine;
+
 namespace prop {
 
 class PropEngine;
@@ -35,9 +38,9 @@ class LazyPropEngine : protected EnvObj
 {
  public:
   /**
-   * Create a LazyPropEngine with a particular prop engine.
+   * Create a LazyPropEngine with a particular theory and prop engine.
    */
-  LazyPropEngine(Env& env, PropEngine* pe);
+  LazyPropEngine(Env& env, TheoryEngine * te, PropEngine* pe);
   /**Destructor.*/
   ~LazyPropEngine() {}
   /**
@@ -47,6 +50,8 @@ class LazyPropEngine : protected EnvObj
                   std::unordered_map<size_t, Node>& skolemMap);
 
  private:
+  /** The theory engine we will be using */
+  TheoryEngine* d_theoryEngine;
   /** The prop engine we will be using */
   PropEngine* d_propEngine;
 };

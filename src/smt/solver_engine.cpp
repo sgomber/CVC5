@@ -49,6 +49,7 @@
 #include "smt/model_core_builder.h"
 #include "smt/preprocessor.h"
 #include "smt/proof_manager.h"
+#include "prop/lazy_prop_engine.h"
 #include "smt/quant_elim_solver.h"
 #include "smt/set_defaults.h"
 #include "smt/smt_solver.h"

@@ -192,7 +192,7 @@ void SetDefaults::setDefaultsPre(Options& opts)
   // lazy asserts requires incremental solving
   if (opts.smt.smtLazyAssert)
   {
-    opts.writeSmt().incrementalSolving = true;
+    opts.writeBase().incrementalSolving = true;
   }
 }
 

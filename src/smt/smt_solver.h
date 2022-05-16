@@ -148,7 +148,7 @@ class SmtSolver : protected EnvObj
   /** All learned literals, used for debugging */
   std::unordered_set<Node> d_allLearnedLits;
   /** The lazy assertion solver */
-  std::unordered_set<prop::LazyPropEngine> d_lazyPropEngine;
+  std::unique_ptr<prop::LazyPropEngine> d_lazyPropEngine;
 };
 
 }  // namespace smt

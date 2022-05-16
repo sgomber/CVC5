@@ -268,7 +268,7 @@ void SmtSolver::processAssertions(Assertions& as)
       d_ppAssertions = assertions;
       d_ppSkolemMap = ism;
     }
-    if (!options().smtLazyAssert)
+    if (!options().smt.smtLazyAssert)
     {
       d_propEngine->assertInputFormulas(assertions, ism);
     }
@@ -343,7 +343,7 @@ void SmtSolver::resetPropEngine()
   d_propEngine.reset(new prop::PropEngine(d_env, d_theoryEngine.get()));
   if (options().smt.smtLazyAssert)
   {
-    d_lazyPropEngine.reset(new prop::LazyPropEngine(d_env, d_propEngine.get()));
+    d_lazyPropEngine.reset(new prop::LazyPropEngine(d_env, d_theoryEngine.get(), d_propEngine.get()));
   }
 }
 
