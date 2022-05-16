@@ -333,6 +333,12 @@ bool ProcessAssertions::apply(Assertions& as)
   applyPass("rewrite", as);
   // rewrite equalities based on theory-specific rewriting
   applyPass("theory-rewrite-eq", as);
+  // and-elim
+  bool requiresAndElim = options().smt.smtLazyAssert;
+  if (requiresAndElim)
+  {
+    applyPass("and-elim", as);
+  }
   // apply theory preprocess, which includes ITE removal
   applyPass("theory-preprocess", as);
   // notice that we do not apply substitutions as a last step here, since

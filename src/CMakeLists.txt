@@ -64,6 +64,8 @@ libcvc5_add_sources(
   preprocessing/learned_literal_manager.h
   preprocessing/passes/ackermann.cpp
   preprocessing/passes/ackermann.h
+  preprocessing/passes/and_elim.cpp
+  preprocessing/passes/and_elim.h
   preprocessing/passes/apply_substs.cpp
   preprocessing/passes/apply_substs.h
   preprocessing/passes/bool_to_bv.cpp

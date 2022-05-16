@@ -25,6 +25,7 @@
 #include "base/map_util.h"
 #include "base/output.h"
 #include "preprocessing/passes/ackermann.h"
+#include "preprocessing/passes/and_elim.h"
 #include "preprocessing/passes/apply_substs.h"
 #include "preprocessing/passes/bool_to_bv.h"
 #include "preprocessing/passes/bv_eager_atoms.h"
@@ -154,6 +155,7 @@ PreprocessingPassRegistry::PreprocessingPassRegistry()
   registerPassInfo("fun-def-fmf", callCtor<FunDefFmf>);
   registerPassInfo("theory-rewrite-eq", callCtor<TheoryRewriteEq>);
   registerPassInfo("strings-eager-pp", callCtor<StringsEagerPp>);
+  registerPassInfo("and-elim", callCtor<AndElim>);
 }
 
 }  // namespace preprocessing
