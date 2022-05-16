@@ -40,7 +40,7 @@ class LazyPropEngine : protected EnvObj
   /**
    * Create a LazyPropEngine with a particular theory and prop engine.
    */
-  LazyPropEngine(Env& env, TheoryEngine * te, PropEngine* pe);
+  LazyPropEngine(Env& env, TheoryEngine* te, PropEngine* pe);
   /**Destructor.*/
   ~LazyPropEngine() {}
   /**

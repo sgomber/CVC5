@@ -22,7 +22,7 @@
 namespace cvc5::internal {
 namespace prop {
 
-LazyPropEngine::LazyPropEngine(Env& env, TheoryEngine * te, PropEngine* pe)
+LazyPropEngine::LazyPropEngine(Env& env, TheoryEngine* te, PropEngine* pe)
     : EnvObj(env), d_theoryEngine(te), d_propEngine(pe)
 {
 }
@@ -33,7 +33,7 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
   // TODO
   d_propEngine->assertInputFormulas(assertions, skolemMap);
   return d_propEngine->checkSat();
-  
+
   size_t asize = assertions.size();
   Result r;
   std::unordered_set<size_t> assertionsAdded;
@@ -42,15 +42,14 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
   {
     r = d_propEngine->checkSat();
     // if we've added all assertions, or we are unsat, we are done
-    if (assertionsAdded.size()==asize || r.getStatus()== Result::UNSAT)
+    if (assertionsAdded.size() == asize || r.getStatus() == Result::UNSAT)
     {
       return r;
     }
-    theory::TheoryModel * tm = d_theoryEngine->getBuiltModel();
+    theory::TheoryModel* tm = d_theoryEngine->getBuiltModel();
     // otherwise, get an arbitrary assertion that is not satisfied
     size_t bestIndex = 0;
-    
-    
+
     assertionsAdded.insert(bestIndex);
     // add the single assertion
     std::vector<Node> newAssertion = {assertions[bestIndex]};
