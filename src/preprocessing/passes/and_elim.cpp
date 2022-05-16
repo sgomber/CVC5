@@ -31,9 +31,8 @@ AndElim::AndElim(PreprocessingPassContext* preprocContext)
 PreprocessingPassResult AndElim::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
-  theory::TrustSubstitutionMap& tlsm =
-      d_preprocContext->getTopLevelSubstitutions();
   size_t size = assertionsToPreprocess->size();
+  size_t i = 0;
   while (i < size)
   {
     Node a = (*assertionsToPreprocess)[i];
