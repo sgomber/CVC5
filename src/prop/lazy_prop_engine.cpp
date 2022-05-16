@@ -102,6 +102,8 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
     {
       newSkolemMap[0] = itk->second;
     }
+    Trace("lazy-prop-debug") << "ASSERT " << newAssertion << std::endl;
+    d_propEngine->resetTrail();
     d_propEngine->assertInputFormulas(newAssertion, newSkolemMap);
   }
   Trace("lazy-prop") << "...finish " << r << " with " << assertionsAdded.size()
