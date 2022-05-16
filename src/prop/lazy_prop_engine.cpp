@@ -30,7 +30,8 @@ LazyPropEngine::LazyPropEngine(Env& env, TheoryEngine* te, PropEngine* pe)
 Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
                                 std::unordered_map<size_t, Node>& skolemMap)
 {
-  Trace("lazy-prop") << "lazy check-sat, #assertions=" << assertions.size() << std::endl;
+  Trace("lazy-prop") << "lazy check-sat, #assertions=" << assertions.size()
+                     << std::endl;
   // By default, we do:
   //   d_propEngine->assertInputFormulas(assertions, skolemMap);
   //   d_propEngine->checkSat();
@@ -102,7 +103,8 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
     }
     d_propEngine->assertInputFormulas(newAssertion, newSkolemMap);
   }
-  Trace("lazy-prop") << "...finish " << r << " with " << assertionsAdded.size() << "/" << asize << " added assertions" << std::endl;
+  Trace("lazy-prop") << "...finish " << r << " with " << assertionsAdded.size()
+                     << "/" << asize << " added assertions" << std::endl;
   return r;
 }
 
