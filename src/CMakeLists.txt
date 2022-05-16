@@ -232,6 +232,8 @@ libcvc5_add_sources(
   prop/cryptominisat.h
   prop/kissat.cpp
   prop/kissat.h
+  prop/lazy_prop_engine.cpp
+  prop/lazy_prop_engine.h
   prop/learned_db.cpp
   prop/learned_db.h
   prop/minisat/core/Dimacs.h
