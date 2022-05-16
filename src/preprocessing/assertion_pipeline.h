@@ -169,6 +169,8 @@ class AssertionPipeline : protected EnvObj
   void enableProofs(smt::PreprocessProofGenerator* pppg);
   /** Is proof enabled? */
   bool isProofEnabled() const;
+  /** Get the preprocess proof generator */
+  smt::PreprocessProofGenerator * getPreprocessProofGenerator();
   //------------------------------------ end for proofs
  private:
   /** The list of current assertions */

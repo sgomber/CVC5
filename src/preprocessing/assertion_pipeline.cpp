@@ -124,6 +124,11 @@ void AssertionPipeline::enableProofs(smt::PreprocessProofGenerator* pppg)
 
 bool AssertionPipeline::isProofEnabled() const { return d_pppg != nullptr; }
 
+smt::PreprocessProofGenerator * AssertionPipeline::getPreprocessProofGenerator()
+{
+  return d_pppg;
+}
+
 void AssertionPipeline::enableStoreSubstsInAsserts()
 {
   d_storeSubstsInAsserts = true;

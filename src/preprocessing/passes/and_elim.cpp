@@ -18,19 +18,25 @@
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/preprocessing_pass_context.h"
 #include "smt/env.h"
+#include "util/rational.h"
+#include "smt/preprocess_proof_generator.h"
 
 namespace cvc5::internal {
 namespace preprocessing {
 namespace passes {
 
 AndElim::AndElim(PreprocessingPassContext* preprocContext)
-    : PreprocessingPass(preprocContext, "and-elim")
+    : PreprocessingPass(preprocContext, "and-elim"), 
+      d_lcp(d_env.getProofNodeManager() ? new LazyCDProof(
+                 d_env.getProofNodeManager(), nullptr, userContext(), "AndElim::lcp")
+                   : nullptr)
 {
 }
 
 PreprocessingPassResult AndElim::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
+  NodeManager * nm = NodeManager::currentNM();
   size_t size = assertionsToPreprocess->size();
   size_t i = 0;
   while (i < size)
@@ -38,10 +44,20 @@ PreprocessingPassResult AndElim::applyInternal(
     Node a = (*assertionsToPreprocess)[i];
     if (a.getKind()==kind::AND)
     {
-      assertionsToPreprocess->replace(i, a[0]);
+      if (isProofEnabled())
+      {
+        smt::PreprocessProofGenerator * pppg = assertionsToPreprocess->getPreprocessProofGenerator();
+        d_lcp->addProof(pppg->getProofFor(a));
+        for (size_t j=0, achild = a.getNumChildren(); j<achild; j++)
+        {
+          Node nj = nm->mkConstInt(Rational(j));
+          d_lcp->addStep(a[j], PfRule::AND_ELIM, {a}, {nj});
+        }
+      }
+      assertionsToPreprocess->replace(i, a[0], d_lcp.get());
       for (size_t j=1, achild = a.getNumChildren(); j<achild; j++)
       {
-        assertionsToPreprocess->push_back(a[j]);
+        assertionsToPreprocess->push_back(a[j], d_lcp.get());
       }
     }
     else
@@ -50,6 +66,11 @@ PreprocessingPassResult AndElim::applyInternal(
     }
   }
   return PreprocessingPassResult::NO_CONFLICT;
+}
+
+bool AndElim::isProofEnabled() const
+{
+  return d_lcp!=nullptr;
 }
 
 }  // namespace passes

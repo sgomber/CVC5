@@ -47,6 +47,7 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
   {
     // check sat with the current assertions
     r = d_propEngine->checkSat();
+    Trace("lazy-prop") << "...check-sat " << r << std::endl;
     // if we've added all assertions, or we are unsat, we are done
     if (assertionsAdded.size() == asize || r.getStatus() == Result::UNSAT)
     {

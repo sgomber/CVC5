@@ -34,6 +34,8 @@ class AndElim : public PreprocessingPass
   AndElim(PreprocessingPassContext* preprocContext);
 
  protected:
+  /** is proof enabled? */
+  bool isProofEnabled() const;
   /**
    * Ensure that no top-level assertions are AND.
    */
@@ -41,7 +43,7 @@ class AndElim : public PreprocessingPass
       AssertionPipeline* assertionsToPreprocess) override;
   /**
    */
-  std::unique_ptr<LazyCDProof> d_lazy;
+  std::unique_ptr<LazyCDProof> d_lcp;
 };
 
 }  // namespace passes
