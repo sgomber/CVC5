@@ -30,6 +30,7 @@ LazyPropEngine::LazyPropEngine(Env& env, TheoryEngine* te, PropEngine* pe)
 Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
                                 std::unordered_map<size_t, Node>& skolemMap)
 {
+  Trace("lazy-prop") << "lazy check-sat, #assertions=" << assertions.size() << std::endl;
   // By default, we do:
   //   d_propEngine->assertInputFormulas(assertions, skolemMap);
   //   d_propEngine->checkSat();
@@ -48,7 +49,7 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
     // if we've added all assertions, or we are unsat, we are done
     if (assertionsAdded.size() == asize || r.getStatus() == Result::UNSAT)
     {
-      return r;
+      break;
     }
     theory::TheoryModel* tm = d_theoryEngine->getBuiltModel();
     // otherwise, get an arbitrary assertion that is not satisfied
@@ -67,6 +68,7 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
             // assertion is false, add it now
             bestIndexSet = true;
             bestIndex = indexCheck;
+            Trace("lazy-prop") << "...found falsified" << std::endl;
             break;
           }
         }
@@ -83,9 +85,10 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
 
     if (!bestIndexSet && r.getStatus() == Result::SAT)
     {
-      // current model satisfies all assertions
-      return r;
+      // current model satisfies all remaining assertions
+      break;
     }
+    Trace("lazy-prop") << "...add assertion #" << bestIndex << std::endl;
     // add the best index
     assertionsAdded.insert(bestIndex);
     // add the single assertion
@@ -99,6 +102,8 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
     }
     d_propEngine->assertInputFormulas(newAssertion, newSkolemMap);
   }
+  Trace("lazy-prop") << "...finish " << r << " with " << assertionsAdded.size() << "/" << asize << " added assertions" << std::endl;
+  return r;
 }
 
 }  // namespace prop
