@@ -44,7 +44,8 @@ class LazyPropEngine : protected EnvObj
    * Check sat
    */
   Result checkSat(const std::vector<Node>& assertions,
-                           std::unordered_map<size_t, Node>& skolemMap);
+                  std::unordered_map<size_t, Node>& skolemMap);
+
  private:
   /** The prop engine we will be using */
   PropEngine* d_propEngine;

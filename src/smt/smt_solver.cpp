@@ -18,8 +18,8 @@
 #include "options/base_options.h"
 #include "options/main_options.h"
 #include "options/smt_options.h"
-#include "prop/prop_engine.h"
 #include "prop/lazy_prop_engine.h"
+#include "prop/prop_engine.h"
 #include "smt/assertions.h"
 #include "smt/env.h"
 #include "smt/logic_exception.h"
@@ -329,7 +329,8 @@ void SmtSolver::deepRestart(Assertions& asr, const std::vector<Node>& zll)
 
 bool SmtSolver::trackPreprocessedAsserts() const
 {
-  return options().smt.deepRestartMode != options::DeepRestartMode::NONE || options().smt.smtLazyAssert;
+  return options().smt.deepRestartMode != options::DeepRestartMode::NONE
+         || options().smt.smtLazyAssert;
 }
 
 void SmtSolver::resetPropEngine()

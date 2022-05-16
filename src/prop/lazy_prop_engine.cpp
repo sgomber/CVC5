@@ -20,10 +20,13 @@
 namespace cvc5::internal {
 namespace prop {
 
-LazyPropEngine::LazyPropEngine(Env& env, PropEngine* pe) : EnvObj(env), d_propEngine(pe) {}
+LazyPropEngine::LazyPropEngine(Env& env, PropEngine* pe)
+    : EnvObj(env), d_propEngine(pe)
+{
+}
 
 Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
-                          std::unordered_map<size_t, Node>& skolemMap)
+                                std::unordered_map<size_t, Node>& skolemMap)
 {
   // TODO
   d_propEngine->assertInputFormulas(assertions, skolemMap);
@@ -32,4 +35,3 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
 
 }  // namespace prop
 }  // namespace cvc5::internal
-
