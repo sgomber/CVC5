@@ -189,6 +189,11 @@ void SetDefaults::setDefaultsPre(Options& opts)
     // deep restart does not work with internal subsolvers?
     opts.writeSmt().deepRestartMode = options::DeepRestartMode::NONE;
   }
+  // lazy asserts requires incremental solving
+  if (opts.smt.smtLazyAssert)
+  {
+    opts.writeSmt().incrementalSolving = true;
+  }
 }
 
 void SetDefaults::finalizeLogic(LogicInfo& logic, Options& opts) const

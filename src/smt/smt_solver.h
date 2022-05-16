@@ -127,8 +127,8 @@ class SmtSolver : protected EnvObj
   //------------------------------------------ end access methods
 
  private:
-  /** Whether we track information necessary for deep restarts */
-  bool canDeepRestart() const;
+  /** Whether we track preprocessed assertions */
+  bool trackPreprocessedAsserts() const;
   /** The preprocessor of this SMT solver */
   Preprocessor d_pp;
   /** Reference to the statistics of SolverEngine */
@@ -144,6 +144,8 @@ class SmtSolver : protected EnvObj
   std::unordered_map<size_t, Node> d_ppSkolemMap;
   /** All learned literals, used for debugging */
   std::unordered_set<Node> d_allLearnedLits;
+  /** The lazy assertion solver */
+  std::unordered_set<LazyPropEngine> d_lazyPropEngine;
 };
 
 }  // namespace smt

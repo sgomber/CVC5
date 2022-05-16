@@ -503,3 +503,11 @@ name   = "SMT Layer"
   minimum    = "0.0"
   maximum    = "1000.0"
   help       = "sets the threshold for average assertions per literal before a deep restart"
+
+[[option]]
+  name       = "smtLazyAssert"
+  category   = "regular"
+  long       = "smt-lazy-assert"
+  type       = "bool"
+  default    = "false"
+  help       = "push assertions to the prop engine lazily"

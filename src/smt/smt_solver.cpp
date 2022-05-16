@@ -149,7 +149,13 @@ Result SmtSolver::checkSatisfiability(Assertions& as,
 
       d_env.verbose(2) << "solving..." << std::endl;
       Trace("smt") << "SmtSolver::check(): running check" << endl;
-      result = d_propEngine->checkSat();
+      if (options().smt.smtLazyAssert)
+      {
+      }
+      else
+      {
+        result = d_propEngine->checkSat();
+      }
       Trace("smt") << "SmtSolver::check(): result " << result << std::endl;
 
       rm->endCall();
@@ -240,7 +246,7 @@ void SmtSolver::processAssertions(Assertions& as)
     preprocessing::IteSkolemMap& ism = ap.getIteSkolemMap();
     // if we can deep restart, we always remember the preprocessed formulas,
     // which are the basis for the next check-sat.
-    if (canDeepRestart())
+    if (trackPreprocessedAsserts())
     {
       // incompatible with global negation
       Assert(!as.isGlobalNegated());
@@ -269,7 +275,10 @@ void SmtSolver::processAssertions(Assertions& as)
       d_ppAssertions = assertions;
       d_ppSkolemMap = ism;
     }
-    d_propEngine->assertInputFormulas(assertions, ism);
+    if (!options().smtLazyAssert)
+    {
+      d_propEngine->assertInputFormulas(assertions, ism);
+    }
   }
 
   // clear the current assertions
@@ -278,7 +287,7 @@ void SmtSolver::processAssertions(Assertions& as)
 
 void SmtSolver::deepRestart(Assertions& asr, const std::vector<Node>& zll)
 {
-  Assert(canDeepRestart());
+  Assert(trackPreprocessedAsserts());
   Assert(!zll.empty());
   Trace("deep-restart") << "Have " << zll.size()
                         << " zero level learned literals" << std::endl;
@@ -325,9 +334,9 @@ void SmtSolver::deepRestart(Assertions& asr, const std::vector<Node>& zll)
   finishInit();
 }
 
-bool SmtSolver::canDeepRestart() const
+bool SmtSolver::trackPreprocessedAsserts() const
 {
-  return options().smt.deepRestartMode != options::DeepRestartMode::NONE;
+  return options().smt.deepRestartMode != options::DeepRestartMode::NONE || options().smt.smtLazyAssert;
 }
 
 TheoryEngine* SmtSolver::getTheoryEngine() { return d_theoryEngine.get(); }
