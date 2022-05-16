@@ -908,7 +908,8 @@ def test_mk_true(solver):
 def test_mk_tuple(solver):
     solver.mkTuple([solver.mkBitVectorSort(3)],
                    [solver.mkBitVector(3, "101", 2)])
-    solver.mkTuple([solver.getRealSort()], [solver.mkInteger("5")])
+    with pytest.raises(RuntimeError):
+      solver.mkTuple([solver.getRealSort()], [solver.mkInteger("5")])
 
     with pytest.raises(RuntimeError):
         solver.mkTuple([], [solver.mkBitVector(3, "101", 2)])
@@ -1587,7 +1588,7 @@ def checkSimpleSeparationConstraints(slv):
     heap = slv.mkTerm(Kind.SEP_PTO, p, x)
     slv.assertFormula(heap)
     nil = slv.mkSepNil(integer)
-    slv.assertFormula(nil.eqTerm(slv.mkReal(5)))
+    slv.assertFormula(nil.eqTerm(slv.mkInteger(5)))
     slv.checkSat()
 
 

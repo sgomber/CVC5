@@ -949,8 +949,9 @@ TEST_F(TestApiBlackSolver, mkTuple)
 {
   ASSERT_NO_THROW(d_solver.mkTuple({d_solver.mkBitVectorSort(3)},
                                    {d_solver.mkBitVector(3, "101", 2)}));
-  ASSERT_NO_THROW(
-      d_solver.mkTuple({d_solver.getRealSort()}, {d_solver.mkInteger("5")}));
+  ASSERT_THROW(
+      d_solver.mkTuple({d_solver.getRealSort()}, {d_solver.mkInteger("5")}),
+      CVC5ApiException);
 
   ASSERT_THROW(d_solver.mkTuple({}, {d_solver.mkBitVector(3, "101", 2)}),
                CVC5ApiException);
@@ -2128,7 +2129,7 @@ void checkSimpleSeparationConstraints(Solver* solver)
   Term heap = solver->mkTerm(cvc5::Kind::SEP_PTO, {p, x});
   solver->assertFormula(heap);
   Term nil = solver->mkSepNil(integer);
-  solver->assertFormula(nil.eqTerm(solver->mkReal(5)));
+  solver->assertFormula(nil.eqTerm(solver->mkInteger(5)));
   solver->checkSat();
 }
 }  // namespace

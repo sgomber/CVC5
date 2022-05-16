@@ -913,9 +913,10 @@ class SolverTest
     assertDoesNotThrow(()
                            -> d_solver.mkTuple(new Sort[] {d_solver.mkBitVectorSort(3)},
                                new Term[] {d_solver.mkBitVector(3, "101", 2)}));
-    assertDoesNotThrow(()
-                           -> d_solver.mkTuple(new Sort[] {d_solver.getRealSort()},
-                               new Term[] {d_solver.mkInteger("5")}));
+    assertThrows(CVC5ApiException.class,
+        ()
+            -> d_solver.mkTuple(new Sort[] {d_solver.getRealSort()},
+                new Term[] {d_solver.mkInteger("5")}));
 
     assertThrows(CVC5ApiException.class,
         () -> d_solver.mkTuple(new Sort[] {}, new Term[] {d_solver.mkBitVector(3, "101", 2)}));
@@ -2133,7 +2134,7 @@ class SolverTest
     Term heap = solver.mkTerm(SEP_PTO, p, x);
     solver.assertFormula(heap);
     Term nil = solver.mkSepNil(integer);
-    solver.assertFormula(nil.eqTerm(solver.mkReal(5)));
+    solver.assertFormula(nil.eqTerm(solver.mkInteger(5)));
     solver.checkSat();
   }
 
