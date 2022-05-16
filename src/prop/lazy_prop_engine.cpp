@@ -30,9 +30,11 @@ LazyPropEngine::LazyPropEngine(Env& env, TheoryEngine* te, PropEngine* pe)
 Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
                                 std::unordered_map<size_t, Node>& skolemMap)
 {
-  // TODO
-  d_propEngine->assertInputFormulas(assertions, skolemMap);
-  return d_propEngine->checkSat();
+  // By default, we do:
+  //   d_propEngine->assertInputFormulas(assertions, skolemMap);
+  //   d_propEngine->checkSat();
+  // Instead, this method pushes assertions to the prop engine one at a time
+  // based on the model for the current set.
 
   size_t indexCheck = 0;
   size_t asize = assertions.size();
@@ -41,6 +43,7 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
   std::unordered_map<size_t, Node>::iterator itk;
   while (true)
   {
+    // check sat with the current assertions
     r = d_propEngine->checkSat();
     // if we've added all assertions, or we are unsat, we are done
     if (assertionsAdded.size() == asize || r.getStatus() == Result::UNSAT)
@@ -61,6 +64,7 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
         {
           if (!val.getConst<bool>())
           {
+            // assertion is false, add it now
             bestIndexSet = true;
             bestIndex = indexCheck;
             break;
@@ -73,6 +77,7 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
           bestIndex = indexCheck;
         }
       }
+      // increment the index
       indexCheck = (indexCheck + 1 == asize ? 0 : indexCheck + 1);
     } while (indexCheck != indexCheckEnd);
 
