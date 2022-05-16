@@ -54,7 +54,7 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
     size_t indexCheckEnd = indexCheck;
     do
     {
-      if (assertionsAdded.find(indexCheck)==assertionsAdded.end())
+      if (assertionsAdded.find(indexCheck) == assertionsAdded.end())
       {
         Node val = tm->getValue(assertions[indexCheck]);
         if (val.isConst())
@@ -73,11 +73,10 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
           bestIndex = indexCheck;
         }
       }
-      indexCheck = (indexCheck+1==asize ? 0 : indexCheck+1);
-    }
-    while (indexCheck!=indexCheckEnd);
-    
-    if (!bestIndexSet && r.getStatus()==Result::SAT)
+      indexCheck = (indexCheck + 1 == asize ? 0 : indexCheck + 1);
+    } while (indexCheck != indexCheckEnd);
+
+    if (!bestIndexSet && r.getStatus() == Result::SAT)
     {
       // current model satisfies all assertions
       return r;
