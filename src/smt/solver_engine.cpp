@@ -943,8 +943,7 @@ void SolverEngine::declarePool(const Node& p,
   qe->declarePool(p, initValue);
 }
 
-void SolverEngine::declareOracleFun(
-    Node var)
+void SolverEngine::declareOracleFun(Node var)
 {
   // FIXME
 }

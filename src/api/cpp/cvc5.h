@@ -4513,11 +4513,12 @@ class CVC5_EXPORT Solver
    * @param constraint The constraint of the oracle interface
    * @param fn The function that implements the oracle interface.
    */
-  void defineOracleInterface(const std::vector<Term>& inputs,
-                             const std::vector<Term>& outputs,
-                             Term assume,
-                             Term constraint,
-                             std::function<std::vector<Term>(const std::vector<Term>&)> fn) const;
+  void defineOracleInterface(
+      const std::vector<Term>& inputs,
+      const std::vector<Term>& outputs,
+      Term assume,
+      Term constraint,
+      std::function<std::vector<Term>(const std::vector<Term>&)> fn) const;
   /**
    * Pop (a) level(s) from the assertion stack.
    *
