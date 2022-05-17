@@ -41,7 +41,6 @@ class Oracle
   /** Run the function on the given input */
   std::vector<Node> run(const std::vector<Node>& input) const
   {
-    std::cout << "Oracle call functional " << input << std::endl;
     return d_fn(input);
   }
   /** Get the function for this oracle */

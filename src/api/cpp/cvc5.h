@@ -4521,7 +4521,7 @@ class CVC5_EXPORT Solver
   Term declareOracleFun(const std::string& symbol,
                         const std::vector<Sort>& sorts,
                         const Sort& sort,
-                        std::function<std::vector<Term>(const std::vector<Term>&)> fn) const;
+                        std::function<Term(const std::vector<Term>&)> fn) const;
   /**
    * Define an oracle interface.
    *

@@ -7171,12 +7171,11 @@ Term Solver::declareOracleFun(const std::string& symbol,
   CVC5_API_SOLVER_CHECK_CODOMAIN_SORT(sort);
   CVC5_API_ARG_CHECK_EXPECTED(binName != "", binName);
   //////// all checks before this line
-  return declareOracleFunHelper(symbol, sorts, sort, binName);
+  //return declareOracleFunHelper(symbol, sorts, sort, binName);
   OracleBinaryCaller& obc = getOracleBinaryCaller(binName);
   return declareOracleFun(symbol, sorts, sort, [&](const
   std::vector<Term>& input) {
-    std::cout << "Run the oracle binary caller" << std::endl;
-    return obc.runOracle(input);
+    return obc.runOracleSingleOut(input);
   });
   ////////
   CVC5_API_TRY_CATCH_END;
@@ -7186,7 +7185,7 @@ Term Solver::declareOracleFun(
     const std::string& symbol,
     const std::vector<Sort>& sorts,
     const Sort& sort,
-    std::function<std::vector<Term>(const std::vector<Term>&)> fn) const
+    std::function<Term(const std::vector<Term>&)> fn) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_DOMAIN_SORTS(sorts);
@@ -7202,13 +7201,10 @@ Term Solver::declareOracleFun(
   // Wrap the terms-to-term function so that it is nodes-to-nodes. Note we
   // make the method return a vector of size one to conform to the interface
   // at the SolverEngine level.
-  d_slv->declareOracleFun(fun, [&](const std::vector<internal::Node> nodes) {
-    std::cout << "Convert to terms" << std::endl;
+  d_slv->declareOracleFun(fun, [&, fn](const std::vector<internal::Node> nodes) {
     std::vector<Term> terms = Term::nodeVectorToTerms(this, nodes);
-    std::cout << "Call on " << terms << std::endl;
-    std::vector<Term> output = fn(terms);
-    std::cout << "Convert back " << output << std::endl;
-    return Term::termVectorToNodes(output);
+    Term output = fn(terms);
+    return Term::termVectorToNodes({output});
   });
   return Term(this, fun);
   ////////

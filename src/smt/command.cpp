@@ -1215,13 +1215,11 @@ void DeclareOracleFunCommand::invoke(Solver* solver, SymbolManager* sm)
   {
     ret = d_sort;
   }
-  Term fun = solver->declareOracleFun(d_id, args, ret, d_binName);
-  /*
+  //Term fun = solver->declareOracleFun(d_id, args, ret, d_binName);
   OracleBinaryCaller& obc = sm->getOracleBinaryCaller(d_binName);
   Term fun = solver->declareOracleFun(d_id, args, ret, [&](const
   std::vector<Term>& input) { return obc.runOracleSingleOut(input);
   });
-  */
   // bind the symbol for the parser
   sm->getSymbolTable()->bind(d_id, fun);
   // mark that it will be printed in the model
