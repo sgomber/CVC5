@@ -464,19 +464,17 @@ class CVC5_EXPORT SolverEngine
   void declarePool(const Node& p, const std::vector<Node>& initValue);
 
   /**
-   * Add an oracle function to the state, also adds an oracle interface
-   * defining it, when binName is not "".
+   * Add an oracle function to the state, without an implementation.
    *
    * @param var The oracle function
-   * @param binName The name of the binary, if one exists
    */
-  void declareOracleFun(Node var, const std::string& binName = "");
+  void declareOracleFun(Node var);
   /**
    * Add an oracle function to the state, also adds an oracle interface
    * defining it.
    *
    * @param var The oracle function symbol
-   * @param fn The method for the oracle
+   * @param fn The method implementing the oracle
    */
   void declareOracleFun(
       Node var, std::function<std::vector<Node>(const std::vector<Node>&)> fn);
@@ -493,16 +491,11 @@ class CVC5_EXPORT SolverEngine
    * expected output of the oracle
    * @param assume The assumption the interface generates
    * @param constraint The constraint the interface generates
-   * @param binName The name of the external binary to call
+   * @param fn The method implementing the oracle interface
    *
    * This adds the corresponding oracle interface quantified formula as a
    * top-level assertion.
    */
-  void defineOracleInterface(const std::vector<Node>& inputs,
-                             const std::vector<Node>& outputs,
-                             Node assume,
-                             Node constraint,
-                             const std::string& binName);
   void defineOracleInterface(
       const std::vector<Node>& inputs,
       const std::vector<Node>& outputs,
@@ -1171,15 +1164,6 @@ class CVC5_EXPORT SolverEngine
    * destructed, or another SolverEngine is created.
    */
   std::unique_ptr<smt::SolverEngineScope> d_scope;
-  //!!!!!!!! temporary
-  /** get the oracle for binary name */
-  Node getOracleNode(const std::string& name);
-  /** get the oracle binary caller */
-  OracleBinaryCallerInternal& getOracleBinaryCallerInternal(
-      const std::string& name);
-  /** Map binary names to oracle binary callers */
-  std::map<std::string, std::unique_ptr<OracleBinaryCallerInternal>>
-      d_oracleBinCalls;
 }; /* class SolverEngine */
 
 /* -------------------------------------------------------------------------- */

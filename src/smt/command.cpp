@@ -1288,8 +1288,11 @@ void DefineOracleInterfaceCommand::invoke(Solver* solver, SymbolManager* sm)
 {
   try
   {
+    OracleBinaryCaller& obc = sm->getOracleBinaryCaller(d_binName);
     solver->defineOracleInterface(
-        d_inputs, d_outputs, d_assume, d_constraint, d_binName);
+        d_inputs, d_outputs, d_assume, d_constraint, [&](const
+    std::vector<Term>& input) { return obc.runOracle(input);
+    });
     d_commandStatus = CommandSuccess::instance();
   }
   catch (exception& e)

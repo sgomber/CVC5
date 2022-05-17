@@ -4463,36 +4463,6 @@ class CVC5_EXPORT Solver
                         const std::vector<Sort>& sorts,
                         const Sort& sort);
   /**
-   * Declare an oracle function with reference to a executable binary name.
-   *
-   * As described above, oracle function symbols have a different semantics
-   * with respect to ordinary declared functions.
-   *
-   * \verbatim embed:rst:leading-asterisk
-   * .. code:: smtlib
-   *
-   * (declare-oracle-fun <sym> (<sort>*) <sort> <sym>)
-   * \endverbatim
-   *
-   * Note that this command is equivalent to calling the variant of
-   * declareOracleFun having no binary name, and subsequently calling
-   * defineOracleInterface with inputs {i1, ..., in}, outputs {o},
-   * assume (= (f i1 ... in) o), constraint null, and the given binary name.
-   *
-   * @warning This method is experimental and may change in future versions.
-   *
-   * @param symbol The name of the pool
-   * @param sorts The sorts of the parameters to this function
-   * @param sort The sort of the return value of this function
-   * @param binName The name of the binary executable that implements the
-   * oracle function.
-   * @return The oracle function
-   */
-  Term declareOracleFun(const std::string& symbol,
-                        const std::vector<Sort>& sorts,
-                        const Sort& sort,
-                        const std::string& binName);
-  /**
    * Declare an oracle function with reference to an implementation.
    *
    * Oracle functions have a different semantics with respect to ordinary
@@ -4538,14 +4508,13 @@ class CVC5_EXPORT Solver
    * @param outputs The inputs to the oracle interface
    * @param assume The assumption of the oracle interface
    * @param constraint The constraint of the oracle interface
-   * @param binName The name of the binary executable associated with the
-   * oracle interface.
+   * @param fn The function that implements the oracle interface.
    */
   void defineOracleInterface(const std::vector<Term>& inputs,
                              const std::vector<Term>& outputs,
                              Term assume,
                              Term constraint,
-                             const std::string& binName) const;
+                             std::function<std::vector<Term>(const std::vector<Term>&)> fn) const;
   /**
    * Pop (a) level(s) from the assertion stack.
    *
@@ -5120,11 +5089,6 @@ class CVC5_EXPORT Solver
   Term mkCharFromStrHelper(const std::string& s) const;
   /** Get value helper, which accounts for subtyping */
   Term getValueHelper(const Term& term) const;
-  /** declareOracleFun helper */
-  Term declareOracleFunHelper(const std::string& symbol,
-                              const std::vector<Sort>& sorts,
-                              const Sort& sort,
-                              const std::string& binName) const;
 
   /**
    * Helper function that ensures that a given term is of sort real (as opposed
@@ -5152,8 +5116,6 @@ class CVC5_EXPORT Solver
    */
   Term mkTermHelper(const Op& op, const std::vector<Term>& children) const;
 
-  /** get the oracle binary caller */
-  OracleBinaryCaller& getOracleBinaryCaller(const std::string& name);
   /**
    * Synthesize n-ary function following specified syntactic constraints.
    *
@@ -5218,8 +5180,6 @@ class CVC5_EXPORT Solver
   std::unique_ptr<internal::SolverEngine> d_slv;
   /** The random number generator of this solver. */
   std::unique_ptr<internal::Random> d_rng;
-  /** Map binary names to oracle binary callers */
-  std::map<std::string, std::unique_ptr<OracleBinaryCaller>> d_oracleBinCalls;
 };
 
 }  // namespace cvc5

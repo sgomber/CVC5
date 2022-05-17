@@ -62,8 +62,6 @@ libcvc5_add_sources(
   node_value.h
   oracle_binary_caller.cpp
   oracle_binary_caller.h
-  oracle_binary_caller_internal.cpp
-  oracle_binary_caller_internal.h
   oracle.h
   oracle_caller.cpp
   oracle_caller.h

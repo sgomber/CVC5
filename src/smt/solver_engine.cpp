@@ -23,7 +23,6 @@
 #include "expr/bound_var_manager.h"
 #include "expr/node.h"
 #include "expr/node_algorithm.h"
-#include "expr/oracle_binary_caller_internal.h"
 #include "options/base_options.h"
 #include "options/expr_options.h"
 #include "options/language.h"
@@ -944,14 +943,10 @@ void SolverEngine::declarePool(const Node& p,
   qe->declarePool(p, initValue);
 }
 
-void SolverEngine::declareOracleFun(Node var, const std::string& binName)
+void SolverEngine::declareOracleFun(
+    Node var)
 {
-  finishInit();
-  d_state->doPendingPops();
-  OracleBinaryCallerInternal& obc = getOracleBinaryCallerInternal(binName);
-  declareOracleFun(var, [&](const std::vector<internal::Node> nodes) {
-    return obc.runOracle(nodes);
-  });
+  // FIXME
 }
 
 void SolverEngine::declareOracleFun(
@@ -998,19 +993,6 @@ void SolverEngine::declareOracleFun(
   defineOracleInterfaceInternal(inputs, outputs, assume, constraint, o);
 }
 
-void SolverEngine::defineOracleInterface(const std::vector<Node>& inputs,
-                                         const std::vector<Node>& outputs,
-                                         Node assume,
-                                         Node constraint,
-                                         const std::string& binName)
-{
-  finishInit();
-  d_state->doPendingPops();
-  Node o = getOracleNode(binName);
-  // define the oracle interface
-  defineOracleInterfaceInternal(inputs, outputs, assume, constraint, o);
-}
-
 void SolverEngine::defineOracleInterface(
     const std::vector<Node>& inputs,
     const std::vector<Node>& outputs,
@@ -1038,7 +1020,7 @@ void SolverEngine::defineOracleInterfaceInternal(
   // make the oracle interface quantified formula
   Node q = quantifiers::OracleEngine::mkOracleInterface(
       inputs, outputs, assume, constraint, o);
-  Trace("ajr-temp") << q << std::endl;
+  Trace("smt") << "Assert oracle interface quantifier: " << q << std::endl;
   // assert it
   assertFormula(q);
 }
@@ -2033,28 +2015,5 @@ ResourceManager* SolverEngine::getResourceManager() const
 const Printer& SolverEngine::getPrinter() const { return d_env->getPrinter(); }
 
 theory::Rewriter* SolverEngine::getRewriter() { return d_env->getRewriter(); }
-
-Node SolverEngine::getOracleNode(const std::string& name)
-{
-  OracleBinaryCallerInternal& obc = getOracleBinaryCallerInternal(name);
-  Oracle oracle([&](const std::vector<internal::Node> nodes) {
-    return obc.runOracle(nodes);
-  });
-  Node o = NodeManager::currentNM()->mkOracle(oracle);
-  return o;
-}
-
-OracleBinaryCallerInternal& SolverEngine::getOracleBinaryCallerInternal(
-    const std::string& name)
-{
-  std::map<std::string, std::unique_ptr<OracleBinaryCallerInternal>>::iterator
-      it = d_oracleBinCalls.find(name);
-  if (it != d_oracleBinCalls.end())
-  {
-    return *it->second.get();
-  }
-  d_oracleBinCalls[name].reset(new OracleBinaryCallerInternal(name));
-  return *d_oracleBinCalls[name].get();
-}
 
 }  // namespace cvc5::internal

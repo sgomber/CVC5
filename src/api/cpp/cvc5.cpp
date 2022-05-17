@@ -7156,27 +7156,15 @@ Term Solver::declareOracleFun(const std::string& symbol,
   CVC5_API_SOLVER_CHECK_DOMAIN_SORTS(sorts);
   CVC5_API_SOLVER_CHECK_CODOMAIN_SORT(sort);
   //////// all checks before this line
-  return declareOracleFunHelper(symbol, sorts, sort, "");
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
-Term Solver::declareOracleFun(const std::string& symbol,
-                              const std::vector<Sort>& sorts,
-                              const Sort& sort,
-                              const std::string& binName)
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_SOLVER_CHECK_DOMAIN_SORTS(sorts);
-  CVC5_API_SOLVER_CHECK_CODOMAIN_SORT(sort);
-  CVC5_API_ARG_CHECK_EXPECTED(binName != "", binName);
-  //////// all checks before this line
-  //return declareOracleFunHelper(symbol, sorts, sort, binName);
-  OracleBinaryCaller& obc = getOracleBinaryCaller(binName);
-  return declareOracleFun(symbol, sorts, sort, [&](const
-  std::vector<Term>& input) {
-    return obc.runOracleSingleOut(input);
-  });
+  internal::TypeNode type = *sort.d_type;
+  if (!sorts.empty())
+  {
+    std::vector<internal::TypeNode> types = Sort::sortVectorToTypeNodes(sorts);
+    type = d_nodeMgr->mkFunctionType(types, type);
+  }
+  internal::Node fun = d_nodeMgr->mkVar(symbol, type);
+  d_slv->declareOracleFun(fun);
+  return Term(this, fun);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -7211,39 +7199,25 @@ Term Solver::declareOracleFun(
   CVC5_API_TRY_CATCH_END;
 }
 
-Term Solver::declareOracleFunHelper(const std::string& symbol,
-                                    const std::vector<Sort>& sorts,
-                                    const Sort& sort,
-                                    const std::string& binName) const
-{
-  internal::TypeNode type = *sort.d_type;
-  if (!sorts.empty())
-  {
-    std::vector<internal::TypeNode> types = Sort::sortVectorToTypeNodes(sorts);
-    type = d_nodeMgr->mkFunctionType(types, type);
-  }
-  internal::Node fun = d_nodeMgr->mkVar(symbol, type);
-  d_slv->declareOracleFun(fun, binName);
-  return Term(this, fun);
-}
-
 void Solver::defineOracleInterface(const std::vector<Term>& inputs,
                                    const std::vector<Term>& outputs,
                                    Term assume,
                                    Term constraint,
-                                   const std::string& binName) const
+                             std::function<std::vector<Term>(const std::vector<Term>&)> fn) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_TERMS(inputs);
   CVC5_API_SOLVER_CHECK_TERMS(outputs);
   CVC5_API_SOLVER_CHECK_TERM(assume);
   CVC5_API_SOLVER_CHECK_TERM(constraint);
-  CVC5_API_ARG_CHECK_EXPECTED(binName != "", binName);
   //////// all checks before this line
+  // FIXME
+  /*
   std::vector<internal::Node> inputn = Term::termVectorToNodes(inputs);
   std::vector<internal::Node> outputn = Term::termVectorToNodes(outputs);
   d_slv->defineOracleInterface(
       inputn, outputn, *assume.d_node, *constraint.d_node, binName);
+      */
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -7748,18 +7722,6 @@ std::vector<Term> Solver::getSynthSolutions(
   return synthSolution;
   ////////
   CVC5_API_TRY_CATCH_END;
-}
-
-OracleBinaryCaller& Solver::getOracleBinaryCaller(const std::string& name)
-{
-  std::map<std::string, std::unique_ptr<OracleBinaryCaller>>::iterator it =
-      d_oracleBinCalls.find(name);
-  if (it != d_oracleBinCalls.end())
-  {
-    return *it->second.get();
-  }
-  d_oracleBinCalls[name].reset(new OracleBinaryCaller(this, name));
-  return *d_oracleBinCalls[name].get();
 }
 
 Statistics Solver::getStatistics() const
