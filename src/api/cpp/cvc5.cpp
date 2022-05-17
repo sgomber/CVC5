@@ -54,7 +54,6 @@
 #include "expr/node_builder.h"
 #include "expr/node_manager.h"
 #include "expr/node_manager_attributes.h"
-#include "expr/oracle_binary_caller.h"
 #include "expr/sequence.h"
 #include "expr/type_node.h"
 #include "options/base_options.h"
@@ -7099,13 +7098,16 @@ void Solver::defineOracleInterface(
   CVC5_API_SOLVER_CHECK_TERM(assume);
   CVC5_API_SOLVER_CHECK_TERM(constraint);
   //////// all checks before this line
-  // FIXME
-  /*
   std::vector<internal::Node> inputn = Term::termVectorToNodes(inputs);
   std::vector<internal::Node> outputn = Term::termVectorToNodes(outputs);
+  // Wrap the terms-to-terms function so that it is nodes-to-nodes.
   d_slv->defineOracleInterface(
-      inputn, outputn, *assume.d_node, *constraint.d_node, binName);
-      */
+      inputn, outputn, *assume.d_node, *constraint.d_node,
+      [&, fn](const std::vector<internal::Node> nodes) {
+        std::vector<Term> terms = Term::nodeVectorToTerms(this, nodes);
+        std::vector<Term> output = fn(terms);
+        return Term::termVectorToNodes(output);
+      });
   ////////
   CVC5_API_TRY_CATCH_END;
 }
