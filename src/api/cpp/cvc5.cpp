@@ -7102,7 +7102,10 @@ void Solver::defineOracleInterface(
   std::vector<internal::Node> outputn = Term::termVectorToNodes(outputs);
   // Wrap the terms-to-terms function so that it is nodes-to-nodes.
   d_slv->defineOracleInterface(
-      inputn, outputn, *assume.d_node, *constraint.d_node,
+      inputn,
+      outputn,
+      *assume.d_node,
+      *constraint.d_node,
       [&, fn](const std::vector<internal::Node> nodes) {
         std::vector<Term> terms = Term::nodeVectorToTerms(this, nodes);
         std::vector<Term> output = fn(terms);
