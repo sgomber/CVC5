@@ -118,13 +118,17 @@ void TypeMatcher::getTypes(std::vector<TypeNode>& types) const
     types.push_back(t);
   }
 }
-void TypeMatcher::getMatches(std::vector<TypeNode>& types) const
+bool TypeMatcher::getMatches(std::vector<TypeNode>& types, bool reqFull) const
 {
   types.clear();
   for (size_t i = 0, nmatch = d_match.size(); i < nmatch; i++)
   {
     if (d_match[i].isNull())
     {
+      if (reqFull)
+      {
+        return false;
+      }
       types.push_back(d_types[i]);
     }
     else
@@ -132,6 +136,7 @@ void TypeMatcher::getMatches(std::vector<TypeNode>& types) const
       types.push_back(d_match[i]);
     }
   }
+  return true;
 }
 
 }  // namespace cvc5::internal

@@ -67,7 +67,11 @@ TypeNode DatatypeConstructorTypeRule::computeType(NodeManager* nodeManager,
       }
     }
     std::vector<TypeNode> instTypes;
-    m.getMatches(instTypes);
+    if (!m.getMatches(instTypes, true))
+    {
+      throw TypeCheckingExceptionPrivate(
+          n, "could not infer type of parameterized constructor");
+    }
     TypeNode range = t.instantiate(instTypes);
     Trace("typecheck-idt") << "Return (constructor) " << range << " for " << n
                            << std::endl;

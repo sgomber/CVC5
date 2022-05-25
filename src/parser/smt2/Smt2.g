@@ -1304,7 +1304,7 @@ termNonVariable[cvc5::Term& expr, cvc5::Term& expr2]
           std::vector<cvc5::Term> cargs;
           cargs.push_back(f);
           cargs.insert(cargs.end(),args.begin(),args.end());
-          cvc5::Term c = MK_TERM(cvc5::APPLY_CONSTRUCTOR,cargs);
+          cvc5::Term c = MK_TERM(cvc5::APPLY_CONSTRUCTOR, cargs);
           cvc5::Term bvla = MK_TERM(cvc5::VARIABLE_LIST,args);
           cvc5::Term mc = MK_TERM(cvc5::MATCH_BIND_CASE, bvla, c, f3);
           matchcases.push_back(mc);

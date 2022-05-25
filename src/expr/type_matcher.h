@@ -56,7 +56,7 @@ class TypeMatcher
   /**
    * Get the match for the parameter types based on the last call to doMatching.
    */
-  void getMatches(std::vector<TypeNode>& types) const;
+  bool getMatches(std::vector<TypeNode>& types, bool reqFull = false) const;
 
  private:
   /** The parameter types */
