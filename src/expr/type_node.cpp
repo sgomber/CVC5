@@ -276,13 +276,21 @@ bool TypeNode::isWellFounded() const {
   return kind::isWellFounded(*this);
 }
 
+bool TypeNode::isInteger() const
+{
+  return getKind() == kind::TYPE_CONSTANT
+         && getConst<TypeConstant>() == INTEGER_TYPE;
+}
+
+bool TypeNode::isReal() const
+{
+  return getKind() == kind::TYPE_CONSTANT
+         && getConst<TypeConstant>() == REAL_TYPE;
+}
+
 bool TypeNode::isStringLike() const { return isString() || isSequence(); }
 
-// !!! Note that this will change to isReal() || isInteger() when subtyping is
-// eliminated
-bool TypeNode::isRealOrInt() const { return isReal(); }
-
-bool TypeNode::isSubtypeOf(TypeNode t) const {
+bool TypeNode::isInstanceOf(TypeNode t) const {
   if (*this == t)
   {
     return true;
@@ -298,10 +306,6 @@ bool TypeNode::isSubtypeOf(TypeNode t) const {
     // ABSTRACT_TYPE{k} is a subtype of types with kind k
     return getKind() == tak;
   }
-  if (isInteger())
-  {
-    return t.isReal();
-  }
   Kind k = getKind();
   if (k == kind::TYPE_CONSTANT || k != t.getKind())
   {
@@ -314,22 +318,11 @@ bool TypeNode::isSubtypeOf(TypeNode t) const {
     // different arities
     return false;
   }
-  // special case: allow subtyping for range types of functions
-  if (k == kind::FUNCTION_TYPE)
-  {
-    if (!getRangeType().isSubtypeOf(t.getRangeType()))
-    {
-      // range is not subtype, return false
-      return false;
-    }
-    // only check the arguments
-    nchild = nchild - 1;
-  }
   for (size_t i = 0; i < nchild; i++)
   {
     TypeNode c = (*this)[i];
     TypeNode tc = t[i];
-    if (c != tc)
+    if (!c.isInstanceOf(tc))
     {
       // disequal component type
       return false;
@@ -338,13 +331,7 @@ bool TypeNode::isSubtypeOf(TypeNode t) const {
   return true;
 }
 
-bool TypeNode::isComparableTo(TypeNode t) const {
-  if (*this == t)
-  {
-    return true;
-  }
-  return isSubtypeOf(t) || t.isSubtypeOf(*this);
-}
+bool TypeNode::isRealOrInt() const { return isReal() || isInteger(); }
 
 TypeNode TypeNode::getDatatypeTesterDomainType() const
 {
@@ -356,14 +343,6 @@ TypeNode TypeNode::getSequenceElementType() const
 {
   Assert(isSequence());
   return (*this)[0];
-}
-
-TypeNode TypeNode::getBaseType() const {
-  TypeNode realt = NodeManager::currentNM()->realType();
-  if (isSubtypeOf(realt)) {
-    return realt;
-  }
-  return *this;
 }
 
 std::vector<TypeNode> TypeNode::getArgTypes() const {
@@ -512,22 +491,6 @@ bool TypeNode::isParameterInstantiatedDatatype(size_t n) const
   return dt.getParameter(n) != (*this)[n + 1];
 }
 
-TypeNode TypeNode::leastCommonTypeNode(TypeNode t0, TypeNode t1){
-  if (t0 == t1)
-  {
-    return t0;
-  }
-  if (t0.isSubtypeOf(t1))
-  {
-    return t1;
-  }
-  else if (t1.isSubtypeOf(t0))
-  {
-    return t0;
-  }
-  return TypeNode();
-}
-
 /** Is this a sort kind */
 bool TypeNode::isUninterpretedSort() const
 {
@@ -610,7 +573,7 @@ Kind TypeNode::getAbstractKind() const
 
 std::string TypeNode::toString() const {
   std::stringstream ss;
-  d_nv->toStream(ss, -1, 0);
+  toStream(ss);
   return ss.str();
 }
 

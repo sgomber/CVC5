@@ -18,6 +18,7 @@
 #ifndef CVC5__API__CVC5_H
 #define CVC5__API__CVC5_H
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
@@ -1733,11 +1734,6 @@ class CVC5_EXPORT Term
    */
   Kind getKindHelper() const;
 
-  /**
-   * @return True if the current term is a constant integer that is casted into
-   *         real using the operator CAST_TO_REAL, and returns false otherwise
-   */
-  bool isCastedReal() const;
   /**
    * The internal node wrapped by this term.
    * @note This is a ``std::shared_ptr`` rather than a ``std::unique_ptr`` to
@@ -3463,8 +3459,7 @@ class CVC5_EXPORT Solver
   Term mkTerm(const Op& op, const std::vector<Term>& children = {}) const;
 
   /**
-   * Create a tuple term. Terms are automatically converted if sorts are
-   * compatible.
+   * Create a tuple term, where terms have the provided sorts.
    * @param sorts The sorts of the elements in the tuple.
    * @param terms The elements in the tuple.
    * @return The tuple Term.
@@ -4456,6 +4451,36 @@ class CVC5_EXPORT Solver
                    const Sort& sort,
                    const std::vector<Term>& initValue) const;
   /**
+   * Declare an oracle function with reference to an implementation.
+   *
+   * Oracle functions have a different semantics with respect to ordinary
+   * declared functions. In particular, for an input to be satisfiable,
+   * its oracle functions are implicitly universally quantified.
+   *
+   * This method is used in part for implementing this command:
+   *
+   * \verbatim embed:rst:leading-asterisk
+   * .. code:: smtlib
+   *
+   * (declare-oracle-fun <sym> (<sort>*) <sort> <sym>)
+   * \endverbatim
+   *
+   * In particular, the above command is implemented by constructing a
+   * function over terms that wraps a call to binary sym via a text interface.
+   *
+   * @warning This method is experimental and may change in future versions.
+   *
+   * @param symbol The name of the oracle
+   * @param sorts The sorts of the parameters to this function
+   * @param sort The sort of the return value of this function
+   * @param fn The function that implements the oracle function.
+   * @return The oracle function
+   */
+  Term declareOracleFun(const std::string& symbol,
+                        const std::vector<Sort>& sorts,
+                        const Sort& sort,
+                        std::function<Term(const std::vector<Term>&)> fn) const;
+  /**
    * Pop (a) level(s) from the assertion stack.
    *
    * SMT-LIB:
@@ -5031,14 +5056,6 @@ class CVC5_EXPORT Solver
   Term getValueHelper(const Term& term) const;
 
   /**
-   * Helper function that ensures that a given term is of sort real (as opposed
-   * to being of sort integer).
-   * @param t A term of sort integer or real.
-   * @return A term of sort real.
-   */
-  Term ensureRealSort(const Term& t) const;
-
-  /**
    * Create n-ary term of given kind. This handles the cases of left/right
    * associative operators, chainable operators, and cases when the number of
    * children exceeds the maximum arity for the kind.
@@ -5082,18 +5099,6 @@ class CVC5_EXPORT Solver
 
   /** Check whether string s is a valid decimal integer. */
   bool isValidInteger(const std::string& s) const;
-
-  /**
-   * If needed, convert this term to a given sort.
-   * 
-   * The sort of the term must be convertible into the target sort.
-   * Currently only Int to Real conversions are supported.
-   *
-   * @param t The term.
-   * @param s The target sort.
-   * @return The term wrapped into a sort conversion if needed.
-   */
-  Term ensureTermSort(const Term& t, const Sort& s) const;
 
   /**
    * Check that the given term is a valid closed term, which can be used as an
