@@ -290,7 +290,8 @@ bool TypeNode::isReal() const
 
 bool TypeNode::isStringLike() const { return isString() || isSequence(); }
 
-bool TypeNode::isInstanceOf(TypeNode t) const {
+bool TypeNode::isInstanceOf(TypeNode t) const
+{
   if (*this == t)
   {
     return true;
