@@ -18,7 +18,7 @@ echo "------- cvc5-tfa casc j11 : $bench at $2..."
 function trywith {
   limit=$1; shift;
   echo "--- Run $@ at $limit...";
-  (ulimit -S -t "$limit";$cvc5 --lang=tptp --no-type-checking --no-interactive --force-logic="UFNIRA" --dump-proofs --proof-granularity=off --proof-format=tptp --force-no-limit-cpu-while-dump "$@" $bench) 2>/dev/null |
+  (ulimit -S -t "$limit";$cvc5 --lang=tptp --no-type-checking --no-interactive --force-logic="UFNIRA" --dump-proofs --proof-format=tptp --force-no-limit-cpu-while-dump "$@" $bench) 2>/dev/null |
   (read w1 w2 w3 result w4 w5;
   case "$result" in
   Unsatisfiable) echo "$w1 $w2 $w3 $result $w4 $w5";cat;exit 0;;
@@ -28,11 +28,11 @@ function trywith {
 }
 function finishwith {
   echo "--- Run $@...";
-  $cvc5 --lang=tptp --no-type-checking --no-interactive --force-logic="UFNIRA" --dump-proofs --proof-granularity=off --proof-format=tptp --force-no-limit-cpu-while-dump "$@" $bench
+  $cvc5 --lang=tptp --no-type-checking --no-interactive --force-logic="UFNIRA" --dump-proofs --proof-format=tptp --force-no-limit-cpu-while-dump "$@" $bench
 }
 
 trywith 15 --finite-model-find --decision=internal
-trywith 15 --decision=internal --simplification=none --no-inst-no-entail --no-quant-cf --full-saturate-quant
+trywith 15 --decision=internal --simplification=none --no-inst-no-entail --no-cbqi --full-saturate-quant
 trywith 15 --no-e-matching --full-saturate-quant
 trywith 15 --cegqi-all --purify-triggers --full-saturate-quant
 finishwith --macros-quant --macros-quant-mode=all --nl-ext-tplanes --full-saturate-quant
