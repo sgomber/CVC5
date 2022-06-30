@@ -1,13 +1,15 @@
 #!/bin/bash
 
+# script is used for TFA division
+
 here=`dirname $0`
-cvc4=$here/cvc4
+cvc5=$here/cvc5
 bench="$1"
 
 file=${bench##*/}
 filename=${file%.*}
 
-echo "------- cvc4-tfa casc j10 : $bench at $2..."
+echo "------- cvc5-tfa casc j11 : $bench at $2..."
 
 # use: trywith [params..]
 # to attempt a run.  If an SZS ontology result is printed, then
@@ -16,7 +18,7 @@ echo "------- cvc4-tfa casc j10 : $bench at $2..."
 function trywith {
   limit=$1; shift;
   echo "--- Run $@ at $limit...";
-  (ulimit -S -t "$limit";$cvc4 --lang=tptp --no-type-checking --no-interactive --force-logic="UFNIRA" --dump-proofs --proof-granularity=off --proof-format=tptp --force-no-limit-cpu-while-dump "$@" $bench) 2>/dev/null |
+  (ulimit -S -t "$limit";$cvc5 --lang=tptp --no-type-checking --no-interactive --force-logic="UFNIRA" --dump-proofs --proof-granularity=off --proof-format=tptp --force-no-limit-cpu-while-dump "$@" $bench) 2>/dev/null |
   (read w1 w2 w3 result w4 w5;
   case "$result" in
   Unsatisfiable) echo "$w1 $w2 $w3 $result $w4 $w5";cat;exit 0;;
@@ -26,7 +28,7 @@ function trywith {
 }
 function finishwith {
   echo "--- Run $@...";
-  $cvc4 --lang=tptp --no-type-checking --no-interactive --force-logic="UFNIRA" --dump-proofs --proof-granularity=off --proof-format=tptp --force-no-limit-cpu-while-dump "$@" $bench
+  $cvc5 --lang=tptp --no-type-checking --no-interactive --force-logic="UFNIRA" --dump-proofs --proof-granularity=off --proof-format=tptp --force-no-limit-cpu-while-dump "$@" $bench
 }
 
 trywith 15 --finite-model-find --decision=internal
