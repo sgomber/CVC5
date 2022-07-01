@@ -101,17 +101,6 @@ void TheoryProxy::notifyInputFormulas(
   std::unordered_map<size_t, Node>::iterator it;
   for (size_t i = 0, asize = assertions.size(); i < asize; i++)
   {
-    // is the assertion a skolem definition?
-    it = skolemMap.find(i);
-    Node skolem;
-    if (it != skolemMap.end())
-    {
-      skolem = it->second;
-    }
-    if (!skolem.isNull())
-    {
-      notifySkolemDefinition(assertions[i], skolem);
-    }
     notifyAssertion(assertions[i], skolem, false);
   }
 
