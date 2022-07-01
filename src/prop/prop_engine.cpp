@@ -197,7 +197,7 @@ void PropEngine::assertInputFormulas(
     Trace("prop") << "assertFormula(" << node << ")" << std::endl;
     assertInternal(node, false, false, true);
   }
-  // then notify input formulas
+  // then notify input formulas, which adds to the list of decision engine
   d_theoryProxy->notifyInputFormulas(assertions, skolemMap);
 }
 
