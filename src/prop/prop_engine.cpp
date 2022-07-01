@@ -185,16 +185,19 @@ void PropEngine::assertInputFormulas(
     std::unordered_map<size_t, Node>& skolemMap)
 {
   Assert(!d_inCheckSat) << "Sat solver in solve()!";
+  // notify skolem definitions first
   for (const std::pair<const size_t, Node>& slem : skolemMap)
   {
     Assert(slem.first < assertions.size());
     d_theoryProxy->notifySkolemDefinition(assertions[slem.first], slem.second);
   }
+  // then assert to SAT
   for (const Node& node : assertions)
   {
     Trace("prop") << "assertFormula(" << node << ")" << std::endl;
     assertInternal(node, false, false, true);
   }
+  // then notify input formulas
   d_theoryProxy->notifyInputFormulas(assertions, skolemMap);
 }
 
