@@ -187,7 +187,7 @@ void PropEngine::assertInputFormulas(
   Assert(!d_inCheckSat) << "Sat solver in solve()!";
   for (const std::pair<const size_t, Node>& slem : skolemMap)
   {
-    Assert (slem.first<assertions.size());
+    Assert(slem.first < assertions.size());
     d_theoryProxy->notifySkolemDefinition(assertions[slem.first], slem.second);
   }
   for (const Node& node : assertions)
