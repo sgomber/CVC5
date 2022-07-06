@@ -857,8 +857,10 @@ enum class InferenceId
   STRINGS_REGISTER_TERM_ATOMIC,
   // a lemma added during term registration
   STRINGS_REGISTER_TERM,
+  // an inference for str.unit during collect model info
+  STRINGS_CMI_STR_UNIT_VALUE,
   // a split during collect model info
-  STRINGS_CMI_SPLIT,
+  STRINGS_CMI_LEN_SPLIT,
   //-------------------------------------- end strings theory
 
   //-------------------------------------- uf theory
