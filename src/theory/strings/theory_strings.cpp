@@ -466,11 +466,11 @@ bool TheoryStrings::collectModelInfoType(
         // already exists in the equality engine, e.g. (str.unit x) evaluates
         // to (str.unit 65), which rewrites to "A".
         // Our care graph computation will not split on (= x 65) given two
-        // string terms (str.unit x), "A". We handle this case here (using a
-        // model-based policy) instead.
+        // string terms (str.unit x), "A". We handle this case using a
+        // model-based policy here instead.
         if (d_equalityEngine->hasTerm(assignedValue))
         {
-          Assert(!d_equalityEngine.areEqual(assignedValue, eqc));
+          Assert(!d_equalityEngine->areEqual(assignedValue, eqc));
           Node lem = nm->mkNode(IMPLIES,
                                 nfe.d_nf[0][0].eqNode(val),
                                 nfe.d_nf[0].eqNode(assignedValue));
