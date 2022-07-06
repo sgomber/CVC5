@@ -43,9 +43,9 @@ trywith 5 --multi-trigger-cache --full-saturate-quant
 trywith 5 --prenex-quant=none --full-saturate-quant
 trywith 5 --enum-inst-interleave --decision=internal --full-saturate-quant
 trywith 5 --relevant-triggers --full-saturate-quant
-trywith 5 --finite-model-find --fmf-inst-engine --sort-inference --uf-ss-fair
+trywith 5 --finite-model-find --e-matching --sort-inference --uf-ss-fair
 trywith 10 --pre-skolem-quant=on --full-saturate-quant
-trywith 10 --qcf-vo-exp --full-saturate-quant
+trywith 10 --cbqi-vo-exp --full-saturate-quant
 trywith 10 --no-cbqi --full-saturate-quant
 finishwith --macros-quant --macros-quant-mode=all --full-saturate-quant
 # echo "% SZS status" "GaveUp for $filename"

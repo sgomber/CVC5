@@ -18,7 +18,7 @@ echo "------- cvc5-thf casc j11 : $bench at $2..."
 function trywith {
   limit=$1; shift;
   echo "--- Run $@ at $limit...";
-  (ulimit -S -t "$limit";$cvc5 --lang=tptp --uf-ho --no-type-checking --no-interactive --dump-proofs --proof-format=tptp --force-no-limit-cpu-while-dump "$@" $bench) 2>/dev/null |
+  (ulimit -S -t "$limit";$cvc5 --lang=tptp --no-type-checking --no-interactive --dump-proofs --proof-format=tptp --force-no-limit-cpu-while-dump "$@" $bench) 2>/dev/null |
   (read w1 w2 w3 result w4 w5;
   case "$result" in
   Unsatisfiable) echo "$w1 $w2 $w3 $result $w4 $w5";cat;exit 0;;
@@ -28,7 +28,7 @@ function trywith {
 }
 function finishwith {
   echo "--- Run $@...";
-  $cvc5 --lang=tptp --uf-ho --no-type-checking --no-interactive --dump-proofs --proof-format=tptp --force-no-limit-cpu-while-dump "$@" $bench
+  $cvc5 --lang=tptp --no-type-checking --no-interactive --dump-proofs --proof-format=tptp --force-no-limit-cpu-while-dump "$@" $bench
 }
 
 # designed for 120 seconds
