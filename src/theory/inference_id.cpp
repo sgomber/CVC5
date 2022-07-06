@@ -501,7 +501,8 @@ const char* toString(InferenceId i)
     case InferenceId::STRINGS_REGISTER_TERM_ATOMIC:
       return "STRINGS_REGISTER_TERM_ATOMIC";
     case InferenceId::STRINGS_REGISTER_TERM: return "STRINGS_REGISTER_TERM";
-    case InferenceId::STRINGS_CMI_STR_UNIT_VALUE: return "STRINGS_CMI_STR_UNIT_VALUE";
+    case InferenceId::STRINGS_CMI_STR_UNIT_VALUE:
+      return "STRINGS_CMI_STR_UNIT_VALUE";
     case InferenceId::STRINGS_CMI_LEN_SPLIT: return "STRINGS_CMI_LEN_SPLIT";
 
     case InferenceId::UF_BREAK_SYMMETRY: return "UF_BREAK_SYMMETRY";

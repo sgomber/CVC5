@@ -470,8 +470,10 @@ bool TheoryStrings::collectModelInfoType(
         // model-based policy) instead.
         if (d_equalityEngine->hasTerm(assignedValue))
         {
-          Assert (!d_equalityEngine.areEqual(assignedValue, eqc));
-          Node lem = nm->mkNode(IMPLIES, nfe.d_nf[0][0].eqNode(val), nfe.d_nf[0].eqNode(assignedValue));
+          Assert(!d_equalityEngine.areEqual(assignedValue, eqc));
+          Node lem = nm->mkNode(IMPLIES,
+                                nfe.d_nf[0][0].eqNode(val),
+                                nfe.d_nf[0].eqNode(assignedValue));
           // e.g. (=> (= x 65) (= (str.unit x) "A"))
           d_im.lemma(lem, InferenceId::STRINGS_CMI_STR_UNIT_VALUE);
           Trace("strings-model") << "...unit value lemma" << std::endl;
@@ -1045,7 +1047,8 @@ void TheoryStrings::eqNotifyMerge(TNode t1, TNode t2)
 }
 
 void TheoryStrings::computeCareGraph(){
-  //computing the care graph here is necessary, due to operators that take non-string arguments
+  // computing the care graph here is necessary, due to operators that take
+  // non-string arguments
   Trace("strings-cg") << "TheoryStrings::computeCareGraph(): Build term indices..." << std::endl;
   // Term index for each (type, operator) pair. We require the operator here
   // since operators are polymorphic, taking strings/sequences.
