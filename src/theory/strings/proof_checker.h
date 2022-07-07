@@ -35,7 +35,10 @@ class StringProofRuleChecker : public ProofRuleChecker
    * @param unifiedVSpt Whether we are using the unified form of variable
    * splits.
    */
-  StringProofRuleChecker(uint32_t alphaCard, bool unifiedVSpt) : d_alphaCard(alphaCard), d_unifiedVSpt(unifiedVSpt) {}
+  StringProofRuleChecker(uint32_t alphaCard, bool unifiedVSpt)
+      : d_alphaCard(alphaCard), d_unifiedVSpt(unifiedVSpt)
+  {
+  }
   ~StringProofRuleChecker() {}
 
   /** Register all rules owned by this rule checker in pc. */

@@ -66,7 +66,8 @@ TheoryStrings::TheoryStrings(Env& env, OutputChannel& out, Valuation valuation)
       d_im(env, *this, d_state, d_termReg, d_extTheory, d_statistics),
       d_extTheory(env, d_extTheoryCb, d_im),
       // the checker depends on the cardinality of the alphabet
-      d_checker(d_termReg.getAlphabetCardinality(), options().strings.stringUnifiedVSpt),
+      d_checker(d_termReg.getAlphabetCardinality(),
+                options().strings.stringUnifiedVSpt),
       d_bsolver(env, d_state, d_im, d_termReg),
       d_csolver(env, d_state, d_im, d_termReg, d_bsolver),
       d_esolver(env,

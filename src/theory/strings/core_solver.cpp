@@ -1578,8 +1578,13 @@ void CoreSolver::processSimpleNEq(NormalForm& nfi,
           Node xcv =
               nm->mkNode(STRING_CONCAT, isRev ? strb : nc, isRev ? nc : strb);
           std::vector<Node> newSkolems;
-          iinfo.d_conc = getConclusion(
-              xcv, stra, PfRule::CONCAT_CPROP, isRev, options().strings.stringUnifiedVSpt, skc, newSkolems);
+          iinfo.d_conc = getConclusion(xcv,
+                                       stra,
+                                       PfRule::CONCAT_CPROP,
+                                       isRev,
+                                       options().strings.stringUnifiedVSpt,
+                                       skc,
+                                       newSkolems);
           Assert(newSkolems.size() == 1);
           iinfo.d_skolems[LENGTH_SPLIT].push_back(newSkolems[0]);
           iinfo.setId(InferenceId::STRINGS_SSPLIT_CST_PROP);
@@ -1595,8 +1600,13 @@ void CoreSolver::processSimpleNEq(NormalForm& nfi,
       // E.g. "abc" ++ ... = nc ++ ... ---> nc = "a" ++ k
       SkolemCache* skc = d_termReg.getSkolemCache();
       std::vector<Node> newSkolems;
-      iinfo.d_conc = getConclusion(
-          nc, nfcv[index], PfRule::CONCAT_CSPLIT, isRev, options().strings.stringUnifiedVSpt, skc, newSkolems);
+      iinfo.d_conc = getConclusion(nc,
+                                   nfcv[index],
+                                   PfRule::CONCAT_CSPLIT,
+                                   isRev,
+                                   options().strings.stringUnifiedVSpt,
+                                   skc,
+                                   newSkolems);
       NormalForm::getExplanationForPrefixEq(
           nfi, nfj, index, index, iinfo.d_premises);
       iinfo.d_premises.push_back(expNonEmpty);
@@ -1692,21 +1702,36 @@ void CoreSolver::processSimpleNEq(NormalForm& nfi,
     if (lentTestSuccess == -1)
     {
       iinfo.setId(InferenceId::STRINGS_SSPLIT_VAR);
-      iinfo.d_conc =
-          getConclusion(x, y, PfRule::CONCAT_SPLIT, isRev, options().strings.stringUnifiedVSpt, skc, newSkolems);
+      iinfo.d_conc = getConclusion(x,
+                                   y,
+                                   PfRule::CONCAT_SPLIT,
+                                   isRev,
+                                   options().strings.stringUnifiedVSpt,
+                                   skc,
+                                   newSkolems);
     }
     else if (lentTestSuccess == 0)
     {
       iinfo.setId(InferenceId::STRINGS_SSPLIT_VAR_PROP);
-      iinfo.d_conc =
-          getConclusion(x, y, PfRule::CONCAT_LPROP, isRev, options().strings.stringUnifiedVSpt, skc, newSkolems);
+      iinfo.d_conc = getConclusion(x,
+                                   y,
+                                   PfRule::CONCAT_LPROP,
+                                   isRev,
+                                   options().strings.stringUnifiedVSpt,
+                                   skc,
+                                   newSkolems);
     }
     else
     {
       Assert(lentTestSuccess == 1);
       iinfo.setId(InferenceId::STRINGS_SSPLIT_VAR_PROP);
-      iinfo.d_conc =
-          getConclusion(y, x, PfRule::CONCAT_LPROP, isRev, options().strings.stringUnifiedVSpt, skc, newSkolems);
+      iinfo.d_conc = getConclusion(y,
+                                   x,
+                                   PfRule::CONCAT_LPROP,
+                                   isRev,
+                                   options().strings.stringUnifiedVSpt,
+                                   skc,
+                                   newSkolems);
     }
     // add the length constraint(s) as the last antecedant
     Node lc = utils::mkAnd(lcVec);
