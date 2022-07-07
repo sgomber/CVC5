@@ -115,8 +115,6 @@ Node SkolemCache::mkTypedSkolemCached(
     }
     break;
     // these are eliminated by normalizeStringSkolem
-    case SK_ID_V_SPT:
-    case SK_ID_V_SPT_REV:
     case SK_ID_VC_SPT:
     case SK_ID_VC_SPT_REV:
     case SK_ID_C_SPT:
@@ -184,15 +182,15 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
     b = nm->mkNode(
         ADD, nm->mkNode(STRING_LENGTH, pre), nm->mkNode(STRING_LENGTH, b));
   }
-  else if (id == SK_ID_V_SPT || id == SK_ID_C_SPT)
+  else if (id == SK_ID_C_SPT)
   {
-    // SK_ID_*_SPT(x, y) ---> SK_SUFFIX_REM(x, (str.len y))
+    // SK_ID_C_SPT(x, y) ---> SK_SUFFIX_REM(x, (str.len y))
     id = SK_SUFFIX_REM;
     b = nm->mkNode(STRING_LENGTH, b);
   }
-  else if (id == SK_ID_V_SPT_REV || id == SK_ID_C_SPT_REV)
+  else if (id == SK_ID_C_SPT_REV)
   {
-    // SK_ID_*_SPT_REV(x, y) ---> SK_PREFIX(x, (- (str.len x) (str.len y)))
+    // SK_ID_C_SPT_REV(x, y) ---> SK_PREFIX(x, (- (str.len x) (str.len y)))
     id = SK_PREFIX;
     b = nm->mkNode(
         SUB, nm->mkNode(STRING_LENGTH, a), nm->mkNode(STRING_LENGTH, b));
@@ -254,7 +252,7 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
                     : utils::mkSuffix(b, la);
     id = SK_PURIFY;
     // SK_ID_V_UNIFIED_SPT(x,y) --->
-    //   ite(len(x) >= len(y), substr(x,0,str.len(y)), substr(y,0,str.len(x))
+    //   ite(len(x) >= len(y), substr(x,0,str.len(y)), substr(y,0,str.len(x)))
     a = nm->mkNode(ITE, nm->mkNode(GEQ, la, lb), ta, tb);
     b = Node::null();
   }

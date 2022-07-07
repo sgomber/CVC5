@@ -32,11 +32,9 @@ class StringProofRuleChecker : public ProofRuleChecker
  public:
   /**
    * @param alphaCard The cardinality of the alphabet
-   * @param unifiedVSpt Whether we are using the unified form of variable
-   * splits.
    */
-  StringProofRuleChecker(uint32_t alphaCard, bool unifiedVSpt)
-      : d_alphaCard(alphaCard), d_unifiedVSpt(unifiedVSpt)
+  StringProofRuleChecker(uint32_t alphaCard)
+      : d_alphaCard(alphaCard)
   {
   }
   ~StringProofRuleChecker() {}
@@ -51,8 +49,6 @@ class StringProofRuleChecker : public ProofRuleChecker
                      const std::vector<Node>& args) override;
   /** cardinality of the alphabet, which impacts certain inferences */
   uint32_t d_alphaCard;
-  /** Whether we are using the unified form of variable splits */
-  bool d_unifiedVSpt;
 };
 
 }  // namespace strings
