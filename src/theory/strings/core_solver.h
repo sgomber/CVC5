@@ -234,6 +234,8 @@ class CoreSolver : protected EnvObj
    * @param y The second term
    * @param rule The proof rule whose conclusion we are asking for
    * @param isRev Whether the equation is in a reverse direction
+   * @param unifiedVSpt Whether we are using the unified form of variable
+   * splitting
    * @param skc The skolem cache (to allocate fresh variables if necessary)
    * @param newSkolems The vector to add new variables to
    * @return The conclusion of the inference.
@@ -242,6 +244,7 @@ class CoreSolver : protected EnvObj
                             Node y,
                             PfRule rule,
                             bool isRev,
+                            bool unifiedVSpt,
                             SkolemCache* skc,
                             std::vector<Node>& newSkolems);
   /**
