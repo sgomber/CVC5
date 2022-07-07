@@ -33,10 +33,7 @@ class StringProofRuleChecker : public ProofRuleChecker
   /**
    * @param alphaCard The cardinality of the alphabet
    */
-  StringProofRuleChecker(uint32_t alphaCard)
-      : d_alphaCard(alphaCard)
-  {
-  }
+  StringProofRuleChecker(uint32_t alphaCard) : d_alphaCard(alphaCard) {}
   ~StringProofRuleChecker() {}
 
   /** Register all rules owned by this rule checker in pc. */

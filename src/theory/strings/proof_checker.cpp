@@ -291,8 +291,7 @@ Node StringProofRuleChecker::checkInternal(PfRule id,
     // use skolem cache
     SkolemCache skc(nullptr);
     std::vector<Node> newSkolems;
-    Node conc = CoreSolver::getConclusion(
-        t0, s0, id, isRev, &skc, newSkolems);
+    Node conc = CoreSolver::getConclusion(t0, s0, id, isRev, &skc, newSkolems);
     return conc;
   }
   else if (id == PfRule::STRING_DECOMPOSE)
