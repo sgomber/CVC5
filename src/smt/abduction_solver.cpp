@@ -66,12 +66,10 @@ bool AbductionSolver::getAbduct(const std::vector<Node>& axioms,
   Trace("sygus-abduct") << "SolverEngine::getAbduct: made conjecture : "
                         << aconj << ", solving for " << d_sssf << std::endl;
   // we generate a new smt engine to do the abduction query
-  initializeSubsolver(d_subsolver, d_env);
-  // get the logic
-  LogicInfo l = d_subsolver->getLogicInfo().getUnlockedCopy();
-  // enable everything needed for sygus
-  l.enableSygus();
-  d_subsolver->setLogic(l);
+  Options subOptions;
+  subOptions.copyValues(d_env.getOriginalOptions());
+  subOptions.writeQuantifiers().sygus = true;
+  initializeSubsolver(d_subsolver, subOptions, logicInfo());
   // assert the abduction query
   d_subsolver->assertFormula(aconj);
   d_axioms = axioms;
