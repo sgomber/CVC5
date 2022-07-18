@@ -936,8 +936,11 @@ bool SetDefaults::incompatibleWithProofs(Options& opts,
     // functions are incompatible with our equality proofs. Moreover, enabling
     // proofs for sygus (sub)solvers is irrelevant, since they are not given
     // check-sat queries.
-    reason << "sygus";
-    return true;
+    if (opts.proofMode==Options::ProofMode::FULL)
+    {
+      reason << "sygus";
+      return true;
+    }
   }
   // options that are automatically set to support proofs
   if (opts.bv.bvAssertInput)
