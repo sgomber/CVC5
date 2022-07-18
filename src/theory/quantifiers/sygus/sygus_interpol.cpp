@@ -338,7 +338,10 @@ bool SygusInterpol::solveInterpolation(const std::string& name,
   d_itp = mkPredicate(name);
   mkSygusConjecture(d_itp, axioms, conj);
 
-  initializeSubsolver(d_subSolver, d_env);
+  Options subOptions;
+  subOptions.copyValues(d_env.getOriginalOptions());
+  subOptions.writeQuantifiers().sygus = true;
+  initializeSubsolver(d_subSolver, subOptions, logicInfo());
   // get the logic
   LogicInfo l = d_subSolver->getLogicInfo().getUnlockedCopy();
   // enable everything needed for sygus

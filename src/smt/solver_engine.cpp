@@ -1391,12 +1391,14 @@ std::vector<Node> SolverEngine::reduceUnsatCore(const std::vector<Node>& core)
   for (const Node& skip : core)
   {
     std::unique_ptr<SolverEngine> coreChecker;
-    initializeSubsolver(coreChecker, *d_env.get());
-    coreChecker->setLogic(getLogicInfo());
-    coreChecker->getOptions().writeSmt().checkUnsatCores = false;
+    Options subOptions;
+    subOptions.copyValues(d_env->getOriginalOptions());
+    subOptions.writeBase().incrementalSolving = false;
+    subOptions.writeSmt().checkUnsatCores = false;
     // disable all proof options
-    coreChecker->getOptions().writeSmt().produceProofs = false;
-    coreChecker->getOptions().writeSmt().checkProofs = false;
+    subOptions.writeSmt().produceProofs = false;
+    subOptions.writeSmt().checkProofs = false;
+    initializeSubsolver(coreChecker, subOptions, getLogicInfo());
 
     for (const Node& ucAssertion : core)
     {
