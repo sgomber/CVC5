@@ -35,8 +35,9 @@ class SetDefaults : protected EnvObj
    * internal subsolver (see SolverEngine::isInternalSubsolver).
    */
   SetDefaults(Env& env, bool isInternalSubsolver);
-  
+
   void setDefaults(Env& env);
+
  private:
   /**
    * The purpose of this method is to set the default options and update the
