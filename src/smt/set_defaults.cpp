@@ -63,7 +63,8 @@ void SetDefaults::setDefaults(LogicInfo& logic, Options& opts)
 
 void SetDefaults::setDefaultsPre(Options& opts)
 {
-  Trace("ajr-temp") << "Proofs : " << opts.writeSmt().produceProofs << std::endl;
+  Trace("ajr-temp") << "Proofs : " << opts.writeSmt().produceProofs
+                    << std::endl;
   // implied options
   if (opts.smt.debugCheckModels)
   {
@@ -937,7 +938,7 @@ bool SetDefaults::incompatibleWithProofs(Options& opts,
     // functions are incompatible with our equality proofs. Moreover, enabling
     // proofs for sygus (sub)solvers is irrelevant, since they are not given
     // check-sat queries.
-    if (opts.smt.proofMode==options::ProofMode::FULL)
+    if (opts.smt.proofMode == options::ProofMode::FULL)
     {
       reason << "sygus";
       return true;
