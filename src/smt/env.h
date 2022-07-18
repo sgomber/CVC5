@@ -45,6 +45,7 @@ enum class OutputTag;
 using OutputTag = options::OutputTag;
 
 namespace smt {
+class SetDefaults;
 class PfManager;
 }
 
@@ -63,7 +64,7 @@ class TrustSubstitutionMap;
 class Env
 {
   friend class SolverEngine;
-  friend class SetDefaults;
+  friend class smt::SetDefaults;
   friend class smt::PfManager;
 
  public:
@@ -334,7 +335,7 @@ class Env
    * The referenced objects holds the options as initially parsed before being
    * changed, e.g., by setDefaults().
    */
-  const Options* d_originalOptions;
+  Options d_originalOptions;
   /** Manager for limiting time and abstract resource usage. */
   std::unique_ptr<ResourceManager> d_resourceManager;
   /** The theory that owns the uninterpreted sort. */

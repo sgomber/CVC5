@@ -129,7 +129,7 @@ StatisticsRegistry& Env::getStatisticsRegistry()
 
 const Options& Env::getOptions() const { return d_options; }
 
-const Options& Env::getOriginalOptions() const { return *d_originalOptions; }
+const Options& Env::getOriginalOptions() const { return d_originalOptions; }
 
 ResourceManager* Env::getResourceManager() const
 {

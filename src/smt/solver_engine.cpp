@@ -186,7 +186,7 @@ void SolverEngine::finishInit()
   // Call finish init on the set defaults module. This inializes the logic
   // and the best default options based on our heuristics.
   SetDefaults sdefaults(*d_env, d_isInternalSubsolver);
-  sdefaults.setDefaults(d_env->d_logic, getOptions());
+  sdefaults.setDefaults(*d_env);
 
   ProofNodeManager* pnm = nullptr;
   if (d_env->getOptions().smt.produceProofs)
