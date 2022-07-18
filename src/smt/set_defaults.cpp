@@ -51,6 +51,12 @@ SetDefaults::SetDefaults(Env& env, bool isInternalSubsolver)
 {
 }
 
+void SetDefaults::setDefaults(Env& env)
+{
+  env.d_originalOptions.copyValues(env.d_options);
+  setDefaults(env.d_options, env.d_logicInfo);
+}
+
 void SetDefaults::setDefaults(LogicInfo& logic, Options& opts)
 {
   // initial changes that are independent of logic, and may impact the logic

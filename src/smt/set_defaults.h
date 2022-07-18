@@ -35,6 +35,9 @@ class SetDefaults : protected EnvObj
    * internal subsolver (see SolverEngine::isInternalSubsolver).
    */
   SetDefaults(Env& env, bool isInternalSubsolver);
+  
+  void setDefaults(Env& env);
+ private:
   /**
    * The purpose of this method is to set the default options and update the
    * logic info for an SMT engine.
@@ -46,7 +49,6 @@ class SetDefaults : protected EnvObj
    */
   void setDefaults(LogicInfo& logic, Options& opts);
 
- private:
   //------------------------- utility methods
   /**
    * Determine whether we will be solving a SyGuS problem.

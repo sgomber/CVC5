@@ -63,6 +63,7 @@ class TrustSubstitutionMap;
 class Env
 {
   friend class SolverEngine;
+  friend class SetDefaults;
   friend class smt::PfManager;
 
  public:
