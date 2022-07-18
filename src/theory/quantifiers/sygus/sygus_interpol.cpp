@@ -339,7 +339,7 @@ bool SygusInterpol::solveInterpolation(const std::string& name,
   mkSygusConjecture(d_itp, axioms, conj);
 
   Options subOptions;
-  subOptions.copyValues(d_env.getOriginalOptions());
+  subOptions.copyValues(d_env.getOptions());
   subOptions.writeQuantifiers().sygus = true;
   initializeSubsolver(d_subSolver, subOptions, logicInfo());
   // get the logic

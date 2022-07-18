@@ -63,7 +63,7 @@ void initializeSubsolver(std::unique_ptr<SolverEngine>& smte,
                          unsigned long timeout)
 {
   initializeSubsolver(
-      smte, env.getOriginalOptions(), env.getLogicInfo(), needsTimeout, timeout);
+      smte, env.getOptions(), env.getLogicInfo(), needsTimeout, timeout);
   // set up separation logic heap if necessary
   TypeNode sepLocType, sepDataType;
   if (env.getSepHeapTypes(sepLocType, sepDataType))
