@@ -15,12 +15,12 @@
 
 #include "preprocessing/passes/sygus_inference.h"
 
+#include "options/smt_options.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/preprocessing_pass_context.h"
 #include "smt/smt_statistics_registry.h"
 #include "smt/solver_engine.h"
 #include "smt/solver_engine_scope.h"
-#include "options/smt_options.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/quantifiers_preprocess.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
