@@ -20,6 +20,7 @@
 #include "smt/smt_statistics_registry.h"
 #include "smt/solver_engine.h"
 #include "smt/solver_engine_scope.h"
+#include "options/smt_options.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/quantifiers_preprocess.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
@@ -296,7 +297,11 @@ bool SygusInference::solveSygus(const std::vector<Node>& assertions,
 
   // make a separate smt call
   std::unique_ptr<SolverEngine> rrSygus;
-  theory::initializeSubsolver(rrSygus, options(), logicInfo());
+  Options subOptions;
+  subOptions.copyValues(options());
+  subOptions.writeQuantifiers().sygus = true;
+  subOptions.writeSmt().produceProofs = false;
+  theory::initializeSubsolver(rrSygus, subOptions, logicInfo());
   rrSygus->assertFormula(body);
   Trace("sygus-infer") << "*** Check sat..." << std::endl;
   Result r = rrSygus->checkSat();

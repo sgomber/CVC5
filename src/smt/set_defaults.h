@@ -49,10 +49,6 @@ class SetDefaults : protected EnvObj
  private:
   //------------------------- utility methods
   /**
-   * Determine whether we will be solving a SyGuS problem.
-   */
-  bool isSygus(const Options& opts) const;
-  /**
    * Determine whether we will be using SyGuS.
    */
   bool usesSygus(const Options& opts) const;

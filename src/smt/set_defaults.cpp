@@ -175,6 +175,10 @@ void SetDefaults::setDefaultsPre(Options& opts)
       throw OptionException(ss.str());
     }
   }
+  if (opts.quantifiers.sygusRewSynthInput)
+  {
+    opts.writeQuantifiers().sygus = true;
+  }
   if (d_isInternalSubsolver)
   {
     // these options must be disabled on internal subsolvers, as they are
@@ -190,14 +194,14 @@ void SetDefaults::finalizeLogic(LogicInfo& logic, Options& opts) const
 {
   if (opts.quantifiers.sygusInstWasSetByUser)
   {
-    if (isSygus(opts))
+    if (opts.quantifiers.sygus)
     {
       throw OptionException(std::string(
           "SyGuS instantiation quantifiers module cannot be enabled "
           "for SyGuS inputs."));
     }
   }
-  else if (!isSygus(opts) && logic.isQuantified()
+  else if (!opts.quantifiers.sygus && logic.isQuantified()
            && (logic.isPure(THEORY_FP)
                || (logic.isPure(THEORY_ARITH) && !logic.isLinear()
                    && logic.areIntegersUsed()))
@@ -866,28 +870,9 @@ void SetDefaults::setDefaultsPost(const LogicInfo& logic, Options& opts) const
   }
 }
 
-bool SetDefaults::isSygus(const Options& opts) const
-{
-  if (opts.quantifiers.sygus)
-  {
-    return true;
-  }
-  if (!d_isInternalSubsolver)
-  {
-    if (opts.smt.produceAbducts || opts.smt.interpolants
-        || opts.quantifiers.sygusInference
-        || opts.quantifiers.sygusRewSynthInput)
-    {
-      // since we are trying to recast as sygus, we assume the input is sygus
-      return true;
-    }
-  }
-  return false;
-}
-
 bool SetDefaults::usesSygus(const Options& opts) const
 {
-  if (isSygus(opts))
+  if (opts.quantifiers.sygus)
   {
     return true;
   }
@@ -930,7 +915,7 @@ bool SetDefaults::incompatibleWithProofs(Options& opts,
     reason << "global-negate";
     return true;
   }
-  if (isSygus(opts))
+  if (opts.quantifiers.sygus)
   {
     // we don't support proofs with SyGuS. One issue is that SyGuS evaluation
     // functions are incompatible with our equality proofs. Moreover, enabling
@@ -1429,7 +1414,7 @@ void SetDefaults::setDefaultsQuantifiers(const LogicInfo& logic,
 
   // apply sygus options
   // if we are attempting to rewrite everything to SyGuS, use sygus()
-  if (isSygus(opts))
+  if (opts.quantifiers.sygus)
   {
     std::stringstream reasonNoSygus;
     if (incompatibleWithSygus(opts, reasonNoSygus))
