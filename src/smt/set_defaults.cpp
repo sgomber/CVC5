@@ -1556,11 +1556,6 @@ void SetDefaults::setDefaultsQuantifiers(const LogicInfo& logic,
 
 void SetDefaults::setDefaultsSygus(Options& opts) const
 {
-  if (!opts.quantifiers.sygus)
-  {
-    notifyModifyOption("sygus", "true", "");
-    opts.writeQuantifiers().sygus = true;
-  }
   // must use Ferrante/Rackoff for real arithmetic
   if (!opts.quantifiers.cegqiMidpointWasSetByUser)
   {

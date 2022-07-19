@@ -343,11 +343,6 @@ bool SygusInterpol::solveInterpolation(const std::string& name,
   subOptions.writeQuantifiers().sygus = true;
   subOptions.writeSmt().produceProofs = false;
   initializeSubsolver(d_subSolver, subOptions, logicInfo());
-  // get the logic
-  LogicInfo l = d_subSolver->getLogicInfo().getUnlockedCopy();
-  // enable everything needed for sygus
-  l.enableSygus();
-  d_subSolver->setLogic(l);
 
   for (const Node& var : d_vars)
   {
