@@ -63,8 +63,6 @@ void SetDefaults::setDefaults(LogicInfo& logic, Options& opts)
 
 void SetDefaults::setDefaultsPre(Options& opts)
 {
-  Trace("ajr-temp") << "Proofs : " << opts.writeSmt().produceProofs
-                    << std::endl;
   // implied options
   if (opts.smt.debugCheckModels)
   {

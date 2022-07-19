@@ -69,7 +69,7 @@ bool AbductionSolver::getAbduct(const std::vector<Node>& axioms,
   Options subOptions;
   subOptions.copyValues(d_env.getOptions());
   subOptions.writeQuantifiers().sygus = true;
-  subOptions.writeQuantifiers().produceProofs = false;
+  subOptions.writeSmt().produceProofs = false;
   // we generate a new smt engine to do the abduction query
   initializeSubsolver(d_subsolver, subOptions, logicInfo());
   // get the logic
