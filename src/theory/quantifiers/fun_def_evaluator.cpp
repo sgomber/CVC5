@@ -55,11 +55,12 @@ Node FunDefEvaluator::evaluateDefinitions(Node n)
 {
   Trace("fd-eval") << "FunDefEvaluator: evaluateDefinitions " << n << std::endl;
   Node curr = n;
-  for (size_t i=0; i<options().quantifiers.sygusRecFunEvalLimit; i++)
+  for (size_t i = 0; i < options().quantifiers.sygusRecFunEvalLimit; i++)
   {
     // rewrite curr
     curr = rewrite(curr);
-    Trace("fd-eval-debug") << "...rewritten (" << i << "):" << curr << std::endl;
+    Trace("fd-eval-debug") << "...rewritten (" << i << "):" << curr
+                           << std::endl;
     // if constant, we are done
     if (curr.isConst())
     {
@@ -74,10 +75,7 @@ Node FunDefEvaluator::evaluateDefinitions(Node n)
   return n;
 }
 
-bool FunDefEvaluator::shouldTraverse(Node n)
-{
-  return !n.isClosure();
-}
+bool FunDefEvaluator::shouldTraverse(Node n) { return !n.isClosure(); }
 
 Node FunDefEvaluator::postConvert(Node n)
 {

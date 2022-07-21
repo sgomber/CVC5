@@ -22,8 +22,8 @@
 #include <vector>
 
 #include "expr/node.h"
-#include "smt/env_obj.h"
 #include "expr/node_converter.h"
+#include "smt/env_obj.h"
 
 namespace cvc5::internal {
 namespace theory {
