@@ -2134,17 +2134,17 @@ constructorDef[bool isTermType, cvc5::DatatypeDecl& type]
       ctor = new cvc5::DatatypeConstructorDecl(
           SOLVER->mkDatatypeConstructorDecl(id));
     }
-    ( LPAREN_TOK 
-       { !isTermType }?( symbol[id,CHECK_NONE,SYM_SORT] sortSymbol[t] )
-       { isTermType }?( sortSymbol[t] {
+    ( { isTermType }?( sortSymbol[t] {
         // make an arbitrary name
         std::stringstream ss;
         ss << "@" << type.getName() << "_" << index;
-        id = ss.str();
         index++;
-       })
+        ctor->addSelector(ss.str(), t);
+       })*
+    | { !isTermType }?( LPAREN_TOK
+        symbol[id,CHECK_NONE,SYM_SORT] sortSymbol[t]
        { ctor->addSelector(id, t); }
-       RPAREN_TOK )*
+       RPAREN_TOK )* )
     {
       type.addConstructor(*ctor);
       delete ctor;
