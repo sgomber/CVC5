@@ -75,7 +75,22 @@ Node FunDefEvaluator::evaluateDefinitions(Node n)
   return n;
 }
 
-bool FunDefEvaluator::shouldTraverse(Node n) { return true; }
+Node FunDefEvaluator::preConvert(Node n)
+{
+  // must rename variables to ensure variable shadowing issues don't arise
+  // when evaluating recursive functions with nested quantifiers
+  if (n.isClosure())
+  {
+    std::vector<Node> vars(n[0].begin(), n[0].end());
+    std::vector<Node> subs;
+    for (const Node& v : vars)
+    {
+      subs.push_back(nm->mkBoundVar(v.getType()));
+    }
+    return n.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
+  }
+  return n;
+}
 
 Node FunDefEvaluator::postConvert(Node n)
 {

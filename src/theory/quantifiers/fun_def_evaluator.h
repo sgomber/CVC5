@@ -76,8 +76,8 @@ class FunDefEvaluator : public NodeConverter, protected EnvObj
   std::map<Node, FunDefInfo> d_funDefMap;
   /** list of all definitions */
   std::vector<Node> d_funDefs;
-  /** Should we traverse n? */
-  bool shouldTraverse(Node n) override;
+  /** Pre-convert method */
+  Node preConvert(Node n) override;
   /** Post-convert method */
   Node postConvert(Node n) override;
 };
