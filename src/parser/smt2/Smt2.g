@@ -961,7 +961,7 @@ extendedCommand[std::unique_ptr<cvc5::Command>* cmd]
     )
   ;
 
-datatypeDefCommand[bool isCo, std::unique_ptr<cvc5::Command>* cmd, bool isTermType]
+datatypeDefCommand[bool isCo, bool isTermType, std::unique_ptr<cvc5::Command>* cmd]
 @declarations {
   std::vector<cvc5::DatatypeDecl> dts;
   std::string name;
@@ -974,10 +974,10 @@ datatypeDefCommand[bool isCo, std::unique_ptr<cvc5::Command>* cmd, bool isTermTy
    dnames.push_back(name);
    arities.push_back(-1);
  }
- datatypesDef[isCo, dnames, arities, cmd]
+ datatypesDef[isCo, isTermType, dnames, arities, cmd]
  ;
 
-datatypesDefCommand[bool isCo, std::unique_ptr<cvc5::Command>* cmd]
+datatypesDefCommand[bool isCo, bool isTermType, std::unique_ptr<cvc5::Command>* cmd]
 @declarations {
   std::vector<cvc5::DatatypeDecl> dts;
   std::string name;
@@ -995,7 +995,7 @@ datatypesDefCommand[bool isCo, std::unique_ptr<cvc5::Command>* cmd]
   )*
   RPAREN_TOK
   LPAREN_TOK
-  datatypesDef[isCo, dnames, arities, cmd]
+  datatypesDef[isCo, isTermType, dnames, arities, cmd]
   RPAREN_TOK
   ;
 
@@ -1008,6 +1008,7 @@ datatypesDefCommand[bool isCo, std::unique_ptr<cvc5::Command>* cmd]
  * given in the preamble of that command and thus is known prior to this call.
  */
 datatypesDef[bool isCo,
+             bool isTermType,
              const std::vector<std::string>& dnames,
              const std::vector<int>& arities,
              std::unique_ptr<cvc5::Command>* cmd]
@@ -1062,7 +1063,7 @@ datatypesDef[bool isCo,
         dts.push_back(SOLVER->mkDatatypeDecl(dnames[dts.size()], params, isCo));
       }
       LPAREN_TOK
-      ( LPAREN_TOK constructorDef[dts.back()] RPAREN_TOK )+
+      ( LPAREN_TOK constructorDef[isTermType, dts.back()] RPAREN_TOK )+
       RPAREN_TOK { PARSER_STATE->popScope(); }
     | { // if the arity was fixed by prelude and is not equal to 0
         if( arities[dts.size()]>0 ){
@@ -1078,7 +1079,7 @@ datatypesDef[bool isCo,
                                              params,
                                              isCo));
       }
-      ( LPAREN_TOK constructorDef[dts.back()] RPAREN_TOK )+
+      ( LPAREN_TOK constructorDef[isTermType, dts.back()] RPAREN_TOK )+
     )
     RPAREN_TOK
     )+
@@ -2100,57 +2101,54 @@ nonemptyNumeralList[std::vector<uint32_t>& numerals]
     )+
   ;
 
-/**
- * Parses a datatype definition
- */
-datatypeDef[bool isCo, std::vector<cvc5::DatatypeDecl>& datatypes,
-            std::vector< cvc5::Sort >& params]
+/** Parses a datatype definition */
+datatypeDef[bool isCo, 
+            bool isTermType,
+            std::vector<cvc5::DatatypeDecl>& datatypes,
+            std::vector<cvc5::Sort>& params]
 @init {
   std::string id;
 }
-    /* This really needs to be CHECK_NONE, or mutually-recursive
-     * datatypes won't work, because this type will already be
-     * "defined" as an unresolved type; don't worry, we check
-     * below. */
-  : symbol[id,CHECK_NONE,SYM_SORT] { PARSER_STATE->pushScope(); }
-    {
+  : symbol[id,CHECK_NONE,SYM_SORT] { 
+      PARSER_STATE->pushScope();
       datatypes.push_back(SOLVER->mkDatatypeDecl(id, params, isCo));
     }
-    ( LPAREN_TOK constructorDef[datatypes.back()] RPAREN_TOK )+
+    ( LPAREN_TOK 
+      constructorDef[isTermType, datatypes.back()]
+      RPAREN_TOK )+
     { PARSER_STATE->popScope(); }
   ;
 
 /**
- * Parses a constructor defintion for type
+ * Parses a constructor defintion for datatype
  */
-constructorDef[cvc5::DatatypeDecl& type]
+constructorDef[bool isTermType, cvc5::DatatypeDecl& type]
 @init {
   std::string id;
+  cvc5::Sort t;
   cvc5::DatatypeConstructorDecl* ctor = NULL;
+  size_t index = 0;
 }
   : symbol[id,CHECK_NONE,SYM_VARIABLE]
     {
       ctor = new cvc5::DatatypeConstructorDecl(
           SOLVER->mkDatatypeConstructorDecl(id));
     }
-    ( LPAREN_TOK selector[*ctor] RPAREN_TOK )*
-    { // make the constructor
+    ( LPAREN_TOK 
+       { !isTermType }?( symbol[id,CHECK_NONE,SYM_SORT] sortSymbol[t]
+       )
+       { isTermType }?( sortSymbol[t] {
+        // make an arbitrary name
+        std::stringstream ss;
+        ss << "@" << type.getName() << "_" << index;
+        id = ss.str();
+        index++;
+       })
+       { ctor->addSelector(id, t); }
+       RPAREN_TOK )*
+    {
       type.addConstructor(*ctor);
-      Trace("parser-idt") << "constructor: " << id.c_str() << std::endl;
       delete ctor;
-    }
-  ;
-
-selector[cvc5::DatatypeConstructorDecl& ctor]
-@init {
-  std::string id;
-  cvc5::Sort t, t2;
-}
-  : symbol[id,CHECK_NONE,SYM_SORT] sortSymbol[t]
-    { 
-      ctor.addSelector(id, t);
-      Trace("parser-idt") << "selector: " << id.c_str()
-                          << " of type " << t << std::endl;
     }
   ;
 
