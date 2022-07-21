@@ -2120,7 +2120,9 @@ datatypeDef[bool isCo,
   ;
 
 /**
- * Parses a constructor defintion for datatype
+ * Parses a constructor defintion for datatype.
+ * @param isTermType whether the constructor is for a declare-term-type, in
+ * which case we read types (without identifiers) for selectors.
  */
 constructorDef[bool isTermType, cvc5::DatatypeDecl& type]
 @init {
@@ -2142,9 +2144,8 @@ constructorDef[bool isTermType, cvc5::DatatypeDecl& type]
         ctor->addSelector(ss.str(), t);
        })*
     | { !isTermType }?( LPAREN_TOK
-        symbol[id,CHECK_NONE,SYM_SORT] sortSymbol[t]
-       { ctor->addSelector(id, t); }
-       RPAREN_TOK )* )
+        symbol[id,CHECK_NONE,SYM_SORT] sortSymbol[t] RPAREN_TOK
+       { ctor->addSelector(id, t); } )* )
     {
       type.addConstructor(*ctor);
       delete ctor;
