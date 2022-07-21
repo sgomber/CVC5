@@ -74,6 +74,11 @@ Node FunDefEvaluator::evaluateDefinitions(Node n)
   return n;
 }
 
+bool FunDefEvaluator::shouldTraverse(Node n)
+{
+  return !n.isClosure();
+}
+
 Node FunDefEvaluator::postConvert(Node n)
 {
   if (n.getKind() != APPLY_UF)
