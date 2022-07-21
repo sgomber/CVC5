@@ -16,10 +16,10 @@
 
 #include "theory/quantifiers/fun_def_evaluator.h"
 
+#include "expr/node_algorithm.h"
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/rewriter.h"
-#include "expr/node_algorithm.h"
 
 using namespace cvc5::internal::kind;
 
@@ -97,7 +97,8 @@ Node FunDefEvaluator::postConvert(Node n)
   {
     if (expr::hasBoundVar(c))
     {
-      // do not evaluate on terms with bound variables, which can lead to variable shadowing issues
+      // do not evaluate on terms with bound variables, which can lead to
+      // variable shadowing issues
       return rewrite(n);
     }
   }
