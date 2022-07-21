@@ -2139,7 +2139,7 @@ constructorDef[bool isTermType, cvc5::DatatypeDecl& type]
     ( { isTermType }?( sortSymbol[t] {
         // make an arbitrary name
         std::stringstream ss;
-        ss << "@" << type.getName() << "_" << index;
+        ss << "@" << id << "_" << index;
         index++;
         ctor->addSelector(ss.str(), t);
        })*
