@@ -332,8 +332,8 @@ command [std::unique_ptr<cvc5::Command>* cmd]
       }
       cmd->reset(new DefineFunctionCommand(name, terms, t, expr));
     }
-  | DECLARE_DATATYPE_TOK datatypeDefCommand[false, cmd]
-  | DECLARE_DATATYPES_TOK datatypesDefCommand[false, cmd]
+  | DECLARE_DATATYPE_TOK datatypeDefCommand[false, false, cmd]
+  | DECLARE_DATATYPES_TOK datatypesDefCommand[false, false, cmd]
   | /* value query */
     GET_VALUE_TOK 
     {
@@ -866,8 +866,10 @@ extendedCommand[std::unique_ptr<cvc5::Command>* cmd]
 }
     /* Extended SMT-LIB set of commands syntax, not permitted in
      * --smtlib2 compliance mode. */
-  : DECLARE_CODATATYPE_TOK datatypeDefCommand[true, cmd]
-  | DECLARE_CODATATYPES_TOK datatypesDefCommand[true, cmd]
+  : DECLARE_CODATATYPE_TOK datatypeDefCommand[true, false, cmd]
+  | DECLARE_CODATATYPES_TOK datatypesDefCommand[true, false, cmd]
+  | DECLARE_TERM_TYPE_TOK datatypeDefCommand[false, true, cmd]
+  | DECLARE_TERM_TYPES_TOK datatypesDefCommand[false, true, cmd]
 
     /* Support some of Z3's extended SMT-LIB commands */
 
@@ -959,7 +961,7 @@ extendedCommand[std::unique_ptr<cvc5::Command>* cmd]
     )
   ;
 
-datatypeDefCommand[bool isCo, std::unique_ptr<cvc5::Command>* cmd]
+datatypeDefCommand[bool isCo, std::unique_ptr<cvc5::Command>* cmd, bool isTermType]
 @declarations {
   std::vector<cvc5::DatatypeDecl> dts;
   std::string name;
@@ -2187,12 +2189,14 @@ PUSH_TOK : 'push';
 POP_TOK : 'pop';
 AS_TOK : 'as';
 CONST_TOK : { !PARSER_STATE->strictModeEnabled() }? 'const';
+DECLARE_DATATYPE_TOK : 'declare-datatype';
+DECLARE_DATATYPES_TOK : 'declare-datatypes';
 
 // extended commands
 DECLARE_CODATATYPE_TOK : 'declare-codatatype';
-DECLARE_DATATYPE_TOK : 'declare-datatype';
-DECLARE_DATATYPES_TOK : 'declare-datatypes';
 DECLARE_CODATATYPES_TOK : 'declare-codatatypes';
+DECLARE_TERM_TYPE_TOK : 'declare-term-type';
+DECLARE_TERM_TYPES_TOK : 'declare-term-types';
 PAR_TOK : 'par';
 SET_COMPREHENSION_TOK : { PARSER_STATE->isTheoryEnabled(internal::theory::THEORY_SETS) }?'set.comprehension';
 TESTER_TOK : { PARSER_STATE->isTheoryEnabled(internal::theory::THEORY_DATATYPES) }?'is';
