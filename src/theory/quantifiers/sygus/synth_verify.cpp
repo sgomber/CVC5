@@ -76,6 +76,7 @@ Result SynthVerify::verify(Node query,
     {
       if (!queryp.getConst<bool>())
       {
+        Trace("sygus-engine") << "  ...got unsat (trivial)" << std::endl;
         return Result(Result::UNSAT);
       }
       // sat, but we need to get arbtirary model values below

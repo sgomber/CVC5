@@ -19,6 +19,7 @@
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/rewriter.h"
+#include "expr/node_algorithm.h"
 
 using namespace cvc5::internal::kind;
 
@@ -91,9 +92,25 @@ Node FunDefEvaluator::evaluateDefinitions(Node n) const
       else
       {
         Trace("fd-eval-debug") << "recurse " << cur << std::endl;
-        visited[cur] = Node::null();
-        visit.push_back(cur);
-        for (const Node& cn : cur)
+        Node curs;
+        if (cur.isClosure())
+        {
+          std::vector<Node> vars(cur[0].begin(), cur[0].end());
+          std::vector<Node> subs;
+          for (const Node& v : vars)
+          {
+            subs.push_back(nm->mkBoundVar(v.getType()));
+          }
+          curs = cur.substitute(vars.begin(), vars.end(), subs.begin(), subs.end());
+          visited[cur] = curs;
+        }
+        else
+        {
+          visited[cur] = Node::null();
+          curs = cur;
+        }
+        visit.push_back(curs);
+        for (const Node& cn : curs)
         {
           visit.push_back(cn);
         }
@@ -102,7 +119,7 @@ Node FunDefEvaluator::evaluateDefinitions(Node n) const
     else
     {
       curEval = it->second;
-      if (curEval.isNull())
+      if (curEval.isNull() || curEval==cur)
       {
         Trace("fd-eval-debug") << "from arguments " << cur << std::endl;
         Node ret = cur;
@@ -115,7 +132,7 @@ Node FunDefEvaluator::evaluateDefinitions(Node n) const
         {
           children.push_back(cur.getOperator());
         }
-        else if (ck == ITE)
+        else if (ck == ITE && curEval.isNull())
         {
           // get evaluation of condition
           it = visited.find(cur[0]);
@@ -123,23 +140,27 @@ Node FunDefEvaluator::evaluateDefinitions(Node n) const
           Assert(!it->second.isNull());
           if (!it->second.isConst())
           {
-            Trace("fd-eval") << "FunDefEvaluator: couldn't reduce condition of "
-                                "ITE to const, FAIL\n";
-            return Node::null();
+            visited[cur] = cur;
+            visit.push_back(cur);
+            visit.push_back(cur[1]);
+            visit.push_back(cur[2]);
           }
-          // pick child to evaluate depending on condition eval
-          unsigned childIdxToEval = it->second.getConst<bool>() ? 1 : 2;
-          Trace("fd-eval-debug2")
-              << "FunDefEvaluator: result of ITE condition : "
-              << it->second.getConst<bool>() << "\n";
-          // the result will be the result of evaluation the child
-          visited[cur] = cur[childIdxToEval];
-          // push back self and child. The child will be evaluated first and
-          // result will be the result of evaluation child
-          visit.push_back(cur);
-          visit.push_back(cur[childIdxToEval]);
-          Trace("fd-eval-debug2") << "FunDefEvaluator: result will be from : "
-                                  << cur[childIdxToEval] << "\n";
+          else
+          {
+            // pick child to evaluate depending on condition eval
+            unsigned childIdxToEval = it->second.getConst<bool>() ? 1 : 2;
+            Trace("fd-eval-debug2")
+                << "FunDefEvaluator: result of ITE condition : "
+                << it->second.getConst<bool>() << "\n";
+            // the result will be the result of evaluation the child
+            visited[cur] = cur[childIdxToEval];
+            // push back self and child. The child will be evaluated first and
+            // result will be the result of evaluation child
+            visit.push_back(cur);
+            visit.push_back(cur[childIdxToEval]);
+            Trace("fd-eval-debug2") << "FunDefEvaluator: result will be from : "
+                                    << cur[childIdxToEval] << "\n";
+          }
           continue;
         }
         unsigned child CVC5_UNUSED = 0;
@@ -199,6 +220,7 @@ Node FunDefEvaluator::evaluateDefinitions(Node n) const
             }
             Assert(!sbody.isNull());
           }
+          Trace("ajr-temp") << "subs body " << cur << " = " << ret << "\n";
           // our result is the result of the body
           visited[cur] = sbody;
           // If its not constant, we push back self and the substituted body.
@@ -219,7 +241,7 @@ Node FunDefEvaluator::evaluateDefinitions(Node n) const
             ret = nm->mkNode(cur.getKind(), children);
             ret = rewrite(ret);
           }
-          Trace("fd-eval-debug2") << "built from arguments " << ret << "\n";
+          Trace("ajr-temp") << "built from arguments " << cur << " = " << ret << "\n";
           visited[cur] = ret;
         }
       }
@@ -231,15 +253,15 @@ Node FunDefEvaluator::evaluateDefinitions(Node n) const
         it = visited.find(curEval);
         if (it == visited.end())
         {
-          Trace("fd-eval-debug2") << "eval without definition\n";
+          Trace("ajr-temp") << "eval without definition " << cur << " = " << curEval << "\n";
           // this is the case where curEval was not a constant but it was
           // irreducible, for example (DT_SYGUS_EVAL e args)
           visited[cur] = curEval;
         }
         else
         {
-          Trace("fd-eval-debug2")
-              << "eval with definition " << it->second << "\n";
+          Trace("ajr-temp")
+              << "eval with definition " << cur << " = " << it->second << "\n";
           visited[cur] = it->second;
       }
     }

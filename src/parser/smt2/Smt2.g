@@ -25,7 +25,7 @@ options {
   // Only lookahead of <= k requested (disable for LL* parsing)
   // Note that cvc5's BoundedTokenBuffer requires a fixed k !
   // If you change this k, change it also in smt2_input.cpp !
-  k = 2;
+  k = 3;
 }/* options */
 
 @header {
