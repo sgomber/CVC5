@@ -2135,8 +2135,7 @@ constructorDef[bool isTermType, cvc5::DatatypeDecl& type]
           SOLVER->mkDatatypeConstructorDecl(id));
     }
     ( LPAREN_TOK 
-       { !isTermType }?( symbol[id,CHECK_NONE,SYM_SORT] sortSymbol[t]
-       )
+       { !isTermType }?( symbol[id,CHECK_NONE,SYM_SORT] sortSymbol[t] )
        { isTermType }?( sortSymbol[t] {
         // make an arbitrary name
         std::stringstream ss;
