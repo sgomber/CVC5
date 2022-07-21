@@ -58,12 +58,14 @@ Node FunDefEvaluator::evaluateDefinitions(Node n)
   Node curr = n;
   for (size_t i = 0; i < options().quantifiers.sygusRecFunEvalLimit; i++)
   {
+    Node prev = curr;
     // expand definitions, with rewriting
+    clearCaches();
     curr = convert(curr);
     Trace("fd-eval-debug") << "...rewritten (" << i << "):" << curr
                            << std::endl;
     // if constant, we are done
-    if (curr.isConst())
+    if (curr.isConst() || prev ==curr)
     {
       Trace("fd-eval") << "...return " << curr << std::endl;
       return curr;
@@ -77,33 +79,27 @@ bool FunDefEvaluator::shouldTraverse(Node n) { return true; }
 
 Node FunDefEvaluator::postConvert(Node n)
 {
+  n = rewrite(n);
+  Trace("fd-eval-debug2") << "Post-convert " << n << std::endl;
   if (n.getKind() != APPLY_UF)
   {
     // not an application of a recursive function
-    return rewrite(n);
+    return n;
   }
   // need to evaluate it
   Node f = n.getOperator();
   std::map<Node, FunDefInfo>::const_iterator itf = d_funDefMap.find(f);
   if (itf == d_funDefMap.end())
   {
-    return rewrite(n);
+    return n;
   }
   // get the function definition
   Node sbody = itf->second.d_body;
   const std::vector<Node>& args = itf->second.d_args;
   std::vector<Node> children(n.begin(), n.end());
-  for (const Node& c : children)
-  {
-    if (expr::hasBoundVar(c))
-    {
-      // do not evaluate on terms with bound variables, which can lead to
-      // variable shadowing issues
-      return rewrite(n);
-    }
-  }
   // invoke it on arguments using the evaluator, which will rewrite
   sbody = evaluate(sbody, args, children);
+  Trace("fd-eval-debug2") << "...expand to " << sbody << std::endl;
   Assert(!sbody.isNull());
   return sbody;
 }

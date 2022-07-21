@@ -258,4 +258,12 @@ TypeNode NodeConverter::postConvertType(TypeNode tn)
 }
 bool NodeConverter::shouldTraverse(Node n) { return true; }
 
+void NodeConverter::clearCaches()
+{
+  d_preCache.clear();
+  d_cache.clear();
+  d_preTCache.clear();
+  d_tcache.clear();
+}
+
 }  // namespace cvc5::internal

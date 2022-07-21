@@ -58,6 +58,8 @@ class NodeConverter
   TypeNode convertType(TypeNode tn);
 
  protected:
+  /** clear caches */
+  void clearCaches();
   //------------------------- virtual interface
   /** Should we traverse n? */
   virtual bool shouldTraverse(Node n);
