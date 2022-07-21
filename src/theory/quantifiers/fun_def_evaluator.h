@@ -23,6 +23,7 @@
 
 #include "expr/node.h"
 #include "smt/env_obj.h"
+#include "expr/node_converter.h"
 
 namespace cvc5::internal {
 namespace theory {
@@ -31,7 +32,7 @@ namespace quantifiers {
 /**
  * Techniques for evaluating recursively defined functions.
  */
-class FunDefEvaluator : protected EnvObj
+class FunDefEvaluator : public NodeConverter, protected EnvObj
 {
  public:
   FunDefEvaluator(Env& env);
@@ -46,7 +47,7 @@ class FunDefEvaluator : protected EnvObj
    * class. If n cannot be simplified to a constant, then this method returns
    * null.
    */
-  Node evaluateDefinitions(Node n) const;
+  Node evaluateDefinitions(Node n);
   /**
    * Has a call to assertDefinition been made? If this returns false, then
    * the evaluate method is the same as calling the rewriter, and returning
@@ -75,6 +76,8 @@ class FunDefEvaluator : protected EnvObj
   std::map<Node, FunDefInfo> d_funDefMap;
   /** list of all definitions */
   std::vector<Node> d_funDefs;
+  /** Post-convert method */
+  Node postConvert(Node n) override;
 };
 
 }  // namespace quantifiers

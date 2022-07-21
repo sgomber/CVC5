@@ -51,204 +51,54 @@ void FunDefEvaluator::assertDefinition(Node q)
                    << fdi.d_args << " / " << fdi.d_body << std::endl;
 }
 
-Node FunDefEvaluator::evaluateDefinitions(Node n) const
+Node FunDefEvaluator::evaluateDefinitions(Node n)
 {
-  // should do standard rewrite before this call
-  Assert(rewrite(n) == n);
   Trace("fd-eval") << "FunDefEvaluator: evaluateDefinitions " << n << std::endl;
-  NodeManager* nm = NodeManager::currentNM();
-  std::unordered_map<TNode, unsigned> funDefCount;
-  std::unordered_map<TNode, unsigned>::iterator itCount;
-  std::unordered_map<TNode, Node> visited;
-  std::unordered_map<TNode, Node>::iterator it;
-  std::map<Node, FunDefInfo>::const_iterator itf;
-  std::vector<TNode> visit;
-  TNode cur;
-  TNode curEval;
-  Node f;
-  visit.push_back(n);
-  do
+  Node curr = n;
+  for (size_t i=0; i<options().quantifiers.sygusRecFunEvalLimit; i++)
   {
-    cur = visit.back();
-    visit.pop_back();
-    it = visited.find(cur);
-    Trace("fd-eval-debug") << "evaluate subterm " << cur << std::endl;
+    // rewrite curr
+    curr = rewrite(curr);
+    Trace("fd-eval-debug") << "...rewritten (" << i << "):" << curr << std::endl;
+    // if constant, we are done
+    if (curr.isConst())
+    {
+      Trace("fd-eval") << "...return " << curr << std::endl;
+      return curr;
+    }
+    // expand definitions
+    curr = convert(curr);
+    Trace("fd-eval-debug") << "...expanded (" << i << "):" << curr << std::endl;
+  }
+  Trace("fd-eval") << "...failed, return original" << std::endl;
+  return n;
+}
 
-    if (it == visited.end())
-    {
-      if (cur.isConst())
-      {
-        Trace("fd-eval-debug") << "constant " << cur << std::endl;
-        visited[cur] = cur;
-      }
-      else if (cur.getKind() == ITE)
-      {
-        Trace("fd-eval-debug") << "ITE " << cur << std::endl;
-        visited[cur] = Node::null();
-        visit.push_back(cur);
-        visit.push_back(cur[0]);
-      }
-      else
-      {
-        Trace("fd-eval-debug") << "recurse " << cur << std::endl;
-        visited[cur] = Node::null();
-        visit.push_back(cur);
-        for (const Node& cn : cur)
-        {
-          visit.push_back(cn);
-        }
-      }
-    }
-    else
-    {
-      curEval = it->second;
-      if (curEval.isNull())
-      {
-        Trace("fd-eval-debug") << "from arguments " << cur << std::endl;
-        Node ret = cur;
-        bool childChanged = false;
-        std::vector<Node> children;
-        Kind ck = cur.getKind();
-        // If a parameterized node that is not APPLY_UF (which is handled below,
-        // we add it to the children vector.
-        if (ck != APPLY_UF && cur.getMetaKind() == metakind::PARAMETERIZED)
-        {
-          children.push_back(cur.getOperator());
-        }
-        else if (ck == ITE)
-        {
-          // get evaluation of condition
-          it = visited.find(cur[0]);
-          Assert(it != visited.end());
-          Assert(!it->second.isNull());
-          if (!it->second.isConst())
-          {
-            Trace("fd-eval") << "FunDefEvaluator: couldn't reduce condition of "
-                                "ITE to const, FAIL\n";
-            return Node::null();
-          }
-          // pick child to evaluate depending on condition eval
-          unsigned childIdxToEval = it->second.getConst<bool>() ? 1 : 2;
-          Trace("fd-eval-debug2")
-              << "FunDefEvaluator: result of ITE condition : "
-              << it->second.getConst<bool>() << "\n";
-          // the result will be the result of evaluation the child
-          visited[cur] = cur[childIdxToEval];
-          // push back self and child. The child will be evaluated first and
-          // result will be the result of evaluation child
-          visit.push_back(cur);
-          visit.push_back(cur[childIdxToEval]);
-          Trace("fd-eval-debug2") << "FunDefEvaluator: result will be from : "
-                                  << cur[childIdxToEval] << "\n";
-          continue;
-        }
-        unsigned child CVC5_UNUSED = 0;
-        for (const Node& cn : cur)
-        {
-          it = visited.find(cn);
-          Assert(it != visited.end());
-          Assert(!it->second.isNull());
-          childChanged = childChanged || cn != it->second;
-          children.push_back(it->second);
-          Trace("fd-eval-debug2") << "argument " << child++
-                                  << " eval : " << it->second << std::endl;
-        }
-        if (cur.getKind() == APPLY_UF)
-        {
-          // need to evaluate it
-          f = cur.getOperator();
-          Trace("fd-eval-debug2")
-              << "FunDefEvaluator: need to eval " << f << "\n";
-          itf = d_funDefMap.find(f);
-          itCount = funDefCount.find(f);
-          if (itCount == funDefCount.end())
-          {
-            funDefCount[f] = 0;
-            itCount = funDefCount.find(f);
-          }
-          if (itf == d_funDefMap.end()
-              || itCount->second > options().quantifiers.sygusRecFunEvalLimit)
-          {
-            Trace("fd-eval")
-                << "FunDefEvaluator: "
-                << (itf == d_funDefMap.end() ? "no definition for "
-                                             : "too many evals for ")
-                << f << ", FAIL" << std::endl;
-            return Node::null();
-          }
-          ++funDefCount[f];
-          // get the function definition
-          Node sbody = itf->second.d_body;
-          Trace("fd-eval-debug2")
-              << "FunDefEvaluator: definition: " << sbody << "\n";
-          const std::vector<Node>& args = itf->second.d_args;
-          if (!args.empty())
-          {
-            // invoke it on arguments using the evaluator
-            sbody = evaluate(sbody, args, children);
-            if (TraceIsOn("fd-eval-debug2"))
-            {
-              Trace("fd-eval-debug2")
-                  << "FunDefEvaluator: evaluation with args:\n";
-              for (const Node& ch : children)
-              {
-                Trace("fd-eval-debug2") << "..." << ch << "\n";
-              }
-              Trace("fd-eval-debug2")
-                  << "FunDefEvaluator: results in " << sbody << "\n";
-            }
-            Assert(!sbody.isNull());
-          }
-          // our result is the result of the body
-          visited[cur] = sbody;
-          // If its not constant, we push back self and the substituted body.
-          // Thus, we evaluate the body first; our result will be the result of
-          // evaluating the body.
-          if (!sbody.isConst())
-          {
-            Trace("fd-eval-debug2") << "FunDefEvaluator: will map " << cur
-                                    << " from body " << sbody << "\n";
-            visit.push_back(cur);
-            visit.push_back(sbody);
-          }
-        }
-        else
-        {
-          if (childChanged)
-          {
-            ret = nm->mkNode(cur.getKind(), children);
-            ret = rewrite(ret);
-          }
-          Trace("fd-eval-debug2") << "built from arguments " << ret << "\n";
-          visited[cur] = ret;
-        }
-      }
-      else if (cur != curEval && !curEval.isConst())
-      {
-        Trace("fd-eval-debug") << "from body " << cur << std::endl;
-        Trace("fd-eval-debug") << "and eval  " << curEval << std::endl;
-        // we had to evaluate our body, which should have a definition now
-        it = visited.find(curEval);
-        if (it == visited.end())
-        {
-          Trace("fd-eval-debug2") << "eval without definition\n";
-          // this is the case where curEval was not a constant but it was
-          // irreducible, for example (DT_SYGUS_EVAL e args)
-          visited[cur] = curEval;
-        }
-        else
-        {
-          Trace("fd-eval-debug2")
-              << "eval with definition " << it->second << "\n";
-          visited[cur] = it->second;
-      }
-    }
-    }
-  } while (!visit.empty());
-  Trace("fd-eval") << "FunDefEvaluator: return " << visited[n] << ", SUCCESS\n";
-  Assert(visited.find(n) != visited.end());
-  Assert(!visited.find(n)->second.isNull());
-  return visited[n];
+Node FunDefEvaluator::postConvert(Node n)
+{
+  if (n.getKind() != APPLY_UF)
+  {
+    // not an application of a recursive function
+    return n;
+  }
+  // need to evaluate it
+  Node f = n.getOperator();
+  std::map<Node, FunDefInfo>::const_iterator itf = d_funDefMap.find(f);
+  if (itf == d_funDefMap.end())
+  {
+    return n;
+  }
+  // get the function definition
+  Node sbody = itf->second.d_body;
+  const std::vector<Node>& args = itf->second.d_args;
+  if (!args.empty())
+  {
+    std::vector<Node> children(n.begin(), n.end());
+    // invoke it on arguments using the evaluator, which will rewrite
+    sbody = evaluate(sbody, args, children);
+    Assert(!sbody.isNull());
+  }
+  return sbody;
 }
 
 bool FunDefEvaluator::hasDefinitions() const { return !d_funDefMap.empty(); }
