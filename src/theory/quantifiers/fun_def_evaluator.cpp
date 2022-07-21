@@ -83,6 +83,7 @@ Node FunDefEvaluator::preConvert(Node n)
   {
     std::vector<Node> vars(n[0].begin(), n[0].end());
     std::vector<Node> subs;
+    NodeManager * nm = NodeManager::currentNM();
     for (const Node& v : vars)
     {
       subs.push_back(nm->mkBoundVar(v.getType()));
