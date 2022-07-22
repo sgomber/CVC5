@@ -937,7 +937,7 @@ void DeclareOracleFunCommand::invoke(Solver* solver, SymbolManager* sm)
         return obc.runOracleSingleOut(input);
       });
   // bind the symbol for the parser
-  sm->getSymbolTable()->bind(d_id, fun);
+  sm->bind(d_id, fun);
   // mark that it will be printed in the model
   sm->addModelDeclarationTerm(fun);
   d_commandStatus = CommandSuccess::instance();
@@ -1009,23 +1009,14 @@ void DefineOracleInterfaceCommand::invoke(Solver* solver, SymbolManager* sm)
   }
 }
 
-Command* DefineOracleInterfaceCommand::clone() const
-{
-  return new DefineOracleInterfaceCommand(
-      d_inputs, d_outputs, d_assume, d_constraint, d_binName);
-}
-
 std::string DefineOracleInterfaceCommand::getCommandName() const
 {
   return "define-oracle-interface";
 }
 
-void DefineOracleInterfaceCommand::toStream(std::ostream& out,
-                                            int toDepth,
-                                            size_t dag,
-                                            Language language) const
+void DefineOracleInterfaceCommand::toStream(std::ostream& out) const
 {
-  Printer::getPrinter(language)->toStreamCmdDefineOracleInterface(
+  Printer::getPrinter(out)->toStreamCmdDefineOracleInterface(
       out,
       termVectorToNodes(d_inputs),
       termVectorToNodes(d_outputs),

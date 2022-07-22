@@ -402,14 +402,9 @@ class CVC5_EXPORT DefineOracleInterfaceCommand : public Command
   Term getConstraint() const;
   const std::string& getBinaryName() const;
 
-  void invoke(Solver* solver, SymbolManager* sm) override;
-  Command* clone() const override;
+  void invoke(Solver* solver, parser::SymbolManager* sm) override;
   std::string getCommandName() const override;
-  void toStream(std::ostream& out,
-                int toDepth = -1,
-                size_t dag = 1,
-                internal::Language language =
-                    internal::Language::LANG_AUTO) const override;
+  void toStream(std::ostream& out) const override;
 
  protected:
   /** The input arguments for the interface we are defining */
