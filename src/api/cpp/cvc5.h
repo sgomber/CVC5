@@ -4485,7 +4485,11 @@ class CVC5_EXPORT Solver
    *
    * @warning This method is experimental and may change in future versions.
    *
+<<<<<<< HEAD
    * @param symbol The name of the pool
+=======
+   * @param symbol The name of the oracle
+>>>>>>> 2fdab57f3e5211e1fef622fbc08cb9825fe6252d
    * @param sorts The sorts of the parameters to this function
    * @param sort The sort of the return value of this function
    * @param fn The function that implements the oracle function.
@@ -4496,6 +4500,7 @@ class CVC5_EXPORT Solver
                         const Sort& sort,
                         std::function<Term(const std::vector<Term>&)> fn) const;
   /**
+<<<<<<< HEAD
    * Define an oracle interface.
    *
    * \verbatim embed:rst:leading-asterisk
@@ -4520,6 +4525,8 @@ class CVC5_EXPORT Solver
       Term constraint,
       std::function<std::vector<Term>(const std::vector<Term>&)> fn) const;
   /**
+=======
+>>>>>>> 2fdab57f3e5211e1fef622fbc08cb9825fe6252d
    * Pop (a) level(s) from the assertion stack.
    *
    * SMT-LIB:

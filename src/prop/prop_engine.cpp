@@ -36,7 +36,6 @@
 #include "prop/sat_solver_factory.h"
 #include "prop/theory_proxy.h"
 #include "smt/env.h"
-#include "smt/smt_statistics_registry.h"
 #include "theory/output_channel.h"
 #include "theory/theory_engine.h"
 #include "util/resource_manager.h"
@@ -74,7 +73,7 @@ PropEngine::PropEngine(Env& env, TheoryEngine* te)
       d_satSolver(nullptr),
       d_cnfStream(nullptr),
       d_pfCnfStream(nullptr),
-      d_theoryLemmaPg(d_env.getProofNodeManager(), d_env.getUserContext()),
+      d_theoryLemmaPg(d_env, d_env.getUserContext(), "PropEngine::ThLemmaPg"),
       d_ppm(nullptr),
       d_interrupted(false),
       d_assumptions(d_env.getUserContext())
@@ -95,7 +94,7 @@ PropEngine::PropEngine(Env& env, TheoryEngine* te)
   }
 
   d_satSolver =
-      SatSolverFactory::createCDCLTMinisat(d_env, smtStatisticsRegistry());
+      SatSolverFactory::createCDCLTMinisat(d_env, statisticsRegistry());
 
   // CNF stream and theory proxy required pointers to each other, make the
   // theory proxy first
@@ -125,7 +124,7 @@ PropEngine::PropEngine(Env& env, TheoryEngine* te)
         *d_cnfStream,
         static_cast<MinisatSatSolver*>(d_satSolver)->getProofManager()));
     d_ppm.reset(
-        new PropPfManager(userContext, pnm, d_satSolver, d_pfCnfStream.get()));
+        new PropPfManager(env, userContext, d_satSolver, d_pfCnfStream.get()));
   }
 }
 
@@ -205,11 +204,13 @@ void PropEngine::assertLemma(TrustNode tlemma, theory::LemmaProperty p)
   {
     Assert(tplemma.getGenerator() != nullptr);
     // ensure closed, make the proof node eagerly here to debug
-    tplemma.debugCheckClosed("te-proof-debug", "TheoryEngine::lemma");
+    tplemma.debugCheckClosed(
+        options(), "te-proof-debug", "TheoryEngine::lemma");
     for (theory::SkolemLemma& lem : ppLemmas)
     {
       Assert(lem.d_lemma.getGenerator() != nullptr);
-      lem.d_lemma.debugCheckClosed("te-proof-debug", "TheoryEngine::lemma_new");
+      lem.d_lemma.debugCheckClosed(
+          options(), "te-proof-debug", "TheoryEngine::lemma_new");
     }
   }
 
@@ -221,6 +222,7 @@ void PropEngine::assertLemma(TrustNode tlemma, theory::LemmaProperty p)
       Trace("te-lemma") << "Lemma, new lemma: " << lem.d_lemma.getProven()
                         << " (skolem is " << lem.d_skolem << ")" << std::endl;
     }
+    Trace("te-lemma") << "removable = " << removable << std::endl;
   }
 
   // now, assert the lemmas
@@ -240,7 +242,8 @@ void PropEngine::assertTrustedLemmaInternal(TrustNode trn, bool removable)
   if (isProofEnabled() && !d_env.isTheoryProofProducing()
       && !trn.getGenerator())
   {
-    d_theoryLemmaPg.addStep(node, PfRule::THEORY_LEMMA, {}, {node});
+    Node actualNode = negated ? node.notNode() : node;
+    d_theoryLemmaPg.addStep(actualNode, PfRule::THEORY_LEMMA, {}, {actualNode});
     trn = TrustNode::mkReplaceGenTrustNode(trn, &d_theoryLemmaPg);
   }
   assertInternal(node, negated, removable, false, trn.getGenerator());
@@ -266,7 +269,7 @@ void PropEngine::assertInternal(
     }
     else
     {
-      d_cnfStream->convertAndAssert(node, removable, negated, input);
+      d_cnfStream->convertAndAssert(node, removable, negated);
     }
   }
   else if (isProofEnabled())
@@ -280,7 +283,7 @@ void PropEngine::assertInternal(
   }
   else
   {
-    d_cnfStream->convertAndAssert(node, removable, negated, input);
+    d_cnfStream->convertAndAssert(node, removable, negated);
   }
 }
 
@@ -289,13 +292,37 @@ void PropEngine::assertLemmasInternal(
     const std::vector<theory::SkolemLemma>& ppLemmas,
     bool removable)
 {
-  // Assert to decision engine. Notice this must come before the calls to
-  // assertTrustedLemmaInternal below, since the decision engine requires
-  // setting up information about the relevance of skolems before literals
-  // are potentially asserted to the theory engine, which it listens to for
-  // tracking active skolem definitions.
   if (!removable)
   {
+    // notify skolem definitions first to ensure that the computation of
+    // when a literal contains a skolem is accurate in the calls below.
+    Trace("prop") << "Notify skolem definitions..." << std::endl;
+    for (const theory::SkolemLemma& lem : ppLemmas)
+    {
+      d_theoryProxy->notifySkolemDefinition(lem.getProven(), lem.d_skolem);
+    }
+  }
+  // Assert to the SAT solver first
+  Trace("prop") << "Push to SAT..." << std::endl;
+  if (!trn.isNull())
+  {
+    assertTrustedLemmaInternal(trn, removable);
+  }
+  for (const theory::SkolemLemma& lem : ppLemmas)
+  {
+    assertTrustedLemmaInternal(lem.d_lemma, removable);
+  }
+  // Note that this order is important for theories that send lemmas during
+  // preregistration, as it impacts the order in which lemmas are processed
+  // by default by the decision engine. In particular, sending to the SAT
+  // solver first means that lemmas sent during preregistration in response to
+  // the current lemma are processed after that lemma. This makes a difference
+  // e.g. for string reduction lemmas, where preregistration lemmas are
+  // introduced for skolems that appear in reductions. Moving the above
+  // block after the one below has mixed performance on SMT-LIB strings logics.
+  if (!removable)
+  {
+    Trace("prop") << "Notify assertions..." << std::endl;
     // also add to the decision engine, where notice we don't need proofs
     if (!trn.isNull())
     {
@@ -307,14 +334,7 @@ void PropEngine::assertLemmasInternal(
       d_theoryProxy->notifyAssertion(lem.getProven(), lem.d_skolem, true);
     }
   }
-  if (!trn.isNull())
-  {
-    assertTrustedLemmaInternal(trn, removable);
-  }
-  for (const theory::SkolemLemma& lem : ppLemmas)
-  {
-    assertTrustedLemmaInternal(lem.d_lemma, removable);
-  }
+  Trace("prop") << "Finish " << trn << std::endl;
 }
 
 void PropEngine::requirePhase(TNode n, bool phase) {
@@ -332,7 +352,7 @@ bool PropEngine::isDecision(Node lit) const {
 
 std::vector<Node> PropEngine::getPropDecisions() const
 {
-  std::vector<Node> decisions; 
+  std::vector<Node> decisions;
   std::vector<SatLiteral> miniDecisions = d_satSolver->getDecisions();
   for (SatLiteral d : miniDecisions)
   {
@@ -379,6 +399,20 @@ void PropEngine::printSatisfyingAssignment(){
     }
   }
 }
+void PropEngine::outputIncompleteReason(UnknownExplanation uexp,
+                                        theory::IncompleteId iid)
+{
+  if (isOutputOn(OutputTag::INCOMPLETE))
+  {
+    output(OutputTag::INCOMPLETE) << "(incomplete ";
+    output(OutputTag::INCOMPLETE) << uexp;
+    if (iid != theory::IncompleteId::UNKNOWN)
+    {
+      output(OutputTag::INCOMPLETE) << " " << iid;
+    }
+    output(OutputTag::INCOMPLETE) << ")" << std::endl;
+  }
+}
 
 Result PropEngine::checkSat() {
   Assert(!d_inCheckSat) << "Sat solver in solve()!";
@@ -393,6 +427,7 @@ Result PropEngine::checkSat() {
 
   if (options().base.preprocessOnly)
   {
+    outputIncompleteReason(UnknownExplanation::REQUIRES_FULL_CHECK);
     return Result(Result::UNKNOWN, UnknownExplanation::REQUIRES_FULL_CHECK);
   }
 
@@ -426,6 +461,7 @@ Result PropEngine::checkSat() {
     {
       why = UnknownExplanation::RESOURCEOUT;
     }
+    outputIncompleteReason(why);
     return Result(Result::UNKNOWN, why);
   }
 
@@ -436,6 +472,8 @@ Result PropEngine::checkSat() {
   Trace("prop") << "PropEngine::checkSat() => " << result << std::endl;
   if (result == SAT_VALUE_TRUE && d_theoryProxy->isIncomplete())
   {
+    outputIncompleteReason(UnknownExplanation::INCOMPLETE,
+                           d_theoryProxy->getIncompleteId());
     return Result(Result::UNKNOWN, UnknownExplanation::INCOMPLETE);
   }
   return Result(result == SAT_VALUE_TRUE ? Result::SAT : Result::UNSAT);
@@ -698,17 +736,6 @@ void PropEngine::getUnsatCore(std::vector<Node>& core)
   {
     core.push_back(d_cnfStream->getNode(lit));
   }
-}
-
-std::shared_ptr<ProofNode> PropEngine::getRefutation()
-{
-  Assert(options().smt.unsatCoresMode == options::UnsatCoresMode::ASSUMPTIONS);
-  std::vector<Node> core;
-  getUnsatCore(core);
-  CDProof cdp(d_env.getProofNodeManager());
-  Node fnode = NodeManager::currentNM()->mkConst(false);
-  cdp.addStep(fnode, PfRule::SAT_REFUTATION, core, {});
-  return cdp.getProofFor(fnode);
 }
 
 std::vector<Node> PropEngine::getLearnedZeroLevelLiterals(

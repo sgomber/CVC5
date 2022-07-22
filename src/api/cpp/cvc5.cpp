@@ -69,8 +69,7 @@
 #include "smt/model.h"
 #include "smt/smt_mode.h"
 #include "smt/solver_engine.h"
-#include "theory/bags/table_project_op.h"
-#include "theory/datatypes/tuple_project_op.h"
+#include "theory/datatypes/project_op.h"
 #include "theory/logic_info.h"
 #include "theory/theory_model.h"
 #include "util/bitvector.h"
@@ -301,6 +300,8 @@ const static std::unordered_map<Kind, std::pair<internal::Kind, std::string>>
         KIND_ENUM(SET_CHOOSE, internal::Kind::SET_CHOOSE),
         KIND_ENUM(SET_IS_SINGLETON, internal::Kind::SET_IS_SINGLETON),
         KIND_ENUM(SET_MAP, internal::Kind::SET_MAP),
+        KIND_ENUM(SET_FILTER, internal::Kind::SET_FILTER),
+        KIND_ENUM(SET_FOLD, internal::Kind::SET_FOLD),
         /* Relations -------------------------------------------------------- */
         KIND_ENUM(RELATION_JOIN, internal::Kind::RELATION_JOIN),
         KIND_ENUM(RELATION_PRODUCT, internal::Kind::RELATION_PRODUCT),
@@ -308,6 +309,9 @@ const static std::unordered_map<Kind, std::pair<internal::Kind, std::string>>
         KIND_ENUM(RELATION_TCLOSURE, internal::Kind::RELATION_TCLOSURE),
         KIND_ENUM(RELATION_JOIN_IMAGE, internal::Kind::RELATION_JOIN_IMAGE),
         KIND_ENUM(RELATION_IDEN, internal::Kind::RELATION_IDEN),
+        KIND_ENUM(RELATION_GROUP, internal::Kind::RELATION_GROUP),
+        KIND_ENUM(RELATION_AGGREGATE, internal::Kind::RELATION_AGGREGATE),
+        KIND_ENUM(RELATION_PROJECT, internal::Kind::RELATION_PROJECT),
         /* Bags ------------------------------------------------------------- */
         KIND_ENUM(BAG_UNION_MAX, internal::Kind::BAG_UNION_MAX),
         KIND_ENUM(BAG_UNION_DISJOINT, internal::Kind::BAG_UNION_DISJOINT),
@@ -334,6 +338,7 @@ const static std::unordered_map<Kind, std::pair<internal::Kind, std::string>>
         KIND_ENUM(TABLE_PROJECT, internal::Kind::TABLE_PROJECT),
         KIND_ENUM(TABLE_AGGREGATE, internal::Kind::TABLE_AGGREGATE),
         KIND_ENUM(TABLE_JOIN, internal::Kind::TABLE_JOIN),
+        KIND_ENUM(TABLE_GROUP, internal::Kind::TABLE_GROUP),
         /* Strings ---------------------------------------------------------- */
         KIND_ENUM(STRING_CONCAT, internal::Kind::STRING_CONCAT),
         KIND_ENUM(STRING_IN_REGEXP, internal::Kind::STRING_IN_REGEXP),
@@ -622,6 +627,8 @@ const static std::unordered_map<internal::Kind,
         {internal::Kind::SET_CHOOSE, SET_CHOOSE},
         {internal::Kind::SET_IS_SINGLETON, SET_IS_SINGLETON},
         {internal::Kind::SET_MAP, SET_MAP},
+        {internal::Kind::SET_FILTER, SET_FILTER},
+        {internal::Kind::SET_FOLD, SET_FOLD},
         /* Relations ------------------------------------------------------- */
         {internal::Kind::RELATION_JOIN, RELATION_JOIN},
         {internal::Kind::RELATION_PRODUCT, RELATION_PRODUCT},
@@ -629,6 +636,11 @@ const static std::unordered_map<internal::Kind,
         {internal::Kind::RELATION_TCLOSURE, RELATION_TCLOSURE},
         {internal::Kind::RELATION_JOIN_IMAGE, RELATION_JOIN_IMAGE},
         {internal::Kind::RELATION_IDEN, RELATION_IDEN},
+        {internal::Kind::RELATION_GROUP, RELATION_GROUP},
+        {internal::Kind::RELATION_AGGREGATE_OP, RELATION_AGGREGATE},
+        {internal::Kind::RELATION_AGGREGATE, RELATION_AGGREGATE},
+        {internal::Kind::RELATION_PROJECT_OP, RELATION_PROJECT},
+        {internal::Kind::RELATION_PROJECT, RELATION_PROJECT},
         /* Bags ------------------------------------------------------------ */
         {internal::Kind::BAG_UNION_MAX, BAG_UNION_MAX},
         {internal::Kind::BAG_UNION_DISJOINT, BAG_UNION_DISJOINT},
@@ -657,6 +669,8 @@ const static std::unordered_map<internal::Kind,
         {internal::Kind::TABLE_AGGREGATE, TABLE_AGGREGATE},
         {internal::Kind::TABLE_JOIN_OP, TABLE_JOIN},
         {internal::Kind::TABLE_JOIN, TABLE_JOIN},
+        {internal::Kind::TABLE_GROUP_OP, TABLE_GROUP},
+        {internal::Kind::TABLE_GROUP, TABLE_GROUP},
         /* Strings --------------------------------------------------------- */
         {internal::Kind::STRING_CONCAT, STRING_CONCAT},
         {internal::Kind::STRING_IN_REGEXP, STRING_IN_REGEXP},
@@ -737,6 +751,43 @@ const static std::unordered_set<Kind> s_indexed_kinds(
      FLOATINGPOINT_TO_FP_FROM_REAL,
      FLOATINGPOINT_TO_FP_FROM_SBV,
      FLOATINGPOINT_TO_FP_FROM_UBV});
+
+/**
+ * Mapping from external (API) kind to the corresponding internal operator kind.
+ */
+const static std::unordered_map<Kind, internal::Kind> s_op_kinds{
+    {BITVECTOR_EXTRACT, internal::Kind::BITVECTOR_EXTRACT_OP},
+    {BITVECTOR_REPEAT, internal::Kind::BITVECTOR_REPEAT_OP},
+    {BITVECTOR_ROTATE_LEFT, internal::Kind::BITVECTOR_ROTATE_LEFT_OP},
+    {BITVECTOR_ROTATE_RIGHT, internal::Kind::BITVECTOR_ROTATE_RIGHT_OP},
+    {BITVECTOR_SIGN_EXTEND, internal::Kind::BITVECTOR_SIGN_EXTEND_OP},
+    {BITVECTOR_ZERO_EXTEND, internal::Kind::BITVECTOR_ZERO_EXTEND_OP},
+    {DIVISIBLE, internal::Kind::DIVISIBLE_OP},
+    {FLOATINGPOINT_TO_SBV, internal::Kind::FLOATINGPOINT_TO_SBV_OP},
+    {FLOATINGPOINT_TO_UBV, internal::Kind::FLOATINGPOINT_TO_UBV_OP},
+    {FLOATINGPOINT_TO_FP_FROM_IEEE_BV,
+     internal::Kind::FLOATINGPOINT_TO_FP_FROM_IEEE_BV_OP},
+    {FLOATINGPOINT_TO_FP_FROM_FP,
+     internal::Kind::FLOATINGPOINT_TO_FP_FROM_FP_OP},
+    {FLOATINGPOINT_TO_FP_FROM_REAL,
+     internal::Kind::FLOATINGPOINT_TO_FP_FROM_REAL_OP},
+    {FLOATINGPOINT_TO_FP_FROM_SBV,
+     internal::Kind::FLOATINGPOINT_TO_FP_FROM_SBV_OP},
+    {FLOATINGPOINT_TO_FP_FROM_UBV,
+     internal::Kind::FLOATINGPOINT_TO_FP_FROM_UBV_OP},
+    {IAND, internal::Kind::IAND_OP},
+    {INT_TO_BITVECTOR, internal::Kind::INT_TO_BITVECTOR_OP},
+    {REGEXP_REPEAT, internal::Kind::REGEXP_REPEAT_OP},
+    {REGEXP_LOOP, internal::Kind::REGEXP_LOOP_OP},
+    {TUPLE_PROJECT, internal::Kind::TUPLE_PROJECT_OP},
+    {RELATION_AGGREGATE, internal::Kind::RELATION_AGGREGATE_OP},
+    {RELATION_GROUP, internal::Kind::RELATION_GROUP_OP},
+    {RELATION_PROJECT, internal::Kind::RELATION_PROJECT_OP},
+    {TABLE_PROJECT, internal::Kind::TABLE_PROJECT_OP},
+    {TABLE_AGGREGATE, internal::Kind::TABLE_AGGREGATE_OP},
+    {TABLE_JOIN, internal::Kind::TABLE_JOIN_OP},
+    {TABLE_GROUP, internal::Kind::TABLE_GROUP_OP},
+};
 
 /* -------------------------------------------------------------------------- */
 /* Rounding Mode for Floating Points                                          */
@@ -1910,11 +1961,17 @@ size_t Op::getNumIndicesHelper() const
     case FLOATINGPOINT_TO_FP_FROM_UBV: size = 2; break;
     case REGEXP_LOOP: size = 2; break;
     case TUPLE_PROJECT:
-      size = d_node->getConst<internal::TupleProjectOp>().getIndices().size();
-      break;
+    case RELATION_AGGREGATE:
+    case RELATION_GROUP:
+    case RELATION_PROJECT:
+    case TABLE_AGGREGATE:
+    case TABLE_GROUP:
+    case TABLE_JOIN:
     case TABLE_PROJECT:
-      size = d_node->getConst<internal::TableProjectOp>().getIndices().size();
+    {
+      size = d_node->getConst<internal::ProjectOp>().getIndices().size();
       break;
+    }
     default: CVC5_API_CHECK(false) << "Unhandled kind " << kindToString(k);
   }
   return size;
@@ -2066,11 +2123,17 @@ Term Op::getIndexHelper(size_t index) const
 
       break;
     }
-
     case TUPLE_PROJECT:
+    case RELATION_AGGREGATE:
+    case RELATION_GROUP:
+    case RELATION_PROJECT:
+    case TABLE_AGGREGATE:
+    case TABLE_GROUP:
+    case TABLE_JOIN:
+    case TABLE_PROJECT:
     {
       const std::vector<uint32_t>& projectionIndices =
-          d_node->getConst<internal::TupleProjectOp>().getIndices();
+          d_node->getConst<internal::ProjectOp>().getIndices();
       t = d_solver->mkRationalValHelper(projectionIndices[index]);
       break;
     }
@@ -4834,7 +4897,7 @@ Solver::Solver(std::unique_ptr<internal::Options>&& original)
   d_nodeMgr = internal::NodeManager::currentNM();
   d_nodeMgr->init();
   d_originalOptions = std::move(original);
-  d_slv.reset(new internal::SolverEngine(d_nodeMgr, d_originalOptions.get()));
+  d_slv.reset(new internal::SolverEngine(d_originalOptions.get()));
   d_slv->setSolver(this);
   d_rng.reset(new internal::Random(d_slv->getOptions().driver.seed));
   resetStatistics();
@@ -4883,7 +4946,7 @@ template <typename T>
 Op Solver::mkOpHelper(Kind kind, const T& t) const
 {
   //////// all checks before this line
-  internal::Node res = getNodeManager()->mkConst(t);
+  internal::Node res = getNodeManager()->mkConst(s_op_kinds.at(kind), t);
   static_cast<void>(res.getType(true)); /* kick off type checking */
   return Op(this, kind, res);
 }
@@ -6105,17 +6168,17 @@ Op Solver::mkOp(Kind kind, const std::vector<uint32_t>& args) const
       res = mkOpHelper(kind, internal::RegExpLoop(args[0], args[1]));
       break;
     case TUPLE_PROJECT:
-      res = mkOpHelper(kind, internal::TupleProjectOp(args));
-      break;
-    case TABLE_PROJECT:
-      res = mkOpHelper(kind, internal::TableProjectOp(args));
-      break;
+    case RELATION_AGGREGATE:
+    case RELATION_GROUP:
+    case RELATION_PROJECT:
     case TABLE_AGGREGATE:
-      res = mkOpHelper(kind, internal::TableAggregateOp(args));
-      break;
+    case TABLE_GROUP:
     case TABLE_JOIN:
-      res = mkOpHelper(kind, internal::TableJoinOp(args));
+    case TABLE_PROJECT:
+    {
+      res = mkOpHelper(kind, internal::ProjectOp(args));
       break;
+    }
     default:
       if (nargs == 0)
       {
@@ -6303,11 +6366,7 @@ Term Solver::defineFun(const std::string& symbol,
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_CODOMAIN_SORT(sort);
   CVC5_API_SOLVER_CHECK_TERM(term);
-  // We are permissive with subtypes so that integers are allowed to define
-  // the body of a function whose codomain is real. This is to accomodate
-  // SMT-LIB inputs in the Reals theory, where NUMERAL can be used to specify
-  // reals. Instead of making our parser for numerals dependent on the logic,
-  // we instead allow integers here in this case.
+  // the sort of the body must match the return sort
   CVC5_API_CHECK(term.d_node->getType() == *sort.d_type)
       << "Invalid sort of function body '" << term << "', expected '" << sort
       << "'";
@@ -6352,7 +6411,6 @@ Term Solver::defineFunRec(const std::string& symbol,
 
   CVC5_API_SOLVER_CHECK_TERM(term);
   CVC5_API_SOLVER_CHECK_CODOMAIN_SORT(sort);
-  // we are permissive with subtypes, similar to defineFun
   CVC5_API_CHECK(term.d_node->getType() == *sort.d_type)
       << "Invalid sort of function body '" << term << "', expected '" << sort
       << "'";
@@ -6402,7 +6460,6 @@ Term Solver::defineFunRec(const Term& fun,
     std::vector<Sort> domain_sorts = fun.getSort().getFunctionDomainSorts();
     CVC5_API_SOLVER_CHECK_BOUND_VARS_DEF_FUN(fun, bound_vars, domain_sorts);
     Sort codomain = fun.getSort().getFunctionCodomainSort();
-    // we are permissive with subtypes, similar to defineFun
     CVC5_API_CHECK(*codomain.d_type == term.d_node->getType())
         << "Invalid sort of function body '" << term << "', expected '"
         << codomain << "'";
@@ -6750,7 +6807,7 @@ std::vector<Term> Solver::getUnsatAssumptions(void) const
 std::vector<Term> Solver::getUnsatCore(void) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_CHECK(d_slv->getOptions().smt.unsatCores)
+  CVC5_API_CHECK(d_slv->getOptions().smt.produceUnsatCores)
       << "Cannot get unsat core unless explicitly enabled "
          "(try --produce-unsat-cores)";
   CVC5_API_RECOVERABLE_CHECK(d_slv->getSmtMode() == internal::SmtMode::UNSAT)
@@ -7040,6 +7097,9 @@ Term Solver::declareOracleFun(const std::string& symbol,
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_DOMAIN_SORTS(sorts);
   CVC5_API_SOLVER_CHECK_CODOMAIN_SORT(sort);
+  CVC5_API_CHECK(d_slv->getOptions().quantifiers.oracles)
+      << "Cannot call declareOracleFun unless oracles is enabled (use "
+         "--oracles)";
   //////// all checks before this line
   internal::TypeNode type = *sort.d_type;
   if (!sorts.empty())
@@ -7054,6 +7114,7 @@ Term Solver::declareOracleFun(const std::string& symbol,
   CVC5_API_TRY_CATCH_END;
 }
 
+
 Term Solver::declareOracleFun(
     const std::string& symbol,
     const std::vector<Sort>& sorts,
@@ -7063,6 +7124,9 @@ Term Solver::declareOracleFun(
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_DOMAIN_SORTS(sorts);
   CVC5_API_SOLVER_CHECK_CODOMAIN_SORT(sort);
+  CVC5_API_CHECK(d_slv->getOptions().quantifiers.oracles)
+      << "Cannot call declareOracleFun unless oracles is enabled (use "
+         "--oracles)";
   //////// all checks before this line
   internal::TypeNode type = *sort.d_type;
   if (!sorts.empty())
@@ -7135,7 +7199,7 @@ Term Solver::getInterpolant(const Term& conj) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_TERM(conj);
-  CVC5_API_CHECK(d_slv->getOptions().smt.interpolants)
+  CVC5_API_CHECK(d_slv->getOptions().smt.produceInterpolants)
       << "Cannot get interpolant unless interpolants are enabled (try "
          "--produce-interpolants)";
   //////// all checks before this line
@@ -7150,7 +7214,7 @@ Term Solver::getInterpolant(const Term& conj, Grammar& grammar) const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_SOLVER_CHECK_TERM(conj);
-  CVC5_API_CHECK(d_slv->getOptions().smt.interpolants)
+  CVC5_API_CHECK(d_slv->getOptions().smt.produceInterpolants)
       << "Cannot get interpolant unless interpolants are enabled (try "
          "--produce-interpolants)";
   //////// all checks before this line
@@ -7164,7 +7228,7 @@ Term Solver::getInterpolant(const Term& conj, Grammar& grammar) const
 Term Solver::getInterpolantNext() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
-  CVC5_API_CHECK(d_slv->getOptions().smt.interpolants)
+  CVC5_API_CHECK(d_slv->getOptions().smt.produceInterpolants)
       << "Cannot get interpolant unless interpolants are enabled (try "
          "--produce-interpolants)";
   CVC5_API_CHECK(d_slv->getOptions().base.incrementalSolving)
@@ -7346,11 +7410,15 @@ void Solver::setOption(const std::string& option,
       option.find("command-verbosity") != std::string::npos
       || std::find(options.cbegin(), options.cend(), option) != options.cend())
       << "Unrecognized option: " << option << '.';
+  // this list includes options that are prescribed to be changable in any
+  // context based on the SMT-LIB standard, as well as options (e.g. tlimit-per)
+  // that have no impact on solver initialization or imply other options.
   static constexpr auto mutableOpts = {"diagnostic-output-channel",
                                        "print-success",
                                        "regular-output-channel",
                                        "reproducible-resource-limit",
-                                       "verbosity"};
+                                       "verbosity",
+                                       "tlimit-per"};
   if (std::find(mutableOpts.begin(), mutableOpts.end(), option)
       == mutableOpts.end())
   {
