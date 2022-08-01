@@ -498,10 +498,6 @@ TypeNode NodeManager::getType(TNode n, bool check)
   bool hasType = getAttribute(n, TypeAttr(), typeNode);
   bool needsCheck = check && !getAttribute(n, TypeCheckedAttr());
 
-  Trace("getType") << this << " getting type for " << &n << " " << n
-                   << ", check=" << check << ", needsCheck = " << needsCheck
-                   << ", hasType = " << hasType << endl;
-
 #ifdef CVC5_DEBUG
   // already did type check eagerly upon creation in node builder
   bool doTypeCheck = false;
@@ -513,22 +509,22 @@ TypeNode NodeManager::getType(TNode n, bool check)
     /* Iterate and compute the children bottom up. This avoids stack
        overflows in computeType() when the Node graph is really deep,
        which should only affect us when we're type checking lazily. */
-    stack<TNode> worklist;
-    worklist.push(n);
+    std::vector<TNode> worklist;
+    worklist.push_back(n);
 
     while (!worklist.empty())
     {
-      TNode m = worklist.top();
+      TNode m = worklist.back();
 
       bool readyToCompute = true;
 
-      for (TNode::iterator it = m.begin(), end = m.end(); it != end; ++it)
+      for (TNode mc : m)
       {
-        if (!hasAttribute(*it, TypeAttr())
-            || (check && !getAttribute(*it, TypeCheckedAttr())))
+        if (!hasAttribute(mc, TypeAttr())
+            || (check && !getAttribute(mc, TypeCheckedAttr())))
         {
           readyToCompute = false;
-          worklist.push(*it);
+          worklist.push_back(mc);
         }
       }
 
@@ -537,7 +533,7 @@ TypeNode NodeManager::getType(TNode n, bool check)
         Assert(check || m.getMetaKind() != kind::metakind::NULLARY_OPERATOR);
         /* All the children have types, time to compute */
         typeNode = TypeChecker::computeType(this, m, check);
-        worklist.pop();
+        worklist.pop_back();
       }
     }  // end while
 
@@ -556,9 +552,6 @@ TypeNode NodeManager::getType(TNode n, bool check)
   Assert(hasAttribute(n, TypeAttr()));
   /* The check should have happened, if we asked for it. */
   Assert(!check || getAttribute(n, TypeCheckedAttr()));
-
-  Trace("getType") << "type of " << &n << " " << n << " is " << typeNode
-                   << endl;
   return typeNode;
 }
 
