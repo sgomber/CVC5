@@ -249,7 +249,7 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
   std::vector<Node>& patTermsSingle = d_patTerms[0][f];
   if (!patTermsSingle.empty())
   {
-    size_t numSingleTriggers = patTermsSingle.size();
+    size_t numSingleTriggersToUse = patTermsSingle.size();
     if (options().quantifiers.relevantTriggers)
     {
       Assert(d_quant_rel);
@@ -276,20 +276,20 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
                                     << ")" << std::endl;
         }
       }
-      numSingleTriggers = 1;
+      // consider only those that have the same score as the best
+      numSingleTriggersToUse = 1;
       unsigned nqfs_curr = d_quant_rel->getNumQuantifiersForSymbol(
           patTermsSingle[0].getOperator());
-      // consider all that have the same score
-      while (numSingleTriggers < patTermsSingle.size()
+      while (numSingleTriggersToUse < patTermsSingle.size()
              && d_quant_rel->getNumQuantifiersForSymbol(
-                    patTermsSingle[numSingleTriggers].getOperator())
+                    patTermsSingle[numSingleTriggersToUse].getOperator())
                     <= nqfs_curr)
       {
-        numSingleTriggers++;
+        numSingleTriggersToUse++;
       }
     }
     // add all considered single triggers
-    for (size_t i = 0; i < numSingleTriggers; i++)
+    for (size_t i = 0; i < numSingleTriggersToUse; i++)
     {
       Trigger* tr = d_td.mkTrigger(f,
                                    patTermsSingle[i],
@@ -309,7 +309,7 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
   std::vector<Node>& patTermsMulti = d_patTerms[1][f];
   if (d_made_multi_trigger[f])
   {
-    // shuffle randomly
+    // shuffle randomly if we've already made a multi trigger
     std::shuffle(
         patTermsMulti.begin(), patTermsMulti.end(), Random::getRandom());
   }
