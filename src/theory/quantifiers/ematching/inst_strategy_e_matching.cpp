@@ -248,7 +248,7 @@ void InstStrategyAutoGenTriggers::generateTriggers(Node q)
         << "...failed to generate pattern terms" << std::endl;
     return;
   }
-  bool alreadyMadeTriggers = d_madeTriggers.find(q)!=d_madeTriggers.end();
+  bool alreadyMadeTriggers = d_madeTriggers.find(q) != d_madeTriggers.end();
   d_madeTriggers.insert(q);
   // first, generate single triggers
   std::vector<Node>& patTermsSingle = d_patTerms[0][q];
@@ -650,7 +650,8 @@ void InstStrategyAutoGenTriggers::addUserNoPattern( Node q, Node pat ) {
   }
 }
 
-void InstStrategyAutoGenTriggers::sortPatTermsByRelevance(std::vector<Node>& patTerms)
+void InstStrategyAutoGenTriggers::sortPatTermsByRelevance(
+    std::vector<Node>& patTerms)
 {
   if (!options().quantifiers.relevantTriggers)
   {

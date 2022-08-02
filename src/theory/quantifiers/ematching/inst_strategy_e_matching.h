@@ -110,7 +110,8 @@ class InstStrategyAutoGenTriggers : public InstStrategy
    */
   QuantRelevance* d_quant_rel;
   /**
-   * If relevant triggers is enabled, sort terms in patTerms based on how often they occur.
+   * If relevant triggers is enabled, sort terms in patTerms based on how often
+   * they occur.
    */
   void sortPatTermsByRelevance(std::vector<Node>& patTerms);
 }; /* class InstStrategyAutoGenTriggers */
