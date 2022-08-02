@@ -283,7 +283,7 @@ void PatternTermSelector::collectTermsInternal(
            && std::find(d_excluded.begin(), d_excluded.end(), n)
                   == d_excluded.end())
   {
-    nu = getIsUsableTrigger(d_opts,n, d_quant);
+    nu = getIsUsableTrigger(d_opts, n, d_quant);
     if (d_opts.quantifiers.nestedTriggers)
     {
       // if we're using nested terms, we need another check for free variables

@@ -418,7 +418,7 @@ name   = "Quantifiers"
 
 [[option]]
   name       = "nestedTriggers"
-  category   = "regular"
+  category   = "expert"
   long       = "nested-triggers"
   type       = "bool"
   default    = "false"
