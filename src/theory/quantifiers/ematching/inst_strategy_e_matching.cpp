@@ -235,9 +235,11 @@ InstStrategyStatus InstStrategyAutoGenTriggers::process(Node f,
   return InstStrategyStatus::STATUS_UNKNOWN;
 }
 
-void InstStrategyAutoGenTriggers::generateTriggers( Node q )
+void InstStrategyAutoGenTriggers::generateTriggers(Node q)
 {
-  Trace("auto-gen-trigger-debug") << "Generate triggers for " << q << ", #var=" << q[0].getNumChildren() << "..." << std::endl;
+  Trace("auto-gen-trigger-debug")
+      << "Generate triggers for " << q << ", #var=" << q[0].getNumChildren()
+      << "..." << std::endl;
 
   // first, generate the set of pattern terms
   if (!generatePatternTerms(q))
@@ -308,7 +310,7 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node q )
   }
   // now consider multi-triggers
   std::vector<Node>& patTermsMulti = d_patTerms[1][q];
-  if (d_made_multi_trigger.find(q)!=d_made_multi_trigger.end())
+  if (d_made_multi_trigger.find(q) != d_made_multi_trigger.end())
   {
     // shuffle randomly if we've already made a multi trigger
     std::shuffle(
