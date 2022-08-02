@@ -1,33 +1,28 @@
-/*********************                                                        */
-/*! \file output_channel.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Morgan Deters, Andrew Reynolds, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The theory output channel interface
- **
- ** The theory output channel interface.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Morgan Deters, Andrew Reynolds, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The theory output channel interface.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__OUTPUT_CHANNEL_H
-#define CVC4__THEORY__OUTPUT_CHANNEL_H
+#ifndef CVC5__THEORY__OUTPUT_CHANNEL_H
+#define CVC5__THEORY__OUTPUT_CHANNEL_H
 
-#include <memory>
-
-#include "expr/proof_node.h"
-#include "smt/logic_exception.h"
-#include "theory/interrupted.h"
-#include "theory/trust_node.h"
+#include "proof/trust_node.h"
+#include "theory/incomplete_id.h"
 #include "util/resource_manager.h"
 
-namespace CVC4 {
+namespace cvc5::internal {
 namespace theory {
 
 /** Properties of lemmas */
@@ -71,7 +66,7 @@ class Theory;
 /**
  * Generic "theory output channel" interface.
  *
- * All methods can throw unrecoverable CVC4::Exception's unless otherwise
+ * All methods can throw unrecoverable cvc5::internal::Exception's unless otherwise
  * documented.
  */
 class OutputChannel {
@@ -95,7 +90,7 @@ class OutputChannel {
    *
    * @throws Interrupted if the theory can be safely interrupted.
    */
-  virtual void safePoint(ResourceManager::Resource r) {}
+  virtual void safePoint(Resource r) {}
 
   /**
    * Indicate a theory conflict has arisen.
@@ -127,16 +122,6 @@ class OutputChannel {
   virtual void lemma(TNode n, LemmaProperty p = LemmaProperty::NONE) = 0;
 
   /**
-   * Request a split on a new theory atom.  This is equivalent to
-   * calling lemma({OR n (NOT n)}).
-   *
-   * @param n - a theory atom; must be of Boolean type
-   */
-  void split(TNode n);
-
-  virtual void splitLemma(TNode n, bool removable = false) = 0;
-
-  /**
    * If a decision is made on n, it must be in the phase specified.
    * Note that this is enforced *globally*, i.e., it is completely
    * context-INdependent.  If you ever requirePhase() on a literal,
@@ -155,7 +140,7 @@ class OutputChannel {
    * this context level.  If SAT is later determined by the
    * TheoryEngine, it should actually return an UNKNOWN result.
    */
-  virtual void setIncomplete() = 0;
+  virtual void setIncomplete(IncompleteId id) = 0;
 
   /**
    * "Spend" a "resource."  The meaning is specific to the context in
@@ -168,7 +153,7 @@ class OutputChannel {
    * long-running operations, they cannot rely on resource() to break
    * out of infinite or intractable computations.
    */
-  virtual void spendResource(ResourceManager::Resource r) {}
+  virtual void spendResource(Resource r) {}
 
   /**
    * Handle user attribute.
@@ -177,12 +162,6 @@ class OutputChannel {
    * This can happen through, for example, the SMT-LIBv2 language.
    */
   virtual void handleUserAttribute(const char* attr, Theory* t) {}
-
-  /** Demands that the search restart from sat search level 0.
-   * Using this leads to non-termination issues.
-   * It is appropriate for prototyping for theories.
-   */
-  virtual void demandRestart() {}
 
   //---------------------------- new proof
   /**
@@ -204,6 +183,6 @@ class OutputChannel {
 }; /* class OutputChannel */
 
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5::internal
 
-#endif /* CVC4__THEORY__OUTPUT_CHANNEL_H */
+#endif /* CVC5__THEORY__OUTPUT_CHANNEL_H */

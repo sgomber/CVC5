@@ -1,29 +1,32 @@
-/*********************                                                        */
-/*! \file ee_manager_distributed.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Management of a distributed approach for equality sharing.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Management of a distributed approach for equality sharing.
+ */
 
 #include "theory/ee_manager_distributed.h"
 
 #include "theory/quantifiers_engine.h"
 #include "theory/shared_solver.h"
 #include "theory/theory_engine.h"
+#include "theory/uf/equality_engine.h"
 
-namespace CVC4 {
+namespace cvc5::internal {
 namespace theory {
 
-EqEngineManagerDistributed::EqEngineManagerDistributed(TheoryEngine& te,
+EqEngineManagerDistributed::EqEngineManagerDistributed(Env& env,
+                                                       TheoryEngine& te,
                                                        SharedSolver& shs)
-    : EqEngineManager(te, shs), d_masterEENotify(nullptr)
+    : EqEngineManager(env, te, shs), d_masterEENotify(nullptr)
 {
 }
 
@@ -33,7 +36,7 @@ EqEngineManagerDistributed::~EqEngineManagerDistributed()
 
 void EqEngineManagerDistributed::initializeTheories()
 {
-  context::Context* c = d_te.getSatContext();
+  context::Context* c = context();
   // initialize the shared solver
   EeSetupInfo esis;
   if (d_sharedSolver.needsEqualityEngine(esis))
@@ -47,18 +50,16 @@ void EqEngineManagerDistributed::initializeTheories()
     Unhandled() << "Expected shared solver to use equality engine";
   }
 
-  const LogicInfo& logicInfo = d_te.getLogicInfo();
+  const LogicInfo& logicInfo = d_env.getLogicInfo();
   if (logicInfo.isQuantified())
   {
     // construct the master equality engine
     Assert(d_masterEqualityEngine == nullptr);
     QuantifiersEngine* qe = d_te.getQuantifiersEngine();
     Assert(qe != nullptr);
-    d_masterEENotify.reset(new MasterNotifyClass(qe));
-    d_masterEqualityEngine.reset(new eq::EqualityEngine(*d_masterEENotify.get(),
-                                                        d_te.getSatContext(),
-                                                        "theory::master",
-                                                        false));
+    d_masterEENotify.reset(new quantifiers::MasterNotifyClass(qe));
+    d_masterEqualityEngine = std::make_unique<eq::EqualityEngine>(
+        d_env, c, *d_masterEENotify.get(), "theory::master", false);
   }
   // allocate equality engines per theory
   for (TheoryId theoryId = theory::THEORY_FIRST;
@@ -107,11 +108,5 @@ void EqEngineManagerDistributed::notifyModel(bool incomplete)
   }
 }
 
-void EqEngineManagerDistributed::MasterNotifyClass::eqNotifyNewClass(TNode t)
-{
-  // adds t to the quantifiers term database
-  d_quantEngine->eqNotifyNewClass(t);
-}
-
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5::internal

@@ -1,34 +1,41 @@
-/*********************                                                        */
-/*! \file factoring_check.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Gereon Kremer, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of factoring check
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Tim King
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of factoring check.
+ */
 
 #include "theory/arith/nl/ext/factoring_check.h"
 
 #include "expr/node.h"
 #include "expr/skolem_manager.h"
+#include "proof/proof.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/arith/inference_manager.h"
+#include "theory/arith/nl/ext/ext_state.h"
 #include "theory/arith/nl/nl_model.h"
+#include "theory/rewriter.h"
+#include "util/rational.h"
 
-namespace CVC4 {
+using namespace cvc5::internal::kind;
+
+namespace cvc5::internal {
 namespace theory {
 namespace arith {
 namespace nl {
 
-FactoringCheck::FactoringCheck(ExtState* data) : d_data(data)
+FactoringCheck::FactoringCheck(Env& env, ExtState* data)
+    : EnvObj(env), d_data(data)
 {
-  d_zero = NodeManager::currentNM()->mkConst(Rational(0));
-  d_one = NodeManager::currentNM()->mkConst(Rational(1));
+  d_one = NodeManager::currentNM()->mkConstReal(Rational(1));
 }
 
 void FactoringCheck::check(const std::vector<Node>& asserts,
@@ -53,7 +60,7 @@ void FactoringCheck::check(const std::vector<Node>& asserts,
       {
         Trace("nl-ext-factor") << "Factoring for literal " << lit
                                << ", monomial sum is : " << std::endl;
-        if (Trace.isOn("nl-ext-factor"))
+        if (TraceIsOn("nl-ext-factor"))
         {
           ArithMSum::debugPrintMonomialSum(msum, "nl-ext-factor");
         }
@@ -89,7 +96,7 @@ void FactoringCheck::check(const std::vector<Node>& asserts,
                     children.pop_back();
                   }
                   children[i] = itm->first[i];
-                  val = Rewriter::rewrite(val);
+                  val = rewrite(val);
                   factor_to_mono[itm->first[i]].push_back(val);
                   factor_to_mono_orig[itm->first[i]].push_back(itm->first);
                 }
@@ -116,8 +123,10 @@ void FactoringCheck::check(const std::vector<Node>& asserts,
           {
             continue;
           }
-          Node sum = nm->mkNode(Kind::PLUS, itf->second);
-          sum = Rewriter::rewrite(sum);
+          Node sum = nm->mkNode(Kind::ADD, itf->second);
+          sum = rewrite(sum);
+          // remove TO_REAL if necessary here
+          sum = sum.getKind() == TO_REAL ? sum[0] : sum;
           Trace("nl-ext-factor")
               << "* Factored sum for " << x << " : " << sum << std::endl;
 
@@ -143,12 +152,12 @@ void FactoringCheck::check(const std::vector<Node>& asserts,
                   itm->second, itm->first.isNull() ? d_one : itm->first));
             }
           }
-          Node polyn =
-              poly.size() == 1 ? poly[0] : nm->mkNode(Kind::PLUS, poly);
+          Node polyn = poly.size() == 1 ? poly[0] : nm->mkNode(Kind::ADD, poly);
           Trace("nl-ext-factor")
               << "...factored polynomial : " << polyn << std::endl;
-          Node conc_lit = nm->mkNode(atom.getKind(), polyn, d_zero);
-          conc_lit = Rewriter::rewrite(conc_lit);
+          Node zero = nm->mkConstRealOrInt(polyn.getType(), Rational(0));
+          Node conc_lit = nm->mkNode(atom.getKind(), polyn, zero);
+          conc_lit = rewrite(conc_lit);
           if (!polarity)
           {
             conc_lit = conc_lit.negate();
@@ -167,8 +176,8 @@ void FactoringCheck::check(const std::vector<Node>& asserts,
             proof->addStep(
                 flem, PfRule::MACRO_SR_PRED_TRANSFORM, {split, k_eq}, {flem});
           }
-          d_data->d_im.addPendingArithLemma(
-              flem, InferenceId::NL_FACTOR, proof);
+          d_data->d_im.addPendingLemma(
+              flem, InferenceId::ARITH_NL_FACTOR, proof);
         }
       }
     }
@@ -178,25 +187,30 @@ void FactoringCheck::check(const std::vector<Node>& asserts,
 Node FactoringCheck::getFactorSkolem(Node n, CDProof* proof)
 {
   std::map<Node, Node>::iterator itf = d_factor_skolem.find(n);
+  Node k;
   if (itf == d_factor_skolem.end())
   {
     NodeManager* nm = NodeManager::currentNM();
-    Node k = nm->getSkolemManager()->mkPurifySkolem(n, "kf");
+    k = nm->getSkolemManager()->mkPurifySkolem(n, "kf");
     Node k_eq = k.eqNode(n);
     Trace("nl-ext-factor") << "...adding factor skolem " << k << " == " << n
                            << std::endl;
-    if (d_data->isProofEnabled())
-    {
-      proof->addStep(k_eq, PfRule::MACRO_SR_PRED_INTRO, {}, {k_eq});
-    }
-    d_data->d_im.addPendingArithLemma(k_eq, InferenceId::NL_FACTOR, proof);
+    d_data->d_im.addPendingLemma(k_eq, InferenceId::ARITH_NL_FACTOR, proof);
     d_factor_skolem[n] = k;
-    return k;
   }
-  return itf->second;
+  else
+  {
+    k = itf->second;
+  }
+  if (d_data->isProofEnabled())
+  {
+    Node k_eq = k.eqNode(n);
+    proof->addStep(k_eq, PfRule::MACRO_SR_PRED_INTRO, {}, {k_eq});
+  }
+  return k;
 }
 
 }  // namespace nl
 }  // namespace arith
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5::internal

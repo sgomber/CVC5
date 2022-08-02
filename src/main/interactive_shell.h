@@ -1,77 +1,81 @@
-/*********************                                                        */
-/*! \file interactive_shell.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Morgan Deters, Christopher L. Conway, Aina Niemetz
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Interactive shell for CVC4
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Morgan Deters, Mathias Preiner, Christopher L. Conway
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Interactive shell for cvc5.
+ */
 
-#ifndef CVC4__INTERACTIVE_SHELL_H
-#define CVC4__INTERACTIVE_SHELL_H
+#ifndef CVC5__INTERACTIVE_SHELL_H
+#define CVC5__INTERACTIVE_SHELL_H
 
 #include <iosfwd>
+#include <memory>
+#include <optional>
 #include <string>
+#include <vector>
 
-#include "options/language.h"
-#include "options/options.h"
-#include "util/unsafe_interrupt_exception.h"
+namespace cvc5 {
 
-namespace CVC4 {
-
-class Command;
-class Options;
-
-namespace api {
 class Solver;
-}
 
 namespace parser {
   class Parser;
-}/* CVC4::parser namespace */
+  class SymbolManager;
+  }  // namespace parser
 
-class SymbolManager;
+  class Command;
 
-class CVC4_PUBLIC InteractiveShell
-{
-  const Options& d_options;
-  std::istream& d_in;
-  std::ostream& d_out;
-  parser::Parser* d_parser;
-  bool d_quit;
-  bool d_usingEditline;
+  namespace internal {
 
-  std::string d_historyFilename;
+  class InteractiveShell
+  {
+   public:
+    using CmdSeq = std::vector<std::unique_ptr<cvc5::Command>>;
 
-  static const std::string INPUT_FILENAME;
-  static const unsigned s_historyLimit = 500;
+    InteractiveShell(Solver* solver,
+                     cvc5::parser::SymbolManager* sm,
+                     std::istream& in,
+                     std::ostream& out);
 
-public:
- InteractiveShell(api::Solver* solver, SymbolManager* sm);
+    /**
+     * Close out the interactive session.
+     */
+    ~InteractiveShell();
 
- /**
-  * Close out the interactive session.
-  */
- ~InteractiveShell();
+    /**
+     * Read a list of commands from the interactive shell. This will read as
+     * many lines as necessary to parse at least one well-formed command.
+     */
+    std::optional<CmdSeq> readCommand();
 
- /**
-  * Read a command from the interactive shell. This will read as
-  * many lines as necessary to parse a well-formed command.
-  */
- Command* readCommand();
+    /**
+     * Return the internal parser being used.
+     */
+    cvc5::parser::Parser* getParser() { return d_parser.get(); }
 
- /**
-  * Return the internal parser being used.
-  */
- parser::Parser* getParser() { return d_parser; }
+   private:
+    Solver* d_solver;
+    std::istream& d_in;
+    std::ostream& d_out;
+    std::unique_ptr<cvc5::parser::Parser> d_parser;
+    bool d_quit;
+    bool d_usingEditline;
 
-};/* class InteractiveShell */
+    std::string d_historyFilename;
 
-}/* CVC4 namespace */
+    static const std::string INPUT_FILENAME;
+    static const unsigned s_historyLimit = 500;
+  }; /* class InteractiveShell */
 
-#endif /* CVC4__INTERACTIVE_SHELL_H */
+  }  // namespace internal
+  }  // namespace cvc5
+
+#endif /* CVC5__INTERACTIVE_SHELL_H */

@@ -1,26 +1,28 @@
-/*********************                                                        */
-/*! \file quant_elim_solver.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The solver for quantifier elimination queries
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The solver for quantifier elimination queries.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__SMT__QUANT_ELIM_SOLVER_H
-#define CVC4__SMT__QUANT_ELIM_SOLVER_H
+#ifndef CVC5__SMT__QUANT_ELIM_SOLVER_H
+#define CVC5__SMT__QUANT_ELIM_SOLVER_H
 
 #include "expr/node.h"
 #include "smt/assertions.h"
+#include "smt/env_obj.h"
 
-namespace CVC4 {
+namespace cvc5::internal {
 namespace smt {
 
 class SmtSolver;
@@ -33,10 +35,10 @@ class SmtSolver;
  * quantifier instantiations used for unsat which are in turn used for
  * constructing the solution for the quantifier elimination query.
  */
-class QuantElimSolver
+class QuantElimSolver : protected EnvObj
 {
  public:
-  QuantElimSolver(SmtSolver& sms);
+  QuantElimSolver(Env& env, SmtSolver& sms);
   ~QuantElimSolver();
 
   /**
@@ -49,7 +51,7 @@ class QuantElimSolver
    * elimination is LRA and LIA.
    *
    * This function returns a formula ret such that, given
-   * the current set of formulas A asserted to this SmtEngine :
+   * the current set of formulas A asserted to this SolverEngine :
    *
    * If doFull = true, then
    *   - ( A ^ q ) and ( A ^ ret ) are equivalent
@@ -80,10 +82,10 @@ class QuantElimSolver
    * for incrementally computing the result of a
    * quantifier elimination.
    *
-   * @param as The assertions of the SmtEngine
+   * @param as The assertions of the SolverEngine
    * @param q The quantified formula we are eliminating quantifiers from
    * @param doFull Whether we are doing full quantifier elimination on q
-   * @param isInternalSubsolver Whether the SmtEngine we belong to is an
+   * @param isInternalSubsolver Whether the SolverEngine we belong to is an
    * internal subsolver. If it is not, then we convert the final result to
    * witness form.
    * @return The result of eliminating quantifiers from q.
@@ -99,6 +101,6 @@ class QuantElimSolver
 };
 
 }  // namespace smt
-}  // namespace CVC4
+}  // namespace cvc5::internal
 
-#endif /* CVC4__SMT__QUANT_ELIM_SOLVER_H */
+#endif /* CVC5__SMT__QUANT_ELIM_SOLVER_H */

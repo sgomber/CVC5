@@ -1,21 +1,22 @@
-/*********************                                                        */
-/*! \file solver_state.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Tianyi Liang, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The solver state of the theory of strings
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Aina Niemetz, Tianyi Liang
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The solver state of the theory of strings.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__STRINGS__SOLVER_STATE_H
-#define CVC4__THEORY__STRINGS__SOLVER_STATE_H
+#ifndef CVC5__THEORY__STRINGS__SOLVER_STATE_H
+#define CVC5__THEORY__STRINGS__SOLVER_STATE_H
 
 #include <map>
 
@@ -29,7 +30,7 @@
 #include "theory/uf/equality_engine.h"
 #include "theory/valuation.h"
 
-namespace CVC4 {
+namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
@@ -47,8 +48,7 @@ class SolverState : public TheoryState
   typedef context::CDList<Node> NodeList;
 
  public:
-  SolverState(context::Context* c,
-              context::UserContext* u,
+  SolverState(Env& env,
               Valuation& v);
   ~SolverState();
   //-------------------------------------- disequality information
@@ -64,9 +64,9 @@ class SolverState : public TheoryState
   void addDisequality(TNode t1, TNode t2);
   //-------------------------------------- end disequality information
   //------------------------------------------ conflicts
-  /** set pending prefix conflict
+  /** set pending merge conflict
    *
-   * If conf is non-null, this is called when conf is a conjunction of literals
+   * This is called when conf is a conjunction of literals
    * that hold in the current context that are unsatisfiable. It is set as the
    * "pending conflict" to be processed as a conflict lemma on the output
    * channel of this class. It is not sent out immediately since it may require
@@ -74,7 +74,7 @@ class SolverState : public TheoryState
    * during a merge operation, when the equality engine is not in a state to
    * provide explanations.
    */
-  void setPendingPrefixConflictWhen(Node conf);
+  void setPendingMergeConflict(Node conf, InferenceId id);
   /**
    * Set pending conflict, infer info version. Called when we are in conflict
    * based on the inference ii. This generalizes the above method.
@@ -161,6 +161,6 @@ class SolverState : public TheoryState
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5::internal
 
-#endif /* CVC4__THEORY__STRINGS__SOLVER_STATE_H */
+#endif /* CVC5__THEORY__STRINGS__SOLVER_STATE_H */

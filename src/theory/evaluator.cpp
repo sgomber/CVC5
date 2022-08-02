@@ -1,18 +1,17 @@
-/*********************                                                        */
-/*! \file evaluator.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andres Noetzli, Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The Evaluator class
- **
- ** The Evaluator class.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andres Noetzli, Andrew Reynolds, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The Evaluator class.
+ */
 
 #include "theory/evaluator.h"
 
@@ -20,9 +19,12 @@
 #include "theory/rewriter.h"
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/theory.h"
+#include "theory/uf/function_const.h"
 #include "util/integer.h"
 
-namespace CVC4 {
+using namespace cvc5::internal::kind;
+
+namespace cvc5::internal {
 namespace theory {
 
 EvalResult::EvalResult(const EvalResult& other)
@@ -43,10 +45,7 @@ EvalResult::EvalResult(const EvalResult& other)
       new (&d_str) String;
       d_str = other.d_str;
       break;
-    case UCONST:
-      new (&d_uc)
-          UninterpretedConstant(other.d_uc.getType(), other.d_uc.getIndex());
-      break;
+    case UVALUE: new (&d_av) UninterpretedSortValue(other.d_av); break;
     case INVALID: break;
   }
 }
@@ -71,10 +70,7 @@ EvalResult& EvalResult::operator=(const EvalResult& other)
         new (&d_str) String;
         d_str = other.d_str;
         break;
-      case UCONST:
-        new (&d_uc)
-            UninterpretedConstant(other.d_uc.getType(), other.d_uc.getIndex());
-        break;
+      case UVALUE: new (&d_av) UninterpretedSortValue(other.d_av); break;
       case INVALID: break;
     }
   }
@@ -100,25 +96,27 @@ EvalResult::~EvalResult()
       d_str.~String();
       break;
     }
-    case UCONST:
+    case UVALUE:
     {
-      d_uc.~UninterpretedConstant();
+      d_av.~UninterpretedSortValue();
       break;
     }
     default: break;
   }
 }
 
-Node EvalResult::toNode() const
+Node EvalResult::toNode(const TypeNode& tn) const
 {
   NodeManager* nm = NodeManager::currentNM();
   switch (d_tag)
   {
     case EvalResult::BOOL: return nm->mkConst(d_bool);
     case EvalResult::BITVECTOR: return nm->mkConst(d_bv);
-    case EvalResult::RATIONAL: return nm->mkConst(d_rat);
+    case EvalResult::RATIONAL:
+      Assert(!tn.isNull());
+      return nm->mkConstRealOrInt(tn, d_rat);
     case EvalResult::STRING: return nm->mkConst(d_str);
-    case EvalResult::UCONST: return nm->mkConst(d_uc);
+    case EvalResult::UVALUE: return nm->mkConst(d_av);
     default:
     {
       Trace("evaluator") << "Missing conversion from " << d_tag << " to node"
@@ -128,62 +126,68 @@ Node EvalResult::toNode() const
   }
 }
 
+Evaluator::Evaluator(Rewriter* rr, uint32_t alphaCard)
+    : d_rr(rr), d_alphaCard(alphaCard)
+{
+}
+
+Node Evaluator::eval(TNode n,
+                     const std::vector<Node>& args,
+                     const std::vector<Node>& vals) const
+{
+  std::unordered_map<Node, Node> visited;
+  return eval(n, args, vals, visited);
+}
 Node Evaluator::eval(TNode n,
                      const std::vector<Node>& args,
                      const std::vector<Node>& vals,
-                     bool useRewriter) const
-{
-  std::unordered_map<Node, Node, NodeHashFunction> visited;
-  return eval(n, args, vals, visited, useRewriter);
-}
-Node Evaluator::eval(
-    TNode n,
-    const std::vector<Node>& args,
-    const std::vector<Node>& vals,
-    const std::unordered_map<Node, Node, NodeHashFunction>& visited,
-    bool useRewriter) const
+                     const std::unordered_map<Node, Node>& visited) const
 {
   Trace("evaluator") << "Evaluating " << n << " under substitution " << args
                      << " " << vals << " with visited size = " << visited.size()
                      << std::endl;
-  std::unordered_map<TNode, Node, NodeHashFunction> evalAsNode;
-  std::unordered_map<TNode, EvalResult, TNodeHashFunction> results;
+  std::unordered_map<TNode, Node> evalAsNode;
+  std::unordered_map<TNode, EvalResult> results;
   // add visited to results
   for (const std::pair<const Node, Node>& p : visited)
   {
     Trace("evaluator") << "Add " << p.first << " == " << p.second << std::endl;
-    results[p.first] = evalInternal(p.second, args, vals, evalAsNode, results, useRewriter);
+    results[p.first] = evalInternal(p.second, args, vals, evalAsNode, results);
     if (results[p.first].d_tag == EvalResult::INVALID)
     {
       // could not evaluate, use the evalAsNode map
-      std::unordered_map<TNode, Node, NodeHashFunction>::iterator itn =
-          evalAsNode.find(p.second);
+      std::unordered_map<TNode, Node>::iterator itn = evalAsNode.find(p.second);
       Assert(itn != evalAsNode.end());
       Node val = itn->second;
-      if (useRewriter)
+      if (d_rr != nullptr)
       {
-        val = Rewriter::rewrite(val);
+        val = d_rr->rewrite(val);
       }
       evalAsNode[p.first] = val;
     }
   }
   Trace("evaluator") << "Run eval internal..." << std::endl;
-  Node ret = evalInternal(n, args, vals, evalAsNode, results, useRewriter).toNode();
+  Node ret =
+      evalInternal(n, args, vals, evalAsNode, results).toNode(n.getType());
   // if we failed to evaluate
-  if (ret.isNull() && useRewriter)
+  if (d_rr != nullptr)
   {
-    // should be stored in the evaluation-as-node map
-    std::unordered_map<TNode, Node, NodeHashFunction>::iterator itn =
-        evalAsNode.find(n);
-    Assert(itn != evalAsNode.end());
-    ret = Rewriter::rewrite(itn->second);
+    if (ret.isNull())
+    {
+      // should be stored in the evaluation-as-node map
+      std::unordered_map<TNode, Node>::iterator itn = evalAsNode.find(n);
+      Assert(itn != evalAsNode.end());
+      ret = itn->second;
+    }
+    // always rewrite, which can change if the evaluation was not a constant
+    ret = d_rr->rewrite(ret);
   }
   // should be the same as substitution + rewriting, or possibly null if
-  // useRewriter is false
-  Assert((ret.isNull() && !useRewriter)
+  // d_rr is nullptr or non-constant
+  Assert(ret.isNull() || !ret.isConst() || d_rr == nullptr
          || ret
-                == Rewriter::rewrite(n.substitute(
-                       args.begin(), args.end(), vals.begin(), vals.end())));
+                == d_rr->rewrite(n.substitute(
+                    args.begin(), args.end(), vals.begin(), vals.end())));
   return ret;
 }
 
@@ -191,13 +195,12 @@ EvalResult Evaluator::evalInternal(
     TNode n,
     const std::vector<Node>& args,
     const std::vector<Node>& vals,
-    std::unordered_map<TNode, Node, NodeHashFunction>& evalAsNode,
-    std::unordered_map<TNode, EvalResult, TNodeHashFunction>& results,
-    bool useRewriter) const
+    std::unordered_map<TNode, Node>& evalAsNode,
+    std::unordered_map<TNode, EvalResult>& results) const
 {
   std::vector<TNode> queue;
   queue.emplace_back(n);
-  std::unordered_map<TNode, EvalResult, TNodeHashFunction>::iterator itr;
+  std::unordered_map<TNode, EvalResult>::iterator itr;
 
   while (queue.size() != 0)
   {
@@ -294,11 +297,11 @@ EvalResult Evaluator::evalInternal(
           // successfully evaluated, and the children that did not.
           Trace("evaluator") << "Evaluator: collect arguments" << std::endl;
           currNodeVal = reconstruct(currNodeVal, results, evalAsNode);
-          if (useRewriter)
+          if (d_rr != nullptr)
           {
             // Rewrite the result now, if we use the rewriter. We will see below
             // if we are able to turn it into a valid EvalResult.
-            currNodeVal = Rewriter::rewrite(currNodeVal);
+            currNodeVal = d_rr->rewrite(currNodeVal);
           }
         }
         needsReconstruct = false;
@@ -328,9 +331,18 @@ EvalResult Evaluator::evalInternal(
         {
           Trace("evaluator") << "Evaluate " << currNode << std::endl;
           TNode op = currNode.getOperator();
-          Assert(evalAsNode.find(op) != evalAsNode.end());
-          // no function can be a valid EvalResult
-          op = evalAsNode[op];
+          if (op.getKind() == kind::FUNCTION_ARRAY_CONST)
+          {
+            // If we have a function constant as the operator, it was not
+            // processed. We require converting to a lambda now.
+            op = uf::FunctionConst::toLambda(op);
+          }
+          else
+          {
+            Assert(evalAsNode.find(op) != evalAsNode.end());
+            // no function can be a valid EvalResult
+            op = evalAsNode[op];
+          }
           Trace("evaluator") << "Operator evaluated to " << op << std::endl;
           if (op.getKind() != kind::LAMBDA)
           {
@@ -354,22 +366,20 @@ EvalResult Evaluator::evalInternal(
 
           for (const auto& lambdaVal : currNode)
           {
-            lambdaVals.insert(lambdaVals.begin(), results[lambdaVal].toNode());
+            lambdaVals.insert(lambdaVals.begin(),
+                              results[lambdaVal].toNode(lambdaVal.getType()));
           }
 
           // Lambdas are evaluated in a recursive fashion because each
           // evaluation requires different substitutions. We use a fresh cache
-          // since the evaluation of op[1] is under a new substitution and thus
-          // should not be cached. We could alternatively copy evalAsNode to
-          // evalAsNodeC but favor avoiding this copy for performance reasons.
-          std::unordered_map<TNode, Node, NodeHashFunction> evalAsNodeC;
-          std::unordered_map<TNode, EvalResult, TNodeHashFunction> resultsC;
-          results[currNode] = evalInternal(op[1],
-                                           lambdaArgs,
-                                           lambdaVals,
-                                           evalAsNodeC,
-                                           resultsC,
-                                           useRewriter);
+          // since the evaluation of op[1] is under a new substitution and
+          // thus should not be cached. We could alternatively copy evalAsNode
+          // to evalAsNodeC but favor avoiding this copy for performance
+          // reasons.
+          std::unordered_map<TNode, Node> evalAsNodeC;
+          std::unordered_map<TNode, EvalResult> resultsC;
+          results[currNode] = evalInternal(
+              op[1], lambdaArgs, lambdaVals, evalAsNodeC, resultsC);
           Trace("evaluator") << "Evaluated via arguments to "
                              << results[currNode].d_tag << std::endl;
           if (results[currNode].d_tag == EvalResult::INVALID)
@@ -414,19 +424,20 @@ EvalResult Evaluator::evalInternal(
         }
 
         case kind::CONST_RATIONAL:
+        case kind::CONST_INTEGER:
         {
           const Rational& r = currNodeVal.getConst<Rational>();
           results[currNode] = EvalResult(r);
           break;
         }
-        case kind::UNINTERPRETED_CONSTANT:
+        case kind::UNINTERPRETED_SORT_VALUE:
         {
-          const UninterpretedConstant& uc =
-              currNodeVal.getConst<UninterpretedConstant>();
-          results[currNode] = EvalResult(uc);
+          const UninterpretedSortValue& av =
+              currNodeVal.getConst<UninterpretedSortValue>();
+          results[currNode] = EvalResult(av);
           break;
         }
-        case kind::PLUS:
+        case kind::ADD:
         {
           Rational res = results[currNode[0]].d_rat;
           for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
@@ -437,7 +448,7 @@ EvalResult Evaluator::evalInternal(
           break;
         }
 
-        case kind::MINUS:
+        case kind::SUB:
         {
           const Rational& x = results[currNode[0]].d_rat;
           const Rational& y = results[currNode[1]].d_rat;
@@ -445,7 +456,7 @@ EvalResult Evaluator::evalInternal(
           break;
         }
 
-        case kind::UMINUS:
+        case kind::NEG:
         {
           const Rational& x = results[currNode[0]].d_rat;
           results[currNode] = EvalResult(-x);
@@ -460,6 +471,34 @@ EvalResult Evaluator::evalInternal(
             res = res * results[currNode[i]].d_rat;
           }
           results[currNode] = EvalResult(res);
+          break;
+        }
+        case kind::DIVISION:
+        case kind::DIVISION_TOTAL:
+        {
+          Rational res = results[currNode[0]].d_rat;
+          bool divbyzero = false;
+          for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
+          {
+            if (results[currNode[i]].d_rat.isZero())
+            {
+              Trace("evaluator")
+                  << "Division by zero not supported" << std::endl;
+              divbyzero = true;
+              results[currNode] = EvalResult();
+              break;
+            }
+            res = res / results[currNode[i]].d_rat;
+          }
+          if (divbyzero)
+          {
+            processUnhandled(
+                currNode, currNodeVal, evalAsNode, results, needsReconstruct);
+          }
+          else
+          {
+            results[currNode] = EvalResult(res);
+          }
           break;
         }
 
@@ -495,6 +534,26 @@ EvalResult Evaluator::evalInternal(
         {
           const Rational& x = results[currNode[0]].d_rat;
           results[currNode] = EvalResult(x.abs());
+          break;
+        }
+        case kind::TO_REAL:
+        {
+          // casting to real is a no-op
+          const Rational& x = results[currNode[0]].d_rat;
+          results[currNode] = EvalResult(x);
+          break;
+        }
+        case kind::TO_INTEGER:
+        {
+          // casting to int takes the floor
+          const Rational& x = results[currNode[0]].d_rat.floor();
+          results[currNode] = EvalResult(x);
+          break;
+        }
+        case kind::IS_INTEGER:
+        {
+          const Rational& x = results[currNode[0]].d_rat;
+          results[currNode] = EvalResult(x.isIntegral());
           break;
         }
         case kind::CONST_STRING:
@@ -542,6 +601,23 @@ EvalResult Evaluator::evalInternal(
           }
           break;
         }
+        case kind::SEQ_NTH:
+        {
+          // only strings evaluate
+          Assert (currNode[0].getType().isString());
+          const String& s = results[currNode[0]].d_str;
+          Integer s_len(s.size());
+          Integer i = results[currNode[1]].d_rat.getNumerator();
+          if (i.strictlyNegative() || i >= s_len)
+          {
+            results[currNode] = EvalResult(Rational(-1));
+          }
+          else
+          {
+            results[currNode] = EvalResult(Rational(s.getVec()[i.toUnsignedInt()]));
+          }
+          break;
+        }
 
         case kind::STRING_UPDATE:
         {
@@ -576,7 +652,7 @@ EvalResult Evaluator::evalInternal(
           break;
         }
 
-        case kind::STRING_STRCTN:
+        case kind::STRING_CONTAINS:
         {
           const String& s = results[currNode[0]].d_str;
           const String& t = results[currNode[1]].d_str;
@@ -584,7 +660,7 @@ EvalResult Evaluator::evalInternal(
           break;
         }
 
-        case kind::STRING_STRIDOF:
+        case kind::STRING_INDEXOF:
         {
           const String& s = results[currNode[0]].d_str;
           Integer s_len(s.size());
@@ -610,7 +686,7 @@ EvalResult Evaluator::evalInternal(
           break;
         }
 
-        case kind::STRING_STRREPL:
+        case kind::STRING_REPLACE:
         {
           const String& s = results[currNode[0]].d_str;
           const String& x = results[currNode[1]].d_str;
@@ -680,7 +756,7 @@ EvalResult Evaluator::evalInternal(
         case kind::STRING_FROM_CODE:
         {
           Integer i = results[currNode[0]].d_rat.getNumerator();
-          if (i >= 0 && i < strings::utils::getAlphabetCardinality())
+          if (i >= 0 && i < d_alphaCard)
           {
             std::vector<unsigned> svec = {i.toUnsignedInt()};
             results[currNode] = EvalResult(String(svec));
@@ -738,7 +814,7 @@ EvalResult Evaluator::evalInternal(
           break;
         }
 
-        case kind::BITVECTOR_PLUS:
+        case kind::BITVECTOR_ADD:
         {
           BitVector res = results[currNode[0]].d_bv;
           for (size_t i = 1, end = currNode.getNumChildren(); i < end; i++)
@@ -792,41 +868,17 @@ EvalResult Evaluator::evalInternal(
           break;
         }
         case kind::BITVECTOR_UDIV:
-        case kind::BITVECTOR_UDIV_TOTAL:
         {
-          if (currNodeVal.getKind() == kind::BITVECTOR_UDIV_TOTAL
-              || results[currNode[1]].d_bv.getValue() != 0)
-          {
-            BitVector res = results[currNode[0]].d_bv;
-            res = res.unsignedDivTotal(results[currNode[1]].d_bv);
-            results[currNode] = EvalResult(res);
-          }
-          else
-          {
-            results[currNode] = EvalResult();
-            evalAsNode[currNode] =
-                needsReconstruct ? reconstruct(currNode, results, evalAsNode)
-                                 : currNodeVal;
-          }
+          BitVector res = results[currNode[0]].d_bv;
+          res = res.unsignedDivTotal(results[currNode[1]].d_bv);
+          results[currNode] = EvalResult(res);
           break;
         }
         case kind::BITVECTOR_UREM:
-        case kind::BITVECTOR_UREM_TOTAL:
         {
-          if (currNodeVal.getKind() == kind::BITVECTOR_UREM_TOTAL
-              || results[currNode[1]].d_bv.getValue() != 0)
-          {
-            BitVector res = results[currNode[0]].d_bv;
-            res = res.unsignedRemTotal(results[currNode[1]].d_bv);
-            results[currNode] = EvalResult(res);
-          }
-          else
-          {
-            results[currNode] = EvalResult();
-            evalAsNode[currNode] =
-                needsReconstruct ? reconstruct(currNode, results, evalAsNode)
-                                 : currNodeVal;
-          }
+          BitVector res = results[currNode[0]].d_bv;
+          res = res.unsignedRemTotal(results[currNode[1]].d_bv);
+          results[currNode] = EvalResult(res);
           break;
         }
 
@@ -860,15 +912,15 @@ EvalResult Evaluator::evalInternal(
               results[currNode] = EvalResult(lhs.d_str == rhs.d_str);
               break;
             }
-            case EvalResult::UCONST:
+            case EvalResult::UVALUE:
             {
-              results[currNode] = EvalResult(lhs.d_uc == rhs.d_uc);
+              results[currNode] = EvalResult(lhs.d_av == rhs.d_av);
               break;
             }
 
             default:
             {
-              Trace("evaluator") << "Theory " << Theory::theoryOf(currNode[0])
+              Trace("evaluator") << "Evaluation of " << currNode[0].getKind()
                                  << " not supported" << std::endl;
               results[currNode] = EvalResult();
               evalAsNode[currNode] =
@@ -898,10 +950,8 @@ EvalResult Evaluator::evalInternal(
         {
           Trace("evaluator") << "Kind " << currNodeVal.getKind()
                              << " not supported" << std::endl;
-          results[currNode] = EvalResult();
-          evalAsNode[currNode] =
-              needsReconstruct ? reconstruct(currNode, results, evalAsNode)
-                               : currNodeVal;
+          processUnhandled(
+              currNode, currNodeVal, evalAsNode, results, needsReconstruct);
         }
       }
     }
@@ -910,10 +960,9 @@ EvalResult Evaluator::evalInternal(
   return results[n];
 }
 
-Node Evaluator::reconstruct(
-    TNode n,
-    std::unordered_map<TNode, EvalResult, TNodeHashFunction>& eresults,
-    std::unordered_map<TNode, Node, NodeHashFunction>& evalAsNode) const
+Node Evaluator::reconstruct(TNode n,
+                            std::unordered_map<TNode, EvalResult>& eresults,
+                            std::unordered_map<TNode, Node>& evalAsNode) const
 {
   if (n.getNumChildren() == 0)
   {
@@ -921,8 +970,8 @@ Node Evaluator::reconstruct(
   }
   Trace("evaluator") << "Evaluator: reconstruct " << n << std::endl;
   NodeManager* nm = NodeManager::currentNM();
-  std::unordered_map<TNode, EvalResult, TNodeHashFunction>::iterator itr;
-  std::unordered_map<TNode, Node, NodeHashFunction>::iterator itn;
+  std::unordered_map<TNode, EvalResult>::iterator itr;
+  std::unordered_map<TNode, Node>::iterator itn;
   std::vector<Node> echildren;
   if (n.getMetaKind() == kind::metakind::PARAMETERIZED)
   {
@@ -945,7 +994,7 @@ Node Evaluator::reconstruct(
       else
       {
         // otherwise, use the evaluation of the operator
-        echildren.push_back(itr->second.toNode());
+        echildren.push_back(itr->second.toNode(op.getType()));
       }
     }
   }
@@ -963,7 +1012,7 @@ Node Evaluator::reconstruct(
     else
     {
       // otherwise, use the evaluation
-      echildren.push_back(itr->second.toNode());
+      echildren.push_back(itr->second.toNode(currNodeChild.getType()));
     }
   }
   // The value is the result of our (partially) successful evaluation
@@ -975,5 +1024,15 @@ Node Evaluator::reconstruct(
   return nn;
 }
 
+void Evaluator::processUnhandled(TNode n,
+                                 TNode nv,
+                                 std::unordered_map<TNode, Node>& evalAsNode,
+                                 std::unordered_map<TNode, EvalResult>& results,
+                                 bool needsReconstruct) const
+{
+  results[n] = EvalResult();
+  evalAsNode[n] = needsReconstruct ? reconstruct(n, results, evalAsNode) : Node(nv);
+}
+
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5::internal

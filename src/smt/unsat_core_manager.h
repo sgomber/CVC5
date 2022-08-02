@@ -1,35 +1,36 @@
-/*********************                                                        */
-/*! \file unsat_core_manager.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Haniel Barbosa
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The unsat core manager of SmtEngine.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Haniel Barbosa, Aina Niemetz, Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The unsat core manager of SolverEngine.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__SMT__UNSAT_CORE_MANAGER_H
-#define CVC4__SMT__UNSAT_CORE_MANAGER_H
+#ifndef CVC5__SMT__UNSAT_CORE_MANAGER_H
+#define CVC5__SMT__UNSAT_CORE_MANAGER_H
 
-#include "context/cdhashmap.h"
 #include "context/cdlist.h"
 #include "expr/node.h"
-#include "expr/proof_node.h"
+#include "proof/proof_node.h"
+#include "theory/quantifiers/instantiation_list.h"
 
-namespace CVC4 {
+namespace cvc5::internal {
 
 namespace smt {
 
 class Assertions;
 
 /**
- * This class is responsible for managing the proof output of SmtEngine, as
+ * This class is responsible for managing the proof output of SolverEngine, as
  * well as setting up the global proof checker and proof node manager.
  */
 class UnsatCoreManager
@@ -61,13 +62,13 @@ class UnsatCoreManager
    * matrix with each row corresponding to the terms with which the respective
    * quantified formula is instiated.
    */
-  void getRelevantInstantiations(
-      std::shared_ptr<ProofNode> pfn,
-      std::map<Node, std::vector<std::vector<Node>>>& insts);
+  void getRelevantInstantiations(std::shared_ptr<ProofNode> pfn,
+                                 std::map<Node, InstantiationList>& insts,
+                                 bool getDebugInfo = false);
 
 }; /* class UnsatCoreManager */
 
 }  // namespace smt
-}  // namespace CVC4
+}  // namespace cvc5::internal
 
-#endif /* CVC4__SMT__UNSAT_CORE_MANAGER_H */
+#endif /* CVC5__SMT__UNSAT_CORE_MANAGER_H */

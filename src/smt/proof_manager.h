@@ -1,103 +1,132 @@
-/*********************                                                        */
-/*! \file proof_manager.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The proof manager of SmtEngine
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Haniel Barbosa, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The proof manager of SolverEngine.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__SMT__PROOF_MANAGER_H
-#define CVC4__SMT__PROOF_MANAGER_H
+#ifndef CVC5__SMT__PROOF_MANAGER_H
+#define CVC5__SMT__PROOF_MANAGER_H
 
 #include "context/cdhashmap.h"
-#include "context/cdlist.h"
 #include "expr/node.h"
-#include "expr/proof_checker.h"
-#include "expr/proof_node.h"
-#include "expr/proof_node_manager.h"
-#include "smt/preprocess_proof_generator.h"
-#include "smt/proof_post_processor.h"
+#include "smt/env_obj.h"
 
-namespace CVC4 {
+namespace cvc5::internal {
 
-class SmtEngine;
+class ProofChecker;
+class ProofNode;
+class ProofNodeManager;
+class SolverEngine;
+
+namespace rewriter {
+class RewriteDb;
+}
 
 namespace smt {
 
 class Assertions;
-class DefinedFunction;
+class PreprocessProofGenerator;
+class ProofPostproccess;
 
 /**
- * This class is responsible for managing the proof output of SmtEngine, as
+ * This class is responsible for managing the proof output of SolverEngine, as
  * well as setting up the global proof checker and proof node manager.
+ *
+ * The proof production of an SolverEngine is directly impacted by whether, and
+ * how, we are producing unsat cores:
+ *
+ * - If we are producing unsat cores using the old proof infrastructure, then
+ *   SolverEngine will not have proofs in the sense of this proof manager.
+ *
+ * - If we are producing unsat cores using this proof infrastructure, then the
+ *   SolverEngine will have proofs using this proof manager, according to the
+ * unsat core mode:
+ *
+ *   - assumption mode: proofs only for preprocessing, not in sat solver or
+ *   theory engine, and level of granularity set to off (unless otherwise
+ *   specified by the user)
+ *
+ *   - sat-proof mode: proofs for preprocessing + sat solver, not in theory
+ *   engine and level of granularity set to off (unless otherwise specified by
+ *   the user)
+ *
+ *   - full-proof mode: proofs for the whole solver as normal
+ *
+ *   Note that if --produce-proofs is set then full-proof mode of unsat cores is
+ *   forced.
+ *
+ * - If we are not producing unsat cores then the SolverEngine will have proofs
+ * as long as --produce-proofs is on.
+ *
+ * - If SolverEngine has been configured in a way that is incompatible with
+ * proofs then unsat core production will be disabled.
  */
-class PfManager
+class PfManager : protected EnvObj
 {
-  /** The type of our internal map of defined functions */
-  using DefinedFunctionMap =
-      context::CDHashMap<Node, smt::DefinedFunction, NodeHashFunction>;
-
  public:
-  PfManager(context::UserContext* u, SmtEngine* smte);
+  PfManager(Env& env);
   ~PfManager();
   /**
    * Print the proof on the given output stream.
-   *
-   * The argument pfn is the proof for false in the current context.
-   *
-   * Throws an assertion failure if pg cannot provide a closed proof with
-   * respect to assertions in as and df. For the latter, entries in the defined
-   * function map correspond to equalities of the form (= f (lambda (...) t)),
-   * which are considered assertions in the final proof.
    */
-  void printProof(std::ostream& out,
-                  std::shared_ptr<ProofNode> pfn,
-                  Assertions& as,
-                  DefinedFunctionMap& df);
-  /**
-   * Check proof, same as above, without printing.
-   */
-  void checkProof(std::shared_ptr<ProofNode> pfn,
-                  Assertions& as,
-                  DefinedFunctionMap& df);
+  void printProof(std::ostream& out, std::shared_ptr<ProofNode> fp);
 
   /**
-   * Get final proof.
+   * Translate difficulty map. This takes a mapping dmap from preprocessed
+   * assertions to values estimating their difficulty. It translates this
+   * map so that dmap contains a mapping from *input* assertions to values
+   * estimating their difficulty.
    *
-   * The argument pfn is the proof for false in the current context.
+   * It does this translation by constructing a proof of preprocessing for all
+   * preprocessed assertions marked as having a difficulty, traversing those
+   * proofs, and conditionally incrementing the difficulty of the input
+   * assertion on which they depend. This is based on whether the free
+   * assumption is the "source" of an assertion.
+   *
+   * @param dmap Map estimating the difficulty of preprocessed assertions
+   * @param as The input assertions
    */
-  std::shared_ptr<ProofNode> getFinalProof(std::shared_ptr<ProofNode> pfn,
-                                           Assertions& as,
-                                           DefinedFunctionMap& df);
+  void translateDifficultyMap(std::map<Node, Node>& dmap, Assertions& as);
+
+  /**
+   * Connect proof to assertions
+   *
+   * Replaces the free assumptions of pfn that correspond to preprocessed
+   * assertions in as with their corresponding proof of preprocessing.
+   *
+   * Throws an assertion failure if pg cannot provide a closed proof with
+   * respect to assertions in as. Note this includes equalities of the form
+   * (= f (lambda (...) t)) which originate from define-fun commands for f.
+   * These are considered assertions in the final proof.
+   */
+  std::shared_ptr<ProofNode> connectProofToAssertions(
+      std::shared_ptr<ProofNode> pfn, Assertions& as);
   //--------------------------- access to utilities
   /** Get a pointer to the ProofChecker owned by this. */
   ProofChecker* getProofChecker() const;
   /** Get a pointer to the ProofNodeManager owned by this. */
   ProofNodeManager* getProofNodeManager() const;
+  /** Get the rewrite database, containing definitions of rewrites from DSL. */
+  rewriter::RewriteDb* getRewriteDatabase() const;
   /** Get the proof generator for proofs of preprocessing. */
   smt::PreprocessProofGenerator* getPreprocessProofGenerator() const;
   //--------------------------- end access to utilities
  private:
   /**
-   * Set final proof, which initializes d_finalProof to the given proof node of
-   * false, postprocesses it, and stores it in d_finalProof.
-   */
-  void setFinalProof(std::shared_ptr<ProofNode> pfn,
-                     Assertions& as,
-                     DefinedFunctionMap& df);
-  /**
    * Get assertions from the assertions
    */
   void getAssertions(Assertions& as,
-                     DefinedFunctionMap& df,
                      std::vector<Node>& assertions);
   /** The false node */
   Node d_false;
@@ -109,15 +138,9 @@ class PfManager
   std::unique_ptr<smt::PreprocessProofGenerator> d_pppg;
   /** The proof post-processor */
   std::unique_ptr<smt::ProofPostproccess> d_pfpp;
-  /**
-   * The final proof produced by the SMT engine.
-   * Combines the proofs of preprocessing, prop engine and theory engine, to be
-   * connected by setFinalProof().
-   */
-  std::shared_ptr<ProofNode> d_finalProof;
-}; /* class SmtEngine */
+}; /* class SolverEngine */
 
 }  // namespace smt
-}  // namespace CVC4
+}  // namespace cvc5::internal
 
-#endif /* CVC4__SMT__PROOF_MANAGER_H */
+#endif /* CVC5__SMT__PROOF_MANAGER_H */

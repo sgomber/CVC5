@@ -1,45 +1,49 @@
-/*********************                                                        */
-/*! \file iand_solver.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Yoni Zohar, Gereon Kremer
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Solver for integer and (IAND) constraints
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Gereon Kremer, Makai Mann
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Solver for integer and (IAND) constraints.
+ */
 
-#ifndef CVC4__THEORY__ARITH__NL__IAND_SOLVER_H
-#define CVC4__THEORY__ARITH__NL__IAND_SOLVER_H
+#ifndef CVC5__THEORY__ARITH__NL__IAND_SOLVER_H
+#define CVC5__THEORY__ARITH__NL__IAND_SOLVER_H
 
 #include <map>
 #include <vector>
 
 #include "context/cdhashset.h"
 #include "expr/node.h"
-#include "theory/arith/arith_state.h"
-#include "theory/arith/inference_manager.h"
+#include "smt/env_obj.h"
 #include "theory/arith/nl/iand_utils.h"
-#include "theory/arith/nl/nl_lemma_utils.h"
-#include "theory/arith/nl/nl_model.h"
 
-namespace CVC4 {
+namespace cvc5::internal {
 namespace theory {
 namespace arith {
+
+class ArithState;
+class InferenceManager;
+
 namespace nl {
+
+class NlModel;
 
 /** Integer and solver class
  *
  */
-class IAndSolver
+class IAndSolver : protected EnvObj
 {
-  typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
+  typedef context::CDHashSet<Node> NodeSet;
 
  public:
-  IAndSolver(InferenceManager& im, ArithState& state, NlModel& model);
+  IAndSolver(Env& env, InferenceManager& im, ArithState& state, NlModel& model);
   ~IAndSolver();
 
   /** init last call
@@ -82,6 +86,8 @@ class IAndSolver
   InferenceManager& d_im;
   /** Reference to the non-linear model object */
   NlModel& d_model;
+  /** Reference to the arithmetic state */
+  ArithState& d_astate;
   /** commonly used terms */
   Node d_false;
   Node d_true;
@@ -97,7 +103,7 @@ class IAndSolver
 
   /**
    * convert integer value to bitvector value of bitwidth k,
-   * equivalent to Rewriter::rewrite( ((_ intToBv k) n) ).
+   * equivalent to rewrite( ((_ intToBv k) n) ).
    */
   Node convertToBvK(unsigned k, Node n) const;
   /** make iand */
@@ -109,7 +115,7 @@ class IAndSolver
   /**
    * Value-based refinement lemma for i of the form ((_ iand k) x y). Returns:
    *   x = M(x) ^ y = M(y) =>
-   *     ((_ iand k) x y) = Rewriter::rewrite(((_ iand k) M(x) M(y)))
+   *     ((_ iand k) x y) = rewrite(((_ iand k) M(x) M(y)))
    */
   Node valueBasedLemma(Node i);
   /**
@@ -130,6 +136,6 @@ class IAndSolver
 }  // namespace nl
 }  // namespace arith
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5::internal
 
-#endif /* CVC4__THEORY__ARITH__IAND_SOLVER_H */
+#endif /* CVC5__THEORY__ARITH__IAND_SOLVER_H */

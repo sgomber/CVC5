@@ -1,30 +1,32 @@
-/*********************                                                        */
-/*! \file ee_manager.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Utilities for management of equality engines.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Utilities for management of equality engines.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__EE_MANAGER__H
-#define CVC4__THEORY__EE_MANAGER__H
+#ifndef CVC5__THEORY__EE_MANAGER__H
+#define CVC5__THEORY__EE_MANAGER__H
 
 #include <map>
 #include <memory>
 
+#include "smt/env_obj.h"
 #include "theory/ee_setup_info.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
 
-namespace CVC4 {
+namespace cvc5::internal {
 
 class TheoryEngine;
 
@@ -50,7 +52,7 @@ struct EeTheoryInfo
 };
 
 /** Virtual base class for equality engine managers */
-class EqEngineManager
+class EqEngineManager : protected EnvObj
 {
  public:
    /**
@@ -58,7 +60,7 @@ class EqEngineManager
    * @param sharedSolver The shared solver that is being used in combination
    * with this equality engine manager
     */
-  EqEngineManager(TheoryEngine& te, SharedSolver& shs);
+  EqEngineManager(Env& env, TheoryEngine& te, SharedSolver& shs);
   virtual ~EqEngineManager() {}
   /**
    * Initialize theories, called during TheoryEngine::finishInit after theory
@@ -95,6 +97,6 @@ class EqEngineManager
 };
 
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5::internal
 
-#endif /* CVC4__THEORY__EE_MANAGER__H */
+#endif /* CVC5__THEORY__EE_MANAGER__H */

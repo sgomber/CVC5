@@ -1,25 +1,27 @@
-/*********************                                                        */
-/*! \file trigger_term_info.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of trigger term info class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Mathias Preiner
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of trigger term info class.
+ */
 
 #include "theory/quantifiers/ematching/trigger_term_info.h"
 
 #include "theory/quantifiers/term_util.h"
 
-using namespace CVC4::kind;
+using namespace cvc5::internal::kind;
 
-namespace CVC4 {
+namespace cvc5::internal {
 namespace theory {
+namespace quantifiers {
 namespace inst {
 
 void TriggerTermInfo::init(Node q, Node n, int reqPol, Node reqPolEq)
@@ -47,13 +49,10 @@ bool TriggerTermInfo::isAtomicTrigger(Node n)
 
 bool TriggerTermInfo::isAtomicTriggerKind(Kind k)
 {
-  // we use both APPLY_SELECTOR and APPLY_SELECTOR_TOTAL since this
-  // method is used both for trigger selection and for ground term registration,
-  // where these two things require those kinds respectively.
   return k == APPLY_UF || k == SELECT || k == STORE || k == APPLY_CONSTRUCTOR
-         || k == APPLY_SELECTOR || k == APPLY_SELECTOR_TOTAL
-         || k == APPLY_TESTER || k == UNION || k == INTERSECTION || k == SUBSET
-         || k == SETMINUS || k == MEMBER || k == SINGLETON || k == SEP_PTO
+         || k == APPLY_SELECTOR || k == APPLY_TESTER || k == SET_UNION
+         || k == SET_INTER || k == SET_SUBSET || k == SET_MINUS
+         || k == SET_MEMBER || k == SET_SINGLETON || k == SEP_PTO
          || k == BITVECTOR_TO_NAT || k == INT_TO_BITVECTOR || k == HO_APPLY
          || k == STRING_LENGTH || k == SEQ_NTH;
 }
@@ -66,6 +65,46 @@ bool TriggerTermInfo::isRelationalTrigger(Node n)
 bool TriggerTermInfo::isRelationalTriggerKind(Kind k)
 {
   return k == EQUAL || k == GEQ;
+}
+
+bool TriggerTermInfo::isUsableRelationTrigger(Node n)
+{
+  bool hasPol, pol;
+  Node lit;
+  return isUsableRelationTrigger(n, hasPol, pol, lit);
+}
+bool TriggerTermInfo::isUsableRelationTrigger(Node n,
+                                              bool& hasPol,
+                                              bool& pol,
+                                              Node& lit)
+{
+  // relational triggers (not) (= (~ x t) true|false), where ~ in { =, >= }.
+  hasPol = false;
+  pol = n.getKind() != NOT;
+  lit = pol ? n : n[0];
+  if (lit.getKind() == EQUAL && lit[1].getType().isBoolean()
+      && lit[1].isConst())
+  {
+    hasPol = true;
+    pol = lit[1].getConst<bool>() ? pol : !pol;
+    lit = lit[0];
+  }
+  // is it a relational trigger?
+  if ((lit.getKind() == EQUAL && lit[0].getType().isRealOrInt())
+      || lit.getKind() == GEQ)
+  {
+    // if one side of the relation is a variable and the other side is a ground
+    // term, we can treat this using the relational match generator
+    for (size_t i = 0; i < 2; i++)
+    {
+      if (lit[i].getKind() == INST_CONSTANT
+          && !quantifiers::TermUtil::hasInstConstAttr(lit[1 - i]))
+      {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 bool TriggerTermInfo::isSimpleTrigger(Node n)
@@ -103,7 +142,7 @@ int32_t TriggerTermInfo::getTriggerWeight(Node n)
   {
     return 0;
   }
-  if (isAtomicTrigger(n))
+  if (isAtomicTrigger(n) || isUsableRelationTrigger(n))
   {
     return 1;
   }
@@ -111,5 +150,6 @@ int32_t TriggerTermInfo::getTriggerWeight(Node n)
 }
 
 }  // namespace inst
+}  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5::internal

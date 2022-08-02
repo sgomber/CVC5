@@ -1,28 +1,28 @@
-/*********************                                                        */
-/*! \file var_match_generator.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief variable match generator class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ * Variable match generator class.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__QUANTIFIERS__VAR_MATCH_GENERATOR_H
-#define CVC4__THEORY__QUANTIFIERS__VAR_MATCH_GENERATOR_H
+#ifndef CVC5__THEORY__QUANTIFIERS__VAR_MATCH_GENERATOR_H
+#define CVC5__THEORY__QUANTIFIERS__VAR_MATCH_GENERATOR_H
 
-#include <map>
 #include "expr/node.h"
 #include "theory/quantifiers/ematching/inst_match_generator.h"
 
-namespace CVC4 {
+namespace cvc5::internal {
 namespace theory {
+namespace quantifiers {
 namespace inst {
 
 /** match generator for purified terms
@@ -32,15 +32,12 @@ namespace inst {
 class VarMatchGeneratorTermSubs : public InstMatchGenerator
 {
  public:
-  VarMatchGeneratorTermSubs(Node var, Node subs);
+  VarMatchGeneratorTermSubs(Env& env, Trigger* tparent, Node var, Node subs);
 
   /** Reset */
-  bool reset(Node eqc, QuantifiersEngine* qe) override;
+  bool reset(Node eqc) override;
   /** Get the next match. */
-  int getNextMatch(Node q,
-                   InstMatch& m,
-                   QuantifiersEngine* qe,
-                   Trigger* tparent) override;
+  int getNextMatch(InstMatch& m) override;
 
  private:
   /** variable we are matching (x in the example x+1). */
@@ -54,7 +51,8 @@ class VarMatchGeneratorTermSubs : public InstMatchGenerator
 };
 
 }  // namespace inst
+}  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5::internal
 
 #endif

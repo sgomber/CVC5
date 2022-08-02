@@ -1,38 +1,51 @@
-/*********************                                                        */
-/*! \file base_solver.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Andres Noetzli, Tianyi Liang
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Base solver for the theory of strings. This class implements term
- ** indexing and constant inference for the theory of strings.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Andres Noetzli, Tianyi Liang
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Base solver for the theory of strings. This class implements term
+ * indexing and constant inference for the theory of strings.
+ */
 
 #include "theory/strings/base_solver.h"
 
 #include "expr/sequence.h"
+#include "options/quantifiers_options.h"
 #include "options/strings_options.h"
+#include "theory/rewriter.h"
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
+#include "util/rational.h"
+#include "util/string.h"
 
 using namespace std;
-using namespace CVC4::context;
-using namespace CVC4::kind;
+using namespace cvc5::context;
+using namespace cvc5::internal::kind;
 
-namespace CVC4 {
+namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
-BaseSolver::BaseSolver(SolverState& s, InferenceManager& im)
-    : d_state(s), d_im(im), d_congruent(s.getSatContext())
+BaseSolver::BaseSolver(Env& env,
+                       SolverState& s,
+                       InferenceManager& im,
+                       TermRegistry& tr)
+    : EnvObj(env),
+      d_state(s),
+      d_im(im),
+      d_termReg(tr),
+      d_congruent(context()),
+      d_strUnitOobEq(userContext())
 {
   d_false = NodeManager::currentNM()->mkConst(false);
-  d_cardSize = utils::getAlphabetCardinality();
+  d_cardSize = options().strings.stringsAlphaCard;
 }
 
 BaseSolver::~BaseSolver() {}
@@ -42,7 +55,7 @@ void BaseSolver::checkInit()
   // build term index
   d_eqcInfo.clear();
   d_termIndex.clear();
-  d_stringsEqc.clear();
+  d_stringLikeEqc.clear();
 
   Trace("strings-base") << "BaseSolver::checkInit" << std::endl;
   // count of congruent, non-congruent per operator (independent of type),
@@ -61,11 +74,15 @@ void BaseSolver::checkInit()
       std::map<Kind, TermIndex>& tti = d_termIndex[tn];
       if (tn.isStringLike())
       {
-        d_stringsEqc.push_back(eqc);
+        d_stringLikeEqc.push_back(eqc);
         emps = Word::mkEmptyWord(tn);
       }
       Node var;
       eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
+      std::vector<Node> prevConstLike;
+      bool isString = eqc.getType().isString();
+      // have we found a constant in this equivalence class
+      bool foundConst = false;
       while (!eqc_i.isFinished())
       {
         Node n = *eqc_i;
@@ -74,59 +91,41 @@ void BaseSolver::checkInit()
         // process constant-like terms
         if (utils::isConstantLike(n))
         {
-          Node prev = d_eqcInfo[eqc].d_bestContent;
-          if (!prev.isNull())
+          // compare against the other constant-like terms in this equivalence
+          // class
+          for (const Node& prev : prevConstLike)
           {
-            // we have either (seq.unit x) = C, or (seq.unit x) = (seq.unit y)
-            // where C is a sequence constant.
-            Node cval =
-                prev.isConst() ? prev : (n.isConst() ? n : Node::null());
-            std::vector<Node> exp;
-            exp.push_back(prev.eqNode(n));
-            Node s, t;
-            if (cval.isNull())
+            if (processConstantLike(n, prev))
             {
-              // injectivity of seq.unit
-              s = prev[0];
-              t = n[0];
-            }
-            else
-            {
-              // should not have two constants in the same equivalence class
-              Assert(cval.getType().isSequence());
-              std::vector<Node> cchars = Word::getChars(cval);
-              if (cchars.size() == 1)
-              {
-                Node oval = prev.isConst() ? n : prev;
-                Assert(oval.getKind() == SEQ_UNIT);
-                s = oval[0];
-                t = cchars[0].getConst<Sequence>().getVec()[0];
-                // oval is congruent (ignored) in this context
-                d_congruent.insert(oval);
-              }
-              else
-              {
-                // (seq.unit x) = C => false if |C| != 1.
-                d_im.sendInference(
-                    exp, d_false, Inference::UNIT_CONST_CONFLICT);
-                return;
-              }
-            }
-            if (!d_state.areEqual(s, t))
-            {
-              // (seq.unit x) = (seq.unit y) => x=y, or
-              // (seq.unit x) = (seq.unit c) => x=c
-              Assert(s.getType() == t.getType());
-              d_im.sendInference(exp, s.eqNode(t), Inference::UNIT_INJ);
+              // in conflict, return
+              return;
             }
           }
+          bool addToConstLike = isString && !foundConst;
           // update best content
-          if (prev.isNull() || n.isConst())
+          if (prevConstLike.empty() || n.isConst())
           {
             d_eqcInfo[eqc].d_bestContent = n;
             d_eqcInfo[eqc].d_bestScore = 0;
             d_eqcInfo[eqc].d_base = n;
             d_eqcInfo[eqc].d_exp = Node::null();
+            if (n.isConst())
+            {
+              // only keep the current
+              prevConstLike.clear();
+              foundConst = true;
+            }
+          }
+          // Determine if we need to track n to compare it to other constant
+          // like terms in this equivalence class. This is done if we do not
+          // have any other constant-like terms we are tracking, or if we have
+          // not yet encountered a constant and we are a string equivalence
+          // class. This is because all *pairs* of str.unit must be compared
+          // to one another, whereas since seq.unit is injective, we can
+          // compare seq.unit with a single representative seq.unit term.
+          if (prevConstLike.empty() || addToConstLike)
+          {
+            prevConstLike.push_back(n);
           }
         }
         if (tn.isInteger())
@@ -187,7 +186,7 @@ void BaseSolver::checkInit()
                     }
                   }
                   // infer the equality
-                  d_im.sendInference(exp, n.eqNode(nc), Inference::I_NORM);
+                  d_im.sendInference(exp, n.eqNode(nc), InferenceId::STRINGS_I_NORM);
                 }
                 else
                 {
@@ -237,7 +236,7 @@ void BaseSolver::checkInit()
                   }
                   AlwaysAssert(foundNEmpty);
                   // infer the equality
-                  d_im.sendInference(exp, n.eqNode(ns), Inference::I_NORM_S);
+                  d_im.sendInference(exp, n.eqNode(ns), InferenceId::STRINGS_I_NORM_S);
                 }
                 d_congruent.insert(n);
                 congruentCount[k].first++;
@@ -283,7 +282,7 @@ void BaseSolver::checkInit()
     }
     ++eqcs_i;
   }
-  if (Trace.isOn("strings-base"))
+  if (TraceIsOn("strings-base"))
   {
     for (const std::pair<const Kind, std::pair<uint32_t, uint32_t>>& cc :
          congruentCount)
@@ -294,6 +293,88 @@ void BaseSolver::checkInit()
     }
   }
   Trace("strings-base") << "BaseSolver::checkInit finished" << std::endl;
+}
+
+bool BaseSolver::processConstantLike(Node a, Node b)
+{
+  // we have either (seq.unit x) = C, or (seq.unit x) = (seq.unit y)
+  // where C is a sequence constant.
+  Node cval = b.isConst() ? b : (a.isConst() ? a : Node::null());
+  std::vector<Node> exp;
+  exp.push_back(b.eqNode(a));
+  Node s, t;
+  if (cval.isNull())
+  {
+    // injectivity of seq.unit
+    s = b[0];
+    t = a[0];
+  }
+  else
+  {
+    // should not have two constants in the same equivalence class
+    std::vector<Node> cchars = Word::getChars(cval);
+    if (cchars.size() == 1)
+    {
+      Node oval = b.isConst() ? a : b;
+      Assert(oval.getKind() == SEQ_UNIT || oval.getKind() == STRING_UNIT);
+      s = oval[0];
+      t = Word::getNth(cchars[0], 0);
+      // oval is congruent (ignored) in this context
+      d_congruent.insert(oval);
+    }
+    else
+    {
+      // (seq.unit x) = C => false if |C| != 1.
+      d_im.sendInference(
+          exp, d_false, InferenceId::STRINGS_UNIT_CONST_CONFLICT);
+      return true;
+    }
+  }
+  Trace("strings-base") << "Process constant-like pair " << s << ", " << t
+                        << " from " << a << ", " << b << std::endl;
+  if (!d_state.areEqual(s, t))
+  {
+    Assert(s.getType() == t.getType());
+    Node eq = s.eqNode(t);
+    if (a.getType().isString())
+    {
+      // String unit is not injective, due to invalid code points.
+      // We do an inference scheme in two parts.
+      // for (str.unit x), (str.unit y): x = y or x != y
+      if (!d_state.areDisequal(s, t))
+      {
+        d_im.sendSplit(s, t, InferenceId::STRINGS_UNIT_SPLIT);
+      }
+      else if (d_strUnitOobEq.find(eq) == d_strUnitOobEq.end())
+      {
+        // cache that we have performed this inference
+        Node eqSym = t.eqNode(s);
+        d_strUnitOobEq.insert(eq);
+        d_strUnitOobEq.insert(eqSym);
+        exp.push_back(eq.notNode());
+        // (str.unit x) = (str.unit y) ^ x != y =>
+        // x or y is not a valid code point
+        Node scr = utils::mkCodeRange(s, d_cardSize);
+        Node tcr = utils::mkCodeRange(t, d_cardSize);
+        Node conc =
+            NodeManager::currentNM()->mkNode(OR, scr.notNode(), tcr.notNode());
+        // We do not explain exp for two reasons. First, we are
+        // caching this inference based on the user context and thus
+        // it should not depend on the current explanation. Second,
+        // s or t may be concrete integers corresponding to code
+        // points of string constants, and thus are not guaranteed to
+        // be terms in the equality engine.
+        d_im.sendInference(exp, exp, conc, InferenceId::STRINGS_UNIT_INJ_OOB);
+      }
+    }
+    else
+    {
+      // (seq.unit x) = (seq.unit y) => x=y, or
+      // (seq.unit x) = (seq.unit c) => x=c
+      d_im.sendInference(exp, eq, InferenceId::STRINGS_UNIT_INJ);
+    }
+  }
+  return false;
 }
 
 void BaseSolver::checkConstantEquivalenceClasses()
@@ -340,11 +421,11 @@ void BaseSolver::checkConstantEquivalenceClasses(TermIndex* ti,
     Node c;
     if (isConst)
     {
-      c = utils::mkNConcat(vecc, n.getType());
+      c = d_termReg.mkNConcat(vecc, n.getType());
     }
     if (!isConst || !d_state.areEqual(n, c))
     {
-      if (Trace.isOn("strings-debug"))
+      if (TraceIsOn("strings-debug"))
       {
         Trace("strings-debug")
             << "Constant eqc : " << c << " for " << n << std::endl;
@@ -355,59 +436,53 @@ void BaseSolver::checkConstantEquivalenceClasses(TermIndex* ti,
         }
         Trace("strings-debug") << std::endl;
       }
-      size_t count = 0;
       size_t countc = 0;
       std::vector<Node> exp;
       // non-constant vector
       std::vector<Node> vecnc;
       size_t contentSize = 0;
-      while (count < n.getNumChildren())
+      for (size_t count = 0, nchild = n.getNumChildren(); count < nchild;
+           ++count)
       {
         // Add explanations for the empty children
         Node emps;
-        while (count < n.getNumChildren()
-               && d_state.isEqualEmptyWord(n[count], emps))
+        if (d_state.isEqualEmptyWord(n[count], emps))
         {
           d_im.addToExplanation(n[count], emps, exp);
-          count++;
+          continue;
         }
-        if (count < n.getNumChildren())
+        else if (vecc[countc].isNull())
         {
-          if (vecc[countc].isNull())
-          {
-            Assert(!isConst);
-            // no constant for this component, leave it as is
-            vecnc.push_back(n[count]);
-          }
-          else
-          {
-            if (!isConst)
-            {
-              // use the constant
-              vecnc.push_back(vecc[countc]);
-              Assert(vecc[countc].isConst());
-              contentSize += Word::getLength(vecc[countc]);
-            }
-            Trace("strings-debug") << "...explain " << n[count] << " "
-                                   << vecc[countc] << std::endl;
-            if (!d_state.areEqual(n[count], vecc[countc]))
-            {
-              Node nrr = d_state.getRepresentative(n[count]);
-              Assert(!d_eqcInfo[nrr].d_bestContent.isNull()
-                     && d_eqcInfo[nrr].d_bestContent.isConst());
-              // must flatten to avoid nested AND in explanations
-              utils::flattenOp(AND, d_eqcInfo[nrr].d_exp, exp);
-              // now explain equality to base
-              d_im.addToExplanation(n[count], d_eqcInfo[nrr].d_base, exp);
-            }
-            else
-            {
-              d_im.addToExplanation(n[count], vecc[countc], exp);
-            }
-            countc++;
-          }
-          count++;
+          Assert(!isConst);
+          // no constant for this component, leave it as is
+          vecnc.push_back(n[count]);
+          continue;
         }
+        // if we are not entirely a constant
+        if (!isConst)
+        {
+          // use the constant component
+          vecnc.push_back(vecc[countc]);
+          Assert(vecc[countc].isConst());
+          contentSize += Word::getLength(vecc[countc]);
+        }
+        Trace("strings-debug")
+            << "...explain " << n[count] << " " << vecc[countc] << std::endl;
+        if (!d_state.areEqual(n[count], vecc[countc]))
+        {
+          Node nrr = d_state.getRepresentative(n[count]);
+          Assert(!d_eqcInfo[nrr].d_bestContent.isNull()
+                 && d_eqcInfo[nrr].d_bestContent.isConst());
+          // must flatten to avoid nested AND in explanations
+          utils::flattenOp(AND, d_eqcInfo[nrr].d_exp, exp);
+          // now explain equality to base
+          d_im.addToExplanation(n[count], d_eqcInfo[nrr].d_base, exp);
+        }
+        else
+        {
+          d_im.addToExplanation(n[count], vecc[countc], exp);
+        }
+        countc++;
       }
       // exp contains an explanation of n==c
       Assert(!isConst || countc == vecc.size());
@@ -423,7 +498,7 @@ void BaseSolver::checkConstantEquivalenceClasses(TermIndex* ti,
           {
             // The equivalence class is not entailed to be equal to a constant
             // and we found a better concatenation
-            Node nct = utils::mkNConcat(vecnc, n.getType());
+            Node nct = d_termReg.mkNConcat(vecnc, n.getType());
             Assert(!nct.isConst());
             bei.d_bestContent = nct;
             bei.d_bestScore = contentSize;
@@ -440,7 +515,7 @@ void BaseSolver::checkConstantEquivalenceClasses(TermIndex* ti,
       }
       else if (d_state.hasTerm(c))
       {
-        d_im.sendInference(exp, n.eqNode(c), Inference::I_CONST_MERGE);
+        d_im.sendInference(exp, n.eqNode(c), InferenceId::STRINGS_I_CONST_MERGE);
         return;
       }
       else if (!d_im.hasProcessed())
@@ -473,7 +548,7 @@ void BaseSolver::checkConstantEquivalenceClasses(TermIndex* ti,
             exp.push_back(bei.d_exp);
             d_im.addToExplanation(n, bei.d_base, exp);
           }
-          d_im.sendInference(exp, d_false, Inference::I_CONST_CONFLICT);
+          d_im.sendInference(exp, d_false, InferenceId::STRINGS_I_CONST_CONFLICT);
           return;
         }
         else
@@ -514,7 +589,7 @@ void BaseSolver::checkCardinality()
   // between lengths of string terms that are disequal (DEQ-LENGTH-SP).
   std::map<TypeNode, std::vector<std::vector<Node> > > cols;
   std::map<TypeNode, std::vector<Node> > lts;
-  d_state.separateByLength(d_stringsEqc, cols, lts);
+  d_state.separateByLength(d_stringLikeEqc, cols, lts);
   for (std::pair<const TypeNode, std::vector<std::vector<Node> > >& c : cols)
   {
     checkCardinalityType(c.first, c.second, lts[c.first]);
@@ -537,13 +612,46 @@ void BaseSolver::checkCardinalityType(TypeNode tn,
   {
     Assert(tn.isSequence());
     TypeNode etn = tn.getSequenceElementType();
-    if (etn.isInterpretedFinite())
+    if (!d_env.isFiniteType(etn))
     {
       // infinite cardinality, we are fine
       return;
     }
-    // TODO (cvc4-projects #23): how to handle sequence for finite types?
-    return;
+    // we check the cardinality class of the type, assuming that FMF is
+    // disabled.
+    if (isCardinalityClassFinite(etn.getCardinalityClass(), false))
+    {
+      Cardinality c = etn.getCardinality();
+      bool smallCardinality = false;
+      if (!c.isLargeFinite())
+      {
+        Integer ci = c.getFiniteCardinality();
+        if (ci.fitsUnsignedInt())
+        {
+          smallCardinality = true;
+          typeCardSize = ci.toUnsignedInt();
+        }
+      }
+      if (!smallCardinality)
+      {
+        // if it is large finite, then there is no way we could have
+        // constructed that many terms in memory, hence there is nothing
+        // to do.
+        return;
+      }
+    }
+    else
+    {
+      Assert(options().quantifiers.finiteModelFind);
+      // we are in a case where the cardinality of the type is infinite
+      // if not FMF, and finite given the Env's option value for FMF. In this
+      // case, FMF must be true, and the cardinality is finite and dynamic
+      // (i.e. it depends on the model's finite interpretation for uninterpreted
+      // sorts). We do not know how to handle this case, we set incomplete.
+      // TODO (cvc4-projects #23): how to handle sequence for finite types?
+      d_im.setIncomplete(IncompleteId::SEQ_FINITE_DYNAMIC_CARDINALITY);
+      return;
+    }
   }
   // for each collection
   for (unsigned i = 0, csize = cols.size(); i < csize; ++i)
@@ -573,8 +681,8 @@ void BaseSolver::checkCardinalityType(TypeNode tn,
     if (lr.isConst())
     {
       // if constant, compare
-      Node cmp = nm->mkNode(GEQ, lr, nm->mkConst(Rational(card_need)));
-      cmp = Rewriter::rewrite(cmp);
+      Node cmp = nm->mkNode(GEQ, lr, nm->mkConstInt(Rational(card_need)));
+      cmp = rewrite(cmp);
       needsSplit = !cmp.getConst<bool>();
     }
     else
@@ -587,7 +695,7 @@ void BaseSolver::checkCardinalityType(TypeNode tn,
       bool success = true;
       while (r < card_need && success)
       {
-        Node rr = nm->mkConst(Rational(r));
+        Node rr = nm->mkConstInt(Rational(r));
         if (d_state.areDisequal(rr, lr))
         {
           r++;
@@ -622,7 +730,7 @@ void BaseSolver::checkCardinalityType(TypeNode tn,
         if (!d_state.areDisequal(*itr1, *itr2))
         {
           // add split lemma
-          if (d_im.sendSplit(*itr1, *itr2, Inference::CARD_SP))
+          if (d_im.sendSplit(*itr1, *itr2, InferenceId::STRINGS_CARD_SP))
           {
             return;
           }
@@ -637,7 +745,7 @@ void BaseSolver::checkCardinalityType(TypeNode tn,
                           << std::endl;
     if (int_k + 1 > ei->d_cardinalityLemK.get())
     {
-      Node k_node = nm->mkConst(Rational(int_k));
+      Node k_node = nm->mkConstInt(Rational(int_k));
       // add cardinality lemma
       Node dist = nm->mkNode(DISTINCT, cols[i]);
       std::vector<Node> expn;
@@ -655,12 +763,12 @@ void BaseSolver::checkCardinalityType(TypeNode tn,
       }
       Node len = nm->mkNode(STRING_LENGTH, cols[i][0]);
       Node cons = nm->mkNode(GEQ, len, k_node);
-      cons = Rewriter::rewrite(cons);
+      cons = rewrite(cons);
       ei->d_cardinalityLemK.set(int_k + 1);
       if (!cons.isConst() || !cons.getConst<bool>())
       {
         d_im.sendInference(
-            expn, expn, cons, Inference::CARDINALITY, false, true);
+            expn, expn, cons, InferenceId::STRINGS_CARDINALITY, false, true);
         return;
       }
     }
@@ -727,9 +835,9 @@ Node BaseSolver::explainBestContentEqc(Node n, Node eqc, std::vector<Node>& exp)
   return Node::null();
 }
 
-const std::vector<Node>& BaseSolver::getStringEqc() const
+const std::vector<Node>& BaseSolver::getStringLikeEqc() const
 {
-  return d_stringsEqc;
+  return d_stringLikeEqc;
 }
 
 Node BaseSolver::TermIndex::add(TNode n,
@@ -759,4 +867,4 @@ Node BaseSolver::TermIndex::add(TNode n,
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5::internal

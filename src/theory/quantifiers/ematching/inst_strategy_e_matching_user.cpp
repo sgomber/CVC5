@@ -1,59 +1,42 @@
-/*********************                                                        */
-/*! \file inst_strategy_e_matching_user.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Morgan Deters, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of e matching instantiation strategies
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Morgan Deters, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of e-matching instantiation strategies.
+ */
 
 #include "theory/quantifiers/ematching/inst_strategy_e_matching_user.h"
 
 #include "theory/quantifiers/ematching/pattern_term_selector.h"
-#include "theory/quantifiers_engine.h"
+#include "theory/quantifiers/ematching/trigger_database.h"
+#include "theory/quantifiers/quantifiers_state.h"
 
-using namespace CVC4::kind;
-using namespace CVC4::theory::inst;
+using namespace cvc5::internal::kind;
+using namespace cvc5::internal::theory::quantifiers::inst;
 
-namespace CVC4 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
-InstStrategyUserPatterns::InstStrategyUserPatterns(QuantifiersEngine* ie,
-                                                   QuantifiersState& qs)
-    : InstStrategy(ie, qs)
+InstStrategyUserPatterns::InstStrategyUserPatterns(
+    Env& env,
+    inst::TriggerDatabase& td,
+    QuantifiersState& qs,
+    QuantifiersInferenceManager& qim,
+    QuantifiersRegistry& qr,
+    TermRegistry& tr)
+    : InstStrategy(env, td, qs, qim, qr, tr)
 {
 }
 InstStrategyUserPatterns::~InstStrategyUserPatterns() {}
-
-size_t InstStrategyUserPatterns::getNumUserGenerators(Node q) const
-{
-  std::map<Node, std::vector<inst::Trigger*> >::const_iterator it =
-      d_user_gen.find(q);
-  if (it == d_user_gen.end())
-  {
-    return 0;
-  }
-  return it->second.size();
-}
-
-inst::Trigger* InstStrategyUserPatterns::getUserGenerator(Node q,
-                                                          size_t i) const
-{
-  std::map<Node, std::vector<inst::Trigger*> >::const_iterator it =
-      d_user_gen.find(q);
-  if (it == d_user_gen.end())
-  {
-    return nullptr;
-  }
-  Assert(i < it->second.size());
-  return it->second[i];
-}
 
 std::string InstStrategyUserPatterns::identify() const
 {
@@ -84,7 +67,7 @@ InstStrategyStatus InstStrategyUserPatterns::process(Node q,
   {
     return InstStrategyStatus::STATUS_UNFINISHED;
   }
-  options::UserPatMode upm = d_quantEngine->getInstUserPatMode();
+  options::UserPatMode upm = getInstUserPatMode();
   int peffort = upm == options::UserPatMode::RESORT ? 2 : 1;
   if (e < peffort)
   {
@@ -103,8 +86,8 @@ InstStrategyStatus InstStrategyUserPatterns::process(Node q,
     std::vector<std::vector<Node> >& ugw = d_user_gen_wait[q];
     for (size_t i = 0, usize = ugw.size(); i < usize; i++)
     {
-      Trigger* t = Trigger::mkTrigger(
-          d_quantEngine, q, ugw[i], true, Trigger::TR_RETURN_NULL);
+      Trigger* t =
+          d_td.mkTrigger(q, ugw[i], true, TriggerDatabase::TR_RETURN_NULL);
       if (t)
       {
         d_user_gen[q].push_back(t);
@@ -113,10 +96,10 @@ InstStrategyStatus InstStrategyUserPatterns::process(Node q,
     ugw.clear();
   }
 
-  std::vector<inst::Trigger*>& ug = d_user_gen[q];
+  std::vector<Trigger*>& ug = d_user_gen[q];
   for (Trigger* t : ug)
   {
-    if (Trace.isOn("process-trigger"))
+    if (TraceIsOn("process-trigger"))
     {
       Trace("process-trigger") << "  Process (user) ";
       t->debugPrint("process-trigger");
@@ -125,11 +108,6 @@ InstStrategyStatus InstStrategyUserPatterns::process(Node q,
     unsigned numInst = t->addInstantiations();
     Trace("process-trigger")
         << "  Done, numInst = " << numInst << "." << std::endl;
-    d_quantEngine->d_statistics.d_instantiations_user_patterns += numInst;
-    if (t->isMultiTrigger())
-    {
-      d_quantEngine->d_statistics.d_multi_trigger_instantiations += numInst;
-    }
     if (d_qstate.isInConflict())
     {
       // we are already in conflict
@@ -144,9 +122,15 @@ void InstStrategyUserPatterns::addUserPattern(Node q, Node pat)
   Assert(pat.getKind() == INST_PATTERN);
   // add to generators
   std::vector<Node> nodes;
+  const Options& opts = d_env.getOptions();
   for (const Node& p : pat)
   {
-    Node pat_use = PatternTermSelector::getIsUsableTrigger(p, q);
+    if (std::find(nodes.begin(), nodes.end(), p) != nodes.end())
+    {
+      // skip duplicate pattern term
+      continue;
+    }
+    Node pat_use = PatternTermSelector::getIsUsableTrigger(opts, p, q);
     if (pat_use.isNull())
     {
       Trace("trigger-warn") << "User-provided trigger is not usable : " << pat
@@ -157,13 +141,12 @@ void InstStrategyUserPatterns::addUserPattern(Node q, Node pat)
   }
   Trace("user-pat") << "Add user pattern: " << pat << " for " << q << std::endl;
   // check match option
-  if (d_quantEngine->getInstUserPatMode() == options::UserPatMode::RESORT)
+  if (getInstUserPatMode() == options::UserPatMode::RESORT)
   {
     d_user_gen_wait[q].push_back(nodes);
     return;
   }
-  Trigger* t =
-      Trigger::mkTrigger(d_quantEngine, q, nodes, true, Trigger::TR_MAKE_NEW);
+  Trigger* t = d_td.mkTrigger(q, nodes, true, TriggerDatabase::TR_MAKE_NEW);
   if (t)
   {
     d_user_gen[q].push_back(t);
@@ -177,4 +160,4 @@ void InstStrategyUserPatterns::addUserPattern(Node q, Node pat)
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5::internal

@@ -1,21 +1,22 @@
-/*********************                                                        */
-/*! \file pattern_term_selector.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds, Mathias Preiner, Morgan Deters
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief pattern term selector class
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mathias Preiner, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Pattern term selector class.
+ */
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__QUANTIFIERS__PATTERN_TERM_SELECTOR_H
-#define CVC4__THEORY__QUANTIFIERS__PATTERN_TERM_SELECTOR_H
+#ifndef CVC5__THEORY__QUANTIFIERS__PATTERN_TERM_SELECTOR_H
+#define CVC5__THEORY__QUANTIFIERS__PATTERN_TERM_SELECTOR_H
 
 #include <map>
 
@@ -23,8 +24,9 @@
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/ematching/trigger_term_info.h"
 
-namespace CVC4 {
+namespace cvc5::internal {
 namespace theory {
+namespace quantifiers {
 namespace inst {
 
 /**
@@ -36,6 +38,7 @@ class PatternTermSelector
 {
  public:
   /**
+   * @param opts Reference to the options, which impacts pattern term selection
    * @param q The quantified formula we are selecting pattern terms for
    * @param tstrt the selection strategy (see options/quantifiers_mode.h),
    * @param exc The set of terms we are excluding as pattern terms.
@@ -43,13 +46,12 @@ class PatternTermSelector
    * in the pattern terms we are return, e.g. we do not return f(x) if we are
    * also returning f(f(x)). This is default true since it helps in practice
    * to filter trigger instances.
-   * @param nestedTriggers when true, we consider terms within nested quantifiers
    */
-  PatternTermSelector(Node q,
+  PatternTermSelector(const Options& opts,
+                      Node q,
                       options::TriggerSelMode tstrt,
                       const std::vector<Node>& exc = {},
-                      bool filterInst = true,
-                      bool nestedTriggers = false);
+                      bool filterInst = true);
   ~PatternTermSelector();
   /** collect pattern terms
    *
@@ -73,7 +75,7 @@ class PatternTermSelector
    * (2) Relational triggers are put into solved form, e.g.
    *      getIsUsableTrigger( (= (+ x a) 5), q ) may return (= x (- 5 a)).
    */
-  static Node getIsUsableTrigger(Node n, Node q);
+  static Node getIsUsableTrigger(const Options& opts, Node n, Node q);
   /** get the variable associated with an inversion for n
    *
    * A term n with an inversion variable x has the following property :
@@ -96,7 +98,10 @@ class PatternTermSelector
    * This returns the union of all free variables in usable triggers that are
    * subterms of n.
    */
-  static void getTriggerVariables(Node n, Node q, std::vector<Node>& tvars);
+  static void getTriggerVariables(const Options& opts,
+                                  Node n,
+                                  Node q,
+                                  std::vector<Node>& tvars);
 
  protected:
   /** Is n a usable trigger in quantified formula q?
@@ -104,21 +109,21 @@ class PatternTermSelector
    * A usable trigger is one that is matchable and contains free variables only
    * from q.
    */
-  static bool isUsableTrigger(Node n, Node q);
+  static bool isUsableTrigger(const Options& opts, Node n, Node q);
   /** Is n a usable atomic trigger?
    *
    * A usable atomic trigger is a term that is both a useable trigger and an
    * atomic trigger.
    */
-  static bool isUsableAtomicTrigger(Node n, Node q);
+  static bool isUsableAtomicTrigger(const Options& opts, Node n, Node q);
   /** is subterm of trigger usable (helper function for isUsableTrigger) */
-  static bool isUsable(Node n, Node q);
+  static bool isUsable(const Options& opts, Node n, Node q);
   /** returns an equality that is equivalent to the equality eq and
    * is a usable trigger for q if one exists, otherwise returns Node::null().
    */
-  static Node getIsUsableEq(Node q, Node eq);
+  static Node getIsUsableEq(const Options& opts, Node q, Node eq);
   /** returns whether n1 == n2 is a usable (relational) trigger for q. */
-  static bool isUsableEqTerms(Node q, Node n1, Node n2);
+  static bool isUsableEqTerms(const Options& opts, Node q, Node n1, Node n2);
   /** Helper for collect, with a fixed strategy for selection and filtering */
   void collectInternal(Node n,
                        std::vector<Node>& patTerms,
@@ -180,6 +185,8 @@ class PatternTermSelector
                           Node n2,
                           const std::vector<Node>& fv1,
                           const std::vector<Node>& fv2);
+  /** Reference to options */
+  const Options& d_opts;
   /** The quantified formula this trigger is for. */
   Node d_quant;
   /** The trigger selection strategy */
@@ -188,12 +195,11 @@ class PatternTermSelector
   std::vector<Node> d_excluded;
   /** Whether we are filtering instances */
   bool d_filterInst;
-  /** Whether we are selection triggers in nested quantifiers */
-  bool d_nestedTriggers;
 };
 
 }  // namespace inst
+}  // namespace quantifiers
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5::internal
 
 #endif

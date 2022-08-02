@@ -1,27 +1,30 @@
-/*********************                                                        */
-/*! \file apply_substs.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Aina Niemetz, Andrew Reynolds, Mathias Preiner
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Apply substitutions preprocessing pass.
- **
- ** Apply top level substitutions to assertions, rewrite, and store back into
- ** assertions.
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Aina Niemetz, Andrew Reynolds, Gereon Kremer
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Apply substitutions preprocessing pass.
+ *
+ * Apply top level substitutions to assertions, rewrite, and store back into
+ * assertions.
+ */
 
 #include "preprocessing/passes/apply_substs.h"
 
 #include "context/cdo.h"
-#include "theory/rewriter.h"
+#include "preprocessing/assertion_pipeline.h"
+#include "preprocessing/preprocessing_pass_context.h"
+#include "smt/env.h"
 #include "theory/substitutions.h"
 
-namespace CVC4 {
+namespace cvc5::internal {
 namespace preprocessing {
 namespace passes {
 
@@ -33,8 +36,8 @@ ApplySubsts::ApplySubsts(PreprocessingPassContext* preprocContext)
 PreprocessingPassResult ApplySubsts::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
-  Chat() << "applying substitutions..." << std::endl;
-  Trace("apply-substs") << "SmtEnginePrivate::processAssertions(): "
+  verbose(2) << "applying substitutions..." << std::endl;
+  Trace("apply-substs") << "ApplySubsts::processAssertions(): "
                         << "applying substitutions" << std::endl;
   // TODO(#1255): Substitutions in incremental mode should be managed with a
   // proper data structure.
@@ -50,9 +53,10 @@ PreprocessingPassResult ApplySubsts::applyInternal(
     }
     Trace("apply-substs") << "applying to " << (*assertionsToPreprocess)[i]
                           << std::endl;
-    d_preprocContext->spendResource(ResourceManager::Resource::PreprocessStep);
+    d_preprocContext->spendResource(Resource::PreprocessStep);
     assertionsToPreprocess->replaceTrusted(
-        i, tlsm.apply((*assertionsToPreprocess)[i]));
+        i,
+        tlsm.applyTrusted((*assertionsToPreprocess)[i], d_env.getRewriter()));
     Trace("apply-substs") << "  got " << (*assertionsToPreprocess)[i]
                           << std::endl;
   }
@@ -61,4 +65,4 @@ PreprocessingPassResult ApplySubsts::applyInternal(
 
 }  // namespace passes
 }  // namespace preprocessing
-}  // namespace CVC4
+}  // namespace cvc5::internal

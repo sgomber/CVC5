@@ -1,20 +1,21 @@
-/*********************                                                        */
-/*! \file output_channel.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief The theory output channel interface
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * The theory output channel interface.
+ */
 
 #include "theory/output_channel.h"
 
-namespace CVC4 {
+namespace cvc5::internal {
 namespace theory {
 
 LemmaProperty operator|(LemmaProperty lhs, LemmaProperty rhs)
@@ -76,8 +77,6 @@ std::ostream& operator<<(std::ostream& out, LemmaProperty p)
   return out;
 }
 
-void OutputChannel::split(TNode n) { splitLemma(n.orNode(n.notNode())); }
-
 void OutputChannel::trustedConflict(TrustNode pconf)
 {
   Unreachable() << "OutputChannel::trustedConflict: no implementation"
@@ -91,4 +90,4 @@ void OutputChannel::trustedLemma(TrustNode lem, LemmaProperty p)
 }
 
 }  // namespace theory
-}  // namespace CVC4
+}  // namespace cvc5::internal
