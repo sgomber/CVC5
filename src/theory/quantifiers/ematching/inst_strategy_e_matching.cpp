@@ -272,15 +272,16 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
           Trace("relevant-trigger")
               << "   " << p << " from " << d_pat_to_mpat[p] << " (";
           Trace("relevant-trigger") << d_quant_rel->getNumQuantifiersForSymbol(
-                                            d_pat_to_mpat[p].getOperator())
+              d_pat_to_mpat[p].getOperator())
                                     << ")" << std::endl;
         }
       }
       numSingleTriggers = 1;
-      unsigned nqfs_curr =
-              d_quant_rel->getNumQuantifiersForSymbol(patTermsSingle[0].getOperator());
+      unsigned nqfs_curr = d_quant_rel->getNumQuantifiersForSymbol(
+          patTermsSingle[0].getOperator());
       // consider all that have the same score
-      while (numSingleTriggers < patTermsSingle.size() && d_quant_rel->getNumQuantifiersForSymbol(
+      while (numSingleTriggers < patTermsSingle.size()
+             && d_quant_rel->getNumQuantifiersForSymbol(
                     patTermsSingle[numSingleTriggers].getOperator())
                     <= nqfs_curr)
       {
@@ -288,13 +289,13 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
       }
     }
     // add all considered single triggers
-    for (size_t i=0; i<numSingleTriggers; i++)
+    for (size_t i = 0; i < numSingleTriggers; i++)
     {
       Trigger* tr = d_td.mkTrigger(f,
-                                    patTermsSingle[i],
-                                    false,
-                                    TriggerDatabase::TR_RETURN_NULL,
-                                    d_num_trigger_vars[f]);
+                                   patTermsSingle[i],
+                                   false,
+                                   TriggerDatabase::TR_RETURN_NULL,
+                                   d_num_trigger_vars[f]);
       addTrigger(tr, f);
     }
     if (!options().quantifiers.multiTriggerWhenSingle)
@@ -305,13 +306,12 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
         << "Resort to choosing multi-triggers..." << std::endl;
   }
   // now consider multi-triggers
-  std::vector<Node>& patTermsMulti = d_patTerms[1][f]; 
+  std::vector<Node>& patTermsMulti = d_patTerms[1][f];
   if (d_made_multi_trigger[f])
   {
     // shuffle randomly
-    std::shuffle(patTermsMulti.begin(),
-                  patTermsMulti.end(),
-                  Random::getRandom());
+    std::shuffle(
+        patTermsMulti.begin(), patTermsMulti.end(), Random::getRandom());
   }
   else
   {
@@ -319,10 +319,10 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
   }
   // will possibly want to get an old trigger
   Trigger* tr = d_td.mkTrigger(f,
-                      patTermsMulti,
-                      false,
-                      TriggerDatabase::TR_GET_OLD,
-                      d_num_trigger_vars[f]);
+                               patTermsMulti,
+                               false,
+                               TriggerDatabase::TR_GET_OLD,
+                               d_num_trigger_vars[f]);
   addTrigger(tr, f);
   // we only add a single multi-trigger
 }
