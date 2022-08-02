@@ -235,18 +235,19 @@ InstStrategyStatus InstStrategyAutoGenTriggers::process(Node f,
   return InstStrategyStatus::STATUS_UNKNOWN;
 }
 
-void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
-  Trace("auto-gen-trigger-debug") << "Generate triggers for " << f << ", #var=" << f[0].getNumChildren() << "..." << std::endl;
+void InstStrategyAutoGenTriggers::generateTriggers( Node q )
+{
+  Trace("auto-gen-trigger-debug") << "Generate triggers for " << q << ", #var=" << q[0].getNumChildren() << "..." << std::endl;
 
   // first, generate the set of pattern terms
-  if (!generatePatternTerms(f))
+  if (!generatePatternTerms(q))
   {
     Trace("auto-gen-trigger-debug")
         << "...failed to generate pattern terms" << std::endl;
     return;
   }
   // first, generate single triggers
-  std::vector<Node>& patTermsSingle = d_patTerms[0][f];
+  std::vector<Node>& patTermsSingle = d_patTerms[0][q];
   if (!patTermsSingle.empty())
   {
     size_t numSingleTriggersToUse = patTermsSingle.size();
@@ -291,12 +292,12 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
     // add all considered single triggers
     for (size_t i = 0; i < numSingleTriggersToUse; i++)
     {
-      Trigger* tr = d_td.mkTrigger(f,
+      Trigger* tr = d_td.mkTrigger(q,
                                    patTermsSingle[i],
                                    false,
                                    TriggerDatabase::TR_RETURN_NULL,
-                                   d_num_trigger_vars[f]);
-      addTrigger(tr, f);
+                                   d_num_trigger_vars[q]);
+      addTrigger(tr, q);
     }
     if (!options().quantifiers.multiTriggerWhenSingle)
     {
@@ -306,8 +307,8 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
         << "Resort to choosing multi-triggers..." << std::endl;
   }
   // now consider multi-triggers
-  std::vector<Node>& patTermsMulti = d_patTerms[1][f];
-  if (d_made_multi_trigger[f])
+  std::vector<Node>& patTermsMulti = d_patTerms[1][q];
+  if (d_made_multi_trigger.find(q)!=d_made_multi_trigger.end())
   {
     // shuffle randomly if we've already made a multi trigger
     std::shuffle(
@@ -315,15 +316,15 @@ void InstStrategyAutoGenTriggers::generateTriggers( Node f ){
   }
   else
   {
-    d_made_multi_trigger[f] = true;
+    d_made_multi_trigger.insert(q);
   }
   // will possibly want to get an old trigger
-  Trigger* tr = d_td.mkTrigger(f,
+  Trigger* tr = d_td.mkTrigger(q,
                                patTermsMulti,
                                false,
                                TriggerDatabase::TR_GET_OLD,
-                               d_num_trigger_vars[f]);
-  addTrigger(tr, f);
+                               d_num_trigger_vars[q]);
+  addTrigger(tr, q);
   // we only add a single multi-trigger
 }
 
@@ -530,7 +531,6 @@ bool InstStrategyAutoGenTriggers::generatePatternTerms(Node f)
     addPatternToPool(f, pat, num_fv, mpat);
   }
   // tinfo not used below this point
-  d_made_multi_trigger[f] = false;
   if (TraceIsOn("auto-gen-trigger"))
   {
     Trace("auto-gen-trigger")
@@ -562,10 +562,8 @@ void InstStrategyAutoGenTriggers::addPatternToPool( Node q, Node pat, unsigned n
   if (num_fv == num_vars)
   {
     d_patTerms[0][q].push_back( pat );
-    d_is_single_trigger[ pat ] = true;
   }else{
     d_patTerms[1][q].push_back( pat );
-    d_is_single_trigger[ pat ] = false;
   }
 }
 
