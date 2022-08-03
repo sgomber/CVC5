@@ -19,6 +19,7 @@
 #include "preprocessing/preprocessing_pass_context.h"
 #include "smt/env.h"
 #include "util/rational.h"
+#include "options/smt_options.h"
 #include "smt/preprocess_proof_generator.h"
 
 namespace cvc5::internal {
@@ -27,9 +28,8 @@ namespace passes {
 
 AndElim::AndElim(PreprocessingPassContext* preprocContext)
     : PreprocessingPass(preprocContext, "and-elim"), 
-      d_lcp(d_env.getProofNodeManager() ? new LazyCDProof(
-                 d_env.getProofNodeManager(), nullptr, userContext(), "AndElim::lcp")
-                   : nullptr)
+      d_lcp(new LazyCDProof(
+                 d_env, nullptr, userContext(), "AndElim::lcp"))
 {
 }
 
@@ -70,7 +70,7 @@ PreprocessingPassResult AndElim::applyInternal(
 
 bool AndElim::isProofEnabled() const
 {
-  return d_lcp!=nullptr;
+  return options().smt.produceProofs;
 }
 
 }  // namespace passes
