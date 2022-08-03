@@ -240,7 +240,7 @@ void SmtSolver::processAssertions(Assertions& as)
     preprocessing::IteSkolemMap& ism = ap.getIteSkolemMap();
     // if we can deep restart, we always remember the preprocessed formulas,
     // which are the basis for the next check-sat.
-    if (trackPreprocessedAsserts())
+    if (trackPreprocessedAssertions())
     {
       // incompatible with global negation
       Assert(!as.isGlobalNegated());
@@ -279,9 +279,14 @@ void SmtSolver::processAssertions(Assertions& as)
   as.clearCurrent();
 }
 
+const std::vector<Node>& SmtSolver::getPreprocessedAssertions() const
+{
+  return d_ppAssertions;
+}
+
 void SmtSolver::deepRestart(Assertions& asr, const std::vector<Node>& zll)
 {
-  Assert(trackPreprocessedAsserts());
+  Assert(trackPreprocessedAssertions());
   Assert(!zll.empty());
   Trace("deep-restart") << "Have " << zll.size()
                         << " zero level learned literals" << std::endl;
@@ -328,12 +333,6 @@ void SmtSolver::deepRestart(Assertions& asr, const std::vector<Node>& zll)
   finishInit();
 }
 
-bool SmtSolver::trackPreprocessedAsserts() const
-{
-  return options().smt.deepRestartMode != options::DeepRestartMode::NONE
-         || options().smt.smtLazyAssert;
-}
-
 void SmtSolver::resetPropEngine()
 {
   /* force destruction of referenced PropEngine to enforce that statistics
@@ -347,6 +346,12 @@ void SmtSolver::resetPropEngine()
     d_lazyPropEngine.reset(new prop::LazyPropEngine(
         d_env, d_theoryEngine.get(), d_propEngine.get()));
   }
+}
+bool SmtSolver::trackPreprocessedAssertions() const
+{
+  return options().smt.deepRestartMode != options::DeepRestartMode::NONE
+         || options().smt.produceProofs
+         || options().smt.smtLazyAssert;
 }
 
 TheoryEngine* SmtSolver::getTheoryEngine() { return d_theoryEngine.get(); }

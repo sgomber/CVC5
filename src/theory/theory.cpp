@@ -25,7 +25,6 @@
 #include "options/arith_options.h"
 #include "options/smt_options.h"
 #include "options/theory_options.h"
-#include "smt/smt_statistics_registry.h"
 #include "theory/ee_setup_info.h"
 #include "theory/ext_theory.h"
 #include "theory/output_channel.h"
@@ -320,7 +319,7 @@ bool Theory::isLegalElimination(TNode x, TNode val)
   {
     return false;
   }
-  if (!val.getType().isSubtypeOf(x.getType()))
+  if (val.getType() != x.getType())
   {
     return false;
   }
@@ -672,34 +671,9 @@ eq::EqualityEngine* Theory::getEqualityEngine()
   return d_equalityEngine;
 }
 
-bool Theory::usesCentralEqualityEngine() const
-{
-  return usesCentralEqualityEngine(d_id);
-}
-
-bool Theory::usesCentralEqualityEngine(TheoryId id)
-{
-  if (id == THEORY_BUILTIN)
-  {
-    return true;
-  }
-  if (options::eeMode() == options::EqEngineMode::DISTRIBUTED)
-  {
-    return false;
-  }
-  if (id == THEORY_ARITH)
-  {
-    // conditional on whether we are using the equality solver
-    return options::arithEqSolver();
-  }
-  return id == THEORY_UF || id == THEORY_DATATYPES || id == THEORY_BAGS
-         || id == THEORY_FP || id == THEORY_SETS || id == THEORY_STRINGS
-         || id == THEORY_SEP || id == THEORY_ARRAYS || id == THEORY_BV;
-}
-
 bool Theory::expUsingCentralEqualityEngine(TheoryId id)
 {
-  return id != THEORY_ARITH && usesCentralEqualityEngine(id);
+  return id != THEORY_ARITH;
 }
 
 theory::Assertion Theory::get()

@@ -118,6 +118,14 @@ bool ProcessAssertions::apply(Assertions& as)
     return true;
   }
 
+  // this must be applied to assertions before they are preprocessed, so that
+  // we do not synthesize rewrite rules for internally generated symbols.
+  if (options().quantifiers.sygusRewSynthInput)
+  {
+    // do candidate rewrite rule synthesis
+    applyPass("synth-rr", as);
+  }
+
   if (options().bv.bvGaussElim)
   {
     applyPass("bv-gauss", as);
@@ -255,11 +263,6 @@ bool ProcessAssertions::apply(Assertions& as)
   {
     applyPass("sygus-infer", as);
   }
-  else if (options().quantifiers.sygusRewSynthInput)
-  {
-    // do candidate rewrite rule synthesis
-    applyPass("synth-rr", as);
-  }
 
   Trace("smt-proc") << "ProcessAssertions::processAssertions() : pre-simplify"
                     << endl;
@@ -276,7 +279,7 @@ bool ProcessAssertions::apply(Assertions& as)
   dumpAssertions("assertions::post-simplify", as);
   Trace("assertions::post-simplify") << std::endl;
 
-  if (options().smt.doStaticLearning)
+  if (options().smt.staticLearning)
   {
     applyPass("static-learning", as);
   }
@@ -470,7 +473,7 @@ void ProcessAssertions::dumpAssertions(const std::string& key, Assertions& as)
 
 void ProcessAssertions::dumpAssertionsToStream(std::ostream& os, Assertions& as)
 {
-  PrintBenchmark pb(&d_env.getPrinter());
+  PrintBenchmark pb(Printer::getPrinter(os));
   std::vector<Node> assertions;
   // Notice that the following list covers define-fun and define-fun-rec
   // from input. The former does not impact the assertions since define-fun are

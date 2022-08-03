@@ -258,7 +258,9 @@ void Smt2::addSepOperators() {
 void Smt2::addCoreSymbols()
 {
   defineType("Bool", d_solver->getBooleanSort(), true);
-  defineType("Table", d_solver->mkBagSort(d_solver->mkTupleSort({})), true);
+  Sort tupleSort = d_solver->mkTupleSort({});
+  defineType("Relation", d_solver->mkSetSort(tupleSort), true);
+  defineType("Table", d_solver->mkBagSort(tupleSort), true);
   defineVar("true", d_solver->mkTrue(), true);
   defineVar("false", d_solver->mkFalse(), true);
   addOperator(cvc5::AND, "and");
@@ -312,6 +314,36 @@ modes::BlockModelsMode Smt2::getBlockModelsMode(const std::string& mode)
   }
   parseError(std::string("Unknown block models mode `") + mode + "'");
   return modes::BlockModelsMode::LITERALS;
+}
+
+modes::LearnedLitType Smt2::getLearnedLitType(const std::string& mode)
+{
+  if (mode == "preprocess_solved")
+  {
+    return modes::LEARNED_LIT_PREPROCESS_SOLVED;
+  }
+  else if (mode == "preprocess")
+  {
+    return modes::LEARNED_LIT_PREPROCESS;
+  }
+  else if (mode == "input")
+  {
+    return modes::LEARNED_LIT_INPUT;
+  }
+  else if (mode == "solvable")
+  {
+    return modes::LEARNED_LIT_SOLVABLE;
+  }
+  else if (mode == "constant_prop")
+  {
+    return modes::LEARNED_LIT_CONSTANT_PROP;
+  }
+  else if (mode == "internal")
+  {
+    return modes::LEARNED_LIT_INTERNAL;
+  }
+  parseError(std::string("Unknown learned literal type `") + mode + "'");
+  return modes::LEARNED_LIT_UNKNOWN;
 }
 
 bool Smt2::isTheoryEnabled(internal::theory::TheoryId theory) const
@@ -605,6 +637,8 @@ Command* Smt2::setLogic(std::string name, bool fromCommand)
     addOperator(cvc5::SET_CHOOSE, "set.choose");
     addOperator(cvc5::SET_IS_SINGLETON, "set.is_singleton");
     addOperator(cvc5::SET_MAP, "set.map");
+    addOperator(cvc5::SET_FILTER, "set.filter");
+    addOperator(cvc5::SET_FOLD, "set.fold");
     addOperator(cvc5::RELATION_JOIN, "rel.join");
     addOperator(cvc5::RELATION_PRODUCT, "rel.product");
     addOperator(cvc5::RELATION_TRANSPOSE, "rel.transpose");
@@ -636,6 +670,7 @@ Command* Smt2::setLogic(std::string name, bool fromCommand)
     addOperator(cvc5::BAG_FOLD, "bag.fold");
     addOperator(cvc5::BAG_PARTITION, "bag.partition");
     addOperator(cvc5::TABLE_PRODUCT, "table.product");
+    addOperator(cvc5::BAG_PARTITION, "table.group");
   }
   if (d_logic.isTheoryEnabled(internal::theory::THEORY_STRINGS))
   {
@@ -1126,7 +1161,10 @@ cvc5::Term Smt2::applyParseOp(ParseOp& p, std::vector<cvc5::Term>& args)
     return ret;
   }
   else if (p.d_kind == cvc5::TUPLE_PROJECT || p.d_kind == cvc5::TABLE_PROJECT
-           || p.d_kind == cvc5::TABLE_AGGREGATE || p.d_kind == cvc5::TABLE_JOIN)
+           || p.d_kind == cvc5::TABLE_AGGREGATE || p.d_kind == cvc5::TABLE_JOIN
+           || p.d_kind == cvc5::TABLE_GROUP || p.d_kind == cvc5::RELATION_GROUP
+           || p.d_kind == cvc5::RELATION_AGGREGATE
+           || p.d_kind == cvc5::RELATION_PROJECT)
   {
     cvc5::Term ret = d_solver->mkTerm(p.d_op, args);
     Trace("parser") << "applyParseOp: return projection " << ret << std::endl;
@@ -1146,17 +1184,39 @@ cvc5::Term Smt2::applyParseOp(ParseOp& p, std::vector<cvc5::Term>& args)
   }
   else if (isBuiltinOperator)
   {
-    if (!isHoEnabled() && (kind == cvc5::EQUAL || kind == cvc5::DISTINCT))
+    if (kind == cvc5::EQUAL || kind == cvc5::DISTINCT)
     {
+      bool isReal = false;
       // need hol if these operators are applied over function args
-      for (std::vector<cvc5::Term>::iterator i = args.begin(); i != args.end();
-           ++i)
+      for (const Term& i : args)
       {
-        if ((*i).getSort().isFunction())
+        Sort s = i.getSort();
+        if (!isHoEnabled())
         {
-          parseError(
-              "Cannot apply equality to functions unless logic is prefixed by "
-              "HO_.");
+          if (s.isFunction())
+          {
+            parseError(
+                "Cannot apply equality to functions unless logic is prefixed "
+                "by HO_.");
+          }
+        }
+        if (s.isReal())
+        {
+          isReal = true;
+        }
+      }
+      // If strict mode is not enabled, we are permissive for Int and Real
+      // subtyping. Note that other arithmetic operators and relations are
+      // already permissive, e.g. <=, +.
+      if (isReal && !strictModeEnabled())
+      {
+        for (Term& i : args)
+        {
+          Sort s = i.getSort();
+          if (s.isInteger())
+          {
+            i = d_solver->mkTerm(cvc5::TO_REAL, {i});
+          }
         }
       }
     }
@@ -1194,14 +1254,7 @@ cvc5::Term Smt2::applyParseOp(ParseOp& p, std::vector<cvc5::Term>& args)
                       << std::endl;
       return ret;
     }
-    if (kind == cvc5::SET_SINGLETON && args.size() == 1)
-    {
-      cvc5::Term ret = d_solver->mkTerm(cvc5::SET_SINGLETON, {args[0]});
-      Trace("parser") << "applyParseOp: return set.singleton " << ret
-                      << std::endl;
-      return ret;
-    }
-    else if (kind == cvc5::CARDINALITY_CONSTRAINT)
+    if (kind == cvc5::CARDINALITY_CONSTRAINT)
     {
       if (args.size() != 2)
       {

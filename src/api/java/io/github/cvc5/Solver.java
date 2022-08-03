@@ -16,6 +16,7 @@
 package io.github.cvc5;
 
 import io.github.cvc5.modes.BlockModelsMode;
+import io.github.cvc5.modes.LearnedLitType;
 import java.io.IOException;
 import java.util.*;
 
@@ -47,6 +48,9 @@ public class Solver implements IPointer, AutoCloseable
   // store pointers for terms, sorts, etc
   List<AbstractPointer> abstractPointers = new ArrayList<>();
 
+  // store IOracle objects
+  List<IOracle> oracles = new ArrayList<>();
+
   @Override
   public void close()
   {
@@ -57,6 +61,8 @@ public class Solver implements IPointer, AutoCloseable
     }
     // delete the heap memory for this solver
     deletePointer();
+    // clear oracles
+    oracles.clear();
   }
 
   void addAbstractPointer(AbstractPointer abstractPointer)
@@ -1755,15 +1761,16 @@ public class Solver implements IPointer, AutoCloseable
    *
    * @api.note This method is experimental and may change in future versions.
    *
+   * @param type The type of learned literals to return
    * @return The list of learned literals.
    */
-  public Term[] getLearnedLiterals()
+  public Term[] getLearnedLiterals(LearnedLitType type)
   {
-    long[] retPointers = getLearnedLiterals(pointer);
+    long[] retPointers = getLearnedLiterals(pointer, type.getValue());
     return Utils.getTerms(this, retPointers);
   }
 
-  private native long[] getLearnedLiterals(long pointer);
+  private native long[] getLearnedLiterals(long pointer, int type);
 
   /**
    * Get the list of asserted formulas.
@@ -2181,6 +2188,42 @@ public class Solver implements IPointer, AutoCloseable
       long pointer, String symbol, long sortPointer, long[] termPointers);
 
   /**
+   * Declare an oracle function with reference to an implementation.
+   *
+   * Oracle functions have a different semantics with respect to ordinary
+   * declared functions. In particular, for an input to be satisfiable,
+   * its oracle functions are implicitly universally quantified.
+   *
+   * This method is used in part for implementing this command:
+   *
+   * {@code
+   * (declare-oracle-fun <sym> (<sort>*) <sort> <sym>)
+   * }
+   *
+   *
+   * In particular, the above command is implemented by constructing a
+   * function over terms that wraps a call to binary sym via a text interface.
+   *
+   * @api.note This method is experimental and may change in future versions.
+   *
+   * @param symbol The name of the oracle
+   * @param sorts The sorts of the parameters to this function
+   * @param sort The sort of the return value of this function
+   * @param oracle An object that implements the oracle interface.
+   * @return The oracle function
+   */
+  public Term declareOracleFun(String symbol, Sort[] sorts, Sort sort, IOracle oracle)
+  {
+    oracles.add(oracle);
+    long[] sortPointers = Utils.getPointers(sorts);
+    long termPointer = declareOracleFun(pointer, symbol, sortPointers, sort.getPointer(), oracle);
+    return new Term(this, termPointer);
+  }
+
+  private native long declareOracleFun(
+      long pointer, String symbol, long[] sortPointers, long sortPointer, IOracle oracle);
+
+  /**
    * Pop a level from the assertion stack.
    *
    * SMT-LIB:
@@ -2569,16 +2612,15 @@ public class Solver implements IPointer, AutoCloseable
    * @param ntSymbols The pre-declaration of the non-terminal symbols.
    * @return The grammar.
    */
-  public Grammar mkGrammar(Term[] boundVars, Term[] ntSymbols) {
+  public Grammar mkGrammar(Term[] boundVars, Term[] ntSymbols)
+  {
     long[] boundVarPointers = Utils.getPointers(boundVars);
     long[] ntSymbolPointers = Utils.getPointers(ntSymbols);
-    long grammarPointer =
-        mkGrammar(pointer, boundVarPointers, ntSymbolPointers);
+    long grammarPointer = mkGrammar(pointer, boundVarPointers, ntSymbolPointers);
     return new Grammar(this, grammarPointer);
   }
 
-  private native long mkGrammar(
-      long pointer, long[] boundVarPointers, long[] ntSymbolPointers);
+  private native long mkGrammar(long pointer, long[] boundVarPointers, long[] ntSymbolPointers);
 
   /**
    * Synthesize n-ary function.

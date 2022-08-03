@@ -104,6 +104,10 @@ class SmtSolver : protected EnvObj
    */
   void processAssertions(Assertions& as);
   /**
+   * Get the list of preprocessed assertions
+   */
+  const std::vector<Node>& getPreprocessedAssertions() const;
+  /**
    * Perform a deep restart.
    *
    * This constructs a fresh copy of the theory engine and prop engine, and
@@ -128,8 +132,8 @@ class SmtSolver : protected EnvObj
   //------------------------------------------ end access methods
 
  private:
-  /** Whether we track preprocessed assertions */
-  bool trackPreprocessedAsserts() const;
+  /** Whether we track information necessary for deep restarts */
+  bool trackPreprocessedAssertions() const;
   /** Reset the prop engine, assumes theory engine is reset */
   void resetPropEngine();
   /** The preprocessor of this SMT solver */
