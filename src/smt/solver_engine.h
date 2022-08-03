@@ -1058,6 +1058,8 @@ class CVC5_EXPORT SolverEngine
 
   /** The SMT solver */
   std::unique_ptr<smt::SmtSolver> d_smtSolver;
+  /** The SMT solver driver */
+  std::unique_ptr<smt::SmtSolverDriver> d_smtSolverDriver;
 
   /**
    * The utility used for checking models
