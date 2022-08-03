@@ -34,6 +34,7 @@
 #include "theory/quantifiers_engine.h"
 #include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
+#include "theory/trust_substitutions.h"
 
 using namespace cvc5::internal::theory;
 using namespace cvc5::internal::kind;
@@ -311,9 +312,10 @@ bool SygusSolver::getSynthSolutions(std::map<Node, Node>& solMap)
   Trace("smt") << "SygusSolver::getSynthSolutions" << std::endl;
   if (usingSygusSubsolver())
   {
-    // use the call to get the synth solutions from the subsolver
+    // use the call to get the synth solutions from the subsolver   
     return d_subsolver ? d_subsolver->getSubsolverSynthSolutions(solMap)
                        : false;
+
   }
   return getSubsolverSynthSolutions(solMap);
 }
@@ -484,7 +486,7 @@ void SygusSolver::expandDefinitionsSygusDt(TypeNode tn) const
       // expandDefinitions.
       Node eop = op.isConst()
                      ? op
-                     : d_smtSolver.getPreprocessor()->expandDefinitions(op);
+                     : d_env.getTopLevelSubstitutions().apply(op);
       eop = rewrite(eop);
       datatypes::utils::setExpandedDefinitionForm(op, eop);
       // also must consider the arguments
