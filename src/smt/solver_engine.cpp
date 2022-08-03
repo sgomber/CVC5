@@ -53,6 +53,7 @@
 #include "smt/quant_elim_solver.h"
 #include "smt/set_defaults.h"
 #include "smt/smt_solver.h"
+#include "smt/smt_solver_driver.h"
 #include "smt/solver_engine_state.h"
 #include "smt/solver_engine_stats.h"
 #include "smt/sygus_solver.h"
@@ -175,6 +176,9 @@ void SolverEngine::finishInit()
   SetDefaults sdefaults(*d_env, d_isInternalSubsolver);
   sdefaults.setDefaults(d_env->d_logic, getOptions());
 
+  // make the SMT solver driver based on the options
+  d_smtSolverDriver.reset(new SmtSolverDriverSingleCall(*d_env.get(), *d_smtSolver));
+  
   ProofNodeManager* pnm = nullptr;
   if (d_env->getOptions().smt.produceProofs)
   {

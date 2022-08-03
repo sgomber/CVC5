@@ -107,6 +107,10 @@ class SmtSolver : protected EnvObj
    */
   const std::vector<Node>& getPreprocessedAssertions() const;
   /**
+   * 
+   */
+  const std::unordered_map<size_t, Node>& getPreprocessedSkolemMap() const;
+  /**
    * Perform a deep restart.
    *
    * This constructs a fresh copy of the theory engine and prop engine, and

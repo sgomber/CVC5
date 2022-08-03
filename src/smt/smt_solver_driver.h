@@ -30,35 +30,36 @@ namespace smt {
 
 class SmtSolver;
 
+enum class CheckAgainStatus
+{
+  PREPROCESS_SOLVE_AGAIN,
+  SOLVE_AGAIN,
+  FINISH
+};
+  
 class SmtSolverDriver : protected EnvObj
 {
  public:
-  SmtSolverDriver(Env& env, SmtSolver* smt);
+  SmtSolverDriver(Env& env, SmtSolver& smt);
   virtual void notifyInputFormulas(
       std::vector<Node> ppAssertions,
       std::unordered_map<size_t, Node> ppSkolemMap) = 0;
   virtual void finishCheckSat(Result r) = 0;
-  enum class CheckAgainStatus
-  {
-    PREPROCESS_SOLVE_AGAIN,
-    SOLVE_AGAIN,
-    FINISH
-  };
   /**
    * Return true if we should check again. If so, we populate assertions
    * with the set of things that should be preprocessed
    */
   virtual CheckAgainStatus checkAgain(Assertions& as) = 0;
 
- private:
+ protected:
   /** The underlying SMT solver */
-  SmtSolver* d_smt;
+  SmtSolver& d_smt;
 };
 
 class SmtSolverDriverSingleCall : public SmtSolverDriver
 {
  public:
-  SmtSolverDriverSingleCall(Env& env, SmtSolver* smt);
+  SmtSolverDriverSingleCall(Env& env, SmtSolver& smt);
   void notifyInputFormulas(
       std::vector<Node> ppAssertions,
       std::unordered_map<size_t, Node> ppSkolemMap) override;
@@ -69,7 +70,7 @@ class SmtSolverDriverSingleCall : public SmtSolverDriver
 class SmtSolverDriverDeepRestarts : public SmtSolverDriver
 {
  public:
-  SmtSolverDriverDeepRestarts(Env& env, SmtSolver* smt);
+  SmtSolverDriverDeepRestarts(Env& env, SmtSolver& smt);
   void notifyInputFormulas(
       std::vector<Node> ppAssertions,
       std::unordered_map<size_t, Node> ppSkolemMap) override;

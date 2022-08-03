@@ -13,23 +13,23 @@
  * The solver for SMT queries in an SolverEngine.
  */
 
-#include <vector>
+#include "smt/smt_solver_driver.h"
 
-#include "cvc5_private.h"
-#include "expr/node.h"
-#include "smt/assertions.h"
-#include "smt/env_obj.h"
-#include "util/result.h"
+#include "smt/smt_solver.h"
+#include "options/base_options.h"
+#include "options/main_options.h"
+#include "options/smt_options.h"
+#include "prop/prop_engine.h"
 
 namespace cvc5::internal {
 namespace smt {
 
-SmtSolverDriver::SmtSolverDriver(Env& env, SmtSolver* smt)
+SmtSolverDriver::SmtSolverDriver(Env& env, SmtSolver& smt)
     : EnvObj(env), d_smt(smt)
 {
 }
 
-SmtSolverDriverSingleCall::SmtSolverDriverSingleCall(Env& env, SmtSolver* smt)
+SmtSolverDriverSingleCall::SmtSolverDriverSingleCall(Env& env, SmtSolver& smt)
     : SmtSolverDriver(env, smt)
 {
 }
@@ -39,7 +39,7 @@ void SmtSolverDriverSingleCall::notifyInputFormulas(
     std::unordered_map<size_t, Node> ppSkolemMap)
 {
   // immediately assert all formulas to the underlying prop engine
-  d_smt->getPropEngine()->assertInputFormulas(ppAssertions, ppSkolemMap);
+  d_smt.getPropEngine()->assertInputFormulas(ppAssertions, ppSkolemMap);
 }
 void SmtSolverDriverSingleCall::finishCheckSat(Result r)
 {
@@ -51,7 +51,7 @@ CheckAgainStatus SmtSolverDriverSingleCall::checkAgain(Assertions& as)
 }
 
 SmtSolverDriverDeepRestarts::SmtSolverDriverDeepRestarts(Env& env,
-                                                         SmtSolver* smt)
+                                                         SmtSolver& smt)
     : SmtSolverDriver(env, smt)
 {
 }
@@ -61,13 +61,13 @@ void SmtSolverDriverDeepRestarts::notifyInputFormulas(
     std::unordered_map<size_t, Node> ppSkolemMap)
 {
   // immediately assert all formulas to the underlying prop engine
-  d_smt->getPropEngine()->assertInputFormulas(ppAssertions, ppSkolemMap);
+  d_smt.getPropEngine()->assertInputFormulas(ppAssertions, ppSkolemMap);
 }
 
 void SmtSolverDriverDeepRestarts::finishCheckSat(Result r)
 {
   d_zll.clear();
-  d_zll = d_smt->getPropEngine()->getLearnedZeroLevelLiteralsForRestart();
+  d_zll = d_smt.getPropEngine()->getLearnedZeroLevelLiteralsForRestart();
 }
 CheckAgainStatus SmtSolverDriverDeepRestarts::checkAgain(Assertions& as)
 {
@@ -80,12 +80,14 @@ CheckAgainStatus SmtSolverDriverDeepRestarts::checkAgain(Assertions& as)
 
   preprocessing::AssertionPipeline& apr = as.getAssertionPipeline();
   // Copy the preprocessed assertions and skolem map information directly
-  for (const Node& a : d_ppAssertions)
+  const std::vector<Node>& ppAssertions = d_smt.getPreprocessedAssertions();
+  for (const Node& a : ppAssertions)
   {
     apr.push_back(a);
   }
   preprocessing::IteSkolemMap& ismr = apr.getIteSkolemMap();
-  for (const std::pair<const size_t, Node>& k : d_ppSkolemMap)
+  const std::unordered_map<size_t, Node>& ppSkolemMap = d_smt.getPreprocessedSkolemMap();
+  for (const std::pair<const size_t, Node>& k : ppSkolemMap)
   {
     // carry the entire skolem map, which should align with the order of
     // assertions passed into the new assertions pipeline
@@ -95,14 +97,14 @@ CheckAgainStatus SmtSolverDriverDeepRestarts::checkAgain(Assertions& as)
   {
     output(OutputTag::DEEP_RESTART) << "(deep-restart (";
     bool firstTime = true;
-    for (TNode lit : zll)
+    for (TNode lit : d_zll)
     {
       output(OutputTag::DEEP_RESTART) << (firstTime ? "" : " ") << lit;
       firstTime = false;
     }
     output(OutputTag::DEEP_RESTART) << "))" << std::endl;
   }
-  for (TNode lit : zll)
+  for (TNode lit : d_zll)
   {
     Trace("deep-restart-lit") << "Restart learned lit: " << lit << std::endl;
     apr.push_back(lit);
