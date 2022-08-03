@@ -36,7 +36,7 @@ enum class CheckAgainStatus
   SOLVE_AGAIN,
   FINISH
 };
-  
+
 class SmtSolverDriver : protected EnvObj
 {
  public:

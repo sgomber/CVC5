@@ -281,7 +281,8 @@ const std::vector<Node>& SmtSolver::getPreprocessedAssertions() const
   return d_ppAssertions;
 }
 
-const std::unordered_map<size_t, Node>& SmtSolver::getPreprocessedSkolemMap() const
+const std::unordered_map<size_t, Node>& SmtSolver::getPreprocessedSkolemMap()
+    const
 {
   return d_ppSkolemMap;
 }

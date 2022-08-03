@@ -15,11 +15,11 @@
 
 #include "smt/smt_solver_driver.h"
 
-#include "smt/smt_solver.h"
 #include "options/base_options.h"
 #include "options/main_options.h"
 #include "options/smt_options.h"
 #include "prop/prop_engine.h"
+#include "smt/smt_solver.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -86,7 +86,8 @@ CheckAgainStatus SmtSolverDriverDeepRestarts::checkAgain(Assertions& as)
     apr.push_back(a);
   }
   preprocessing::IteSkolemMap& ismr = apr.getIteSkolemMap();
-  const std::unordered_map<size_t, Node>& ppSkolemMap = d_smt.getPreprocessedSkolemMap();
+  const std::unordered_map<size_t, Node>& ppSkolemMap =
+      d_smt.getPreprocessedSkolemMap();
   for (const std::pair<const size_t, Node>& k : ppSkolemMap)
   {
     // carry the entire skolem map, which should align with the order of

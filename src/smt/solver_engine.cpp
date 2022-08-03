@@ -31,8 +31,8 @@
 #include "options/options_public.h"
 #include "options/parser_options.h"
 #include "options/printer_options.h"
-#include "options/quantifiers_options.h"
 #include "options/proof_options.h"
+#include "options/quantifiers_options.h"
 #include "options/smt_options.h"
 #include "options/theory_options.h"
 #include "printer/printer.h"
@@ -177,8 +177,9 @@ void SolverEngine::finishInit()
   sdefaults.setDefaults(d_env->d_logic, getOptions());
 
   // make the SMT solver driver based on the options
-  d_smtSolverDriver.reset(new SmtSolverDriverSingleCall(*d_env.get(), *d_smtSolver));
-  
+  d_smtSolverDriver.reset(
+      new SmtSolverDriverSingleCall(*d_env.get(), *d_smtSolver));
+
   ProofNodeManager* pnm = nullptr;
   if (d_env->getOptions().smt.produceProofs)
   {
