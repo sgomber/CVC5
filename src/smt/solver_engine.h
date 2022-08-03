@@ -78,6 +78,7 @@ class AbductionSolver;
 class InterpolationSolver;
 class QuantElimSolver;
 
+class SmtSolverDriver;
 struct SolverEngineStatistics;
 class PfManager;
 class UnsatCoreManager;

@@ -33,7 +33,7 @@ class SmtSolver;
 class SmtSolverDriver : protected EnvObj
 {
  public:
-  SmtSolverDriver(Env& env, SmtSolver* smt) : EnvObj(env), d_smt(smt) {}
+  SmtSolverDriver(Env& env, SmtSolver* smt);
   virtual void notifyInputFormulas(
       std::vector<Node> ppAssertions,
       std::unordered_map<size_t, Node> ppSkolemMap) = 0;
@@ -58,91 +58,23 @@ class SmtSolverDriver : protected EnvObj
 class SmtSolverDriverSingleCall : public SmtSolverDriver
 {
  public:
-  SmtSolverDriverSingleCall(Env& env, SmtSolver* smt) : SmtSolverDriver(env, smt) {}
-
+  SmtSolverDriverSingleCall(Env& env, SmtSolver* smt);
   void notifyInputFormulas(
       std::vector<Node> ppAssertions,
-      std::unordered_map<size_t, Node> ppSkolemMap) override
-  {
-    // immediately assert all formulas to the underlying prop engine
-    d_smt->getPropEngine()->assertInputFormulas(ppAssertions, ppSkolemMap);
-  }
-  void finishCheckSat(Result r) override
-  {
-    // do nothing
-  }
-  CheckAgainStatus checkAgain(Assertions& as) override
-  {
-    return CheckAgainStatus::FINISH;
-  }
+      std::unordered_map<size_t, Node> ppSkolemMap) override;
+  void finishCheckSat(Result r) override;
+  CheckAgainStatus checkAgain(Assertions& as) override;
 };
 
 class SmtSolverDriverDeepRestarts : public SmtSolverDriver
 {
  public:
-  SmtSolverDriverDeepRestarts(Env& env, SmtSolver* smt) : SmtSolverDriver(env, smt) {}
-
+  SmtSolverDriverDeepRestarts(Env& env, SmtSolver* smt);
   void notifyInputFormulas(
       std::vector<Node> ppAssertions,
-      std::unordered_map<size_t, Node> ppSkolemMap) override
-  {
-    // immediately assert all formulas to the underlying prop engine
-    d_smt->getPropEngine()->assertInputFormulas(ppAssertions, ppSkolemMap);
-  }
-  
-  void finishCheckSat(Result r) override
-  {
-    d_zll.clear();
-    d_zll = d_smt->getPropEngine()->getLearnedZeroLevelLiteralsForRestart();
-  }
-  CheckAgainStatus checkAgain(Assertions& as) override
-  {
-    if (d_zll.empty())
-    {
-      return CheckAgainStatus::FINISH;
-    }
-    Trace("deep-restart") << "Have " << d_zll.size()
-                          << " zero level learned literals" << std::endl;
-
-    preprocessing::AssertionPipeline& apr = as.getAssertionPipeline();
-    // Copy the preprocessed assertions and skolem map information directly
-    for (const Node& a : d_ppAssertions)
-    {
-      apr.push_back(a);
-    }
-    preprocessing::IteSkolemMap& ismr = apr.getIteSkolemMap();
-    for (const std::pair<const size_t, Node>& k : d_ppSkolemMap)
-    {
-      // carry the entire skolem map, which should align with the order of
-      // assertions passed into the new assertions pipeline
-      ismr[k.first] = k.second;
-    }
-    if (isOutputOn(OutputTag::DEEP_RESTART))
-    {
-      output(OutputTag::DEEP_RESTART) << "(deep-restart (";
-      bool firstTime = true;
-      for (TNode lit : zll)
-      {
-        output(OutputTag::DEEP_RESTART) << (firstTime ? "" : " ") << lit;
-        firstTime = false;
-      }
-      output(OutputTag::DEEP_RESTART) << "))" << std::endl;
-    }
-    for (TNode lit : zll)
-    {
-      Trace("deep-restart-lit") << "Restart learned lit: " << lit << std::endl;
-      apr.push_back(lit);
-      if (Configuration::isAssertionBuild())
-      {
-        Assert(d_allLearnedLits.find(lit) == d_allLearnedLits.end())
-            << "Relearned: " << lit << std::endl;
-        d_allLearnedLits.insert(lit);
-      }
-    }
-    Trace("deep-restart") << "Finished compute deep restart" << std::endl;
-
-    return CheckAgainStatus::FINISH;
-  }
+      std::unordered_map<size_t, Node> ppSkolemMap) override;
+  void finishCheckSat(Result r) override;
+  CheckAgainStatus checkAgain(Assertions& as) override;
 private:
   /** The current learned literals */
   std::vector<Node> d_zll;

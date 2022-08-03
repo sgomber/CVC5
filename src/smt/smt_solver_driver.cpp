@@ -31,16 +31,16 @@ SmtSolverDriverSingleCall::SmtSolverDriverSingleCall(Env& env, SmtSolver* smt) :
 
 void SmtSolverDriverSingleCall::notifyInputFormulas(
     std::vector<Node> ppAssertions,
-    std::unordered_map<size_t, Node> ppSkolemMap) override
+    std::unordered_map<size_t, Node> ppSkolemMap) 
 {
   // immediately assert all formulas to the underlying prop engine
   d_smt->getPropEngine()->assertInputFormulas(ppAssertions, ppSkolemMap);
 }
-void SmtSolverDriverSingleCall::finishCheckSat(Result r) override
+void SmtSolverDriverSingleCall::finishCheckSat(Result r) 
 {
   // do nothing
 }
-CheckAgainStatus SmtSolverDriverSingleCall::checkAgain(Assertions& as) override
+CheckAgainStatus SmtSolverDriverSingleCall::checkAgain(Assertions& as) 
 {
   return CheckAgainStatus::FINISH;
 }
@@ -49,18 +49,18 @@ SmtSolverDriverDeepRestarts::SmtSolverDriverDeepRestarts(Env& env, SmtSolver* sm
 
 void SmtSolverDriverDeepRestarts::notifyInputFormulas(
     std::vector<Node> ppAssertions,
-    std::unordered_map<size_t, Node> ppSkolemMap) override
+    std::unordered_map<size_t, Node> ppSkolemMap) 
 {
   // immediately assert all formulas to the underlying prop engine
   d_smt->getPropEngine()->assertInputFormulas(ppAssertions, ppSkolemMap);
 }
 
-void SmtSolverDriverDeepRestarts::finishCheckSat(Result r) override
+void SmtSolverDriverDeepRestarts::finishCheckSat(Result r) 
 {
   d_zll.clear();
   d_zll = d_smt->getPropEngine()->getLearnedZeroLevelLiteralsForRestart();
 }
-CheckAgainStatus SmtSolverDriverDeepRestarts::checkAgain(Assertions& as) override
+CheckAgainStatus SmtSolverDriverDeepRestarts::checkAgain(Assertions& as) 
 {
   if (d_zll.empty())
   {
