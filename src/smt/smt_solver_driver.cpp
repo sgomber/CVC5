@@ -118,7 +118,7 @@ CheckAgainStatus SmtSolverDriverDeepRestarts::checkAgain(Assertions& as)
   }
   Trace("deep-restart") << "Finished compute deep restart" << std::endl;
 
-  return CheckAgainStatus::FINISH;
+  return CheckAgainStatus::PREPROCESS_SOLVE_AGAIN;
 }
 
 }  // namespace smt

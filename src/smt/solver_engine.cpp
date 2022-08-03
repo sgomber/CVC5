@@ -732,47 +732,26 @@ Result SolverEngine::checkSat()
 
 Result SolverEngine::checkSat(const Node& assumption)
 {
-  ensureWellFormedTerm(assumption, "checkSat");
+  // call the vector version
   std::vector<Node> assump;
   if (!assumption.isNull())
   {
     assump.push_back(assumption);
   }
-  return checkSatInternal(assump);
+  return checkSat(assump);
 }
 
 Result SolverEngine::checkSat(const std::vector<Node>& assumptions)
 {
-  ensureWellFormedTerms(assumptions, "checkSat");
-  return checkSatInternal(assumptions);
-}
-
-Result SolverEngine::checkSatInternal(const std::vector<Node>& assumptions)
-{
   finishInit();
-
+  ensureWellFormedTerms(assumptions, "checkSat");
+  
   Trace("smt") << "SolverEngine::checkSat(" << assumptions << ")" << endl;
   // update the state to indicate we are about to run a check-sat
   bool hasAssumptions = !assumptions.empty();
   d_state->notifyCheckSat(hasAssumptions);
-
-  // state should be fully ready now
-  Assert(d_state->isFullyReady());
-
-  // check the satisfiability with the solver object
-  Assertions& as = *d_asserts.get();
-  Result r = d_smtSolver->checkSatisfiability(as, assumptions);
-
-  // If the result is unknown, we may optionally do a "deep restart" where
-  // the members of the SMT solver are reconstructed and given the
-  // preprocessed input formulas (plus additional learned formulas). Notice
-  // that assumptions are pushed to the preprocessed input in the above call, so
-  // any additional satisfiability checks use an empty set of assumptions.
-  while (r.getStatus() == Result::UNKNOWN && deepRestart())
-  {
-    Trace("smt") << "SolverEngine::checkSat after deep restart" << std::endl;
-    r = d_smtSolver->checkSatisfiability(as, {});
-  }
+  
+  Result r = checkSatInternal(assumptions);
 
   Trace("smt") << "SolverEngine::checkSat(" << assumptions << ") => " << r
                << endl;
@@ -809,6 +788,29 @@ Result SolverEngine::checkSatInternal(const std::vector<Node>& assumptions)
   {
     printStatisticsDiff();
   }
+  return r;
+}
+
+Result SolverEngine::checkSatInternal(const std::vector<Node>& assumptions)
+{
+  // state should be fully ready now
+  Assert(d_state->isFullyReady());
+
+  // check the satisfiability with the solver object
+  Assertions& as = *d_asserts.get();
+  Result r = d_smtSolver->checkSatisfiability(as, assumptions);
+
+  // If the result is unknown, we may optionally do a "deep restart" where
+  // the members of the SMT solver are reconstructed and given the
+  // preprocessed input formulas (plus additional learned formulas). Notice
+  // that assumptions are pushed to the preprocessed input in the above call, so
+  // any additional satisfiability checks use an empty set of assumptions.
+  while (r.getStatus() == Result::UNKNOWN && deepRestart())
+  {
+    Trace("smt") << "SolverEngine::checkSat after deep restart" << std::endl;
+    r = d_smtSolver->checkSatisfiability(as, {});
+  }
+
   return r;
 }
 
