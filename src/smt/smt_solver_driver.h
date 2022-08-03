@@ -49,8 +49,8 @@ class SmtSolverDriver : protected EnvObj
    * Return true if we should check again. If so, we populate assertions
    * with the set of things that should be preprocessed
    */
-  virtual CheckAgainStatus checkAgain(Assertions& as) = 0;
-
+  virtual CheckAgainStatus checkAgain() = 0;
+  virtual void populateAssertions(Assertions& as) {}
  protected:
   /** The underlying SMT solver */
   SmtSolver& d_smt;
@@ -64,7 +64,7 @@ class SmtSolverDriverSingleCall : public SmtSolverDriver
       std::vector<Node> ppAssertions,
       std::unordered_map<size_t, Node> ppSkolemMap) override;
   void finishCheckSat(Result r) override;
-  CheckAgainStatus checkAgain(Assertions& as) override;
+  CheckAgainStatus checkAgain() override;
 };
 
 class SmtSolverDriverDeepRestarts : public SmtSolverDriver
@@ -75,7 +75,8 @@ class SmtSolverDriverDeepRestarts : public SmtSolverDriver
       std::vector<Node> ppAssertions,
       std::unordered_map<size_t, Node> ppSkolemMap) override;
   void finishCheckSat(Result r) override;
-  CheckAgainStatus checkAgain(Assertions& as) override;
+  CheckAgainStatus checkAgain() override;
+  void populateAssertions(Assertions& as) override;
 
  private:
   /** The current learned literals */

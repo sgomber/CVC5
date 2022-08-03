@@ -45,7 +45,7 @@ void SmtSolverDriverSingleCall::finishCheckSat(Result r)
 {
   // do nothing
 }
-CheckAgainStatus SmtSolverDriverSingleCall::checkAgain(Assertions& as)
+CheckAgainStatus SmtSolverDriverSingleCall::checkAgain()
 {
   return CheckAgainStatus::FINISH;
 }
@@ -69,15 +69,19 @@ void SmtSolverDriverDeepRestarts::finishCheckSat(Result r)
   d_zll.clear();
   d_zll = d_smt.getPropEngine()->getLearnedZeroLevelLiteralsForRestart();
 }
-CheckAgainStatus SmtSolverDriverDeepRestarts::checkAgain(Assertions& as)
+CheckAgainStatus SmtSolverDriverDeepRestarts::checkAgain()
 {
   if (d_zll.empty())
   {
     return CheckAgainStatus::FINISH;
   }
+  return CheckAgainStatus::PREPROCESS_SOLVE_AGAIN;
+}
+
+void SmtSolverDriverDeepRestarts::populateAssertions(Assertions& as)
+{
   Trace("deep-restart") << "Have " << d_zll.size()
                         << " zero level learned literals" << std::endl;
-
   preprocessing::AssertionPipeline& apr = as.getAssertionPipeline();
   // Copy the preprocessed assertions and skolem map information directly
   const std::vector<Node>& ppAssertions = d_smt.getPreprocessedAssertions();
@@ -117,8 +121,6 @@ CheckAgainStatus SmtSolverDriverDeepRestarts::checkAgain(Assertions& as)
     }
   }
   Trace("deep-restart") << "Finished compute deep restart" << std::endl;
-
-  return CheckAgainStatus::PREPROCESS_SOLVE_AGAIN;
 }
 
 }  // namespace smt

@@ -810,6 +810,34 @@ Result SolverEngine::checkSatInternal(const std::vector<Node>& assumptions)
     Trace("smt") << "SolverEngine::checkSat after deep restart" << std::endl;
     r = d_smtSolver->checkSatisfiability(as, {});
   }
+#if 0
+////////////////////////////////
+
+  bool checkAgain = true;
+  while(checkAgain)
+  {
+    r = d_smtSolver->checkSatisfiability(as, {});
+    CheckAgainStatus cas = d_smtSolverDriver->checkAgain();
+    if (cas==CheckAgainStatus::FINISH)
+    {
+      checkAgain = false;
+    }
+    else if (cas==CheckAgainStatus::PREPROCESS_SOLVE_AGAIN)
+    {
+      as.clearCurrent();
+      d_state->notifyResetAssertions();
+      // finish init the SMT solver, which reconstructs the theory engine and
+      // prop engine.
+      d_smtSolverDriver->populateAssertions(as);
+      d_smtSolver->finishInit();
+      // push the state to maintain global context around everything
+      d_state->setup();
+    }
+    else if (cas==CheckAgainStatus::SOLVE_AGAIN)
+    {
+    }
+  }
+#endif
 
   return r;
 }

@@ -120,7 +120,6 @@ Result SmtSolver::checkSatisfiability(Assertions& as,
   Result result;
   try
   {
-
     // then, initialize the assertions
     as.initializeCheckSat(assumptions);
 
