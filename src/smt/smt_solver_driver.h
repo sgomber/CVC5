@@ -1,9 +1,11 @@
 
 class SmtSolverDriver
 {
-public:
-  SmtSolverDriver(SmtSolver * smt) : d_smt(smt){}
-  virtual void notifyInputFormulas(std::vector<Node> ppAssertions, std::unordered_map<size_t, Node> ppSkolemMap) = 0;
+ public:
+  SmtSolverDriver(SmtSolver* smt) : d_smt(smt) {}
+  virtual void notifyInputFormulas(
+      std::vector<Node> ppAssertions,
+      std::unordered_map<size_t, Node> ppSkolemMap) = 0;
   virtual void finishCheckSat() = 0;
   enum class CheckAgainStatus
   {
@@ -16,17 +18,20 @@ public:
    * with the set of things that should be preprocessed
    */
   virtual CheckAgainStatus checkAgain(Assertions& as) = 0;
-private:
+
+ private:
   /** The underlying SMT solver */
-  SmtSolver * d_smt;
+  SmtSolver* d_smt;
 };
 
 class SmtSolverDriverSingleCall : public SmtSolverDriver
 {
-public:
-  SmtSolverDriverSingleCall(SmtSolver * smt) : SmtSolverDriver(smt){}
-  
-  void notifyInputFormulas(std::vector<Node> ppAssertions, std::unordered_map<size_t, Node> ppSkolemMap) override
+ public:
+  SmtSolverDriverSingleCall(SmtSolver* smt) : SmtSolverDriver(smt) {}
+
+  void notifyInputFormulas(
+      std::vector<Node> ppAssertions,
+      std::unordered_map<size_t, Node> ppSkolemMap) override
   {
     // immediately assert all formulas to the underlying prop engine
     d_smt->getPropEngine()->assertInputFormulas(ppAssertions, ppSkolemMap);
