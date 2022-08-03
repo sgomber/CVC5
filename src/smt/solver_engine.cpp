@@ -745,12 +745,12 @@ Result SolverEngine::checkSat(const std::vector<Node>& assumptions)
 {
   finishInit();
   ensureWellFormedTerms(assumptions, "checkSat");
-  
+
   Trace("smt") << "SolverEngine::checkSat(" << assumptions << ")" << endl;
   // update the state to indicate we are about to run a check-sat
   bool hasAssumptions = !assumptions.empty();
   d_state->notifyCheckSat(hasAssumptions);
-  
+
   Result r = checkSatInternal(assumptions);
 
   Trace("smt") << "SolverEngine::checkSat(" << assumptions << ") => " << r
