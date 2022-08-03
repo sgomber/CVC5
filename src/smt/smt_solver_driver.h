@@ -29,7 +29,7 @@ namespace cvc5::internal {
 namespace smt {
 
 class SmtSolver;
-  
+
 class SmtSolverDriver : protected EnvObj
 {
  public:
@@ -75,14 +75,15 @@ class SmtSolverDriverDeepRestarts : public SmtSolverDriver
       std::unordered_map<size_t, Node> ppSkolemMap) override;
   void finishCheckSat(Result r) override;
   CheckAgainStatus checkAgain(Assertions& as) override;
-private:
+
+ private:
   /** The current learned literals */
   std::vector<Node> d_zll;
   /** All learned literals, used for debugging */
   std::unordered_set<Node> d_allLearnedLits;
 };
 
-}
-}
+}  // namespace smt
+}  // namespace cvc5::internal
 
 #endif

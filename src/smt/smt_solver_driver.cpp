@@ -13,10 +13,9 @@
  * The solver for SMT queries in an SolverEngine.
  */
 
-#include "cvc5_private.h"
-
 #include <vector>
 
+#include "cvc5_private.h"
 #include "expr/node.h"
 #include "smt/assertions.h"
 #include "smt/env_obj.h"
@@ -25,42 +24,52 @@
 namespace cvc5::internal {
 namespace smt {
 
-SmtSolverDriver::SmtSolverDriver(Env& env, SmtSolver* smt) : EnvObj(env), d_smt(smt) {}
+SmtSolverDriver::SmtSolverDriver(Env& env, SmtSolver* smt)
+    : EnvObj(env), d_smt(smt)
+{
+}
 
-SmtSolverDriverSingleCall::SmtSolverDriverSingleCall(Env& env, SmtSolver* smt) : SmtSolverDriver(env, smt) {}
+SmtSolverDriverSingleCall::SmtSolverDriverSingleCall(Env& env, SmtSolver* smt)
+    : SmtSolverDriver(env, smt)
+{
+}
 
 void SmtSolverDriverSingleCall::notifyInputFormulas(
     std::vector<Node> ppAssertions,
-    std::unordered_map<size_t, Node> ppSkolemMap) 
+    std::unordered_map<size_t, Node> ppSkolemMap)
 {
   // immediately assert all formulas to the underlying prop engine
   d_smt->getPropEngine()->assertInputFormulas(ppAssertions, ppSkolemMap);
 }
-void SmtSolverDriverSingleCall::finishCheckSat(Result r) 
+void SmtSolverDriverSingleCall::finishCheckSat(Result r)
 {
   // do nothing
 }
-CheckAgainStatus SmtSolverDriverSingleCall::checkAgain(Assertions& as) 
+CheckAgainStatus SmtSolverDriverSingleCall::checkAgain(Assertions& as)
 {
   return CheckAgainStatus::FINISH;
 }
 
-SmtSolverDriverDeepRestarts::SmtSolverDriverDeepRestarts(Env& env, SmtSolver* smt) : SmtSolverDriver(env, smt) {}
+SmtSolverDriverDeepRestarts::SmtSolverDriverDeepRestarts(Env& env,
+                                                         SmtSolver* smt)
+    : SmtSolverDriver(env, smt)
+{
+}
 
 void SmtSolverDriverDeepRestarts::notifyInputFormulas(
     std::vector<Node> ppAssertions,
-    std::unordered_map<size_t, Node> ppSkolemMap) 
+    std::unordered_map<size_t, Node> ppSkolemMap)
 {
   // immediately assert all formulas to the underlying prop engine
   d_smt->getPropEngine()->assertInputFormulas(ppAssertions, ppSkolemMap);
 }
 
-void SmtSolverDriverDeepRestarts::finishCheckSat(Result r) 
+void SmtSolverDriverDeepRestarts::finishCheckSat(Result r)
 {
   d_zll.clear();
   d_zll = d_smt->getPropEngine()->getLearnedZeroLevelLiteralsForRestart();
 }
-CheckAgainStatus SmtSolverDriverDeepRestarts::checkAgain(Assertions& as) 
+CheckAgainStatus SmtSolverDriverDeepRestarts::checkAgain(Assertions& as)
 {
   if (d_zll.empty())
   {
@@ -109,5 +118,5 @@ CheckAgainStatus SmtSolverDriverDeepRestarts::checkAgain(Assertions& as)
   return CheckAgainStatus::FINISH;
 }
 
-}
-}
+}  // namespace smt
+}  // namespace cvc5::internal
