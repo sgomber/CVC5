@@ -90,7 +90,7 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
       // current model satisfies all remaining assertions
       break;
     }
-    Trace("lazy-prop") << "...add assertion #" << bestIndex << std::endl;
+    Trace("lazy-prop") << "...add assertion #" << bestIndex << ", now " << assertionsAdded.size() << "/" << asize << " assertions added" << std::endl;
     // add the best index
     assertionsAdded.insert(bestIndex);
     // add the single assertion
@@ -102,7 +102,7 @@ Result LazyPropEngine::checkSat(const std::vector<Node>& assertions,
     {
       newSkolemMap[0] = itk->second;
     }
-    Trace("lazy-prop-debug") << "ASSERT " << newAssertion << std::endl;
+    Trace("lazy-prop-debug") << "(assert " << newAssertion[0] << ")" << std::endl;
     d_propEngine->resetTrail();
     d_propEngine->assertInputFormulas(newAssertion, newSkolemMap);
   }
