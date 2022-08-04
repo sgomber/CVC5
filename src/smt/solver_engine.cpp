@@ -756,8 +756,8 @@ Result SolverEngine::checkSat(const std::vector<Node>& assumptions)
   if (rm->out())
   {
     UnknownExplanation why = rm->outOfResources()
-                                  ? UnknownExplanation::RESOURCEOUT
-                                  : UnknownExplanation::TIMEOUT;
+                                 ? UnknownExplanation::RESOURCEOUT
+                                 : UnknownExplanation::TIMEOUT;
     r = Result(Result::UNKNOWN, why);
   }
   else
@@ -767,8 +767,8 @@ Result SolverEngine::checkSat(const std::vector<Node>& assumptions)
     r = checkSatInternal(assumptions);
     rm->endCall();
     Trace("limit") << "SmtSolver::check(): cumulative millis "
-                    << rm->getTimeUsage() << ", resources "
-                    << rm->getResourceUsage() << endl;
+                   << rm->getTimeUsage() << ", resources "
+                   << rm->getResourceUsage() << endl;
   }
 
   Trace("smt") << "SolverEngine::checkSat(" << assumptions << ") => " << r
@@ -806,7 +806,7 @@ Result SolverEngine::checkSat(const std::vector<Node>& assumptions)
   {
     printStatisticsDiff();
   }
-  
+
   // set the filename on the result
   const std::string& filename = d_env->getOptions().driver.filename;
   return Result(r, filename);
@@ -832,7 +832,7 @@ Result SolverEngine::checkSatInternal(const std::vector<Node>& assumptions)
     r = d_smtSolver->checkSatisfiability(as, {});
   }
   return r;
-  
+
 #if 0
 ////////////////////////////////
   Assert(d_state->isFullyReady());

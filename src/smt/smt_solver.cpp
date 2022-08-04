@@ -132,14 +132,13 @@ Result SmtSolver::checkSatisfiability(Assertions& as,
     processAssertions(as);
     Trace("smt") << "SmtSolver::check(): done processing assertions" << endl;
 
-
     d_env.verbose(2) << "solving..." << std::endl;
     Trace("smt") << "SmtSolver::check(): running check" << endl;
     result = d_propEngine->checkSat();
     Trace("smt") << "SmtSolver::check(): result " << result << std::endl;
 
     if ((d_env.getOptions().smt.solveRealAsInt
-          || d_env.getOptions().smt.solveIntAsBV > 0)
+         || d_env.getOptions().smt.solveIntAsBV > 0)
         && result.getStatus() == Result::UNSAT)
     {
       result = Result(Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);
@@ -148,7 +147,7 @@ Result SmtSolver::checkSatisfiability(Assertions& as,
     if (as.isGlobalNegated())
     {
       Trace("smt") << "SmtSolver::process global negate " << result
-                    << std::endl;
+                   << std::endl;
       if (result.getStatus() == Result::UNSAT)
       {
         result = Result(Result::SAT);
@@ -167,14 +166,12 @@ Result SmtSolver::checkSatisfiability(Assertions& as,
         }
         else
         {
-          result =
-              Result(Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);
+          result = Result(Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);
         }
       }
       Trace("smt") << "SmtSolver::global negate returned " << result
-                    << std::endl;
+                   << std::endl;
     }
-  
   }
   catch (const LogicException& e)
   {
@@ -191,8 +188,7 @@ Result SmtSolver::checkSatisfiability()
 {
   Result result = d_propEngine->checkSat();
   // handle options-specific modifications to result
-  if ((options().smt.solveRealAsInt
-        || options().smt.solveIntAsBV > 0)
+  if ((options().smt.solveRealAsInt || options().smt.solveIntAsBV > 0)
       && result.getStatus() == Result::UNSAT)
   {
     result = Result(Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);

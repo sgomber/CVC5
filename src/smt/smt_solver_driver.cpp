@@ -19,9 +19,9 @@
 #include "options/main_options.h"
 #include "options/smt_options.h"
 #include "prop/prop_engine.h"
-#include "smt/smt_solver.h"
 #include "smt/env.h"
 #include "smt/logic_exception.h"
+#include "smt/smt_solver.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -31,20 +31,20 @@ SmtSolverDriver::SmtSolverDriver(Env& env, SmtSolver& smt)
 {
 }
 
-Result SmtSolverDriver::checkSatisfiability(Assertions& as,
-                            const std::vector<Node>& assumptions)
+Result SmtSolverDriver::checkSatisfiability(
+    Assertions& as, const std::vector<Node>& assumptions)
 {
   Result r = runCheckSatWithPreprocess(as, assumptions);
   bool runCheckAgain = true;
-  while(runCheckAgain)
+  while (runCheckAgain)
   {
     CheckAgainStatus cas = checkAgain();
     bool runCheckWithPreprocess = true;
-    if (cas==CheckAgainStatus::FINISH)
+    if (cas == CheckAgainStatus::FINISH)
     {
       runCheckAgain = false;
     }
-    else if (cas==CheckAgainStatus::PREPROCESS_SOLVE_AGAIN)
+    else if (cas == CheckAgainStatus::PREPROCESS_SOLVE_AGAIN)
     {
       as.clearCurrent();
       // finish init the SMT solver, which reconstructs the theory engine and
@@ -52,7 +52,7 @@ Result SmtSolverDriver::checkSatisfiability(Assertions& as,
       populateAssertions(as);
       d_smt.finishInit();
     }
-    else if (cas==CheckAgainStatus::SOLVE_AGAIN)
+    else if (cas == CheckAgainStatus::SOLVE_AGAIN)
     {
       runCheckWithPreprocess = false;
     }
@@ -60,8 +60,8 @@ Result SmtSolverDriver::checkSatisfiability(Assertions& as,
   return r;
 }
 
-Result SmtSolverDriver::runCheckSatWithPreprocess(Assertions& as,
-                                      const std::vector<Node>& assumptions)
+Result SmtSolverDriver::runCheckSatWithPreprocess(
+    Assertions& as, const std::vector<Node>& assumptions)
 {
   Result result;
   try
@@ -76,7 +76,8 @@ Result SmtSolverDriver::runCheckSatWithPreprocess(Assertions& as,
     // Make sure the prop layer has all of the assertions
     Trace("smt") << "SmtSolver::check(): processing assertions" << std::endl;
     d_smt.processAssertions(as);
-    Trace("smt") << "SmtSolver::check(): done processing assertions" << std::endl;
+    Trace("smt") << "SmtSolver::check(): done processing assertions"
+                 << std::endl;
 
     d_env.verbose(2) << "solving..." << std::endl;
     Trace("smt") << "SmtSolver::check(): running check" << std::endl;
@@ -87,7 +88,7 @@ Result SmtSolverDriver::runCheckSatWithPreprocess(Assertions& as,
     if (as.isGlobalNegated())
     {
       Trace("smt") << "SmtSolver::process global negate " << result
-                    << std::endl;
+                   << std::endl;
       if (result.getStatus() == Result::UNSAT)
       {
         result = Result(Result::SAT);
@@ -106,14 +107,12 @@ Result SmtSolverDriver::runCheckSatWithPreprocess(Assertions& as,
         }
         else
         {
-          result =
-              Result(Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);
+          result = Result(Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);
         }
       }
       Trace("smt") << "SmtSolver::global negate returned " << result
-                    << std::endl;
+                   << std::endl;
     }
-  
   }
   catch (const LogicException& e)
   {
@@ -128,10 +127,7 @@ Result SmtSolverDriver::runCheckSatWithPreprocess(Assertions& as,
   return Result(result, filename);
 }
 
-Result SmtSolverDriver::runCheckSat()
-{
-}
-
+Result SmtSolverDriver::runCheckSat() {}
 
 SmtSolverDriverSingleCall::SmtSolverDriverSingleCall(Env& env, SmtSolver& smt)
     : SmtSolverDriver(env, smt)

@@ -51,7 +51,6 @@ class SmtSolverDriver : protected EnvObj
    */
   virtual CheckAgainStatus checkAgain() = 0;
   virtual void populateAssertions(Assertions& as) {}
-  
 
   /**
    * Check satisfiability (used to check satisfiability and entailment)
@@ -68,6 +67,7 @@ class SmtSolverDriver : protected EnvObj
    */
   Result checkSatisfiability(Assertions& as,
                              const std::vector<Node>& assumptions);
+
  protected:
   /**
    * Check satisfiability (used to check satisfiability and entailment)
@@ -83,7 +83,7 @@ class SmtSolverDriver : protected EnvObj
    * temporary assertions.
    */
   Result runCheckSatWithPreprocess(Assertions& as,
-                             const std::vector<Node>& assumptions);
+                                   const std::vector<Node>& assumptions);
   /**
    * Check satisfiability (used to check satisfiability and entailment)
    * in SolverEngine. This is done via adding assumptions (when necessary) to
