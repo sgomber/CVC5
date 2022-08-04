@@ -83,36 +83,6 @@ Result SmtSolverDriver::runCheckSatWithPreprocess(
     Trace("smt") << "SmtSolver::check(): running check" << std::endl;
     result = d_smt.checkSatisfiability();
     Trace("smt") << "SmtSolver::check(): result " << result << std::endl;
-
-    // handle preprocessing-specific modifications to result
-    if (as.isGlobalNegated())
-    {
-      Trace("smt") << "SmtSolver::process global negate " << result
-                   << std::endl;
-      if (result.getStatus() == Result::UNSAT)
-      {
-        result = Result(Result::SAT);
-      }
-      else if (result.getStatus() == Result::SAT)
-      {
-        // Only can answer unsat if the theory is satisfaction complete. This
-        // includes linear arithmetic and bitvectors, which are the primary
-        // targets for the global negate option. Other logics are possible
-        // here but not considered.
-        LogicInfo logic = logicInfo();
-        if ((logic.isPure(theory::THEORY_ARITH) && logic.isLinear())
-            || logic.isPure(theory::THEORY_BV))
-        {
-          result = Result(Result::UNSAT);
-        }
-        else
-        {
-          result = Result(Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);
-        }
-      }
-      Trace("smt") << "SmtSolver::global negate returned " << result
-                   << std::endl;
-    }
   }
   catch (const LogicException& e)
   {

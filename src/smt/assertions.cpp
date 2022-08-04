@@ -40,7 +40,6 @@ Assertions::Assertions(Env& env, AbstractValues& absv)
       d_assertionList(userContext()),
       d_assertionListDefs(userContext()),
       d_globalDefineFunLemmasIndex(userContext(), 0),
-      d_globalNegation(false),
       d_assertions(env)
 {
 }
@@ -70,10 +69,9 @@ void Assertions::clearCurrent()
 
 void Assertions::initializeCheckSat(const std::vector<Node>& assumptions)
 {
-  // reset global negation
-  d_globalNegation = false;
-  // clear the assumptions
+  // FIXME
   d_assumptions.clear();
+  Assert (d_assumptions.empty());
   /* Assume: BIGAND assumptions  */
   d_assumptions = assumptions;
 
@@ -96,8 +94,6 @@ void Assertions::assertFormula(const Node& n)
 }
 
 std::vector<Node>& Assertions::getAssumptions() { return d_assumptions; }
-bool Assertions::isGlobalNegated() const { return d_globalNegation; }
-void Assertions::flipGlobalNegated() { d_globalNegation = !d_globalNegation; }
 
 preprocessing::AssertionPipeline& Assertions::getAssertionPipeline()
 {
