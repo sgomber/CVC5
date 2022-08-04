@@ -751,7 +751,25 @@ Result SolverEngine::checkSat(const std::vector<Node>& assumptions)
   bool hasAssumptions = !assumptions.empty();
   d_state->notifyCheckSat(hasAssumptions);
 
-  Result r = checkSatInternal(assumptions);
+  Result r;
+  ResourceManager* rm = d_env->getResourceManager();
+  if (rm->out())
+  {
+    UnknownExplanation why = rm->outOfResources()
+                                  ? UnknownExplanation::RESOURCEOUT
+                                  : UnknownExplanation::TIMEOUT;
+    r = Result(Result::UNKNOWN, why);
+  }
+  else
+  {
+    rm->beginCall();
+    TimerStat::CodeTimer solveTimer(d_stats->d_solveTime);
+    r = checkSatInternal(assumptions);
+    rm->endCall();
+    Trace("limit") << "SmtSolver::check(): cumulative millis "
+                    << rm->getTimeUsage() << ", resources "
+                    << rm->getResourceUsage() << endl;
+  }
 
   Trace("smt") << "SolverEngine::checkSat(" << assumptions << ") => " << r
                << endl;
@@ -788,7 +806,10 @@ Result SolverEngine::checkSat(const std::vector<Node>& assumptions)
   {
     printStatisticsDiff();
   }
-  return r;
+  
+  // set the filename on the result
+  const std::string& filename = d_env->getOptions().driver.filename;
+  return Result(r, filename);
 }
 
 Result SolverEngine::checkSatInternal(const std::vector<Node>& assumptions)
@@ -810,36 +831,14 @@ Result SolverEngine::checkSatInternal(const std::vector<Node>& assumptions)
     Trace("smt") << "SolverEngine::checkSat after deep restart" << std::endl;
     r = d_smtSolver->checkSatisfiability(as, {});
   }
+  return r;
+  
 #if 0
 ////////////////////////////////
-
-  bool checkAgain = true;
-  while(checkAgain)
-  {
-    r = d_smtSolver->checkSatisfiability(as, {});
-    CheckAgainStatus cas = d_smtSolverDriver->checkAgain();
-    if (cas==CheckAgainStatus::FINISH)
-    {
-      checkAgain = false;
-    }
-    else if (cas==CheckAgainStatus::PREPROCESS_SOLVE_AGAIN)
-    {
-      as.clearCurrent();
-      d_state->notifyResetAssertions();
-      // finish init the SMT solver, which reconstructs the theory engine and
-      // prop engine.
-      d_smtSolverDriver->populateAssertions(as);
-      d_smtSolver->finishInit();
-      // push the state to maintain global context around everything
-      d_state->setup();
-    }
-    else if (cas==CheckAgainStatus::SOLVE_AGAIN)
-    {
-    }
-  }
+  Assert(d_state->isFullyReady());
+  Assertions& as = *d_asserts.get();
+  return d_smtSolverDriver->checkSatisfiability(as, assumptions);
 #endif
-
-  return r;
 }
 
 std::vector<Node> SolverEngine::getUnsatAssumptions(void)

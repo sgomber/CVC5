@@ -20,6 +20,8 @@
 #include "options/smt_options.h"
 #include "prop/prop_engine.h"
 #include "smt/smt_solver.h"
+#include "smt/env.h"
+#include "smt/logic_exception.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -28,6 +30,108 @@ SmtSolverDriver::SmtSolverDriver(Env& env, SmtSolver& smt)
     : EnvObj(env), d_smt(smt)
 {
 }
+
+Result SmtSolverDriver::checkSatisfiability(Assertions& as,
+                            const std::vector<Node>& assumptions)
+{
+  Result r = runCheckSatWithPreprocess(as, assumptions);
+  bool runCheckAgain = true;
+  while(runCheckAgain)
+  {
+    CheckAgainStatus cas = checkAgain();
+    bool runCheckWithPreprocess = true;
+    if (cas==CheckAgainStatus::FINISH)
+    {
+      runCheckAgain = false;
+    }
+    else if (cas==CheckAgainStatus::PREPROCESS_SOLVE_AGAIN)
+    {
+      as.clearCurrent();
+      // finish init the SMT solver, which reconstructs the theory engine and
+      // prop engine.
+      populateAssertions(as);
+      d_smt.finishInit();
+    }
+    else if (cas==CheckAgainStatus::SOLVE_AGAIN)
+    {
+      runCheckWithPreprocess = false;
+    }
+  }
+  return r;
+}
+
+Result SmtSolverDriver::runCheckSatWithPreprocess(Assertions& as,
+                                      const std::vector<Node>& assumptions)
+{
+  Result result;
+  try
+  {
+    // then, initialize the assertions
+    as.initializeCheckSat(assumptions);
+
+    // make the check, where notice smt engine should be fully inited by now
+
+    Trace("smt") << "SmtSolver::check()" << std::endl;
+
+    // Make sure the prop layer has all of the assertions
+    Trace("smt") << "SmtSolver::check(): processing assertions" << std::endl;
+    d_smt.processAssertions(as);
+    Trace("smt") << "SmtSolver::check(): done processing assertions" << std::endl;
+
+    d_env.verbose(2) << "solving..." << std::endl;
+    Trace("smt") << "SmtSolver::check(): running check" << std::endl;
+    result = d_smt.checkSatisfiability();
+    Trace("smt") << "SmtSolver::check(): result " << result << std::endl;
+
+    // handle preprocessing-specific modifications to result
+    if (as.isGlobalNegated())
+    {
+      Trace("smt") << "SmtSolver::process global negate " << result
+                    << std::endl;
+      if (result.getStatus() == Result::UNSAT)
+      {
+        result = Result(Result::SAT);
+      }
+      else if (result.getStatus() == Result::SAT)
+      {
+        // Only can answer unsat if the theory is satisfaction complete. This
+        // includes linear arithmetic and bitvectors, which are the primary
+        // targets for the global negate option. Other logics are possible
+        // here but not considered.
+        LogicInfo logic = logicInfo();
+        if ((logic.isPure(theory::THEORY_ARITH) && logic.isLinear())
+            || logic.isPure(theory::THEORY_BV))
+        {
+          result = Result(Result::UNSAT);
+        }
+        else
+        {
+          result =
+              Result(Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);
+        }
+      }
+      Trace("smt") << "SmtSolver::global negate returned " << result
+                    << std::endl;
+    }
+  
+  }
+  catch (const LogicException& e)
+  {
+    // The exception may have been throw during solving, backtrack to reset the
+    // decision level to the level expected after this method finishes
+    d_smt.getPropEngine()->resetTrail();
+    throw;
+  }
+
+  // set the filename on the result
+  const std::string& filename = options().driver.filename;
+  return Result(result, filename);
+}
+
+Result SmtSolverDriver::runCheckSat()
+{
+}
+
 
 SmtSolverDriverSingleCall::SmtSolverDriverSingleCall(Env& env, SmtSolver& smt)
     : SmtSolverDriver(env, smt)

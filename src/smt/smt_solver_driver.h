@@ -51,7 +51,53 @@ class SmtSolverDriver : protected EnvObj
    */
   virtual CheckAgainStatus checkAgain() = 0;
   virtual void populateAssertions(Assertions& as) {}
+  
+
+  /**
+   * Check satisfiability (used to check satisfiability and entailment)
+   * in SolverEngine. This is done via adding assumptions (when necessary) to
+   * assertions as, preprocessing and pushing assertions into the prop engine
+   * of this class, and checking for satisfiability via the prop engine.
+   *
+   * @param as The object managing the assertions in SolverEngine. This class
+   * maintains a current set of (unprocessed) assertions which are pushed
+   * into the internal members of this class (TheoryEngine and PropEngine)
+   * during this call.
+   * @param assumptions The assumptions for this check-sat call, which are
+   * temporary assertions.
+   */
+  Result checkSatisfiability(Assertions& as,
+                             const std::vector<Node>& assumptions);
  protected:
+  /**
+   * Check satisfiability (used to check satisfiability and entailment)
+   * in SolverEngine. This is done via adding assumptions (when necessary) to
+   * assertions as, preprocessing and pushing assertions into the prop engine
+   * of this class, and checking for satisfiability via the prop engine.
+   *
+   * @param as The object managing the assertions in SolverEngine. This class
+   * maintains a current set of (unprocessed) assertions which are pushed
+   * into the internal members of this class (TheoryEngine and PropEngine)
+   * during this call.
+   * @param assumptions The assumptions for this check-sat call, which are
+   * temporary assertions.
+   */
+  Result runCheckSatWithPreprocess(Assertions& as,
+                             const std::vector<Node>& assumptions);
+  /**
+   * Check satisfiability (used to check satisfiability and entailment)
+   * in SolverEngine. This is done via adding assumptions (when necessary) to
+   * assertions as, preprocessing and pushing assertions into the prop engine
+   * of this class, and checking for satisfiability via the prop engine.
+   *
+   * @param as The object managing the assertions in SolverEngine. This class
+   * maintains a current set of (unprocessed) assertions which are pushed
+   * into the internal members of this class (TheoryEngine and PropEngine)
+   * during this call.
+   * @param assumptions The assumptions for this check-sat call, which are
+   * temporary assertions.
+   */
+  Result runCheckSat();
   /** The underlying SMT solver */
   SmtSolver& d_smt;
 };

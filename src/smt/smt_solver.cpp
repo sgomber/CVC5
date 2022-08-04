@@ -127,72 +127,54 @@ Result SmtSolver::checkSatisfiability(Assertions& as,
 
     Trace("smt") << "SmtSolver::check()" << endl;
 
-    ResourceManager* rm = d_env.getResourceManager();
-    if (rm->out())
+    // Make sure the prop layer has all of the assertions
+    Trace("smt") << "SmtSolver::check(): processing assertions" << endl;
+    processAssertions(as);
+    Trace("smt") << "SmtSolver::check(): done processing assertions" << endl;
+
+
+    d_env.verbose(2) << "solving..." << std::endl;
+    Trace("smt") << "SmtSolver::check(): running check" << endl;
+    result = d_propEngine->checkSat();
+    Trace("smt") << "SmtSolver::check(): result " << result << std::endl;
+
+    if ((d_env.getOptions().smt.solveRealAsInt
+          || d_env.getOptions().smt.solveIntAsBV > 0)
+        && result.getStatus() == Result::UNSAT)
     {
-      UnknownExplanation why = rm->outOfResources()
-                                   ? UnknownExplanation::RESOURCEOUT
-                                   : UnknownExplanation::TIMEOUT;
-      result = Result(Result::UNKNOWN, why);
+      result = Result(Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);
     }
-    else
+    // flipped if we did a global negation
+    if (as.isGlobalNegated())
     {
-      rm->beginCall();
-
-      // Make sure the prop layer has all of the assertions
-      Trace("smt") << "SmtSolver::check(): processing assertions" << endl;
-      processAssertions(as);
-      Trace("smt") << "SmtSolver::check(): done processing assertions" << endl;
-
-      TimerStat::CodeTimer solveTimer(d_stats.d_solveTime);
-
-      d_env.verbose(2) << "solving..." << std::endl;
-      Trace("smt") << "SmtSolver::check(): running check" << endl;
-      result = d_propEngine->checkSat();
-      Trace("smt") << "SmtSolver::check(): result " << result << std::endl;
-
-      rm->endCall();
-      Trace("limit") << "SmtSolver::check(): cumulative millis "
-                     << rm->getTimeUsage() << ", resources "
-                     << rm->getResourceUsage() << endl;
-
-      if ((d_env.getOptions().smt.solveRealAsInt
-           || d_env.getOptions().smt.solveIntAsBV > 0)
-          && result.getStatus() == Result::UNSAT)
+      Trace("smt") << "SmtSolver::process global negate " << result
+                    << std::endl;
+      if (result.getStatus() == Result::UNSAT)
       {
-        result = Result(Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);
+        result = Result(Result::SAT);
       }
-      // flipped if we did a global negation
-      if (as.isGlobalNegated())
+      else if (result.getStatus() == Result::SAT)
       {
-        Trace("smt") << "SmtSolver::process global negate " << result
-                     << std::endl;
-        if (result.getStatus() == Result::UNSAT)
+        // Only can answer unsat if the theory is satisfaction complete. This
+        // includes linear arithmetic and bitvectors, which are the primary
+        // targets for the global negate option. Other logics are possible
+        // here but not considered.
+        LogicInfo logic = d_env.getLogicInfo();
+        if ((logic.isPure(theory::THEORY_ARITH) && logic.isLinear())
+            || logic.isPure(theory::THEORY_BV))
         {
-          result = Result(Result::SAT);
+          result = Result(Result::UNSAT);
         }
-        else if (result.getStatus() == Result::SAT)
+        else
         {
-          // Only can answer unsat if the theory is satisfaction complete. This
-          // includes linear arithmetic and bitvectors, which are the primary
-          // targets for the global negate option. Other logics are possible
-          // here but not considered.
-          LogicInfo logic = d_env.getLogicInfo();
-          if ((logic.isPure(theory::THEORY_ARITH) && logic.isLinear())
-              || logic.isPure(theory::THEORY_BV))
-          {
-            result = Result(Result::UNSAT);
-          }
-          else
-          {
-            result =
-                Result(Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);
-          }
+          result =
+              Result(Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);
         }
-        Trace("smt") << "SmtSolver::global negate returned " << result
-                     << std::endl;
       }
+      Trace("smt") << "SmtSolver::global negate returned " << result
+                    << std::endl;
     }
+  
   }
   catch (const LogicException& e)
   {
@@ -202,9 +184,20 @@ Result SmtSolver::checkSatisfiability(Assertions& as,
     throw;
   }
 
-  // set the filename on the result
-  const std::string& filename = d_env.getOptions().driver.filename;
-  return Result(result, filename);
+  return result;
+}
+
+Result SmtSolver::checkSatisfiability()
+{
+  Result result = d_propEngine->checkSat();
+  // handle options-specific modifications to result
+  if ((options().smt.solveRealAsInt
+        || options().smt.solveIntAsBV > 0)
+      && result.getStatus() == Result::UNSAT)
+  {
+    result = Result(Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);
+  }
+  return result;
 }
 
 void SmtSolver::processAssertions(Assertions& as)
