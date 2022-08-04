@@ -97,13 +97,6 @@ class SmtSolver : protected EnvObj
   Result checkSatisfiability(Assertions& as,
                              const std::vector<Node>& assumptions);
   /**
-   * Check satisfiability (used to check satisfiability and entailment)
-   * in SolverEngine. This is done via adding assumptions (when necessary) to
-   * assertions as, preprocessing and pushing assertions into the prop engine
-   * of this class, and checking for satisfiability via the prop engine.
-   */
-  Result checkSatisfiability();
-  /**
    * Process the assertions that have been asserted in as. This moves the set of
    * assertions that have been buffered into as, preprocesses them, pushes them
    * into the SMT solver, and clears the buffer.
@@ -142,6 +135,12 @@ class SmtSolver : protected EnvObj
   //------------------------------------------ end access methods
 
  private:
+  /**
+   * Check satisfiability based on the current state of the prop engine.
+   * This assumes we have pushed the necessary assertions to it. It post
+   * processes the results based on the options.
+   */
+  Result checkSatInternal();
   /** Whether we track information necessary for deep restarts */
   bool trackPreprocessedAssertions() const;
   /** The preprocessor of this SMT solver */

@@ -64,6 +64,7 @@ Result SmtSolverDriver::runCheckSatWithPreprocess(
     Assertions& as, const std::vector<Node>& assumptions)
 {
   Result result;
+  /*
   try
   {
     // then, initialize the assertions
@@ -91,7 +92,7 @@ Result SmtSolverDriver::runCheckSatWithPreprocess(
     d_smt.getPropEngine()->resetTrail();
     throw;
   }
-
+*/
   // set the filename on the result
   const std::string& filename = options().driver.filename;
   return Result(result, filename);
