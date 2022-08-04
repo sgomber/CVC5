@@ -67,12 +67,9 @@ void Assertions::clearCurrent()
   d_assertions.getIteSkolemMap().clear();
 }
 
-void Assertions::initializeCheckSat(const std::vector<Node>& assumptions)
+void Assertions::setAssumptions(const std::vector<Node>& assumptions)
 {
-  // FIXME
   d_assumptions.clear();
-  Assert(d_assumptions.empty());
-  /* Assume: BIGAND assumptions  */
   d_assumptions = assumptions;
 
   Result r(Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);

@@ -70,7 +70,7 @@ class Assertions : protected EnvObj
    *
    * @param assumptions The assumptions of the upcoming check-sat call.
    */
-  void initializeCheckSat(const std::vector<Node>& assumptions);
+  void setAssumptions(const std::vector<Node>& assumptions);
   /**
    * Add a formula to the current context: preprocess, do per-theory
    * setup, use processAssertionList(), asserting to T-solver for
