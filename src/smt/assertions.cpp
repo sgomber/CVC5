@@ -71,7 +71,7 @@ void Assertions::initializeCheckSat(const std::vector<Node>& assumptions)
 {
   // FIXME
   d_assumptions.clear();
-  Assert (d_assumptions.empty());
+  Assert(d_assumptions.empty());
   /* Assume: BIGAND assumptions  */
   d_assumptions = assumptions;
 

@@ -196,8 +196,7 @@ Result SmtSolver::checkSatisfiability()
   // handle preprocessing-specific modifications to result
   if (options().quantifiers.globalNegate)
   {
-    Trace("smt") << "SmtSolver::process global negate " << result
-                  << std::endl;
+    Trace("smt") << "SmtSolver::process global negate " << result << std::endl;
     if (result.getStatus() == Result::UNSAT)
     {
       result = Result(Result::SAT);
@@ -219,8 +218,7 @@ Result SmtSolver::checkSatisfiability()
         result = Result(Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);
       }
     }
-    Trace("smt") << "SmtSolver::global negate returned " << result
-                  << std::endl;
+    Trace("smt") << "SmtSolver::global negate returned " << result << std::endl;
   }
   return result;
 }
