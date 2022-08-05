@@ -190,16 +190,14 @@ Result SmtSolver::checkSatInternal()
 
 void SmtSolver::processAssertions(Assertions& as)
 {
+  preprocess(as);
+  assertToInternal(as);
+}
+
+void SmtSolver::preprocess(Assertions& as)
+{
   TimerStat::CodeTimer paTimer(d_stats.d_processAssertionsTime);
   d_env.getResourceManager()->spendResource(Resource::PreprocessStep);
-
-  preprocessing::AssertionPipeline& ap = as.getAssertionPipeline();
-
-  if (ap.size() == 0)
-  {
-    // nothing to do
-    return;
-  }
 
   // process the assertions with the preprocessor
   d_pp.process(as);
@@ -207,51 +205,57 @@ void SmtSolver::processAssertions(Assertions& as)
   // end: INVARIANT to maintain: no reordering of assertions or
   // introducing new ones
 
-  // Push the formula to SAT
+  preprocessing::AssertionPipeline& ap = as.getAssertionPipeline();
+  const std::vector<Node>& assertions = ap.ref();
+  // It is important to distinguish the input assertions from the skolem
+  // definitions, as the decision justification heuristic treates the latter
+  // specially. Note that we don't pass the preprocess learned literals
+  // d_pp.getLearnedLiterals() here, since they may not exactly correspond
+  // to the actual preprocessed learned literals, as the input may have
+  // undergone further preprocessing.
+  preprocessing::IteSkolemMap& ism = ap.getIteSkolemMap();
+  // if we can deep restart, we always remember the preprocessed formulas,
+  // which are the basis for the next check-sat.
+  if (trackPreprocessedAssertions())
   {
-    d_env.verbose(2) << "converting to CNF..." << endl;
-    const std::vector<Node>& assertions = ap.ref();
-    // It is important to distinguish the input assertions from the skolem
-    // definitions, as the decision justification heuristic treates the latter
-    // specially. Note that we don't pass the preprocess learned literals
-    // d_pp.getLearnedLiterals() here, since they may not exactly correspond
-    // to the actual preprocessed learned literals, as the input may have
-    // undergone further preprocessing.
-    preprocessing::IteSkolemMap& ism = ap.getIteSkolemMap();
-    // if we can deep restart, we always remember the preprocessed formulas,
-    // which are the basis for the next check-sat.
-    if (trackPreprocessedAssertions())
+    // incompatible with global negation
+    Assert(!options().quantifiers.globalNegate);
+    theory::SubstitutionMap& sm = d_env.getTopLevelSubstitutions().get();
+    // note that if a skolem is eliminated in preprocessing, we remove it
+    // from the preprocessed skolem map
+    std::vector<size_t> elimSkolems;
+    for (const std::pair<const size_t, Node>& k : d_ppSkolemMap)
     {
-      // incompatible with global negation
-      Assert(!options().quantifiers.globalNegate);
-      theory::SubstitutionMap& sm = d_env.getTopLevelSubstitutions().get();
-      // note that if a skolem is eliminated in preprocessing, we remove it
-      // from the preprocessed skolem map
-      std::vector<size_t> elimSkolems;
-      for (const std::pair<const size_t, Node>& k : d_ppSkolemMap)
+      if (sm.hasSubstitution(k.second))
       {
-        if (sm.hasSubstitution(k.second))
-        {
-          Trace("deep-restart-ism")
-              << "SKOLEM:" << k.second << " was eliminated during preprocessing"
-              << std::endl;
-          elimSkolems.push_back(k.first);
-          continue;
-        }
-        Trace("deep-restart-ism") << "SKOLEM:" << k.second << " is skolem for "
-                                  << assertions[k.first] << std::endl;
+        Trace("deep-restart-ism")
+            << "SKOLEM:" << k.second << " was eliminated during preprocessing"
+            << std::endl;
+        elimSkolems.push_back(k.first);
+        continue;
       }
-      for (size_t i : elimSkolems)
-      {
-        ism.erase(i);
-      }
-      // remember the assertions and Skolem mapping
-      d_ppAssertions = assertions;
-      d_ppSkolemMap = ism;
+      Trace("deep-restart-ism") << "SKOLEM:" << k.second << " is skolem for "
+                                << assertions[k.first] << std::endl;
     }
-    d_propEngine->assertInputFormulas(assertions, ism);
+    for (size_t i : elimSkolems)
+    {
+      ism.erase(i);
+    }
+    // remember the assertions and Skolem mapping
+    d_ppAssertions = assertions;
+    d_ppSkolemMap = ism;
   }
+}
 
+void SmtSolver::assertToInternal(Assertions& as)
+{
+  // get the assertions
+  preprocessing::AssertionPipeline& ap = as.getAssertionPipeline();
+  const std::vector<Node>& assertions = ap.ref();
+  preprocessing::IteSkolemMap& ism = ap.getIteSkolemMap();
+  // assert to prop engine, which will convert to CNF
+  d_env.verbose(2) << "converting to CNF..." << endl;
+  d_propEngine->assertInputFormulas(assertions, ism);
   // clear the current assertions
   as.clearCurrent();
 }
