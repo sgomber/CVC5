@@ -751,25 +751,7 @@ Result SolverEngine::checkSat(const std::vector<Node>& assumptions)
   bool hasAssumptions = !assumptions.empty();
   d_state->notifyCheckSat(hasAssumptions);
 
-  Result r;
-  ResourceManager* rm = d_env->getResourceManager();
-  if (rm->out())
-  {
-    UnknownExplanation why = rm->outOfResources()
-                                 ? UnknownExplanation::RESOURCEOUT
-                                 : UnknownExplanation::TIMEOUT;
-    r = Result(Result::UNKNOWN, why);
-  }
-  else
-  {
-    rm->beginCall();
-    TimerStat::CodeTimer solveTimer(d_stats->d_solveTime);
-    r = checkSatInternal(assumptions);
-    rm->endCall();
-    Trace("limit") << "SmtSolver::check(): cumulative millis "
-                   << rm->getTimeUsage() << ", resources "
-                   << rm->getResourceUsage() << endl;
-  }
+  Result r = checkSatInternal(assumptions);
 
   Trace("smt") << "SolverEngine::checkSat(" << assumptions << ") => " << r
                << endl;

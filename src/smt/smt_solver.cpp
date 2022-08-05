@@ -127,15 +127,38 @@ Result SmtSolver::checkSatisfiability(Assertions& as,
 
     Trace("smt") << "SmtSolver::check()" << endl;
 
-    // Make sure the prop layer has all of the assertions
-    Trace("smt") << "SmtSolver::check(): processing assertions" << endl;
-    processAssertions(as);
-    Trace("smt") << "SmtSolver::check(): done processing assertions" << endl;
+    ResourceManager* rm = d_env.getResourceManager();
+    if (rm->out())
+    {
+      UnknownExplanation why = rm->outOfResources()
+                                   ? UnknownExplanation::RESOURCEOUT
+                                   : UnknownExplanation::TIMEOUT;
+      result = Result(Result::UNKNOWN, why);
+    }
+    else
+    {
+      rm->beginCall();
 
-    d_env.verbose(2) << "solving..." << std::endl;
-    Trace("smt") << "SmtSolver::check(): running check" << endl;
-    result = checkSatInternal();
-    Trace("smt") << "SmtSolver::check(): result " << result << std::endl;
+      // Preprocess the assertions
+      Trace("smt") << "SmtSolver::check(): preprocess" << endl;
+      preprocess(as);
+      Trace("smt") << "SmtSolver::check(): done preprocess" << endl;
+
+      // Make sure the prop layer has all of the assertions
+      Trace("smt") << "SmtSolver::check(): assert to internal" << endl;
+      assertToInternal(as);
+      Trace("smt") << "SmtSolver::check(): done assert to internal" << endl;
+
+      d_env.verbose(2) << "solving..." << std::endl;
+      Trace("smt") << "SmtSolver::check(): running check" << endl;
+      result = checkSatInternal();
+      Trace("smt") << "SmtSolver::check(): result " << result << std::endl;
+
+      rm->endCall();
+      Trace("limit") << "SmtSolver::check(): cumulative millis "
+                     << rm->getTimeUsage() << ", resources "
+                     << rm->getResourceUsage() << endl;
+    }
   }
   catch (const LogicException& e)
   {
