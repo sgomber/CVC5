@@ -62,6 +62,7 @@ class SmtSolverDriverSingleCall : public SmtSolverDriver
 {
  public:
   SmtSolverDriverSingleCall(Env& env, SmtSolver& smt);
+
  protected:
   Result checkSatNext(Assertions& as, bool& checkAgain) override;
   void getNextAssertions(Assertions& as) override;
@@ -71,9 +72,11 @@ class SmtSolverDriverDeepRestarts : public SmtSolverDriver
 {
  public:
   SmtSolverDriverDeepRestarts(Env& env, SmtSolver& smt);
+
  protected:
   Result checkSatNext(Assertions& as, bool& checkAgain) override;
   void getNextAssertions(Assertions& as) override;
+
  private:
   /** The current learned literals */
   std::vector<Node> d_zll;

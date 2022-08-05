@@ -99,7 +99,7 @@ Result SmtSolverDriverSingleCall::checkSatNext(Assertions& as, bool& checkAgain)
 
 void SmtSolverDriverSingleCall::getNextAssertions(Assertions& as)
 {
-  Assert (false);
+  Assert(false);
 }
 
 SmtSolverDriverDeepRestarts::SmtSolverDriverDeepRestarts(Env& env,
@@ -108,7 +108,8 @@ SmtSolverDriverDeepRestarts::SmtSolverDriverDeepRestarts(Env& env,
 {
 }
 
-Result SmtSolverDriverDeepRestarts::checkSatNext(Assertions& as, bool& checkAgain)
+Result SmtSolverDriverDeepRestarts::checkSatNext(Assertions& as,
+                                                 bool& checkAgain)
 {
   d_smt.preprocess(as);
   d_smt.assertToInternal(as);
@@ -117,7 +118,7 @@ Result SmtSolverDriverDeepRestarts::checkSatNext(Assertions& as, bool& checkAgai
   d_zll.clear();
   d_zll = d_smt.getPropEngine()->getLearnedZeroLevelLiteralsForRestart();
   // check again if we didn't solve and there are learned literals
-  if (!d_zll.empty() && result.getStatus() == Result::UNKNOWN )
+  if (!d_zll.empty() && result.getStatus() == Result::UNKNOWN)
   {
     checkAgain = true;
   }
