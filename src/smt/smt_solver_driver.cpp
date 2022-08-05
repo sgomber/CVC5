@@ -34,56 +34,44 @@ SmtSolverDriver::SmtSolverDriver(Env& env, SmtSolver& smt)
 Result SmtSolverDriver::checkSatisfiability(
     Assertions& as, const std::vector<Node>& assumptions)
 {
-  Result r = runCheckSatWithPreprocess(as, assumptions);
-  bool runCheckAgain = true;
-  while (runCheckAgain)
-  {
-    CheckAgainStatus cas = checkAgain();
-    bool runCheckWithPreprocess = true;
-    if (cas == CheckAgainStatus::FINISH)
-    {
-      runCheckAgain = false;
-    }
-    else if (cas == CheckAgainStatus::PREPROCESS_SOLVE_AGAIN)
-    {
-      as.clearCurrent();
-      // finish init the SMT solver, which reconstructs the theory engine and
-      // prop engine.
-      populateAssertions(as);
-      d_smt.finishInit();
-    }
-    else if (cas == CheckAgainStatus::SOLVE_AGAIN)
-    {
-      runCheckWithPreprocess = false;
-    }
-  }
-  return r;
-}
-
-Result SmtSolverDriver::runCheckSatWithPreprocess(
-    Assertions& as, const std::vector<Node>& assumptions)
-{
   Result result;
-  /*
   try
   {
     // then, initialize the assertions
-    as.initializeCheckSat(assumptions);
+    as.setAssumptions(assumptions);
 
     // make the check, where notice smt engine should be fully inited by now
 
     Trace("smt") << "SmtSolver::check()" << std::endl;
 
-    // Make sure the prop layer has all of the assertions
-    Trace("smt") << "SmtSolver::check(): processing assertions" << std::endl;
-    d_smt.processAssertions(as);
-    Trace("smt") << "SmtSolver::check(): done processing assertions"
-                 << std::endl;
+    ResourceManager* rm = d_env.getResourceManager();
+    if (rm->out())
+    {
+      UnknownExplanation why = rm->outOfResources()
+                                   ? UnknownExplanation::RESOURCEOUT
+                                   : UnknownExplanation::TIMEOUT;
+      result = Result(Result::UNKNOWN, why);
+    }
+    else
+    {
+      rm->beginCall();
 
-    d_env.verbose(2) << "solving..." << std::endl;
-    Trace("smt") << "SmtSolver::check(): running check" << std::endl;
-    result = d_smt.checkSatisfiability();
-    Trace("smt") << "SmtSolver::check(): result " << result << std::endl;
+      bool checkAgain = true;
+      while (checkAgain)
+      {
+        checkAgain = false;
+        result = checkSatNext(as, checkAgain);
+        if (checkAgain)
+        {
+          // TODO
+        }
+      }
+
+      rm->endCall();
+      Trace("limit") << "SmtSolver::check(): cumulative millis "
+                     << rm->getTimeUsage() << ", resources "
+                     << rm->getResourceUsage() << std::endl;
+    }
   }
   catch (const LogicException& e)
   {
@@ -92,33 +80,26 @@ Result SmtSolverDriver::runCheckSatWithPreprocess(
     d_smt.getPropEngine()->resetTrail();
     throw;
   }
-*/
-  // set the filename on the result
-  const std::string& filename = options().driver.filename;
-  return Result(result, filename);
-}
 
-Result SmtSolverDriver::runCheckSat() {}
+  return result;
+}
 
 SmtSolverDriverSingleCall::SmtSolverDriverSingleCall(Env& env, SmtSolver& smt)
     : SmtSolverDriver(env, smt)
 {
 }
 
-void SmtSolverDriverSingleCall::notifyInputFormulas(
-    std::vector<Node> ppAssertions,
-    std::unordered_map<size_t, Node> ppSkolemMap)
+Result SmtSolverDriverSingleCall::checkSatNext(Assertions& as, bool& checkAgain)
 {
-  // immediately assert all formulas to the underlying prop engine
-  d_smt.getPropEngine()->assertInputFormulas(ppAssertions, ppSkolemMap);
+  d_smt.preprocess(as);
+  d_smt.assertToInternal(as);
+  Result result = d_smt.checkSatInternal();
+  return result;
 }
-void SmtSolverDriverSingleCall::finishCheckSat(Result r)
+
+void SmtSolverDriverSingleCall::getNextAssertions(Assertions& as)
 {
-  // do nothing
-}
-CheckAgainStatus SmtSolverDriverSingleCall::checkAgain()
-{
-  return CheckAgainStatus::FINISH;
+  Assert (false);
 }
 
 SmtSolverDriverDeepRestarts::SmtSolverDriverDeepRestarts(Env& env,
@@ -127,29 +108,23 @@ SmtSolverDriverDeepRestarts::SmtSolverDriverDeepRestarts(Env& env,
 {
 }
 
-void SmtSolverDriverDeepRestarts::notifyInputFormulas(
-    std::vector<Node> ppAssertions,
-    std::unordered_map<size_t, Node> ppSkolemMap)
+Result SmtSolverDriverDeepRestarts::checkSatNext(Assertions& as, bool& checkAgain)
 {
-  // immediately assert all formulas to the underlying prop engine
-  d_smt.getPropEngine()->assertInputFormulas(ppAssertions, ppSkolemMap);
-}
-
-void SmtSolverDriverDeepRestarts::finishCheckSat(Result r)
-{
+  d_smt.preprocess(as);
+  d_smt.assertToInternal(as);
+  Result result = d_smt.checkSatInternal();
+  // get the learned literals immediately
   d_zll.clear();
   d_zll = d_smt.getPropEngine()->getLearnedZeroLevelLiteralsForRestart();
-}
-CheckAgainStatus SmtSolverDriverDeepRestarts::checkAgain()
-{
-  if (d_zll.empty())
+  // check again if we didn't solve and there are learned literals
+  if (!d_zll.empty() && result.getStatus() == Result::UNKNOWN )
   {
-    return CheckAgainStatus::FINISH;
+    checkAgain = true;
   }
-  return CheckAgainStatus::PREPROCESS_SOLVE_AGAIN;
+  return result;
 }
 
-void SmtSolverDriverDeepRestarts::populateAssertions(Assertions& as)
+void SmtSolverDriverDeepRestarts::getNextAssertions(Assertions& as)
 {
   Trace("deep-restart") << "Have " << d_zll.size()
                         << " zero level learned literals" << std::endl;

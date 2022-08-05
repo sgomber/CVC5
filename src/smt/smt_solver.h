@@ -136,7 +136,6 @@ class SmtSolver : protected EnvObj
   Preprocessor* getPreprocessor();
   //------------------------------------------ end access methods
 
- private:
   /**
    * Preprocess the assertions. This calls the preprocessor on the assertions
    * and sets d_ppAssertions / d_ppSkolemMap if necessary.
@@ -154,6 +153,7 @@ class SmtSolver : protected EnvObj
    * processes the results based on the options.
    */
   Result checkSatInternal();
+ private:
   /** Whether we track information necessary for deep restarts */
   bool trackPreprocessedAssertions() const;
   /** The preprocessor of this SMT solver */

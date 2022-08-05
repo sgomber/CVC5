@@ -30,27 +30,10 @@ namespace smt {
 
 class SmtSolver;
 
-enum class CheckAgainStatus
-{
-  PREPROCESS_SOLVE_AGAIN,
-  SOLVE_AGAIN,
-  FINISH
-};
-
 class SmtSolverDriver : protected EnvObj
 {
  public:
   SmtSolverDriver(Env& env, SmtSolver& smt);
-  virtual void notifyInputFormulas(
-      std::vector<Node> ppAssertions,
-      std::unordered_map<size_t, Node> ppSkolemMap) = 0;
-  virtual void finishCheckSat(Result r) = 0;
-  /**
-   * Return true if we should check again. If so, we populate assertions
-   * with the set of things that should be preprocessed
-   */
-  virtual CheckAgainStatus checkAgain() = 0;
-  virtual void populateAssertions(Assertions& as) {}
 
   /**
    * Check satisfiability (used to check satisfiability and entailment)
@@ -69,35 +52,8 @@ class SmtSolverDriver : protected EnvObj
                              const std::vector<Node>& assumptions);
 
  protected:
-  /**
-   * Check satisfiability (used to check satisfiability and entailment)
-   * in SolverEngine. This is done via adding assumptions (when necessary) to
-   * assertions as, preprocessing and pushing assertions into the prop engine
-   * of this class, and checking for satisfiability via the prop engine.
-   *
-   * @param as The object managing the assertions in SolverEngine. This class
-   * maintains a current set of (unprocessed) assertions which are pushed
-   * into the internal members of this class (TheoryEngine and PropEngine)
-   * during this call.
-   * @param assumptions The assumptions for this check-sat call, which are
-   * temporary assertions.
-   */
-  Result runCheckSatWithPreprocess(Assertions& as,
-                                   const std::vector<Node>& assumptions);
-  /**
-   * Check satisfiability (used to check satisfiability and entailment)
-   * in SolverEngine. This is done via adding assumptions (when necessary) to
-   * assertions as, preprocessing and pushing assertions into the prop engine
-   * of this class, and checking for satisfiability via the prop engine.
-   *
-   * @param as The object managing the assertions in SolverEngine. This class
-   * maintains a current set of (unprocessed) assertions which are pushed
-   * into the internal members of this class (TheoryEngine and PropEngine)
-   * during this call.
-   * @param assumptions The assumptions for this check-sat call, which are
-   * temporary assertions.
-   */
-  Result runCheckSat();
+  virtual Result checkSatNext(Assertions& as, bool& checkAgain) = 0;
+  virtual void getNextAssertions(Assertions& as) = 0;
   /** The underlying SMT solver */
   SmtSolver& d_smt;
 };
@@ -106,24 +62,18 @@ class SmtSolverDriverSingleCall : public SmtSolverDriver
 {
  public:
   SmtSolverDriverSingleCall(Env& env, SmtSolver& smt);
-  void notifyInputFormulas(
-      std::vector<Node> ppAssertions,
-      std::unordered_map<size_t, Node> ppSkolemMap) override;
-  void finishCheckSat(Result r) override;
-  CheckAgainStatus checkAgain() override;
+ protected:
+  Result checkSatNext(Assertions& as, bool& checkAgain) override;
+  void getNextAssertions(Assertions& as) override;
 };
 
 class SmtSolverDriverDeepRestarts : public SmtSolverDriver
 {
  public:
   SmtSolverDriverDeepRestarts(Env& env, SmtSolver& smt);
-  void notifyInputFormulas(
-      std::vector<Node> ppAssertions,
-      std::unordered_map<size_t, Node> ppSkolemMap) override;
-  void finishCheckSat(Result r) override;
-  CheckAgainStatus checkAgain() override;
-  void populateAssertions(Assertions& as) override;
-
+ protected:
+  Result checkSatNext(Assertions& as, bool& checkAgain) override;
+  void getNextAssertions(Assertions& as) override;
  private:
   /** The current learned literals */
   std::vector<Node> d_zll;
