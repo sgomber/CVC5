@@ -190,7 +190,9 @@ Result SmtSolver::checkSatInternal()
 
 void SmtSolver::processAssertions(Assertions& as)
 {
+  // preprocess
   preprocess(as);
+  // assert to internal
   assertToInternal(as);
 }
 
