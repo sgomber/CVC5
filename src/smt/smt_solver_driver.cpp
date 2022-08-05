@@ -63,7 +63,11 @@ Result SmtSolverDriver::checkSatisfiability(
         result = checkSatNext(as, checkAgain);
         if (checkAgain)
         {
-          // TODO
+          as.clearCurrent();
+          // get the next assertions
+          getNextAssertions(as);
+          // finish init to construct new theory/prop engine
+          d_smt.finishInit();
         }
       }
 
