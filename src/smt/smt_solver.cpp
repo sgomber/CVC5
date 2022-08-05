@@ -223,7 +223,7 @@ void SmtSolver::processAssertions(Assertions& as)
     if (trackPreprocessedAssertions())
     {
       // incompatible with global negation
-      Assert(!as.isGlobalNegated());
+      Assert(!options().quantifiers.globalNegate);
       theory::SubstitutionMap& sm = d_env.getTopLevelSubstitutions().get();
       // note that if a skolem is eliminated in preprocessing, we remove it
       // from the preprocessed skolem map
