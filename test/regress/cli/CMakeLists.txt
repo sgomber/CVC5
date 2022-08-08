@@ -905,6 +905,7 @@ set(regress_0_tests
   regress0/parser/bv_arity_smt2.6.smt2
   regress0/parser/bv_nat.smt2
   regress0/parser/constraint.smt2
+  regress0/parser/dd.define-named.smt2
   regress0/parser/declarefun-emptyset-uf.smt2
   regress0/parser/define_sort.smt2
   regress0/parser/force_logic_set_logic.smt2
@@ -1009,6 +1010,7 @@ set(regress_0_tests
   regress0/proofs/proj-issue462-sat-proof-option.smt2
   regress0/proofs/proj-issue468-mkScope.smt2
   regress0/proofs/proj-issue492-skolem-lemma-pf.smt2
+  regress0/proofs/proof-components.smt2
   regress0/proofs/qgu-fuzz-1-bool-sat.smt2
   regress0/proofs/qgu-fuzz-2-bool-chainres-checking.smt2
   regress0/proofs/qgu-fuzz-3-chainres-checking.smt2
@@ -1737,6 +1739,7 @@ set(regress_1_tests
   regress1/abduction/issue5848.smt2
   regress1/abduction/issue6605-1.smt2
   regress1/abduction/issue9001-sample-fail.smt2
+  regress1/abduction/multiple-get-abduct-uc.smt2
   regress1/abduction/simple-incremental.smt2
   regress1/abduction/simple-incremental-push-pop.smt2
   regress1/abduction/sygus-abduct-ex1-grammar.smt2
