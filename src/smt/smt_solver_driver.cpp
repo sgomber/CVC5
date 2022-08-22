@@ -26,8 +26,8 @@
 namespace cvc5::internal {
 namespace smt {
 
-SmtSolverDriver::SmtSolverDriver(Env& env, SmtSolver& smt)
-    : EnvObj(env), d_smt(smt)
+SmtSolverDriver::SmtSolverDriver(Env& env, SmtSolver& smt, ContextManager& ctx)
+    : EnvObj(env), d_smt(smt), d_ctx(ctx)
 {
 }
 
@@ -88,8 +88,8 @@ Result SmtSolverDriver::checkSatisfiability(
   return result;
 }
 
-SmtSolverDriverSingleCall::SmtSolverDriverSingleCall(Env& env, SmtSolver& smt)
-    : SmtSolverDriver(env, smt)
+SmtSolverDriverSingleCall::SmtSolverDriverSingleCall(Env& env, SmtSolver& smt, ContextManager& ctx)
+    : SmtSolverDriver(env, smt, ctx)
 {
 }
 
@@ -107,8 +107,8 @@ void SmtSolverDriverSingleCall::getNextAssertions(Assertions& as)
 }
 
 SmtSolverDriverDeepRestarts::SmtSolverDriverDeepRestarts(Env& env,
-                                                         SmtSolver& smt)
-    : SmtSolverDriver(env, smt)
+                                                         SmtSolver& smt, ContextManager& ctx)
+    : SmtSolverDriver(env, smt, ctx)
 {
 }
 

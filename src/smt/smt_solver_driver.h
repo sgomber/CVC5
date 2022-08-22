@@ -29,11 +29,12 @@ namespace cvc5::internal {
 namespace smt {
 
 class SmtSolver;
+class ContextManager;
 
 class SmtSolverDriver : protected EnvObj
 {
  public:
-  SmtSolverDriver(Env& env, SmtSolver& smt);
+  SmtSolverDriver(Env& env, SmtSolver& smt, ContextManager& ctx);
 
   /**
    * Check satisfiability (used to check satisfiability and entailment)
@@ -56,12 +57,14 @@ class SmtSolverDriver : protected EnvObj
   virtual void getNextAssertions(Assertions& as) = 0;
   /** The underlying SMT solver */
   SmtSolver& d_smt;
+  /** The underlying context manager */
+  ContextManager& d_ctx;
 };
 
 class SmtSolverDriverSingleCall : public SmtSolverDriver
 {
  public:
-  SmtSolverDriverSingleCall(Env& env, SmtSolver& smt);
+  SmtSolverDriverSingleCall(Env& env, SmtSolver& smt, ContextManager& ctx);
 
  protected:
   Result checkSatNext(Assertions& as, bool& checkAgain) override;
@@ -71,7 +74,7 @@ class SmtSolverDriverSingleCall : public SmtSolverDriver
 class SmtSolverDriverDeepRestarts : public SmtSolverDriver
 {
  public:
-  SmtSolverDriverDeepRestarts(Env& env, SmtSolver& smt);
+  SmtSolverDriverDeepRestarts(Env& env, SmtSolver& smt, ContextManager& ctx);
 
  protected:
   Result checkSatNext(Assertions& as, bool& checkAgain) override;
