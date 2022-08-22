@@ -175,11 +175,6 @@ class SmtSolver : protected EnvObj
    */
   Result checkSatInternal();
  private:
-  /**
-   * Check satisfiability for the given assertions object and assumptions.
-   */
-  Result checkSatisfiability(Assertions& as,
-                             const std::vector<Node>& assumptions);
   /** Whether we track information necessary for deep restarts */
   bool trackPreprocessedAssertions() const;
   /** The preprocessor of this SMT solver */
