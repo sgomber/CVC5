@@ -153,6 +153,11 @@ class SmtSolver : protected EnvObj
   //------------------------------------------ end access methods
 
   /**
+   * Check satisfiability for the given assertions object and assumptions.
+   */
+  Result checkSatisfiability(Assertions& as,
+                             const std::vector<Node>& assumptions);
+  /**
    * Preprocess the assertions. This calls the preprocessor on the assertions
    * and sets d_ppAssertions / d_ppSkolemMap if necessary.
    */
