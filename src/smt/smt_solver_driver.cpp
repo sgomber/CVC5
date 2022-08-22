@@ -88,7 +88,9 @@ Result SmtSolverDriver::checkSatisfiability(
   return result;
 }
 
-SmtSolverDriverSingleCall::SmtSolverDriverSingleCall(Env& env, SmtSolver& smt, ContextManager& ctx)
+SmtSolverDriverSingleCall::SmtSolverDriverSingleCall(Env& env,
+                                                     SmtSolver& smt,
+                                                     ContextManager& ctx)
     : SmtSolverDriver(env, smt, ctx)
 {
 }
@@ -107,7 +109,8 @@ void SmtSolverDriverSingleCall::getNextAssertions(Assertions& as)
 }
 
 SmtSolverDriverDeepRestarts::SmtSolverDriverDeepRestarts(Env& env,
-                                                         SmtSolver& smt, ContextManager& ctx)
+                                                         SmtSolver& smt,
+                                                         ContextManager& ctx)
     : SmtSolverDriver(env, smt, ctx)
 {
 }
