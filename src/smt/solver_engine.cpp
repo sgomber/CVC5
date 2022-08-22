@@ -198,6 +198,9 @@ void SolverEngine::finishInit()
   }
   // enable proof support in the environment/rewriter
   d_env->finishInit(pnm);
+  
+  // TODO: based on options
+  d_smtSolverDriver.reset(new SmtSolverDriverSingleCall(*d_env.get(), *d_smtSolver.get(), *d_ctxManager.get()));
 
   Trace("smt-debug") << "SolverEngine::finishInit" << std::endl;
   d_smtSolver->finishInit();
