@@ -32,8 +32,7 @@ SmtDriver::SmtDriver(Env& env, SmtSolver& smt, ContextManager& ctx)
 {
 }
 
-Result SmtDriver::checkSatisfiability(
-    const std::vector<Node>& assumptions)
+Result SmtDriver::checkSatisfiability(const std::vector<Node>& assumptions)
 {
   Assertions& as = d_smt.getAssertions();
   Result result;
@@ -96,8 +95,8 @@ Result SmtDriver::checkSatisfiability(
 }
 
 SmtDriverSingleCall::SmtDriverSingleCall(Env& env,
-                                                     SmtSolver& smt,
-                                                     ContextManager& ctx)
+                                         SmtSolver& smt,
+                                         ContextManager& ctx)
     : SmtDriver(env, smt, ctx)
 {
 }
@@ -111,10 +110,7 @@ Result SmtDriverSingleCall::checkSatNext(bool& checkAgain)
   return result;
 }
 
-void SmtDriverSingleCall::getNextAssertions(Assertions& as)
-{
-  Assert(false);
-}
+void SmtDriverSingleCall::getNextAssertions(Assertions& as) { Assert(false); }
 
 }  // namespace smt
 }  // namespace cvc5::internal

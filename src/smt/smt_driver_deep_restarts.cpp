@@ -15,17 +15,17 @@
 
 #include "smt/smt_driver_deep_restarts.h"
 
-#include "smt/env.h"
-#include "smt/smt_solver.h"
 #include "options/base_options.h"
 #include "prop/prop_engine.h"
+#include "smt/env.h"
+#include "smt/smt_solver.h"
 
 namespace cvc5::internal {
 namespace smt {
 
 SmtDriverDeepRestarts::SmtDriverDeepRestarts(Env& env,
-                                                         SmtSolver& smt,
-                                                         ContextManager& ctx)
+                                             SmtSolver& smt,
+                                             ContextManager& ctx)
     : SmtDriver(env, smt, ctx)
 {
 }
