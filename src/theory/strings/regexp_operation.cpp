@@ -1131,6 +1131,7 @@ bool RegExpOpr::containC2(unsigned cnt, Node n) {
   return false;
 }
 Node RegExpOpr::convert1(unsigned cnt, Node n) {
+  n = rewrite(n);
   Trace("regexp-debug") << "Converting " << n << " at " << cnt << "... " << std::endl;
   Node r1, r2;
   convert2(cnt, n, r1, r2);
@@ -1220,6 +1221,12 @@ void RegExpOpr::convert2(unsigned cnt, Node n, Node &r1, Node &r2) {
 RegExpOpr::IntersectFrame::IntersectFrame(RegExpOpr& reo, Node r1, Node r2, unsigned cnt)
 : d_r1(r1), d_r2(r2), d_cnt(cnt), d_csetIndex(0)
 {
+  if (d_r1 > d_r2)
+  {
+    TNode tmpNode = d_r1;
+    d_r1 = d_r2;
+    d_r2 = tmpNode;
+  }
   initialize(reo);
 }
 
@@ -1232,8 +1239,8 @@ void RegExpOpr::IntersectFrame::initialize(RegExpOpr& reo)
     Trace("regexp-int-debug") << " ... normal without cache" << std::endl;
     std::set<unsigned> cset1, cset2;
     std::set<Node> vset1, vset2;
-    reo.firstChars(r1, cset1, vset1);
-    reo.firstChars(r2, cset2, vset2);
+    reo.firstChars(d_r1, cset1, vset1);
+    reo.firstChars(d_r2, cset2, vset2);
     Trace("regexp-int-debug") << " ... got fset" << std::endl;
     std::set_intersection(cset1.begin(),
                           cset1.end(),
@@ -1266,9 +1273,14 @@ bool RegExpOpr::IntersectFrame::processNext(RegExpOpr& reo,
   std::vector<IntersectFrame>& toProcess)
 {
   NodeManager* nm = NodeManager::currentNM();
-  if (d_csetIndex==cvec.size())
+  if (d_csetIndex==d_cset.size())
   {
     // finish
+    d_result = d_resultVec.size() == 0 ? reo.d_emptyRegexp
+                    : d_resultVec.size() == 1
+                        ? d_resultVec[0]
+                        : nm->mkNode(kind::REGEXP_UNION, d_resultVec);
+    d_result = reo.convert1(d_cnt, d_result);
     return true;
   }
   std::vector<unsigned> cvec;
@@ -1297,14 +1309,14 @@ bool RegExpOpr::IntersectFrame::processNext(RegExpOpr& reo,
   }
   else
   {
-    std::map<PairNodes, Node> cache2(cache);
-    result[p] = nm->mkNode(kind::REGEXP_RV, nm->mkConstInt(Rational(cnt)));
-    toProcess.push_back(IntersectFrame(reo, r1l, r2l, cnt+1));
+    std::pair<Node, Node> p(d_r1, d_r2);
+    result[p] = nm->mkNode(REGEXP_RV, nm->mkConstInt(Rational(d_cnt)));
+    toProcess.push_back(IntersectFrame(reo, r1l, r2l, d_cnt+1));
   }
 
-  rt = rewrite(nm->mkNode(kind::REGEXP_CONCAT,
-                          nm->mkNode(kind::STRING_TO_REGEXP, nm->mkConst(c)),
-                          rt));
+  rt = nm->mkNode(REGEXP_CONCAT,
+                          nm->mkNode(STRING_TO_REGEXP, nm->mkConst(c)),
+                          rt);
 
   Trace("regexp-int-debug")
       << "  ... got p(r1,c) && p(r2,c) = " << reo.mkString(rt) << std::endl;
@@ -1362,13 +1374,22 @@ Node RegExpOpr::intersectInternal(Node r1,
                                   Node r2)
 {
   std::pair <Node, Node> p(r1, r2);
-  NodeManager* nm = NodeManager::currentNM();
   std::map<std::pair<Node, Node>, Node> result;
   std::vector<IntersectFrame> toProcess;
-  toProcess.push_back(IntersectFrame(*this, r1, r2));
+  toProcess.push_back(IntersectFrame(*this, r1, r2, 0));
   while (!toProcess.empty())
   {
-    
+    IntersectFrame& ifr = toProcess.back();
+    if (ifr.processNext(*this, result, toProcess))
+    {
+      Node res = rewrite(ifr.d_result);
+      Trace("regexp-int-debug")
+          << "  ... try testing no RV of " << mkString(res) << std::endl;
+      if (!expr::hasSubtermKind(REGEXP_RV, res))
+      {
+        d_inter_cache[p] = res;
+      }
+    }
   }
   Assert (result.find(p)!=result.end());
   return result[p];
