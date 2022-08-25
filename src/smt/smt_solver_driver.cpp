@@ -22,6 +22,7 @@
 #include "smt/env.h"
 #include "smt/logic_exception.h"
 #include "smt/smt_solver.h"
+#include "smt/context_manager.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -64,10 +65,13 @@ Result SmtSolverDriver::checkSatisfiability(
         if (checkAgain)
         {
           as.clearCurrent();
+          d_ctx.notifyResetAssertions();
           // get the next assertions
           getNextAssertions(as);
           // finish init to construct new theory/prop engine
           d_smt.finishInit();
+          // setup
+          d_ctx.setup();
         }
       }
 
@@ -118,11 +122,11 @@ SmtSolverDriverDeepRestarts::SmtSolverDriverDeepRestarts(Env& env,
 Result SmtSolverDriverDeepRestarts::checkSatNext(Assertions& as,
                                                  bool& checkAgain)
 {
+  d_zll.clear();
   d_smt.preprocess(as);
   d_smt.assertToInternal(as);
   Result result = d_smt.checkSatInternal();
   // get the learned literals immediately
-  d_zll.clear();
   d_zll = d_smt.getPropEngine()->getLearnedZeroLevelLiteralsForRestart();
   // check again if we didn't solve and there are learned literals
   if (!d_zll.empty() && result.getStatus() == Result::UNKNOWN)
