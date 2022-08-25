@@ -24,8 +24,8 @@ namespace cvc5::internal {
 namespace smt {
 
 SmtDriverIncAssert::SmtDriverIncAssert(Env& env,
-                                             SmtSolver& smt,
-                                             ContextManager* ctx)
+                                       SmtSolver& smt,
+                                       ContextManager* ctx)
     : SmtDriver(env, smt, ctx), d_initialized(false)
 {
 }
@@ -47,9 +47,7 @@ Result SmtDriverIncAssert::checkSatNext(bool& checkAgain)
   return result;
 }
 
-void SmtDriverIncAssert::getNextAssertions(Assertions& as)
-{
-}
+void SmtDriverIncAssert::getNextAssertions(Assertions& as) {}
 
 }  // namespace smt
 }  // namespace cvc5::internal

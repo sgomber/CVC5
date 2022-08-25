@@ -35,12 +35,13 @@ class SmtDriverIncAssert : public SmtDriver
  protected:
   Result checkSatNext(bool& checkAgain) override;
   void getNextAssertions(Assertions& as) override;
+
  private:
-   /** Initialized */
-   bool d_initialized;
-   /** The original preprocessed assertions */
-   std::vector<Node> d_ppAsserts;
-   /** The original skolem map */
+  /** Initialized */
+  bool d_initialized;
+  /** The original preprocessed assertions */
+  std::vector<Node> d_ppAsserts;
+  /** The original skolem map */
   std::unordered_map<size_t, Node> d_ppSkolemMap;
 };
 
