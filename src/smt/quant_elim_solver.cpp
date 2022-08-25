@@ -18,13 +18,13 @@
 #include "base/modal_exception.h"
 #include "expr/skolem_manager.h"
 #include "expr/subs.h"
-#include "smt/smt_solver.h"
+#include "expr/subtype_elim_node_converter.h"
 #include "smt/smt_driver.h"
+#include "smt/smt_solver.h"
 #include "theory/quantifiers/cegqi/nested_qe.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/theory_engine.h"
 #include "util/string.h"
-#include "expr/subtype_elim_node_converter.h"
 
 using namespace cvc5::internal::theory;
 using namespace cvc5::internal::kind;

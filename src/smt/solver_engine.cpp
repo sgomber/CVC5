@@ -209,8 +209,8 @@ void SolverEngine::finishInit()
   else
   {
     // deep restarts not enabled
-    d_smtDriver.reset(new SmtDriverSingleCall(
-        *d_env.get(), *d_smtSolver.get()));
+    d_smtDriver.reset(
+        new SmtDriverSingleCall(*d_env.get(), *d_smtSolver.get()));
   }
 
   Trace("smt-debug") << "SolverEngine::finishInit" << std::endl;

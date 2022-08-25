@@ -66,7 +66,7 @@ Result SmtDriver::checkSatisfiability(const std::vector<Node>& assumptions)
         // if we were asked to check again
         if (checkAgain)
         {
-          Assert (d_ctx!=nullptr);
+          Assert(d_ctx != nullptr);
           as.clearCurrent();
           d_ctx->notifyResetAssertions();
           // get the next assertions based on the driver strategy
@@ -95,8 +95,7 @@ Result SmtDriver::checkSatisfiability(const std::vector<Node>& assumptions)
   return result;
 }
 
-SmtDriverSingleCall::SmtDriverSingleCall(Env& env,
-                                         SmtSolver& smt)
+SmtDriverSingleCall::SmtDriverSingleCall(Env& env, SmtSolver& smt)
     : SmtDriver(env, smt, nullptr)
 {
 }
