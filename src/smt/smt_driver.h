@@ -56,8 +56,10 @@ class SmtDriver : protected EnvObj
  protected:
   /**
    * Check satisfiability next, return the result.
+   *
    * If checkAgain is set to true, then this driver will be called to
    * getNextAssertions as described below.
+   *
    * If checkAgain is not set or set to false, then the returned result
    * is the final one returned by the checkSatisfiability method above.
    */
@@ -67,7 +69,7 @@ class SmtDriver : protected EnvObj
    * where checkAgain has been set to true. This populates assertions with
    * those that will be checked on the next call to checkSatNext.
    *
-   * Note that as is always the assertions of the underlying solver d_smt
+   * Note that `as` is always the assertions of the underlying solver d_smt
    * currently.
    */
   virtual void getNextAssertions(Assertions& as) = 0;
