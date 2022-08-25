@@ -1263,9 +1263,12 @@ Node RegExpOpr::intersectInternalBase(Node r1, Node r2)
   return Node::null();
 }
 
-Node RegExpOpr::intersectInternal( Node r1, Node r2, std::map< PairNodes, Node > cache, unsigned cnt )
+Node RegExpOpr::intersectInternal(Node r1,
+                                  Node r2,
+                                  std::map<PairNodes, Node> cache,
+                                  unsigned cnt)
 {
-  if(r1 > r2)
+  if (r1 > r2)
   {
     TNode tmpNode = r1;
     r1 = r2;
@@ -1285,8 +1288,7 @@ Node RegExpOpr::intersectInternal( Node r1, Node r2, std::map< PairNodes, Node >
   {
     return itrcache->second;
   }
-  
-  
+
   Node rNode;
   Trace("regexp-int-debug") << " ... normal without cache" << std::endl;
   std::vector<unsigned> cset;
@@ -1315,7 +1317,7 @@ Node RegExpOpr::intersectInternal( Node r1, Node r2, std::map< PairNodes, Node >
     }
     else
     {
-      //TODO: variable
+      // TODO: variable
       Unreachable();
     }
   }
@@ -1323,8 +1325,8 @@ Node RegExpOpr::intersectInternal( Node r1, Node r2, std::map< PairNodes, Node >
   {
     Trace("regexp-int-debug") << "Try CSET(" << cset.size() << ") = {";
     for (std::vector<unsigned>::const_iterator it = cset.begin();
-          it != cset.end();
-          ++it)
+         it != cset.end();
+         ++it)
     {
       if (it != cset.begin())
       {
@@ -1336,14 +1338,13 @@ Node RegExpOpr::intersectInternal( Node r1, Node r2, std::map< PairNodes, Node >
   }
   std::map<PairNodes, Node> cacheX;
   for (std::vector<unsigned>::const_iterator it = cset.begin();
-        it != cset.end();
-        ++it)
+       it != cset.end();
+       ++it)
   {
     std::vector<unsigned> cvec;
     cvec.push_back(*it);
     String c(cvec);
-    Trace("regexp-int-debug")
-        << "Try character " << c << " ... " << std::endl;
+    Trace("regexp-int-debug") << "Try character " << c << " ... " << std::endl;
     Node r1l = derivativeSingle(r1, c);
     Node r2l = derivativeSingle(r2, c);
     Trace("regexp-int-debug")
@@ -1372,8 +1373,7 @@ Node RegExpOpr::intersectInternal( Node r1, Node r2, std::map< PairNodes, Node >
       cacheX[pp] = rt;
     }
 
-    rt =
-        rewrite(nm->mkNode(kind::REGEXP_CONCAT,
+    rt = rewrite(nm->mkNode(kind::REGEXP_CONCAT,
                             nm->mkNode(kind::STRING_TO_REGEXP, nm->mkConst(c)),
                             rt));
 
