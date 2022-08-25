@@ -128,12 +128,12 @@ Result SmtSolverDriverDeepRestarts::checkSatNext(Assertions& as,
   d_smt.preprocess(as);
   d_smt.assertToInternal(as);
   Result result = d_smt.checkSatInternal();
-  // get the learned literals immediately
-  d_zll = d_smt.getPropEngine()->getLearnedZeroLevelLiteralsForRestart();
   // check again if we didn't solve and there are learned literals
-  if (!d_zll.empty() && result.getStatus() == Result::UNKNOWN)
+  if (result.getStatus() == Result::UNKNOWN)
   {
-    checkAgain = true;
+    // get the learned literals immediately
+    d_zll = d_smt.getPropEngine()->getLearnedZeroLevelLiteralsForRestart();
+    checkAgain = !d_zll.empty();
   }
   return result;
 }

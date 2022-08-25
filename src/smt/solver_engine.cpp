@@ -739,6 +739,9 @@ Result SolverEngine::checkSatInternal(const std::vector<Node>& assumptions)
   d_ctxManager->doPendingPops();
   d_ctxManager->notifyCheckSat(hasAssumptions);
 
+#if 0
+  Result r = d_smtSolverDriver->checkSatisfiability(assumptions);
+#else
   // check the satisfiability with the solver object
   Result r = d_smtSolver->checkSatisfiability(assumptions);
 
@@ -752,6 +755,7 @@ Result SolverEngine::checkSatInternal(const std::vector<Node>& assumptions)
     Trace("smt") << "SolverEngine::checkSat after deep restart" << std::endl;
     r = d_smtSolver->checkSatisfiability({});
   }
+#endif
 
   Trace("smt") << "SolverEngine::checkSat(" << assumptions << ") => " << r
                << endl;
