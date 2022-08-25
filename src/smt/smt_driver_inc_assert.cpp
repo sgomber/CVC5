@@ -80,23 +80,24 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
     return;
   }
   // should have set d_nextIndexToInclude which is not already included
-  Assert (d_nextIndexToInclude<d_ppAsserts.size());
-  Assert (d_ainfo.find(d_nextIndexToInclude)==d_ainfo.end());
-  
+  Assert(d_nextIndexToInclude < d_ppAsserts.size());
+  Assert(d_ainfo.find(d_nextIndexToInclude) == d_ainfo.end());
+
   // initialize the assertion info
   AssertInfo& ainext = d_ainfo[d_nextIndexToInclude];
   // check if it has a corresponding skolem
-  std::unordered_map<size_t, Node>::iterator itk = d_ppSkolemMap.find(d_nextIndexToInclude);
-  if (itk!=d_ppSkolemMap.end())
+  std::unordered_map<size_t, Node>::iterator itk =
+      d_ppSkolemMap.find(d_nextIndexToInclude);
+  if (itk != d_ppSkolemMap.end())
   {
     ainext.d_skolem = itk->second;
   }
   // get the covering for this point, iterate over previous models
-  for (size_t i=0, nmodels = d_modelValues.size(); i<nmodels; i++)
+  for (size_t i = 0, nmodels = d_modelValues.size(); i < nmodels; i++)
   {
-    Assert (d_modelValues[i].size()==d_ppAsserts.size());
+    Assert(d_modelValues[i].size() == d_ppAsserts.size());
     Node vic = d_modelValues[i][d_nextIndexToInclude];
-    if (vic==d_false)
+    if (vic == d_false)
     {
       ainext.d_cover.push_back(i);
     }
@@ -105,10 +106,9 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
       ainext.d_coverUnk.push_back(i);
     }
   }
-  
+
   // go through and refactor assertions that are no longer necessary
-  
-  
+
   // initialize the point
 
   // now have a list of assertions to include

@@ -38,9 +38,9 @@ class SmtDriverIncAssert : public SmtDriver
 
  private:
   /**
-   * Record current model, return true if we set d_nextIndexToInclude, 
+   * Record current model, return true if we set d_nextIndexToInclude,
    * indicating that we want to include a new assertion.
-   * 
+   *
    * @param allAssertsSat set to true if the current model satisfies all
    * assertions.
    */
