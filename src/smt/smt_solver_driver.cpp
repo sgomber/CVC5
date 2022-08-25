@@ -19,10 +19,10 @@
 #include "options/main_options.h"
 #include "options/smt_options.h"
 #include "prop/prop_engine.h"
+#include "smt/context_manager.h"
 #include "smt/env.h"
 #include "smt/logic_exception.h"
 #include "smt/smt_solver.h"
-#include "smt/context_manager.h"
 
 namespace cvc5::internal {
 namespace smt {
