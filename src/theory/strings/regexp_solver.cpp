@@ -508,7 +508,9 @@ bool RegExpSolver::checkEqcIntersect(const std::vector<Node>& mems)
       rcti = rct;
       continue;
     }
+    Trace("ajr-temp") << "Intersect " << mi[1] << " " << m[1] << std::endl;
     Node resR = d_regexp_opr.intersect(mi[1], m[1]);
+    Trace("ajr-temp") << "...return " << resR << std::endl;
     // intersection should be computable
     Assert(!resR.isNull());
     if (resR == d_emptyRegexp)
