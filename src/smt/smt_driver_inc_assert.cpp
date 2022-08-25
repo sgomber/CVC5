@@ -63,15 +63,17 @@ Result SmtDriverIncAssert::checkSatNext(bool& checkAgain)
   return result;
 }
 
-void SmtDriverIncAssert::getNextAssertions(Assertions& as) {
+void SmtDriverIncAssert::getNextAssertions(Assertions& as)
+{
   if (!d_initialized)
   {
     d_ppAsserts = d_smt.getPreprocessedAssertions();
-    std::unordered_map<size_t, Node> ppSkolemMap = d_smt.getPreprocessedSkolemMap();
+    std::unordered_map<size_t, Node> ppSkolemMap =
+        d_smt.getPreprocessedSkolemMap();
     // convert to mapping between formulas and their definition
     for (std::pair<const size_t, Node>& pps : ppSkolemMap)
     {
-      Assert (pps.first<d_ppAsserts.size());
+      Assert(pps.first < d_ppAsserts.size());
       d_ppSkolemMap[d_ppAsserts[pps.first]] = pps.second;
     }
     d_initialized = true;
@@ -79,22 +81,19 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as) {
     return;
   }
   // should have set d_nextIndexToInclude
-  
-  
-  
+
   // now have a list of assertions to include
   preprocessing::AssertionPipeline& apr = as.getAssertionPipeline();
   preprocessing::IteSkolemMap& ismr = apr.getIteSkolemMap();
   for (std::pair<const size_t, AssertInfo>& a : d_ainfo)
   {
-    Assert (a.first<d_ppAsserts.size());
-    Assert (!a.second.d_cover.empty());
+    Assert(a.first < d_ppAsserts.size());
+    Assert(!a.second.d_cover.empty());
     Node pa = d_ppAsserts[a.first];
     apr.push_back(pa);
     // carry the skolem mapping as well
     if (!a.second.d_skolem.isNull())
     {
-      
     }
   }
 }
@@ -108,33 +107,32 @@ bool SmtDriverIncAssert::recordCurrentModel()
   theory::TheoryModel* m = te->getBuiltModel();
   d_modelValues.emplace_back();
   std::vector<Node>& currModel = d_modelValues.back();
-  for (size_t i=0, nasserts = d_ppAsserts.size(); i<nasserts; i++)
+  for (size_t i = 0, nasserts = d_ppAsserts.size(); i < nasserts; i++)
   {
     Node a = d_ppAsserts[i];
     Node av = m->getValue(a);
     av = av.isConst() ? av : Node::null();
     currModel.push_back(av);
-    if (av==d_true)
+    if (av == d_true)
     {
       continue;
     }
     // if its already included in our assertions
-    if (d_ainfo.find(i)!=d_ainfo.end())
+    if (d_ainfo.find(i) != d_ainfo.end())
     {
     }
     if (indexSetToFalse)
     {
       continue;
     }
-    if (av==d_false)
+    if (av == d_false)
     {
       d_nextIndexToInclude = i;
       indexSetToFalse = true;
       indexSet = true;
     }
-    else if (!indexSet && av!=d_true)
+    else if (!indexSet && av != d_true)
     {
-      
     }
   }
   // we are successful (with SAT) if we didnt set an index

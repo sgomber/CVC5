@@ -37,7 +37,7 @@ class SmtDriverIncAssert : public SmtDriver
   void getNextAssertions(Assertions& as) override;
 
  private:
-  /** 
+  /**
    * Record current model, return true if the current model satisfies all
    * assertions.
    */
@@ -60,7 +60,7 @@ class SmtDriverIncAssert : public SmtDriver
    */
   class AssertInfo
   {
-  public:
+   public:
     /** List of models that we are covering */
     std::vector<size_t> d_cover;
     /** the skolem */
