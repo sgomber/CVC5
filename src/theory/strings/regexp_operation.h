@@ -100,8 +100,7 @@ class RegExpOpr : protected EnvObj
                          Node r2,
                          std::map<PairNodes, Node> cache,
                          unsigned cnt);
-  Node intersectInternalBase(Node r1,
-                         Node r2);
+  Node intersectInternalBase(Node r1, Node r2);
   /**
    * Given a regular expression r, this returns an equivalent regular expression
    * that contains no applications of intersection.
