@@ -48,18 +48,24 @@ Result SmtDriverIncAssert::checkSatNext(bool& checkAgain)
   d_smt.assertToInternal(as);
   Result result = d_smt.checkSatInternal();
   // if UNSAT, we are done
-  if (result.getStatus() != Result::UNSAT)
+  if (result.getStatus() == Result::UNSAT)
   {
-    if (recordCurrentModel())
-    {
-      // a model happened to satisfy every assertion
-      result = Result(Result::SAT);
-    }
-    else
-    {
-      checkAgain = true;
-    }
+    return result;
   }
+  bool allAssertsSat;
+  if (recordCurrentModel(allAssertsSat))
+  {
+    checkAgain = true;
+  }
+  else if (allAssertsSat)
+  {
+    // a model happened to satisfy every assertion
+    return Result(Result::SAT);
+  }
+  // Otherwise, we take the current result (likely unknown).
+  // If result happens to be SAT, then we are in a case where the model doesnt
+  // satisfy an assertion that was included, in which case we trust the
+  // checkSatInternal result.
   return result;
 }
 
@@ -68,19 +74,42 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
   if (!d_initialized)
   {
     d_ppAsserts = d_smt.getPreprocessedAssertions();
-    std::unordered_map<size_t, Node> ppSkolemMap =
-        d_smt.getPreprocessedSkolemMap();
-    // convert to mapping between formulas and their definition
-    for (std::pair<const size_t, Node>& pps : ppSkolemMap)
-    {
-      Assert(pps.first < d_ppAsserts.size());
-      d_ppSkolemMap[d_ppAsserts[pps.first]] = pps.second;
-    }
+    d_ppSkolemMap = d_smt.getPreprocessedSkolemMap();
     d_initialized = true;
     // do not provide any assertions initially
     return;
   }
-  // should have set d_nextIndexToInclude
+  // should have set d_nextIndexToInclude which is not already included
+  Assert (d_nextIndexToInclude<d_ppAsserts.size());
+  Assert (d_ainfo.find(d_nextIndexToInclude)==d_ainfo.end());
+  
+  // initialize the assertion info
+  AssertInfo& ainext = d_ainfo[d_nextIndexToInclude];
+  // check if it has a corresponding skolem
+  std::unordered_map<size_t, Node>::iterator itk = d_ppSkolemMap.find(d_nextIndexToInclude);
+  if (itk!=d_ppSkolemMap.end())
+  {
+    ainext.d_skolem = itk->second;
+  }
+  // get the covering for this point, iterate over previous models
+  for (size_t i=0, nmodels = d_modelValues.size(); i<nmodels; i++)
+  {
+    Assert (d_modelValues[i].size()==d_ppAsserts.size());
+    Node vic = d_modelValues[i][d_nextIndexToInclude];
+    if (vic==d_false)
+    {
+      ainext.d_cover.push_back(i);
+    }
+    else if (vic.isNull())
+    {
+      ainext.d_coverUnk.push_back(i);
+    }
+  }
+  
+  // go through and refactor assertions that are no longer necessary
+  
+  
+  // initialize the point
 
   // now have a list of assertions to include
   preprocessing::AssertionPipeline& apr = as.getAssertionPipeline();
@@ -94,12 +123,14 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
     // carry the skolem mapping as well
     if (!a.second.d_skolem.isNull())
     {
+      ismr[apr.size()] = a.second.d_skolem;
     }
   }
 }
 
-bool SmtDriverIncAssert::recordCurrentModel()
+bool SmtDriverIncAssert::recordCurrentModel(bool& allAssertsSat)
 {
+  allAssertsSat = true;
   bool indexSet = false;
   bool indexSetToFalse = false;
   TheoryEngine* te = d_smt.getTheoryEngine();
@@ -117,26 +148,37 @@ bool SmtDriverIncAssert::recordCurrentModel()
     {
       continue;
     }
+    allAssertsSat = false;
     // if its already included in our assertions
     if (d_ainfo.find(i) != d_ainfo.end())
     {
+      // we were unable to satisfy this assertion; the result from the last
+      // check-sat was likely "unknown", we skip this assertion and look to
+      // find a different one
+      continue;
     }
     if (indexSetToFalse)
     {
+      // already have a false index
       continue;
     }
-    if (av == d_false)
+    bool isFalse = (av == d_false);
+    if (!isFalse && indexSet)
     {
-      d_nextIndexToInclude = i;
-      indexSetToFalse = true;
-      indexSet = true;
+      // already have an unknown index
+      continue;
     }
-    else if (!indexSet && av != d_true)
-    {
-    }
+    // include this one, remembering if it is false or not
+    d_nextIndexToInclude = i;
+    indexSetToFalse = isFalse;
+    indexSet = true;
   }
-  // we are successful (with SAT) if we didnt set an index
-  return !indexSet;
+  if (!indexSetToFalse)
+  {
+    d_unkModels.insert(d_modelValues.size());
+  }
+  // we are successful (with SAT) if the model satisfies all assertions
+  return indexSet;
 }
 
 }  // namespace smt

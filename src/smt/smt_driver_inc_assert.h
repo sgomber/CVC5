@@ -38,10 +38,13 @@ class SmtDriverIncAssert : public SmtDriver
 
  private:
   /**
-   * Record current model, return true if the current model satisfies all
+   * Record current model, return true if we set d_nextIndexToInclude, 
+   * indicating that we want to include a new assertion.
+   * 
+   * @param allAssertsSat set to true if the current model satisfies all
    * assertions.
    */
-  bool recordCurrentModel();
+  bool recordCurrentModel(bool& allAssertsSat);
   /** Common nodes */
   Node d_true;
   Node d_false;
@@ -50,9 +53,11 @@ class SmtDriverIncAssert : public SmtDriver
   /** The original preprocessed assertions */
   std::vector<Node> d_ppAsserts;
   /** The original skolem map */
-  std::unordered_map<Node, Node> d_ppSkolemMap;
+  std::unordered_map<size_t, Node> d_ppSkolemMap;
   /** the model value map */
   std::vector<std::vector<Node>> d_modelValues;
+  /** set of model indices that only had unknown points */
+  std::unordered_set<size_t> d_unkModels;
   /** next index to include */
   size_t d_nextIndexToInclude;
   /**
@@ -61,8 +66,10 @@ class SmtDriverIncAssert : public SmtDriver
   class AssertInfo
   {
    public:
-    /** List of models that we are covering */
+    /** List of models that we are covering (false) */
     std::vector<size_t> d_cover;
+    /** List of models that we are covering (unknown) */
+    std::vector<size_t> d_coverUnk;
     /** the skolem */
     Node d_skolem;
   };
