@@ -1291,17 +1291,15 @@ bool RegExpOpr::IntersectFrame::processNext(RegExpOpr& reo,
   }
   std::pair<Node,Node> pp(r1l, r2l);
   std::map<PairNodes, Node>::const_iterator itr2 = d_cacheX.find(pp);
-  if (itr2 != cacheX.end())
+  if (itr2 != d_cacheX.end())
   {
     rt = itr2->second;
   }
   else
   {
     std::map<PairNodes, Node> cache2(cache);
-    cache2[p] = nm->mkNode(kind::REGEXP_RV, nm->mkConstInt(Rational(cnt)));
-    rt = intersectInternal(r1l, r2l, cache2, cnt + 1);
+    result[p] = nm->mkNode(kind::REGEXP_RV, nm->mkConstInt(Rational(cnt)));
     toProcess.push_back(IntersectFrame(reo, r1l, r2l, cnt+1));
-    cacheX[pp] = rt;
   }
 
   rt = rewrite(nm->mkNode(kind::REGEXP_CONCAT,
