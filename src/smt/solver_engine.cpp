@@ -54,6 +54,7 @@
 #include "smt/quant_elim_solver.h"
 #include "smt/set_defaults.h"
 #include "smt/smt_driver.h"
+#include "smt/smt_driver_deep_restarts.h"
 #include "smt/smt_solver.h"
 #include "smt/solver_engine_state.h"
 #include "smt/solver_engine_stats.h"

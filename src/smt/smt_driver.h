@@ -74,21 +74,6 @@ class SmtDriverSingleCall : public SmtDriver
   void getNextAssertions(Assertions& as) override;
 };
 
-class SmtDriverDeepRestarts : public SmtDriver
-{
- public:
-  SmtDriverDeepRestarts(Env& env, SmtSolver& smt, ContextManager& ctx);
-
- protected:
-  Result checkSatNext(bool& checkAgain) override;
-  void getNextAssertions(Assertions& as) override;
-
- private:
-  /** The current learned literals */
-  std::vector<Node> d_zll;
-  /** All learned literals, used for debugging */
-  std::unordered_set<Node> d_allLearnedLits;
-};
 
 }  // namespace smt
 }  // namespace cvc5::internal
