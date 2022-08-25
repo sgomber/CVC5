@@ -74,7 +74,6 @@ class SmtDriverSingleCall : public SmtDriver
   void getNextAssertions(Assertions& as) override;
 };
 
-
 }  // namespace smt
 }  // namespace cvc5::internal
 
