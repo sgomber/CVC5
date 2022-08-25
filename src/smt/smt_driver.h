@@ -31,16 +31,22 @@ namespace smt {
 class SmtSolver;
 class ContextManager;
 
+/**
+ * SMT driver class.
+ * 
+ * The purpose of this class is to define algorithms for checking
+ * satisfiability beyond a single call to the underlying SMT solver. The
+ * default implementation, SmtDriverSingleCall, is used for invoking a
+ * single call to the SMT solver only.
+ */
 class SmtDriver : protected EnvObj
 {
  public:
   SmtDriver(Env& env, SmtSolver& smt, ContextManager& ctx);
 
   /**
-   * Check satisfiability (used to check satisfiability and entailment)
-   * in SolverEngine. This is done via adding assumptions (when necessary) to
-   * assertions as, preprocessing and pushing assertions into the prop engine
-   * of this class, and checking for satisfiability via the prop engine.
+   * Check satisfiability. This invokes the algorithm given by this driver
+   * for checking satisfiability.
    *
    * @param assumptions The assumptions for this check-sat call, which are
    * temporary assertions.
@@ -48,6 +54,13 @@ class SmtDriver : protected EnvObj
   Result checkSatisfiability(const std::vector<Node>& assumptions);
 
  protected:
+  /**
+   * Check satisfiability next, return the result.
+   * If checkAgain is set to true, then this driver will be called to
+   * getNextAssertions as described below.
+   * If checkAgain is not set or set to false, then the returned result
+   * is the final one returned by the checkSatisfiability method above.
+   */
   virtual Result checkSatNext(bool& checkAgain) = 0;
   /**
    * Get the next assertions. This is called immediately after checkSatNext
@@ -64,13 +77,19 @@ class SmtDriver : protected EnvObj
   ContextManager& d_ctx;
 };
 
+/**
+ * The default SMT driver, which makes a single call to the underlying
+ * SMT solver.
+ */
 class SmtDriverSingleCall : public SmtDriver
 {
  public:
   SmtDriverSingleCall(Env& env, SmtSolver& smt, ContextManager& ctx);
 
  protected:
+   /** Check sat next, does not set checkAgain to true */
   Result checkSatNext(bool& checkAgain) override;
+  /** Never called */
   void getNextAssertions(Assertions& as) override;
 };
 
