@@ -42,18 +42,21 @@ class SmtSolverDriver : protected EnvObj
    * assertions as, preprocessing and pushing assertions into the prop engine
    * of this class, and checking for satisfiability via the prop engine.
    *
-   * @param as The object managing the assertions in SolverEngine. This class
-   * maintains a current set of (unprocessed) assertions which are pushed
-   * into the internal members of this class (TheoryEngine and PropEngine)
-   * during this call.
    * @param assumptions The assumptions for this check-sat call, which are
    * temporary assertions.
    */
-  Result checkSatisfiability(Assertions& as,
-                             const std::vector<Node>& assumptions);
+  Result checkSatisfiability(const std::vector<Node>& assumptions);
 
  protected:
-  virtual Result checkSatNext(Assertions& as, bool& checkAgain) = 0;
+  virtual Result checkSatNext(bool& checkAgain) = 0;
+  /**
+   * Get the next assertions. This is called immediately after checkSatNext
+   * where checkAgain has been set to true. This populates assertions with
+   * those that will be checked on the next call to checkSatNext.
+   *
+   * Note that as is always the assertions of the underlying solver d_smt
+   * currently.
+   */
   virtual void getNextAssertions(Assertions& as) = 0;
   /** The underlying SMT solver */
   SmtSolver& d_smt;
@@ -67,7 +70,7 @@ class SmtSolverDriverSingleCall : public SmtSolverDriver
   SmtSolverDriverSingleCall(Env& env, SmtSolver& smt, ContextManager& ctx);
 
  protected:
-  Result checkSatNext(Assertions& as, bool& checkAgain) override;
+  Result checkSatNext(bool& checkAgain) override;
   void getNextAssertions(Assertions& as) override;
 };
 
@@ -77,7 +80,7 @@ class SmtSolverDriverDeepRestarts : public SmtSolverDriver
   SmtSolverDriverDeepRestarts(Env& env, SmtSolver& smt, ContextManager& ctx);
 
  protected:
-  Result checkSatNext(Assertions& as, bool& checkAgain) override;
+  Result checkSatNext(bool& checkAgain) override;
   void getNextAssertions(Assertions& as) override;
 
  private:

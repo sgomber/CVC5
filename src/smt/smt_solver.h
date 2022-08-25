@@ -150,6 +150,8 @@ class SmtSolver : protected EnvObj
   theory::QuantifiersEngine* getQuantifiersEngine();
   /** Get a pointer to the preprocessor */
   Preprocessor* getPreprocessor();
+  /** Get the assertions maintained by this SMT solver */
+  Assertions& getAssertions();
   //------------------------------------------ end access methods
 
   /**

@@ -734,23 +734,10 @@ Result SolverEngine::checkSatInternal(const std::vector<Node>& assumptions)
   d_ctxManager->doPendingPops();
   d_ctxManager->notifyCheckSat(hasAssumptions);
 
-#if 0
+  // Call the SMT solver driver to check for satisfiability. Note that in the
+  // case of options like e.g. deep restarts, this may invokve multiple calls
+  // to checkSatisfiability in the underlying SMT solver
   Result r = d_smtSolverDriver->checkSatisfiability(assumptions);
-#else
-  // check the satisfiability with the solver object
-  Result r = d_smtSolver->checkSatisfiability(assumptions);
-
-  // If the result is unknown, we may optionally do a "deep restart" where
-  // the members of the SMT solver are reconstructed and given the
-  // preprocessed input formulas (plus additional learned formulas). Notice
-  // that assumptions are pushed to the preprocessed input in the above call, so
-  // any additional satisfiability checks use an empty set of assumptions.
-  while (r.getStatus() == Result::UNKNOWN && deepRestart())
-  {
-    Trace("smt") << "SolverEngine::checkSat after deep restart" << std::endl;
-    r = d_smtSolver->checkSatisfiability({});
-  }
-#endif
 
   Trace("smt") << "SolverEngine::checkSat(" << assumptions << ") => " << r
                << endl;

@@ -33,8 +33,9 @@ SmtSolverDriver::SmtSolverDriver(Env& env, SmtSolver& smt, ContextManager& ctx)
 }
 
 Result SmtSolverDriver::checkSatisfiability(
-    Assertions& as, const std::vector<Node>& assumptions)
+    const std::vector<Node>& assumptions)
 {
+  Assertions& as = d_smt.getAssertions();
   Result result;
   try
   {
@@ -62,7 +63,7 @@ Result SmtSolverDriver::checkSatisfiability(
       {
         checkAgain = false;
         // check sat based on the driver strategy
-        result = checkSatNext(as, checkAgain);
+        result = checkSatNext(checkAgain);
         // if we were asked to check again
         if (checkAgain)
         {
@@ -101,8 +102,9 @@ SmtSolverDriverSingleCall::SmtSolverDriverSingleCall(Env& env,
 {
 }
 
-Result SmtSolverDriverSingleCall::checkSatNext(Assertions& as, bool& checkAgain)
+Result SmtSolverDriverSingleCall::checkSatNext(bool& checkAgain)
 {
+  Assertions& as = d_smt.getAssertions();
   d_smt.preprocess(as);
   d_smt.assertToInternal(as);
   Result result = d_smt.checkSatInternal();
@@ -121,9 +123,9 @@ SmtSolverDriverDeepRestarts::SmtSolverDriverDeepRestarts(Env& env,
 {
 }
 
-Result SmtSolverDriverDeepRestarts::checkSatNext(Assertions& as,
-                                                 bool& checkAgain)
+Result SmtSolverDriverDeepRestarts::checkSatNext(bool& checkAgain)
 {
+  Assertions& as = d_smt.getAssertions();
   d_zll.clear();
   d_smt.preprocess(as);
   d_smt.assertToInternal(as);
