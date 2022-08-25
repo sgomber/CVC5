@@ -61,12 +61,14 @@ Result SmtSolverDriver::checkSatisfiability(
       while (checkAgain)
       {
         checkAgain = false;
+        // check sat based on the driver strategy
         result = checkSatNext(as, checkAgain);
+        // if we were asked to check again
         if (checkAgain)
         {
           as.clearCurrent();
           d_ctx.notifyResetAssertions();
-          // get the next assertions
+          // get the next assertions based on the driver strategy
           getNextAssertions(as);
           // finish init to construct new theory/prop engine
           d_smt.finishInit();
