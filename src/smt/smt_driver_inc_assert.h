@@ -37,12 +37,37 @@ class SmtDriverIncAssert : public SmtDriver
   void getNextAssertions(Assertions& as) override;
 
  private:
+  /** 
+   * Record current model, return true if the current model satisfies all
+   * assertions.
+   */
+  bool recordCurrentModel();
+  /** Common nodes */
+  Node d_true;
+  Node d_false;
   /** Initialized */
   bool d_initialized;
   /** The original preprocessed assertions */
   std::vector<Node> d_ppAsserts;
   /** The original skolem map */
-  std::unordered_map<size_t, Node> d_ppSkolemMap;
+  std::unordered_map<Node, Node> d_ppSkolemMap;
+  /** the model value map */
+  std::vector<std::vector<Node>> d_modelValues;
+  /** next index to include */
+  size_t d_nextIndexToInclude;
+  /**
+   * All information about an assertion.
+   */
+  class AssertInfo
+  {
+  public:
+    /** List of models that we are covering */
+    std::vector<size_t> d_cover;
+    /** the skolem */
+    Node d_skolem;
+  };
+  /** The current indices in d_ppAsserts we are considering */
+  std::map<size_t, AssertInfo> d_ainfo;
 };
 
 }  // namespace smt
