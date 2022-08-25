@@ -1375,10 +1375,11 @@ Node RegExpOpr::intersectInternalBase(Node r1, Node r2)
 
 Node RegExpOpr::intersectInternal(Node r1, Node r2)
 {
-  std::pair<Node, Node> p(r1, r2);
   std::map<std::pair<Node, Node>, Node> result;
   std::vector<IntersectFrame> toProcess;
   toProcess.push_back(IntersectFrame(*this, r1, r2, 0));
+  // remember the first pair, which may be reordered
+  std::pair<Node, Node> finalp(toProcess[0].d_r1, toProcess[0].d_r2);
   while (!toProcess.empty())
   {
     IntersectFrame& ifr = toProcess.back();
@@ -1389,13 +1390,14 @@ Node RegExpOpr::intersectInternal(Node r1, Node r2)
           << "  ... try testing no RV of " << mkString(res) << std::endl;
       if (!expr::hasSubtermKind(REGEXP_RV, res))
       {
+        std::pair<Node, Node> p(ifr.d_r1, ifr.d_r2);
         d_inter_cache[p] = res;
       }
       toProcess.pop_back();
     }
   }
-  Assert(result.find(p) != result.end());
-  return result[p];
+  Assert(result.find(finalp) != result.end());
+  return result[finalp];
 }
 
 Node RegExpOpr::intersectInternal(Node r1,
