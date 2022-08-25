@@ -27,6 +27,7 @@
 #include "options/smt_options.h"
 #include "smt/preprocessor.h"
 #include "smt/smt_solver.h"
+#include "smt/smt_driver.h"
 #include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/sygus/sygus_grammar_cons.h"
@@ -259,7 +260,8 @@ SynthResult SygusSolver::checkSynth(Assertions& as, bool isNext)
   {
     std::vector<Node> query;
     query.push_back(d_conj);
-    r = d_smtSolver.checkSatisfiability(query);
+    SmtDriverSingleCall sdsc(d_env, d_smtSolver);
+    r = sdsc.checkSatisfiability(query);
   }
   // The result returned by the above call is typically "unknown", which may
   // or may not correspond to a state in which we solved the conjecture

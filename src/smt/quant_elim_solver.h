@@ -93,7 +93,7 @@ class QuantElimSolver : protected EnvObj
   Node getQuantifierElimination(Node q, bool doFull, bool isInternalSubsolver);
 
  private:
-  /** The SMT solver, which is used during doQuantifierElimination. */
+  /** The SMT driver, which is used during doQuantifierElimination. */
   SmtSolver& d_smtSolver;
 };
 

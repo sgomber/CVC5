@@ -27,7 +27,7 @@
 namespace cvc5::internal {
 namespace smt {
 
-SmtDriver::SmtDriver(Env& env, SmtSolver& smt, ContextManager& ctx)
+SmtDriver::SmtDriver(Env& env, SmtSolver& smt, ContextManager* ctx)
     : EnvObj(env), d_smt(smt), d_ctx(ctx)
 {
 }
@@ -66,14 +66,15 @@ Result SmtDriver::checkSatisfiability(const std::vector<Node>& assumptions)
         // if we were asked to check again
         if (checkAgain)
         {
+          Assert (d_ctx!=nullptr);
           as.clearCurrent();
-          d_ctx.notifyResetAssertions();
+          d_ctx->notifyResetAssertions();
           // get the next assertions based on the driver strategy
           getNextAssertions(as);
           // finish init to construct new theory/prop engine
           d_smt.finishInit();
           // setup
-          d_ctx.setup();
+          d_ctx->setup();
         }
       }
 
@@ -95,9 +96,8 @@ Result SmtDriver::checkSatisfiability(const std::vector<Node>& assumptions)
 }
 
 SmtDriverSingleCall::SmtDriverSingleCall(Env& env,
-                                         SmtSolver& smt,
-                                         ContextManager& ctx)
-    : SmtDriver(env, smt, ctx)
+                                         SmtSolver& smt)
+    : SmtDriver(env, smt, nullptr)
 {
 }
 

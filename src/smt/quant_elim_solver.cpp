@@ -19,6 +19,7 @@
 #include "expr/skolem_manager.h"
 #include "expr/subs.h"
 #include "smt/smt_solver.h"
+#include "smt/smt_driver.h"
 #include "theory/quantifiers/cegqi/nested_qe.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/theory_engine.h"
@@ -71,7 +72,8 @@ Node QuantElimSolver::getQuantifierElimination(Node q,
   Trace("smt-qe-debug") << "Query for quantifier elimination : " << ne
                         << std::endl;
   Assert(ne.getNumChildren() == 3);
-  Result r = d_smtSolver.checkSatisfiability(std::vector<Node>{ne.notNode()});
+  SmtDriverSingleCall sdsc(d_env, d_smtSolver);
+  Result r = sdsc.checkSatisfiability(std::vector<Node>{ne.notNode()});
   Trace("smt-qe") << "Query returned " << r << std::endl;
   if (r.getStatus() != Result::UNSAT)
   {

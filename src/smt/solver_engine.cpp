@@ -204,13 +204,13 @@ void SolverEngine::finishInit()
   if (options().smt.deepRestartMode != options::DeepRestartMode::NONE)
   {
     d_smtDriver.reset(new SmtDriverDeepRestarts(
-        *d_env.get(), *d_smtSolver.get(), *d_ctxManager.get()));
+        *d_env.get(), *d_smtSolver.get(), d_ctxManager.get()));
   }
   else
   {
     // deep restarts not enabled
     d_smtDriver.reset(new SmtDriverSingleCall(
-        *d_env.get(), *d_smtSolver.get(), *d_ctxManager.get()));
+        *d_env.get(), *d_smtSolver.get()));
   }
 
   Trace("smt-debug") << "SolverEngine::finishInit" << std::endl;

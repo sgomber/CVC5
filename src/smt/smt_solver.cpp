@@ -115,67 +115,6 @@ void SmtSolver::interrupt()
     d_theoryEngine->interrupt();
   }
 }
-Result SmtSolver::checkSatisfiability(const std::vector<Node>& assumptions)
-{
-  return checkSatisfiability(d_asserts, assumptions);
-}
-
-Result SmtSolver::checkSatisfiability(Assertions& as,
-                                      const std::vector<Node>& assumptions)
-{
-  Result result;
-  try
-  {
-    // then, initialize the assertions
-    as.setAssumptions(assumptions);
-
-    // make the check, where notice smt engine should be fully inited by now
-
-    Trace("smt") << "SmtSolver::check()" << endl;
-
-    ResourceManager* rm = d_env.getResourceManager();
-    if (rm->out())
-    {
-      UnknownExplanation why = rm->outOfResources()
-                                   ? UnknownExplanation::RESOURCEOUT
-                                   : UnknownExplanation::TIMEOUT;
-      result = Result(Result::UNKNOWN, why);
-    }
-    else
-    {
-      rm->beginCall();
-
-      // Preprocess the assertions
-      Trace("smt") << "SmtSolver::check(): preprocess" << endl;
-      preprocess(as);
-      Trace("smt") << "SmtSolver::check(): done preprocess" << endl;
-
-      // Make sure the prop layer has all of the assertions
-      Trace("smt") << "SmtSolver::check(): assert to internal" << endl;
-      assertToInternal(as);
-      Trace("smt") << "SmtSolver::check(): done assert to internal" << endl;
-
-      d_env.verbose(2) << "solving..." << std::endl;
-      Trace("smt") << "SmtSolver::check(): running check" << endl;
-      result = checkSatInternal();
-      Trace("smt") << "SmtSolver::check(): result " << result << std::endl;
-
-      rm->endCall();
-      Trace("limit") << "SmtSolver::check(): cumulative millis "
-                     << rm->getTimeUsage() << ", resources "
-                     << rm->getResourceUsage() << endl;
-    }
-  }
-  catch (const LogicException& e)
-  {
-    // The exception may have been throw during solving, backtrack to reset the
-    // decision level to the level expected after this method finishes
-    getPropEngine()->resetTrail();
-    throw;
-  }
-
-  return result;
-}
 
 Result SmtSolver::checkSatInternal()
 {

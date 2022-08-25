@@ -30,7 +30,7 @@ class ContextManager;
 class SmtDriverDeepRestarts : public SmtDriver
 {
  public:
-  SmtDriverDeepRestarts(Env& env, SmtSolver& smt, ContextManager& ctx);
+  SmtDriverDeepRestarts(Env& env, SmtSolver& smt, ContextManager* ctx);
 
  protected:
   Result checkSatNext(bool& checkAgain) override;

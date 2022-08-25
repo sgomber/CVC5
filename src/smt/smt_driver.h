@@ -42,7 +42,7 @@ class ContextManager;
 class SmtDriver : protected EnvObj
 {
  public:
-  SmtDriver(Env& env, SmtSolver& smt, ContextManager& ctx);
+  SmtDriver(Env& env, SmtSolver& smt, ContextManager* ctx);
 
   /**
    * Check satisfiability. This invokes the algorithm given by this driver
@@ -73,18 +73,23 @@ class SmtDriver : protected EnvObj
   virtual void getNextAssertions(Assertions& as) = 0;
   /** The underlying SMT solver */
   SmtSolver& d_smt;
-  /** The underlying context manager */
-  ContextManager& d_ctx;
+  /**
+   * The underlying context manager. This is only required to be provided
+   * if the checkSatNext method ever sets checkAgain to true.
+   */
+  ContextManager* d_ctx;
 };
 
 /**
  * The default SMT driver, which makes a single call to the underlying
  * SMT solver.
+ * 
+ * Notice this class does not require ContextManager.
  */
 class SmtDriverSingleCall : public SmtDriver
 {
  public:
-  SmtDriverSingleCall(Env& env, SmtSolver& smt, ContextManager& ctx);
+  SmtDriverSingleCall(Env& env, SmtSolver& smt);
 
  protected:
   /** Check sat next, does not set checkAgain to true */

@@ -25,7 +25,7 @@ namespace smt {
 
 SmtDriverDeepRestarts::SmtDriverDeepRestarts(Env& env,
                                              SmtSolver& smt,
-                                             ContextManager& ctx)
+                                             ContextManager* ctx)
     : SmtDriver(env, smt, ctx)
 {
 }
