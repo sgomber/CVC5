@@ -97,19 +97,25 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
   {
     Assert(d_modelValues[i].size() == d_ppAsserts.size());
     Node vic = d_modelValues[i][d_nextIndexToInclude];
+    bool coverModel = false;
     if (vic == d_false)
     {
-      ainext.d_cover.push_back(i);
+      coverModel = true;
     }
-    else if (vic.isNull())
+    else if (vic.isNull() && d_unkModels.find(i)!=d_unkModels.end())
     {
-      ainext.d_coverUnk.push_back(i);
+      coverModel = true;
+    }
+    if (coverModel)
+    {
+      // TODO: decrement others
+      d_modelToAssert[i] = d_nextIndexToInclude;
+      ainext.d_coverModels++;
     }
   }
 
   // go through and refactor assertions that are no longer necessary
 
-  // initialize the point
 
   // now have a list of assertions to include
   preprocessing::AssertionPipeline& apr = as.getAssertionPipeline();

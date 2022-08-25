@@ -58,6 +58,8 @@ class SmtDriverIncAssert : public SmtDriver
   std::vector<std::vector<Node>> d_modelValues;
   /** set of model indices that only had unknown points */
   std::unordered_set<size_t> d_unkModels;
+  /** mapping from models to the assertions that cover them */
+  std::unordered_map<size_t, size_t> d_modelToAssert;
   /** next index to include */
   size_t d_nextIndexToInclude;
   /**
@@ -66,10 +68,9 @@ class SmtDriverIncAssert : public SmtDriver
   class AssertInfo
   {
    public:
-    /** List of models that we are covering (false) */
-    std::vector<size_t> d_cover;
-    /** List of models that we are covering (unknown) */
-    std::vector<size_t> d_coverUnk;
+     AssertInfo() : d_coverModels(0) {}
+    /** Number of models we cover */
+    size_t d_coverModels;
     /** the skolem */
     Node d_skolem;
   };
