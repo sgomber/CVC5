@@ -100,8 +100,7 @@ class RegExpOpr : protected EnvObj
                          Node r2,
                          std::map<PairNodes, Node> cache,
                          unsigned cnt);
-  Node intersectInternal(Node r1,
-                         Node r2);
+  Node intersectInternal(Node r1, Node r2);
   Node intersectInternalBase(Node r1, Node r2);
   /**
    * Given a regular expression r, this returns an equivalent regular expression
@@ -200,7 +199,7 @@ class RegExpOpr : protected EnvObj
 
   class IntersectFrame
   {
-  public:
+   public:
     IntersectFrame(RegExpOpr& reo, Node r1, Node r2, unsigned cnt);
     Node d_r1;
     Node d_r2;
@@ -212,9 +211,9 @@ class RegExpOpr : protected EnvObj
     /** index in cset we are currently processing */
     size_t d_csetIndex;
     void initialize(RegExpOpr& reo);
-    bool processNext(RegExpOpr& reo, 
-  std::map<std::pair<Node, Node>, Node>& result,
-  std::vector<IntersectFrame>& toProcess);
+    bool processNext(RegExpOpr& reo,
+                     std::map<std::pair<Node, Node>, Node>& result,
+                     std::vector<IntersectFrame>& toProcess);
   };
 };
 
