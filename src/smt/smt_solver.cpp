@@ -302,55 +302,6 @@ const std::unordered_map<size_t, Node>& SmtSolver::getPreprocessedSkolemMap()
   return d_ppSkolemMap;
 }
 
-void SmtSolver::deepRestart(Assertions& asr, const std::vector<Node>& zll)
-{
-  Assert(trackPreprocessedAssertions());
-  Assert(!zll.empty());
-  Trace("deep-restart") << "Have " << zll.size()
-                        << " zero level learned literals" << std::endl;
-
-  preprocessing::AssertionPipeline& apr = asr.getAssertionPipeline();
-  // Copy the preprocessed assertions and skolem map information directly
-  for (const Node& a : d_ppAssertions)
-  {
-    apr.push_back(a);
-  }
-  preprocessing::IteSkolemMap& ismr = apr.getIteSkolemMap();
-  for (const std::pair<const size_t, Node>& k : d_ppSkolemMap)
-  {
-    // carry the entire skolem map, which should align with the order of
-    // assertions passed into the new assertions pipeline
-    ismr[k.first] = k.second;
-  }
-
-  if (isOutputOn(OutputTag::DEEP_RESTART))
-  {
-    output(OutputTag::DEEP_RESTART) << "(deep-restart (";
-    bool firstTime = true;
-    for (TNode lit : zll)
-    {
-      output(OutputTag::DEEP_RESTART) << (firstTime ? "" : " ") << lit;
-      firstTime = false;
-    }
-    output(OutputTag::DEEP_RESTART) << "))" << std::endl;
-  }
-  for (TNode lit : zll)
-  {
-    Trace("deep-restart-lit") << "Restart learned lit: " << lit << std::endl;
-    apr.push_back(lit);
-    if (Configuration::isAssertionBuild())
-    {
-      Assert(d_allLearnedLits.find(lit) == d_allLearnedLits.end())
-          << "Relearned: " << lit << std::endl;
-      d_allLearnedLits.insert(lit);
-    }
-  }
-  Trace("deep-restart") << "Finished compute deep restart" << std::endl;
-
-  // we now finish init to reconstruct prop engine and theory engine
-  finishInit();
-}
-
 bool SmtSolver::trackPreprocessedAssertions() const
 {
   return options().smt.deepRestartMode != options::DeepRestartMode::NONE

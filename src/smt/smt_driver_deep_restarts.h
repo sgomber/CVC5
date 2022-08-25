@@ -15,8 +15,8 @@
 
 #include "cvc5_private.h"
 
-#ifndef CVC5__SMT__SMT_SOLVER_DRIVER_H
-#define CVC5__SMT__SMT_SOLVER_DRIVER_H
+#ifndef CVC5__SMT__SMT_DRIVER_DEEP_RESTARTS_H
+#define CVC5__SMT__SMT_DRIVER_DEEP_RESTARTS_H
 
 #include <vector>
 
@@ -31,10 +31,10 @@ namespace smt {
 class SmtSolver;
 class ContextManager;
 
-class SmtSolverDriver : protected EnvObj
+class SmtDriver : protected EnvObj
 {
  public:
-  SmtSolverDriver(Env& env, SmtSolver& smt, ContextManager& ctx);
+  SmtDriver(Env& env, SmtSolver& smt, ContextManager& ctx);
 
   /**
    * Check satisfiability (used to check satisfiability and entailment)
@@ -64,20 +64,20 @@ class SmtSolverDriver : protected EnvObj
   ContextManager& d_ctx;
 };
 
-class SmtSolverDriverSingleCall : public SmtSolverDriver
+class SmtDriverSingleCall : public SmtDriver
 {
  public:
-  SmtSolverDriverSingleCall(Env& env, SmtSolver& smt, ContextManager& ctx);
+  SmtDriverSingleCall(Env& env, SmtSolver& smt, ContextManager& ctx);
 
  protected:
   Result checkSatNext(bool& checkAgain) override;
   void getNextAssertions(Assertions& as) override;
 };
 
-class SmtSolverDriverDeepRestarts : public SmtSolverDriver
+class SmtDriverDeepRestarts : public SmtDriver
 {
  public:
-  SmtSolverDriverDeepRestarts(Env& env, SmtSolver& smt, ContextManager& ctx);
+  SmtDriverDeepRestarts(Env& env, SmtSolver& smt, ContextManager& ctx);
 
  protected:
   Result checkSatNext(bool& checkAgain) override;

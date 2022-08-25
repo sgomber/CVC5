@@ -54,7 +54,7 @@
 #include "smt/quant_elim_solver.h"
 #include "smt/set_defaults.h"
 #include "smt/smt_solver.h"
-#include "smt/smt_solver_driver.h"
+#include "smt/smt_driver.h"
 #include "smt/solver_engine_state.h"
 #include "smt/solver_engine_stats.h"
 #include "smt/sygus_solver.h"
@@ -93,7 +93,7 @@ SolverEngine::SolverEngine(const Options* optr)
       d_asserts(new Assertions(*d_env.get(), *d_absValues.get())),
       d_routListener(new ResourceOutListener(*this)),
       d_smtSolver(nullptr),
-      d_smtSolverDriver(nullptr),
+      d_smtDriver(nullptr),
       d_checkModels(nullptr),
       d_pfManager(nullptr),
       d_ucManager(nullptr),
@@ -202,13 +202,13 @@ void SolverEngine::finishInit()
   // make SMT solver driver based on options
   if (options().smt.deepRestartMode != options::DeepRestartMode::NONE)
   {
-    d_smtSolverDriver.reset(new SmtSolverDriverDeepRestarts(
+    d_smtDriver.reset(new SmtDriverDeepRestarts(
         *d_env.get(), *d_smtSolver.get(), *d_ctxManager.get()));
   }
   else
   {
     // deep restarts not enabled
-    d_smtSolverDriver.reset(new SmtSolverDriverSingleCall(
+    d_smtDriver.reset(new SmtDriverSingleCall(
         *d_env.get(), *d_smtSolver.get(), *d_ctxManager.get()));
   }
 
@@ -737,7 +737,7 @@ Result SolverEngine::checkSatInternal(const std::vector<Node>& assumptions)
   // Call the SMT solver driver to check for satisfiability. Note that in the
   // case of options like e.g. deep restarts, this may invokve multiple calls
   // to checkSatisfiability in the underlying SMT solver
-  Result r = d_smtSolverDriver->checkSatisfiability(assumptions);
+  Result r = d_smtDriver->checkSatisfiability(assumptions);
 
   Trace("smt") << "SolverEngine::checkSat(" << assumptions << ") => " << r
                << endl;
@@ -1865,38 +1865,6 @@ void SolverEngine::resetAssertions()
 
   // reset SmtSolver, which will construct a new prop engine
   d_smtSolver->resetAssertions();
-}
-
-bool SolverEngine::deepRestart()
-{
-  if (options().smt.deepRestartMode == options::DeepRestartMode::NONE)
-  {
-    // deep restarts not enabled
-    return false;
-  }
-  Trace("smt") << "SMT deepRestart()" << endl;
-
-  Assert(d_state->isFullyInited());
-
-  // get the zero-level learned literals now, before resetting the context
-  std::vector<Node> zll =
-      getPropEngine()->getLearnedZeroLevelLiteralsForRestart();
-
-  if (zll.empty())
-  {
-    // not worthwhile to restart if we didn't learn anything
-    Trace("deep-restart") << "No learned literals" << std::endl;
-    return false;
-  }
-
-  d_asserts->clearCurrent();
-  d_ctxManager->notifyResetAssertions();
-  // deep restart the SMT solver, which reconstructs the theory engine and
-  // prop engine.
-  d_smtSolver->deepRestart(*d_asserts.get(), zll);
-  // push the state to maintain global context around everything
-  d_ctxManager->setup();
-  return true;
 }
 
 void SolverEngine::interrupt()

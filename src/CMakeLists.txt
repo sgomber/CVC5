@@ -345,12 +345,14 @@ libcvc5_add_sources(
   smt/solver_engine_state.h
   smt/solver_engine_stats.cpp
   smt/solver_engine_stats.h
+  smt/smt_driver.cpp
+  smt/smt_driver.h
+  smt/smt_driver_deep_restarts.cpp
+  smt/smt_driver_deep_restarts.h
   smt/smt_mode.cpp
   smt/smt_mode.h
   smt/smt_solver.cpp
   smt/smt_solver.h
-  smt/smt_solver_driver.cpp
-  smt/smt_solver_driver.h
   smt/sygus_solver.cpp
   smt/sygus_solver.h
   smt/term_formula_removal.cpp
