@@ -1276,6 +1276,11 @@ bool RegExpOpr::IntersectFrame::processNext(
     std::map<std::pair<Node, Node>, Node>& result,
     std::vector<IntersectFrame>& toProcess)
 {
+  if (!d_result.isNull())
+  {
+    // already finished
+    return false;
+  }
   NodeManager* nm = NodeManager::currentNM();
   if (d_csetIndex == d_cset.size())
   {
@@ -1383,8 +1388,10 @@ Node RegExpOpr::intersectInternal(Node r1, Node r2)
   while (!toProcess.empty())
   {
     IntersectFrame& ifr = toProcess.back();
+    // process next for the current frame
     if (!ifr.processNext(*this, result, toProcess))
     {
+      Assert (!ifr.d_result.isNull());
       Node res = rewrite(ifr.d_result);
       Trace("regexp-int-debug")
           << "  ... try testing no RV of " << mkString(res) << std::endl;

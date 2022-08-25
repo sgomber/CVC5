@@ -196,24 +196,35 @@ class RegExpOpr : protected EnvObj
  private:
   /** pointer to the skolem cache used by this class */
   SkolemCache* d_sc;
-
+  /**
+   * Utility for computing the intersection of regular expressions r1 and r2.
+   */
   class IntersectFrame
   {
    public:
     IntersectFrame(RegExpOpr& reo, Node r1, Node r2, unsigned cnt);
+    /** The regular expressions we are computing the intersection of */
     Node d_r1;
     Node d_r2;
-    std::vector<Node> d_resultVec;
+    /** The result */
     Node d_result;
-    std::vector<unsigned> d_cset;
-    unsigned d_cnt;
-    std::map<PairNodes, Node> d_cacheX;
-    /** index in cset we are currently processing */
-    size_t d_csetIndex;
-    void initialize(RegExpOpr& reo);
+    /** Process next */
     bool processNext(RegExpOpr& reo,
                      std::map<std::pair<Node, Node>, Node>& result,
                      std::vector<IntersectFrame>& toProcess);
+  private:
+    /** Called on initialization */
+    void initialize(RegExpOpr& reo);
+    /** Partial information for constructing the result */
+    std::vector<Node> d_resultVec;
+    /** Partial information for constructing the result: possible first characters of both d_r1 and d_r2 */
+    std::vector<unsigned> d_cset;
+    /** ?? */
+    unsigned d_cnt;
+    /** index in cset we are currently processing */
+    size_t d_csetIndex;
+    /** Internal cache at this frame */
+    std::map<std::pair<Node, Node>, Node> d_cacheX;
   };
 };
 
