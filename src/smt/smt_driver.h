@@ -33,7 +33,7 @@ class ContextManager;
 
 /**
  * SMT driver class.
- * 
+ *
  * The purpose of this class is to define algorithms for checking
  * satisfiability beyond a single call to the underlying SMT solver. The
  * default implementation, SmtDriverSingleCall, is used for invoking a
@@ -87,7 +87,7 @@ class SmtDriverSingleCall : public SmtDriver
   SmtDriverSingleCall(Env& env, SmtSolver& smt, ContextManager& ctx);
 
  protected:
-   /** Check sat next, does not set checkAgain to true */
+  /** Check sat next, does not set checkAgain to true */
   Result checkSatNext(bool& checkAgain) override;
   /** Never called */
   void getNextAssertions(Assertions& as) override;
