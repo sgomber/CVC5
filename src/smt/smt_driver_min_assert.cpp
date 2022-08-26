@@ -21,6 +21,7 @@
 #include "smt/smt_solver.h"
 #include "theory/theory_engine.h"
 #include "theory/theory_model.h"
+#include "util/random.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -248,19 +249,24 @@ bool SmtDriverMinAssert::recordCurrentModel(bool& allAssertsSat)
   theory::TheoryModel* m = te->getBuiltModel();
   d_modelValues.emplace_back();
   std::vector<Node>& currModel = d_modelValues.back();
-  for (size_t i = 0, nasserts = d_ppAsserts.size(); i < nasserts; i++)
+  size_t nasserts = d_ppAsserts.size();
+  Assert (nasserts>0);
+  size_t startIndex = Random::getRandom().pick(0, nasserts-1);
+  currModel.resize(nasserts);
+  for (size_t i = 0; i < nasserts; i++)
   {
-    Node a = d_ppAsserts[i];
+    size_t ii = (i+startIndex)%nasserts;
+    Node a = d_ppAsserts[ii];
     Node av = m->getValue(a);
     av = av.isConst() ? av : Node::null();
-    currModel.push_back(av);
+    currModel[ii] = av;
     if (av == d_true)
     {
       continue;
     }
     allAssertsSat = false;
     // if its already included in our assertions
-    if (d_ainfo.find(i) != d_ainfo.end())
+    if (d_ainfo.find(ii) != d_ainfo.end())
     {
       // we were unable to satisfy this assertion; the result from the last
       // check-sat was likely "unknown", we skip this assertion and look for
@@ -279,7 +285,7 @@ bool SmtDriverMinAssert::recordCurrentModel(bool& allAssertsSat)
       continue;
     }
     // include this one, remembering if it is false or not
-    d_nextIndexToInclude = i;
+    d_nextIndexToInclude = ii;
     indexSetToFalse = isFalse;
     indexSet = true;
   }
