@@ -53,7 +53,8 @@ Result SmtDriverMinAssert::checkSatNext(bool& checkAgain)
   d_smt.assertToInternal(as);
   Trace("smt-min-assert") << "checkSatNext: checkSatInternal" << std::endl;
   Result result = d_smt.checkSatInternal();
-  Trace("smt-min-assert") << "checkSatNext: checkSatInternal returns " << result << std::endl;
+  Trace("smt-min-assert") << "checkSatNext: checkSatInternal returns " << result
+                          << std::endl;
   // if UNSAT, we are done
   if (result.getStatus() == Result::UNSAT)
   {
@@ -181,11 +182,12 @@ void SmtDriverMinAssert::initializePreprocessedAssertions()
 {
   d_ppAsserts.clear();
   d_ppSkolemMap.clear();
-  
+
   const std::vector<Node>& ppAsserts = d_smt.getPreprocessedAssertions();
-  const std::unordered_map<size_t, Node>& ppSkolemMap = d_smt.getPreprocessedSkolemMap();
+  const std::unordered_map<size_t, Node>& ppSkolemMap =
+      d_smt.getPreprocessedSkolemMap();
   std::unordered_map<size_t, Node>::const_iterator it;
-  for (size_t i=0, nasserts = ppAsserts.size(); i<nasserts; i++)
+  for (size_t i = 0, nasserts = ppAsserts.size(); i < nasserts; i++)
   {
     Node pa = ppAsserts[i];
     if (pa.isConst())
@@ -206,13 +208,13 @@ void SmtDriverMinAssert::initializePreprocessedAssertions()
     }
     // always include skolem definitions as-is
     it = ppSkolemMap.find(i);
-    if (it!=ppSkolemMap.end())
+    if (it != ppSkolemMap.end())
     {
       d_ppSkolemMap[d_ppAsserts.size()] = it->second;
       d_ppAsserts.push_back(pa);
       continue;
     }
-    if (pa.getKind()!=kind::AND)
+    if (pa.getKind() != kind::AND)
     {
       d_ppAsserts.push_back(pa);
       continue;
@@ -221,11 +223,11 @@ void SmtDriverMinAssert::initializePreprocessedAssertions()
     std::vector<Node> toProcess;
     toProcess.push_back(pa);
     size_t pindex = 0;
-    while (pindex<toProcess.size())
+    while (pindex < toProcess.size())
     {
       pa = toProcess[pindex];
       pindex++;
-      if (pa.getKind()==kind::AND)
+      if (pa.getKind() == kind::AND)
       {
         toProcess.insert(toProcess.end(), pa.begin(), pa.end());
         continue;

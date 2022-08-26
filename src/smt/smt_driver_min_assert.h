@@ -37,8 +37,8 @@ class SmtDriverMinAssert : public SmtDriver
   void getNextAssertions(Assertions& as) override;
 
  private:
-   /** initialize assertions */
-   void initializePreprocessedAssertions();
+  /** initialize assertions */
+  void initializePreprocessedAssertions();
   /**
    * Record current model, return true if we set d_nextIndexToInclude,
    * indicating that we want to include a new assertion.
