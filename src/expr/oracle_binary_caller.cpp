@@ -49,7 +49,8 @@ std::vector<Term> OracleBinaryCaller::runOracle(const std::vector<Term>& input)
   internal::Node response =
       internal::mini_parsert(oracle_response_istream).expression();
 
-  std::vector<Term> output = Term::nodeVectorToTerms(internal::NodeManager::currentNM(), {response});
+  std::vector<Term> output =
+      Term::nodeVectorToTerms(internal::NodeManager::currentNM(), {response});
   return output;
 }
 
