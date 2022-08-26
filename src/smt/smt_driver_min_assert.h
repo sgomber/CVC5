@@ -15,8 +15,8 @@
 
 #include "cvc5_private.h"
 
-#ifndef CVC5__SMT__SMT_DRIVER_INC_ASSERT_H
-#define CVC5__SMT__SMT_DRIVER_INC_ASSERT_H
+#ifndef CVC5__SMT__SMT_DRIVER_MIN_ASSERT_H
+#define CVC5__SMT__SMT_DRIVER_MIN_ASSERT_H
 
 #include "smt/smt_driver.h"
 #include "util/result.h"
@@ -27,10 +27,10 @@ namespace smt {
 class SmtSolver;
 class ContextManager;
 
-class SmtDriverIncAssert : public SmtDriver
+class SmtDriverMinAssert : public SmtDriver
 {
  public:
-  SmtDriverIncAssert(Env& env, SmtSolver& smt, ContextManager* ctx);
+  SmtDriverMinAssert(Env& env, SmtSolver& smt, ContextManager* ctx);
 
  protected:
   Result checkSatNext(bool& checkAgain) override;

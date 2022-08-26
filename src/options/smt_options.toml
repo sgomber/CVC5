@@ -512,3 +512,11 @@ name   = "SMT Layer"
   minimum    = "0.0"
   maximum    = "1000.0"
   help       = "sets the threshold for average assertions per literal before a deep restart"
+
+[[option]]
+  name       = "smtMinAssert"
+  category   = "expert"
+  long       = "smt-min-assert"
+  type       = "bool"
+  default    = "false"
+  help       = "use minimal assertion algorithm for checking satisfiability"

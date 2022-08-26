@@ -1,6 +1,6 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Aina Niemetz, Morgan Deters
+ *   Andrew Reynolds
  *
  * This file is part of the cvc5 project.
  *
@@ -13,7 +13,7 @@
  * The solver for SMT queries in an SolverEngine.
  */
 
-#include "smt/smt_driver_inc_assert.h"
+#include "smt/smt_driver_min_assert.h"
 
 #include "options/base_options.h"
 #include "prop/prop_engine.h"
@@ -25,7 +25,7 @@
 namespace cvc5::internal {
 namespace smt {
 
-SmtDriverIncAssert::SmtDriverIncAssert(Env& env,
+SmtDriverMinAssert::SmtDriverMinAssert(Env& env,
                                        SmtSolver& smt,
                                        ContextManager* ctx)
     : SmtDriver(env, smt, ctx), d_initialized(false), d_nextIndexToInclude(0)
@@ -34,8 +34,9 @@ SmtDriverIncAssert::SmtDriverIncAssert(Env& env,
   d_false = NodeManager::currentNM()->mkConst(false);
 }
 
-Result SmtDriverIncAssert::checkSatNext(bool& checkAgain)
+Result SmtDriverMinAssert::checkSatNext(bool& checkAgain)
 {
+  Trace("smt-min-assert") << "checkSatNext: preprocess" << std::endl;
   Assertions& as = d_smt.getAssertions();
   d_smt.preprocess(as);
   if (!d_initialized)
@@ -43,24 +44,35 @@ Result SmtDriverIncAssert::checkSatNext(bool& checkAgain)
     // just preprocess on the first check, preprocessed assertions will be
     // recorded below
     checkAgain = true;
+    Trace("smt-min-assert") << "...return, initialize" << std::endl;
     return Result();
   }
+  Trace("smt-min-assert") << "checkSatNext: assertToInternal" << std::endl;
   d_smt.assertToInternal(as);
+  Trace("smt-min-assert") << "checkSatNext: checkSatInternal" << std::endl;
   Result result = d_smt.checkSatInternal();
   // if UNSAT, we are done
   if (result.getStatus() == Result::UNSAT)
   {
+    Trace("smt-min-assert") << "...return, UNSAT" << std::endl;
     return result;
   }
+  Trace("smt-min-assert") << "checkSatNext: recordCurrentModel" << std::endl;
   bool allAssertsSat;
   if (recordCurrentModel(allAssertsSat))
   {
     checkAgain = true;
+    Trace("smt-min-assert") << "...return, check again" << std::endl;
   }
   else if (allAssertsSat)
   {
+    Trace("smt-min-assert") << "...return, SAT" << std::endl;
     // a model happened to satisfy every assertion
     return Result(Result::SAT);
+  }
+  else
+  {
+    Trace("smt-min-assert") << "...return, (fail) " << result << std::endl;
   }
   // Otherwise, we take the current result (likely unknown).
   // If result happens to be SAT, then we are in a case where the model doesnt
@@ -69,7 +81,7 @@ Result SmtDriverIncAssert::checkSatNext(bool& checkAgain)
   return result;
 }
 
-void SmtDriverIncAssert::getNextAssertions(Assertions& as)
+void SmtDriverMinAssert::getNextAssertions(Assertions& as)
 {
   if (!d_initialized)
   {
@@ -91,6 +103,7 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
   {
     ainext.d_skolem = itk->second;
   }
+  Trace("smt-min-assert") << "Add assertion #" << d_nextIndexToInclude << std::endl;
 
   // iterate over previous models
   std::unordered_map<size_t, size_t>::iterator itp;
@@ -122,6 +135,7 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
       ita->second.d_coverModels--;
       if (ita->second.d_coverModels == 0)
       {
+        Trace("smt-min-assert") << "Remove assertion #" << itp->second << std::endl;
         // a previous assertion no longer is necessary
         d_ainfo.erase(ita);
       }
@@ -138,16 +152,17 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
     Assert(a.first < d_ppAsserts.size());
     Assert(a.second.d_coverModels > 0);
     Node pa = d_ppAsserts[a.first];
-    apr.push_back(pa);
     // carry the skolem mapping as well
     if (!a.second.d_skolem.isNull())
     {
       ismr[apr.size()] = a.second.d_skolem;
     }
+    apr.push_back(pa);
   }
+  Trace("smt-min-assert") << "...finished get next assertions" << std::endl;
 }
 
-bool SmtDriverIncAssert::recordCurrentModel(bool& allAssertsSat)
+bool SmtDriverMinAssert::recordCurrentModel(bool& allAssertsSat)
 {
   d_nextIndexToInclude = 0;
   allAssertsSat = true;
