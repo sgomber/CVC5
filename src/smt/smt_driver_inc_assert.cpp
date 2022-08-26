@@ -82,7 +82,6 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
   // should have set d_nextIndexToInclude which is not already included
   Assert(d_nextIndexToInclude < d_ppAsserts.size());
   Assert(d_ainfo.find(d_nextIndexToInclude) == d_ainfo.end());
-
   // initialize the assertion info
   AssertInfo& ainext = d_ainfo[d_nextIndexToInclude];
   // check if it has a corresponding skolem
@@ -92,30 +91,44 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
   {
     ainext.d_skolem = itk->second;
   }
-  // get the covering for this point, iterate over previous models
+  
+  // iterate over previous models
+  std::unordered_map<size_t, size_t>::iterator itp;
+  std::map<size_t, AssertInfo>::iterator ita;
   for (size_t i = 0, nmodels = d_modelValues.size(); i < nmodels; i++)
   {
     Assert(d_modelValues[i].size() == d_ppAsserts.size());
     Node vic = d_modelValues[i][d_nextIndexToInclude];
+    // determine if this assertion should take ownership of the i^th model
     bool coverModel = false;
     if (vic == d_false)
     {
+      // we take all models we were false on
       coverModel = true;
     }
     else if (vic.isNull() && d_unkModels.find(i)!=d_unkModels.end())
     {
+      // we take models we were unknown on that did not have a false assertion
       coverModel = true;
     }
     if (coverModel)
     {
-      // TODO: decrement others
+      // decrement the count of the assertion
+      itp = d_modelToAssert.find(i);
+      Assert (itp!=d_modelToAssert.end());
+      Assert (itp->second!=d_nextIndexToInclude);
+      ita = d_ainfo.find(itp->second);
+      Assert (ita!=d_ainfo.end());
+      ita->second.d_coverModels--;
+      if (ita->second.d_coverModels==0)
+      {
+        // a previous assertion no longer is necessary
+        d_ainfo.erase(ita);
+      }      
       d_modelToAssert[i] = d_nextIndexToInclude;
       ainext.d_coverModels++;
     }
   }
-
-  // go through and refactor assertions that are no longer necessary
-
 
   // now have a list of assertions to include
   preprocessing::AssertionPipeline& apr = as.getAssertionPipeline();
@@ -123,7 +136,7 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
   for (std::pair<const size_t, AssertInfo>& a : d_ainfo)
   {
     Assert(a.first < d_ppAsserts.size());
-    Assert(!a.second.d_cover.empty());
+    Assert(a.second.d_coverModels>0);
     Node pa = d_ppAsserts[a.first];
     apr.push_back(pa);
     // carry the skolem mapping as well
@@ -136,6 +149,7 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
 
 bool SmtDriverIncAssert::recordCurrentModel(bool& allAssertsSat)
 {
+  d_nextIndexToInclude = 0;
   allAssertsSat = true;
   bool indexSet = false;
   bool indexSetToFalse = false;
@@ -159,19 +173,19 @@ bool SmtDriverIncAssert::recordCurrentModel(bool& allAssertsSat)
     if (d_ainfo.find(i) != d_ainfo.end())
     {
       // we were unable to satisfy this assertion; the result from the last
-      // check-sat was likely "unknown", we skip this assertion and look to
-      // find a different one
+      // check-sat was likely "unknown", we skip this assertion and look for
+      // a different one
       continue;
     }
     if (indexSetToFalse)
     {
-      // already have a false index
+      // already have a false assertion
       continue;
     }
     bool isFalse = (av == d_false);
     if (!isFalse && indexSet)
     {
-      // already have an unknown index
+      // already have an unknown assertion
       continue;
     }
     // include this one, remembering if it is false or not
@@ -179,11 +193,12 @@ bool SmtDriverIncAssert::recordCurrentModel(bool& allAssertsSat)
     indexSetToFalse = isFalse;
     indexSet = true;
   }
-  if (!indexSetToFalse)
+  // if we did not find a false assertion, remember it
+  if (!allAssertsSat && !indexSetToFalse)
   {
     d_unkModels.insert(d_modelValues.size());
   }
-  // we are successful (with SAT) if the model satisfies all assertions
+  // we are successful if we have a new assertion to include
   return indexSet;
 }
 
