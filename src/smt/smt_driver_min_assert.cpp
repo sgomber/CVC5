@@ -36,7 +36,8 @@ SmtDriverMinAssert::SmtDriverMinAssert(Env& env,
 
 Result SmtDriverMinAssert::checkSatNext(bool& checkAgain)
 {
-  Trace("smt-min-assert") << "--- checkSatNext #models=" << d_modelValues.size() << std::endl;
+  Trace("smt-min-assert") << "--- checkSatNext #models=" << d_modelValues.size()
+                          << std::endl;
   Trace("smt-min-assert") << "checkSatNext: preprocess" << std::endl;
   Assertions& as = d_smt.getAssertions();
   d_smt.preprocess(as);
@@ -89,7 +90,8 @@ void SmtDriverMinAssert::getNextAssertions(Assertions& as)
     // TODO: split AND
     d_ppAsserts = d_smt.getPreprocessedAssertions();
     d_ppSkolemMap = d_smt.getPreprocessedSkolemMap();
-    Trace("smt-min-assert") << "Have " << d_ppAsserts.size() << " preprocessed assertions" << std::endl;
+    Trace("smt-min-assert") << "Have " << d_ppAsserts.size()
+                            << " preprocessed assertions" << std::endl;
     d_initialized = true;
     // do not provide any assertions initially
     return;
@@ -106,13 +108,13 @@ void SmtDriverMinAssert::getNextAssertions(Assertions& as)
   {
     ainext.d_skolem = itk->second;
   }
-  Assert (!d_modelValues.empty());
+  Assert(!d_modelValues.empty());
   // we assume it takes the current model
-  size_t currModelIndex = d_modelValues.size()-1;
+  size_t currModelIndex = d_modelValues.size() - 1;
   d_modelToAssert[currModelIndex] = d_nextIndexToInclude;
   ainext.d_coverModels++;
-  Trace("smt-min-assert") << "Add assertion #" << d_nextIndexToInclude
-                          << ": " << d_ppAsserts[d_nextIndexToInclude] << std::endl;
+  Trace("smt-min-assert") << "Add assertion #" << d_nextIndexToInclude << ": "
+                          << d_ppAsserts[d_nextIndexToInclude] << std::endl;
 
   // iterate over previous models
   std::unordered_map<size_t, size_t>::iterator itp;
@@ -153,7 +155,8 @@ void SmtDriverMinAssert::getNextAssertions(Assertions& as)
       ainext.d_coverModels++;
     }
   }
-  Trace("smt-min-assert") << "...covers " << ainext.d_coverModels << " models" << std::endl;
+  Trace("smt-min-assert") << "...covers " << ainext.d_coverModels << " models"
+                          << std::endl;
 
   // now have a list of assertions to include
   preprocessing::AssertionPipeline& apr = as.getAssertionPipeline();
@@ -170,7 +173,9 @@ void SmtDriverMinAssert::getNextAssertions(Assertions& as)
     }
     apr.push_back(pa);
   }
-  Trace("smt-min-assert") << "...finished get next assertions, #current assertions = " << d_ainfo.size() << std::endl;
+  Trace("smt-min-assert")
+      << "...finished get next assertions, #current assertions = "
+      << d_ainfo.size() << std::endl;
 }
 
 bool SmtDriverMinAssert::recordCurrentModel(bool& allAssertsSat)
