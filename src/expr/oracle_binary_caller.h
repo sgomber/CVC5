@@ -22,7 +22,7 @@
 
 namespace cvc5 {
 
-//!!!!!!!!!!!! TEMPORARY
+//!!!!!!!!!!!! TEMPORARY d_slv not necessary anymore
 class OracleBinaryCaller
 {
  public:

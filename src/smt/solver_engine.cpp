@@ -959,7 +959,7 @@ void SolverEngine::defineOracleInterface(
     std::function<std::vector<Node>(const std::vector<Node>&)> fn)
 {
   finishInit();
-  d_state->doPendingPops();
+  d_ctxManager->doPendingPops();
   // make the oracle constant
   Oracle oracle(fn);
   Node o = NodeManager::currentNM()->mkOracle(oracle);

@@ -7157,11 +7157,11 @@ Term Solver::declareOracleFun(const std::string& symbol,
   if (!sorts.empty())
   {
     std::vector<internal::TypeNode> types = Sort::sortVectorToTypeNodes(sorts);
-    type = d_nodeMgr->mkFunctionType(types, type);
+    type = d_nm->mkFunctionType(types, type);
   }
-  internal::Node fun = d_nodeMgr->mkVar(symbol, type);
+  internal::Node fun = d_nm->mkVar(symbol, type);
   d_slv->declareOracleFun(fun);
-  return Term(this, fun);
+  return Term(d_nm, fun);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -7222,7 +7222,7 @@ void Solver::defineOracleInterface(
       *assume.d_node,
       *constraint.d_node,
       [&, fn](const std::vector<internal::Node> nodes) {
-        std::vector<Term> terms = Term::nodeVectorToTerms(this, nodes);
+        std::vector<Term> terms = Term::nodeVectorToTerms(d_nm, nodes);
         std::vector<Term> output = fn(terms);
         return Term::termVectorToNodes(output);
       });
