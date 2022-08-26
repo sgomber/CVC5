@@ -68,7 +68,7 @@ class SmtDriverIncAssert : public SmtDriver
   class AssertInfo
   {
    public:
-     AssertInfo() : d_coverModels(0) {}
+    AssertInfo() : d_coverModels(0) {}
     /** Number of models we cover */
     size_t d_coverModels;
     /** the skolem */

@@ -91,7 +91,7 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
   {
     ainext.d_skolem = itk->second;
   }
-  
+
   // iterate over previous models
   std::unordered_map<size_t, size_t>::iterator itp;
   std::map<size_t, AssertInfo>::iterator ita;
@@ -106,7 +106,7 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
       // we take all models we were false on
       coverModel = true;
     }
-    else if (vic.isNull() && d_unkModels.find(i)!=d_unkModels.end())
+    else if (vic.isNull() && d_unkModels.find(i) != d_unkModels.end())
     {
       // we take models we were unknown on that did not have a false assertion
       coverModel = true;
@@ -115,16 +115,16 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
     {
       // decrement the count of the assertion
       itp = d_modelToAssert.find(i);
-      Assert (itp!=d_modelToAssert.end());
-      Assert (itp->second!=d_nextIndexToInclude);
+      Assert(itp != d_modelToAssert.end());
+      Assert(itp->second != d_nextIndexToInclude);
       ita = d_ainfo.find(itp->second);
-      Assert (ita!=d_ainfo.end());
+      Assert(ita != d_ainfo.end());
       ita->second.d_coverModels--;
-      if (ita->second.d_coverModels==0)
+      if (ita->second.d_coverModels == 0)
       {
         // a previous assertion no longer is necessary
         d_ainfo.erase(ita);
-      }      
+      }
       d_modelToAssert[i] = d_nextIndexToInclude;
       ainext.d_coverModels++;
     }
@@ -136,7 +136,7 @@ void SmtDriverIncAssert::getNextAssertions(Assertions& as)
   for (std::pair<const size_t, AssertInfo>& a : d_ainfo)
   {
     Assert(a.first < d_ppAsserts.size());
-    Assert(a.second.d_coverModels>0);
+    Assert(a.second.d_coverModels > 0);
     Node pa = d_ppAsserts[a.first];
     apr.push_back(pa);
     // carry the skolem mapping as well
