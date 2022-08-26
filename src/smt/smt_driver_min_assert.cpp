@@ -103,7 +103,8 @@ void SmtDriverMinAssert::getNextAssertions(Assertions& as)
   {
     ainext.d_skolem = itk->second;
   }
-  Trace("smt-min-assert") << "Add assertion #" << d_nextIndexToInclude << std::endl;
+  Trace("smt-min-assert") << "Add assertion #" << d_nextIndexToInclude
+                          << std::endl;
 
   // iterate over previous models
   std::unordered_map<size_t, size_t>::iterator itp;
@@ -135,7 +136,8 @@ void SmtDriverMinAssert::getNextAssertions(Assertions& as)
       ita->second.d_coverModels--;
       if (ita->second.d_coverModels == 0)
       {
-        Trace("smt-min-assert") << "Remove assertion #" << itp->second << std::endl;
+        Trace("smt-min-assert")
+            << "Remove assertion #" << itp->second << std::endl;
         // a previous assertion no longer is necessary
         d_ainfo.erase(ita);
       }
