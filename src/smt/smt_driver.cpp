@@ -1,6 +1,6 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Aina Niemetz, Morgan Deters
+ *   Andrew Reynolds
  *
  * This file is part of the cvc5 project.
  *
@@ -112,7 +112,7 @@ Result SmtDriverSingleCall::checkSatNext()
   return d_smt.checkSatInternal();
 }
 
-void SmtDriverSingleCall::getNextAssertions(Assertions& as) { Assert(false); }
+void SmtDriverSingleCall::getNextAssertions(Assertions& as) { Unreachable(); }
 
 }  // namespace smt
 }  // namespace cvc5::internal
