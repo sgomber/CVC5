@@ -15,6 +15,7 @@
 
 #include "smt/smt_driver_min_assert.h"
 
+#include "api/cpp/cvc5_types.h"
 #include "options/base_options.h"
 #include "prop/prop_engine.h"
 #include "smt/env.h"
@@ -22,7 +23,6 @@
 #include "theory/theory_engine.h"
 #include "theory/theory_model.h"
 #include "util/random.h"
-#include "api/cpp/cvc5_types.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -250,12 +250,12 @@ bool SmtDriverMinAssert::recordCurrentModel(bool& allAssertsSat)
   d_modelValues.emplace_back();
   std::vector<Node>& currModel = d_modelValues.back();
   size_t nasserts = d_ppAsserts.size();
-  Assert (nasserts>0);
-  size_t startIndex = Random::getRandom().pick(0, nasserts-1);
+  Assert(nasserts > 0);
+  size_t startIndex = Random::getRandom().pick(0, nasserts - 1);
   currModel.resize(nasserts);
   for (size_t i = 0; i < nasserts; i++)
   {
-    size_t ii = (i+startIndex)%nasserts;
+    size_t ii = (i + startIndex) % nasserts;
     Node a = d_ppAsserts[ii];
     Node av = m->getValue(a);
     av = av.isConst() ? av : Node::null();

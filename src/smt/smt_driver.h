@@ -56,11 +56,11 @@ class SmtDriver : protected EnvObj
  protected:
   /**
    * Check satisfiability next, return the result.
-   * 
+   *
    * If the result is unknown with UnknownExplanation REQUIRES_FULL_CHECK,
    * then this driver will be called to getNextAssertions as described below
    * and another call to checkSatNext will be made.
-   * 
+   *
    * Otherwise, the returned result is the final one returned by the
    * checkSatisfiability method above.
    */

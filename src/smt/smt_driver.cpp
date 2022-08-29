@@ -63,8 +63,8 @@ Result SmtDriver::checkSat(const std::vector<Node>& assumptions)
         // check sat based on the driver strategy
         result = checkSatNext();
         // if we were asked to check again
-        if (result.getStatus()==Result::UNKNOWN &&
-            result.getUnknownExplanation()==REQUIRES_CHECK_AGAIN)
+        if (result.getStatus() == Result::UNKNOWN
+            && result.getUnknownExplanation() == REQUIRES_CHECK_AGAIN)
         {
           Assert(d_ctx != nullptr);
           as.clearCurrent();
@@ -80,8 +80,7 @@ Result SmtDriver::checkSat(const std::vector<Node>& assumptions)
         {
           checkAgain = false;
         }
-      }
-      while (checkAgain);
+      } while (checkAgain);
 
       rm->endCall();
       Trace("limit") << "SmtSolver::check(): cumulative millis "
