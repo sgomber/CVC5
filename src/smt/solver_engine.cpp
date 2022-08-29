@@ -743,8 +743,8 @@ Result SolverEngine::checkSatInternal(const std::vector<Node>& assumptions)
 
   // Call the SMT solver driver to check for satisfiability. Note that in the
   // case of options like e.g. deep restarts, this may invokve multiple calls
-  // to checkSatisfiability in the underlying SMT solver
-  Result r = d_smtDriver->checkSatisfiability(assumptions);
+  // to check satisfiability in the underlying SMT solver
+  Result r = d_smtDriver->checkSat(assumptions);
 
   Trace("smt") << "SolverEngine::checkSat(" << assumptions << ") => " << r
                << endl;

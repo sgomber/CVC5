@@ -19,6 +19,7 @@
 #include "prop/prop_engine.h"
 #include "smt/env.h"
 #include "smt/smt_solver.h"
+#include "api/cpp/cvc5_types.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -30,7 +31,7 @@ SmtDriverDeepRestarts::SmtDriverDeepRestarts(Env& env,
 {
 }
 
-Result SmtDriverDeepRestarts::checkSatNext(bool& checkAgain)
+Result SmtDriverDeepRestarts::checkSatNext()
 {
   Assertions& as = d_smt.getAssertions();
   d_zll.clear();
@@ -42,7 +43,11 @@ Result SmtDriverDeepRestarts::checkSatNext(bool& checkAgain)
   {
     // get the learned literals immediately
     d_zll = d_smt.getPropEngine()->getLearnedZeroLevelLiteralsForRestart();
-    checkAgain = !d_zll.empty();
+    // check again if there are any
+    if( !d_zll.empty())
+    {
+      return Result(Result::UNKNOWN, REQUIRES_CHECK_AGAIN);
+    }
   }
   return result;
 }

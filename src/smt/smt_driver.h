@@ -51,19 +51,20 @@ class SmtDriver : protected EnvObj
    * @param assumptions The assumptions for this check-sat call, which are
    * temporary assertions.
    */
-  Result checkSatisfiability(const std::vector<Node>& assumptions);
+  Result checkSat(const std::vector<Node>& assumptions);
 
  protected:
   /**
    * Check satisfiability next, return the result.
-   *
-   * If checkAgain is set to true, then this driver will be called to
-   * getNextAssertions as described below.
-   *
-   * If checkAgain is not set or set to false, then the returned result
-   * is the final one returned by the checkSatisfiability method above.
+   * 
+   * If the result is unknown with UnknownExplanation REQUIRES_FULL_CHECK,
+   * then this driver will be called to getNextAssertions as described below
+   * and another call to checkSatNext will be made.
+   * 
+   * Otherwise, the returned result is the final one returned by the
+   * checkSatisfiability method above.
    */
-  virtual Result checkSatNext(bool& checkAgain) = 0;
+  virtual Result checkSatNext() = 0;
   /**
    * Get the next assertions. This is called immediately after checkSatNext
    * where checkAgain has been set to true. This populates assertions with
@@ -94,8 +95,8 @@ class SmtDriverSingleCall : public SmtDriver
   SmtDriverSingleCall(Env& env, SmtSolver& smt);
 
  protected:
-  /** Check sat next, does not set checkAgain to true */
-  Result checkSatNext(bool& checkAgain) override;
+  /** Check sat next, takes result of underlying smt solver only */
+  Result checkSatNext() override;
   /** Never called */
   void getNextAssertions(Assertions& as) override;
 };

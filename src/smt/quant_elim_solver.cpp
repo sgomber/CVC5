@@ -72,8 +72,9 @@ Node QuantElimSolver::getQuantifierElimination(Node q,
   Trace("smt-qe-debug") << "Query for quantifier elimination : " << ne
                         << std::endl;
   Assert(ne.getNumChildren() == 3);
+  // use a single call driver
   SmtDriverSingleCall sdsc(d_env, d_smtSolver);
-  Result r = sdsc.checkSatisfiability(std::vector<Node>{ne.notNode()});
+  Result r = sdsc.checkSat(std::vector<Node>{ne.notNode()});
   Trace("smt-qe") << "Query returned " << r << std::endl;
   if (r.getStatus() != Result::UNSAT)
   {

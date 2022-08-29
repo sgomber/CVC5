@@ -260,8 +260,9 @@ SynthResult SygusSolver::checkSynth(Assertions& as, bool isNext)
   {
     std::vector<Node> query;
     query.push_back(d_conj);
+    // use a single call driver
     SmtDriverSingleCall sdsc(d_env, d_smtSolver);
-    r = sdsc.checkSatisfiability(query);
+    r = sdsc.checkSat(query);
   }
   // The result returned by the above call is typically "unknown", which may
   // or may not correspond to a state in which we solved the conjecture

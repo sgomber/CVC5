@@ -22,6 +22,7 @@
 #include "theory/theory_engine.h"
 #include "theory/theory_model.h"
 #include "util/random.h"
+#include "api/cpp/cvc5_types.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -35,7 +36,7 @@ SmtDriverMinAssert::SmtDriverMinAssert(Env& env,
   d_false = NodeManager::currentNM()->mkConst(false);
 }
 
-Result SmtDriverMinAssert::checkSatNext(bool& checkAgain)
+Result SmtDriverMinAssert::checkSatNext()
 {
   Trace("smt-min-assert") << "--- checkSatNext #models=" << d_modelValues.size()
                           << std::endl;
@@ -46,9 +47,8 @@ Result SmtDriverMinAssert::checkSatNext(bool& checkAgain)
   {
     // just preprocess on the first check, preprocessed assertions will be
     // recorded below
-    checkAgain = true;
     Trace("smt-min-assert") << "...return, initialize" << std::endl;
-    return Result();
+    return Result(Result::UNKNOWN, UnknownExplanation::REQUIRES_CHECK_AGAIN);
   }
   Trace("smt-min-assert") << "checkSatNext: assertToInternal" << std::endl;
   d_smt.assertToInternal(as);
@@ -66,8 +66,8 @@ Result SmtDriverMinAssert::checkSatNext(bool& checkAgain)
   bool allAssertsSat;
   if (recordCurrentModel(allAssertsSat))
   {
-    checkAgain = true;
     Trace("smt-min-assert") << "...return, check again" << std::endl;
+    return Result(Result::UNKNOWN, UnknownExplanation::REQUIRES_CHECK_AGAIN);
   }
   else if (allAssertsSat)
   {
