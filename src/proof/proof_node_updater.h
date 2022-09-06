@@ -119,11 +119,13 @@ class ProofNodeUpdater : protected EnvObj
   /**
    * Set free assumptions to freeAssumps. This indicates that we expect
    * the proof we are processing to have free assumptions that are in
-   * freeAssumps. This enables checking when this is violated, which is
+   * freeAssumps.
+   *
+   * If doDebug is true, enables checking when this is violated, which is
    * expensive in general. It is not recommended that this method is called
    * by default.
    */
-  void setDebugFreeAssumptions(const std::vector<Node>& freeAssumps);
+  void setDebugFreeAssumptions(const std::vector<Node>& freeAssumps, bool doDebug = false);
 
  private:
   /** The callback */

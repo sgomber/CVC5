@@ -316,13 +316,13 @@ void ProofNodeUpdater::runFinalize(
   }
 }
 
-void ProofNodeUpdater::setDebugFreeAssumptions(
-    const std::vector<Node>& freeAssumps)
+void ProofNodeUpdater::setFreeAssumptions(
+    const std::vector<Node>& freeAssumps, bool doDebug)
 {
   d_freeAssumps.clear();
   d_freeAssumps.insert(
       d_freeAssumps.end(), freeAssumps.begin(), freeAssumps.end());
-  d_debugFreeAssumps = true;
+  d_debugFreeAssumps = doDebug;
 }
 
 }  // namespace cvc5::internal

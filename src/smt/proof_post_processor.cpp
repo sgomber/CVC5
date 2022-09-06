@@ -141,6 +141,12 @@ bool ProofPostprocessCallback::update(Node res,
     cdp->addProof(pfn);
     return true;
   }
+
+  d_resultCount[res]++;
+  if (d_resultCount[res]>1)
+  {
+    Trace("ajr-temp") << "For " << id << " " << res.getId() << " : " << d_resultCount[res] << std::endl;
+  }
   Node ret = expandMacros(id, children, args, cdp);
   Trace("smt-proof-pp-debug") << "...expanded = " << !ret.isNull() << std::endl;
   return !ret.isNull();

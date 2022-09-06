@@ -84,6 +84,8 @@ class ProofPostprocessCallback : public ProofNodeUpdaterCallback, protected EnvO
   std::vector<Node> d_wfAssumptions;
   /** Kinds of proof rules we are eliminating */
   std::unordered_set<PfRule, PfRuleHashFunction> d_elimRules;
+  /** */
+  std::unordered_map<Node, size_t> d_resultCount;
   /** Whether we post-process assumptions in scope. */
   bool d_updateScopedAssumptions;
   //---------------------------------reset at the begining of each update
