@@ -174,7 +174,7 @@ bool containsAssumption(const ProofNode* pn,
           caMap[cur] = res;
           foundAssumption = foundAssumption || res;
         }
-        else if (false && r == PfRule::SCOPE) // FIXME
+        else if (r == PfRule::SCOPE) // FIXME
         {
           // get free assumptions
           std::vector<Node> freeAssump;

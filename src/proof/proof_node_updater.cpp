@@ -295,6 +295,11 @@ void ProofNodeUpdater::runFinalize(
         ProofNodeManager* pnm = d_env.getProofNodeManager();
         for (std::shared_ptr<ProofNode>& ncp : itnw->second)
         {
+          if (expr::containsSubproof(cur.get(), ncp.get()))
+          {
+            continue;
+          }
+          AlwaysAssert (!expr::containsSubproof(ncp.get(), cur.get()));
           pnm->updateNode(ncp.get(), cur.get());
         }
         resCacheNcWaiting.erase(res);
