@@ -108,6 +108,7 @@ PfManager::~PfManager() {}
 std::shared_ptr<ProofNode> PfManager::connectProofToAssertions(
     std::shared_ptr<ProofNode> pfn, Assertions& as, ProofScopeMode scopeMode)
 {
+  pfn = d_pnm->clone(pfn);
   // Note this assumes that connectProofToAssertions is only called once per
   // unsat response. This method would need to cache its result otherwise.
   Trace("smt-proof")
@@ -120,6 +121,8 @@ std::shared_ptr<ProofNode> PfManager::connectProofToAssertions(
     Trace("smt-proof-debug") << *pfn.get() << std::endl;
     Trace("smt-proof-debug") << "=====" << std::endl;
   }
+  std::vector<Node> assertions;
+  getAssertions(as, assertions);
 
   if (TraceIsOn("smt-proof"))
   {
@@ -137,8 +140,6 @@ std::shared_ptr<ProofNode> PfManager::connectProofToAssertions(
 
     Trace("smt-proof")
         << "SolverEngine::connectProofToAssertions(): assertions are:\n";
-    std::vector<Node> assertions;
-    getAssertions(as, assertions);
     for (const Node& n : assertions)
     {
       Trace("smt-proof") << "- " << n << std::endl;
@@ -165,8 +166,6 @@ std::shared_ptr<ProofNode> PfManager::connectProofToAssertions(
     {
       Trace("smt-proof") << "SolverEngine::connectProofToAssertions(): make "
                             "unified scope...\n";
-      std::vector<Node> assertions;
-      getAssertions(as, assertions);
       return d_pnm->mkScope(
           pfn, assertions, true, options().proof.proofPruneInput);
     }
