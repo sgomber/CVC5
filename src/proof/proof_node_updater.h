@@ -125,7 +125,7 @@ class ProofNodeUpdater : protected EnvObj
    * expensive in general. It is not recommended that this method is called
    * by default.
    */
-  void setDebugFreeAssumptions(const std::vector<Node>& freeAssumps, bool doDebug = false);
+  void setFreeAssumptions(const std::vector<Node>& freeAssumps, bool doDebug = false);
 
  private:
   /** The callback */
@@ -181,6 +181,8 @@ class ProofNodeUpdater : protected EnvObj
   bool d_debugFreeAssumps;
   /** The initial free assumptions */
   std::vector<Node> d_freeAssumps;
+  /** The initial free assumptions */
+  std::unordered_set<Node> d_freeAssumpSet;
   /** Whether we are merging subproofs */
   bool d_mergeSubproofs;
   /**

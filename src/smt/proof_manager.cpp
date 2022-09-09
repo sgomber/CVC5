@@ -150,6 +150,7 @@ std::shared_ptr<ProofNode> PfManager::connectProofToAssertions(
   Trace("smt-proof")
       << "SolverEngine::connectProofToAssertions(): postprocess...\n";
   Assert(d_pfpp != nullptr);
+  d_pfpp->setAssertions(assertions);
   d_pfpp->process(pfn);
 
   if (!mkOuterScope)

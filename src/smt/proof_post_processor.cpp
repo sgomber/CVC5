@@ -1310,5 +1310,10 @@ void ProofPostprocess::setEliminateRule(PfRule rule)
   d_cb.setEliminateRule(rule);
 }
 
+void ProofPostprocess::setAssertions(const std::vector<Node>& assertions)
+{
+  d_updater.setFreeAssumptions(assertions);
+}
+
 }  // namespace smt
 }  // namespace cvc5::internal

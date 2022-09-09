@@ -41,7 +41,7 @@ namespace expr {
  * @param pn The proof node.
  * @param assump The vector to add the free asumptions of pn to.
  */
-void getFreeAssumptions(ProofNode* pn, std::vector<Node>& assump);
+void getFreeAssumptions(const ProofNode* pn, std::vector<Node>& assump);
 /**
  * Same as above, but maps assumptions to the proof pointer(s) for that
  * assumption. Notice that depending on how pn is constructed, there may be
@@ -68,10 +68,16 @@ void getFreeAssumptionsMap(
  * @param pn The proof node.
  * @param caMap Cache of results, mapping proof nodes to whether they contain
  * assumptions.
+ * @param 
  * @return true if pn contains assumptions
  */
 bool containsAssumption(const ProofNode* pn,
-                        std::unordered_map<const ProofNode*, bool>& caMap);
+                        std::unordered_map<const ProofNode*, bool>& caMap,
+                        const std::unordered_set<Node>& exclude
+                       );
+bool containsAssumption(const ProofNode* pn,
+                        std::unordered_map<const ProofNode*, bool>& caMap
+                       );
 /**
  * Same as above, with an empty cache as the initial value of caMap.
  */

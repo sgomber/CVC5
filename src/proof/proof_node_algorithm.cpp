@@ -20,7 +20,7 @@
 namespace cvc5::internal {
 namespace expr {
 
-void getFreeAssumptions(ProofNode* pn, std::vector<Node>& assump)
+void getFreeAssumptions(const ProofNode* pn, std::vector<Node>& assump)
 {
   std::map<Node, std::vector<std::shared_ptr<ProofNode>>> amap;
   std::shared_ptr<ProofNode> spn = std::make_shared<ProofNode>(
@@ -137,7 +137,8 @@ void getFreeAssumptionsMap(
 }
 
 bool containsAssumption(const ProofNode* pn,
-                        std::unordered_map<const ProofNode*, bool>& caMap)
+                        std::unordered_map<const ProofNode*, bool>& caMap,
+                        const std::unordered_set<Node>& exclude)
 {
   std::unordered_map<const ProofNode*, bool> visited;
   std::unordered_map<const ProofNode*, bool>::iterator it;
@@ -163,25 +164,46 @@ bool containsAssumption(const ProofNode* pn,
     it = visited.find(cur);
     if (it == visited.end())
     {
-      PfRule r = cur->getRule();
-      if (r == PfRule::ASSUME)
+      if (!foundAssumption)
       {
-        visited[cur] = true;
-        caMap[cur] = true;
-        foundAssumption = true;
-      }
-      else if (!foundAssumption)
-      {
-        // if we haven't found an assumption yet, recurse. Otherwise, we will
-        // not bother computing whether this subproof contains an assumption
-        // since we know its parent already contains one by another child.
-        visited[cur] = false;
-        visit.push_back(cur);
-        const std::vector<std::shared_ptr<ProofNode>>& children =
-            cur->getChildren();
-        for (const std::shared_ptr<ProofNode>& cp : children)
+        PfRule r = cur->getRule();
+        if (r == PfRule::ASSUME)
         {
-          visit.push_back(cp.get());
+          visited[cur] = true;
+          bool res = exclude.find(cur->getResult())==exclude.end();
+          caMap[cur] = res;
+          foundAssumption = foundAssumption || res;
+        }
+        else if (false && r == PfRule::SCOPE) // FIXME
+        {
+          // get free assumptions
+          std::vector<Node> freeAssump;
+          getFreeAssumptions(cur, freeAssump);
+          bool res = false;
+          for (const Node& a : freeAssump)
+          {
+            if (exclude.find(a)==exclude.end())
+            {
+              res = true;
+              break;
+            }
+          }
+          caMap[cur] = res;
+          foundAssumption = foundAssumption || res;
+        }
+        else
+        {
+          // if we haven't found an assumption yet, recurse. Otherwise, we will
+          // not bother computing whether this subproof contains an assumption
+          // since we know its parent already contains one by another child.
+          visited[cur] = false;
+          visit.push_back(cur);
+          const std::vector<std::shared_ptr<ProofNode>>& children =
+              cur->getChildren();
+          for (const std::shared_ptr<ProofNode>& cp : children)
+          {
+            visit.push_back(cp.get());
+          }
         }
       }
     }
@@ -194,11 +216,19 @@ bool containsAssumption(const ProofNode* pn,
   }
   return caMap[cur];
 }
+bool containsAssumption(const ProofNode* pn,
+                        std::unordered_map<const ProofNode*, bool>& caMap
+                       )
+{
+  std::unordered_set<Node> exclude;
+  return containsAssumption(pn, caMap, exclude);
+}
 
 bool containsAssumption(const ProofNode* pn)
 {
   std::unordered_map<const ProofNode*, bool> caMap;
-  return containsAssumption(pn, caMap);
+  std::unordered_set<Node> exclude;
+  return containsAssumption(pn, caMap, exclude);
 }
 
 bool containsSubproof(ProofNode* pn, ProofNode* pnc)
