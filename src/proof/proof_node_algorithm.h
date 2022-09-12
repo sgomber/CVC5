@@ -57,8 +57,8 @@ void getFreeAssumptionsMap(
     std::map<Node, std::vector<std::shared_ptr<ProofNode>>>& amap);
 
 /**
- * Return true if pn contains a subproof whose rule is ASSUME. 
- * 
+ * Return true if pn contains a subproof whose rule is ASSUME.
+ *
  * We distinguish between free vs. non-free assumptions in this call. In
  * particular, each subproof of pn with SCOPE invokes a separate call to
  * getFreeAssumptions. Thus, the subproofs of SCOPE are not cached by this
