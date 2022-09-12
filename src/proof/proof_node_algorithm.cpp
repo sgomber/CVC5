@@ -170,11 +170,11 @@ bool containsAssumption(const ProofNode* pn,
         if (r == PfRule::ASSUME)
         {
           visited[cur] = true;
-          bool res = exclude.find(cur->getResult())==exclude.end();
+          bool res = exclude.find(cur->getResult()) == exclude.end();
           caMap[cur] = res;
           foundAssumption = foundAssumption || res;
         }
-        else if (r == PfRule::SCOPE) // FIXME
+        else if (r == PfRule::SCOPE)  // FIXME
         {
           // get free assumptions
           std::vector<Node> freeAssump;
@@ -182,7 +182,7 @@ bool containsAssumption(const ProofNode* pn,
           bool res = false;
           for (const Node& a : freeAssump)
           {
-            if (exclude.find(a)==exclude.end())
+            if (exclude.find(a) == exclude.end())
             {
               res = true;
               break;
@@ -217,8 +217,7 @@ bool containsAssumption(const ProofNode* pn,
   return caMap[cur];
 }
 bool containsAssumption(const ProofNode* pn,
-                        std::unordered_map<const ProofNode*, bool>& caMap
-                       )
+                        std::unordered_map<const ProofNode*, bool>& caMap)
 {
   std::unordered_set<Node> exclude;
   return containsAssumption(pn, caMap, exclude);

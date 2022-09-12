@@ -130,7 +130,9 @@ class ProofNodeUpdater : protected EnvObj
    * is only done if this updater was constructed with mergeSubproofs set to
    * true.
    */
-  void setFreeAssumptions(const std::vector<Node>& freeAssumps, bool doDebug = false, bool allowFreeMerge = true);
+  void setFreeAssumptions(const std::vector<Node>& freeAssumps,
+                          bool doDebug = false,
+                          bool allowFreeMerge = true);
 
  private:
   /** The callback */

@@ -68,16 +68,14 @@ void getFreeAssumptionsMap(
  * @param pn The proof node.
  * @param caMap Cache of results, mapping proof nodes to whether they contain
  * assumptions.
- * @param 
+ * @param
  * @return true if pn contains assumptions
  */
 bool containsAssumption(const ProofNode* pn,
                         std::unordered_map<const ProofNode*, bool>& caMap,
-                        const std::unordered_set<Node>& exclude
-                       );
+                        const std::unordered_set<Node>& exclude);
 bool containsAssumption(const ProofNode* pn,
-                        std::unordered_map<const ProofNode*, bool>& caMap
-                       );
+                        std::unordered_map<const ProofNode*, bool>& caMap);
 /**
  * Same as above, with an empty cache as the initial value of caMap.
  */

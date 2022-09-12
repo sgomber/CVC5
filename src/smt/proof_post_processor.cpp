@@ -16,8 +16,8 @@
 #include "smt/proof_post_processor.h"
 
 #include "expr/skolem_manager.h"
-#include "options/proof_options.h"
 #include "options/base_options.h"
+#include "options/proof_options.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "proof/proof_node_algorithm.h"
 #include "proof/proof_node_manager.h"
@@ -144,9 +144,10 @@ bool ProofPostprocessCallback::update(Node res,
   }
 
   d_resultCount[res]++;
-  if (d_resultCount[res]>1)
+  if (d_resultCount[res] > 1)
   {
-    Trace("ajr-temp") << "For " << id << " " << res.getId() << " : " << d_resultCount[res] << std::endl;
+    Trace("ajr-temp") << "For " << id << " " << res.getId() << " : "
+                      << d_resultCount[res] << std::endl;
   }
   Node ret = expandMacros(id, children, args, cdp);
   Trace("smt-proof-pp-debug") << "...expanded = " << !ret.isNull() << std::endl;
@@ -1316,7 +1317,7 @@ void ProofPostprocess::setAssertions(const std::vector<Node>& assertions)
   // we cannot merge proofs with free assumptions in incremental mode, since
   // this may change a proof to rely on a different set of free assumptions,
   // e.g. an input assertion at a different user context level.
-  bool allowFreeMerge = !options().base.incrementalSolving; 
+  bool allowFreeMerge = !options().base.incrementalSolving;
   d_updater.setFreeAssumptions(assertions, false, allowFreeMerge);
 }
 

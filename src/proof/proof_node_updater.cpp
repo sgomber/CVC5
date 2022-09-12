@@ -303,7 +303,7 @@ void ProofNodeUpdater::runFinalize(
           {
             continue;
           }
-          AlwaysAssert (!expr::containsSubproof(ncp.get(), cur.get()));
+          AlwaysAssert(!expr::containsSubproof(ncp.get(), cur.get()));
           pnm->updateNode(ncp.get(), cur.get());
         }
         resCacheNcWaiting.erase(res);
@@ -325,8 +325,9 @@ void ProofNodeUpdater::runFinalize(
   }
 }
 
-void ProofNodeUpdater::setFreeAssumptions(
-    const std::vector<Node>& freeAssumps, bool doDebug, bool allowFreeMerge)
+void ProofNodeUpdater::setFreeAssumptions(const std::vector<Node>& freeAssumps,
+                                          bool doDebug,
+                                          bool allowFreeMerge)
 {
   d_freeAssumps.clear();
   d_freeAssumps.insert(
