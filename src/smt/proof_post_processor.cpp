@@ -17,6 +17,7 @@
 
 #include "expr/skolem_manager.h"
 #include "options/proof_options.h"
+#include "options/base_options.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "proof/proof_node_algorithm.h"
 #include "proof/proof_node_manager.h"
@@ -1312,7 +1313,11 @@ void ProofPostprocess::setEliminateRule(PfRule rule)
 
 void ProofPostprocess::setAssertions(const std::vector<Node>& assertions)
 {
-  d_updater.setFreeAssumptions(assertions);
+  // we cannot merge proofs with free assumptions in incremental mode, since
+  // this may change a proof to rely on a different set of free assumptions,
+  // e.g. an input assertion at a different user context level.
+  bool allowFreeMerge = !options().base.incrementalSolving; 
+  d_updater.setFreeAssumptions(assertions, false, allowFreeMerge);
 }
 
 }  // namespace smt

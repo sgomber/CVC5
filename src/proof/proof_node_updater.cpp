@@ -283,6 +283,9 @@ void ProofNodeUpdater::runFinalize(
   {
     Node res = cur->getResult();
     // cache the result if we don't contain an assumption
+    // Notice that d_freeAssumpSet may be uninitialized (empty). This has the
+    // intended effect here, as we consider no assumption as an exception for
+    // merging.
     if (!expr::containsAssumption(cur.get(), cfaMap, d_freeAssumpSet))
     {
       // cache result if we are merging subproofs
@@ -295,6 +298,7 @@ void ProofNodeUpdater::runFinalize(
         ProofNodeManager* pnm = d_env.getProofNodeManager();
         for (std::shared_ptr<ProofNode>& ncp : itnw->second)
         {
+          // TODO: revisit
           if (expr::containsSubproof(cur.get(), ncp.get()))
           {
             continue;
@@ -322,13 +326,18 @@ void ProofNodeUpdater::runFinalize(
 }
 
 void ProofNodeUpdater::setFreeAssumptions(
-    const std::vector<Node>& freeAssumps, bool doDebug)
+    const std::vector<Node>& freeAssumps, bool doDebug, bool allowFreeMerge)
 {
   d_freeAssumps.clear();
   d_freeAssumps.insert(
       d_freeAssumps.end(), freeAssumps.begin(), freeAssumps.end());
   d_freeAssumpSet.clear();
-  d_freeAssumpSet.insert(freeAssumps.begin(), freeAssumps.end());
+  // if we allow merging of free assumptions, then initialize the free
+  // assumption set
+  if (d_mergeSubproofs && allowFreeMerge)
+  {
+    d_freeAssumpSet.insert(freeAssumps.begin(), freeAssumps.end());
+  }
   d_debugFreeAssumps = doDebug;
 }
 

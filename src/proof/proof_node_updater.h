@@ -124,8 +124,13 @@ class ProofNodeUpdater : protected EnvObj
    * If doDebug is true, enables checking when this is violated, which is
    * expensive in general. It is not recommended that this method is called
    * by default.
+   *
+   * If allowFreeMerge is true, this makes it so that this updater is allowed
+   * to merge subproofs that have assumptions that occur in freeAssumps. This
+   * is only done if this updater was constructed with mergeSubproofs set to
+   * true.
    */
-  void setFreeAssumptions(const std::vector<Node>& freeAssumps, bool doDebug = false);
+  void setFreeAssumptions(const std::vector<Node>& freeAssumps, bool doDebug = false, bool allowFreeMerge = true);
 
  private:
   /** The callback */
