@@ -299,7 +299,6 @@ void ProofNodeUpdater::runFinalize(
           {
             continue;
           }
-          AlwaysAssert (!expr::containsSubproof(cur.get(), ncp.get()));
           AlwaysAssert (!expr::containsSubproof(ncp.get(), cur.get()));
           pnm->updateNode(ncp.get(), cur.get());
         }
