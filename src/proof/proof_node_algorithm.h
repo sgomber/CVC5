@@ -57,9 +57,13 @@ void getFreeAssumptionsMap(
     std::map<Node, std::vector<std::shared_ptr<ProofNode>>>& amap);
 
 /**
- * Return true if pn contains a subproof whose rule is ASSUME. Notice that we
- * do *not* distinguish between free vs. non-free assumptions in this call.
- * This call involves at most a single dag traversal over the proof node.
+ * Return true if pn contains a subproof whose rule is ASSUME. 
+ * 
+ * We distinguish between free vs. non-free assumptions in this call. In
+ * particular, each subproof of pn with SCOPE invokes a separate call to
+ * getFreeAssumptions. Thus, the subproofs of SCOPE are not cached by this
+ * call. In the absense of sharing across SCOPE subproofs, this method is
+ * equivalent to a single dag traversal over pn.
  *
  * This call will partially populate caMap. In particular, it will only fill
  * caMap for the proof nodes that were traversed up to where the first
@@ -68,12 +72,15 @@ void getFreeAssumptionsMap(
  * @param pn The proof node.
  * @param caMap Cache of results, mapping proof nodes to whether they contain
  * assumptions.
- * @param
+ * @param exclude The set of assumptions that are excluded from this
+ * computation. This method will return false if the free assumptions of this
+ * proof is a subset of this set.
  * @return true if pn contains assumptions
  */
 bool containsAssumption(const ProofNode* pn,
                         std::unordered_map<const ProofNode*, bool>& caMap,
                         const std::unordered_set<Node>& exclude);
+/** Same as above, without an exclude set */
 bool containsAssumption(const ProofNode* pn,
                         std::unordered_map<const ProofNode*, bool>& caMap);
 /**
