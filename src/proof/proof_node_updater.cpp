@@ -93,17 +93,12 @@ void ProofNodeUpdater::processInternal(std::shared_ptr<ProofNode> pf,
 {
   // Note that processInternal uses a single scope; fa is updated based on
   // the current free assumptions of the proof nodes on the stack.
-
+  d_resCache.clear();
+  d_resCacheNcWaiting.clear();
+  d_cfaMap.clear();
   // The list of proof nodes we are currently traversing beneath. This is used
   // for checking for cycles in the overall proof.
   std::vector<std::shared_ptr<ProofNode>> traversing;
-  // Map from formulas to (closed) proof nodes that prove that fact
-  std::map<Node, std::shared_ptr<ProofNode>> resCache;
-  // Map from formulas to non-closed proof nodes that prove that fact. These
-  // are replaced by proofs in the above map when applicable.
-  std::map<Node, std::vector<std::shared_ptr<ProofNode>>> resCacheNcWaiting;
-  // Map from proof nodes to whether they contain assumptions
-  std::unordered_map<const ProofNode*, bool> cfaMap;
   Trace("pf-process") << "ProofNodeUpdater::process" << std::endl;
   std::unordered_map<std::shared_ptr<ProofNode>, bool> visited;
   std::unordered_map<std::shared_ptr<ProofNode>, bool>::iterator it;
@@ -124,15 +119,15 @@ void ProofNodeUpdater::processInternal(std::shared_ptr<ProofNode> pf,
     {
       if (d_mergeSubproofs)
       {
-        itc = resCache.find(res);
-        if (itc != resCache.end())
+        itc = d_resCache.find(res);
+        if (itc != d_resCache.end())
         {
           // already have a proof, merge it into this one
           visited[cur] = true;
           pnm->updateNode(cur.get(), itc->second.get());
           // does not contain free assumptions since the range of resCache does
           // not contain free assumptions
-          cfaMap[cur.get()] = false;
+          d_cfaMap[cur.get()] = false;
           continue;
         }
       }
@@ -148,7 +143,7 @@ void ProofNodeUpdater::processInternal(std::shared_ptr<ProofNode> pf,
         // no further changes should be made to cur according to the callback
         Trace("pf-process-debug")
             << "...marked to not continue update." << std::endl;
-        runFinalize(cur, fa, resCache, resCacheNcWaiting, cfaMap);
+        runFinalize(cur, fa);
         continue;
       }
       traversing.push_back(cur);
@@ -190,7 +185,7 @@ void ProofNodeUpdater::processInternal(std::shared_ptr<ProofNode> pf,
         Assert(fa.size() >= args.size());
         fa.resize(fa.size() - args.size());
       }
-      runFinalize(cur, fa, resCache, resCacheNcWaiting, cfaMap);
+      runFinalize(cur, fa);
     }
   } while (!visit.empty());
   Trace("pf-process") << "ProofNodeUpdater::process: finished" << std::endl;
@@ -268,10 +263,7 @@ bool ProofNodeUpdater::runUpdate(std::shared_ptr<ProofNode> cur,
 
 void ProofNodeUpdater::runFinalize(
     std::shared_ptr<ProofNode> cur,
-    const std::vector<Node>& fa,
-    std::map<Node, std::shared_ptr<ProofNode>>& resCache,
-    std::map<Node, std::vector<std::shared_ptr<ProofNode>>>& resCacheNcWaiting,
-    std::unordered_map<const ProofNode*, bool>& cfaMap)
+    const std::vector<Node>& fa)
 {
   // run update (marked as post-visit) to a fixed point
   bool dummyContinueUpdate;
@@ -286,14 +278,14 @@ void ProofNodeUpdater::runFinalize(
     // Notice that d_freeAssumpSet may be uninitialized (empty). This has the
     // intended effect here, as we consider no assumption as an exception for
     // merging.
-    if (!expr::containsAssumption(cur.get(), cfaMap, d_freeAssumpSet))
+    if (!expr::containsAssumption(cur.get(), d_cfaMap, d_freeAssumpSet))
     {
       // cache result if we are merging subproofs
-      resCache[res] = cur;
+      d_resCache[res] = cur;
       // go back and merge into the non-closed proofs of the same fact
       std::map<Node, std::vector<std::shared_ptr<ProofNode>>>::iterator itnw =
-          resCacheNcWaiting.find(res);
-      if (itnw != resCacheNcWaiting.end())
+          d_resCacheNcWaiting.find(res);
+      if (itnw != d_resCacheNcWaiting.end())
       {
         ProofNodeManager* pnm = d_env.getProofNodeManager();
         for (std::shared_ptr<ProofNode>& ncp : itnw->second)
@@ -306,12 +298,12 @@ void ProofNodeUpdater::runFinalize(
           AlwaysAssert(!expr::containsSubproof(ncp.get(), cur.get()));
           pnm->updateNode(ncp.get(), cur.get());
         }
-        resCacheNcWaiting.erase(res);
+        d_resCacheNcWaiting.erase(res);
       }
     }
     else
     {
-      resCacheNcWaiting[res].push_back(cur);
+      d_resCacheNcWaiting[res].push_back(cur);
     }
   }
   if (d_debugFreeAssumps)

@@ -179,11 +179,7 @@ class ProofNodeUpdater : protected EnvObj
    *
    */
   void runFinalize(std::shared_ptr<ProofNode> cur,
-                   const std::vector<Node>& fa,
-                   std::map<Node, std::shared_ptr<ProofNode>>& resCache,
-                   std::map<Node, std::vector<std::shared_ptr<ProofNode>>>&
-                       resCacheNcWaiting,
-                   std::unordered_map<const ProofNode*, bool>& cfaMap);
+                   const std::vector<Node>& fa);
   /** Are we debugging free assumptions? */
   bool d_debugFreeAssumps;
   /** The initial free assumptions */
@@ -197,6 +193,13 @@ class ProofNodeUpdater : protected EnvObj
    * automatically introduce SYMM steps.
    */
   bool d_autoSym;
+  // Map from formulas to (closed) proof nodes that prove that fact
+  std::map<Node, std::shared_ptr<ProofNode>> d_resCache;
+  // Map from formulas to non-closed proof nodes that prove that fact. These
+  // are replaced by proofs in the above map when applicable.
+  std::map<Node, std::vector<std::shared_ptr<ProofNode>>> d_resCacheNcWaiting;
+  // Map from proof nodes to whether they contain assumptions
+  std::unordered_map<const ProofNode*, bool> d_cfaMap;
 };
 
 }  // namespace cvc5::internal
