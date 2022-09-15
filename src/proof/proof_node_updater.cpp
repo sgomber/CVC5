@@ -282,28 +282,6 @@ void ProofNodeUpdater::runFinalize(
     {
       // cache result if we are merging subproofs
       d_resCache[res] = cur;
-      // go back and merge into the non-closed proofs of the same fact
-      std::map<Node, std::vector<std::shared_ptr<ProofNode>>>::iterator itnw =
-          d_resCacheNcWaiting.find(res);
-      if (itnw != d_resCacheNcWaiting.end())
-      {
-        ProofNodeManager* pnm = d_env.getProofNodeManager();
-        for (std::shared_ptr<ProofNode>& ncp : itnw->second)
-        {
-          // TODO: revisit
-          if (expr::containsSubproof(cur.get(), ncp.get()))
-          {
-            continue;
-          }
-          AlwaysAssert(!expr::containsSubproof(ncp.get(), cur.get()));
-          pnm->updateNode(ncp.get(), cur.get());
-        }
-        d_resCacheNcWaiting.erase(res);
-      }
-    }
-    else
-    {
-      d_resCacheNcWaiting[res].push_back(cur);
     }
   }
   if (d_debugFreeAssumps)
