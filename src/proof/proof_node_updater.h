@@ -178,8 +178,7 @@ class ProofNodeUpdater : protected EnvObj
    * are updating nodes at post visit time, then we run updateProofNode on it.
    *
    */
-  void runFinalize(std::shared_ptr<ProofNode> cur,
-                   const std::vector<Node>& fa);
+  void runFinalize(std::shared_ptr<ProofNode> cur, const std::vector<Node>& fa);
   /** Are we debugging free assumptions? */
   bool d_debugFreeAssumps;
   /** The initial free assumptions */

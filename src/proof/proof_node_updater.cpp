@@ -261,9 +261,8 @@ bool ProofNodeUpdater::runUpdate(std::shared_ptr<ProofNode> cur,
   return updateProofNode(cur, fa, continueUpdate, preVisit);
 }
 
-void ProofNodeUpdater::runFinalize(
-    std::shared_ptr<ProofNode> cur,
-    const std::vector<Node>& fa)
+void ProofNodeUpdater::runFinalize(std::shared_ptr<ProofNode> cur,
+                                   const std::vector<Node>& fa)
 {
   // run update (marked as post-visit) to a fixed point
   bool dummyContinueUpdate;
