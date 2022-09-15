@@ -132,7 +132,13 @@ Node TheoryModel::getValue(TNode n) const
   //apply substitutions
   Node nn = d_env.getTopLevelSubstitutions().apply(n);
   nn = rewrite(nn);
-  Trace("model-getvalue-debug") << "[model-getvalue] getValue : substitute " << n << " to " << nn << std::endl;
+  if (TraceIsOn("model-getvalue-debug"))
+  {
+    if (n!=nn)
+    {
+      Trace("model-getvalue-debug") << "[model-getvalue] getValue : substitute " << n << " to " << nn << std::endl;
+    }
+  }
   //get value in model
   nn = getModelValue(nn);
   if (nn.isNull())
@@ -202,7 +208,7 @@ Node TheoryModel::getModelValue(TNode n) const
   if (it != d_modelCache.end()) {
     return (*it).second;
   }
-  Trace("model-getvalue-debug") << "Get model value " << n << " ... ";
+  Trace("model-getvalue-debug") << "Get model value " << n << ", hasTerm=";
   Trace("model-getvalue-debug") << d_equalityEngine->hasTerm(n) << std::endl;
   Kind nk = n.getKind();
   if (n.isConst() || nk == BOUND_VARIABLE)
