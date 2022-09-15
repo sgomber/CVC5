@@ -93,8 +93,8 @@ void ProofNodeUpdater::processInternal(std::shared_ptr<ProofNode> pf,
 {
   // Note that processInternal uses a single scope; fa is updated based on
   // the current free assumptions of the proof nodes on the stack.
+  // Clear temporary caches
   d_resCache.clear();
-  d_resCacheNcWaiting.clear();
   d_cfaMap.clear();
   // The list of proof nodes we are currently traversing beneath. This is used
   // for checking for cycles in the overall proof.
@@ -283,6 +283,14 @@ void ProofNodeUpdater::runFinalize(
       // cache result if we are merging subproofs
       d_resCache[res] = cur;
     }
+    // Note that if it contains a free assumption, then we forget this subproof.
+    // altogether. It is possible to remember these subproofs so that they can
+    // be merged into those that don't contain assumptions. However, this can
+    // lead to cyclic subproofs, as it is often the case that a proof
+    // may contain a subproof of the same formula with a free assumption.
+    // Thus, merging such subproofs requires care e.g. to check whether it is
+    // a subproof of what we are merging into. This is prohibitively expensive
+    // in practice.
   }
   if (d_debugFreeAssumps)
   {

@@ -193,12 +193,10 @@ class ProofNodeUpdater : protected EnvObj
    * automatically introduce SYMM steps.
    */
   bool d_autoSym;
-  // Map from formulas to (closed) proof nodes that prove that fact
+  // ------------- temporary information for each update
+  /** Map from formulas to (closed) proof nodes that prove that fact */
   std::map<Node, std::shared_ptr<ProofNode>> d_resCache;
-  // Map from formulas to non-closed proof nodes that prove that fact. These
-  // are replaced by proofs in the above map when applicable.
-  std::map<Node, std::vector<std::shared_ptr<ProofNode>>> d_resCacheNcWaiting;
-  // Map from proof nodes to whether they contain assumptions
+  /** Map from proof nodes to whether they contain assumptions */
   std::unordered_map<const ProofNode*, bool> d_cfaMap;
 };
 
