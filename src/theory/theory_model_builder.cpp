@@ -1123,6 +1123,7 @@ bool TheoryEngineModelBuilder::buildModel(TheoryModel* tm)
     return false;
   }
   Trace("model-builder") << "TheoryEngineModelBuilder: success" << std::endl;
+  Trace("model-builder") << tm->d_equalityEngine->debugPrintEqc() << std::endl;
   return true;
 }
 

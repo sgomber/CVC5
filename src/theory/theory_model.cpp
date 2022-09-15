@@ -213,6 +213,7 @@ Node TheoryModel::getModelValue(TNode n) const
   Kind nk = n.getKind();
   if (n.isConst() || nk == BOUND_VARIABLE)
   {
+    Trace("model-getvalue-debug") << "..return (self) " << n << std::endl;
     d_modelCache[n] = n;
     return n;
   }
@@ -278,6 +279,7 @@ Node TheoryModel::getModelValue(TNode n) const
      d_unevaluated_kinds.find(nk) == d_unevaluated_kinds.end()
       && d_semi_evaluated_kinds.find(nk) == d_semi_evaluated_kinds.end()))
     {
+      Trace("model-getvalue-debug") << "..return (evaluate) " << ret << std::endl;
       d_modelCache[n] = ret;
       return ret;
     }
@@ -310,6 +312,7 @@ Node TheoryModel::getModelValue(TNode n) const
     {
       ret = it2->second;
       d_modelCache[n] = ret;
+      Trace("model-getvalue-debug") << "..return (representative) " << ret << std::endl;
       return ret;
     }
   }
@@ -341,6 +344,7 @@ Node TheoryModel::getModelValue(TNode n) const
         Node boundVarList = nm->mkNode(kind::BOUND_VAR_LIST, args);
         TypeEnumerator te(t.getRangeType());
         ret = nm->mkNode(kind::LAMBDA, boundVarList, *te);
+        Trace("model-getvalue-debug") << "...return (lambda) " << ret << std::endl;
       }
       else
       {
@@ -353,17 +357,20 @@ Node TheoryModel::getModelValue(TNode n) const
       // this is the class for regular expressions
       // we simply invoke the rewriter on them
       ret = rewrite(ret);
+      Trace("model-getvalue-debug") << "...return (rewrite) " << ret << std::endl;
     }
     else
     {
       // Unknown term - return first enumerated value for this type
       TypeEnumerator te(n.getType());
       ret = *te;
+      Trace("model-getvalue-debug") << "...return (unknown) " << ret << std::endl;
     }
     d_modelCache[n] = ret;
     return ret;
   }
 
+  Trace("model-getvalue-debug") << "...return (no-eval, self) " << n << std::endl;
   d_modelCache[n] = n;
   return n;
 }
