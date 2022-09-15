@@ -173,10 +173,9 @@ class ProofNodeUpdater : protected EnvObj
   /**
    * Finalize the node cur. This is called at the moment that it is established
    * that cur will appear in the final proof. We do any final debug checking and
-   * add it to resCache/resCacheNcWaiting if we are merging subproofs, where
-   * these map result formulas to proof nodes with/without assumptions. If we
-   * are updating nodes at post visit time, then we run updateProofNode on it.
-   *
+   * add it to d_resCache if we are merging subproofs, where this map result
+   * formulas to proof nodes without assumptions. If we are updating nodes at
+   * post visit time, then we run updateProofNode on it.
    */
   void runFinalize(std::shared_ptr<ProofNode> cur, const std::vector<Node>& fa);
   /** Are we debugging free assumptions? */
