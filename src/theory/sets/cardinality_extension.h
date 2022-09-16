@@ -342,6 +342,10 @@ class CardinalityExtension : protected EnvObj
    * negativeMember (as univset t)))
    */
   void checkCardinalityExtended(TypeNode& t);
+  /** 
+   * Make ordered set application
+   */
+  static Node mkOrderedApp(Kind k, Node a, Node b);
 
   /** element types of sets for which cardinality is enabled */
   std::map<TypeNode, bool> d_t_card_enabled;

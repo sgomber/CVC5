@@ -296,7 +296,6 @@ void CardinalityExtension::registerCardinalityTerm(Node n)
     {
       Node lem =
           nm->mkNode(EQUAL, nm->mkNode(SET_CARD, nk), nm->mkNode(SET_CARD, nn));
-      lem = rewrite(lem);
       Trace("sets-card") << "  " << k << " : " << lem << std::endl;
       d_im.assertInference(lem, InferenceId::SETS_CARD_EQUAL, d_emp_exp, 1);
     }
@@ -405,21 +404,21 @@ void CardinalityExtension::checkCardCyclesRec(Node eqc,
       d_localBase[n] = n;
       for (unsigned e = 0; e < 2; e++)
       {
-        Node sm = rewrite(nm->mkNode(SET_MINUS, n[e], n[1 - e]));
+        Node sm = nm->mkNode(SET_MINUS, n[e], n[1 - e]);
         sib.push_back(sm);
       }
       true_sib = 2;
     }
     else
     {
-      Node si = rewrite(nm->mkNode(SET_INTER, n[0], n[1]));
+      Node si = mkOrderedApp(SET_INTER, n[0], n[1]);
       sib.push_back(si);
       d_localBase[n] = si;
-      Node osm = rewrite(nm->mkNode(SET_MINUS, n[1], n[0]));
+      Node osm = nm->mkNode(SET_MINUS, n[1], n[0]);
       sib.push_back(osm);
       true_sib = 1;
     }
-    Node u = rewrite(nm->mkNode(SET_UNION, n[0], n[1]));
+    Node u = mkOrderedApp(SET_UNION, n[0], n[1]);
     if (!d_state.hasTerm(u))
     {
       u = Node::null();
@@ -1163,6 +1162,15 @@ const std::vector<Node>& CardinalityExtension::getFiniteTypeMembers(
     TypeNode typeNode)
 {
   return d_finite_type_elements[typeNode];
+}
+
+Node CardinalityExtension::mkOrderedApp(Kind k, Node a, Node b)
+{
+  if (b<a)
+  {
+    std::swap(a,b);
+  }
+  return NodeManager::currentNM()->mkNode(k, a, b);
 }
 
 }  // namespace sets
