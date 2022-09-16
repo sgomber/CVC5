@@ -113,7 +113,8 @@ void SetDefaults::setDefaultsPre(Options& opts)
   // if check-proofs, dump-proofs, or proof-mode=full, then proofs being fully
   // enabled is implied
   if (opts.smt.checkProofs || opts.driver.dumpProofs
-      || opts.smt.proofMode == options::ProofMode::FULL)
+      || opts.smt.proofMode == options::ProofMode::FULL
+      || opts.proof.proofPedantic>0)
   {
     opts.writeSmt().produceProofs = true;
   }

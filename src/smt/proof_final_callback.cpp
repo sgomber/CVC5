@@ -65,16 +65,13 @@ bool ProofFinalCallback::shouldUpdate(std::shared_ptr<ProofNode> pn,
   PfRule r = pn->getRule();
   ProofNodeManager* pnm = d_env.getProofNodeManager();
   Assert(pnm != nullptr);
-  // if not doing eager pedantic checking, fail if below threshold
-  if (options().proof.proofCheck != options::ProofCheckMode::EAGER)
+  // fail if below threshold for pedantic checking
+  if (!d_pedanticFailure)
   {
-    if (!d_pedanticFailure)
+    Assert(d_pedanticFailureOut.str().empty());
+    if (pnm->getChecker()->isPedanticFailure(r, d_pedanticFailureOut))
     {
-      Assert(d_pedanticFailureOut.str().empty());
-      if (pnm->getChecker()->isPedanticFailure(r, d_pedanticFailureOut))
-      {
-        d_pedanticFailure = true;
-      }
+      d_pedanticFailure = true;
     }
   }
   if (options().proof.proofCheck != options::ProofCheckMode::NONE)

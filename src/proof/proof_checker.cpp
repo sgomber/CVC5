@@ -258,26 +258,6 @@ Node ProofChecker::checkInternal(PfRule id,
       return Node::null();
     }
   }
-  // fails if pedantic level is not met
-  if (d_pcMode == options::ProofCheckMode::EAGER)
-  {
-    std::stringstream serr;
-    if (isPedanticFailure(id, serr, enableOutput))
-    {
-      if (enableOutput)
-      {
-        out << serr.str() << std::endl;
-        if (TraceIsOn("proof-pedantic"))
-        {
-          Trace("proof-pedantic")
-              << "Failed pedantic check for " << id << std::endl;
-          Trace("proof-pedantic") << "Expected: " << expected << std::endl;
-          out << "Expected: " << expected << std::endl;
-        }
-      }
-      return Node::null();
-    }
-  }
   return res;
 }
 
