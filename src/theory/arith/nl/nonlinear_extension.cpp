@@ -336,26 +336,19 @@ Result::Status NonlinearExtension::modelBasedRefinement(
   {
     d_model.resetCheck();
     needsRecheck = false;
-    // complete_status:
-    //   1 : we may answer SAT, -1 : we may not answer SAT, 0 : unknown
-    int complete_status = 1;
-    // We require a check either if an assertion is false or a shared term has
-    // a wrong value
-    if (!false_asserts.empty())
+    // always run the strategy, even if false_asserts is empty
+    runStrategy(Theory::Effort::EFFORT_FULL, assertions, false_asserts, xts);
+    if (d_im.hasSentLemma() || d_im.hasPendingLemma())
     {
-      complete_status = 0;
-      runStrategy(Theory::Effort::EFFORT_FULL, assertions, false_asserts, xts);
-      if (d_im.hasSentLemma() || d_im.hasPendingLemma())
-      {
-        d_im.clearWaitingLemmas();
-        return Result::UNSAT;
-      }
+      d_im.clearWaitingLemmas();
+      return Result::UNSAT;
     }
-    Trace("nl-ext") << "Finished check with status : " << complete_status
-                    << std::endl;
+    Trace("nl-ext") << "Finished check with no lemmas" << std::endl;
 
-    // if we did not add a lemma during check and there is a chance for SAT
-    if (complete_status == 0)
+    // If we did not add a lemma, and there are no false assertions, we are
+    // SAT. If there are false assertions, we check model below.
+    bool isComplete = !d_im.hasWaitingLemma();
+    if (!false_asserts.empty())
     {
       Trace("nl-ext")
           << "Check model based on bounds for irrational-valued functions..."
@@ -364,7 +357,7 @@ Result::Status NonlinearExtension::modelBasedRefinement(
       // error bounds on the Taylor approximation of transcendental functions.
       if (checkModel(assertions))
       {
-        complete_status = 1;
+        isComplete = true;
       }
       if (d_im.hasUsed())
       {
@@ -374,7 +367,7 @@ Result::Status NonlinearExtension::modelBasedRefinement(
     }
 
     // if we have not concluded SAT
-    if (complete_status != 1)
+    if (!isComplete)
     {
       // flush the waiting lemmas
       if (d_im.hasWaitingLemma())
