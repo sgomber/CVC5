@@ -463,10 +463,7 @@ OracleBinaryCaller& SymbolManager::getOracleBinaryCaller(
   return d_implementation->getOracleBinaryCaller(d_solver, name);
 }
 
-void SymbolManager::reset()
-{
-  d_implementation->reset();
-}
+void SymbolManager::reset() { d_implementation->reset(); }
 
 void SymbolManager::resetAssertions()
 {
