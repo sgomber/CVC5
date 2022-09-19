@@ -346,10 +346,11 @@ Result::Status NonlinearExtension::modelBasedRefinement(
     Trace("nl-ext") << "Finished check with no lemmas" << std::endl;
 
     // If we did not add a lemma, and there are no false assertions, we are
-    // SAT. If there are false assertions, we check model below.
-    bool isComplete = !d_im.hasWaitingLemma();
-    if (!false_asserts.empty())
+    // SAT. Otherwise, we do a more aggressive check of the model below.
+    bool isComplete = true;
+    if (!false_asserts.empty() || d_im.hasWaitingLemma())
     {
+      isComplete = false;
       Trace("nl-ext")
           << "Check model based on bounds for irrational-valued functions..."
           << std::endl;
