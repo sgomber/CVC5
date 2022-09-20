@@ -348,7 +348,7 @@ Result::Status NonlinearExtension::modelBasedRefinement(
     // If we did not add a lemma, and there are no false assertions, we are
     // SAT. Otherwise, we do a more aggressive check of the model below.
     bool isComplete = true;
-    if (!false_asserts.empty() || d_im.hasWaitingLemma())
+    if (!false_asserts.empty())
     {
       isComplete = false;
       Trace("nl-ext")
@@ -431,6 +431,13 @@ void NonlinearExtension::runStrategy(Theory::Effort effort,
   while (!stop && steps.hasNext())
   {
     InferStep step = steps.next();
+    if (false_asserts.empty() && 
+      step != InferStep::IAND_INIT &&
+      step != InferStep::IAND_FULL &&
+      step != InferStep::IAND_INITIAL)
+    {
+      continue;
+    }
     Trace("nl-strategy") << "Step " << step << std::endl;
     switch (step)
     {
