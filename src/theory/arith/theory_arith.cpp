@@ -447,7 +447,7 @@ void TheoryArith::finalizeModelCache()
   for (const auto& [node, repl] : d_arithModelCache)
   {
     Assert(repl.getType().isRealOrInt());
-    if (Theory::isLeafOf(repl, TheoryId::THEORY_ARITH))
+    if (Theory::isLeafOf(node, TheoryId::THEORY_ARITH) && Theory::isLeafOf(repl, TheoryId::THEORY_ARITH))
     {
       d_arithModelCacheVars.emplace_back(node);
       d_arithModelCacheSubs.emplace_back(repl);
