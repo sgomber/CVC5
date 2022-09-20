@@ -380,19 +380,25 @@ EqualityStatus TheoryArith::getEqualityStatus(TNode a, TNode b) {
   Trace("arith") << "TheoryArith::getEqualityStatus(" << a << ", " << b << ")" << std::endl;
   if (a == b)
   {
+    Trace("arith") << "...return (trivial) true" << std::endl;
     return EQUALITY_TRUE_IN_MODEL;
   }
   if (d_arithModelCache.empty())
   {
-    return d_internal->getEqualityStatus(a,b);
+    EqualityStatus es = d_internal->getEqualityStatus(a,b);
+    Trace("arith") << "...return (from linear) " << es << std::endl;
+    return es;
   }
   Node diff = NodeManager::currentNM()->mkNode(Kind::SUB, a, b);
   std::optional<bool> isZero = isExpressionZero(
       d_env, diff, d_arithModelCacheVars, d_arithModelCacheSubs);
   if (isZero)
   {
-    return *isZero ? EQUALITY_TRUE_IN_MODEL : EQUALITY_FALSE_IN_MODEL;
+    EqualityStatus es = *isZero ? EQUALITY_TRUE_IN_MODEL : EQUALITY_FALSE_IN_MODEL;
+    Trace("arith") << "...return (from evaluate) " << es << std::endl;
+    return es;
   }
+  Trace("arith") << "...return unknown" << std::endl;
   return EQUALITY_UNKNOWN;
 }
 

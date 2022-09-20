@@ -64,6 +64,35 @@ std::ostream& operator<<(std::ostream& os, InferStep step)
   }
 }
 
+bool skipIfNoFalseAsserts(InferStep step)
+{
+  switch (step)
+  {
+    case InferStep::COVERINGS_INIT:
+    case InferStep::COVERINGS_FULL:
+    case InferStep::NL_FACTORING:
+    case InferStep::ICP:
+    case InferStep::NL_INIT:
+    case InferStep::NL_MONOMIAL_INFER_BOUNDS:
+    case InferStep::NL_MONOMIAL_MAGNITUDE0:
+    case InferStep::NL_MONOMIAL_MAGNITUDE1:
+    case InferStep::NL_MONOMIAL_MAGNITUDE2:
+    case InferStep::NL_MONOMIAL_SIGN:
+    case InferStep::NL_RESOLUTION_BOUNDS:
+    case InferStep::NL_SPLIT_ZERO:
+    case InferStep::NL_TANGENT_PLANES:
+    case InferStep::NL_TANGENT_PLANES_WAITING:
+    case InferStep::TRANS_INIT:
+    case InferStep::TRANS_INITIAL:
+    case InferStep::TRANS_MONOTONIC:
+    case InferStep::TRANS_TANGENT_PLANES:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
 namespace {
 /** Puts a new InferStep into a StepSequence */
 inline StepSequence& operator<<(StepSequence& steps, InferStep s)

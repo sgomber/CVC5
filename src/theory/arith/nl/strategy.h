@@ -92,6 +92,11 @@ enum class InferStep
 
 /** Streaming operator for InferStep */
 std::ostream& operator<<(std::ostream& os, InferStep step);
+/**
+ * Return true if this step should not be run if all assertions
+ * are true in the model.
+ */
+bool skipIfNoFalseAsserts(InferStep step);
 
 /** A sequence of steps */
 using StepSequence = std::vector<InferStep>;
