@@ -85,10 +85,8 @@ bool skipIfNoFalseAsserts(InferStep step)
     case InferStep::TRANS_INIT:
     case InferStep::TRANS_INITIAL:
     case InferStep::TRANS_MONOTONIC:
-    case InferStep::TRANS_TANGENT_PLANES:
-      return true;
-    default:
-      break;
+    case InferStep::TRANS_TANGENT_PLANES: return true;
+    default: break;
   }
   return false;
 }
