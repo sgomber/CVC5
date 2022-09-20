@@ -431,10 +431,8 @@ void NonlinearExtension::runStrategy(Theory::Effort effort,
   while (!stop && steps.hasNext())
   {
     InferStep step = steps.next();
-    if (false_asserts.empty() && 
-      step != InferStep::IAND_INIT &&
-      step != InferStep::IAND_FULL &&
-      step != InferStep::IAND_INITIAL)
+    if (false_asserts.empty() && step != InferStep::IAND_INIT
+        && step != InferStep::IAND_FULL && step != InferStep::IAND_INITIAL)
     {
       continue;
     }
