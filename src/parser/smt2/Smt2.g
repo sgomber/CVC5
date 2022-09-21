@@ -2287,7 +2287,7 @@ QUOTED_SYMBOL
   : '|' ~('|' | '\\' | '\n')* '|'
   ;
 UNTERMINATED_QUOTED_SYMBOL
-  : '|' ~('|' | '\\')*
+  : '|' ~('|' | '\\' | '\n')*
   ;
 
 /**
