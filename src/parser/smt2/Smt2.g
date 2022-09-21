@@ -2313,7 +2313,7 @@ SIMPLE_SYMBOL
  * Matches and skips whitespace in the input.
  */
 WHITESPACE
-  : (' ' | '\t' | '\f' | '\r' | '\n')+ { SKIP(); }
+  : (' ' | '\t' | '\f' | '\r' | '\n')+ { }
   ;
 
 /**
