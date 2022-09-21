@@ -2284,7 +2284,7 @@ HO_LAMBDA_TOK : { PARSER_STATE->isHoEnabled() }? 'lambda';
  * will be part of the token text.  Use the symbol[] parser rule instead.
  */
 QUOTED_SYMBOL
-  : '|' ~('|' | '\\')* '|'
+  : '|' ~('|' | '\\' | '\n')* '|'
   ;
 UNTERMINATED_QUOTED_SYMBOL
   : '|' ~('|' | '\\')*
@@ -2313,7 +2313,7 @@ SIMPLE_SYMBOL
  * Matches and skips whitespace in the input.
  */
 WHITESPACE
-  : (' ' | '\t' | '\f' | '\r' | '\n')+ { }
+  : (' ' | '\t' | '\f' | '\r' | '\n')+ { SKIP(); }
   ;
 
 /**
