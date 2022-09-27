@@ -104,10 +104,12 @@ int runCvc5(int argc, char* argv[], std::unique_ptr<cvc5::Solver>& solver)
   // If no file supplied we will read from standard input
   const bool inputFromStdin = filenames.empty() || filenames[0] == "-";
 
-  // if we're reading from stdin on a TTY, default to interactive mode
+  // If we're reading from stdin, use interactive mode. This is independent
+  // of whether we are using a TTY, since otherwise we encounter issues
+  // when parsing tokens that are split over multiple lines (see issue #8374).
   if (!solver->getOptionInfo("interactive").setByUser)
   {
-    solver->setOption("interactive", (inputFromStdin && isatty(fileno(stdin))) ? "true" : "false");
+    solver->setOption("interactive", inputFromStdin ? "true" : "false");
   }
 
   // Auto-detect input language by filename extension
@@ -163,28 +165,38 @@ int runCvc5(int argc, char* argv[], std::unique_ptr<cvc5::Solver>& solver)
 
     // Parse and execute commands until we are done
     bool status = true;
-    if (solver->getOptionInfo("interactive").boolValue() && inputFromStdin)
+    if (inputFromStdin)
     {
       if (!solver->getOptionInfo("incremental").setByUser)
       {
         solver->setOption("incremental", "true");
       }
+      // We always use the interactive shell when piping from stdin. We do this
+      // to avoid memory issues involving tokens that span multiple lines.
+      // We compute whether the interactive shell is actually interactive
+      // (via isatty). If we are not interactive, we disable certain output
+      // information, e.g. for querying the user.
+      bool isInteractive = isatty(fileno(stdin));
       InteractiveShell shell(pExecutor->getSolver(),
                              pExecutor->getSymbolManager(),
                              dopts.in(),
-                             dopts.out());
+                             dopts.out(),
+                             isInteractive);
 
-      auto& out = solver->getDriverOptions().out();
-      out << Configuration::getPackageName() << " "
-          << Configuration::getVersionString();
-      if (Configuration::isGitBuild())
+      if (isInteractive)
       {
-        out << " [" << Configuration::getGitInfo() << "]";
+        auto& out = solver->getDriverOptions().out();
+        out << Configuration::getPackageName() << " "
+            << Configuration::getVersionString();
+        if (Configuration::isGitBuild())
+        {
+          out << " [" << Configuration::getGitInfo() << "]";
+        }
+        out << (Configuration::isDebugBuild() ? " DEBUG" : "") << " assertions:"
+            << (Configuration::isAssertionBuild() ? "on" : "off") << std::endl
+            << std::endl
+            << Configuration::copyright() << std::endl;
       }
-      out << (Configuration::isDebugBuild() ? " DEBUG" : "") << " assertions:"
-          << (Configuration::isAssertionBuild() ? "on" : "off") << std::endl
-          << std::endl
-          << Configuration::copyright() << std::endl;
 
       bool quit = false;
       while (!quit)
@@ -221,15 +233,8 @@ int runCvc5(int argc, char* argv[], std::unique_ptr<cvc5::Solver>& solver)
       ParserBuilder parserBuilder(
           pExecutor->getSolver(), pExecutor->getSymbolManager(), true);
       std::unique_ptr<Parser> parser(parserBuilder.build());
-      if( inputFromStdin ) {
-        parser->setInput(Input::newStreamInput(
-            solver->getOption("input-language"), cin, filename));
-      }
-      else
-      {
-        parser->setInput(
-            Input::newFileInput(solver->getOption("input-language"), filename));
-      }
+      parser->setInput(
+          Input::newFileInput(solver->getOption("input-language"), filename));
 
       PortfolioDriver driver(parser);
       returnValue = driver.solve(pExecutor) ? 0 : 1;
