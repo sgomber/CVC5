@@ -331,6 +331,7 @@ int32_t RelevanceManager::justify(TNode n)
       itc;
   RlvPair cur;
   TCtxStack visit(&d_ptctx);
+  bool isActive = false;
   visit.pushInitial(n);
   do
   {
@@ -383,6 +384,7 @@ int32_t RelevanceManager::justify(TNode n)
                   << "Reason for " << cur.first << " is " << n
                   << ", polarity is " << hasPol << "/" << pol << std::endl;
             }
+            isActive = true;
           }
         }
         d_jcache[cur] = ret;
@@ -412,6 +414,10 @@ int32_t RelevanceManager::justify(TNode n)
       }
     }
   } while (!visit.empty());
+  if (isActive)
+  {
+    
+  }
   RlvPair ci(n, d_ptctx.initialValue());
   Assert(d_jcache.find(ci) != d_jcache.end());
   return d_jcache[ci];
