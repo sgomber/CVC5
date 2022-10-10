@@ -419,8 +419,8 @@ bool RelevanceManager::isRelevant(TNode lit)
 {
   Assert(d_inFullEffortCheck);
   // agnostic to negation
-  TNode atom = lit.getKind()==NOT ? lit[0] : lit;
-  Assert (atom.getKind()!=NOT);
+  TNode atom = lit.getKind() == NOT ? lit[0] : lit;
+  Assert(atom.getKind() != NOT);
   // since this is used in full effort, and typically for all asserted literals,
   // we just ensure relevance is fully computed here
   computeRelevance();
@@ -435,8 +435,8 @@ bool RelevanceManager::isRelevant(TNode lit)
 TNode RelevanceManager::getExplanationForRelevant(TNode lit)
 {
   // agnostic to negation
-  TNode atom = lit.getKind()==NOT ? lit[0] : lit;
-  Assert (atom.getKind()!=NOT);
+  TNode atom = lit.getKind() == NOT ? lit[0] : lit;
+  Assert(atom.getKind() != NOT);
   // Instead of computing relevance for all inputs, we use an efficient
   // implementation that only justifies the input formulas that contain the
   // atom here.
@@ -485,8 +485,8 @@ TNode RelevanceManager::getExplanationForAsserted(TNode lit)
 {
   Assert(d_inFullEffortCheck);
   // agnostic to negation
-  TNode atom = lit.getKind()==NOT ? lit[0] : lit;
-  Assert (atom.getKind()!=NOT);
+  TNode atom = lit.getKind() == NOT ? lit[0] : lit;
+  Assert(atom.getKind() != NOT);
   if (!d_computedRelevanceForLemmas)
   {
     // Ensure we've computed relevance for input formulas first.

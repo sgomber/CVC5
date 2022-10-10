@@ -217,10 +217,7 @@ bool Valuation::needCheck() const{
   return d_engine->needCheck();
 }
 
-bool Valuation::isRelevant(Node lit) const
-{
-  return d_engine->isRelevant(lit);
-}
+bool Valuation::isRelevant(Node lit) const { return d_engine->isRelevant(lit); }
 
 TNode Valuation::getExplanationForAsserted(TNode lit) const
 {
