@@ -724,7 +724,7 @@ bool TheoryEngine::isActive(Node f) const
 {
   if (d_relManager != nullptr)
   {
-    return d_relManager->isActive(lit);
+    return d_relManager->isActive(f);
   }
   // otherwise must assume its active
   return true;
@@ -1339,12 +1339,7 @@ void TheoryEngine::lemma(TrustNode tlemma,
     std::vector<Node> sks;
     Node retLemma =
         d_propEngine->getPreprocessedTerm(tlemma.getProven(), skAsserts, sks);
-    if (options().theory.relevanceFilter && isLemmaPropertyNeedsJustify(p))
-    {
-      d_relManager->notifyPreprocessedAssertion(retLemma, false);
-      d_relManager->notifyPreprocessedAssertions(skAsserts, false);
-    }
-    d_relManager->notifyLemma(retLemma);
+    d_relManager->notifyLemma(retLemma, skAsserts, isLemmaPropertyNeedsJustify(p));
   }
 
   // Mark that we added some lemmas

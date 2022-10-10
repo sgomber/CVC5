@@ -32,6 +32,7 @@ RelevanceManager::RelevanceManager(Env& env, Valuation val)
     : EnvObj(env),
       d_val(val),
       d_input(userContext()),
+      d_lemmas(userContext()),
       d_atomMap(userContext()),
       d_rset(context()),
       d_aset(context()),
@@ -558,18 +559,23 @@ std::unordered_set<TNode> RelevanceManager::getRelevantAssertions(bool& success)
   return rset;
 }
 
-void RelevanceManager::notifyLemma(TNode n)
+void RelevanceManager::notifyLemma(Node lem, const std::vector<Node>& skLemmas, bool needsJustify)
 {
+  if (options().theory.relevanceFilter && needsJustify)
+  {
+    notifyPreprocessedAssertion(lem, false);
+    notifyPreprocessedAssertions(skLemmas, false);
+  }
+  else if (d_trackASet)
+  {
+    d_lemmas.push_back(lem);
+  }
   // notice that we may be in FULL or STANDARD effort here.
   if (d_dman != nullptr)
   {
     // notice that we don't compute relevance here, instead it is computed
-    // on demand based on the literals in n.
-    d_dman->notifyLemma(n, d_inFullEffortCheck);
-  }
-  if (d_trackASet)
-  {
-    d_lemmas.push_back(n);
+    // on demand based on the literals in lem.
+    d_dman->notifyLemma(lem, d_inFullEffortCheck);
   }
 }
 

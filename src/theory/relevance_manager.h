@@ -141,8 +141,9 @@ class RelevanceManager : protected EnvObj
    * copies the assertions.
    */
   std::unordered_set<TNode> getRelevantAssertions(bool& success);
-  /** Notify lemma, for difficulty measurements */
-  void notifyLemma(TNode n);
+  /**
+   */
+  void notifyLemma(Node lem, const std::vector<Node>& skLemmas, bool needsJustify);
   /** Notify that m is a (candidate) model, for difficulty measurements */
   void notifyCandidateModel(TheoryModel* m);
   /**
