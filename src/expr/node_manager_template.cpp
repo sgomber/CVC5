@@ -504,7 +504,7 @@ TypeNode NodeManager::getType(TNode n, bool check)
     cur = visit.back();
     visit.pop_back();
     // already computed this type
-    if (!getAttribute(cur, ta).isNull())
+    if (!getAttribute(cur, ta).isNull() && (!check || getAttribute(n, tca)))
     {
       continue;
     }
@@ -513,20 +513,21 @@ TypeNode NodeManager::getType(TNode n, bool check)
     if (it == visited.end())
     {
       // see if it has a type inferrable at pre traversal
-      typeNode = TypeChecker::preComputeType(this, cur);
-      if (typeNode.isNull())
+      if (!check || cur.getNumChildren()==0)
       {
-        // pre-compute type is not available
-        visited[cur] = false;
-        visit.push_back(cur);
-        visit.insert(visit.end(), cur.begin(), cur.end());
+        typeNode = TypeChecker::preComputeType(this, cur);
+        if (!typeNode.isNull())
+        {
+          visited[cur] = true;
+          setAttribute(cur, ta, typeNode);
+          setAttribute(cur, pta, typeNode);
+          continue;
+        }
       }
-      else
-      {
-        visited[cur] = true;
-        setAttribute(cur, ta, typeNode);
-        setAttribute(cur, pta, typeNode);
-      }
+      // we are checking, or pre-compute type is not available
+      visited[cur] = false;
+      visit.push_back(cur);
+      visit.insert(visit.end(), cur.begin(), cur.end());
     }
     else if (!it->second)
     {
