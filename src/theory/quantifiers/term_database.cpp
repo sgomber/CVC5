@@ -600,6 +600,15 @@ bool TermDb::reset( Theory::Effort effort ){
   d_func_map_eqc_trie.clear();
   d_fmapRelDom.clear();
   d_consistent_ee = true;
+  
+  /*
+  std::unordered_set<Node> active = d_qstate.getActiveFormulas();
+  Trace("ajr-temp") << "*** " << active.size() << " active formulas" << std::endl;
+  for (const Node& n : active)
+  {
+    Trace("ajr-temp") << "  " << n << std::endl;
+  }
+  */
 
   eq::EqualityEngine* ee = d_qstate.getEqualityEngine();
 
