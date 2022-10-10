@@ -34,10 +34,12 @@ RelevanceManager::RelevanceManager(Env& env, Valuation val)
       d_input(userContext()),
       d_atomMap(userContext()),
       d_rset(context()),
+      d_aset(context()),
       d_inFullEffortCheck(false),
       d_fullEffortCheckFail(false),
       d_success(false),
       d_trackRSetExp(false),
+      d_trackASet(false),
       d_miniscopeTopLevel(true),
       d_rsetExp(context()),
       d_jcache(context())
@@ -170,6 +172,10 @@ void RelevanceManager::computeRelevance()
       d_success = false;
       return;
     }
+  }
+  if (d_trackASet)
+  {
+    // if tracking 
   }
   if (TraceIsOn("rel-manager"))
   {
@@ -414,9 +420,10 @@ int32_t RelevanceManager::justify(TNode n)
       }
     }
   } while (!visit.empty());
-  if (isActive)
+  // add to active set if necessary
+  if (d_trackASet && isActive)
   {
-    
+    d_aset.insert(n);
   }
   RlvPair ci(n, d_ptctx.initialValue());
   Assert(d_jcache.find(ci) != d_jcache.end());
@@ -440,6 +447,25 @@ bool RelevanceManager::isRelevant(TNode lit)
     lit = lit[0];
   }
   return d_rset.find(lit) != d_rset.end();
+}
+
+bool RelevanceManager::isActive(TNode f)
+{
+  Assert(d_inFullEffortCheck);
+  if (!d_trackASet)
+  {
+    Warning() << "Asking for RelevanceManager::isActive when active lemma tracking is disabled" << std::endl;
+    return true;
+  }
+  // since this is used in full effort, and typically for all asserted literals,
+  // we just ensure relevance is fully computed here
+  computeRelevance();
+  if (!d_success)
+  {
+    // always relevant if we failed to compute
+    return true;
+  }
+  return d_aset.find(f) != d_aset.end();
 }
 
 TNode RelevanceManager::getExplanationForRelevant(TNode lit)
@@ -540,6 +566,10 @@ void RelevanceManager::notifyLemma(TNode n)
     // notice that we don't compute relevance here, instead it is computed
     // on demand based on the literals in n.
     d_dman->notifyLemma(n, d_inFullEffortCheck);
+  }
+  if (d_trackASet)
+  {
+    d_lemmas.push_back(n);
   }
 }
 

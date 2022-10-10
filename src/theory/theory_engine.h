@@ -210,6 +210,14 @@ class TheoryEngine : protected EnvObj
    * or during LAST_CALL effort.
    */
   bool isRelevant(Node lit) const;
+  /**
+   * Is the formula responsible for a (non-redundant) asserted literal in the
+   * current assertions?
+   * 
+   * The input f should either be a preprocessed input formula, or a
+   * preprocessed theory lemma.
+   */
+  bool isActive(Node f) const;
 
   /**
    * Solve the given literal with a theory that owns it. The proof of tliteral

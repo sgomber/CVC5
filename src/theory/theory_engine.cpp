@@ -720,6 +720,16 @@ bool TheoryEngine::isRelevant(Node lit) const
   return true;
 }
 
+bool TheoryEngine::isActive(Node f) const
+{
+  if (d_relManager != nullptr)
+  {
+    return d_relManager->isActive(lit);
+  }
+  // otherwise must assume its active
+  return true;
+}
+
 theory::Theory::PPAssertStatus TheoryEngine::solve(
     TrustNode tliteral, TrustSubstitutionMap& substitutionOut)
 {

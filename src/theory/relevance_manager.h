@@ -120,6 +120,7 @@ class RelevanceManager : protected EnvObj
    * LAST_CALL efforts, through the Valuation class.
    */
   bool isRelevant(TNode lit);
+  bool isActive(TNode f);
   /**
    * Get the explanation for literal lit is relevant. This returns the
    * preprocessed assertion that was the reason why the literal was relevant
@@ -199,6 +200,8 @@ class RelevanceManager : protected EnvObj
   Valuation d_val;
   /** The input assertions */
   NodeList d_input;
+  /** The lemmas */
+  NodeList d_lemmas;
   /** Map from atoms to the list of input assertions that are contained in */
   NodeListMap d_atomMap;
   /**
@@ -206,6 +209,10 @@ class RelevanceManager : protected EnvObj
    * literals that are definitely relevant in this context.
    */
   NodeSet d_rset;
+  /**
+   * Set of active lemmas.
+   */
+  NodeSet d_aset;
   /** Are we in a full effort check? */
   bool d_inFullEffortCheck;
   /** Have we failed to justify a formula in a full effort check? */
@@ -222,6 +229,8 @@ class RelevanceManager : protected EnvObj
   bool d_success;
   /** Are we tracking the sources of why a literal is relevant */
   bool d_trackRSetExp;
+  /** Are we tracking active lemmas? */
+  bool d_trackASet;
   /**
    * Whether we have miniscoped top-level AND of assertions, which is done
    * as an optimization. This is disabled if e.g. we are computing difficulty,
