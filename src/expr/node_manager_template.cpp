@@ -503,9 +503,16 @@ TypeNode NodeManager::getType(TNode n, bool check)
   {
     cur = visit.back();
     visit.pop_back();
+    // already computed this type
+    if (!getAttribute(cur, ta).isNull())
+    {
+      continue;
+    }
     it = visited.find(cur);
+    // we have yet to visit children
     if (it == visited.end())
     {
+      // see if it has a type inferrable at pre traversal
       typeNode = TypeChecker::preComputeType(this, cur);
       if (typeNode.isNull())
       {
