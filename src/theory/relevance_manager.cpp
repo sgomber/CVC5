@@ -435,7 +435,7 @@ bool RelevanceManager::isRelevant(TNode lit)
 TNode RelevanceManager::getExplanationForRelevant(TNode atom)
 {
   // should remove negation
-  Assert (atom.getKind()!=NOT);
+  Assert(atom.getKind() != NOT);
   // Otherwise, we use an efficient implementation that only justifies
   // the input formulas that contain it.
   NodeList* ilist = nullptr;
@@ -483,7 +483,7 @@ TNode RelevanceManager::getExplanationForAsserted(TNode atom)
 {
   Assert(d_inFullEffortCheck);
   // should remove negation
-  Assert (atom.getKind()!=NOT);
+  Assert(atom.getKind() != NOT);
   if (!d_computeRelevanceForLemmas)
   {
     // Ensure we've computed relevance for input formulas first.
