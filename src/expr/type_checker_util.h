@@ -182,6 +182,10 @@ class SimpleTypeRule
     }
     return R::mkType(nm);
   }
+  static TypeNode preComputeType(NodeManager* nm, TNode n)
+  {
+    return R::mkType(nm);
+  }
 };
 
 /** 
@@ -208,6 +212,10 @@ class SimpleTypeRuleVar
         }
       }
     }
+    return R::mkType(nm);
+  }
+  static TypeNode preComputeType(NodeManager* nm, TNode n)
+  {
     return R::mkType(nm);
   }
 };

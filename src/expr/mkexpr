@@ -158,6 +158,12 @@ function typerule {
     typeNode = $2::computeType(nodeManager, n, check);
     break;
 "
+}
+
+function pretyperule {
+  # typerule OPERATOR typechecking-class
+  lineno=${BASH_LINENO[0]}
+  check_theory_seen
   pretyperules="${pretyperules}
   case kind::$1:
     //typeNode = $2::preComputeType(nodeManager, n);
