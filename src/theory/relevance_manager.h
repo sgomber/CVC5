@@ -155,6 +155,17 @@ class RelevanceManager : protected EnvObj
    */
   std::unordered_set<TNode> getRelevantAssertions(bool& success);
   /**
+   * Called when lem with associated skolem lemmas skLemmas is added as a
+   * lemma to the SAT solver.
+   * 
+   * This updates the list of input assertions and lemmas, as well as
+   * incrementing the difficulty if we are tracking difficulty based on lemmas.
+   * 
+   * @param lem The lemma.
+   * @param skLemmas Its associated skolem lemmas.
+   * @param needsJustify Whether this lemma requires justification, in which
+   * case lem and skLemmas is added to our list of input formulas; otherwise
+   * they are added to our list of lemmas.
    */
   void notifyLemma(Node lem,
                    const std::vector<Node>& skLemmas,
@@ -236,7 +247,7 @@ class RelevanceManager : protected EnvObj
   /** Have we computed relevance for input formulas at full effort? */
   bool d_computedRelevance;
   /** Have we computed relevance for input formulas lemmas at full effort? */
-  bool d_computeRelevanceForLemmas;
+  bool d_computedRelevanceForLemmas;
   /**
    * Did we succeed in computing the relevant selection? If this is false, there
    * was a syncronization issue between the input formula and the satisfying

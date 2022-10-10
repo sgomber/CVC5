@@ -134,7 +134,7 @@ void RelevanceManager::beginRound()
   d_inFullEffortCheck = true;
   d_success = true;
   d_computedRelevance = false;
-  d_computeRelevanceForLemmas = false;
+  d_computedRelevanceForLemmas = false;
 }
 
 void RelevanceManager::endRound() { d_inFullEffortCheck = false; }
@@ -157,7 +157,9 @@ void RelevanceManager::computeRelevance()
   {
     if (!computeRelevanceFor(node))
     {
-      // if we fail to justify an input formula, then no information is useful
+      Assert (!d_success);
+      // if we fail to justify an input formula, then no information
+      // can be inferred from this class, we abort.
       return;
     }
   }
@@ -436,8 +438,9 @@ TNode RelevanceManager::getExplanationForRelevant(TNode atom)
 {
   // should remove negation
   Assert(atom.getKind() != NOT);
-  // Otherwise, we use an efficient implementation that only justifies
-  // the input formulas that contain it.
+  // Instead of computing relevance for all inputs, we use an efficient
+  // implementation that only justifies the input formulas that contain the
+  // atom here.
   NodeList* ilist = nullptr;
   TNode nextInput;
   size_t ninputs = 0;
@@ -484,7 +487,7 @@ TNode RelevanceManager::getExplanationForAsserted(TNode atom)
   Assert(d_inFullEffortCheck);
   // should remove negation
   Assert(atom.getKind() != NOT);
-  if (!d_computeRelevanceForLemmas)
+  if (!d_computedRelevanceForLemmas)
   {
     // Ensure we've computed relevance for input formulas first.
     computeRelevance();
@@ -497,14 +500,14 @@ TNode RelevanceManager::getExplanationForAsserted(TNode atom)
       // return null
       return TNode::null();
     }
-    // Now, justify the lemmas, without adding to relevant literal set
+    // Now, justify the lemmas, without adding to relevant set
     for (const Node& l : d_lemmas)
     {
       justify(l, false);
     }
-    d_computeRelevanceForLemmas = true;
+    d_computedRelevanceForLemmas = true;
   }
-  // Return the explanation for the literal
+  // Return the explanation for the atom
   return getExpForAssertedInternal(atom);
 }
 
