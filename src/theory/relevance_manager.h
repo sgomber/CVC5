@@ -113,13 +113,13 @@ class RelevanceManager : protected EnvObj
   /** End round, called at the end of a full effort check in TheoryEngine. */
   void endRound();
   /**
-   * Is lit part of the current relevant selection? This computes the set of
+   * Is atom part of the current relevant selection? This computes the set of
    * relevant assertions if not already done so. This call is valid during a
    * full effort check in TheoryEngine, or after TheoryEngine has terminated
    * with "sat". This means that theories can query this during FULL or
    * LAST_CALL efforts, through the Valuation class.
    */
-  bool isRelevant(TNode lit);
+  bool isRelevant(TNode atom);
   /**
    * Get the explanation for why atom is relevant. This returns the
    * preprocessed formula that was the reason why the literal was

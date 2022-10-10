@@ -59,6 +59,12 @@ class QuantifiersState : public TheoryState
   const LogicInfo& getLogicInfo() const;
   /** get the stats */
   QuantifiersStatistics& getStats();
+  /**
+   * Get active formulas. Returns the set of formulas that are the reason
+   * for why at least one literal was asserted in the current context. This
+   * method should only be called at full effort.
+   */
+  std::unordered_set<Node> getActiveFormulas() const;
 
  private:
   /** The number of instantiation rounds in this SAT context */

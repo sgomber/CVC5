@@ -415,9 +415,11 @@ int32_t RelevanceManager::justify(TNode n, bool needsJustify)
   return d_jcache[ci];
 }
 
-bool RelevanceManager::isRelevant(TNode lit)
+bool RelevanceManager::isRelevant(TNode atom)
 {
   Assert(d_inFullEffortCheck);
+  // should remove negation
+  Assert(atom.getKind() != NOT);
   // since this is used in full effort, and typically for all asserted literals,
   // we just ensure relevance is fully computed here
   computeRelevance();
@@ -426,12 +428,7 @@ bool RelevanceManager::isRelevant(TNode lit)
     // always relevant if we failed to compute
     return true;
   }
-  // agnostic to negation
-  while (lit.getKind() == NOT)
-  {
-    lit = lit[0];
-  }
-  return d_rset.find(lit) != d_rset.end();
+  return d_rset.find(atom) != d_rset.end();
 }
 
 TNode RelevanceManager::getExplanationForRelevant(TNode atom)
@@ -500,7 +497,9 @@ TNode RelevanceManager::getExplanationForAsserted(TNode atom)
       // return null
       return TNode::null();
     }
-    // Now, justify the lemmas, without adding to relevant set
+    // Now, justify the lemmas, without adding to relevant set. This will
+    // update d_jcache, which is ok since we have already processed
+    // all formulas that impact relevance.
     for (const Node& l : d_lemmas)
     {
       justify(l, false);

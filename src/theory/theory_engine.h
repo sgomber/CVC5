@@ -205,19 +205,19 @@ class TheoryEngine : protected EnvObj
    */
   bool needCheck() const { return d_outputChannelUsed || d_lemmasAdded; }
   /**
-   * Is the literal lit (possibly) critical for satisfying the input formula in
-   * the current context? This call is applicable only during collectModelInfo
-   * or during LAST_CALL effort.
+   * Is (a literal over) the given atom critical for satisfying the input
+   * formula in the current context? This call is applicable only during
+   * collectModelInfo or during LAST_CALL effort.
    */
-  bool isRelevant(Node lit) const;
+  bool isRelevant(Node atom) const;
   /**
-   * Get the reason why lit was asserted in the current context. The return
-   * of this method is a preprocessed input formula or theory lemma, or the
-   * null node if the explanation failed to be computed.
+   * Get the reason why (a literal over) the given atom was asserted in the
+   * current context. The return of this method is a preprocessed input formula
+   * or theory lemma, or the null node if the explanation failed to be computed.
    *
    * This method should only be called at FULL effort check.
    */
-  TNode getExplanationForAsserted(TNode lit) const;
+  TNode getExplanationForAsserted(TNode atom) const;
   /**
    * Solve the given literal with a theory that owns it. The proof of tliteral
    * is carried in the trust node. The proof added to substitutionOut should

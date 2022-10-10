@@ -215,20 +215,19 @@ public:
   bool needCheck() const;
 
   /**
-   * Is the literal lit (possibly) critical for satisfying the input formula in
-   * the current context? This call is applicable only during collectModelInfo
-   * or during LAST_CALL effort.
+   * Is (a literal over) the given atom critical for satisfying the input
+   * formula in the current context? This call is applicable only during
+   * collectModelInfo or during LAST_CALL effort.
    */
-  bool isRelevant(Node lit) const;
+  bool isRelevant(Node atom) const;
   /**
-   * Get the reason why lit was asserted in the current context. The return
-   * of this method is a preprocessed input formula or theory lemma, or the
-   * null node if the explanation failed to be computed.
+   * Get the reason why (a literal over) the given atom was asserted in the
+   * current context. The return of this method is a preprocessed input formula
+   * or theory lemma, or the null node if the explanation failed to be computed.
    *
    * This method should only be called at FULL effort check.
    */
-  TNode getExplanationForAsserted(TNode lit) const;
-
+  TNode getExplanationForAsserted(TNode atom) const;
   //------------------------------------------- access methods for assertions
   /**
    * The following methods are intended only to be used in limited use cases,
@@ -236,9 +235,9 @@ public:
    * assertions from other theories.
    */
   /** The beginning iterator of facts for theory tid.*/
-  context::CDList<Assertion>::const_iterator factsBegin(TheoryId tid);
+  context::CDList<Assertion>::const_iterator factsBegin(TheoryId tid) const;
   /** The beginning iterator of facts for theory tid.*/
-  context::CDList<Assertion>::const_iterator factsEnd(TheoryId tid);
+  context::CDList<Assertion>::const_iterator factsEnd(TheoryId tid) const;
 };/* class Valuation */
 
 }  // namespace theory

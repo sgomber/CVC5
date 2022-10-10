@@ -217,20 +217,20 @@ bool Valuation::needCheck() const{
   return d_engine->needCheck();
 }
 
-bool Valuation::isRelevant(Node lit) const { return d_engine->isRelevant(lit); }
+bool Valuation::isRelevant(Node atom) const { return d_engine->isRelevant(atom); }
 
-TNode Valuation::getExplanationForAsserted(TNode lit) const
+TNode Valuation::getExplanationForAsserted(TNode atom) const
 {
-  return d_engine->getExplanationForAsserted(lit);
+  return d_engine->getExplanationForAsserted(atom);
 }
 
-context::CDList<Assertion>::const_iterator Valuation::factsBegin(TheoryId tid)
+context::CDList<Assertion>::const_iterator Valuation::factsBegin(TheoryId tid) const
 {
   Theory* theory = d_engine->theoryOf(tid);
   Assert(theory != nullptr);
   return theory->facts_begin();
 }
-context::CDList<Assertion>::const_iterator Valuation::factsEnd(TheoryId tid)
+context::CDList<Assertion>::const_iterator Valuation::factsEnd(TheoryId tid) const
 {
   Theory* theory = d_engine->theoryOf(tid);
   Assert(theory != nullptr);

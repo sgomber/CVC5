@@ -710,21 +710,21 @@ void TheoryEngine::ppStaticLearn(TNode in, NodeBuilder& learned)
   CVC5_FOR_EACH_THEORY;
 }
 
-bool TheoryEngine::isRelevant(Node lit) const
+bool TheoryEngine::isRelevant(Node atom) const
 {
   if (d_relManager != nullptr)
   {
-    return d_relManager->isRelevant(lit);
+    return d_relManager->isRelevant(atom);
   }
   // otherwise must assume its relevant
   return true;
 }
 
-TNode TheoryEngine::getExplanationForAsserted(TNode lit) const
+TNode TheoryEngine::getExplanationForAsserted(TNode atom) const
 {
   if (d_relManager != nullptr)
   {
-    return d_relManager->getExplanationForAsserted(lit);
+    return d_relManager->getExplanationForAsserted(atom);
   }
   Warning() << "TheoryEngine::getExplanationForAsserted: relevance manager not "
                "available"
