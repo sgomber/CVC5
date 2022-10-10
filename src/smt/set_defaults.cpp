@@ -739,16 +739,16 @@ void SetDefaults::setDefaultsPost(const LogicInfo& logic, Options& opts) const
   if (logic.isTheoryEnabled(THEORY_ARITH) && !logic.isLinear()
       && opts.arith.nlRlvMode != options::NlRlvMode::NONE)
   {
-    if (!opts.theory.relevanceFilter)
+    if (!opts.theory.trackRelevantLiterals)
     {
-      if (opts.theory.relevanceFilterWasSetByUser)
+      if (opts.theory.trackRelevantLiteralsWasSetByUser)
       {
-        Trace("smt") << "SolverEngine: turning on relevance filtering to support "
+        Trace("smt") << "SolverEngine: turning on relevance tracking to support "
                      "--nl-ext-rlv="
                   << opts.arith.nlRlvMode << std::endl;
       }
       // must use relevance filtering techniques
-      opts.writeTheory().relevanceFilter = true;
+      opts.writeTheory().trackRelevantLiterals = true;
     }
   }
 

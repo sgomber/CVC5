@@ -37,7 +37,6 @@ RelevanceManager::RelevanceManager(Env& env, Valuation val)
       d_rset(context()),
       d_inFullEffortCheck(false),
       d_computedRelevance(false),
-      d_trackRSetExp(false),
       d_miniscopeTopLevel(true),
       d_rsetExp(context()),
       d_jcache(context())
@@ -45,7 +44,6 @@ RelevanceManager::RelevanceManager(Env& env, Valuation val)
   if (options().smt.produceDifficulty)
   {
     d_dman = std::make_unique<DifficultyManager>(env, this, val);
-    d_trackRSetExp = true;
     // we cannot miniscope AND at the top level, since we need to
     // preserve the exact form of preprocessed assertions so the dependencies
     // are tracked.
@@ -377,13 +375,10 @@ int32_t RelevanceManager::justify(TNode n, bool needsJustify)
             }
             // always remember the explanation, regardless of whether this
             // node needs justification
-            if (d_trackRSetExp)
-            {
-              d_rsetExp[cur.first] = n;
-              Trace("rel-manager-exp")
-                  << "Reason for " << cur.first << " is " << n
-                  << ", polarity is " << hasPol << "/" << pol << std::endl;
-            }
+            d_rsetExp[cur.first] = n;
+            Trace("rel-manager-exp")
+                << "Reason for " << cur.first << " is " << n
+                << ", polarity is " << hasPol << "/" << pol << std::endl;
           }
         }
         d_jcache[cur] = ret;
@@ -439,13 +434,6 @@ bool RelevanceManager::isRelevant(TNode lit)
 
 std::unordered_set<Node> RelevanceManager::getActiveFormulas()
 {
-  if (!d_trackRSetExp)
-  {
-    Warning() << "RelevanceManager::getActiveFormulas: requires explanation "
-                 "tracking for relevance"
-              << std::endl;
-    return {};
-  }
   if (!d_computedActiveFormulas)
   {
     Assert(d_inFullEffortCheck);
@@ -466,7 +454,8 @@ std::unordered_set<Node> RelevanceManager::getActiveFormulas()
     }
   }
   std::unordered_set<Node> ret;
-  // take the input formulas that were the reason why a literal was asserted
+  // Take the input formulas that were the reason why a literal was asserted.
+  // This is contained in the domain of the explanations.
   for (const std::pair<const Node, const Node>& r : d_rsetExp)
   {
     ret.insert(r.second);
@@ -568,7 +557,7 @@ void RelevanceManager::notifyLemma(Node lem,
                                    const std::vector<Node>& skLemmas,
                                    bool needsJustify)
 {
-  if (options().theory.relevanceFilter && needsJustify)
+  if (needsJustify)
   {
     notifyPreprocessedAssertion(lem, false);
     notifyPreprocessedAssertions(skLemmas, false);

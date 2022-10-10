@@ -33,12 +33,12 @@ name   = "Theory Layer"
   help       = "condense values for functions in models rather than explicitly representing them"
 
 [[option]]
-  name       = "relevanceFilter"
+  name       = "trackRelevantLiterals"
   category   = "expert"
-  long       = "relevance-filter"
+  long       = "track-relevant-literals"
   type       = "bool"
   default    = "false"
-  help       = "enable analysis of relevance of asserted literals with respect to the input formula"
+  help       = "enable analysis of relevance of asserted literals with respect to the input formula and/or lemmas"
 
 [[option]]
   name       = "eeMode"

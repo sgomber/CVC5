@@ -241,8 +241,6 @@ class RelevanceManager : protected EnvObj
    * This flag is only valid at FULL effort.
    */
   bool d_success;
-  /** Are we tracking the sources of why a literal is relevant */
-  bool d_trackRSetExp;
   /**
    * Whether we have miniscoped top-level AND of assertions, which is done
    * as an optimization. This is disabled if e.g. we are computing difficulty,
