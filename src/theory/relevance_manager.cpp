@@ -157,7 +157,7 @@ void RelevanceManager::computeRelevance()
   {
     if (!computeRelevanceFor(node))
     {
-      Assert (!d_success);
+      Assert(!d_success);
       // if we fail to justify an input formula, then no information
       // can be inferred from this class, we abort.
       return;

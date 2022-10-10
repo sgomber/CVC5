@@ -157,10 +157,10 @@ class RelevanceManager : protected EnvObj
   /**
    * Called when lem with associated skolem lemmas skLemmas is added as a
    * lemma to the SAT solver.
-   * 
+   *
    * This updates the list of input assertions and lemmas, as well as
    * incrementing the difficulty if we are tracking difficulty based on lemmas.
-   * 
+   *
    * @param lem The lemma.
    * @param skLemmas Its associated skolem lemmas.
    * @param needsJustify Whether this lemma requires justification, in which
