@@ -129,7 +129,7 @@ class RelevanceManager : protected EnvObj
    * Get the explanation for literal lit is relevant. This returns the
    * preprocessed assertion that was the reason why the literal was relevant
    * in the current context. It returns null if the literal is not relevant.
-   * 
+   *
    * Note this method can be called before full effort check. It partially
    * caches the results of justifying input formulas that contain lit.
    */
@@ -187,7 +187,7 @@ class RelevanceManager : protected EnvObj
    *
    * This method returns 1 if we justified n to be true, -1 means
    * justified n to be false, 0 means n could not be justified.
-   * 
+   *
    * @param n The formula to justify
    * @param needsJustify True if n is an input formula, or a lemma that needs
    * justification. If this flag is false, we do not add literals to the

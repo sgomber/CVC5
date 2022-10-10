@@ -313,7 +313,7 @@ int32_t RelevanceManager::justify(TNode n, bool needsJustify)
   // We should only compute justification for nodes n that do not need
   // justification after we have computed relevance for all formulas that
   // need justification.
-  Assert (needsJustify || (d_inFullEffortCheck && d_computedRelevance));
+  Assert(needsJustify || (d_inFullEffortCheck && d_computedRelevance));
   // The set of nodes that we have computed currently have no value. Those
   // that are marked as having no value in d_jcache must be recomputed, since
   // the values for SAT literals may have changed.
@@ -441,7 +441,8 @@ std::unordered_set<Node> RelevanceManager::getActiveFormulas()
 {
   if (!d_trackRSetExp)
   {
-    Warning() << "RelevanceManager::getActiveFormulas: requires explanation tracking for relevance"
+    Warning() << "RelevanceManager::getActiveFormulas: requires explanation "
+                 "tracking for relevance"
               << std::endl;
     return {};
   }
@@ -452,7 +453,7 @@ std::unordered_set<Node> RelevanceManager::getActiveFormulas()
     if (!d_success)
     {
       Warning() << "RelevanceManager::getActiveFormulas: failed to compute "
-                  "relevance for input formulas"
+                   "relevance for input formulas"
                 << std::endl;
       // failed to compute, note this should never happen, if it does, we
       // return the empty vector
