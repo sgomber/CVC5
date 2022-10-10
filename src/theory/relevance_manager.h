@@ -121,19 +121,24 @@ class RelevanceManager : protected EnvObj
    */
   bool isRelevant(TNode lit);
   /**
-   * Get a list of formulas that currently are responsible for why at
-   * least one (non-redundant) literal was asserted.
-   */
-  std::unordered_set<Node> getActiveFormulas();
-  /**
    * Get the explanation for literal lit is relevant. This returns the
-   * preprocessed assertion that was the reason why the literal was relevant
-   * in the current context. It returns null if the literal is not relevant.
+   * preprocessed input formula that was the reason why the literal was
+   * asserted in the current context.
    *
    * Note this method can be called before full effort check. It partially
    * caches the results of justifying input formulas that contain lit.
    */
   TNode getExplanationForRelevant(TNode lit);
+  /**
+   * Get the explanation for literal lit is asserted. This returns the
+   * preprocessed input formula or theory lemma that was the reason why the
+   * literal was asserted in the current context.
+   * 
+   * In contrast to the above method, this method may return
+   * theory lemmas that do not require justification. Also unlike the above
+   * method, it is intended to be called during full effort check only.
+   */
+  TNode getExplanationForAsserted(TNode lit);
   /**
    * Get the current relevant selection (see above). This computes this set
    * if not already done so. This call is valid during a full effort check in
@@ -208,8 +213,8 @@ class RelevanceManager : protected EnvObj
    */
   bool updateJustifyLastChild(const RlvPair& cur,
                               std::vector<int32_t>& childrenJustify);
-  /** Return the explanation for why atom is relevant, if it exists */
-  TNode getExplanationForRelevantInternal(TNode atom) const;
+  /** Return the explanation for why atom is asserted, if it exists */
+  TNode getExpForAssertedInternal(TNode atom) const;
   /** Get the list of assertions that contain atom */
   NodeList* getInputListFor(TNode atom, bool doMake = true);
   /** The valuation object, used to query current value of theory literals */
@@ -227,10 +232,10 @@ class RelevanceManager : protected EnvObj
   NodeSet d_rset;
   /** Are we in a full effort check? */
   bool d_inFullEffortCheck;
-  /** Have we computed relevance? */
+  /** Have we computed relevance for input formulas at full effort? */
   bool d_computedRelevance;
-  /** Have we computed active formulas? */
-  bool d_computedActiveFormulas;
+  /** Have we computed relevance for input formulas lemmas at full effort? */
+  bool d_computeRelevanceForLemmas;
   /**
    * Did we succeed in computing the relevant selection? If this is false, there
    * was a syncronization issue between the input formula and the satisfying
@@ -249,10 +254,11 @@ class RelevanceManager : protected EnvObj
    */
   bool d_miniscopeTopLevel;
   /**
-   * Map from the domain of d_rset to the assertion in d_input that is the
-   * reason why that literal is currently relevant.
+   * Map from asserted literals to the assertion in d_input or d_lemmas that is
+   * the reason why that literal is currently asserted. The domain of this
+   * map is a superset of d_rset.
    */
-  NodeMap d_rsetExp;
+  NodeMap d_assertExp;
   /** For computing polarity on terms */
   PolarityTermContext d_ptctx;
   /**

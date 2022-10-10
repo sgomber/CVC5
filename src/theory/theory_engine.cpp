@@ -720,16 +720,16 @@ bool TheoryEngine::isRelevant(Node lit) const
   return true;
 }
 
-std::unordered_set<Node> TheoryEngine::getActiveFormulas() const
+TNode TheoryEngine::getExplanationForAsserted(TNode lit) const
 {
   if (d_relManager != nullptr)
   {
-    return d_relManager->getActiveFormulas();
+    return d_relManager->getExplanationForAsserted(lit);
   }
   Warning()
-      << "TheoryEngine::getActiveFormulas: relevance manager not available"
+      << "TheoryEngine::getExplanationForAsserted: relevance manager not available"
       << std::endl;
-  return {};
+  return TNode::null();
 }
 
 theory::Theory::PPAssertStatus TheoryEngine::solve(

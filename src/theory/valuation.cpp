@@ -219,9 +219,9 @@ bool Valuation::needCheck() const{
 
 bool Valuation::isRelevant(Node lit) const { return d_engine->isRelevant(lit); }
 
-std::unordered_set<Node> Valuation::getActiveFormulas() const
+TNode Valuation::getExplanationForAsserted(TNode lit) const
 {
-  return d_engine->getActiveFormulas();
+  return d_engine->getExplanationForAsserted(lit);
 }
 
 context::CDList<Assertion>::const_iterator Valuation::factsBegin(TheoryId tid)

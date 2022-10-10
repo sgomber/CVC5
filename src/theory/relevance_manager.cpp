@@ -38,7 +38,7 @@ RelevanceManager::RelevanceManager(Env& env, Valuation val)
       d_inFullEffortCheck(false),
       d_computedRelevance(false),
       d_miniscopeTopLevel(true),
-      d_rsetExp(context()),
+      d_assertExp(context()),
       d_jcache(context())
 {
   if (options().smt.produceDifficulty)
@@ -134,7 +134,7 @@ void RelevanceManager::beginRound()
   d_inFullEffortCheck = true;
   d_success = true;
   d_computedRelevance = false;
-  d_computedActiveFormulas = false;
+  d_computeRelevanceForLemmas = false;
 }
 
 void RelevanceManager::endRound() { d_inFullEffortCheck = false; }
@@ -170,7 +170,7 @@ void RelevanceManager::computeRelevance()
     }
     else
     {
-      Trace("rel-manager") << "...success, exp size = " << d_rsetExp.size()
+      Trace("rel-manager") << "...success, exp size = " << d_assertExp.size()
                            << std::endl;
     }
   }
@@ -375,7 +375,7 @@ int32_t RelevanceManager::justify(TNode n, bool needsJustify)
             }
             // always remember the explanation, regardless of whether this
             // node needs justification
-            d_rsetExp[cur.first] = n;
+            d_assertExp[cur.first] = n;
             Trace("rel-manager-exp")
                 << "Reason for " << cur.first << " is " << n << ", polarity is "
                 << hasPol << "/" << pol << std::endl;
@@ -432,11 +432,18 @@ bool RelevanceManager::isRelevant(TNode lit)
   return d_rset.find(lit) != d_rset.end();
 }
 
-std::unordered_set<Node> RelevanceManager::getActiveFormulas()
+TNode RelevanceManager::getExplanationForAsserted(TNode lit)
 {
-  if (!d_computedActiveFormulas)
+  Assert(d_inFullEffortCheck);
+  // agnostic to negation
+  while (lit.getKind() == NOT)
   {
-    Assert(d_inFullEffortCheck);
+    lit = lit[0];
+  }
+  if (!d_computeRelevanceForLemmas)
+  {
+    d_computeRelevanceForLemmas = true;
+    // Ensure we've computed relevance for input formulas first.
     computeRelevance();
     if (!d_success)
     {
@@ -444,23 +451,17 @@ std::unordered_set<Node> RelevanceManager::getActiveFormulas()
                    "relevance for input formulas"
                 << std::endl;
       // failed to compute, note this should never happen, if it does, we
-      // return the empty vector
-      return {};
+      // return null
+      return TNode::null();
     }
-    // now, justify the lemmas, without adding to relevant set
+    // Now, justify the lemmas, without adding to relevant literal set
     for (const Node& l : d_lemmas)
     {
       justify(l, false);
     }
   }
-  std::unordered_set<Node> ret;
-  // Take the input formulas that were the reason why a literal was asserted.
-  // This is contained in the domain of the explanations.
-  for (const std::pair<const Node, const Node>& r : d_rsetExp)
-  {
-    ret.insert(r.second);
-  }
-  return ret;
+  // Return the explanation for the literal
+  return getExpForAssertedInternal(lit);
 }
 
 TNode RelevanceManager::getExplanationForRelevant(TNode lit)
@@ -470,6 +471,8 @@ TNode RelevanceManager::getExplanationForRelevant(TNode lit)
   {
     lit = lit[0];
   }
+  // Otherwise, we use an efficient implementation that only justifies
+  // the input formulas that contain it.
   NodeList* ilist = nullptr;
   TNode nextInput;
   size_t ninputs = 0;
@@ -477,7 +480,7 @@ TNode RelevanceManager::getExplanationForRelevant(TNode lit)
   do
   {
     // check if it has an explanation yet
-    TNode exp = getExplanationForRelevantInternal(lit);
+    TNode exp = getExpForAssertedInternal(lit);
     if (!exp.isNull())
     {
       return exp;
@@ -511,10 +514,10 @@ TNode RelevanceManager::getExplanationForRelevant(TNode lit)
   return TNode::null();
 }
 
-TNode RelevanceManager::getExplanationForRelevantInternal(TNode atom) const
+TNode RelevanceManager::getExpForAssertedInternal(TNode atom) const
 {
-  NodeMap::const_iterator it = d_rsetExp.find(atom);
-  if (it != d_rsetExp.end())
+  NodeMap::const_iterator it = d_assertExp.find(atom);
+  if (it != d_assertExp.end())
   {
     return it->second;
   }

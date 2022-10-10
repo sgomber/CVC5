@@ -221,13 +221,13 @@ public:
    */
   bool isRelevant(Node lit) const;
   /**
-   * Get a list of formulas that currently are responsible for why at
-   * least one (non-redundant) literal was asserted.
+   * Get the reason why lit was asserted in the current context. The return
+   * of this method is a preprocessed input formula or theory lemma, or the
+   * null node if the explanation failed to be computed.
    *
-   * The list of returned formulas are all either preprocessing input formulas
-   * or preprocessed theory lemmas.
+   * This method should only be called at FULL effort check.
    */
-  std::unordered_set<Node> getActiveFormulas() const;
+  TNode getExplanationForAsserted(TNode lit) const;
 
   //------------------------------------------- access methods for assertions
   /**
