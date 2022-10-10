@@ -133,7 +133,7 @@ class RelevanceManager : protected EnvObj
    * Get the explanation for literal lit is asserted. This returns the
    * preprocessed input formula or theory lemma that was the reason why the
    * literal was asserted in the current context.
-   * 
+   *
    * In contrast to the above method, this method may return
    * theory lemmas that do not require justification. Also unlike the above
    * method, it is intended to be called during full effort check only.

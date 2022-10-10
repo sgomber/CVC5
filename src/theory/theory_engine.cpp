@@ -726,9 +726,9 @@ TNode TheoryEngine::getExplanationForAsserted(TNode lit) const
   {
     return d_relManager->getExplanationForAsserted(lit);
   }
-  Warning()
-      << "TheoryEngine::getExplanationForAsserted: relevance manager not available"
-      << std::endl;
+  Warning() << "TheoryEngine::getExplanationForAsserted: relevance manager not "
+               "available"
+            << std::endl;
   return TNode::null();
 }
 
