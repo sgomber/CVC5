@@ -41,8 +41,7 @@ Result SmtDriverMinAssert::checkSatNext()
   Trace("smt-min-assert") << "--- checkSatNext #models=" << d_modelValues.size()
                           << std::endl;
   Trace("smt-min-assert") << "checkSatNext: preprocess" << std::endl;
-  Assertions& as = d_smt.getAssertions();
-  d_smt.preprocess(as);
+  d_smt.preprocess();
   if (!d_initialized)
   {
     // just preprocess on the first check, preprocessed assertions will be
@@ -51,7 +50,7 @@ Result SmtDriverMinAssert::checkSatNext()
     return Result(Result::UNKNOWN, UnknownExplanation::REQUIRES_CHECK_AGAIN);
   }
   Trace("smt-min-assert") << "checkSatNext: assertToInternal" << std::endl;
-  d_smt.assertToInternal(as);
+  d_smt.assertToInternal();
   Trace("smt-min-assert") << "checkSatNext: checkSatInternal" << std::endl;
   Result result = d_smt.checkSatInternal();
   Trace("smt-min-assert") << "checkSatNext: checkSatInternal returns " << result
