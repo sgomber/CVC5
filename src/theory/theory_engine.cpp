@@ -720,7 +720,7 @@ bool TheoryEngine::isRelevant(Node lit) const
   return true;
 }
 
-std::vector<Node> TheoryEngine::getActiveFormulas() const
+std::unordered_set<Node> TheoryEngine::getActiveFormulas() const
 {
   if (d_relManager != nullptr)
   {

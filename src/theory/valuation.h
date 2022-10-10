@@ -227,7 +227,7 @@ public:
    * The list of returned formulas are all either preprocessing input formulas
    * or preprocessed theory lemmas.
    */
-  std::vector<Node> getActiveFormulas() const;
+  std::unordered_set<Node> getActiveFormulas() const;
 
   //------------------------------------------- access methods for assertions
   /**

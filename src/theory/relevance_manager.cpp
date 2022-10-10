@@ -35,11 +35,8 @@ RelevanceManager::RelevanceManager(Env& env, Valuation val)
       d_lemmas(userContext()),
       d_atomMap(userContext()),
       d_rset(context()),
-      d_aset(context()),
       d_inFullEffortCheck(false),
       d_computedRelevance(false),
-      d_fullEffortCheckFail(false),
-      d_success(false),
       d_trackRSetExp(false),
       d_miniscopeTopLevel(true),
       d_rsetExp(context()),
@@ -137,7 +134,7 @@ void RelevanceManager::addInputToAtomsMap(TNode input,
 void RelevanceManager::beginRound()
 {
   d_inFullEffortCheck = true;
-  d_fullEffortCheckFail = false;
+  d_success = true;
   d_computedRelevance = false;
   d_computedActiveFormulas = false;
 }
@@ -151,22 +148,18 @@ void RelevanceManager::computeRelevance()
   {
     return;
   }
+  // remember we are done if we are in full effort check
+  d_computedRelevance = true;
   // if not at full effort, should be tracking something else, e.g. explanation
   // for why literals are relevant.
-  Assert(d_inFullEffortCheck || d_trackRSetExp);
+  Assert(d_inFullEffortCheck);
   Trace("rel-manager") << "RelevanceManager::computeRelevance, full effort = "
                        << d_inFullEffortCheck << "..." << std::endl;
-  // if we already failed
-  if (d_fullEffortCheckFail)
-  {
-    d_success = false;
-    return;
-  }
   for (const Node& node: d_input)
   {
     if (!computeRelevanceFor(node))
     {
-      d_success = false;
+      // if we fail to justify an input formula, then no information is useful
       return;
     }
   }
@@ -183,17 +176,11 @@ void RelevanceManager::computeRelevance()
                            << std::endl;
     }
   }
-  if (d_inFullEffortCheck)
-  {
-    // remember we are done if we are in full effort check
-    d_computedRelevance = true;
-  }
-  d_success = !d_fullEffortCheckFail;
 }
 
 bool RelevanceManager::computeRelevanceFor(TNode input)
 {
-  int32_t val = justify(input);
+  int32_t val = justify(input, true);
   if (val == -1)
   {
     // if we are in full effort check and fail to justify, then we should
@@ -208,7 +195,7 @@ bool RelevanceManager::computeRelevanceFor(TNode input)
            << input;
       Trace("rel-manager") << serr.str() << std::endl;
       Assert(false) << serr.str();
-      d_fullEffortCheckFail = true;
+      d_success = false;
       return false;
     }
   }
@@ -321,8 +308,12 @@ bool RelevanceManager::updateJustifyLastChild(const RlvPair& cur,
   return false;
 }
 
-int32_t RelevanceManager::justify(TNode n)
+int32_t RelevanceManager::justify(TNode n, bool needsJustify)
 {
+  // We should only compute justification for nodes n that do not need
+  // justification after we have computed relevance for all formulas that
+  // need justification.
+  Assert (needsJustify || (d_inFullEffortCheck && d_computedRelevance));
   // The set of nodes that we have computed currently have no value. Those
   // that are marked as having no value in d_jcache must be recomputed, since
   // the values for SAT literals may have changed.
@@ -335,7 +326,6 @@ int32_t RelevanceManager::justify(TNode n)
       itc;
   RlvPair cur;
   TCtxStack visit(&d_ptctx);
-  bool isActive = false;
   visit.pushInitial(n);
   do
   {
@@ -380,7 +370,13 @@ int32_t RelevanceManager::justify(TNode n)
           // relevant if weakly matches polarity
           if (!hasPol || pol == value)
           {
-            d_rset.insert(cur.first);
+            // If the input formula needs justification, add to relevant set.
+            if (needsJustify)
+            {
+              d_rset.insert(cur.first);
+            }
+            // always remember the explanation, regardless of whether this
+            // node needs justification
             if (d_trackRSetExp)
             {
               d_rsetExp[cur.first] = n;
@@ -388,7 +384,6 @@ int32_t RelevanceManager::justify(TNode n)
                   << "Reason for " << cur.first << " is " << n
                   << ", polarity is " << hasPol << "/" << pol << std::endl;
             }
-            isActive = true;
           }
         }
         d_jcache[cur] = ret;
@@ -418,11 +413,6 @@ int32_t RelevanceManager::justify(TNode n)
       }
     }
   } while (!visit.empty());
-  // add to active set if necessary
-  if (isActive)
-  {
-    d_aset.insert(n);
-  }
   RlvPair ci(n, d_ptctx.initialValue());
   Assert(d_jcache.find(ci) != d_jcache.end());
   return d_jcache[ci];
@@ -447,27 +437,39 @@ bool RelevanceManager::isRelevant(TNode lit)
   return d_rset.find(lit) != d_rset.end();
 }
 
-std::vector<Node> RelevanceManager::getActiveFormulas()
+std::unordered_set<Node> RelevanceManager::getActiveFormulas()
 {
-  if (d_computedActiveFormulas)
+  if (!d_trackRSetExp)
   {
-    return d_activeFormulas;
-  }
-  d_activeFormulas.clear();
-  Assert(d_inFullEffortCheck);
-  computeRelevance();
-  if (!d_success)
-  {
-    Warning() << "RelevanceManager::getActiveFormulas: failed to compute "
-                 "relevance for input formulas"
+    Warning() << "RelevanceManager::getActiveFormulas: requires explanation tracking for relevance"
               << std::endl;
-    // failed to compute, note this should never happen, if it does, we
-    // return the empty vector
     return {};
   }
-  std::vector<Node> ret;
+  if (!d_computedActiveFormulas)
+  {
+    Assert(d_inFullEffortCheck);
+    computeRelevance();
+    if (!d_success)
+    {
+      Warning() << "RelevanceManager::getActiveFormulas: failed to compute "
+                  "relevance for input formulas"
+                << std::endl;
+      // failed to compute, note this should never happen, if it does, we
+      // return the empty vector
+      return {};
+    }
+    // now, justify the lemmas, without adding to relevant set
+    for (const Node& l : d_lemmas)
+    {
+      justify(l, false);
+    }
+  }
+  std::unordered_set<Node> ret;
   // take the input formulas that were the reason why a literal was asserted
-
+  for (const std::pair<const Node, const Node>& r : d_rsetExp)
+  {
+    ret.insert(r.second);
+  }
   return ret;
 }
 

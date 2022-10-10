@@ -217,7 +217,7 @@ class TheoryEngine : protected EnvObj
    * The list of returned formulas are all either preprocessing input formulas
    * or preprocessed theory lemmas.
    */
-  std::vector<Node> getActiveFormulas() const;
+  std::unordered_set<Node> getActiveFormulas() const;
 
   /**
    * Solve the given literal with a theory that owns it. The proof of tliteral

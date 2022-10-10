@@ -219,7 +219,7 @@ bool Valuation::needCheck() const{
 
 bool Valuation::isRelevant(Node lit) const { return d_engine->isRelevant(lit); }
 
-std::vector<Node> Valuation::getActiveFormulas() const
+std::unordered_set<Node> Valuation::getActiveFormulas() const
 {
   return d_engine->getActiveFormulas();
 }

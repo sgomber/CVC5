@@ -124,11 +124,14 @@ class RelevanceManager : protected EnvObj
    * Get a list of formulas that currently are responsible for why at
    * least one (non-redundant) literal was asserted.
    */
-  std::vector<Node> getActiveFormulas();
+  std::unordered_set<Node> getActiveFormulas();
   /**
    * Get the explanation for literal lit is relevant. This returns the
    * preprocessed assertion that was the reason why the literal was relevant
    * in the current context. It returns null if the literal is not relevant.
+   * 
+   * Note this method can be called before full effort check. It partially
+   * caches the results of justifying input formulas that contain lit.
    */
   TNode getExplanationForRelevant(TNode lit);
   /**
@@ -184,8 +187,13 @@ class RelevanceManager : protected EnvObj
    *
    * This method returns 1 if we justified n to be true, -1 means
    * justified n to be false, 0 means n could not be justified.
+   * 
+   * @param n The formula to justify
+   * @param needsJustify True if n is an input formula, or a lemma that needs
+   * justification. If this flag is false, we do not add literals to the
+   * relevant set.
    */
-  int32_t justify(TNode n);
+  int32_t justify(TNode n, bool needsJustify);
   /**
    * Update justify last child. This method is a helper function for justify,
    * which is called at the moment that Boolean connective formula cur
@@ -217,18 +225,12 @@ class RelevanceManager : protected EnvObj
    * literals that are definitely relevant in this context.
    */
   NodeSet d_rset;
-  /**
-   * Set of active lemmas.
-   */
-  NodeSet d_aset;
   /** Are we in a full effort check? */
   bool d_inFullEffortCheck;
   /** Have we computed relevance? */
   bool d_computedRelevance;
   /** Have we computed active formulas? */
   bool d_computedActiveFormulas;
-  /** Have we failed to justify a formula in a full effort check? */
-  bool d_fullEffortCheckFail;
   /**
    * Did we succeed in computing the relevant selection? If this is false, there
    * was a syncronization issue between the input formula and the satisfying
@@ -265,8 +267,6 @@ class RelevanceManager : protected EnvObj
    * asserted value matches its polarity.
    */
   RlvPairIntMap d_jcache;
-  /** The active formula set, computed at full effort */
-  std::vector<Node> d_activeFormulas;
   /** Difficulty module */
   std::unique_ptr<DifficultyManager> d_dman;
 };
