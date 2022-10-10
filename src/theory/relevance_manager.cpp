@@ -377,8 +377,8 @@ int32_t RelevanceManager::justify(TNode n, bool needsJustify)
             // node needs justification
             d_rsetExp[cur.first] = n;
             Trace("rel-manager-exp")
-                << "Reason for " << cur.first << " is " << n
-                << ", polarity is " << hasPol << "/" << pol << std::endl;
+                << "Reason for " << cur.first << " is " << n << ", polarity is "
+                << hasPol << "/" << pol << std::endl;
           }
         }
         d_jcache[cur] = ret;

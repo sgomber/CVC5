@@ -743,9 +743,10 @@ void SetDefaults::setDefaultsPost(const LogicInfo& logic, Options& opts) const
     {
       if (opts.theory.trackRelevantLiteralsWasSetByUser)
       {
-        Trace("smt") << "SolverEngine: turning on relevance tracking to support "
-                     "--nl-ext-rlv="
-                  << opts.arith.nlRlvMode << std::endl;
+        Trace("smt")
+            << "SolverEngine: turning on relevance tracking to support "
+               "--nl-ext-rlv="
+            << opts.arith.nlRlvMode << std::endl;
       }
       // must use relevance filtering techniques
       opts.writeTheory().trackRelevantLiterals = true;
