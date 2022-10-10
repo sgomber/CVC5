@@ -83,7 +83,8 @@ void RelevanceManager::notifyPreprocessedAssertion(Node n, bool isInput)
   notifyPreprocessedAssertions(toProcess, isInput);
 }
 
-void RelevanceManager::addAssertionsInternal(std::vector<Node>& toProcess, context::CDList<Node>& list)
+void RelevanceManager::addAssertionsInternal(std::vector<Node>& toProcess,
+                                             context::CDList<Node>& list)
 {
   size_t i = 0;
   while (i < toProcess.size())
@@ -109,7 +110,8 @@ void RelevanceManager::addAssertionsInternal(std::vector<Node>& toProcess, conte
   }
 }
 
-void RelevanceManager::addInputToAtomsMap(TNode input, std::unordered_set<TNode>& visited)
+void RelevanceManager::addInputToAtomsMap(TNode input,
+                                          std::unordered_set<TNode>& visited)
 {
   std::vector<TNode> visit;
   TNode cur;

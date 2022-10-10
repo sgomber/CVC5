@@ -173,7 +173,8 @@ class RelevanceManager : protected EnvObj
    * method handles optimizations such as breaking apart top-level applications
    * of and.
    */
-  void addAssertionsInternal(std::vector<Node>& toProcess, context::CDList<Node>& list);
+  void addAssertionsInternal(std::vector<Node>& toProcess,
+                             context::CDList<Node>& list);
   /** compute the relevant selection */
   void computeRelevance();
   /**
