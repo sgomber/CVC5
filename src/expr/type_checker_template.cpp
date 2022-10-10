@@ -52,9 +52,7 @@ ${pretyperules}
       Unhandled() << " " << n.getKind();
   }
 
-  nodeManager->setAttribute(n, TypeAttr(), typeNode);
-  nodeManager->setAttribute(n, TypeCheckedAttr(),
-                            check || nodeManager->getAttribute(n, TypeCheckedAttr()));
+  nodeManager->setAttribute(n, PreTypeAttr(), typeNode);
 
   return typeNode;
 }

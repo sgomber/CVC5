@@ -297,6 +297,7 @@ for var in \
     exportConstant_cases \
     typechecker_includes \
     typerules \
+    pretyperules \
     construles \
     ; do
   eval text="\${text//\\\$\\{$var\\}/\${$var}}"
