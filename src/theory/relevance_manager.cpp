@@ -139,12 +139,14 @@ void RelevanceManager::beginRound()
   d_inFullEffortCheck = true;
   d_fullEffortCheckFail = false;
   d_computedRelevance = false;
+  d_computedActiveFormulas = false;
 }
 
 void RelevanceManager::endRound() { d_inFullEffortCheck = false; }
 
 void RelevanceManager::computeRelevance()
 {
+  // if we've already computed relevance at full effort, we are done
   if (d_computedRelevance)
   {
     return;
@@ -447,6 +449,11 @@ bool RelevanceManager::isRelevant(TNode lit)
 
 std::vector<Node> RelevanceManager::getActiveFormulas()
 {
+  if (d_computedActiveFormulas)
+  {
+    return d_activeFormulas;
+  }
+  d_activeFormulas.clear();
   Assert(d_inFullEffortCheck);
   computeRelevance();
   if (!d_success)

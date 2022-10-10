@@ -225,6 +225,8 @@ class RelevanceManager : protected EnvObj
   bool d_inFullEffortCheck;
   /** Have we computed relevance? */
   bool d_computedRelevance;
+  /** Have we computed active formulas? */
+  bool d_computedActiveFormulas;
   /** Have we failed to justify a formula in a full effort check? */
   bool d_fullEffortCheckFail;
   /**
@@ -263,6 +265,8 @@ class RelevanceManager : protected EnvObj
    * asserted value matches its polarity.
    */
   RlvPairIntMap d_jcache;
+  /** The active formula set, computed at full effort */
+  std::vector<Node> d_activeFormulas;
   /** Difficulty module */
   std::unique_ptr<DifficultyManager> d_dman;
 };
