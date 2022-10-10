@@ -726,7 +726,9 @@ std::vector<Node> TheoryEngine::getActiveFormulas() const
   {
     return d_relManager->getActiveFormulas();
   }
-  Warning() << "TheoryEngine::getActiveFormulas: relevance manager not available" << std::endl;
+  Warning()
+      << "TheoryEngine::getActiveFormulas: relevance manager not available"
+      << std::endl;
   return {};
 }
 
@@ -1339,7 +1341,8 @@ void TheoryEngine::lemma(TrustNode tlemma,
     std::vector<Node> sks;
     Node retLemma =
         d_propEngine->getPreprocessedTerm(tlemma.getProven(), skAsserts, sks);
-    d_relManager->notifyLemma(retLemma, skAsserts, isLemmaPropertyNeedsJustify(p));
+    d_relManager->notifyLemma(
+        retLemma, skAsserts, isLemmaPropertyNeedsJustify(p));
   }
 
   // Mark that we added some lemmas

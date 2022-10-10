@@ -463,11 +463,13 @@ std::vector<Node> RelevanceManager::getActiveFormulas()
   std::vector<Node> ret;
   if (!d_trackASet)
   {
-    Warning() << "Asking for RelevanceManager::isActive when active lemma tracking is disabled" << std::endl;
+    Warning() << "Asking for RelevanceManager::isActive when active lemma "
+                 "tracking is disabled"
+              << std::endl;
     return {};
   }
   computeRelevance();
-  
+
   return ret;
 }
 
@@ -561,7 +563,9 @@ std::unordered_set<TNode> RelevanceManager::getRelevantAssertions(bool& success)
   return rset;
 }
 
-void RelevanceManager::notifyLemma(Node lem, const std::vector<Node>& skLemmas, bool needsJustify)
+void RelevanceManager::notifyLemma(Node lem,
+                                   const std::vector<Node>& skLemmas,
+                                   bool needsJustify)
 {
   if (options().theory.relevanceFilter && needsJustify)
   {

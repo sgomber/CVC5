@@ -147,7 +147,9 @@ class RelevanceManager : protected EnvObj
   std::unordered_set<TNode> getRelevantAssertions(bool& success);
   /**
    */
-  void notifyLemma(Node lem, const std::vector<Node>& skLemmas, bool needsJustify);
+  void notifyLemma(Node lem,
+                   const std::vector<Node>& skLemmas,
+                   bool needsJustify);
   /** Notify that m is a (candidate) model, for difficulty measurements */
   void notifyCandidateModel(TheoryModel* m);
   /**
