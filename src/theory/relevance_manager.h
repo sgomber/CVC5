@@ -120,7 +120,11 @@ class RelevanceManager : protected EnvObj
    * LAST_CALL efforts, through the Valuation class.
    */
   bool isRelevant(TNode lit);
-  bool isActive(TNode f);
+  /**
+   * Get a list of formulas that currently are responsible for why at
+   * least one (non-redundant) literal was asserted.
+   */
+  std::vector<Node> getActiveFormulas();
   /**
    * Get the explanation for literal lit is relevant. This returns the
    * preprocessed assertion that was the reason why the literal was relevant
@@ -216,6 +220,8 @@ class RelevanceManager : protected EnvObj
   NodeSet d_aset;
   /** Are we in a full effort check? */
   bool d_inFullEffortCheck;
+  /** Have we computed relevance? */
+  bool d_computedRelevance;
   /** Have we failed to justify a formula in a full effort check? */
   bool d_fullEffortCheckFail;
   /**

@@ -219,7 +219,7 @@ bool Valuation::needCheck() const{
 
 bool Valuation::isRelevant(Node lit) const { return d_engine->isRelevant(lit); }
 
-bool Valuation::isActive(Node f) const { return d_engine->isActive(f); }
+std::vector<Node> Valuation::getActiveFormulas() const { return d_engine->getActiveFormulas(); }
 
 context::CDList<Assertion>::const_iterator Valuation::factsBegin(TheoryId tid)
 {

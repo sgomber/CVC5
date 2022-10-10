@@ -37,6 +37,7 @@ RelevanceManager::RelevanceManager(Env& env, Valuation val)
       d_rset(context()),
       d_aset(context()),
       d_inFullEffortCheck(false),
+      d_computedRelevance(false),
       d_fullEffortCheckFail(false),
       d_success(false),
       d_trackRSetExp(false),
@@ -149,12 +150,17 @@ void RelevanceManager::beginRound()
 {
   d_inFullEffortCheck = true;
   d_fullEffortCheckFail = false;
+  d_computedRelevance = false;
 }
 
 void RelevanceManager::endRound() { d_inFullEffortCheck = false; }
 
 void RelevanceManager::computeRelevance()
 {
+  if (d_computedRelevance)
+  {
+    return;
+  }
   // if not at full effort, should be tracking something else, e.g. explanation
   // for why literals are relevant.
   Assert(d_inFullEffortCheck || d_trackRSetExp);
@@ -174,10 +180,6 @@ void RelevanceManager::computeRelevance()
       return;
     }
   }
-  if (d_trackASet)
-  {
-    // if tracking 
-  }
   if (TraceIsOn("rel-manager"))
   {
     if (d_inFullEffortCheck)
@@ -190,6 +192,11 @@ void RelevanceManager::computeRelevance()
       Trace("rel-manager") << "...success, exp size = " << d_rsetExp.size()
                            << std::endl;
     }
+  }
+  if (d_inFullEffortCheck)
+  {
+    // remember we are done if we are in full effort check
+    d_computedRelevance = true;
   }
   d_success = !d_fullEffortCheckFail;
 }
@@ -450,23 +457,18 @@ bool RelevanceManager::isRelevant(TNode lit)
   return d_rset.find(lit) != d_rset.end();
 }
 
-bool RelevanceManager::isActive(TNode f)
+std::vector<Node> RelevanceManager::getActiveFormulas()
 {
   Assert(d_inFullEffortCheck);
+  std::vector<Node> ret;
   if (!d_trackASet)
   {
     Warning() << "Asking for RelevanceManager::isActive when active lemma tracking is disabled" << std::endl;
-    return true;
+    return {};
   }
-  // since this is used in full effort, and typically for all asserted literals,
-  // we just ensure relevance is fully computed here
   computeRelevance();
-  if (!d_success)
-  {
-    // always relevant if we failed to compute
-    return true;
-  }
-  return d_aset.find(f) != d_aset.end();
+  
+  return ret;
 }
 
 TNode RelevanceManager::getExplanationForRelevant(TNode lit)

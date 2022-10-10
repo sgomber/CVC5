@@ -211,13 +211,13 @@ class TheoryEngine : protected EnvObj
    */
   bool isRelevant(Node lit) const;
   /**
-   * Is the formula responsible for a (non-redundant) asserted literal in the
-   * current assertions?
-   * 
-   * The input f should either be a preprocessed input formula, or a
-   * preprocessed theory lemma.
+   * Get a list of formulas that currently are responsible for why at
+   * least one (non-redundant) literal was asserted.
+   *
+   * The list of returned formulas are all either preprocessing input formulas
+   * or preprocessed theory lemmas.
    */
-  bool isActive(Node f) const;
+  std::vector<Node> getActiveFormulas() const;
 
   /**
    * Solve the given literal with a theory that owns it. The proof of tliteral

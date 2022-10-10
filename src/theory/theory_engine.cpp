@@ -720,14 +720,14 @@ bool TheoryEngine::isRelevant(Node lit) const
   return true;
 }
 
-bool TheoryEngine::isActive(Node f) const
+std::vector<Node> TheoryEngine::getActiveFormulas() const
 {
   if (d_relManager != nullptr)
   {
-    return d_relManager->isActive(f);
+    return d_relManager->getActiveFormulas();
   }
-  // otherwise must assume its active
-  return true;
+  Warning() << "TheoryEngine::getActiveFormulas: relevance manager not available" << std::endl;
+  return {};
 }
 
 theory::Theory::PPAssertStatus TheoryEngine::solve(
