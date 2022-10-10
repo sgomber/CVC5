@@ -217,14 +217,14 @@ bool Valuation::needCheck() const{
   return d_engine->needCheck();
 }
 
-bool Valuation::isRelevant(Node atom) const
+bool Valuation::isRelevant(Node lit) const
 {
-  return d_engine->isRelevant(atom);
+  return d_engine->isRelevant(lit);
 }
 
-TNode Valuation::getExplanationForAsserted(TNode atom) const
+TNode Valuation::getExplanationForAsserted(TNode lit) const
 {
-  return d_engine->getExplanationForAsserted(atom);
+  return d_engine->getExplanationForAsserted(lit);
 }
 
 context::CDList<Assertion>::const_iterator Valuation::factsBegin(

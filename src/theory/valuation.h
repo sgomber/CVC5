@@ -215,19 +215,19 @@ public:
   bool needCheck() const;
 
   /**
-   * Is (a literal over) the given atom critical for satisfying the input
+   * Is the given literal critical for satisfying the input
    * formula in the current context? This call is applicable only during
    * collectModelInfo or during LAST_CALL effort.
    */
-  bool isRelevant(Node atom) const;
+  bool isRelevant(Node lit) const;
   /**
-   * Get the reason why (a literal over) the given atom was asserted in the
+   * Get the reason why the given literal was asserted in the
    * current context. The return of this method is a preprocessed input formula
    * or theory lemma, or the null node if the explanation failed to be computed.
    *
    * This method should only be called at FULL effort check.
    */
-  TNode getExplanationForAsserted(TNode atom) const;
+  TNode getExplanationForAsserted(TNode lit) const;
   //------------------------------------------- access methods for assertions
   /**
    * The following methods are intended only to be used in limited use cases,

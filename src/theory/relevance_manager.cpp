@@ -415,11 +415,12 @@ int32_t RelevanceManager::justify(TNode n, bool needsJustify)
   return d_jcache[ci];
 }
 
-bool RelevanceManager::isRelevant(TNode atom)
+bool RelevanceManager::isRelevant(TNode lit)
 {
   Assert(d_inFullEffortCheck);
-  // should remove negation
-  Assert(atom.getKind() != NOT);
+  // agnostic to negation
+  TNode atom = lit.getKind()==NOT ? lit[0] : lit;
+  Assert (atom.getKind()!=NOT);
   // since this is used in full effort, and typically for all asserted literals,
   // we just ensure relevance is fully computed here
   computeRelevance();
@@ -431,10 +432,11 @@ bool RelevanceManager::isRelevant(TNode atom)
   return d_rset.find(atom) != d_rset.end();
 }
 
-TNode RelevanceManager::getExplanationForRelevant(TNode atom)
+TNode RelevanceManager::getExplanationForRelevant(TNode lit)
 {
-  // should remove negation
-  Assert(atom.getKind() != NOT);
+  // agnostic to negation
+  TNode atom = lit.getKind()==NOT ? lit[0] : lit;
+  Assert (atom.getKind()!=NOT);
   // Instead of computing relevance for all inputs, we use an efficient
   // implementation that only justifies the input formulas that contain the
   // atom here.
@@ -479,11 +481,12 @@ TNode RelevanceManager::getExplanationForRelevant(TNode atom)
   return TNode::null();
 }
 
-TNode RelevanceManager::getExplanationForAsserted(TNode atom)
+TNode RelevanceManager::getExplanationForAsserted(TNode lit)
 {
   Assert(d_inFullEffortCheck);
-  // should remove negation
-  Assert(atom.getKind() != NOT);
+  // agnostic to negation
+  TNode atom = lit.getKind()==NOT ? lit[0] : lit;
+  Assert (atom.getKind()!=NOT);
   if (!d_computedRelevanceForLemmas)
   {
     // Ensure we've computed relevance for input formulas first.

@@ -113,15 +113,15 @@ class RelevanceManager : protected EnvObj
   /** End round, called at the end of a full effort check in TheoryEngine. */
   void endRound();
   /**
-   * Is atom part of the current relevant selection? This computes the set of
+   * Is lit part of the current relevant selection? This computes the set of
    * relevant assertions if not already done so. This call is valid during a
    * full effort check in TheoryEngine, or after TheoryEngine has terminated
    * with "sat". This means that theories can query this during FULL or
    * LAST_CALL efforts, through the Valuation class.
    */
-  bool isRelevant(TNode atom);
+  bool isRelevant(TNode lit);
   /**
-   * Get the explanation for why atom is relevant. This returns the
+   * Get the explanation for why lit is relevant. This returns the
    * preprocessed formula that was the reason why the literal was
    * asserted in the current context, which must be an input formula or
    * theory lemma that requires justification.
@@ -129,17 +129,18 @@ class RelevanceManager : protected EnvObj
    * Note this method can be called before full effort check. It partially
    * caches the results of justifying input formulas that contain lit.
    */
-  TNode getExplanationForRelevant(TNode atom);
+  TNode getExplanationForRelevant(TNode lit);
   /**
-   * Get the explanation for why atom is asserted. This returns the
-   * preprocessed formula that was the reason why the atom was asserted in
-   * the current context.
+   * Get the explanation for why the atom of lit is asserted. This returns a
+   * preprocessed formula whose justification includes lit. If multiple
+   * formulas are justified by lit, then the first one in the list of
+   * input formulas / theory lemmas is returned.
    *
    * In contrast to getExplanationForRelevant, this method may return
    * theory lemmas that do not require justification. Also unlike the above
    * method, it is intended to be called during full effort check only.
    */
-  TNode getExplanationForAsserted(TNode atom);
+  TNode getExplanationForAsserted(TNode lit);
   /**
    * Get the current relevant selection (see above). This computes this set
    * if not already done so. This call is valid during a full effort check in
