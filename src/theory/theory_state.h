@@ -99,9 +99,9 @@ class TheoryState : protected EnvObj
    * assertions from other theories.
    */
   /** The beginning iterator of facts for theory tid.*/
-  context::CDList<Assertion>::const_iterator factsBegin(TheoryId tid);
+  context::CDList<Assertion>::const_iterator factsBegin(TheoryId tid) const;
   /** The beginning iterator of facts for theory tid.*/
-  context::CDList<Assertion>::const_iterator factsEnd(TheoryId tid);
+  context::CDList<Assertion>::const_iterator factsEnd(TheoryId tid) const;
 
   /** Get the underlying valuation class */
   Valuation& getValuation();

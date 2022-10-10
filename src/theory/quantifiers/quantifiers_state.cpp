@@ -138,6 +138,9 @@ QuantifiersStatistics& QuantifiersState::getStats() { return d_statistics; }
 
 std::unordered_set<Node> QuantifiersState::getActiveFormulas() const
 {
+  // To compute active formulas, look at all assertions, and take the union
+  // of the explanations of why they were asserted (via
+  // getExplanationForAsserted).
   std::unordered_set<Node> ret;
   const LogicInfo& logicInfo = getLogicInfo();
   for (TheoryId theoryId = THEORY_FIRST; theoryId < THEORY_LAST; ++theoryId)
@@ -152,7 +155,7 @@ std::unordered_set<Node> QuantifiersState::getActiveFormulas() const
          ++it)
     {
       Node lit = (*it).d_assertion;
-      Node atom = lit.getKind() == NOT ? lit[0] : lit;
+      Node atom = lit.getKind() == kind::NOT ? lit[0] : lit;
       Node f = d_valuation.getExplanationForAsserted(atom);
       ret.insert(f);
     }
