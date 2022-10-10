@@ -462,7 +462,9 @@ std::vector<Node> RelevanceManager::getActiveFormulas()
   computeRelevance();
   if (!d_success)
   {
-    Warning() << "RelevanceManager::getActiveFormulas: failed to compute relevance for input formulas" << std::endl;
+    Warning() << "RelevanceManager::getActiveFormulas: failed to compute "
+                 "relevance for input formulas"
+              << std::endl;
     // failed to compute, note this should never happen, if it does, we
     // return the empty vector
     return {};
