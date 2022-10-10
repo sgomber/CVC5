@@ -146,14 +146,13 @@ std::unordered_set<Node> QuantifiersState::getActiveFormulas() const
     {
       continue;
     }
-    for (context::CDList<Assertion>::const_iterator
-              it = factsBegin(theoryId),
-              it_end = factsEnd(theoryId);
-          it != it_end;
-          ++it)
+    for (context::CDList<Assertion>::const_iterator it = factsBegin(theoryId),
+                                                    it_end = factsEnd(theoryId);
+         it != it_end;
+         ++it)
     {
       Node lit = (*it).d_assertion;
-      Node atom = lit.getKind()==NOT ? lit[0] : lit;
+      Node atom = lit.getKind() == NOT ? lit[0] : lit;
       Node f = d_valuation.getExplanationForAsserted(atom);
       ret.insert(f);
     }
