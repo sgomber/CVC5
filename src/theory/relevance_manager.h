@@ -238,8 +238,6 @@ class RelevanceManager : protected EnvObj
   bool d_success;
   /** Are we tracking the sources of why a literal is relevant */
   bool d_trackRSetExp;
-  /** Are we tracking active lemmas? */
-  bool d_trackASet;
   /**
    * Whether we have miniscoped top-level AND of assertions, which is done
    * as an optimization. This is disabled if e.g. we are computing difficulty,

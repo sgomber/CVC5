@@ -41,7 +41,6 @@ RelevanceManager::RelevanceManager(Env& env, Valuation val)
       d_fullEffortCheckFail(false),
       d_success(false),
       d_trackRSetExp(false),
-      d_trackASet(false),
       d_miniscopeTopLevel(true),
       d_rsetExp(context()),
       d_jcache(context())
@@ -429,7 +428,7 @@ int32_t RelevanceManager::justify(TNode n)
     }
   } while (!visit.empty());
   // add to active set if necessary
-  if (d_trackASet && isActive)
+  if (isActive)
   {
     d_aset.insert(n);
   }
@@ -460,15 +459,15 @@ bool RelevanceManager::isRelevant(TNode lit)
 std::vector<Node> RelevanceManager::getActiveFormulas()
 {
   Assert(d_inFullEffortCheck);
-  std::vector<Node> ret;
-  if (!d_trackASet)
+  computeRelevance();
+  if (!d_success)
   {
-    Warning() << "Asking for RelevanceManager::isActive when active lemma "
-                 "tracking is disabled"
-              << std::endl;
+    Warning() << "RelevanceManager::getActiveFormulas: failed to compute relevance for input formulas" << std::endl;
+    // failed to compute, note this should never happen, if it does, we
+    // return the empty vector
     return {};
   }
-  computeRelevance();
+  std::vector<Node> ret;
 
   return ret;
 }
@@ -572,7 +571,7 @@ void RelevanceManager::notifyLemma(Node lem,
     notifyPreprocessedAssertion(lem, false);
     notifyPreprocessedAssertions(skLemmas, false);
   }
-  else if (d_trackASet)
+  else
   {
     d_lemmas.push_back(lem);
   }
