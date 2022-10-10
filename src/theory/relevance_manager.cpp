@@ -432,45 +432,10 @@ bool RelevanceManager::isRelevant(TNode lit)
   return d_rset.find(lit) != d_rset.end();
 }
 
-TNode RelevanceManager::getExplanationForAsserted(TNode lit)
+TNode RelevanceManager::getExplanationForRelevant(TNode atom)
 {
-  Assert(d_inFullEffortCheck);
-  // agnostic to negation
-  while (lit.getKind() == NOT)
-  {
-    lit = lit[0];
-  }
-  if (!d_computeRelevanceForLemmas)
-  {
-    d_computeRelevanceForLemmas = true;
-    // Ensure we've computed relevance for input formulas first.
-    computeRelevance();
-    if (!d_success)
-    {
-      Warning() << "RelevanceManager::getActiveFormulas: failed to compute "
-                   "relevance for input formulas"
-                << std::endl;
-      // failed to compute, note this should never happen, if it does, we
-      // return null
-      return TNode::null();
-    }
-    // Now, justify the lemmas, without adding to relevant literal set
-    for (const Node& l : d_lemmas)
-    {
-      justify(l, false);
-    }
-  }
-  // Return the explanation for the literal
-  return getExpForAssertedInternal(lit);
-}
-
-TNode RelevanceManager::getExplanationForRelevant(TNode lit)
-{
-  // agnostic to negation
-  while (lit.getKind() == NOT)
-  {
-    lit = lit[0];
-  }
+  // should remove negation
+  Assert (atom.getKind()!=NOT);
   // Otherwise, we use an efficient implementation that only justifies
   // the input formulas that contain it.
   NodeList* ilist = nullptr;
@@ -480,7 +445,7 @@ TNode RelevanceManager::getExplanationForRelevant(TNode lit)
   do
   {
     // check if it has an explanation yet
-    TNode exp = getExpForAssertedInternal(lit);
+    TNode exp = getExpForAssertedInternal(atom);
     if (!exp.isNull())
     {
       return exp;
@@ -488,13 +453,13 @@ TNode RelevanceManager::getExplanationForRelevant(TNode lit)
     // if the first time, we get the list of input formulas the atom occurs in
     if (index == 0)
     {
-      ilist = getInputListFor(lit, false);
+      ilist = getInputListFor(atom, false);
       if (ilist != nullptr)
       {
         ninputs = ilist->size();
       }
       Trace("rel-manager-exp-debug")
-          << "Atom " << lit << " occurs in " << ninputs << " assertions..."
+          << "Atom " << atom << " occurs in " << ninputs << " assertions..."
           << std::endl;
     }
     if (index < ninputs)
@@ -512,6 +477,35 @@ TNode RelevanceManager::getExplanationForRelevant(TNode lit)
   } while (!nextInput.isNull());
 
   return TNode::null();
+}
+
+TNode RelevanceManager::getExplanationForAsserted(TNode atom)
+{
+  Assert(d_inFullEffortCheck);
+  // should remove negation
+  Assert (atom.getKind()!=NOT);
+  if (!d_computeRelevanceForLemmas)
+  {
+    // Ensure we've computed relevance for input formulas first.
+    computeRelevance();
+    if (!d_success)
+    {
+      Warning() << "RelevanceManager::getActiveFormulas: failed to compute "
+                   "relevance for input formulas"
+                << std::endl;
+      // failed to compute, note this should never happen, if it does, we
+      // return null
+      return TNode::null();
+    }
+    // Now, justify the lemmas, without adding to relevant literal set
+    for (const Node& l : d_lemmas)
+    {
+      justify(l, false);
+    }
+    d_computeRelevanceForLemmas = true;
+  }
+  // Return the explanation for the literal
+  return getExpForAssertedInternal(atom);
 }
 
 TNode RelevanceManager::getExpForAssertedInternal(TNode atom) const

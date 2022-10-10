@@ -121,24 +121,25 @@ class RelevanceManager : protected EnvObj
    */
   bool isRelevant(TNode lit);
   /**
-   * Get the explanation for literal lit is relevant. This returns the
-   * preprocessed input formula that was the reason why the literal was
-   * asserted in the current context.
+   * Get the explanation for why atom is relevant. This returns the
+   * preprocessed formula that was the reason why the literal was
+   * asserted in the current context, which must be an input formula or
+   * theory lemma that requires justification.
    *
    * Note this method can be called before full effort check. It partially
    * caches the results of justifying input formulas that contain lit.
    */
-  TNode getExplanationForRelevant(TNode lit);
+  TNode getExplanationForRelevant(TNode atom);
   /**
-   * Get the explanation for literal lit is asserted. This returns the
-   * preprocessed input formula or theory lemma that was the reason why the
-   * literal was asserted in the current context.
+   * Get the explanation for why atom is asserted. This returns the
+   * preprocessed formula that was the reason why the atom was asserted in
+   * the current context.
    *
-   * In contrast to the above method, this method may return
+   * In contrast to getExplanationForRelevant, this method may return
    * theory lemmas that do not require justification. Also unlike the above
    * method, it is intended to be called during full effort check only.
    */
-  TNode getExplanationForAsserted(TNode lit);
+  TNode getExplanationForAsserted(TNode atom);
   /**
    * Get the current relevant selection (see above). This computes this set
    * if not already done so. This call is valid during a full effort check in
