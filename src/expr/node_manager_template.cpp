@@ -503,8 +503,8 @@ TypeNode NodeManager::getType(TNode n, bool check)
   {
     cur = visit.back();
     visit.pop_back();
-    // already computed this type
-    if (!getAttribute(cur, ta).isNull() && (!check || getAttribute(n, tca)))
+    // already computed (and checked, if necessary) this type
+    if (!getAttribute(cur, ta).isNull() && (!check || getAttribute(cur, tca)))
     {
       continue;
     }
@@ -512,8 +512,9 @@ TypeNode NodeManager::getType(TNode n, bool check)
     // we have yet to visit children
     if (it == visited.end())
     {
-      // see if it has a type inferrable at pre traversal
-      if (!check || cur.getNumChildren()==0)
+      // See if it has a type inferrable at pre traversal. We only do this
+      // if we are not checking.
+      if (!check)
       {
         typeNode = TypeChecker::preComputeType(this, cur);
         if (!typeNode.isNull())
