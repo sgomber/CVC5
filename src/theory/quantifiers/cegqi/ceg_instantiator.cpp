@@ -1384,9 +1384,8 @@ void CegInstantiator::processAssertions() {
                         << std::endl;
     d_curr_asserts[tid].clear();
     // collect all assertions from theory
-    for (context::CDList<Assertion>::const_iterator
-             it = val.factsBegin(tid),
-             itEnd = val.factsEnd(tid);
+    for (context::CDList<Assertion>::const_iterator it = val.factsBegin(tid),
+                                                    itEnd = val.factsEnd(tid);
          it != itEnd;
          ++it)
     {
