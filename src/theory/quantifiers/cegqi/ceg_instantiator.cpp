@@ -1373,6 +1373,7 @@ void CegInstantiator::processAssertions() {
   }
   //collect assertions for relevant theories
   const LogicInfo& logicInfo = d_qstate.getLogicInfo();
+  const Valuation& val = d_qstate.getValuation();
   for (TheoryId tid : d_tids)
   {
     if (!logicInfo.isTheoryEnabled(tid))
@@ -1384,8 +1385,8 @@ void CegInstantiator::processAssertions() {
     d_curr_asserts[tid].clear();
     // collect all assertions from theory
     for (context::CDList<Assertion>::const_iterator
-             it = d_qstate.factsBegin(tid),
-             itEnd = d_qstate.factsEnd(tid);
+             it = val.factsBegin(tid),
+             itEnd = val.factsEnd(tid);
          it != itEnd;
          ++it)
     {

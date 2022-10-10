@@ -63,6 +63,9 @@ class QuantifiersState : public TheoryState
    * Get active formulas. Returns the set of formulas that are the reason
    * for why at least one literal was asserted in the current context. This
    * method should only be called at full effort.
+   * 
+   * The set of formulas in the returned set are preprocessed input formulas
+   * and/or theory lemmas.
    */
   std::unordered_set<Node> getActiveFormulas() const;
 

@@ -600,11 +600,11 @@ bool TermDb::reset( Theory::Effort effort ){
   d_func_map_eqc_trie.clear();
   d_fmapRelDom.clear();
   d_consistent_ee = true;
-  
+
   /*
   std::unordered_set<Node> active = d_qstate.getActiveFormulas();
-  Trace("ajr-temp") << "*** " << active.size() << " active formulas" << std::endl;
-  for (const Node& n : active)
+  Trace("ajr-temp") << "*** " << active.size() << " active formulas" <<
+  std::endl; for (const Node& n : active)
   {
     Trace("ajr-temp") << "  " << n << std::endl;
   }
@@ -647,6 +647,7 @@ bool TermDb::reset( Theory::Effort effort ){
       ++eqcs_i;
     }
     const LogicInfo& logicInfo = d_qstate.getLogicInfo();
+    const Valuation& val = d_qstate.getValuation();
     for (TheoryId theoryId = THEORY_FIRST; theoryId < THEORY_LAST; ++theoryId)
     {
       if (!logicInfo.isTheoryEnabled(theoryId))
@@ -654,8 +655,8 @@ bool TermDb::reset( Theory::Effort effort ){
         continue;
       }
       for (context::CDList<Assertion>::const_iterator
-               it = d_qstate.factsBegin(theoryId),
-               it_end = d_qstate.factsEnd(theoryId);
+               it = val.factsBegin(theoryId),
+               it_end = val.factsEnd(theoryId);
            it != it_end;
            ++it)
       {

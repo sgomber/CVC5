@@ -149,8 +149,8 @@ std::unordered_set<Node> QuantifiersState::getActiveFormulas() const
     {
       continue;
     }
-    for (context::CDList<Assertion>::const_iterator it = factsBegin(theoryId),
-                                                    it_end = factsEnd(theoryId);
+    for (context::CDList<Assertion>::const_iterator it = d_valuation.factsBegin(theoryId),
+                                                    it_end = d_valuation.factsEnd(theoryId);
          it != it_end;
          ++it)
     {
