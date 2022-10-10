@@ -493,7 +493,6 @@ TypeNode NodeManager::getType(TNode n, bool check)
   {
     return typeNode;
   }
-  PreTypeAttr pta;
   std::unordered_map<TNode, bool> visited;
   std::unordered_map<TNode, bool>::iterator it;
   std::vector<TNode> visit;
@@ -521,7 +520,7 @@ TypeNode NodeManager::getType(TNode n, bool check)
         {
           visited[cur] = true;
           setAttribute(cur, ta, typeNode);
-          setAttribute(cur, pta, typeNode);
+          // note that the result of preComputeType is not cached
           continue;
         }
       }

@@ -28,9 +28,6 @@ namespace expr {
 namespace attr {
   struct VarNameTag { };
   struct SortArityTag { };
-  struct PreTypeTag
-  {
-  };
   struct TypeTag { };
   struct TypeCheckedTag { };
   struct UnresolvedDatatypeTag
@@ -49,7 +46,6 @@ namespace attr {
 
 typedef Attribute<attr::VarNameTag, std::string> VarNameAttr;
 typedef Attribute<attr::SortArityTag, uint64_t> SortArityAttr;
-typedef expr::Attribute<expr::attr::PreTypeTag, TypeNode> PreTypeAttr;
 typedef expr::Attribute<expr::attr::TypeTag, TypeNode> TypeAttr;
 typedef expr::Attribute<expr::attr::TypeCheckedTag, bool> TypeCheckedAttr;
 
