@@ -59,26 +59,16 @@ RelevanceManager::RelevanceManager(Env& env, Valuation val)
 void RelevanceManager::notifyPreprocessedAssertions(
     const std::vector<Node>& assertions, bool isInput)
 {
-  // add to input list, which is user-context dependent
-  std::vector<Node> toProcess;
+  // Add to input list, which is user-context dependent.
+  // Note we temporarily copy the input assertion list here to process it below.
+  std::vector<Node> toProcess = assertions;
+  addAssertionsInternal(toProcess, d_input);
+  std::unordered_set<TNode> visited;
   for (const Node& a : assertions)
   {
-    if (d_miniscopeTopLevel && a.getKind() == AND)
-    {
-      // split top-level AND
-      for (const Node& ac : a)
-      {
-        toProcess.push_back(ac);
-      }
-    }
-    else
-    {
-      d_input.push_back(a);
-      // add to atoms map
-      addInputToAtomsMap(a);
-    }
+    // add to atoms map
+    addInputToAtomsMap(a, visited);
   }
-  addAssertionsInternal(toProcess);
   // notify the difficulty manager if these are input assertions
   if (isInput && d_dman != nullptr)
   {
@@ -93,7 +83,7 @@ void RelevanceManager::notifyPreprocessedAssertion(Node n, bool isInput)
   notifyPreprocessedAssertions(toProcess, isInput);
 }
 
-void RelevanceManager::addAssertionsInternal(std::vector<Node>& toProcess)
+void RelevanceManager::addAssertionsInternal(std::vector<Node>& toProcess, context::CDList<Node>& list)
 {
   size_t i = 0;
   while (i < toProcess.size())
@@ -113,17 +103,14 @@ void RelevanceManager::addAssertionsInternal(std::vector<Node>& toProcess)
     {
       // note that a could be a literal, in which case we could add it to
       // an "always relevant" set here.
-      d_input.push_back(a);
-      // add to atoms map
-      addInputToAtomsMap(a);
+      list.push_back(a);
     }
     i++;
   }
 }
 
-void RelevanceManager::addInputToAtomsMap(TNode input)
+void RelevanceManager::addInputToAtomsMap(TNode input, std::unordered_set<TNode>& visited)
 {
-  std::unordered_set<TNode> visited;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(input);
@@ -470,6 +457,7 @@ std::vector<Node> RelevanceManager::getActiveFormulas()
     return {};
   }
   std::vector<Node> ret;
+  // take the input formulas that were the reason why a literal was asserted
 
   return ret;
 }
@@ -575,7 +563,11 @@ void RelevanceManager::notifyLemma(Node lem,
   }
   else
   {
-    d_lemmas.push_back(lem);
+    // if it is not incorporated as an input formula, include it as a lemma
+    std::vector<Node> toProcess;
+    toProcess.push_back(lem);
+    toProcess.insert(toProcess.end(), skLemmas.begin(), skLemmas.end());
+    addAssertionsInternal(toProcess, d_lemmas);
   }
   // notice that we may be in FULL or STANDARD effort here.
   if (d_dman != nullptr)

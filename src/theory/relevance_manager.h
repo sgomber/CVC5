@@ -161,7 +161,7 @@ class RelevanceManager : protected EnvObj
   /**
    * Called when an input assertion is added, this populates d_atomMap.
    */
-  void addInputToAtomsMap(TNode input);
+  void addInputToAtomsMap(TNode input, std::unordered_set<TNode>& visited);
   /**
    * Compute relevance for input assertion input. This returns false and
    * sets d_fullEffortCheckFail to true if we are at full effort and input
@@ -173,7 +173,7 @@ class RelevanceManager : protected EnvObj
    * method handles optimizations such as breaking apart top-level applications
    * of and.
    */
-  void addAssertionsInternal(std::vector<Node>& toProcess);
+  void addAssertionsInternal(std::vector<Node>& toProcess, context::CDList<Node>& list);
   /** compute the relevant selection */
   void computeRelevance();
   /**
