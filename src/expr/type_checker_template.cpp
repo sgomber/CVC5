@@ -27,8 +27,7 @@ ${typechecker_includes}
 namespace cvc5::internal {
 namespace expr {
 
-TypeNode TypeChecker::preComputeType(NodeManager* nodeManager,
-                                TNode n)
+TypeNode TypeChecker::preComputeType(NodeManager* nodeManager, TNode n)
 {
   TypeNode typeNode;
 
@@ -66,8 +65,7 @@ TypeNode TypeChecker::computeType(NodeManager* nodeManager, TNode n, bool check)
   // Infer the type
   switch (n.getKind())
   {
-
-      // clang-format off
+    // clang-format off
 ${typerules}
       // clang-format on
 
@@ -77,7 +75,7 @@ ${typerules}
   }
   return typeNode;
 
-}/* TypeChecker::computeType */
+} /* TypeChecker::computeType */
 
 bool TypeChecker::computeIsConst(NodeManager* nodeManager, TNode n)
 {

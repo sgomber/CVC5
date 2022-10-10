@@ -28,7 +28,9 @@ namespace expr {
 namespace attr {
   struct VarNameTag { };
   struct SortArityTag { };
-  struct PreTypeTag { };
+  struct PreTypeTag
+  {
+  };
   struct TypeTag { };
   struct TypeCheckedTag { };
   struct UnresolvedDatatypeTag
