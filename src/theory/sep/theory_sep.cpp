@@ -741,6 +741,7 @@ void TheorySep::postCheck(Effort level)
     {
       // failed to construct lemma
       inst_success = false;
+      // we need to add a different lemma
       needAddLemma = true;
     }
     else
@@ -750,11 +751,8 @@ void TheorySep::postCheck(Effort level)
       {
         // lemma is already true
         inst_success = false;
-      }
-      else
-      {
-        // lemma is not already true, we need to add a refinement
-        needAddLemma = true;
+        // we do not set needAddLemma to true, since the lemma is already true
+        // in the current model.
       }
       conc.push_back(polarity ? inst : inst.negate());
     }
