@@ -199,9 +199,6 @@ class TheorySep : public Theory {
   /** The notify class for d_equalityEngine */
   NotifyClass d_notify;
 
-  /** list of all refinement lemms */
-  std::map< Node, std::map< Node, std::vector< Node > > > d_refinement_lem;
-
   //cache for positive polarity start reduction
   NodeSet d_reduce;
   std::map< Node, std::map< Node, Node > > d_red_conc;

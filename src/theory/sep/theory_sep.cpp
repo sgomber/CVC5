@@ -706,7 +706,6 @@ void TheorySep::postCheck(Effort level)
       Assert(satom.getKind() == SEP_PTO || satom.getKind() == SEP_EMP);
       continue;
     }
-    needAddLemma = true;
     Assert(!d_type_ref.isNull());
     TypeNode tn = nm->mkSetType(d_type_ref);
     // tn = nm->mkSetType(nm->mkRefType(tn));
@@ -740,14 +739,22 @@ void TheorySep::postCheck(Effort level)
     Trace("sep-inst-debug") << "    applied inst : " << inst << std::endl;
     if (inst.isNull())
     {
+      // failed to construct lemma
       inst_success = false;
+      needAddLemma = true;
     }
     else
     {
       inst = rewrite(inst);
       if (inst == (polarity ? d_true : d_false))
       {
+        // lemma is already true
         inst_success = false;
+      }
+      else
+      {
+        // lemma is not already true, we need to add a refinement
+        needAddLemma = true;
       }
       conc.push_back(polarity ? inst : inst.negate());
     }
@@ -764,15 +771,11 @@ void TheorySep::postCheck(Effort level)
     lemc.push_back(pol_atom);
     lemc.insert(lemc.end(), conc.begin(), conc.end());
     Node lem = nm->mkNode(OR, lemc);
-    std::vector<Node>& rlems = d_refinement_lem[satom][slbl];
-    if (std::find(rlems.begin(), rlems.end(), lem) == rlems.end())
+    if (d_im.lemma(lem, InferenceId::SEP_REFINEMENT))
     {
-      rlems.push_back(lem);
-      Trace("sep-process") << "-----> refinement lemma (#" << rlems.size()
-                           << ") : " << lem << std::endl;
+      Trace("sep-process") << "-----> refinement lemma : " << lem << std::endl;
       Trace("sep-lemma") << "Sep::Lemma : negated star/wand refinement : "
                          << lem << std::endl;
-      d_im.lemma(lem, InferenceId::SEP_REFINEMENT);
       addedLemma = true;
     }
     else
