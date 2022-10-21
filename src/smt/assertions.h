@@ -119,8 +119,6 @@ class Assertions : protected EnvObj
    * @param pppg The preprocess proof generator of the proof manager.
    */
   void enableProofs(smt::PreprocessProofGenerator* pppg);
-  /** Is proof enabled? */
-  bool isProofEnabled() const;
   //------------------------------------ end for proofs
  private:
   /**
