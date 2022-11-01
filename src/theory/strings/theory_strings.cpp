@@ -142,6 +142,7 @@ void TheoryStrings::finishInit()
 
   bool eagerEval = options().strings.stringEagerEval;
   // The kinds we are treating as function application in congruence
+  d_equalityEngine->addFunctionKind(kind::ADD, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_LENGTH, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_CONCAT, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_IN_REGEXP, eagerEval);
