@@ -39,13 +39,6 @@ class SequencesRewriter : public TheoryRewriter
   ArithEntail& getArithEntail();
   StringsEntail& getStringsEntail();
 
-  //--------------------------------------theory-specific top-level calls
-  /** extended rewrite strings
-   *
-   * If this method returns a non-null node ret', then ret is equivalent to
-   * ret'.
-   */
-  static Node extendedRewrite(Node ret);
  protected:
   /** rewrite regular expression all
    *

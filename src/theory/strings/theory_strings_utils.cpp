@@ -457,6 +457,26 @@ Node mkCodeRange(Node t, uint32_t alphaCard)
                     nm->mkNode(LT, t, nm->mkConstInt(Rational(alphaCard))));
 }
 
+Node eliminatePrefixSuffix(Node node)
+{
+  Assert(node.getKind() == kind::STRING_PREFIX
+         || node.getKind() == kind::STRING_SUFFIX);
+  NodeManager* nm = NodeManager::currentNM();
+  Node lens = nm->mkNode(STRING_LENGTH, node[0]);
+  Node val;
+  if (node.getKind() == kind::STRING_PREFIX)
+  {
+    val = nm->mkConstInt(cvc5::internal::Rational(0));
+  }
+  else
+  {
+    Node lent = nm->mkNode(STRING_LENGTH, node[1]);
+    val = nm->mkNode(SUB, lent, lens);
+  }
+  // general reduction to equality + substr
+  return node[0].eqNode(nm->mkNode(STRING_SUBSTR, node[1], val, lens));
+}
+
 }  // namespace utils
 }  // namespace strings
 }  // namespace theory

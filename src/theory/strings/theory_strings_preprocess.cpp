@@ -927,8 +927,8 @@ Node StringsPreprocess::reduce(Node t,
   }
   else if (t.getKind() == kind::STRING_PREFIX || t.getKind()==kind::STRING_SUFFIX)
   {
-    retNode = SequencesRewriter::extendedRewrite(t);
-    Assert (retNode!=t);
+    // use the utility
+    retNode = utils::eliminatePrefixSuffix(t);
   }
   else if (t.getKind() == kind::STRING_CONTAINS)
   {

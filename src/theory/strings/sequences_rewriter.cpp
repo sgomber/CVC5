@@ -3556,7 +3556,7 @@ Node SequencesRewriter::rewritePrefixSuffix(Node n)
     return returnRewrite(n, eqs, Rewrite::SUF_PREFIX_TO_EQS);
   }
   
-  return node;
+  return n;
 }
 
 Node SequencesRewriter::lengthPreserveRewrite(Node n)
@@ -3704,65 +3704,6 @@ Node SequencesRewriter::postProcessRewrite(Node node, Node ret)
     ret = rewriteEqualityExt(ret);
   }
   return ret;
-}
-
-
-Node SequencesRewriter::extendedRewriteStrings(Node node)
-{
-  Kind k = node.getKind();
-  if (k == EQUAL)
-  {
-    strings::SequencesRewriter sr(&d_rew, nullptr);
-    return sr.rewriteEqualityExt(node);
-  }
-  else if (k == STRING_SUBSTR)
-  {
-    NodeManager* nm = NodeManager::currentNM();
-    Node tot_len = d_rew.rewrite(nm->mkNode(STRING_LENGTH, node[0]));
-    strings::ArithEntail aent(&d_rew);
-    // (str.substr s x y) --> "" if x < len(s) |= 0 >= y
-    Node n1_lt_tot_len = d_rew.rewrite(nm->mkNode(LT, node[1], tot_len));
-    if (aent.checkWithAssumption(n1_lt_tot_len, d_intZero, node[2], false))
-    {
-      Node ret = strings::Word::mkEmptyWord(node.getType());
-      return ret;
-    }
-
-    // (str.substr s x y) --> "" if 0 < y |= x >= str.len(s)
-    Node non_zero_len = d_rew.rewrite(nm->mkNode(LT, d_intZero, node[2]));
-    if (aent.checkWithAssumption(non_zero_len, node[1], tot_len, false))
-    {
-      Node ret = strings::Word::mkEmptyWord(node.getType());
-      return ret;
-    }
-    // (str.substr s x y) --> "" if x >= 0 |= 0 >= str.len(s)
-    Node geq_zero_start = d_rew.rewrite(nm->mkNode(GEQ, node[1], d_intZero));
-    if (aent.checkWithAssumption(geq_zero_start, d_intZero, tot_len, false))
-    {
-      Node ret = strings::Word::mkEmptyWord(node.getType());
-      return ret;
-    }
-  }
-  else if (k == STRING_SUFFIX || k == STRING_PREFIX)
-  {
-    NodeManager* nm = NodeManager::currentNM();
-    Node lens = nm->mkNode(STRING_LENGTH, node[0]);
-    Node lent = nm->mkNode(STRING_LENGTH, node[1]);
-    Node val;
-    if (isPrefix)
-    {
-      val = nm->mkConstInt(cvc5::internal::Rational(0));
-    }
-    else
-    {
-      val = nm->mkNode(SUB, lent, lens);
-    }
-    // general reduction to equality + substr
-    Node retNode = node[0].eqNode(nm->mkNode(STRING_SUBSTR, node[1], val, lens));
-    return ret;
-  }
-
-  return Node::null();
 }
 
 }  // namespace strings

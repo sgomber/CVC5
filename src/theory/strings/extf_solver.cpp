@@ -106,7 +106,7 @@ bool ExtfSolver::doReduction(int effort, Node n)
     pol = d_extfInfoTmp[n].d_const.getConst<bool>() ? 1 : -1;
   }
   // determine if it is the right effort
-  if (k == STRING_SUBSTR || (k == STRING_CONTAINS && pol == 1))
+  if (k == STRING_SUBSTR || (k == STRING_CONTAINS && pol == 1) || k == STRING_PREFIX || k == STRING_SUFFIX)
   {
     // we reduce these semi-eagerly, at effort 1
     if (effort != 1)
@@ -211,7 +211,7 @@ bool ExtfSolver::doReduction(int effort, Node n)
   else
   {
     NodeManager* nm = NodeManager::currentNM();
-    Assert(k == STRING_SUBSTR || k == STRING_UPDATE || k == STRING_CONTAINS
+    Assert(k == STRING_SUBSTR || k == STRING_UPDATE || k == STRING_PREFIX || k == STRING_SUFFIX || k == STRING_CONTAINS
            || k == STRING_INDEXOF || k == STRING_INDEXOF_RE || k == STRING_ITOS
            || k == STRING_STOI || k == STRING_REPLACE || k == STRING_REPLACE_ALL
            || k == SEQ_NTH || k == STRING_REPLACE_RE

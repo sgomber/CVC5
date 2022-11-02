@@ -222,6 +222,11 @@ Node mkAbstractStringValueForLength(Node n, Node len, size_t id);
  */
 Node mkCodeRange(Node t, uint32_t alphaCard);
 
+/**
+ * For prefix/suffix predicate node, returns the equivalent equality to substr.
+ */
+Node eliminatePrefixSuffix(Node node);
+
 }  // namespace utils
 }  // namespace strings
 }  // namespace theory
