@@ -63,6 +63,8 @@ ExtfSolver::ExtfSolver(Env& env,
   d_extt.addFunctionKind(kind::STRING_REPLACE_ALL);
   d_extt.addFunctionKind(kind::STRING_REPLACE_RE);
   d_extt.addFunctionKind(kind::STRING_REPLACE_RE_ALL);
+  d_extt.addFunctionKind(kind::STRING_PREFIX);
+  d_extt.addFunctionKind(kind::STRING_SUFFIX);
   d_extt.addFunctionKind(kind::STRING_CONTAINS);
   d_extt.addFunctionKind(kind::STRING_IN_REGEXP);
   d_extt.addFunctionKind(kind::STRING_LEQ);

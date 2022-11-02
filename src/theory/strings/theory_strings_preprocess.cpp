@@ -925,6 +925,11 @@ Node StringsPreprocess::reduce(Node t,
     // Thus, (str.rev x) = r
     retNode = r;
   }
+  else if (t.getKind() == kind::STRING_PREFIX || t.getKind()==kind::STRING_SUFFIX)
+  {
+    retNode = SequencesRewriter::extendedRewrite(t);
+    Assert (retNode!=t);
+  }
   else if (t.getKind() == kind::STRING_CONTAINS)
   {
     Node x = t[0];

@@ -254,7 +254,7 @@ Node ExtendedRewriter::extendedRewrite(Node n) const
                                  << std::endl;
     if (tid == THEORY_STRINGS)
     {
-      new_ret = extendedRewriteStrings(ret);
+      new_ret = SequencesRewriter::extendedRewrite(ret);
     }
   }
   //----------------------end theory-specific post-rewriting
@@ -1691,71 +1691,6 @@ bool ExtendedRewriter::inferSubstitution(Node n, Subs& subs, bool usePred) const
     return true;
   }
   return false;
-}
-
-Node ExtendedRewriter::extendedRewriteStrings(Node node) const
-{
-  Trace("q-ext-rewrite-debug")
-      << "Extended rewrite strings : " << node << std::endl;
-
-  Kind k = node.getKind();
-  if (k == EQUAL)
-  {
-    strings::SequencesRewriter sr(&d_rew, nullptr);
-    return sr.rewriteEqualityExt(node);
-  }
-  else if (k == STRING_SUBSTR)
-  {
-    NodeManager* nm = NodeManager::currentNM();
-    Node tot_len = d_rew.rewrite(nm->mkNode(STRING_LENGTH, node[0]));
-    strings::ArithEntail aent(&d_rew);
-    // (str.substr s x y) --> "" if x < len(s) |= 0 >= y
-    Node n1_lt_tot_len = d_rew.rewrite(nm->mkNode(LT, node[1], tot_len));
-    if (aent.checkWithAssumption(n1_lt_tot_len, d_intZero, node[2], false))
-    {
-      Node ret = strings::Word::mkEmptyWord(node.getType());
-      debugExtendedRewrite(node, ret, "SS_START_ENTAILS_ZERO_LEN");
-      return ret;
-    }
-
-    // (str.substr s x y) --> "" if 0 < y |= x >= str.len(s)
-    Node non_zero_len = d_rew.rewrite(nm->mkNode(LT, d_intZero, node[2]));
-    if (aent.checkWithAssumption(non_zero_len, node[1], tot_len, false))
-    {
-      Node ret = strings::Word::mkEmptyWord(node.getType());
-      debugExtendedRewrite(node, ret, "SS_NON_ZERO_LEN_ENTAILS_OOB");
-      return ret;
-    }
-    // (str.substr s x y) --> "" if x >= 0 |= 0 >= str.len(s)
-    Node geq_zero_start = d_rew.rewrite(nm->mkNode(GEQ, node[1], d_intZero));
-    if (aent.checkWithAssumption(geq_zero_start, d_intZero, tot_len, false))
-    {
-      Node ret = strings::Word::mkEmptyWord(node.getType());
-      debugExtendedRewrite(node, ret, "SS_GEQ_ZERO_START_ENTAILS_EMP_S");
-      return ret;
-    }
-  }
-  else if (k == STRING_SUFFIX || k == STRING_PREFIX)
-  {
-    NodeManager* nm = NodeManager::currentNM();
-    Node lens = nm->mkNode(STRING_LENGTH, node[0]);
-    Node lent = nm->mkNode(STRING_LENGTH, node[1]);
-    Node val;
-    if (isPrefix)
-    {
-      val = nm->mkConstInt(cvc5::internal::Rational(0));
-    }
-    else
-    {
-      val = nm->mkNode(SUB, lent, lens);
-    }
-    // general reduction to equality + substr
-    Node retNode = node[0].eqNode(nm->mkNode(STRING_SUBSTR, node[1], val, lens));
-    debugExtendedRewrite(node, retNode, "SUF_PREFIX_ELIM");
-    return ret;
-  }
-
-  return Node::null();
 }
 
 void ExtendedRewriter::debugExtendedRewrite(Node n,

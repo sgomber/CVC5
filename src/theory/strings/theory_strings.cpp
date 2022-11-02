@@ -151,6 +151,8 @@ void TheoryStrings::finishInit()
   // `seq.nth` is not always defined, and so we do not evaluate it eagerly.
   d_equalityEngine->addFunctionKind(kind::SEQ_NTH, false);
   // extended functions
+  d_equalityEngine->addFunctionKind(kind::STRING_PREFIX, eagerEval);
+  d_equalityEngine->addFunctionKind(kind::STRING_SUFFIX, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_CONTAINS, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_LEQ, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_SUBSTR, eagerEval);
