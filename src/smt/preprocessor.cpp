@@ -24,7 +24,6 @@
 #include "smt/assertions.h"
 #include "smt/env.h"
 #include "smt/preprocess_proof_generator.h"
-#include "smt/solver_engine.h"
 #include "theory/rewriter.h"
 
 using namespace std;
@@ -55,10 +54,8 @@ void Preprocessor::finishInit(TheoryEngine* te, prop::PropEngine* pe)
   d_processor.finishInit(d_ppContext.get());
 }
 
-bool Preprocessor::process(Assertions& as)
+bool Preprocessor::process(preprocessing::AssertionPipeline& ap)
 {
-  preprocessing::AssertionPipeline& ap = as.getAssertionPipeline();
-
   if (ap.size() == 0)
   {
     // nothing to do
@@ -77,7 +74,7 @@ bool Preprocessor::process(Assertions& as)
   }
 
   // process the assertions, return true if no conflict is discovered
-  bool noConflict = d_processor.apply(as);
+  bool noConflict = d_processor.apply(ap);
 
   // now, post-process the assertions
 

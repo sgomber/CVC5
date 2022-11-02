@@ -3253,11 +3253,6 @@ class CVC5_EXPORT Solver
   /* .................................................................... */
 
   /**
-   * @return Sort null.
-   */
-  Sort getNullSort() const;
-
-  /**
    * @return Sort Boolean.
    */
   Sort getBooleanSort() const;
