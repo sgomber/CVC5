@@ -171,7 +171,9 @@ void EagerSolver::notifyFact(TNode atom,
   Kind ak = atom.getKind();
   Node x;
   Node re;
-  if (ak==STRING_PREFIX || ak==STRING_SUFFIX)
+  // reason via regular expressions, which are only avaiable for the string
+  // type.
+  if ((ak==STRING_PREFIX || ak==STRING_SUFFIX) && atom[0].getType().isString())
   {
     NodeManager * nm = NodeManager::currentNM();
     // (str.prefix s t) implies (re.in t (re.++ (str.to_re s) re.all))
