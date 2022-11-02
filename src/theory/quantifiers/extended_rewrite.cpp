@@ -1735,6 +1735,25 @@ Node ExtendedRewriter::extendedRewriteStrings(Node node) const
       return ret;
     }
   }
+  else if (k == STRING_SUFFIX || k == STRING_PREFIX)
+  {
+    NodeManager* nm = NodeManager::currentNM();
+    Node lens = nm->mkNode(STRING_LENGTH, node[0]);
+    Node lent = nm->mkNode(STRING_LENGTH, node[1]);
+    Node val;
+    if (isPrefix)
+    {
+      val = nm->mkConstInt(cvc5::internal::Rational(0));
+    }
+    else
+    {
+      val = nm->mkNode(SUB, lent, lens);
+    }
+    // general reduction to equality + substr
+    Node retNode = node[0].eqNode(nm->mkNode(STRING_SUBSTR, node[1], val, lens));
+    debugExtendedRewrite(node, retNode, "SUF_PREFIX_ELIM");
+    return ret;
+  }
 
   return Node::null();
 }

@@ -3547,6 +3547,15 @@ Node SequencesRewriter::rewritePrefixSuffix(Node n)
       return returnRewrite(n, ret, Rewrite::SUF_PREFIX_CTN);
     }
   }
+
+  // Check if we can turn the prefix/suffix into equalities by showing that the
+  // prefix/suffix is at least as long as the string
+  Node eqs = d_stringsEntail.inferEqsFromContains(n[1], n[0]);
+  if (!eqs.isNull())
+  {
+    return returnRewrite(n, eqs, Rewrite::SUF_PREFIX_TO_EQS);
+  }
+  
   Node lens = NodeManager::currentNM()->mkNode(kind::STRING_LENGTH, n[0]);
   Node lent = NodeManager::currentNM()->mkNode(kind::STRING_LENGTH, n[1]);
   Node val;
@@ -3558,15 +3567,6 @@ Node SequencesRewriter::rewritePrefixSuffix(Node n)
   {
     val = NodeManager::currentNM()->mkNode(kind::SUB, lent, lens);
   }
-
-  // Check if we can turn the prefix/suffix into equalities by showing that the
-  // prefix/suffix is at least as long as the string
-  Node eqs = d_stringsEntail.inferEqsFromContains(n[1], n[0]);
-  if (!eqs.isNull())
-  {
-    return returnRewrite(n, eqs, Rewrite::SUF_PREFIX_TO_EQS);
-  }
-
   // general reduction to equality + substr
   Node retNode = n[0].eqNode(
       NodeManager::currentNM()->mkNode(kind::STRING_SUBSTR, n[1], val, lens));
