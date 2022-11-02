@@ -106,7 +106,8 @@ bool ExtfSolver::doReduction(int effort, Node n)
     pol = d_extfInfoTmp[n].d_const.getConst<bool>() ? 1 : -1;
   }
   // determine if it is the right effort
-  if (k == STRING_SUBSTR || (k == STRING_CONTAINS && pol == 1) || k == STRING_PREFIX || k == STRING_SUFFIX)
+  if (k == STRING_SUBSTR || (k == STRING_CONTAINS && pol == 1)
+      || k == STRING_PREFIX || k == STRING_SUFFIX)
   {
     // we reduce these semi-eagerly, at effort 1
     if (effort != 1)
@@ -211,12 +212,13 @@ bool ExtfSolver::doReduction(int effort, Node n)
   else
   {
     NodeManager* nm = NodeManager::currentNM();
-    Assert(k == STRING_SUBSTR || k == STRING_UPDATE || k == STRING_PREFIX || k == STRING_SUFFIX || k == STRING_CONTAINS
-           || k == STRING_INDEXOF || k == STRING_INDEXOF_RE || k == STRING_ITOS
-           || k == STRING_STOI || k == STRING_REPLACE || k == STRING_REPLACE_ALL
-           || k == SEQ_NTH || k == STRING_REPLACE_RE
-           || k == STRING_REPLACE_RE_ALL || k == STRING_LEQ
-           || k == STRING_TO_LOWER || k == STRING_TO_UPPER || k == STRING_REV)
+    Assert(k == STRING_SUBSTR || k == STRING_UPDATE || k == STRING_PREFIX
+           || k == STRING_SUFFIX || k == STRING_CONTAINS || k == STRING_INDEXOF
+           || k == STRING_INDEXOF_RE || k == STRING_ITOS || k == STRING_STOI
+           || k == STRING_REPLACE || k == STRING_REPLACE_ALL || k == SEQ_NTH
+           || k == STRING_REPLACE_RE || k == STRING_REPLACE_RE_ALL
+           || k == STRING_LEQ || k == STRING_TO_LOWER || k == STRING_TO_UPPER
+           || k == STRING_REV)
         << "Unknown reduction: " << k;
     std::vector<Node> new_nodes;
     Node res = d_preproc.simplify(n, new_nodes);

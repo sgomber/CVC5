@@ -925,7 +925,8 @@ Node StringsPreprocess::reduce(Node t,
     // Thus, (str.rev x) = r
     retNode = r;
   }
-  else if (t.getKind() == kind::STRING_PREFIX || t.getKind()==kind::STRING_SUFFIX)
+  else if (t.getKind() == kind::STRING_PREFIX
+           || t.getKind() == kind::STRING_SUFFIX)
   {
     // use the utility
     retNode = utils::eliminatePrefixSuffix(t);

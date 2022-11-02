@@ -3555,7 +3555,7 @@ Node SequencesRewriter::rewritePrefixSuffix(Node n)
   {
     return returnRewrite(n, eqs, Rewrite::SUF_PREFIX_TO_EQS);
   }
-  
+
   return n;
 }
 

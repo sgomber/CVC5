@@ -173,15 +173,16 @@ void EagerSolver::notifyFact(TNode atom,
   Node re;
   // reason via regular expressions, which are only avaiable for the string
   // type.
-  if ((ak==STRING_PREFIX || ak==STRING_SUFFIX) && atom[0].getType().isString())
+  if ((ak == STRING_PREFIX || ak == STRING_SUFFIX)
+      && atom[0].getType().isString())
   {
-    NodeManager * nm = NodeManager::currentNM();
+    NodeManager* nm = NodeManager::currentNM();
     // (str.prefix s t) implies (re.in t (re.++ (str.to_re s) re.all))
     // (str.suffix s t) implies (re.in t (re.++ re.all (str.to_re s)))
     x = atom[1];
     Node cf = nm->mkNode(STRING_TO_REGEXP, atom[0]);
     Node rem = nm->mkNode(REGEXP_ALL, {});
-    if (ak==STRING_PREFIX)
+    if (ak == STRING_PREFIX)
     {
       re = nm->mkNode(REGEXP_CONCAT, cf, rem);
     }
@@ -190,7 +191,7 @@ void EagerSolver::notifyFact(TNode atom,
       re = nm->mkNode(REGEXP_CONCAT, rem, cf);
     }
   }
-  else if (ak == STRING_IN_REGEXP && atom[1].getKind()==REGEXP_CONCAT)
+  else if (ak == STRING_IN_REGEXP && atom[1].getKind() == REGEXP_CONCAT)
   {
     x = atom[0];
     re = atom[1];
@@ -199,8 +200,8 @@ void EagerSolver::notifyFact(TNode atom,
   {
     return;
   }
-  Assert (x.getType().isString());
-  Assert (!re.isNull() && re.getKind()==REGEXP_CONCAT);
+  Assert(x.getType().isString());
+  Assert(!re.isNull() && re.getKind() == REGEXP_CONCAT);
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   Node eqc = ee->getRepresentative(x);
   // add prefix constraints
@@ -226,8 +227,7 @@ void EagerSolver::notifyFact(TNode atom,
       {
         if (blenEqc == nullptr)
         {
-          Node lenTerm =
-              NodeManager::currentNM()->mkNode(STRING_LENGTH, x);
+          Node lenTerm = NodeManager::currentNM()->mkNode(STRING_LENGTH, x);
           if (!ee->hasTerm(lenTerm))
           {
             break;
