@@ -163,49 +163,79 @@ void EagerSolver::notifyFact(TNode atom,
                              TNode fact,
                              bool isInternal)
 {
-  if (atom.getKind() == STRING_IN_REGEXP)
+  // negative memberships are not handled below
+  if (!polarity)
   {
-    if (polarity && atom[1].getKind() == REGEXP_CONCAT)
+    return;
+  }
+  Kind ak = atom.getKind();
+  Node x;
+  Node re;
+  if (ak==STRING_PREFIX || ak==STRING_SUFFIX)
+  {
+    NodeManager * nm = NodeManager::currentNM();
+    // (str.prefix s t) implies (re.in t (re.++ (str.to_re s) re.all))
+    // (str.suffix s t) implies (re.in t (re.++ re.all (str.to_re s)))
+    x = atom[1];
+    Node cf = nm->mkNode(STRING_TO_REGEXP, atom[0]);
+    Node rem = nm->mkNode(REGEXP_ALL, {});
+    if (ak==STRING_PREFIX)
     {
-      eq::EqualityEngine* ee = d_state.getEqualityEngine();
-      Node eqc = ee->getRepresentative(atom[0]);
-      // add prefix constraints
-      if (addEndpointsToEqcInfo(atom, atom[1], eqc))
+      re = nm->mkNode(REGEXP_CONCAT, cf, rem);
+    }
+    else
+    {
+      re = nm->mkNode(REGEXP_CONCAT, rem, cf);
+    }
+  }
+  else if (ak == STRING_IN_REGEXP && atom[1].getKind()==REGEXP_CONCAT)
+  {
+    x = atom[0];
+    re = atom[1];
+  }
+  else
+  {
+    return;
+  }
+  Assert (x.getType().isString());
+  Assert (!re.isNull() && re.getKind()==REGEXP_CONCAT);
+  eq::EqualityEngine* ee = d_state.getEqualityEngine();
+  Node eqc = ee->getRepresentative(x);
+  // add prefix constraints
+  if (addEndpointsToEqcInfo(atom, re, eqc))
+  {
+    // conflict, we are done
+    return;
+  }
+  else if (!options().strings.stringsEagerLenEntRegexp)
+  {
+    // do not infer length constraints if option is disabled
+    return;
+  }
+  // also infer length constraints if the first is a variable
+  if (x.isVar())
+  {
+    EqcInfo* blenEqc = nullptr;
+    for (size_t i = 0; i < 2; i++)
+    {
+      bool isLower = (i == 0);
+      Node b = d_rent.getConstantBoundLengthForRegexp(re, isLower);
+      if (!b.isNull())
       {
-        // conflict, we are done
-        return;
-      }
-      else if (!options().strings.stringsEagerLenEntRegexp)
-      {
-        // do not infer length constraints if option is disabled
-        return;
-      }
-      // also infer length constraints if the first is a variable
-      if (atom[0].isVar())
-      {
-        EqcInfo* blenEqc = nullptr;
-        for (size_t i = 0; i < 2; i++)
+        if (blenEqc == nullptr)
         {
-          bool isLower = (i == 0);
-          Node b = d_rent.getConstantBoundLengthForRegexp(atom[1], isLower);
-          if (!b.isNull())
+          Node lenTerm =
+              NodeManager::currentNM()->mkNode(STRING_LENGTH, x);
+          if (!ee->hasTerm(lenTerm))
           {
-            if (blenEqc == nullptr)
-            {
-              Node lenTerm =
-                  NodeManager::currentNM()->mkNode(STRING_LENGTH, atom[0]);
-              if (!ee->hasTerm(lenTerm))
-              {
-                break;
-              }
-              lenTerm = ee->getRepresentative(lenTerm);
-              blenEqc = d_state.getOrMakeEqcInfo(lenTerm);
-            }
-            if (addArithmeticBound(blenEqc, atom, isLower))
-            {
-              return;
-            }
+            break;
           }
+          lenTerm = ee->getRepresentative(lenTerm);
+          blenEqc = d_state.getOrMakeEqcInfo(lenTerm);
+        }
+        if (addArithmeticBound(blenEqc, atom, isLower))
+        {
+          return;
         }
       }
     }

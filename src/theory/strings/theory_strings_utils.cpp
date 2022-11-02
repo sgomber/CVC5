@@ -182,6 +182,16 @@ Node getConstantEndpoint(Node e, bool isSuf)
     e = e[1];
     ek = e.getKind();
   }
+  else if (ek == STRING_PREFIX && !isSuf)
+  {
+    e = e[0];
+    ek = e.getKind();
+  }
+  else if (ek == STRING_SUFFIX && isSuf)
+  {
+    e = e[0];
+    ek = e.getKind();
+  }
   if (ek == STRING_CONCAT || ek == REGEXP_CONCAT)
   {
     return getConstantComponent(e[isSuf ? e.getNumChildren() - 1 : 0]);
