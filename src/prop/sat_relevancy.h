@@ -29,7 +29,7 @@
 #include "theory/theory.h"
 #include "util/statistics_registry.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 class DecisionEngine;
 class TheoryEngine;

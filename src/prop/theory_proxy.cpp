@@ -77,13 +77,13 @@ void TheoryProxy::finishInit(CDCLTSatSolverInterface* satSolver,
 {
   d_cnfStream = cnfStream;
 
-  if (options::satTheoryRelevancy() != options::SatRelevancyMode::NONE)
+  if (options().prop.satTheoryRelevancy != options::SatRelevancyMode::NONE)
   {
     d_satRlv.reset(new SatRelevancy(satSolver,
                                     d_theoryEngine,
                                     d_env,
                                     cnfStream,
-                                    options::satTheoryRelevancy()));
+                                    options().prop.satTheoryRelevancy));
   }
 }
 

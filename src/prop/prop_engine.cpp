@@ -100,7 +100,7 @@ PropEngine::PropEngine(Env& env, TheoryEngine* te)
 
   // track and notify formulas if we are using SAT/Theory relevancy
   bool useSatTheoryRlv =
-      options::satTheoryRelevancy() != options::SatRelevancyMode::NONE;
+      options().prop.satTheoryRelevancy != options::SatRelevancyMode::NONE;
   FormulaLitPolicy flp = useSatTheoryRlv ? FormulaLitPolicy::TRACK_AND_NOTIFY
                                          : FormulaLitPolicy::TRACK;
   // CNF stream and theory proxy required pointers to each other, make the
