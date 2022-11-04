@@ -149,13 +149,13 @@ class TheoryStrings : public Theory {
     }
     void eqNotifyNewClass(TNode t) override
     {
-      Trace("strings") << "NotifyClass::eqNotifyNewClass(" << t << std::endl;
+      Trace("strings") << "NotifyClass::eqNotifyNewClass(" << t << ")" << std::endl;
       d_str.eqNotifyNewClass(t);
     }
     void eqNotifyMerge(TNode t1, TNode t2) override
     {
       Trace("strings") << "NotifyClass::eqNotifyMerge(" << t1 << ", " << t2
-                       << std::endl;
+                       << ")" << std::endl;
       d_str.eqNotifyMerge(t1, t2);
     }
     void eqNotifyDisequal(TNode t1, TNode t2, TNode reason) override

@@ -622,6 +622,7 @@ void Theory::check(Effort level)
     // Theories that don't have an equality engine should always return true
     // for preNotifyFact
     Assert(d_equalityEngine != nullptr);
+    d_assertingFact = fact;
     // assert to the equality engine
     if (atom.getKind() == kind::EQUAL)
     {
@@ -636,6 +637,7 @@ void Theory::check(Effort level)
     // notify the theory of the new fact, which is not internal
     notifyFact(atom, polarity, fact, false);
   }
+  d_assertingFact = TNode::null();
   Trace("theory-check") << "Theory::postCheck " << d_id << std::endl;
   // post-check at level
   postCheck(level);

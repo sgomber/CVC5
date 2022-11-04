@@ -183,6 +183,11 @@ std::string TheoryStrings::identify() const
 
 bool TheoryStrings::propagateLit(TNode literal)
 {
+  if (literal==d_assertingFact)
+  {
+    Trace("strings") << "Do not propagate asserting " << literal << std::endl;
+    return true;
+  }
   return d_im.propagateLit(literal);
 }
 

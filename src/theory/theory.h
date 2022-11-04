@@ -175,6 +175,8 @@ class Theory : protected EnvObj
    * The official equality engine, if we allocated it.
    */
   std::unique_ptr<eq::EqualityEngine> d_allocEqualityEngine;
+  /** The fact we are currently asserting */
+  TNode d_assertingFact;
   /**
    * The theory state, which contains contexts, valuation, and equality
    * engine. Notice the theory is responsible for memory management of this
