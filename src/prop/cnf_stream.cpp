@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Dejan Jovanovic, Haniel Barbosa, Liana Hadarean
+ *   Dejan Jovanovic, Haniel Barbosa, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -27,12 +27,10 @@
 #include "prop/prop_engine.h"
 #include "prop/theory_proxy.h"
 #include "smt/env.h"
-#include "smt/smt_statistics_registry.h"
-#include "smt/solver_engine_scope.h"
 #include "theory/theory.h"
 #include "theory/theory_engine.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace prop {
 
 CnfStream::CnfStream(Env& env,
@@ -51,7 +49,7 @@ CnfStream::CnfStream(Env& env,
       d_registrar(registrar),
       d_name(name),
       d_removable(false),
-      d_stats(name)
+      d_stats(statisticsRegistry(), name)
 {
 }
 
@@ -700,10 +698,7 @@ void CnfStream::convertAndAssertIte(TNode node, bool negated)
 // At the top level we must ensure that all clauses that are asserted are
 // not unit, except for the direct assertions. This allows us to remove the
 // clauses later when they are not needed anymore (lemmas for example).
-void CnfStream::convertAndAssert(TNode node,
-                                 bool removable,
-                                 bool negated,
-                                 bool input)
+void CnfStream::convertAndAssert(TNode node, bool removable, bool negated)
 {
   Trace("cnf") << "convertAndAssert(" << node
                << ", negated = " << (negated ? "true" : "false")
@@ -748,11 +743,12 @@ void CnfStream::convertAndAssert(TNode node, bool negated)
   }
 }
 
-CnfStream::Statistics::Statistics(const std::string& name)
-    : d_cnfConversionTime(smtStatisticsRegistry().registerTimer(
-        name + "::CnfStream::cnfConversionTime"))
+CnfStream::Statistics::Statistics(StatisticsRegistry& sr,
+                                  const std::string& name)
+    : d_cnfConversionTime(
+        sr.registerTimer(name + "::CnfStream::cnfConversionTime"))
 {
 }
 
 }  // namespace prop
-}  // namespace cvc5
+}  // namespace cvc5::internal

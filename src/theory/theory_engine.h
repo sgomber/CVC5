@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -30,6 +30,7 @@
 #include "theory/atom_requests.h"
 #include "theory/engine_output_channel.h"
 #include "theory/interrupted.h"
+#include "theory/partition_generator.h"
 #include "theory/rewriter.h"
 #include "theory/sort_inference.h"
 #include "theory/theory.h"
@@ -40,7 +41,7 @@
 #include "util/hash.h"
 #include "util/statistics_stats.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 class Env;
 class ResourceManager;
@@ -126,7 +127,8 @@ class TheoryEngine : protected EnvObj
   void addTheory(theory::TheoryId theoryId)
   {
     Assert(d_theoryTable[theoryId] == NULL && d_theoryOut[theoryId] == NULL);
-    d_theoryOut[theoryId] = new theory::EngineOutputChannel(this, theoryId);
+    d_theoryOut[theoryId] =
+        new theory::EngineOutputChannel(statisticsRegistry(), this, theoryId);
     d_theoryTable[theoryId] =
         new TheoryClass(d_env, *d_theoryOut[theoryId], theory::Valuation(this));
     getRewriter()->registerTheoryRewriter(
@@ -248,7 +250,7 @@ class TheoryEngine : protected EnvObj
   bool presolve();
 
   /**
-   * Calls postsolve() on all theories.
+   * Resets the internal state.
    */
   void postsolve();
 
@@ -290,14 +292,13 @@ class TheoryEngine : protected EnvObj
   theory::TheoryModel* getModel();
   /**
    * Get the current model for the current set of assertions. This method
-   * should only be called immediately after a satisfiable or unknown
-   * response to a check-sat call, and only if produceModels is true.
+   * should only be called immediately after a satisfiable response to a
+   * check-sat call, and only if produceModels is true.
    *
-   * If the model is not already built, this will cause this theory engine
-   * to build the model.
+   * If the model is not already built, this will cause this theory engine to
+   * build the model.
    *
-   * If the model is not available (for instance, if the last call to check-sat
-   * was interrupted), then this returns the null pointer.
+   * If the model cannot be built, then this returns the null pointer.
    */
   theory::TheoryModel* getBuiltModel();
   /**
@@ -332,21 +333,9 @@ class TheoryEngine : protected EnvObj
     return d_theoryTable[theoryId];
   }
 
-  bool isTheoryEnabled(theory::TheoryId theoryId) const
-  {
-    return d_logicInfo.isTheoryEnabled(theoryId);
-  }
-  /** get the logic info used by this theory engine */
-  const LogicInfo& getLogicInfo() const;
-  /** get the separation logic heap types */
-  bool getSepHeapTypes(TypeNode& locType, TypeNode& dataType) const;
-
-  /**
-   * Declare heap. This is used for separation logics to set the location
-   * and data types. It should be called only once, and before any separation
-   * logic constraints are asserted to this theory engine.
-   */
-  void declareSepHeap(TypeNode locT, TypeNode dataT);
+  bool isTheoryEnabled(theory::TheoryId theoryId) const;
+  /** return the theory that should explain a propagation from TheoryId */
+  theory::TheoryId theoryExpPropagation(theory::TheoryId tid) const;
 
   /**
    * Returns the equality status of the two terms, from the theory
@@ -509,22 +498,7 @@ class TheoryEngine : protected EnvObj
    */
   theory::Theory* d_theoryTable[theory::THEORY_LAST];
 
-  /**
-   * A collection of theories that are "active" for the current run.
-   * This set is provided by the user (as a logic string, say, in SMT-LIBv2
-   * format input), or else by default it's all-inclusive.  This is important
-   * because we can optimize for single-theory runs (no sharing), can reduce
-   * the cost of walking the DAG on registration, etc.
-   */
-  const LogicInfo& d_logicInfo;
-
-  /** The separation logic location and data types */
-  TypeNode d_sepLocType;
-  TypeNode d_sepDataType;
-
-  //--------------------------------- new proofs
-  /** Proof node manager used by this theory engine, if proofs are enabled */
-  ProofNodeManager* d_pnm;
+  //--------------------------------- proofs
   /** The lazy proof object
    *
    * This stores instructions for how to construct proofs for all theory lemmas.
@@ -532,7 +506,7 @@ class TheoryEngine : protected EnvObj
   std::shared_ptr<LazyCDProof> d_lazyProof;
   /** The proof generator */
   std::shared_ptr<TheoryEngineProofGenerator> d_tepg;
-  //--------------------------------- end new proofs
+  //--------------------------------- end proofs
   /** The combination manager we are using */
   std::unique_ptr<theory::CombinationEngine> d_tc;
   /** The shared solver of the above combination engine. */
@@ -546,9 +520,6 @@ class TheoryEngine : protected EnvObj
   /** The relevance manager */
   std::unique_ptr<theory::RelevanceManager> d_relManager;
 
-  /** are we in eager model building mode? (see setEagerModelBuilding). */
-  bool d_eager_model_building;
-
   /**
    * Output channels for individual theories.
    */
@@ -558,13 +529,6 @@ class TheoryEngine : protected EnvObj
    * Are we in conflict.
    */
   context::CDO<bool> d_inConflict;
-
-  /**
-   * Are we in "SAT mode"? In this state, the user can query for the model.
-   * This corresponds to the state in Figure 4.1, page 52 of the SMT-LIB
-   * standard, version 2.6.
-   */
-  bool d_inSatMode;
 
   /**
    * True if a theory has notified us of incompleteness (at this
@@ -642,8 +606,14 @@ class TheoryEngine : protected EnvObj
    */
   context::CDO<bool> d_factsAsserted;
 
+  /**
+   * The splitter produces partitions when the compute-partitions option is
+   * used.
+   */
+  std::unique_ptr<theory::PartitionGenerator> d_partitionGen;
+
 }; /* class TheoryEngine */
 
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__THEORY_ENGINE_H */

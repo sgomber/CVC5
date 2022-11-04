@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Aina Niemetz
+ *   Andrew Reynolds, Gereon Kremer, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -21,17 +21,20 @@
 #include "options/quantifiers_options.h"
 #include "smt/env.h"
 #include "smt/logic_exception.h"
+#include "smt/set_defaults.h"
 #include "util/random.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
 SolutionFilterStrength::SolutionFilterStrength(Env& env)
     : ExprMiner(env), d_isStrong(true)
 {
+  d_subOptions.copyValues(options());
+  smt::SetDefaults::disableChecking(d_subOptions);
 }
 void SolutionFilterStrength::initialize(const std::vector<Node>& vars,
                                         SygusSampler* ss)
@@ -70,7 +73,8 @@ bool SolutionFilterStrength::addTerm(Node n, std::ostream& out)
         << "  implies: check subsumed (strong=" << d_isStrong << ") " << imp
         << "..." << std::endl;
     // check the satisfiability query
-    Result r = doCheck(imp);
+    SubsolverSetupInfo ssi(d_env, d_subOptions);
+    Result r = doCheck(imp, ssi);
     Trace("sygus-sol-implied") << "  implies: ...got : " << r << std::endl;
     if (r.getStatus() == Result::UNSAT)
     {
@@ -89,7 +93,8 @@ bool SolutionFilterStrength::addTerm(Node n, std::ostream& out)
       Trace("sygus-sol-implied")
           << "  implies: check subsuming " << imp << "..." << std::endl;
       // check the satisfiability query
-      Result r = doCheck(imp);
+      SubsolverSetupInfo ssi(d_env, d_subOptions);
+      Result r = doCheck(imp, ssi);
       Trace("sygus-sol-implied") << "  implies: ...got : " << r << std::endl;
       if (r.getStatus() != Result::UNSAT)
       {
@@ -112,4 +117,4 @@ bool SolutionFilterStrength::addTerm(Node n, std::ostream& out)
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

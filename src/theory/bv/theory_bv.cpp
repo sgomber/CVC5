@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Mathias Preiner, Andrew Reynolds, Haniel Barbosa
+ *   Mathias Preiner, Andrew Reynolds, Liana Hadarean
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -18,7 +18,6 @@
 #include "options/bv_options.h"
 #include "options/smt_options.h"
 #include "proof/proof_checker.h"
-#include "smt/smt_statistics_registry.h"
 #include "theory/bv/bv_solver_bitblast.h"
 #include "theory/bv/bv_solver_bitblast_internal.h"
 #include "theory/bv/theory_bv_rewrite_rules_normalization.h"
@@ -28,7 +27,7 @@
 #include "theory/trust_substitutions.h"
 #include "theory/uf/equality_engine.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace bv {
 
@@ -48,13 +47,12 @@ TheoryBV::TheoryBV(Env& env,
   switch (options().bv.bvSolver)
   {
     case options::BVSolver::BITBLAST:
-      d_internal.reset(new BVSolverBitblast(env, &d_state, d_im, d_pnm));
+      d_internal.reset(new BVSolverBitblast(env, &d_state, d_im));
       break;
 
     default:
       AlwaysAssert(options().bv.bvSolver == options::BVSolver::BITBLAST_INTERNAL);
-      d_internal.reset(
-          new BVSolverBitblastInternal(d_env, &d_state, d_im, d_pnm));
+      d_internal.reset(new BVSolverBitblastInternal(d_env, &d_state, d_im));
   }
   d_theoryState = &d_state;
   d_inferManager = &d_im;
@@ -472,4 +470,4 @@ TheoryBV::Statistics::Statistics(StatisticsRegistry& reg,
 
 }  // namespace bv
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

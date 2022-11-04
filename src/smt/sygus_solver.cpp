@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Haniel Barbosa, Abdalrhman Mohamed
+ *   Andrew Reynolds, Gereon Kremer, Haniel Barbosa
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -26,6 +26,7 @@
 #include "options/quantifiers_options.h"
 #include "options/smt_options.h"
 #include "smt/preprocessor.h"
+#include "smt/smt_driver.h"
 #include "smt/smt_solver.h"
 #include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
@@ -35,10 +36,10 @@
 #include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
 
-using namespace cvc5::theory;
-using namespace cvc5::kind;
+using namespace cvc5::internal::theory;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace smt {
 
 SygusSolver::SygusSolver(Env& env, SmtSolver& sms)
@@ -183,7 +184,7 @@ void SygusSolver::assertSygusInvConstraint(Node inv,
   d_sygusConjectureStale = true;
 }
 
-Result SygusSolver::checkSynth(Assertions& as, bool isNext)
+SynthResult SygusSolver::checkSynth(bool isNext)
 {
   Trace("smt") << "SygusSolver::checkSynth" << std::endl;
   // if applicable, check if the subsolver is the correct one
@@ -237,6 +238,7 @@ Result SygusSolver::checkSynth(Assertions& as, bool isNext)
     if (usingSygusSubsolver())
     {
       // we generate a new solver engine to do the SyGuS query
+      Assertions& as = d_smtSolver.getAssertions();
       initializeSygusSubsolver(d_subsolver, as);
 
       // store the pointer (context-dependent)
@@ -259,13 +261,15 @@ Result SygusSolver::checkSynth(Assertions& as, bool isNext)
   {
     std::vector<Node> query;
     query.push_back(d_conj);
-    r = d_smtSolver.checkSatisfiability(as, query);
+    // use a single call driver
+    SmtDriverSingleCall sdsc(d_env, d_smtSolver);
+    r = sdsc.checkSat(query);
   }
   // The result returned by the above call is typically "unknown", which may
   // or may not correspond to a state in which we solved the conjecture
   // successfully. Instead we call getSynthSolutions below. If this returns
-  // true, then we were successful. In this case, we set the result to "unsat",
-  // since the synthesis conjecture was negated when asserted to the subsolver.
+  // true, then we were successful. In this case, we set the synthesis result to
+  // "solution".
   //
   // This behavior is done for 2 reasons:
   // (1) if we do not negate the synthesis conjecture, the subsolver in some
@@ -286,23 +290,30 @@ Result SygusSolver::checkSynth(Assertions& as, bool isNext)
   //
   // Thus, we use getSynthSolutions as means of knowing the conjecture was
   // solved.
+  SynthResult sr;
   std::map<Node, Node> sol_map;
   if (getSynthSolutions(sol_map))
   {
-    // if we have solutions, we return "unsat" by convention
-    r = Result(Result::UNSAT);
+    // if we have solutions, we return "solution"
+    sr = SynthResult(SynthResult::SOLUTION);
     // Check that synthesis solutions satisfy the conjecture
     if (options().smt.checkSynthSol)
     {
+      Assertions& as = d_smtSolver.getAssertions();
       checkSynthSolution(as, sol_map);
     }
+  }
+  else if (r.getStatus() == Result::UNSAT)
+  {
+    // unsat means no solution
+    sr = SynthResult(SynthResult::NO_SOLUTION);
   }
   else
   {
     // otherwise, we return "unknown"
-    r = Result(Result::UNKNOWN, Result::UNKNOWN_REASON);
+    sr = SynthResult(SynthResult::UNKNOWN, UnknownExplanation::UNKNOWN_REASON);
   }
-  return r;
+  return sr;
 }
 
 bool SygusSolver::getSynthSolutions(std::map<Node, Node>& solMap)
@@ -311,7 +322,8 @@ bool SygusSolver::getSynthSolutions(std::map<Node, Node>& solMap)
   if (usingSygusSubsolver())
   {
     // use the call to get the synth solutions from the subsolver
-    return d_subsolver->getSubsolverSynthSolutions(solMap);
+    return d_subsolver ? d_subsolver->getSubsolverSynthSolutions(solMap)
+                       : false;
   }
   return getSubsolverSynthSolutions(solMap);
 }
@@ -375,13 +387,13 @@ void SygusSolver::checkSynthSolution(Assertions& as,
     // Start new SMT engine to check solutions
     std::unique_ptr<SolverEngine> solChecker;
     initializeSygusSubsolver(solChecker, as);
-    solChecker->getOptions().smt.checkSynthSol = false;
-    solChecker->getOptions().quantifiers.sygusRecFun = false;
+    solChecker->getOptions().writeSmt().checkSynthSol = false;
+    solChecker->getOptions().writeQuantifiers().sygusRecFun = false;
     Assert(conj.getKind() == FORALL);
     Node conjBody = conj[1];
-    // we must expand definitions here, since define-fun may contain the
+    // we must apply substitutions here, since define-fun may contain the
     // function-to-synthesize, which needs to be substituted.
-    conjBody = d_smtSolver.getPreprocessor()->expandDefinitions(conjBody);
+    conjBody = d_smtSolver.getPreprocessor()->applySubstitutions(conjBody);
     // Apply solution map to conjecture body
     conjBody = conjBody.substitute(
         fvars.begin(), fvars.end(), fsols.begin(), fsols.end());
@@ -439,7 +451,8 @@ void SygusSolver::initializeSygusSubsolver(std::unique_ptr<SolverEngine>& se,
       processed.insert(def);
     }
   }
-  // Also assert auxiliary assertions
+  // Also assert auxiliary assertions, which typically correspond to
+  // quantified formulas for define-fun-rec only.
   const context::CDList<Node>& alist = as.getAssertionList();
   for (size_t i = 0, asize = alist.size(); i < asize; ++i)
   {
@@ -482,7 +495,7 @@ void SygusSolver::expandDefinitionsSygusDt(TypeNode tn) const
       // expandDefinitions.
       Node eop = op.isConst()
                      ? op
-                     : d_smtSolver.getPreprocessor()->expandDefinitions(op);
+                     : d_smtSolver.getPreprocessor()->applySubstitutions(op);
       eop = rewrite(eop);
       datatypes::utils::setExpandedDefinitionForm(op, eop);
       // also must consider the arguments
@@ -511,4 +524,4 @@ std::vector<Node> SygusSolver::listToVector(const NodeList& list)
 }
 
 }  // namespace smt
-}  // namespace cvc5
+}  // namespace cvc5::internal

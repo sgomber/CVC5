@@ -1,18 +1,16 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Morgan Deters, Mathias Preiner
+ *   Andrew Reynolds, Morgan Deters, Tim King
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
  * ****************************************************************************
  *
- * This is the interface to TheoryUF implementations
- *
- * All implementations of TheoryUF should inherit from this class.
+ * The theory of uninterpreted functions (UF)
  */
 
 #include "cvc5_private.h"
@@ -29,12 +27,13 @@
 #include "theory/uf/symmetry_breaker.h"
 #include "theory/uf/theory_uf_rewriter.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace uf {
 
 class CardinalityExtension;
 class HoExtension;
+class ConversionsSolver;
 class LambdaLift;
 
 class TheoryUF : public Theory {
@@ -79,6 +78,8 @@ private:
   std::unique_ptr<LambdaLift> d_lambdaLift;
   /** the higher-order solver extension (or nullptr if it does not exist) */
   std::unique_ptr<HoExtension> d_ho;
+  /** the conversions solver */
+  std::unique_ptr<ConversionsSolver> d_csolver;
 
   /** node for true */
   Node d_true;
@@ -183,6 +184,6 @@ private:
 
 }  // namespace uf
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__THEORY__UF__THEORY_UF_H */

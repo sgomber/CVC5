@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Aina Niemetz, Tim King
+ *   Aina Niemetz, Tim King, Gereon Kremer
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -20,7 +20,7 @@
 #include "test.h"
 #include "util/integer.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace test {
 
 class TestUtilBlackInteger : public TestInternal
@@ -344,7 +344,7 @@ TEST_F(TestUtilBlackInteger, overly_long_signed)
   ASSERT_NO_THROW(i.getSigned64());
   ASSERT_EQ(i.getSigned64(), sl);
   i = i + 1;
-  ASSERT_THROW(i.getSigned64(), IllegalArgumentException);
+  ASSERT_DEATH(i.getSigned64(), "Overflow detected");
 }
 
 TEST_F(TestUtilBlackInteger, overly_long_unsigned)
@@ -355,13 +355,13 @@ TEST_F(TestUtilBlackInteger, overly_long_unsigned)
   {
     ASSERT_EQ(i.getUnsignedLong(), ul);
   }
-  ASSERT_THROW(i.getLong(), IllegalArgumentException);
+  ASSERT_DEATH(i.getLong(), "Overflow detected");
   ASSERT_NO_THROW(i.getUnsigned64());
   ASSERT_EQ(i.getUnsigned64(), ul);
   uint64_t ulplus1 = ul + 1;
   ASSERT_EQ(ulplus1, 0);
   i = i + 1;
-  ASSERT_THROW(i.getUnsignedLong(), IllegalArgumentException);
+  ASSERT_DEATH(i.getUnsignedLong(), "Overflow detected");
 }
 
 TEST_F(TestUtilBlackInteger, getSigned64)
@@ -369,14 +369,14 @@ TEST_F(TestUtilBlackInteger, getSigned64)
   {
     int64_t i = std::numeric_limits<int64_t>::max();
     Integer a(i);
-    EXPECT_EQ(a.getSigned64(), i);
-    EXPECT_THROW((a + 1).getSigned64(), IllegalArgumentException);
+    ASSERT_EQ(a.getSigned64(), i);
+    ASSERT_DEATH((a + 1).getSigned64(), "Overflow detected");
   }
   {
     int64_t i = std::numeric_limits<int64_t>::min();
     Integer a(i);
-    EXPECT_EQ(a.getSigned64(), i);
-    EXPECT_THROW((a - 1).getSigned64(), IllegalArgumentException);
+    ASSERT_EQ(a.getSigned64(), i);
+    ASSERT_DEATH((a - 1).getSigned64(), "Overflow detected");
   }
 }
 
@@ -385,14 +385,14 @@ TEST_F(TestUtilBlackInteger, getUnsigned64)
   {
     uint64_t i = std::numeric_limits<uint64_t>::max();
     Integer a(i);
-    EXPECT_EQ(a.getUnsigned64(), i);
-    EXPECT_THROW((a + 1).getUnsigned64(), IllegalArgumentException);
+    ASSERT_EQ(a.getUnsigned64(), i);
+    ASSERT_DEATH((a + 1).getUnsigned64(), "Overflow detected");
   }
   {
     uint64_t i = std::numeric_limits<uint64_t>::min();
     Integer a(i);
-    EXPECT_EQ(a.getUnsigned64(), i);
-    EXPECT_THROW((a - 1).getUnsigned64(), IllegalArgumentException);
+    ASSERT_EQ(a.getUnsigned64(), i);
+    ASSERT_DEATH((a - 1).getUnsigned64(), "Overflow detected");
   }
 }
 
@@ -614,4 +614,4 @@ TEST_F(TestUtilBlackInteger, modInverse)
   }
 }
 }  // namespace test
-}  // namespace cvc5
+}  // namespace cvc5::internal

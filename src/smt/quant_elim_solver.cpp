@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Mathias Preiner, Aina Niemetz
+ *   Andrew Reynolds, Mathias Preiner, Gereon Kremer
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -18,17 +18,18 @@
 #include "base/modal_exception.h"
 #include "expr/skolem_manager.h"
 #include "expr/subs.h"
+#include "expr/subtype_elim_node_converter.h"
+#include "smt/smt_driver.h"
 #include "smt/smt_solver.h"
 #include "theory/quantifiers/cegqi/nested_qe.h"
 #include "theory/quantifiers_engine.h"
 #include "theory/theory_engine.h"
 #include "util/string.h"
-#include "expr/subtype_elim_node_converter.h"
 
-using namespace cvc5::theory;
-using namespace cvc5::kind;
+using namespace cvc5::internal::theory;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace smt {
 
 QuantElimSolver::QuantElimSolver(Env& env, SmtSolver& sms)
@@ -38,8 +39,7 @@ QuantElimSolver::QuantElimSolver(Env& env, SmtSolver& sms)
 
 QuantElimSolver::~QuantElimSolver() {}
 
-Node QuantElimSolver::getQuantifierElimination(Assertions& as,
-                                               Node q,
+Node QuantElimSolver::getQuantifierElimination(Node q,
                                                bool doFull,
                                                bool isInternalSubsolver)
 {
@@ -72,8 +72,9 @@ Node QuantElimSolver::getQuantifierElimination(Assertions& as,
   Trace("smt-qe-debug") << "Query for quantifier elimination : " << ne
                         << std::endl;
   Assert(ne.getNumChildren() == 3);
-  Result r =
-      d_smtSolver.checkSatisfiability(as, std::vector<Node>{ne.notNode()});
+  // use a single call driver
+  SmtDriverSingleCall sdsc(d_env, d_smtSolver);
+  Result r = sdsc.checkSat(std::vector<Node>{ne.notNode()});
   Trace("smt-qe") << "Query returned " << r << std::endl;
   if (r.getStatus() != Result::UNSAT)
   {
@@ -142,4 +143,4 @@ Node QuantElimSolver::getQuantifierElimination(Assertions& as,
 }
 
 }  // namespace smt
-}  // namespace cvc5
+}  // namespace cvc5::internal

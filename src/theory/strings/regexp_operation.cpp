@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -25,9 +25,9 @@
 #include "theory/strings/word.h"
 #include "util/regexp.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
@@ -82,7 +82,7 @@ RegExpConstType RegExpOpr::getRegExpConstType(Node r)
       {
         Node tmp = rewrite(cur[0]);
         d_constCache[cur] =
-            tmp.isConst() ? RE_C_CONRETE_CONSTANT : RE_C_VARIABLE;
+            tmp.isConst() ? RE_C_CONCRETE_CONSTANT : RE_C_VARIABLE;
       }
       else if (ck == REGEXP_ALLCHAR || ck == REGEXP_RANGE)
       {
@@ -103,7 +103,8 @@ RegExpConstType RegExpOpr::getRegExpConstType(Node r)
     }
     else if (it->second == RE_C_UNKNOWN)
     {
-      RegExpConstType ret = ck == REGEXP_COMPLEMENT ? RE_C_CONSTANT : RE_C_CONRETE_CONSTANT;
+      RegExpConstType ret =
+          ck == REGEXP_COMPLEMENT ? RE_C_CONSTANT : RE_C_CONCRETE_CONSTANT;
       for (const Node& cn : cur)
       {
         it = d_constCache.find(cn);
@@ -267,7 +268,7 @@ int RegExpOpr::delta( Node r, Node &exp ) {
 }
 
 // 0-unknown, 1-yes, 2-no
-int RegExpOpr::derivativeS(Node r, cvc5::String c, Node& retNode)
+int RegExpOpr::derivativeS(Node r, cvc5::internal::String c, Node& retNode)
 {
   Assert(c.size() < 2);
   Trace("regexp-derive") << "RegExp-derive starts with /" << mkString( r ) << "/, c=" << c << std::endl;
@@ -306,8 +307,8 @@ int RegExpOpr::derivativeS(Node r, cvc5::String c, Node& retNode)
         break;
       }
       case kind::REGEXP_RANGE: {
-        cvc5::String a = r[0].getConst<String>();
-        cvc5::String b = r[1].getConst<String>();
+        cvc5::internal::String a = r[0].getConst<String>();
+        cvc5::internal::String b = r[1].getConst<String>();
         retNode = (a <= c && c <= b) ? d_emptySingleton : d_emptyRegexp;
         break;
       }
@@ -527,7 +528,7 @@ int RegExpOpr::derivativeS(Node r, cvc5::String c, Node& retNode)
   return ret;
 }
 
-Node RegExpOpr::derivativeSingle(Node r, cvc5::String c)
+Node RegExpOpr::derivativeSingle(Node r, cvc5::internal::String c)
 {
   Assert(c.size() < 2);
   Trace("regexp-derive") << "RegExp-derive starts with /" << mkString( r ) << "/, c=" << c << std::endl;
@@ -563,8 +564,8 @@ Node RegExpOpr::derivativeSingle(Node r, cvc5::String c)
         break;
       }
       case kind::REGEXP_RANGE: {
-        cvc5::String a = r[0].getConst<String>();
-        cvc5::String b = r[1].getConst<String>();
+        cvc5::internal::String a = r[0].getConst<String>();
+        cvc5::internal::String b = r[1].getConst<String>();
         retNode = (a <= c && c <= b) ? d_emptySingleton : d_emptyRegexp;
         break;
       }
@@ -1434,7 +1435,9 @@ Node RegExpOpr::removeIntersection(Node r) {
 
 Node RegExpOpr::intersect(Node r1, Node r2)
 {
-  if (!checkConstRegExp(r1) || !checkConstRegExp(r2))
+  if (!checkConstRegExp(r1) || !checkConstRegExp(r2)
+      || expr::hasSubtermKind(REGEXP_COMPLEMENT, r1)
+      || expr::hasSubtermKind(REGEXP_COMPLEMENT, r2))
   {
     return Node::null();
   }
@@ -1576,16 +1579,9 @@ std::string RegExpOpr::mkString( Node r ) {
 
 bool RegExpOpr::regExpIncludes(Node r1, Node r2)
 {
-  const auto& it = d_inclusionCache.find(std::make_pair(r1, r2));
-  if (it != d_inclusionCache.end())
-  {
-    return (*it).second;
-  }
-  bool result = RegExpEntail::regExpIncludes(r1, r2);
-  d_inclusionCache[std::make_pair(r1, r2)] = result;
-  return result;
+  return RegExpEntail::regExpIncludes(r1, r2, d_inclusionCache);
 }
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

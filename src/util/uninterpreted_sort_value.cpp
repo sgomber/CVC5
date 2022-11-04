@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Tim King, Morgan Deters
+ *   Andres Noetzli, Andrew Reynolds, Morgan Deters
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -24,26 +24,23 @@
 
 using namespace std;
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 std::ostream& operator<<(std::ostream& out, const UninterpretedSortValue& val)
 {
-  return out << "@a" << val.getIndex();
+  return out << "@" << val.getType() << "_" << val.getIndex();
 }
 
 UninterpretedSortValue::UninterpretedSortValue(const TypeNode& type,
                                                const Integer& index)
     : d_type(new TypeNode(type)), d_index(index)
 {
-  PrettyCheckArgument(type.isSort(),
-                      type,
-                      "uninterpreted constants can only be created for "
-                      "uninterpreted sorts, not `%s'",
-                      type.toString().c_str());
-  PrettyCheckArgument(index >= 0,
-                      index,
-                      "index >= 0 required for abstract value, not `%s'",
-                      index.toString().c_str());
+  Assert(type.isUninterpretedSort())
+      << "uninterpreted constants can only be created for "
+         "uninterpreted sorts, not `"
+      << type.toString().c_str() << "'";
+  Assert(index >= 0) << "index >= 0 required for abstract value, not `"
+                     << index.toString().c_str() << "'";
 }
 
 UninterpretedSortValue::UninterpretedSortValue(
@@ -73,4 +70,4 @@ bool UninterpretedSortValue::operator<=(const UninterpretedSortValue& val) const
          || (getType() == val.getType() && d_index <= val.d_index);
 }
 
-}  // namespace cvc5
+}  // namespace cvc5::internal

@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Gereon Kremer, Andrew Reynolds, Andres Noetzli
+ *   Gereon Kremer
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -18,7 +18,7 @@
 #include "smt/env.h"
 #include "theory/arith/arith_utilities.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace arith {
 namespace nl {
@@ -83,12 +83,19 @@ std::vector<Node> EqualitySubstitution::eliminateEqualities(
       Assert(o.getNumChildren() == 2);
       for (size_t i = 0; i < 2; ++i)
       {
-        const auto& l = o[i];
-        const auto& r = o[1 - i];
+        const auto& l = (o[i].getKind() == Kind::TO_REAL ? o[i][0] : o[i]);
+        const auto& r = (o[1-i].getKind() == Kind::TO_REAL ? o[1-i][0] : o[1-i]);
+        // lhs can't be constant
         if (l.isConst()) continue;
+        // types must match (otherwise we might have int/real issues)
+        if (r.getType() != l.getType()) continue;
+        // can't substitute stuff from other theories
         if (!Theory::isLeafOf(l, TheoryId::THEORY_ARITH)) continue;
+        // can't substitute the same thing twice
         if (d_substitutions->hasSubstitution(l)) continue;
+        // lhs can't be a subexpression of rhs, would leaf to recursion
         if (expr::hasSubterm(r, l)) continue;
+        // the same, but after substitution
         d_substitutions->invalidateCache();
         if (expr::hasSubterm(d_substitutions->apply(r, nullptr, nullptr, &stc), l)) continue;
         Trace("nl-eqs") << "Found substitution " << l << " -> " << r
@@ -216,4 +223,4 @@ void EqualitySubstitution::addToConflictMap(const Node& n,
 }  // namespace nl
 }  // namespace arith
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

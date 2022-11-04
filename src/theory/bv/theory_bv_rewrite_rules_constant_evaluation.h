@@ -4,27 +4,26 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
  * ****************************************************************************
  *
- * [[ Add one-line brief description here ]]
+ * Constant evaluation rewrite rules of the BV theory.
  *
- * [[ Add lengthier description here ]]
- * \todo document this file
  */
 
 #include "cvc5_private.h"
 
-#pragma once
+#ifndef CVC5__THEORY__BV__THEORY_BV_REWRITE_RULES_CONSTANT_EVALUATION_H
+#define CVC5__THEORY__BV__THEORY_BV_REWRITE_RULES_CONSTANT_EVALUATION_H
 
 #include "theory/bv/theory_bv_rewrite_rules.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "util/bitvector.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace bv {
 
@@ -505,6 +504,7 @@ inline Node RewriteRule<EvalEagerAtom>::apply(TNode node)
   Trace("bv-rewrite") << "RewriteRule<EvalComp>(" << node << ")" << std::endl;
   return node[0];
 }
-}
-}
-}  // namespace cvc5
+}  // namespace bv
+}  // namespace theory
+}  // namespace cvc5::internal
+#endif

@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -18,8 +18,6 @@
 #include "options/proof_options.h"
 #include "proof/annotation_proof_generator.h"
 #include "proof/eager_proof_generator.h"
-#include "smt/smt_statistics_registry.h"
-#include "smt/solver_engine_scope.h"
 #include "theory/builtin/proof_checker.h"
 #include "theory/inference_id_proof_annotator.h"
 #include "theory/output_channel.h"
@@ -29,9 +27,9 @@
 #include "theory/uf/equality_engine.h"
 #include "theory/uf/proof_equality_engine.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 
 TheoryInferenceManager::TheoryInferenceManager(Env& env,
@@ -68,7 +66,7 @@ TheoryInferenceManager::TheoryInferenceManager(Env& env,
     context::UserContext* u = userContext();
     ProofNodeManager* pnm = env.getProofNodeManager();
     d_defaultPg.reset(
-        new EagerProofGenerator(pnm, u, statsName + "EagerProofGenerator"));
+        new EagerProofGenerator(env, u, statsName + "EagerProofGenerator"));
     if (options().proof.proofAnnotate)
     {
       d_iipa.reset(new InferenceIdProofAnnotator(pnm, u));
@@ -634,4 +632,4 @@ void TheoryInferenceManager::notifyInConflict()
 }
 
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

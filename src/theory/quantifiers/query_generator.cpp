@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -20,14 +20,15 @@
 #include <sstream>
 
 #include "options/quantifiers_options.h"
+#include "printer/printer.h"
 #include "smt/env.h"
 #include "smt/logic_exception.h"
 #include "smt/print_benchmark.h"
 
 using namespace std;
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
@@ -62,7 +63,7 @@ void QueryGenerator::dumpQuery(Node qy, const Result& r)
   std::stringstream fname;
   fname << "query" << d_queryCount << ".smt2";
   std::ofstream fs(fname.str(), std::ofstream::out);
-  smt::PrintBenchmark pb(&d_env.getPrinter());
+  smt::PrintBenchmark pb(Printer::getPrinter(fs));
   pb.printBenchmark(fs, d_env.getLogicInfo().getLogicString(), {}, {kqy});
   fs.close();
 }
@@ -84,8 +85,9 @@ bool QueryGeneratorBasic::addTerm(Node n, std::ostream& out)
 {
   ensureBoolean(n);
   out << "(query " << n << ")" << std::endl;
+  SubsolverSetupInfo ssi(d_env);
   std::unique_ptr<SolverEngine> queryChecker;
-  initializeChecker(queryChecker, n);
+  initializeChecker(queryChecker, n, ssi);
   Result r = queryChecker->checkSat();
   dumpQuery(n, r);
   return true;
@@ -93,4 +95,4 @@ bool QueryGeneratorBasic::addTerm(Node n, std::ostream& out)
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Morgan Deters, Mathias Preiner
+ *   Andrew Reynolds, Gereon Kremer, Morgan Deters
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -26,6 +26,7 @@
 #include "theory/quantifiers/fmf/first_order_model_fmc.h"
 #include "theory/quantifiers/fmf/full_model_check.h"
 #include "theory/quantifiers/fmf/model_builder.h"
+#include "theory/quantifiers/ieval/inst_evaluator_manager.h"
 #include "theory/quantifiers/quant_module.h"
 #include "theory/quantifiers/quantifiers_inference_manager.h"
 #include "theory/quantifiers/quantifiers_modules.h"
@@ -39,9 +40,9 @@
 #include "theory/theory_engine.h"
 
 using namespace std;
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 
 QuantifiersEngine::QuantifiersEngine(
@@ -63,16 +64,17 @@ QuantifiersEngine::QuantifiersEngine(
       d_quants_red(userContext()),
       d_numInstRoundsLemma(0)
 {
+  options::FmfMbqiMode mmode = options().quantifiers.fmfMbqiMode;
   Trace("quant-init-debug")
-      << "Initialize model engine, mbqi : " << options().quantifiers.mbqiMode
-      << " " << options().quantifiers.fmfBound << std::endl;
+      << "Initialize model engine, mbqi : " << mmode << " "
+      << options().quantifiers.fmfBound << std::endl;
   // Finite model finding requires specialized ways of building the model.
   // We require constructing the model here, since it is required for
   // initializing the CombinationEngine and the rest of quantifiers engine.
   if (options().quantifiers.fmfBound || options().strings.stringExp
       || (options().quantifiers.finiteModelFind
-          && (options().quantifiers.mbqiMode == options::MbqiMode::FMC
-              || options().quantifiers.mbqiMode == options::MbqiMode::TRUST)))
+          && (mmode == options::FmfMbqiMode::FMC
+              || mmode == options::FmfMbqiMode::TRUST)))
   {
     Trace("quant-init-debug") << "...make fmc builder." << std::endl;
     d_builder.reset(
@@ -103,6 +105,7 @@ QuantifiersEngine::QuantifiersEngine(
   d_util.push_back(tr.getTermDatabase());
   d_util.push_back(qim.getInstantiate());
   d_util.push_back(tr.getTermPools());
+  d_util.push_back(tr.getInstEvaluatorManager());
 }
 
 QuantifiersEngine::~QuantifiersEngine() {}
@@ -168,8 +171,7 @@ void QuantifiersEngine::ppNotifyAssertions(
   Trace("quant-engine-proc")
       << "ppNotifyAssertions in QE, #assertions = " << assertions.size()
       << std::endl;
-  if (options().quantifiers.instLevelInputOnly
-      && options().quantifiers.instMaxLevel != -1)
+  if (options().quantifiers.instMaxLevel != -1)
   {
     for (const Node& a : assertions)
     {
@@ -703,5 +705,24 @@ void QuantifiersEngine::declarePool(Node p, const std::vector<Node>& initValue)
   d_treg.declarePool(p, initValue);
 }
 
+void QuantifiersEngine::declareOracleFun(Node f)
+{
+  if (d_qmodules->d_oracleEngine.get() == nullptr)
+  {
+    warning() << "Cannot declare oracle function when oracles are disabled"
+              << std::endl;
+    return;
+  }
+  d_qmodules->d_oracleEngine->declareOracleFun(f);
+}
+std::vector<Node> QuantifiersEngine::getOracleFuns() const
+{
+  if (d_qmodules->d_oracleEngine.get() == nullptr)
+  {
+    return {};
+  }
+  return d_qmodules->d_oracleEngine->getOracleFuns();
+}
+
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

@@ -1,16 +1,17 @@
-/*********************                                                        */
-/*! \file lfsc_post_processor.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Implementation of the Lfsc post proccessor
- **/
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Andrew Reynolds, Mathias Preiner, Aina Niemetz
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * Implementation of the Lfsc post processor
+ */
 
 #include "proof/lfsc/lfsc_post_processor.h"
 
@@ -21,19 +22,24 @@
 #include "proof/proof_node_algorithm.h"
 #include "proof/proof_node_manager.h"
 #include "proof/proof_node_updater.h"
+#include "smt/env.h"
+#include "theory/strings/theory_strings_utils.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace proof {
 
 LfscProofPostprocessCallback::LfscProofPostprocessCallback(
-    LfscNodeConverter& ltp, ProofNodeManager* pnm)
-    : d_pnm(pnm), d_pc(pnm->getChecker()), d_tproc(ltp), d_firstTime(false)
+    Env& env, LfscNodeConverter& ltp)
+    : EnvObj(env),
+      d_pc(env.getProofNodeManager()->getChecker()),
+      d_tproc(ltp),
+      d_numIgnoredScopes(0)
 {
 }
 
-void LfscProofPostprocessCallback::initializeUpdate() { d_firstTime = true; }
+void LfscProofPostprocessCallback::initializeUpdate() { d_numIgnoredScopes = 0; }
 
 bool LfscProofPostprocessCallback::shouldUpdate(std::shared_ptr<ProofNode> pn,
                                                 const std::vector<Node>& fa,
@@ -54,20 +60,47 @@ bool LfscProofPostprocessCallback::update(Node res,
   Trace("lfsc-pp-debug") << "...proves " << res << std::endl;
   NodeManager* nm = NodeManager::currentNM();
   Assert(id != PfRule::LFSC_RULE);
-  bool isFirstTime = d_firstTime;
-  // On the first call to update, the proof node is the outermost scope of the
-  // proof. This scope should not be printed in the LFSC proof. Instead, the
-  // LFSC proof printer will print the proper scope around the proof, which
-  // e.g. involves an LFSC "check" command.
-  d_firstTime = false;
 
   switch (id)
   {
+    case PfRule::ASSUME:
+    {
+      if (d_defs.find(res) != d_defs.cend())
+      {
+        addLfscRule(cdp, res, children, LfscRule::DEFINITION, args);
+        return true;
+      }
+      return false;
+    }
+    break;
     case PfRule::SCOPE:
     {
-      if (isFirstTime)
+      // On the first two calls to update, the proof node is the outermost
+      // scopes of the proof. These scopes should not be printed in the LFSC
+      // proof. Instead, the LFSC proof printer will print the proper scopes
+      // around the proof, which e.g. involves an LFSC "check" command.
+      if (d_numIgnoredScopes < 2)
       {
-        // Note that we do not want to modify the top-most SCOPE
+        // The arguments of the outer scope are definitions.
+        if (d_numIgnoredScopes == 0)
+        {
+          for (const Node& arg : args)
+          {
+            d_defs.insert(arg);
+            // Notes:
+            // - Some declarations only appear inside definitions and don't show
+            // up in assertions. To ensure that those declarations are printed,
+            // we need to process the definitions.
+            // - We process the definitions here before the rest of the proof to
+            // keep the indices of bound variables consistant between different
+            // queries that share the same definitions (e.g., incremental mode).
+            // Otherwise, bound variables will be assigned indices according to
+            // the order in which they appear in the proof.
+            d_tproc.convert(arg);
+          }
+        }
+        d_numIgnoredScopes++;
+        // Note that we do not want to modify the top-most SCOPEs.
         return false;
       }
       Assert(children.size() == 1);
@@ -170,6 +203,7 @@ bool LfscProofPostprocessCallback::update(Node res,
           return false;
         }
         Node cop = d_tproc.getOperatorOfClosure(res[0]);
+        Node pcop = d_tproc.getOperatorOfClosure(res[0], false, true);
         Trace("lfsc-pp-qcong") << "Operator for closure " << cop << std::endl;
         // start with base case body = body'
         Node curL = children[1][0];
@@ -178,10 +212,13 @@ bool LfscProofPostprocessCallback::update(Node res,
         Trace("lfsc-pp-qcong") << "Base congruence " << currEq << std::endl;
         for (size_t i = 0, nvars = res[0][0].getNumChildren(); i < nvars; i++)
         {
+          size_t ii = (nvars - 1) - i;
           Trace("lfsc-pp-qcong") << "Process child " << i << std::endl;
           // CONG rules for each variable
-          Node v = res[0][0][nvars - 1 - i];
-          Node vop = d_tproc.getOperatorOfBoundVar(cop, v);
+          Node v = res[0][0][ii];
+          // Use partial version for each argument except the last one. This
+          // avoids type errors in internal representation of LFSC terms.
+          Node vop = d_tproc.getOperatorOfBoundVar(ii == 0 ? cop : pcop, v);
           Node vopEq = vop.eqNode(vop);
           cdp->addStep(vopEq, PfRule::REFL, {}, {vop});
           Node nextEq;
@@ -250,17 +287,20 @@ bool LfscProofPostprocessCallback::update(Node res,
         for (size_t i = 0; i < nchildren; i++)
         {
           size_t ii = (nchildren - 1) - i;
+          Trace("lfsc-pp-cong") << "Process child " << ii << std::endl;
           Node uop = op;
-          // special case: each bv concat in the chain has a different type,
-          // so remake the operator here.
-          if (k == kind::BITVECTOR_CONCAT)
+          // special case: applications of the following kinds in the chain may
+          // have a different type, so remake the operator here.
+          if (k == kind::BITVECTOR_CONCAT || k == ADD || k == MULT
+              || k == NONLINEAR_MULT)
           {
             // we get the operator of the next argument concatenated with the
             // current accumulated remainder.
-            Node currApp =
-                nm->mkNode(kind::BITVECTOR_CONCAT, children[ii][0], currEq[0]);
+            Node currApp = nm->mkNode(k, children[ii][0], currEq[0]);
             uop = d_tproc.getOperatorOfTerm(currApp);
           }
+          Trace("lfsc-pp-cong") << "Apply " << uop << " to " << children[ii][0]
+                                << " and " << children[ii][1] << std::endl;
           Node argAppEq =
               nm->mkNode(HO_APPLY, uop, children[ii][0])
                   .eqNode(nm->mkNode(HO_APPLY, uop, children[ii][1]));
@@ -334,7 +374,7 @@ bool LfscProofPostprocessCallback::update(Node res,
     case PfRule::ARITH_SUM_UB:
     {
       // proof of null terminator base 0 = 0
-      Node zero = d_tproc.getNullTerminator(ADD);
+      Node zero = d_tproc.getNullTerminator(ADD, res[0].getType());
       Node cur = zero.eqNode(zero);
       cdp->addStep(cur, PfRule::REFL, {}, {zero});
       for (size_t i = 0, size = children.size(); i < size; i++)
@@ -353,6 +393,21 @@ bool LfscProofPostprocessCallback::update(Node res,
           addLfscRule(cdp, cur, newChildren, LfscRule::ARITH_SUM_UB, {});
         }
       }
+    }
+    break;
+    case PfRule::CONCAT_CONFLICT:
+    {
+      if (children.size() == 1)
+      {
+        // no need to change
+        return false;
+      }
+      Assert(children.size() == 2);
+      Assert(children[0].getKind() == EQUAL);
+      Assert(children[0][0].getType().isSequence());
+      // must use the sequences version of the rule
+      Node falsen = nm->mkConst(false);
+      addLfscRule(cdp, falsen, children, LfscRule::CONCAT_CONFLICT_DEQ, args);
     }
     break;
     default: return false; break;
@@ -403,9 +458,8 @@ Node LfscProofPostprocessCallback::mkDummyPredicate()
   return nm->mkBoundVar(nm->booleanType());
 }
 
-LfscProofPostprocess::LfscProofPostprocess(LfscNodeConverter& ltp,
-                                           ProofNodeManager* pnm)
-    : d_cb(new proof::LfscProofPostprocessCallback(ltp, pnm)), d_pnm(pnm)
+LfscProofPostprocess::LfscProofPostprocess(Env& env, LfscNodeConverter& ltp)
+    : EnvObj(env), d_cb(new proof::LfscProofPostprocessCallback(env, ltp))
 {
 }
 
@@ -414,9 +468,9 @@ void LfscProofPostprocess::process(std::shared_ptr<ProofNode> pf)
   d_cb->initializeUpdate();
   // do not automatically add symmetry steps, since this leads to
   // non-termination for example on policy_variable.smt2
-  ProofNodeUpdater updater(d_pnm, *(d_cb.get()), false, false);
+  ProofNodeUpdater updater(d_env, *(d_cb.get()), false, false);
   updater.process(pf);
 }
 
 }  // namespace proof
-}  // namespace cvc5
+}  // namespace cvc5::internal

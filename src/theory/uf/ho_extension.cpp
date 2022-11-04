@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Gereon Kremer, Mathias Preiner
+ *   Andrew Reynolds, Gereon Kremer, Andres Noetzli
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -19,13 +19,14 @@
 #include "expr/skolem_manager.h"
 #include "options/uf_options.h"
 #include "theory/theory_model.h"
+#include "theory/uf/function_const.h"
 #include "theory/uf/lambda_lift.h"
 #include "theory/uf/theory_uf_rewriter.h"
 
 using namespace std;
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace uf {
 
@@ -100,7 +101,7 @@ TrustNode HoExtension::ppRewrite(Node node, std::vector<SkolemLemma>& lems)
       }
     }
   }
-  else if (k == kind::LAMBDA)
+  else if (k == kind::LAMBDA || k == kind::FUNCTION_ARRAY_CONST)
   {
     Trace("uf-lazy-ll") << "Preprocess lambda: " << node << std::endl;
     TrustNode skTrn = d_ll.ppRewrite(node, lems);
@@ -732,4 +733,4 @@ bool HoExtension::cacheLemma(TNode lem)
 
 }  // namespace uf
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

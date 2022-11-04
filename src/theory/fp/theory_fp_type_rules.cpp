@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -16,12 +16,13 @@
 #include "theory/fp/theory_fp_type_rules.h"
 
 // This is only needed for checking that components are only applied to leaves.
+#include "theory/fp/theory_fp_utils.h"
 #include "theory/theory.h"
 #include "util/cardinality.h"
 #include "util/floatingpoint.h"
 #include "util/roundingmode.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace fp {
 
@@ -757,28 +758,9 @@ TypeNode RoundingModeBitBlast::computeType(NodeManager* nodeManager,
 
 Cardinality CardinalityComputer::computeCardinality(TypeNode type)
 {
-  Assert(type.getKind() == kind::FLOATINGPOINT_TYPE);
-
-  FloatingPointSize fps = type.getConst<FloatingPointSize>();
-
-  /*
-   * 1                    NaN
-   * 2*1                  Infinities
-   * 2*1                  Zeros
-   * 2*2^(s-1)            Subnormal
-   * 2*((2^e)-2)*2^(s-1)  Normal
-   *
-   *  = 1 + 2*2 + 2*((2^e)-1)*2^(s-1)
-   *  =       5 + ((2^e)-1)*2^s
-   */
-
-  Integer significandValues = Integer(2).pow(fps.significandWidth());
-  Integer exponentValues = Integer(2).pow(fps.exponentWidth());
-  exponentValues -= Integer(1);
-
-  return Integer(5) + exponentValues * significandValues;
+  return fp::utils::getCardinality(type);
 }
 
 }  // namespace fp
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

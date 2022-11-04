@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Haniel Barbosa, Andrew Reynolds
+ *   Haniel Barbosa, Gereon Kremer, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -21,23 +21,31 @@
 #include "prop/cnf_stream.h"
 #include "prop/minisat/minisat.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace prop {
 
-SatProofManager::SatProofManager(Minisat::Solver* solver,
-                                 CnfStream* cnfStream,
-                                 context::UserContext* userContext,
-                                 ProofNodeManager* pnm)
-    : d_solver(solver),
+SatProofManager::SatProofManager(Env& env,
+                                 Minisat::Solver* solver,
+                                 CnfStream* cnfStream)
+    : EnvObj(env),
+      d_solver(solver),
       d_cnfStream(cnfStream),
-      d_pnm(pnm),
-      d_resChains(pnm, true, userContext),
-      d_resChainPg(userContext, pnm),
-      d_assumptions(userContext),
-      d_conflictLit(undefSatVariable)
+      d_resChains(d_env, true, userContext()),
+      // enforce unique assumptions and no symmetry. This avoids creating
+      // duplicate assumption proof nodes for the premises of resolution steps,
+      // which when expanded in the lazy proof chain would duplicate their
+      // justifications (which can lead to performance impacts when proof
+      // post-processing). Symmetry we can disable because there is no equality
+      // reasoning performed here
+      d_resChainPg(d_env, userContext(), true, false),
+      d_assumptions(userContext()),
+      d_conflictLit(undefSatVariable),
+      d_optResLevels(userContext()),
+      d_optResManager(userContext(), &d_resChains, d_optResProofs)
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
+  d_optResManager.trackNodeHashSet(&d_assumptions, &d_assumptionLevels);
 }
 
 void SatProofManager::printClause(const Minisat::Clause& clause)
@@ -118,13 +126,15 @@ void SatProofManager::addResolutionStep(const Minisat::Clause& clause,
                        << satLit.isNegated() << "} [" << ~satLit << "] ";
     printClause(clause);
     Trace("sat-proof") << "\nSatProofManager::addResolutionStep:\t"
-                       << clauseNode << "\n";
+                       << clauseNode << " - lvl " << clause.level() + 1 << "\n";
   }
 }
 
 void SatProofManager::endResChain(Minisat::Lit lit)
 {
   SatLiteral satLit = MinisatSatSolver::toSatLiteral(lit);
+  Trace("sat-proof") << "SatProofManager::endResChain: curr user level: "
+                     << userContext()->getLevel() << "\n";
   Trace("sat-proof") << "SatProofManager::endResChain: chain_res for "
                      << satLit;
   endResChain(d_cnfStream->getNode(satLit), {satLit});
@@ -134,6 +144,8 @@ void SatProofManager::endResChain(const Minisat::Clause& clause)
 {
   if (TraceIsOn("sat-proof"))
   {
+    Trace("sat-proof") << "SatProofManager::endResChain: curr user level: "
+                       << userContext()->getLevel() << "\n";
     Trace("sat-proof") << "SatProofManager::endResChain: chain_res for ";
     printClause(clause);
   }
@@ -142,7 +154,17 @@ void SatProofManager::endResChain(const Minisat::Clause& clause)
   {
     clauseLits.insert(MinisatSatSolver::toSatLiteral(clause[i]));
   }
-  endResChain(getClauseNode(clause), clauseLits);
+  Node conclusion = getClauseNode(clause);
+  int clauseLevel = clause.level() + 1;
+  if (clauseLevel < userContext()->getLevel()
+      && !d_resChains.hasGenerator(conclusion))
+  {
+    d_optResLevels[conclusion] = clauseLevel;
+    Trace("sat-proof") << "SatProofManager::endResChain: ..clause's lvl "
+                       << clause.level() + 1 << " below curr user level "
+                       << userContext()->getLevel() << "\n";
+  }
+  endResChain(conclusion, clauseLits);
 }
 
 void SatProofManager::endResChain(Node conclusion,
@@ -687,7 +709,7 @@ void SatProofManager::finalizeProof(Node inConflictNode,
     }
   } while (expanded);
   // now we should be able to close it
-  if (options::proofCheck() == options::ProofCheckMode::EAGER)
+  if (options().proof.proofCheck == options::ProofCheckMode::EAGER)
   {
     std::vector<Node> assumptionsVec;
     for (const Node& a : d_assumptions)
@@ -756,7 +778,7 @@ std::shared_ptr<ProofNode> SatProofManager::getProof()
   std::shared_ptr<ProofNode> pfn = d_resChains.getProofFor(d_false);
   if (!pfn)
   {
-    pfn = d_pnm->mkAssume(d_false);
+    pfn = d_env.getProofNodeManager()->mkAssume(d_false);
   }
   return pfn;
 }
@@ -781,5 +803,29 @@ void SatProofManager::registerSatAssumptions(const std::vector<Node>& assumps)
   }
 }
 
+void SatProofManager::notifyAssumptionInsertedAtLevel(int level,
+                                                      Node assumption)
+{
+  Assert(d_assumptions.contains(assumption));
+  d_assumptionLevels[level].push_back(assumption);
+}
+
+void SatProofManager::notifyPop()
+{
+  for (context::CDHashMap<Node, int>::const_iterator it =
+           d_optResLevels.begin();
+       it != d_optResLevels.end();
+       ++it)
+  {
+    // Save into map the proof of the resolution chain. We copy to prevent the
+    // proof node saved to be restored of suffering unintended updates. This is
+    // *necessary*.
+    std::shared_ptr<ProofNode> clauseResPf =
+        d_env.getProofNodeManager()->clone(d_resChains.getProofFor(it->first));
+    Assert(clauseResPf && clauseResPf->getRule() != PfRule::ASSUME);
+    d_optResProofs[it->second].push_back(clauseResPf);
+  }
+}
+
 }  // namespace prop
-}  // namespace cvc5
+}  // namespace cvc5::internal

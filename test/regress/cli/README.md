@@ -17,7 +17,7 @@ The time limits for each level are:
 ## Running Regression Tests
 
 For running regressions tests, see the
-[INSTALL](https://github.com/cvc5/cvc5/blob/master/INSTALL.rst#testing-cvc5)
+[INSTALL](https://github.com/cvc5/cvc5/blob/main/INSTALL.rst#testing-cvc5)
 file.
 
 By default, each invocation of cvc5 is done with a 10 minute timeout. To use a
@@ -28,6 +28,15 @@ TEST_TIMEOUT=0.5 ctest -L regress0
 ```
 
 This runs regression tests from level 0 with a 0.5 second timeout.
+
+In order to run regressions with an option turned on, set the
+`CVC5_REGRESSION_ARGS` environment variable:
+
+```
+CVC5_REGRESSION_ARGS="--ackermann" ctest -L regress0
+```
+
+This runs regression tests from level 0 with the `--ackermann` option.
 
 ## Adding New Regressions
 
@@ -124,10 +133,14 @@ excluded by adding the `no-` prefix, e.g. `no-cryptominisat` means that the
 test is not valid for builds that include CryptoMiniSat support.
 
 To disable a specific type of test, the `DISABLE-TESTER` directive can be used.
-The following example disables the proof tester for a regression:
+The following example disables the abduct tester for a regression:
 
 ```
-; DISABLE-TESTER: proof
+; DISABLE-TESTER: abduct
 ```
 
-Multiple testers can be disabled using multiple `DISABLE-TESTER` directives.
+Multiple testers can be disabled using multiple `DISABLE-TESTER` directives. In
+general, each `DISABLE-TESTER` directive disables only the specified tester. The
+only exception to this rule is the proof tester. Disabling the proof tester,
+which directs cvc5 to check generated proofs internally, also disables testers
+that check the printed versions of those proofs (e.g., the lfsc tester).

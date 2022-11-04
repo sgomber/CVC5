@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Makai Mann, Yoni Zohar, Clark Barrett
+ *   Makai Mann, Yoni Zohar, Gereon Kremer
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -23,15 +23,14 @@
 #include "options/bv_options.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/preprocessing_pass_context.h"
-#include "smt/smt_statistics_registry.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/rewriter.h"
 #include "theory/theory.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace preprocessing {
 namespace passes {
-using namespace cvc5::theory;
+using namespace cvc5::internal::theory;
 
 BoolToBV::BoolToBV(PreprocessingPassContext* preprocContext)
     : PreprocessingPass(preprocContext, "bool-to-bv"),
@@ -241,7 +240,6 @@ void BoolToBV::visit(const TNode& n, bool allowIteIntroduction)
       break;
     }
   }
-
   Trace("bool-to-bv") << "safe_to_lower = " << safe_to_lower
                       << ", safe_to_rebuild = " << safe_to_rebuild << std::endl;
 
@@ -279,7 +277,6 @@ void BoolToBV::visit(const TNode& n, bool allowIteIntroduction)
   else if (safe_to_rebuild && needToRebuild(n))
   {
     // rebuild to incorporate changes to children
-    Assert(k == new_kind);
     rebuildNode(n, k);
   }
   else if (allowIteIntroduction && fromCache(n).getType().isBoolean())
@@ -383,7 +380,6 @@ void BoolToBV::rebuildNode(const TNode& n, Kind new_kind)
   {
     builder << n.getOperator();
   }
-
   // special case IMPLIES because needs to be rewritten
   if ((k == kind::IMPLIES) && (new_kind != k))
   {
@@ -419,4 +415,4 @@ BoolToBV::Statistics::Statistics(StatisticsRegistry& reg)
 
 }  // namespace passes
 }  // namespace preprocessing
-}  // namespace cvc5
+}  // namespace cvc5::internal

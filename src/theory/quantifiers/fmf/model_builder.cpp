@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Aina Niemetz, Mathias Preiner
+ *   Andrew Reynolds, Mathias Preiner, Gereon Kremer
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -24,11 +24,11 @@
 #include "theory/quantifiers/quantifiers_state.h"
 
 using namespace std;
-using namespace cvc5;
-using namespace cvc5::kind;
+using namespace cvc5::internal;
+using namespace cvc5::internal::kind;
 using namespace cvc5::context;
-using namespace cvc5::theory;
-using namespace cvc5::theory::quantifiers;
+using namespace cvc5::internal::theory;
+using namespace cvc5::internal::theory::quantifiers;
 
 QModelBuilder::QModelBuilder(Env& env,
                              QuantifiersState& qs,
@@ -54,7 +54,7 @@ void QModelBuilder::finishInit()
 }
 
 bool QModelBuilder::optUseModel() {
-  return options().quantifiers.mbqiMode != options::MbqiMode::NONE
+  return options().quantifiers.fmfMbqiMode != options::FmfMbqiMode::NONE
          || options().quantifiers.fmfBound || options().strings.stringExp;
 }
 
@@ -114,15 +114,15 @@ void QModelBuilder::debugModel( TheoryModel* m ){
     int bad = 0;
     QuantifiersBoundInference& qbi = d_qreg.getQuantifiersBoundInference();
     Instantiate* inst = d_qim.getInstantiate();
-    for( unsigned i=0; i<fm->getNumAssertedQuantifiers(); i++ ){
-      Node f = fm->getAssertedQuantifier( i );
-      std::vector< Node > vars;
-      for( unsigned j=0; j<f[0].getNumChildren(); j++ ){
-        vars.push_back( f[0][j] );
-      }
-      QRepBoundExt qrbe(qbi, fm);
+    for (size_t i = 0, nquant = fm->getNumAssertedQuantifiers(); i < nquant;
+         i++)
+    {
+      Node q = fm->getAssertedQuantifier(i);
+      std::vector<Node> vars(q[0].begin(), q[0].end());
+      QRepBoundExt qrbe(d_env, qbi, d_qstate, d_treg, q);
       RepSetIterator riter(m->getRepSet(), &qrbe);
-      if( riter.setQuantifier( f ) ){
+      if (riter.setQuantifier(q))
+      {
         while( !riter.isFinished() ){
           tests++;
           std::vector< Node > terms;
@@ -130,12 +130,12 @@ void QModelBuilder::debugModel( TheoryModel* m ){
           {
             terms.push_back( riter.getCurrentTerm( k ) );
           }
-          Node n = inst->getInstantiation(f, vars, terms);
+          Node n = inst->getInstantiation(q, vars, terms);
           Node val = m->getValue(n);
           if (!val.isConst() || !val.getConst<bool>())
           {
             Trace("quant-check-model") << "*******  Instantiation " << n << " for " << std::endl;
-            Trace("quant-check-model") << "         " << f << std::endl;
+            Trace("quant-check-model") << "         " << q << std::endl;
             Trace("quant-check-model") << "         Evaluates to " << val << std::endl;
             bad++;
           }
@@ -146,10 +146,11 @@ void QModelBuilder::debugModel( TheoryModel* m ){
           Trace("quant-check-model") << ", " << bad << " failed" << std::endl;
         }
         Trace("quant-check-model") << "." << std::endl;
-      }else{
-        if( riter.isIncomplete() ){
-          Trace("quant-check-model") << "Warning: Could not test quantifier " << f << std::endl;
-        }
+      }
+      else if (riter.isIncomplete())
+      {
+        Trace("quant-check-model")
+            << "Warning: Could not test quantifier " << q << std::endl;
       }
     }
   }

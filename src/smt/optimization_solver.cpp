@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Yancheng Ou, Michael Chang, Aina Niemetz
+ *   Yancheng Ou, Andrew Reynolds, Michael Chang
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -27,15 +27,15 @@
 #include "smt/solver_engine.h"
 #include "theory/smt_engine_subsolver.h"
 
-using namespace cvc5::theory;
-using namespace cvc5::omt;
-namespace cvc5 {
+using namespace cvc5::internal::theory;
+using namespace cvc5::internal::omt;
+namespace cvc5::internal {
 namespace smt {
 
 std::ostream& operator<<(std::ostream& out, const OptimizationResult& result)
 {
   // check the output language first
-  Language lang = options::ioutils::getOutputLang(out);
+  Language lang = options::ioutils::getOutputLanguage(out);
   if (!language::isLangSmt2(lang))
   {
     Unimplemented()
@@ -69,7 +69,7 @@ std::ostream& operator<<(std::ostream& out,
                          const OptimizationObjective& objective)
 {
   // check the output language first
-  Language lang = options::ioutils::getOutputLang(out);
+  Language lang = options::ioutils::getOutputLanguage(out);
   if (!language::isLangSmt2(lang))
   {
     Unimplemented()
@@ -94,9 +94,10 @@ std::ostream& operator<<(std::ostream& out,
 }
 
 OptimizationSolver::OptimizationSolver(SolverEngine* parent)
-    : d_parent(parent),
+    : EnvObj(parent->getEnv()),
+      d_parent(parent),
       d_optChecker(),
-      d_objectives(parent->getUserContext()),
+      d_objectives(userContext()),
       d_results()
 {
 }
@@ -156,7 +157,7 @@ std::unique_ptr<SolverEngine> OptimizationSolver::createOptCheckerWithTimeout(
   optChecker->setOption("incremental", "true");
   optChecker->setOption("produce-models", "true");
   // Move assertions from the parent solver to the subsolver
-  std::vector<Node> p_assertions = parentSMTSolver->getExpandedAssertions();
+  std::vector<Node> p_assertions = parentSMTSolver->getSubstitutedAssertions();
   for (const Node& e : p_assertions)
   {
     optChecker->assertFormula(e);
@@ -251,7 +252,7 @@ Result OptimizationSolver::optimizeLexicographicIterative()
     {
       case Result::SAT:
         // assert target[i] == value[i] and proceed
-        d_optChecker->assertFormula(d_optChecker->getNodeManager()->mkNode(
+        d_optChecker->assertFormula(NodeManager::currentNM()->mkNode(
             kind::EQUAL, d_objectives[i].getTarget(), d_results[i].getValue()));
         break;
       case Result::UNSAT:
@@ -280,7 +281,7 @@ Result OptimizationSolver::optimizeParetoNaiveGIA()
   {
     d_optChecker = createOptCheckerWithTimeout(d_parent);
   }
-  NodeManager* nm = d_optChecker->getNodeManager();
+  NodeManager* nm = NodeManager::currentNM();
 
   // checks whether the current set of assertions are satisfied or not
   Result satResult = d_optChecker->checkSat();
@@ -378,4 +379,4 @@ Result OptimizationSolver::optimizeParetoNaiveGIA()
 }
 
 }  // namespace smt
-}  // namespace cvc5
+}  // namespace cvc5::internal

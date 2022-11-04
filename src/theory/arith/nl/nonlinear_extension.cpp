@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -20,8 +20,6 @@
 
 #include "options/arith_options.h"
 #include "options/smt_options.h"
-#include "printer/smt2/smt2_printer.h"
-#include "smt/logic_exception.h"
 #include "theory/arith/arith_state.h"
 #include "theory/arith/arith_utilities.h"
 #include "theory/arith/bound_inference.h"
@@ -33,9 +31,9 @@
 #include "theory/theory_model.h"
 #include "util/rational.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace arith {
 namespace nl {
@@ -47,13 +45,14 @@ NonlinearExtension::NonlinearExtension(Env& env,
       d_containing(containing),
       d_astate(state),
       d_im(containing.getInferenceManager()),
+      d_stats(statisticsRegistry()),
       d_hasNlTerms(false),
       d_checkCounter(0),
       d_extTheoryCb(state.getEqualityEngine()),
       d_extTheory(env, d_extTheoryCb, d_im),
       d_model(env),
       d_trSlv(d_env, d_astate, d_im, d_model),
-      d_extState(d_im, d_model, d_env),
+      d_extState(d_env, d_im, d_model),
       d_factoringSlv(d_env, &d_extState),
       d_monomialBoundsSlv(d_env, &d_extState),
       d_monomialSlv(d_env, &d_extState),
@@ -71,9 +70,6 @@ NonlinearExtension::NonlinearExtension(Env& env,
   d_extTheory.addFunctionKind(kind::IAND);
   d_extTheory.addFunctionKind(kind::POW2);
   d_true = NodeManager::currentNM()->mkConst(true);
-  d_zero = NodeManager::currentNM()->mkConst(CONST_RATIONAL, Rational(0));
-  d_one = NodeManager::currentNM()->mkConst(CONST_RATIONAL, Rational(1));
-  d_neg_one = NodeManager::currentNM()->mkConst(CONST_RATIONAL, Rational(-1));
 
   if (d_env.isTheoryProofProducing())
   {
@@ -89,19 +85,6 @@ void NonlinearExtension::preRegisterTerm(TNode n)
   // register terms with extended theory, to find extended terms that can be
   // eliminated by context-depedendent simplification.
   d_extTheory.registerTerm(n);
-  // logic exceptions based on the configuration of nl-ext: if we are a
-  // transcendental function, we require nl-ext=full.
-  Kind k = n.getKind();
-  if (isTranscendentalKind(k))
-  {
-    if (options().arith.nlExt != options::NlExtMode::FULL)
-    {
-      std::stringstream ss;
-      ss << "Term of kind " << printer::smt2::Smt2Printer::smtKindString(k)
-         << " requires nl-ext mode to be set to value 'full'";
-      throw LogicException(ss.str());
-    }
-  }
 }
 
 void NonlinearExtension::processSideEffect(const NlLemma& se)
@@ -529,4 +512,4 @@ void NonlinearExtension::runStrategy(Theory::Effort effort,
 }  // namespace nl
 }  // namespace arith
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

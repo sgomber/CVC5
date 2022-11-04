@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -22,9 +22,10 @@
 #include "context/cdlist.h"
 #include "expr/node.h"
 #include "expr/type_node.h"
+#include "smt/env_obj.h"
 #include "util/result.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 class Env;
 class SolverEngine;
@@ -63,18 +64,13 @@ class OptimizationResult
       : d_result(result), d_value(value), d_infinity(isInf)
   {
   }
-  OptimizationResult()
-      : d_result(Result::UNKNOWN, Result::UnknownExplanation::NO_STATUS),
-        d_value(),
-        d_infinity(FINITE)
-  {
-  }
+  OptimizationResult() : d_result(), d_value(), d_infinity(FINITE) {}
   ~OptimizationResult() = default;
 
   /**
    * Returns an enum indicating whether
    * the result is SAT or not.
-   * @return whether the result is SAT, UNSAT or UNKNOWN
+   * @return whether the result is SAT, UNSAT or NONE
    **/
   Result getResult() const { return d_result; }
 
@@ -189,7 +185,7 @@ std::ostream& operator<<(std::ostream& out,
  * implements a linear optimization loop. Supports activateObjective,
  * checkOpt, and objectiveGetValue in that order.
  */
-class OptimizationSolver
+class OptimizationSolver : protected EnvObj
 {
  public:
   /**
@@ -323,6 +319,6 @@ class OptimizationSolver
 };
 
 }  // namespace smt
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__SMT__OPTIMIZATION_SOLVER_H */

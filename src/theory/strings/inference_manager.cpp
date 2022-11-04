@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -24,9 +24,9 @@
 
 using namespace std;
 using namespace cvc5::context;
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
@@ -41,14 +41,10 @@ InferenceManager::InferenceManager(Env& env,
       d_termReg(tr),
       d_extt(e),
       d_statistics(statistics),
-      d_ipc(isProofEnabled()
-                ? new InferProofCons(
-                      context(), env.getProofNodeManager(), d_statistics)
-                : nullptr),
-      d_ipcl(isProofEnabled()
-                 ? new InferProofCons(
-                       context(), env.getProofNodeManager(), d_statistics)
-                 : nullptr)
+      d_ipc(isProofEnabled() ? new InferProofCons(env, context(), d_statistics)
+                             : nullptr),
+      d_ipcl(isProofEnabled() ? new InferProofCons(env, context(), d_statistics)
+                              : nullptr)
 {
   NodeManager* nm = NodeManager::currentNM();
   d_zero = nm->mkConstInt(Rational(0));
@@ -373,4 +369,4 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

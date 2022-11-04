@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Morgan Deters, Dejan Jovanovic, Clark Barrett
+ *   Morgan Deters, Mathias Preiner, Dejan Jovanovic
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -29,7 +29,7 @@
 #include "context/cdhashmap.h"
 #include "util/hash.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 
 class Rewriter;
@@ -103,7 +103,7 @@ class SubstitutionMap
   SubstitutionMap(context::Context* context = nullptr);
 
   /** Get substitutions in this object as a raw map */
-  std::unordered_map<Node, Node> getSubstitutions();
+  std::unordered_map<Node, Node> getSubstitutions() const;
   /**
    * Adds a substitution from x to t.
    */
@@ -186,6 +186,6 @@ inline std::ostream& operator << (std::ostream& out, const SubstitutionMap& subs
 
 std::ostream& operator<<(std::ostream& out, const theory::SubstitutionMap::iterator& i);
 
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__THEORY__SUBSTITUTIONS_H */

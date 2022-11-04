@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Morgan Deters, Aina Niemetz, Dejan Jovanovic
+ *   Morgan Deters, Aina Niemetz, Andres Noetzli
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -13,9 +13,9 @@
  * A node value.
  *
  * The actual node implementation.
- * Instances of this class are generally referenced through cvc5::Node rather
- * than by pointer. Note that cvc5::Node maintains the reference count on
- * NodeValue instances.
+ * Instances of this class are generally referenced through cvc5::internal::Node
+ * rather than by pointer. Note that cvc5::internal::Node maintains the
+ * reference count on NodeValue instances.
  */
 
 #include "cvc5_private.h"
@@ -30,7 +30,7 @@
 #include "expr/metakind.h"
 #include "options/language.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 template <bool ref_count> class NodeTemplate;
 class TypeNode;
@@ -44,7 +44,7 @@ namespace expr {
 namespace kind {
   namespace metakind {
 
-  template < ::cvc5::Kind k, class T, bool pool>
+  template <cvc5::internal::Kind k, class T, bool pool>
   struct NodeValueConstCompare;
 
   struct NodeValueCompare;
@@ -57,13 +57,13 @@ namespace expr {
 /**
  * This is a NodeValue.
  */
-class NodeValue
+class CVC5_EXPORT NodeValue
 {
   template <bool>
-  friend class ::cvc5::NodeTemplate;
-  friend class ::cvc5::TypeNode;
-  friend class ::cvc5::NodeBuilder;
-  friend class ::cvc5::NodeManager;
+  friend class cvc5::internal::NodeTemplate;
+  friend class cvc5::internal::TypeNode;
+  friend class cvc5::internal::NodeBuilder;
+  friend class cvc5::internal::NodeManager;
 
   template <Kind k, class T, bool pool>
   friend struct kind::metakind::NodeValueConstCompare;
@@ -93,7 +93,7 @@ class NodeValue
     using pointer = T*;
     using reference = T;
 
-    iterator() : d_i(NULL) {}
+    iterator() : d_i(nullptr) {}
     explicit iterator(const_nv_iterator i) : d_i(i) {}
 
     /** Conversion of a TNode iterator to a Node iterator. */
@@ -228,9 +228,7 @@ class NodeValue
 
   std::string toString() const;
 
-  void toStream(std::ostream& out,
-                int toDepth = -1,
-                size_t dag = 1) const;
+  void toStream(std::ostream& out) const;
 
   void printAst(std::ostream& out, int indent = 0) const;
 
@@ -296,10 +294,6 @@ class NodeValue
 
   void inc()
   {
-    Assert(!isBeingDeleted())
-        << "NodeValue is currently being deleted "
-           "and increment is being called on it. Don't Do That!";
-    // FIXME multithreading
     if (__builtin_expect((d_rc < MAX_RC - 1), true))
     {
       ++d_rc;
@@ -329,8 +323,6 @@ class NodeValue
 
   /** Decrement ref counts of children */
   inline void decrRefCounts();
-
-  bool isBeingDeleted() const;
 
   /** Returns true if the reference count is maximized. */
   inline bool HasMaximizedReferenceCount() { return d_rc == MAX_RC; }
@@ -478,6 +470,6 @@ inline NodeValue* NodeValue::getChild(int i) const {
 }
 
 }  // namespace expr
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__EXPR__NODE_VALUE_H */

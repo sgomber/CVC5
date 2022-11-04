@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds
+ *   Andrew Reynolds, Aina Niemetz, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -19,9 +19,9 @@
 #include "expr/node_algorithm.h"
 #include "printer/printer.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace smt {
 
 void PrintBenchmark::printAssertions(std::ostream& out,
@@ -56,7 +56,7 @@ void PrintBenchmark::printAssertions(std::ostream& out,
       std::vector<TypeNode> datatypeBlock;
       for (const TypeNode& ctn : connectedTypes)
       {
-        if (ctn.isSort())
+        if (ctn.isUninterpretedSort())
         {
           d_printer->toStreamCmdDeclareType(out, ctn);
         }
@@ -183,7 +183,7 @@ void PrintBenchmark::getConnectedSubfieldTypes(
     return;
   }
   processed.insert(tn);
-  if (tn.isSort())
+  if (tn.isUninterpretedSort())
   {
     connectedTypes.push_back(tn);
   }
@@ -231,14 +231,14 @@ void PrintBenchmark::getConnectedDefinitions(
   {
     // a recursively defined symbol
     recDefs.push_back(n);
-    // get the symbols in the body
-    std::unordered_set<Node> symsBody;
-    expr::getSymbols(it->second.second, symsBody, visited);
-    for (const Node& s : symsBody)
-    {
-      getConnectedDefinitions(
-          s, recDefs, ordinaryDefs, syms, defMap, processedDefs, visited);
-    }
+  }
+  // get the symbols in the body
+  std::unordered_set<Node> symsBody;
+  expr::getSymbols(it->second.second, symsBody, visited);
+  for (const Node& s : symsBody)
+  {
+    getConnectedDefinitions(
+        s, recDefs, ordinaryDefs, syms, defMap, processedDefs, visited);
   }
 }
 
@@ -281,4 +281,4 @@ void PrintBenchmark::printBenchmark(std::ostream& out,
 }
 
 }  // namespace smt
-}  // namespace cvc5
+}  // namespace cvc5::internal

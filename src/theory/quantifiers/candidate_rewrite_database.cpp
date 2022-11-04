@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Aina Niemetz, Andres Noetzli
+ *   Andrew Reynolds, Andres Noetzli, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -16,20 +16,19 @@
 #include "theory/quantifiers/candidate_rewrite_database.h"
 
 #include "options/base_options.h"
+#include "options/quantifiers_options.h"
 #include "printer/printer.h"
-#include "smt/smt_statistics_registry.h"
-#include "smt/solver_engine.h"
-#include "smt/solver_engine_scope.h"
+#include "smt/set_defaults.h"
 #include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/rewriter.h"
 
 using namespace std;
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 using namespace cvc5::context;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
@@ -45,6 +44,11 @@ CandidateRewriteDatabase::CandidateRewriteDatabase(
       d_using_sygus(false),
       d_crewrite_filter(env)
 {
+  // determine the options to use for the verification subsolvers we spawn
+  // we start with the provided options
+  d_subOptions.copyValues(options());
+  // disable checking
+  smt::SetDefaults::disableChecking(d_subOptions);
 }
 void CandidateRewriteDatabase::initialize(const std::vector<Node>& vars,
                                           SygusSampler* ss)
@@ -143,8 +147,9 @@ Node CandidateRewriteDatabase::addTerm(Node sol,
         // Notice we don't set produce-models. rrChecker takes the same
         // options as the SolverEngine we belong to, where we ensure that
         // produce-models is set.
+        SubsolverSetupInfo ssi(d_env, d_subOptions);
         std::unique_ptr<SolverEngine> rrChecker;
-        initializeChecker(rrChecker, crr);
+        initializeChecker(rrChecker, crr, ssi);
         Result r = rrChecker->checkSat();
         Trace("rr-check") << "...result : " << r << std::endl;
         if (r.getStatus() == Result::SAT)
@@ -187,7 +192,8 @@ Node CandidateRewriteDatabase::addTerm(Node sol,
           // add the solution again
           // by construction of the above point, we should be unique now
           eq_sol = d_sampler->registerTerm(sol);
-          Assert(eq_sol == sol);
+          Assert(eq_sol == sol) << "Model failed to distinguish terms "
+                                << eq_sol << " and " << sol;
         }
         else
         {
@@ -309,4 +315,4 @@ void CandidateRewriteDatabase::enableExtendedRewriter()
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

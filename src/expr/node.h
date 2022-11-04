@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -37,7 +37,7 @@
 #include "util/hash.h"
 #include "util/utility.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 class TypeNode;
 class NodeManager;
@@ -127,25 +127,25 @@ typedef NodeTemplate<true> Node;
  */
 typedef NodeTemplate<false> TNode;
 
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 namespace std {
 
 template <>
-struct hash<cvc5::Node>
+struct hash<cvc5::internal::Node>
 {
-  size_t operator()(const cvc5::Node& node) const;
+  size_t operator()(const cvc5::internal::Node& node) const;
 };
 
 template <>
-struct hash<cvc5::TNode>
+struct hash<cvc5::internal::TNode>
 {
-  size_t operator()(const cvc5::TNode& node) const;
+  size_t operator()(const cvc5::internal::TNode& node) const;
 };
 
 }  // namespace std
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace expr {
 
 class NodeValue;
@@ -199,8 +199,8 @@ class NodeTemplate {
 
   friend class NodeBuilder;
 
-  friend class ::cvc5::expr::attr::AttributeManager;
-  friend struct ::cvc5::expr::attr::SmtAttributes;
+  friend class ::cvc5::internal::expr::attr::AttributeManager;
+  friend struct ::cvc5::internal::expr::attr::SmtAttributes;
 
   /**
    * Assigns the expression value and does reference counting. No assumptions
@@ -479,6 +479,18 @@ public:
    * (default: false)
    */
   TypeNode getType(bool check = false) const;
+
+  /**
+   * Has name? Return true if this node has an associated variable
+   * name (via the attribute expr::VarNameAttr). This is true typically for
+   * user-created variables.
+   */
+  bool hasName() const;
+  /**
+   * Get the name. Returns the string value of the expr::VarNameAttr attribute
+   * for this node.
+   */
+  std::string getName() const;
 
   /**
    * Substitution of Nodes.
@@ -811,16 +823,11 @@ public:
    * given stream
    *
    * @param out the stream to serialize this node to
-   * @param toDepth the depth to which to print this expression, or -1 to
-   * print it fully
-   * @param language the language in which to output
    */
-  inline void toStream(std::ostream& out,
-                       int toDepth = -1,
-                       size_t dagThreshold = 1) const
+  inline void toStream(std::ostream& out) const
   {
     assertTNodeNotExpired();
-    d_nv->toStream(out, toDepth, dagThreshold);
+    d_nv->toStream(out);
   }
 
   void constToStream(std::ostream& out) const
@@ -862,9 +869,7 @@ public:
  * @return the stream
  */
 inline std::ostream& operator<<(std::ostream& out, TNode n) {
-  n.toStream(out,
-             options::ioutils::getNodeDepth(out),
-             options::ioutils::getDagThresh(out));
+  n.toStream(out);
   return out;
 }
 
@@ -946,12 +951,12 @@ std::ostream& operator<<(
   return out;
 }
 
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 //#include "expr/attribute.h"
 #include "expr/node_manager.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 using TNodePairHashFunction =
     PairHashFunction<TNode, TNode, std::hash<TNode>, std::hash<TNode>>;
@@ -1407,6 +1412,6 @@ Node NodeTemplate<ref_count>::substitute(
   }
 }
 
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__NODE_H */

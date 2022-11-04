@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -26,10 +26,11 @@
 #include "proof/proof_node_manager.h"
 #include "proof/theory_proof_step_buffer.h"
 #include "prop/cnf_stream.h"
+#include "prop/opt_clauses_manager.h"
 #include "prop/sat_proof_manager.h"
 #include "smt/env_obj.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace prop {
 
 class SatProofManager;
@@ -69,11 +70,13 @@ class ProofCnfStream : protected EnvObj, public ProofGenerator
    * @param node formula to convert and assert
    * @param negated whether we are asserting the node negated
    * @param removable whether the SAT solver can choose to remove the clauses
+   * @param input whether the node is from the input
    * @param pg a proof generator for node
    */
   void convertAndAssert(TNode node,
                         bool negated,
                         bool removable,
+                        bool input,
                         ProofGenerator* pg);
 
   /**
@@ -91,6 +94,23 @@ class ProofCnfStream : protected EnvObj, public ProofGenerator
   void ensureLiteral(TNode n);
 
   /**
+   * Returns true iff the node has an assigned literal (it might not be
+   * translated).
+   */
+  bool hasLiteral(TNode node) const;
+
+  /**
+   * Returns the literal that represents the given node in the SAT CNF
+   * representation.
+   */
+  SatLiteral getLiteral(TNode node);
+
+  /**
+   * Returns the Boolean variables from the input problem.
+   */
+  void getBooleanVariables(std::vector<TNode>& outputVariables) const;
+
+  /**
    * Blocks a proof, so that it is not further updated by a post processor of
    * this class's proof. */
   void addBlocked(std::shared_ptr<ProofNode> pfn);
@@ -100,6 +120,24 @@ class ProofCnfStream : protected EnvObj, public ProofGenerator
    * blocked proof node is one integrated into this class via an external proof
    * generator. */
   bool isBlocked(std::shared_ptr<ProofNode> pfn);
+
+  /** Notify that current propagation inserted at lower level than current.
+   *
+   * The proof of the current propagation (d_currPropagationProcessed) will be
+   * saved in d_optClausesPfs, so that it is not potentially lost when the user
+   * context is popped.
+   */
+  void notifyCurrPropagationInsertedAtLevel(int explLevel);
+  /** Notify that added clause was inserted at lower level than current.
+   *
+   * As above, the proof of this clause is saved in  d_optClausesPfs.
+   */
+  void notifyClauseInsertedAtLevel(const SatClause& clause, int clLevel);
+
+  /** Retrieve the proofs for clauses derived from the input */
+  std::vector<std::shared_ptr<ProofNode>> getInputClausesProofs();
+  /** Retrieve the proofs for clauses derived from lemmas */
+  std::vector<std::shared_ptr<ProofNode>> getLemmaClausesProofs();
 
  private:
   /**
@@ -162,6 +200,14 @@ class ProofCnfStream : protected EnvObj, public ProofGenerator
 
   /** Reference to the underlying cnf stream. */
   CnfStream& d_cnfStream;
+
+  /** Whether we are we asserting clauses derived from the input. */
+  bool d_input;
+  /** Asserted clauses derived from the input */
+  context::CDHashSet<Node> d_inputClauses;
+  /** Asserted clauses derived from lemmas */
+  context::CDHashSet<Node> d_lemmaClauses;
+
   /** The proof manager of underlying SAT solver associated with this stream. */
   SatProofManager* d_satPM;
   /** The user-context-dependent proof object. */
@@ -174,9 +220,21 @@ class ProofCnfStream : protected EnvObj, public ProofGenerator
    * These are proof nodes added to this class by external generators. */
   context::CDHashSet<std::shared_ptr<ProofNode>, ProofNodeHashFunction>
       d_blocked;
+
+  /** The current propagation being processed via this class. */
+  Node d_currPropagationProcessed;
+  /** User-context-dependent map assertion level to proof nodes.
+   *
+   * This map is used to update the internal proof of this class when the
+   * context pops.
+   */
+  std::map<int, std::vector<std::shared_ptr<ProofNode>>> d_optClausesPfs;
+  /** Manager for optimized propagations and added clauses inserted at assertion
+   * levels below the current user level. */
+  OptimizedClausesManager d_optClausesManager;
 };
 
 }  // namespace prop
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif

@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Haniel Barbosa, Dejan Jovanovic
+ *   Andrew Reynolds, Aina Niemetz, Andres Noetzli
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -27,7 +27,7 @@
 #include "theory/substitutions.h"
 #include "theory/theory_rewriter.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace uf {
 
@@ -66,12 +66,16 @@ class TheoryUfRewriter : public TheoryRewriter
  private:
   /** Entry point for rewriting lambdas */
   static Node rewriteLambda(Node node);
+  /** rewrite bv2nat */
+  static RewriteResponse rewriteBVToNat(TNode node);
+  /** rewrite int2bv */
+  static RewriteResponse rewriteIntToBV(TNode node);
   /** Is the logic higher-order? */
   bool d_isHigherOrder;
 }; /* class TheoryUfRewriter */
 
 }  // namespace uf
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__THEORY__UF__THEORY_UF_REWRITER_H */

@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Martin Brain, Andrew Reynolds, Andres Noetzli
+ *   Martin Brain, Andrew Reynolds, Aina Niemetz
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -31,9 +31,9 @@
 #include "util/floatingpoint.h"
 
 using namespace std;
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace fp {
 
@@ -71,7 +71,7 @@ TheoryFp::TheoryFp(Env& env, OutputChannel& out, Valuation valuation)
       d_state(env, valuation),
       d_im(env, *this, d_state, "theory::fp::", true),
       d_wbFactsCache(userContext()),
-      d_true(d_env.getNodeManager()->mkConst(true))
+      d_true(NodeManager::currentNM()->mkConst(true))
 {
   // indicate we are using the default theory state and inference manager
   d_theoryState = &d_state;
@@ -92,28 +92,22 @@ bool TheoryFp::needsEqualityEngine(EeSetupInfo& esi)
 void TheoryFp::finishInit()
 {
   Assert(d_equalityEngine != nullptr);
-  // Kinds that are to be handled in the congruence closure
 
+  // Kinds that are to be handled in the congruence closure
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_ABS);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_NEG);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_ADD);
-  // d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_SUB); // Removed
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_MULT);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_DIV);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_FMA);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_SQRT);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_REM);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_RTI);
-  // d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_MIN); // Removed
-  // d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_MAX); // Removed
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_MIN_TOTAL);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_MAX_TOTAL);
 
-  // d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_EQ); // Removed
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_LEQ);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_LT);
-  // d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_GEQ); // Removed
-  // d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_GT); // Removed
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_IS_NORMAL);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_IS_SUBNORMAL);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_IS_ZERO);
@@ -128,9 +122,6 @@ void TheoryFp::finishInit()
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_TO_FP_FROM_SBV);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_TO_FP_FROM_UBV);
 
-  // d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_TO_UBV); // Removed
-  // d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_TO_SBV); // Removed
-  // d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_TO_REAL); // Removed
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_TO_UBV_TOTAL);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_TO_SBV_TOTAL);
   d_equalityEngine->addFunctionKind(kind::FLOATINGPOINT_TO_REAL_TOTAL);
@@ -147,11 +138,25 @@ void TheoryFp::finishInit()
 TrustNode TheoryFp::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
 {
   Trace("fp-ppRewrite") << "TheoryFp::ppRewrite(): " << node << std::endl;
+
   // first, see if we need to expand definitions
   TrustNode texp = d_rewriter.expandDefinition(node);
   if (!texp.isNull())
   {
     return texp;
+  }
+
+  if (Configuration::isAssertionBuild())
+  {
+    // The following kinds should have been removed by the
+    // rewriter/expandDefinition
+    Kind k = node.getKind();
+    Assert(k != kind::FLOATINGPOINT_SUB && k != kind::FLOATINGPOINT_MIN
+           && k != kind::FLOATINGPOINT_MAX && k != kind::FLOATINGPOINT_EQ
+           && k != kind::FLOATINGPOINT_GEQ && k != kind::FLOATINGPOINT_GT
+           && k != kind::FLOATINGPOINT_TO_UBV && k != kind::FLOATINGPOINT_TO_SBV
+           && k != kind::FLOATINGPOINT_TO_REAL)
+        << "Expected floating-point kind " << k << " to be removed";
   }
 
   Node res = node;
@@ -430,7 +435,8 @@ void TheoryFp::wordBlastAndEquateTerm(TNode node)
     NodeManager* nm = NodeManager::currentNM();
 
     handleLemma(
-        nm->mkNode(kind::EQUAL, addA, nm->mkConst(::cvc5::BitVector(1U, 1U))),
+        nm->mkNode(
+            kind::EQUAL, addA, nm->mkConst(cvc5::internal::BitVector(1U, 1U))),
         InferenceId::FP_EQUATE_TERM);
 
     ++oldSize;
@@ -447,11 +453,12 @@ void TheoryFp::wordBlastAndEquateTerm(TNode node)
       NodeManager* nm = NodeManager::currentNM();
 
       handleLemma(
-          nm->mkNode(kind::EQUAL,
-                     node,
-                     nm->mkNode(kind::EQUAL,
-                                wordBlasted,
-                                nm->mkConst(::cvc5::BitVector(1U, 1U)))),
+          nm->mkNode(
+              kind::EQUAL,
+              node,
+              nm->mkNode(kind::EQUAL,
+                         wordBlasted,
+                         nm->mkConst(cvc5::internal::BitVector(1U, 1U)))),
           InferenceId::FP_EQUATE_TERM);
     }
     else
@@ -801,11 +808,14 @@ bool TheoryFp::collectModelValues(TheoryModel* m,
     TNode current = working.back();
     working.pop_back();
 
-    if (visited.find(current) != visited.end())
+    if (visited.find(current) != visited.end() || current.isClosure())
     {
-      // Ignore things that have already been explored
+      // Ignore things that have already been explored and closures. For
+      // variables in closures (e.g., set comprehension), we rely on the
+      // reduction of the closures to handle the body.
       continue;
     }
+
     visited.insert(current);
 
     TypeNode t = current.getType();
@@ -908,4 +918,4 @@ void TheoryFp::NotifyClass::eqNotifyConstantTermMerge(TNode t1, TNode t2) {
 
 }  // namespace fp
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

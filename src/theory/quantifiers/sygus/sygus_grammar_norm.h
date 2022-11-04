@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -26,7 +26,7 @@
 #include "expr/type_node.h"
 #include "smt/env_obj.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
@@ -81,11 +81,15 @@ class OpPosTrie
    * unres_t becomes the indexed type and true is returned. Otherwise a new type
    * is created, indexed by the given positions, and assigned to unres_t, with
    * false being returned.
+   *
+   * @param useIndexedName If true, we include the indices in op_pos in the
+   * name of unres_tn.
    */
   bool getOrMakeType(TypeNode tn,
                      TypeNode& unres_tn,
                      const std::vector<unsigned>& op_pos,
-                     unsigned ind = 0);
+                     unsigned ind = 0,
+                     bool useIndexedName = false);
   /** clear all data from this trie */
   void clear() { d_children.clear(); }
 
@@ -427,6 +431,6 @@ class SygusGrammarNorm : protected EnvObj
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif

@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds
+ *   Andrew Reynolds, Gereon Kremer
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -19,7 +19,7 @@
 #include "options/io_utils.h"
 #include "printer/printer.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 InstantiationVec::InstantiationVec(const std::vector<Node>& vec,
                                    theory::InferenceId id,
@@ -31,16 +31,14 @@ InstantiationVec::InstantiationVec(const std::vector<Node>& vec,
 void InstantiationList::initialize(Node q) { d_quant = q; }
 std::ostream& operator<<(std::ostream& out, const InstantiationList& ilist)
 {
-  auto language = options::ioutils::getOutputLang(out);
-  Printer::getPrinter(language)->toStream(out, ilist);
+  Printer::getPrinter(out)->toStream(out, ilist);
   return out;
 }
 
 std::ostream& operator<<(std::ostream& out, const SkolemList& skl)
 {
-  auto language = options::ioutils::getOutputLang(out);
-  Printer::getPrinter(language)->toStream(out, skl);
+  Printer::getPrinter(out)->toStream(out, skl);
   return out;
 }
 
-}  // namespace cvc5
+}  // namespace cvc5::internal

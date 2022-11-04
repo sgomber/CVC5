@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Hanna Lachnitt, Haniel Barbosa
+ *   Hanna Lachnitt, Haniel Barbosa, Andrew Reynolds
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -21,18 +21,19 @@
 #include "proof/proof_checker.h"
 #include "proof/proof_node_algorithm.h"
 #include "proof/proof_node_manager.h"
+#include "smt/env.h"
 #include "theory/builtin/proof_checker.h"
 #include "util/rational.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 namespace proof {
 
 AletheProofPostprocessCallback::AletheProofPostprocessCallback(
-    ProofNodeManager* pnm, AletheNodeConverter& anc)
-    : d_pnm(pnm), d_anc(anc)
+    Env& env, AletheNodeConverter& anc, bool resPivots)
+    : EnvObj(env), d_anc(anc), d_resPivots(resPivots)
 {
   NodeManager* nm = NodeManager::currentNM();
   d_cl = nm->mkBoundVar("cl", nm->sExprType());
@@ -43,6 +44,15 @@ bool AletheProofPostprocessCallback::shouldUpdate(std::shared_ptr<ProofNode> pn,
                                                   bool& continueUpdate)
 {
   return pn->getRule() != PfRule::ALETHE_RULE;
+}
+
+bool AletheProofPostprocessCallback::shouldUpdatePost(
+    std::shared_ptr<ProofNode> pn, const std::vector<Node>& fa)
+{
+  Assert(!pn->getArguments().empty());
+  AletheRule rule = getAletheRule(pn->getArguments()[0]);
+  return rule == AletheRule::RESOLUTION || rule == AletheRule::REORDERING
+         || rule == AletheRule::CONTRACTION;
 }
 
 bool AletheProofPostprocessCallback::update(Node res,
@@ -324,8 +334,8 @@ bool AletheProofPostprocessCallback::update(Node res,
       return success;
     }
     case PfRule::THEORY_REWRITE:
-    { 
-       return addAletheStep(AletheRule::ALL_SIMPLIFY,
+    {
+      return addAletheStep(AletheRule::ALL_SIMPLIFY,
                            res,
                            nm->mkNode(kind::SEXPR, d_cl, res),
                            children,
@@ -986,7 +996,8 @@ bool AletheProofPostprocessCallback::update(Node res,
         {
           Node vpi = children[0][0][i].eqNode(children[0][1][i]);
           new_args.push_back(vpi);
-          vpis.push_back(nm->mkNode(kind::SEXPR, d_cl, vpi));
+          vpi = nm->mkNode(kind::SEXPR, d_cl, vpi);
+          vpis.push_back(vpi);
           success &= addAletheStep(AletheRule::REFL, vpi, vpi, {}, {}, *cdp);
         }
         vpis.push_back(children[1]);
@@ -1467,16 +1478,17 @@ bool AletheProofPostprocessCallback::update(Node res,
 }
 
 // Adds an OR rule to the premises of a step if the premise is not a clause and
-// should not be a singleton. Since FACTORING and REORDERING always take
+// should not be a singleton. Since CONTRACTION and REORDERING always take
 // non-singletons, this function adds an OR step to their premise if it was
 // formerly printed as (cl (or F1 ... Fn)). For resolution, it is necessary to
 // check all children to find out whether they're singleton before determining
 // if they are already printed correctly.
-bool AletheProofPostprocessCallback::finalize(Node res,
-                                              PfRule id,
-                                              const std::vector<Node>& children,
-                                              const std::vector<Node>& args,
-                                              CDProof* cdp)
+bool AletheProofPostprocessCallback::updatePost(
+    Node res,
+    PfRule id,
+    const std::vector<Node>& children,
+    const std::vector<Node>& args,
+    CDProof* cdp)
 {
   NodeManager* nm = NodeManager::currentNM();
   AletheRule rule = getAletheRule(args[0]);
@@ -1501,9 +1513,8 @@ bool AletheProofPostprocessCallback::finalize(Node res,
       }
       std::vector<Node> new_children = children;
       std::vector<Node> new_args =
-          options::proofAletheResPivots()
-              ? args
-              : std::vector<Node>(args.begin(), args.begin() + 3);
+          d_resPivots ? args
+                      : std::vector<Node>(args.begin(), args.begin() + 3);
       Node trueNode = nm->mkConst(true);
       Node falseNode = nm->mkConst(false);
       bool hasUpdated = false;
@@ -1601,7 +1612,7 @@ bool AletheProofPostprocessCallback::finalize(Node res,
           }
         }
       }
-      if (hasUpdated || !options::proofAletheResPivots())
+      if (hasUpdated || !d_resPivots)
       {
         Trace("alethe-proof")
             << "... update alethe step in finalizer " << res << " "
@@ -1671,7 +1682,11 @@ bool AletheProofPostprocessCallback::finalize(Node res,
       }
       return false;
     }
-    default: return false;
+    default:
+    {
+      Unreachable();
+      return false;
+    }
   }
   return false;
 }
@@ -1805,9 +1820,10 @@ bool AletheProofPostprocessCallback::addAletheStepFromOr(
   return addAletheStep(rule, res, conclusion, children, args, cdp);
 }
 
-AletheProofPostprocess::AletheProofPostprocess(ProofNodeManager* pnm,
-                                               AletheNodeConverter& anc)
-    : d_pnm(pnm), d_cb(d_pnm, anc)
+AletheProofPostprocess::AletheProofPostprocess(Env& env,
+                                               AletheNodeConverter& anc,
+                                               bool resPivots)
+    : EnvObj(env), d_cb(env, anc, resPivots)
 {
 }
 
@@ -1816,7 +1832,7 @@ AletheProofPostprocess::~AletheProofPostprocess() {}
 void AletheProofPostprocess::process(std::shared_ptr<ProofNode> pf)
 {
   // Translate proof node
-  ProofNodeUpdater updater(d_pnm, d_cb, true, false);
+  ProofNodeUpdater updater(d_env, d_cb, false, false);
   updater.process(pf->getChildren()[0]);
 
   // In the Alethe proof format the final step has to be (cl). However, after
@@ -1824,7 +1840,7 @@ void AletheProofPostprocess::process(std::shared_ptr<ProofNode> pf)
   // required.
   // The function has the additional purpose of sanitizing the attributes of the
   // first SCOPE
-  CDProof cpf(d_pnm, nullptr, "ProofNodeUpdater::CDProof", true);
+  CDProof cpf(d_env, nullptr, "ProofNodeUpdater::CDProof", true);
   const std::vector<std::shared_ptr<ProofNode>>& cc = pf->getChildren();
   std::vector<Node> ccn;
   for (const std::shared_ptr<ProofNode>& cp : cc)
@@ -1841,11 +1857,11 @@ void AletheProofPostprocess::process(std::shared_ptr<ProofNode> pf)
 
     // then, update the original proof node based on this one
     Trace("pf-process-debug") << "Update node..." << std::endl;
-    d_pnm->updateNode(pf.get(), npn.get());
+    d_env.getProofNodeManager()->updateNode(pf.get(), npn.get());
     Trace("pf-process-debug") << "...update node finished." << std::endl;
   }
 }
 
 }  // namespace proof
 
-}  // namespace cvc5
+}  // namespace cvc5::internal

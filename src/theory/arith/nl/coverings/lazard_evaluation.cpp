@@ -1,10 +1,27 @@
+/******************************************************************************
+ * Top contributors (to current version):
+ *   Gereon Kremer, Andres Noetzli
+ *
+ * This file is part of the cvc5 project.
+ *
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * in the top-level source directory and their institutional affiliations.
+ * All rights reserved.  See the file COPYING in the top-level source
+ * directory for licensing information.
+ * ****************************************************************************
+ *
+ * [[ Add one-line brief description here ]]
+ *
+ * [[ Add lengthier description here ]]
+ * \todo document this file
+ */
 #include "theory/arith/nl/coverings/lazard_evaluation.h"
 
 #ifdef CVC5_POLY_IMP
 
 #include "base/check.h"
 #include "base/output.h"
-#include "smt/smt_statistics_registry.h"
+#include "util/statistics_registry.h"
 #include "util/statistics_stats.h"
 
 #ifdef CVC5_USE_COCOA
@@ -15,19 +32,16 @@
 
 #include "theory/arith/nl/coverings/cocoa_converter.h"
 
-namespace cvc5::theory::arith::nl::coverings {
+namespace cvc5::internal::theory::arith::nl::coverings {
 
-struct LazardEvaluationStats
-{
-  IntStat d_directAssignments =
-      smtStatisticsRegistry().registerInt("theory::arith::coverings::lazard-direct");
-  IntStat d_ranAssignments =
-      smtStatisticsRegistry().registerInt("theory::arith::coverings::lazard-rans");
-  IntStat d_evaluations =
-      smtStatisticsRegistry().registerInt("theory::arith::coverings::lazard-evals");
-  IntStat d_reductions =
-      smtStatisticsRegistry().registerInt("theory::arith::coverings::lazard-reduce");
-};
+LazardEvaluationStats::LazardEvaluationStats(StatisticsRegistry& reg)
+    : d_directAssignments(
+        reg.registerInt("theory::arith::coverings::lazard-direct")),
+      d_ranAssignments(
+          reg.registerInt("theory::arith::coverings::lazard-rans")),
+      d_evaluations(reg.registerInt("theory::arith::coverings::lazard-evals")),
+      d_reductions(
+          reg.registerInt("theory::arith::coverings::lazard-reduce")){};
 
 struct LazardEvaluationState;
 std::ostream& operator<<(std::ostream& os, const LazardEvaluationState& state);
@@ -525,6 +539,8 @@ struct LazardEvaluationState
     }
     return res;
   }
+
+  LazardEvaluationState(StatisticsRegistry& reg) : d_stats(reg) {}
 };
 
 std::ostream& operator<<(std::ostream& os, const LazardEvaluationState& state)
@@ -547,8 +563,8 @@ std::ostream& operator<<(std::ostream& os, const LazardEvaluationState& state)
   return os;
 }
 
-LazardEvaluation::LazardEvaluation()
-    : d_state(std::make_unique<LazardEvaluationState>())
+LazardEvaluation::LazardEvaluation(StatisticsRegistry& reg)
+    : d_state(std::make_unique<LazardEvaluationState>(reg))
 {
 }
 
@@ -819,11 +835,11 @@ std::vector<poly::Interval> LazardEvaluation::infeasibleRegions(
   return combined;
 }
 
-}  // namespace cvc5::theory::arith::nl::coverings
+}  // namespace cvc5::internal::theory::arith::nl::coverings
 
 #else
 
-namespace cvc5::theory::arith::nl::coverings {
+namespace cvc5::internal::theory::arith::nl::coverings {
 
 /**
  * Do a very simple wrapper around the regular poly::infeasible_regions.
@@ -835,7 +851,7 @@ struct LazardEvaluationState
 {
   poly::Assignment d_assignment;
 };
-LazardEvaluation::LazardEvaluation()
+LazardEvaluation::LazardEvaluation(StatisticsRegistry&)
     : d_state(std::make_unique<LazardEvaluationState>())
 {
 }
@@ -873,7 +889,7 @@ std::vector<poly::Interval> LazardEvaluation::infeasibleRegions(
   return poly::infeasible_regions(q, d_state->d_assignment, sc);
 }
 
-}  // namespace cvc5::theory::arith::nl::coverings
+}  // namespace cvc5::internal::theory::arith::nl::coverings
 
 #endif
 #endif

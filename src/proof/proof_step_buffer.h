@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -23,7 +23,7 @@
 #include "expr/node.h"
 #include "proof/proof_rule.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 class ProofChecker;
 
@@ -76,7 +76,9 @@ class ProofStepBuffer
    * is added to the buffer maintained by this class.
    *
    * If expected is non-null, then this method returns null if the result of
-   * checking is not equal to expected.
+   * checking is not equal to expected. Furthermore note that if proof
+   * checking is set to none, this method will always successfully return
+   * expected.
    */
   Node tryStep(PfRule id,
                const std::vector<Node>& children,
@@ -127,6 +129,6 @@ class ProofStepBuffer
   std::unordered_set<Node> d_allSteps;
 };
 
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__PROOF__PROOF_STEP_BUFFER_H */

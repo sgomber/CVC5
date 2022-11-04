@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Haniel Barbosa, Dejan Jovanovic
+ *   Andrew Reynolds, Haniel Barbosa, Tim King
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -23,19 +23,20 @@
 #include "options/base_options.h"
 #include "options/decision_options.h"
 #include "options/prop_options.h"
+#include "options/parallel_options.h"
 #include "options/smt_options.h"
 #include "prop/cnf_stream.h"
+#include "prop/proof_cnf_stream.h"
 #include "prop/prop_engine.h"
 #include "prop/sat_relevancy.h"
 #include "prop/skolem_def_manager.h"
 #include "prop/zero_level_learner.h"
 #include "smt/env.h"
-#include "smt/smt_statistics_registry.h"
 #include "theory/rewriter.h"
 #include "theory/theory_engine.h"
 #include "util/statistics_stats.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace prop {
 
 TheoryProxy::TheoryProxy(Env& env,
@@ -53,13 +54,17 @@ TheoryProxy::TheoryProxy(Env& env,
       d_satRlv(nullptr),
       d_tpp(env, *theoryEngine),
       d_skdm(skdm),
-      d_zll(nullptr)
+      d_zll(nullptr),
+      d_stopSearch(false, userContext())
 {
-  bool trackTopLevelLearned = isOutputOn(OutputTag::LEARNED_LITS)
-                              || options().smt.produceLearnedLiterals;
-  if (trackTopLevelLearned)
+  bool trackZeroLevel =
+      options().smt.deepRestartMode != options::DeepRestartMode::NONE
+      || isOutputOn(OutputTag::LEARNED_LITS)
+      || options().smt.produceLearnedLiterals
+      || options().parallel.computePartitions > 0;
+  if (trackZeroLevel)
   {
-    d_zll = std::make_unique<ZeroLevelLearner>(env, propEngine);
+    d_zll = std::make_unique<ZeroLevelLearner>(env, theoryEngine);
   }
 }
 
@@ -90,6 +95,16 @@ void TheoryProxy::presolve()
   {
     d_satRlv->presolve(d_queue);
   }
+  d_stopSearch = false;
+}
+
+void TheoryProxy::notifyTopLevelSubstitution(const Node& lhs,
+                                             const Node& rhs) const
+{
+  if (d_zll != nullptr)
+  {
+    d_zll->notifyTopLevelSubstitution(lhs, rhs);
+  }
 }
 
 void TheoryProxy::notifyInputFormulas(
@@ -113,6 +128,10 @@ void TheoryProxy::notifyInputFormulas(
     {
       skolem = it->second;
     }
+    if (!skolem.isNull())
+    {
+      notifySkolemDefinition(assertions[i], skolem);
+    }
     notifyAssertion(assertions[i], skolem, false);
   }
 
@@ -120,8 +139,14 @@ void TheoryProxy::notifyInputFormulas(
   // determine what is learnable
   if (d_zll != nullptr)
   {
-    d_zll->notifyInputFormulas(assertions, skolemMap);
+    d_zll->notifyInputFormulas(assertions);
   }
+}
+
+void TheoryProxy::notifySkolemDefinition(Node a, TNode skolem)
+{
+  Assert(!skolem.isNull());
+  d_skdm->notifySkolemDefinition(skolem, a);
 }
 
 void TheoryProxy::notifyAssertion(Node a, TNode skolem, bool isLemma)
@@ -140,8 +165,6 @@ void TheoryProxy::notifyAssertion(Node a, TNode skolem, bool isLemma)
   }
   else
   {
-    // a skolem definition from input
-    d_skdm->notifySkolemDefinition(skolem, a);
     d_decisionEngine->addSkolemDefinition(a, skolem, isLemma);
   }
 }
@@ -168,8 +191,16 @@ void TheoryProxy::theoryCheck(theory::Theory::Effort effort) {
     d_queue.pop();
     if (d_zll != nullptr)
     {
-      // check if this corresponds to a zero-level asserted literal
-      d_zll->notifyAsserted(assertion);
+      if (d_stopSearch.get())
+      {
+        break;
+      }
+      int32_t alevel = d_propEngine->getDecisionLevel(assertion);
+      if (!d_zll->notifyAsserted(assertion, alevel))
+      {
+        d_stopSearch = true;
+        break;
+      }
     }
     // now, assert to theory engine
     d_theoryEngine->assertFact(assertion);
@@ -181,19 +212,23 @@ void TheoryProxy::theoryCheck(theory::Theory::Effort effort) {
       // assertion processed makes all skolems in assertion active,
       // which triggers their definitions to becoming relevant
       std::vector<TNode> activeSkolemDefs;
-      d_skdm->notifyAsserted(assertion, activeSkolemDefs, true);
-      if (d_satRlv != nullptr)
+      d_skdm->notifyAsserted(assertion, activeSkolemDefs);
+      if (!activeSkolemDefs.empty())
       {
-        d_satRlv->notifyActivatedSkolemDefs(activeSkolemDefs, d_queue);
-      }
-      if (d_dmNeedsActiveDefs)
-      {
+        if (d_satRlv != nullptr)
+        {
+          d_satRlv->notifyActivatedSkolemDefs(activeSkolemDefs, d_queue);
+        }
+        // notify the decision engine of the skolem definitions that have become
+        // active due to the assertion.
         d_decisionEngine->notifyActiveSkolemDefs(activeSkolemDefs);
       }
     }
   }
-  // check with the theory engine
-  d_theoryEngine->check(effort);
+  if (!d_stopSearch.get())
+  {
+    d_theoryEngine->check(effort);
+  }
 }
 
 void TheoryProxy::theoryPropagate(std::vector<SatLiteral>& output) {
@@ -252,6 +287,19 @@ void TheoryProxy::explainPropagation(SatLiteral l, SatClause& explanation) {
   }
 }
 
+void TheoryProxy::notifyCurrPropagationInsertedAtLevel(int explLevel)
+{
+  d_propEngine->getProofCnfStream()->notifyCurrPropagationInsertedAtLevel(
+      explLevel);
+}
+
+void TheoryProxy::notifyClauseInsertedAtLevel(const SatClause& clause,
+                                              int clLevel)
+{
+  d_propEngine->getProofCnfStream()->notifyClauseInsertedAtLevel(clause,
+                                                                 clLevel);
+}
+
 void TheoryProxy::enqueueTheoryLiteral(const SatLiteral& l) {
   if (d_satRlv != nullptr)
   {
@@ -285,6 +333,11 @@ SatLiteral TheoryProxy::getNextTheoryDecisionRequest() {
 SatLiteral TheoryProxy::getNextDecisionEngineRequest(bool &stopSearch) {
   Assert(d_decisionEngine != NULL);
   Assert(stopSearch != true);
+  if (d_stopSearch.get())
+  {
+    stopSearch = true;
+    return undefSatLiteral;
+  }
   SatLiteral ret = d_decisionEngine->getNext(stopSearch);
   if(stopSearch) {
     Trace("decision") << "  ***  Decision Engine stopped search *** " << std::endl;
@@ -293,12 +346,25 @@ SatLiteral TheoryProxy::getNextDecisionEngineRequest(bool &stopSearch) {
 }
 
 bool TheoryProxy::theoryNeedCheck() const {
+  if (d_stopSearch.get())
+  {
+    return false;
+  }
   return d_theoryEngine->needCheck();
 }
 
 bool TheoryProxy::isIncomplete() const
 {
-  return d_theoryEngine->isIncomplete();
+  return d_stopSearch.get() || d_theoryEngine->isIncomplete();
+}
+
+theory::IncompleteId TheoryProxy::getIncompleteId() const
+{
+  if (d_stopSearch.get())
+  {
+    return theory::IncompleteId::STOP_SEARCH;
+  }
+  return d_theoryEngine->getIncompleteId();
 }
 
 TNode TheoryProxy::getNode(SatLiteral lit) {
@@ -318,7 +384,7 @@ void TheoryProxy::spendResource(Resource r)
 bool TheoryProxy::isDecisionRelevant(SatVariable var) { return true; }
 
 bool TheoryProxy::isDecisionEngineDone() {
-  return d_decisionEngine->isDone();
+  return d_decisionEngine->isDone() || d_stopSearch.get();
 }
 
 SatValue TheoryProxy::getDecisionPolarity(SatVariable var) {
@@ -372,14 +438,33 @@ void TheoryProxy::preRegister(Node n)
   }
 }
 
-std::vector<Node> TheoryProxy::getLearnedZeroLevelLiterals() const
+std::vector<Node> TheoryProxy::getLearnedZeroLevelLiterals(
+    modes::LearnedLitType ltype) const
 {
   if (d_zll != nullptr)
   {
-    return d_zll->getLearnedZeroLevelLiterals();
+    return d_zll->getLearnedZeroLevelLiterals(ltype);
+  }
+  return {};
+}
+
+modes::LearnedLitType TheoryProxy::getLiteralType(const Node& lit) const
+{
+  if (d_zll != nullptr)
+  {
+    return d_zll->computeLearnedLiteralType(lit);
+  }
+  return modes::LEARNED_LIT_UNKNOWN;
+}
+
+std::vector<Node> TheoryProxy::getLearnedZeroLevelLiteralsForRestart() const
+{
+  if (d_zll != nullptr)
+  {
+    return d_zll->getLearnedZeroLevelLiteralsForRestart();
   }
   return {};
 }
 
 }  // namespace prop
-}  // namespace cvc5
+}  // namespace cvc5::internal

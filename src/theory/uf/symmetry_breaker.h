@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Morgan Deters, Liana Hadarean, Tim King
+ *   Morgan Deters, Liana Hadarean, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -51,10 +51,10 @@
 #include "context/context.h"
 #include "expr/node.h"
 #include "expr/node_builder.h"
-#include "smt/smt_statistics_registry.h"
+#include "smt/env_obj.h"
 #include "util/statistics_stats.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace uf {
 
@@ -145,7 +145,7 @@ public:
     /** time spent in initial round of normalization */
     TimerStat d_initNormalizationTimer;
 
-    Statistics(const std::string& name);
+    Statistics(StatisticsRegistry& sr, const std::string& name);
   };
 
   Statistics d_stats;
@@ -170,8 +170,8 @@ public:
 
 std::ostream& operator<<(
     std::ostream& out,
-    const ::cvc5::theory::uf::SymmetryBreaker::Permutation& p);
+    const cvc5::internal::theory::uf::SymmetryBreaker::Permutation& p);
 
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__THEORY__UF__SYMMETRY_BREAKER_H */

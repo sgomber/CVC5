@@ -4,33 +4,29 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
  * ****************************************************************************
  *
- * [[ Add one-line brief description here ]]
- *
- * [[ Add lengthier description here ]]
- * \todo document this file
+ * BV rewrite rule enum.
  */
 
 #include "cvc5_private.h"
 
-#pragma once
+#ifndef CVC5__THEORY__BV__THEORY_BV_REWRITE_RULES_H
+#define CVC5__THEORY__BV__THEORY_BV_REWRITE_RULES_H
 
 #include <sstream>
 
 #include "context/context.h"
 #include "printer/printer.h"
-#include "smt/solver_engine.h"
-#include "smt/solver_engine_scope.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/theory.h"
 #include "util/statistics_stats.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace bv {
 
@@ -77,6 +73,13 @@ enum RewriteRuleId
   SremEliminateFewerBitwiseOps,
   ZeroExtendEliminate,
   SignExtendEliminate,
+  UaddoEliminate,
+  SaddoEliminate,
+  UmuloEliminate,
+  SmuloEliminate,
+  UsuboEliminate,
+  SsuboEliminate,
+  SdivoEliminate,
   BVToNatEliminate,
   IntToBVEliminate,
 
@@ -752,12 +755,12 @@ struct FixpointRewriteStrategy {
       if (R19::applies(current)) current = R19::template run<false>(current);
       if (R20::applies(current)) current = R20::template run<false>(current);
     } while (previous != current);
-    
+
     return current;
   }
 };
 
-
-} // End namespace bv
-} // End namespace theory
-}  // End namespace cvc5
+}  // namespace bv
+}  // namespace theory
+}  // namespace cvc5::internal
+#endif

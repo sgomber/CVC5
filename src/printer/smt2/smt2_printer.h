@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Abdalrhman Mohamed, Andrew Reynolds, Tim King
+ *   Abdalrhman Mohamed, Andrew Reynolds, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -20,7 +20,7 @@
 
 #include "printer/printer.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 class LetBinding;
 
@@ -34,16 +34,14 @@ enum Variant
                    // support for the string standard
 };                 /* enum Variant */
 
-class Smt2Printer : public cvc5::Printer
+class Smt2Printer : public cvc5::internal::Printer
 {
  public:
   Smt2Printer(Variant variant = no_variant) : d_variant(variant) {}
-  using cvc5::Printer::toStream;
-  void toStream(std::ostream& out,
-                TNode n,
-                int toDepth,
-                size_t dag) const override;
-  void toStream(std::ostream& out, const CommandStatus* s) const override;
+  using cvc5::internal::Printer::toStream;
+  void toStream(std::ostream& out, TNode n) const override;
+  void toStream(std::ostream& out, TNode n, int toDepth, size_t dag) const;
+  void toStream(std::ostream& out, Kind k) const override;
   void toStream(std::ostream& out, const smt::Model& m) const override;
   /**
    * Writes the unsat core to the stream out.
@@ -51,6 +49,14 @@ class Smt2Printer : public cvc5::Printer
    * (UnsatCore::getCoreNames) for printing named assertions.
    */
   void toStream(std::ostream& out, const UnsatCore& core) const override;
+
+  void toStreamCmdSuccess(std::ostream& out) const override;
+  void toStreamCmdInterrupted(std::ostream& out) const override;
+  void toStreamCmdUnsupported(std::ostream& out) const override;
+  void toStreamCmdFailure(std::ostream& out,
+                          const std::string& message) const override;
+  void toStreamCmdRecoverableFailure(std::ostream& out,
+                                     const std::string& message) const override;
 
   /** Print empty command */
   void toStreamCmdEmpty(std::ostream& out,
@@ -64,15 +70,21 @@ class Smt2Printer : public cvc5::Printer
   void toStreamCmdAssert(std::ostream& out, Node n) const override;
 
   /** Print push command */
-  void toStreamCmdPush(std::ostream& out) const override;
+  void toStreamCmdPush(std::ostream& out, uint32_t nscopes) const override;
 
   /** Print pop command */
-  void toStreamCmdPop(std::ostream& out) const override;
+  void toStreamCmdPop(std::ostream& out, uint32_t nscopes) const override;
 
   /** Print declare-fun command */
   void toStreamCmdDeclareFunction(std::ostream& out,
                                   const std::string& id,
                                   TypeNode type) const override;
+
+  /** Print declare-oracle-fun command */
+  void toStreamCmdDeclareOracleFun(std::ostream& out,
+                                   const std::string& id,
+                                   TypeNode type,
+                                   const std::string& binName) const override;
 
   /** Print declare-pool command */
   void toStreamCmdDeclarePool(std::ostream& out,
@@ -159,22 +171,24 @@ class Smt2Printer : public cvc5::Printer
   void toStreamCmdGetModel(std::ostream& out) const override;
 
   /** Print block-model command */
-  void toStreamCmdBlockModel(std::ostream& out) const override;
+  void toStreamCmdBlockModel(std::ostream& out,
+                             modes::BlockModelsMode mode) const override;
 
   /** Print block-model-values command */
   void toStreamCmdBlockModelValues(
       std::ostream& out, const std::vector<Node>& nodes) const override;
 
   /** Print get-proof command */
-  void toStreamCmdGetProof(std::ostream& out) const override;
+  void toStreamCmdGetProof(std::ostream& out,
+                           modes::ProofComponent c) const override;
 
-  /** Print get-interpol command */
+  /** Print get-interpolant command */
   void toStreamCmdGetInterpol(std::ostream& out,
                               const std::string& name,
                               Node conj,
                               TypeNode sygusType) const override;
 
-  /** Print get-interpol-next command */
+  /** Print get-interpolant-next command */
   void toStreamCmdGetInterpolNext(std::ostream& out) const override;
 
   /** Print get-abduct command */
@@ -201,7 +215,8 @@ class Smt2Printer : public cvc5::Printer
   void toStreamCmdGetDifficulty(std::ostream& out) const override;
 
   /** Print get-learned-literals command */
-  void toStreamCmdGetLearnedLiterals(std::ostream& out) const override;
+  void toStreamCmdGetLearnedLiterals(std::ostream& out,
+                                     modes::LearnedLitType t) const override;
 
   /** Print get-assertions command */
   void toStreamCmdGetAssertions(std::ostream& out) const override;
@@ -246,24 +261,16 @@ class Smt2Printer : public cvc5::Printer
                               TypeNode locType,
                               TypeNode dataType) const override;
 
-  /** Print command sequence command */
-  void toStreamCmdCommandSequence(
-      std::ostream& out, const std::vector<Command*>& sequence) const override;
-
-  /** Print declaration sequence command */
-  void toStreamCmdDeclarationSequence(
-      std::ostream& out, const std::vector<Command*>& sequence) const override;
-
   /**
    * Get the string for a kind k, which returns how the kind k is printed in
-   * the SMT-LIB format (with variant v).
+   * the SMT-LIB format.
    */
-  static std::string smtKindString(Kind k, Variant v = smt2_6_variant);
+  static std::string smtKindString(Kind k);
   /**
    * Same as above, but also takes into account the type of the node, which
    * makes a difference for printing sequences.
    */
-  static std::string smtKindStringOf(const Node& n, Variant v = smt2_6_variant);
+  static std::string smtKindStringOf(const Node& n);
   /**
    * Get the string corresponding to the sygus datatype t printed as a grammar.
    */
@@ -277,17 +284,20 @@ class Smt2Printer : public cvc5::Printer
                 TNode n,
                 int toDepth,
                 LetBinding* lbind = nullptr) const;
+  /**
+   * Prints the vector as a sorted variable list
+   */
+  void toStreamSortedVarList(std::ostream& out,
+                             const std::vector<Node>& vars) const;
+  /**
+   * Prints a type as part of e.g. a declare-fun command. This prints either
+   * `() T` if the type T is not a function, or `(T1 ... Tn) Tr` if T is
+   * a function type with argument types T1 ... Tn and return Tr.
+   */
+  void toStreamDeclareType(std::ostream& out, TypeNode tn) const;
   /** To stream type node, which ensures tn is printed in smt2 format */
   void toStreamType(std::ostream& out, TypeNode tn) const;
-  /**
-   * To stream, with a forced type. This method is used in some corner cases
-   * to force a node n to be printed as if it had type tn. This is used e.g.
-   * for the body of define-fun commands and arguments of singleton terms.
-   */
-  void toStreamCastToType(std::ostream& out,
-                          TNode n,
-                          int toDepth,
-                          TypeNode tn) const;
+  /** To stream datatype */
   void toStream(std::ostream& out, const DType& dt) const;
   /**
    * To stream model sort. This prints the appropriate output for type
@@ -318,6 +328,6 @@ class Smt2Printer : public cvc5::Printer
 
 }  // namespace smt2
 }  // namespace printer
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__PRINTER__SMT2_PRINTER_H */

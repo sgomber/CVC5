@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Gereon Kremer
+ *   Andrew Reynolds, Aina Niemetz, Gereon Kremer
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -30,24 +30,22 @@
 #include "proof/trust_node.h"
 #include "theory/substitutions.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 
 /**
  * A layer on top of SubstitutionMap that tracks proofs.
  */
-class TrustSubstitutionMap : public ProofGenerator
+class TrustSubstitutionMap : protected EnvObj, public ProofGenerator
 {
   using NodeUIntMap = context::CDHashMap<Node, size_t>;
 
  public:
-  TrustSubstitutionMap(context::Context* c,
-                       ProofNodeManager* pnm = nullptr,
+  TrustSubstitutionMap(Env& env,
+                       context::Context* c,
                        std::string name = "TrustSubstitutionMap",
                        PfRule trustId = PfRule::PREPROCESS_LEMMA,
                        MethodId ids = MethodId::SB_DEFAULT);
-  /** Set proof node manager */
-  void setProofNodeManager(ProofNodeManager* pnm);
   /** Gets a reference to the underlying substitution map */
   SubstitutionMap& get();
   /**
@@ -149,6 +147,6 @@ class TrustSubstitutionMap : public ProofGenerator
 };
 
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__THEORY__TRUST_SUBSTITUTIONS_H */

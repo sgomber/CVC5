@@ -1,10 +1,10 @@
 ###############################################################################
 # Top contributors (to current version):
-#   Mathias Preiner, Gereon Kremer, Aina Niemetz
+#   Mathias Preiner, Gereon Kremer, Andrew Reynolds
 #
 # This file is part of the cvc5 project.
 #
-# Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+# Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
 # in the top-level source directory and their institutional affiliations.
 # All rights reserved.  See the file COPYING in the top-level source
 # directory for licensing information.
@@ -21,11 +21,15 @@ libcvc5_add_sources(
   bin_heap.h
   bitvector.cpp
   bitvector.h
+  ff_val.cpp
+  ff_val.h
   bool.h
   cardinality.cpp
   cardinality.h
   cardinality_class.cpp
   cardinality_class.h
+  cocoa_globals.cpp
+  cocoa_globals.h
   dense_map.h
   didyoumean.cpp
   didyoumean.h

@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Dejan Jovanovic, Liana Hadarean, Morgan Deters
+ *   Gereon Kremer, Dejan Jovanovic, Liana Hadarean
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -25,7 +25,7 @@
 #include "prop/minisat/simp/SimpSolver.h"
 #include "util/statistics_stats.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace prop {
 
 //// DPllMinisatSatSolver
@@ -167,7 +167,7 @@ ClauseId MinisatSatSolver::addClause(SatClause& clause, bool removable) {
   }
   d_minisat->addClause(minisat_clause, removable, clause_id);
   // FIXME: to be deleted when we kill old proof code for unsat cores
-  Assert(!options().smt.unsatCores || options().smt.produceProofs
+  Assert(!options().smt.produceUnsatCores || options().smt.produceProofs
          || clause_id != ClauseIdError);
   return clause_id;
 }
@@ -266,6 +266,23 @@ bool MinisatSatSolver::isDecision(SatVariable decn) const {
   return d_minisat->isDecision( decn );
 }
 
+std::vector<SatLiteral> MinisatSatSolver::getDecisions() const
+{
+  std::vector<SatLiteral> decisions;
+  const Minisat::vec<Minisat::Lit>& miniDecisions =
+      d_minisat->getMiniSatDecisions();
+  for (size_t i = 0, ndec = miniDecisions.size(); i < ndec; ++i)
+  {
+    decisions.push_back(toSatLiteral(miniDecisions[i]));
+  }
+  return decisions;
+}
+
+std::vector<Node> MinisatSatSolver::getOrderHeap() const
+{
+  return d_minisat->getMiniSatOrderHeap();
+}
+
 int32_t MinisatSatSolver::getDecisionLevel(SatVariable v) const
 {
   return d_minisat->level(v) + d_minisat->user_level(v);
@@ -348,20 +365,20 @@ void MinisatSatSolver::Statistics::deinit()
 }
 
 }  // namespace prop
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
-namespace cvc5 {
+namespace cvc5::internal {
 template <>
-prop::SatLiteral toSatLiteral<cvc5::Minisat::Solver>(Minisat::Solver::TLit lit)
+prop::SatLiteral toSatLiteral<cvc5::internal::Minisat::Solver>(Minisat::Solver::TLit lit)
 {
   return prop::MinisatSatSolver::toSatLiteral(lit);
 }
 
 template <>
-void toSatClause<cvc5::Minisat::Solver>(
-    const cvc5::Minisat::Solver::TClause& minisat_cl, prop::SatClause& sat_cl)
+void toSatClause<cvc5::internal::Minisat::Solver>(
+    const cvc5::internal::Minisat::Solver::TClause& minisat_cl, prop::SatClause& sat_cl)
 {
   prop::MinisatSatSolver::toSatClause(minisat_cl, sat_cl);
 }
 
-}  // namespace cvc5
+}  // namespace cvc5::internal

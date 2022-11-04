@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -25,7 +25,6 @@
 #include "options/smt_options.h"
 #include "proof/proof_checker.h"
 #include "smt/logic_exception.h"
-#include "smt/smt_statistics_registry.h"
 #include "theory/arrays/skolem_cache.h"
 #include "theory/arrays/theory_arrays_rewriter.h"
 #include "theory/decision_manager.h"
@@ -35,7 +34,7 @@
 
 using namespace std;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace arrays {
 
@@ -79,7 +78,7 @@ TheoryArrays::TheoryArrays(Env& env,
           name + "number of setModelVal conflicts")),
       d_ppEqualityEngine(d_env, userContext(), name + "pp", true),
       d_ppFacts(userContext()),
-      d_rewriter(env.getRewriter(), d_pnm),
+      d_rewriter(env),
       d_state(env, valuation),
       d_im(env, *this, d_state),
       d_literalsToPropagate(context()),
@@ -87,7 +86,7 @@ TheoryArrays::TheoryArrays(Env& env,
       d_isPreRegistered(context()),
       d_mayEqualEqualityEngine(d_env, context(), name + "mayEqual", true),
       d_notify(*this),
-      d_infoMap(context(), name),
+      d_infoMap(statisticsRegistry(), context(), name),
       d_mergeQueue(context()),
       d_mergeInProgress(false),
       d_RowQueue(context()),
@@ -99,7 +98,6 @@ TheoryArrays::TheoryArrays(Env& env,
       d_constReadsList(context()),
       d_constReadsContext(new context::Context()),
       d_contextPopper(context(), d_constReadsContext),
-      d_skolemIndex(context(), 0),
       d_decisionRequests(context()),
       d_permRef(context()),
       d_modelConstraints(context()),
@@ -302,8 +300,8 @@ TrustNode TheoryArrays::ppRewrite(TNode term, std::vector<SkolemLemma>& lems)
     if (k == kind::EQ_RANGE)
     {
       std::stringstream ss;
-      ss << "Term of kind " << k
-         << " not supported in default mode, try --arrays-exp";
+      ss << "Term of kind `" << k
+         << "` not supported in default mode, try `--arrays-exp`.";
       throw LogicException(ss.str());
     }
   }
@@ -796,6 +794,7 @@ void TheoryArrays::preRegisterTermInternal(TNode node)
     d_infoMap.setConstArr(node, node);
     Assert(d_mayEqualEqualityEngine.getRepresentative(node) == node);
     d_defValues[node] = defaultValue;
+    setNonLinear(node);
     break;
   }
   default:
@@ -1000,8 +999,12 @@ void TheoryArrays::computeCareGraph()
         temp->push_back(r1);
       }
       else {
-        // We don't know the model value for x.  Just do brute force examination of all pairs of reads
-        for (unsigned j = 0; j < size; ++j) {
+        // We don't know the model value for x.  Just do brute force examination of all pairs of reads.
+        // Note that we have to loop over *all* reads here, not just subsequent reads, because there
+        // may be an earlier read that *does* have a model value.  So if we don't check here, the two
+        // reads won't get compared.
+        for (unsigned j = 0; j < size; ++j)
+        {
           TNode r2 = d_reads[j];
           Assert(d_equalityEngine->hasTerm(r2));
           checkPair(r1,r2);
@@ -1126,19 +1129,6 @@ bool TheoryArrays::collectModelValues(TheoryModel* m,
 
     // Build the STORE_ALL term with the default value
     rep = nm->mkConst(ArrayStoreAll(nrep.getType(), rep));
-    /*
-  }
-  else {
-    std::unordered_map<Node, Node>::iterator it = d_skolemCache.find(n);
-    if (it == d_skolemCache.end()) {
-      rep = nm->mkSkolem("array_collect_model_var", n.getType(), "base model
-  variable for array collectModelInfo"); d_skolemCache[n] = rep;
-    }
-    else {
-      rep = (*it).second;
-    }
-  }
-*/
 
     // For each read, require that the rep stores the right value
     vector<Node>& reads = selects[nrep];
@@ -1184,19 +1174,7 @@ void TheoryArrays::presolve()
 
 Node TheoryArrays::getSkolem(TNode ref)
 {
-  // the call to SkolemCache::getExtIndexSkolem should be deterministic, but use
-  // cache anyways for now
-  Node skolem;
-  std::unordered_map<Node, Node>::iterator it = d_skolemCache.find(ref);
-  if (it == d_skolemCache.end()) {
-    Assert(ref.getKind() == kind::NOT && ref[0].getKind() == kind::EQUAL);
-    // make the skolem using the skolem cache utility
-    skolem = SkolemCache::getExtIndexSkolem(ref);
-    d_skolemCache[ref] = skolem;
-  }
-  else {
-    skolem = (*it).second;
-  }
+  Node skolem = SkolemCache::getExtIndexSkolem(ref);
 
   Trace("pf::array") << "Pregistering a Skolem" << std::endl;
   preRegisterTermInternal(skolem);
@@ -1215,7 +1193,8 @@ void TheoryArrays::postCheck(Effort level)
       && weakEquiv)
   {
     // Replay all array merges to update weak equivalence data structures
-    context::CDList<Node>::iterator it = d_arrayMerges.begin(), iend = d_arrayMerges.end();
+    context::CDList<Node>::iterator it = d_arrayMerges.begin(),
+                                    iend = d_arrayMerges.end();
     TNode a, b, eq;
     for (; it != iend; ++it) {
       eq = *it;
@@ -2261,4 +2240,4 @@ void TheoryArrays::computeRelevantTerms(std::set<Node>& termSet)
 
 }  // namespace arrays
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

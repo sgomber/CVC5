@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Aina Niemetz, Liana Hadarean, Makai Mann
+ *   Liana Hadarean, Aina Niemetz, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -20,7 +20,7 @@
 #include <iostream>
 
 using namespace std;
-using namespace cvc5::api;
+using namespace cvc5;
 
 int main()
 {
@@ -116,7 +116,7 @@ int main()
   cout << " cvc5: " << slv.checkSatAssuming(query.notTerm()) << endl;
 
   // Assert that a is odd
-  Op extract_op = slv.mkOp(BITVECTOR_EXTRACT, 0, 0);
+  Op extract_op = slv.mkOp(BITVECTOR_EXTRACT, {0, 0});
   Term lsb_of_a = slv.mkTerm(extract_op, {a});
   cout << "Sort of " << lsb_of_a << " is " << lsb_of_a.getSort() << endl;
   Term a_odd = slv.mkTerm(EQUAL, {lsb_of_a, slv.mkBitVector(1u, 1u)});

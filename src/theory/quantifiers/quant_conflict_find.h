@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Tim King, Morgan Deters
+ *   Andrew Reynolds, Tim King, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -24,9 +24,10 @@
 #include "context/cdhashmap.h"
 #include "context/cdlist.h"
 #include "expr/node_trie.h"
+#include "theory/quantifiers/inst_match.h"
 #include "theory/quantifiers/quant_module.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
@@ -34,11 +35,11 @@ class QuantConflictFind;
 class QuantInfo;
 
 //match generator
-class MatchGen {
+class MatchGen : protected EnvObj {
   friend class QuantInfo;
 
  public:
-  MatchGen(QuantConflictFind* p, QuantInfo* qi, Node n, bool isVar = false);
+  MatchGen(Env& env, QuantConflictFind* p, QuantInfo* qi, Node n, bool isVar = false);
 
   //type of the match generator
   enum {
@@ -125,7 +126,11 @@ class QuantInfo : protected EnvObj
 {
  public:
   using VarMgMap = std::map<size_t, std::unique_ptr<MatchGen>>;
-  QuantInfo(Env& env, QuantConflictFind* p, Node q);
+  QuantInfo(Env& env,
+            QuantifiersState& qs,
+            TermRegistry& tr,
+            QuantConflictFind* p,
+            Node q);
   ~QuantInfo();
   /** get quantified formula */
   Node getQuantifiedFormula() const;
@@ -179,8 +184,12 @@ class QuantInfo : protected EnvObj
                         TNode n,
                         bool pol,
                         std::map<TNode, bool>& visited);
+  /** Reference to the quantifiers state */
+  QuantifiersState& d_qs;
   /** The parent who owns this class */
   QuantConflictFind* d_parent;
+  /** An instantiation match */
+  InstMatch d_instMatch;
   std::unique_ptr<MatchGen> d_mg;
   Node d_q;
   VarMgMap d_var_mg;
@@ -227,7 +236,7 @@ class QuantConflictFind : public QuantifiersModule
   public:
     IntStat d_inst_rounds;
     IntStat d_entailment_checks;
-    Statistics();
+    Statistics(StatisticsRegistry& sr);
   };
   Statistics d_statistics;
   /** Identify this module */
@@ -312,6 +321,6 @@ std::ostream& operator<<(std::ostream& os, const QuantConflictFind::Effort& e);
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif

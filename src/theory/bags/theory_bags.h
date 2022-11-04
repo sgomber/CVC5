@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Mudathir Mohamed, Haniel Barbosa
+ *   Mudathir Mohamed, Aina Niemetz, Haniel Barbosa
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -28,10 +28,11 @@
 #include "theory/bags/solver_state.h"
 #include "theory/bags/strategy.h"
 #include "theory/bags/term_registry.h"
+#include "theory/care_pair_argument_callback.h"
 #include "theory/theory.h"
 #include "theory/theory_eq_notify.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace bags {
 
@@ -82,7 +83,9 @@ class TheoryBags : public Theory
   std::string identify() const override { return "THEORY_BAGS"; }
   void preRegisterTerm(TNode n) override;
   void presolve() override;
-
+  void computeCareGraph() override;
+  void processCarePairArgs(TNode a, TNode b) override;
+  bool isCareArg(Node n, unsigned a);
   /** run strategy for effort e */
   void runStrategy(Theory::Effort e);
   /** run the given inference step */
@@ -130,8 +133,10 @@ class TheoryBags : public Theory
   /** the main solver for bags */
   CardSolver d_cardSolver;
 
-  /** bag reduction */
-  BagReduction d_bagReduction;
+  /** The care pair argument callback, used for theory combination */
+  CarePairArgumentCallback d_cpacb;
+  /** map kinds to their terms. It is cleared during post check */
+  std::map<Kind, std::vector<Node>> d_opMap;
 
   /** The representation of the strategy */
   Strategy d_strat;
@@ -143,6 +148,6 @@ class TheoryBags : public Theory
 
 }  // namespace bags
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__THEORY__BAGS__THEORY_BAGS_H */

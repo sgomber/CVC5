@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Mathias Preiner, Andrew Reynolds, Morgan Deters
+ *   Mathias Preiner, Gereon Kremer, Andrew Reynolds
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -25,8 +25,7 @@
 #include "options/base_options.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/preprocessing_pass_context.h"
-#include "smt/smt_statistics_registry.h"
-#include "smt_util/boolean_simplification.h"
+#include "preprocessing/util/boolean_simplification.h"
 #include "theory/booleans/circuit_propagator.h"
 #include "theory/theory_engine.h"
 #include "theory/theory_model.h"
@@ -34,10 +33,10 @@
 #include "util/rational.h"
 
 using namespace std;
-using namespace cvc5::kind;
-using namespace cvc5::theory;
+using namespace cvc5::internal::kind;
+using namespace cvc5::internal::theory;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace preprocessing {
 namespace passes {
 
@@ -192,8 +191,6 @@ void MipLibTrick::collectBooleanVariables(
 PreprocessingPassResult MipLibTrick::applyInternal(
     AssertionPipeline* assertionsToPreprocess)
 {
-  Assert(assertionsToPreprocess->getRealAssertionsEnd()
-         == assertionsToPreprocess->size());
   Assert(!options().base.incrementalSolving);
 
   // collect Boolean variables
@@ -537,7 +534,7 @@ PreprocessingPassResult MipLibTrick::applyInternal(
 
               Node n = rewrite(geq.andNode(leq));
               assertionsToPreprocess->push_back(n);
-              TrustSubstitutionMap tnullMap(&fakeContext, nullptr);
+              TrustSubstitutionMap tnullMap(d_env, &fakeContext);
               CVC5_UNUSED SubstitutionMap& nullMap = tnullMap.get();
               Theory::PPAssertStatus status CVC5_UNUSED;  // just for assertions
               status = te->solve(tgeq, tnullMap);
@@ -616,9 +613,7 @@ PreprocessingPassResult MipLibTrick::applyInternal(
   if (!removeAssertions.empty())
   {
     Trace("miplib") << " scrubbing miplib encoding..." << endl;
-    for (size_t i = 0, size = assertionsToPreprocess->getRealAssertionsEnd();
-         i < size;
-         ++i)
+    for (size_t i = 0, size = assertionsToPreprocess->size(); i < size; ++i)
     {
       Node assertion = (*assertionsToPreprocess)[i];
       if (removeAssertions.find(assertion.getId()) != removeAssertions.end())
@@ -647,7 +642,6 @@ PreprocessingPassResult MipLibTrick::applyInternal(
   {
     Trace("miplib") << " miplib pass found nothing." << endl;
   }
-  assertionsToPreprocess->updateRealAssertionsEnd();
   return PreprocessingPassResult::NO_CONFLICT;
 }
 
@@ -660,4 +654,4 @@ MipLibTrick::Statistics::Statistics(StatisticsRegistry& reg)
 
 }  // namespace passes
 }  // namespace preprocessing
-}  // namespace cvc5
+}  // namespace cvc5::internal

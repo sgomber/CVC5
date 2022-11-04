@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds
+ *   Andrew Reynolds, Gereon Kremer
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -17,7 +17,7 @@
 
 #include "options/strings_options.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
@@ -100,10 +100,6 @@ void Strategy::initializeStrategy()
     d_strategy_init = true;
     // beginning indices
     step_begin[Theory::EFFORT_FULL] = 0;
-    if (options().strings.stringEager)
-    {
-      step_begin[Theory::EFFORT_STANDARD] = 0;
-    }
     // add the inference steps
     addStrategyStep(CHECK_INIT);
     addStrategyStep(CHECK_CONST_EQC);
@@ -119,25 +115,11 @@ void Strategy::initializeStrategy()
       addStrategyStep(CHECK_FLAT_FORMS);
     }
     addStrategyStep(CHECK_EXTF_REDUCTION, 1);
-    if (options().strings.stringEager)
-    {
-      // do only the above inferences at standard effort, if applicable
-      step_end[Theory::EFFORT_STANDARD] = d_infer_steps.size() - 1;
-    }
-    if (!options().strings.stringEagerLen)
-    {
-      addStrategyStep(CHECK_REGISTER_TERMS_PRE_NF);
-    }
     addStrategyStep(CHECK_NORMAL_FORMS_EQ);
     addStrategyStep(CHECK_EXTF_EVAL, 1);
-    if (!options().strings.stringEagerLen && options().strings.stringLenNorm)
-    {
-      addStrategyStep(CHECK_LENGTH_EQC, 0, false);
-      addStrategyStep(CHECK_REGISTER_TERMS_NF);
-    }
     addStrategyStep(CHECK_NORMAL_FORMS_DEQ);
     addStrategyStep(CHECK_CODES);
-    if (options().strings.stringEagerLen && options().strings.stringLenNorm)
+    if (options().strings.stringLenNorm)
     {
       addStrategyStep(CHECK_LENGTH_EQC);
     }
@@ -178,4 +160,4 @@ void Strategy::initializeStrategy()
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

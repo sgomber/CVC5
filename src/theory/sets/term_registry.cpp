@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Mudathir Mohamed, Andres Noetzli
+ *   Andrew Reynolds, Andres Noetzli, Aina Niemetz
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -19,25 +19,24 @@
 #include "expr/skolem_manager.h"
 
 using namespace std;
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace sets {
 
 TermRegistry::TermRegistry(Env& env,
                            SolverState& state,
                            InferenceManager& im,
-                           SkolemCache& skc,
-                           ProofNodeManager* pnm)
+                           SkolemCache& skc)
     : EnvObj(env),
       d_im(im),
       d_skCache(skc),
       d_proxy(userContext()),
       d_proxy_to_term(userContext()),
-      d_epg(
-          pnm ? new EagerProofGenerator(pnm, nullptr, "sets::TermRegistry::epg")
-              : nullptr)
+      d_epg(env.isTheoryProofProducing() ? new EagerProofGenerator(
+                env, nullptr, "sets::TermRegistry::epg")
+                                         : nullptr)
 {
 }
 
@@ -45,7 +44,8 @@ Node TermRegistry::getProxy(Node n)
 {
   Kind nk = n.getKind();
   if (nk != SET_EMPTY && nk != SET_SINGLETON && nk != SET_INTER
-      && nk != SET_MINUS && nk != SET_UNION && nk != SET_UNIVERSE)
+      && nk != SET_MINUS && nk != SET_UNION && nk != SET_UNIVERSE
+      && nk != SET_MAP)
   {
     return n;
   }
@@ -95,19 +95,6 @@ Node TermRegistry::getUnivSet(TypeNode tn)
   return n;
 }
 
-Node TermRegistry::getTypeConstraintSkolem(Node n, TypeNode tn)
-{
-  std::map<TypeNode, Node>::iterator it = d_tc_skolem[n].find(tn);
-  if (it == d_tc_skolem[n].end())
-  {
-    SkolemManager* sm = NodeManager::currentNM()->getSkolemManager();
-    Node k = sm->mkDummySkolem("tc_k", tn);
-    d_tc_skolem[n][tn] = k;
-    return k;
-  }
-  return it->second;
-}
-
 void TermRegistry::debugPrintSet(Node s, const char* c) const
 {
   if (s.getNumChildren() == 0)
@@ -151,4 +138,4 @@ void TermRegistry::sendSimpleLemmaInternal(Node n, InferenceId id)
 
 }  // namespace sets
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

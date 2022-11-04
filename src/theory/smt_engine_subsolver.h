@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds
+ *   Andrew Reynolds, Aina Niemetz
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -25,8 +25,29 @@
 #include "expr/node.h"
 #include "smt/solver_engine.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
+
+/** Set of information required for setting up a subsolver */
+struct SubsolverSetupInfo
+{
+  /** Construct the info from explicit arguments */
+  SubsolverSetupInfo(const Options& opts,
+                     const LogicInfo& logicInfo,
+                     TypeNode sepLocType = TypeNode::null(),
+                     TypeNode sepDataType = TypeNode::null());
+  /** Construct the info from Env */
+  SubsolverSetupInfo(const Env& env);
+  /** Construct from env, but with options replaced */
+  SubsolverSetupInfo(const Env& env, const Options& opts);
+  /** The options of the subsolver */
+  const Options& d_opts;
+  /** The logic info of the subsolver */
+  const LogicInfo& d_logicInfo;
+  /** The separation logic location and data types */
+  TypeNode d_sepLocType;
+  TypeNode d_sepDataType;
+};
 
 /**
  * This function initializes the smt engine smte to check the satisfiability
@@ -42,14 +63,12 @@ namespace theory {
  * if the current SMT engine has declared a separation logic heap.
  *
  * @param smte The smt engine pointer to initialize
- * @param opts The options for the subsolver.
- * @param logicInfo The logic info to set on the subsolver
+ * @param info The information for setting up the subsolver
  * @param needsTimeout Whether we would like to set a timeout
  * @param timeout The timeout (in milliseconds)
  */
 void initializeSubsolver(std::unique_ptr<SolverEngine>& smte,
-                         const Options& opts,
-                         const LogicInfo& logicInfo,
+                         const SubsolverSetupInfo& info,
                          bool needsTimeout = false,
                          unsigned long timeout = 0);
 
@@ -69,8 +88,7 @@ void initializeSubsolver(std::unique_ptr<SolverEngine>& smte,
  */
 Result checkWithSubsolver(std::unique_ptr<SolverEngine>& smte,
                           Node query,
-                          const Options& opts,
-                          const LogicInfo& logicInfo,
+                          const SubsolverSetupInfo& info,
                           bool needsTimeout = false,
                           unsigned long timeout = 0);
 
@@ -81,14 +99,12 @@ Result checkWithSubsolver(std::unique_ptr<SolverEngine>& smte,
  * concerned with the state of the SMT engine after the check.
  *
  * @param query The query to check
- * @param opts The options for the subsolver
- * @param logicInfo The logic info to set on the subsolver
+ * @param info The information for setting up the subsolver
  * @param needsTimeout Whether we would like to set a timeout
  * @param timeout The timeout (in milliseconds)
  */
 Result checkWithSubsolver(Node query,
-                          const Options& opts,
-                          const LogicInfo& logicInfo,
+                          const SubsolverSetupInfo& info,
                           bool needsTimeout = false,
                           unsigned long timeout = 0);
 
@@ -100,16 +116,14 @@ Result checkWithSubsolver(Node query,
  * @param query The query to check
  * @param vars The variables we are interesting in getting a model for.
  * @param modelVals A vector storing the model values of variables in vars.
- * @param opts The options for the subsolver
- * @param logicInfo The logic info to set on the subsolver
+ * @param info The information for setting up the subsolver
  * @param needsTimeout Whether we would like to set a timeout
  * @param timeout The timeout (in milliseconds)
  */
 Result checkWithSubsolver(Node query,
                           const std::vector<Node>& vars,
                           std::vector<Node>& modelVals,
-                          const Options& opts,
-                          const LogicInfo& logicInfo,
+                          const SubsolverSetupInfo& info,
                           bool needsTimeout = false,
                           unsigned long timeout = 0);
 
@@ -139,6 +153,6 @@ bool getUnsatCoreFromSubsolver(SolverEngine& smt,
 void getUnsatCoreFromSubsolver(SolverEngine& smt, std::vector<Node>& uasserts);
 
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__THEORY__SMT_ENGINE_SUBSOLVER_H */

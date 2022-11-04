@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -29,12 +29,13 @@
 #include "theory/quantifiers/quantifiers_state.h"
 #include "theory/quantifiers/term_database.h"
 #include "theory/quantifiers/term_util.h"
+#include "theory/rep_set_iterator.h"
 #include "theory/rewriter.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 using namespace cvc5::context;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 namespace fmcheck {
@@ -65,7 +66,8 @@ bool EntryTrie::hasGeneralization( FirstOrderModelFmc * m, Node c, int index ) {
         return true;
       }
     }
-    if( c[index].getType().isSort() ){
+    if (c[index].getType().isUninterpretedSort())
+    {
       //for star: check if all children are defined and have generalizations
       if (c[index] == st)
       {  /// option fmfFmcCoverSimplify
@@ -371,7 +373,8 @@ bool FullModelChecker::processBuildModel(TheoryModel* m){
        it != rs->d_type_reps.end();
        ++it)
   {
-    if( it->first.isSort() ){
+    if (it->first.isUninterpretedSort())
+    {
       Trace("fmc") << "Cardinality( " << it->first << " )" << " = " << it->second.size() << std::endl;
       for( size_t a=0; a<it->second.size(); a++ ){
         Node r = m->getRepresentative(it->second[a]);
@@ -488,7 +491,9 @@ bool FullModelChecker::processBuildModel(TheoryModel* m){
       if( !nv.isConst() ){
         Trace("fmc-warn") << "Warning : model for " << op << " has non-constant value in model " << nv << std::endl;
       }
-      Node en = (useSimpleModels() && hasNonStar) ? n : NodeManager::currentNM()->mkNode( APPLY_UF, entry_children );
+      Node en = hasNonStar ? n
+                           : NodeManager::currentNM()->mkNode(APPLY_UF,
+                                                              entry_children);
       if( std::find(conds.begin(), conds.end(), n )==conds.end() ){
         Trace("fmc-model-debug") << "- add " << n << " -> " << nv << " (entry is " << en << ")" << std::endl;
         conds.push_back(n);
@@ -611,13 +616,16 @@ void FullModelChecker::debugPrint(const char * tr, Node n, bool dispStar) {
   else
   {
     TypeNode tn = n.getType();
-    if( tn.isSort() && d_rep_ids.find(tn)!=d_rep_ids.end() ){
+    if (tn.isUninterpretedSort() && d_rep_ids.find(tn) != d_rep_ids.end())
+    {
       if (d_rep_ids[tn].find(n)!=d_rep_ids[tn].end()) {
         Trace(tr) << d_rep_ids[tn][n];
       }else{
         Trace(tr) << n;
       }
-    }else{
+    }
+    else
+    {
       Trace(tr) << n;
     }
   }
@@ -638,7 +646,7 @@ int FullModelChecker::doExhaustiveInstantiation( FirstOrderModel * fm, Node f, i
   FirstOrderModelFmc* fmfmc = static_cast<FirstOrderModelFmc*>(fm);
   if (effort == 0)
   {
-    if (options().quantifiers.mbqiMode == options::MbqiMode::NONE)
+    if (options().quantifiers.fmfMbqiMode == options::FmfMbqiMode::NONE)
     {
       // just exhaustive instantiate
       Node c = mkCondDefault(fmfmc, f);
@@ -738,11 +746,9 @@ int FullModelChecker::doExhaustiveInstantiation( FirstOrderModel * fm, Node f, i
       }
       // just add the instance
       d_triedLemmas++;
-      if (instq->addInstantiation(f,
-                                  inst,
-                                  InferenceId::QUANTIFIERS_INST_FMF_FMC,
-                                  Node::null(),
-                                  true))
+      instq->processInstantiationRep(f, inst);
+      if (instq->addInstantiation(
+              f, inst, InferenceId::QUANTIFIERS_INST_FMF_FMC, Node::null()))
       {
         Trace("fmc-debug-inst") << "** Added instantiation." << std::endl;
         d_addedLemmas++;
@@ -820,16 +826,20 @@ int FullModelChecker::doExhaustiveInstantiation( FirstOrderModel * fm, Node f, i
 class RepBoundFmcEntry : public QRepBoundExt
 {
  public:
-  RepBoundFmcEntry(QuantifiersBoundInference& qbi,
+  RepBoundFmcEntry(Env& env,
+                   QuantifiersBoundInference& qbi,
+                   QuantifiersState& qs,
+                   TermRegistry& tr,
+                   TNode q,
                    Node e,
-                   FirstOrderModelFmc* f)
-      : QRepBoundExt(qbi, f), d_entry(e), d_fm(f)
+                   FirstOrderModelFmc* fmc)
+      : QRepBoundExt(env, qbi, qs, tr, q), d_entry(e), d_fm(fmc)
   {
   }
   ~RepBoundFmcEntry() {}
   /** set bound */
   virtual RsiEnumType setBound(Node owner,
-                               unsigned i,
+                               size_t i,
                                std::vector<Node>& elements) override
   {
     if (!d_fm->isStar(d_entry[i]))
@@ -856,7 +866,7 @@ bool FullModelChecker::exhaustiveInstantiate(FirstOrderModelFmc* fm,
   debugPrintCond("fmc-exh", c, true);
   Trace("fmc-exh")<< std::endl;
   QuantifiersBoundInference& qbi = d_qreg.getQuantifiersBoundInference();
-  RepBoundFmcEntry rbfe(qbi, c, fm);
+  RepBoundFmcEntry rbfe(d_env, qbi, d_qstate, d_treg, f, c, d_fm.get());
   RepSetIterator riter(fm->getRepSet(), &rbfe);
   Trace("fmc-exh-debug") << "Set quantifier..." << std::endl;
   //initialize
@@ -891,11 +901,11 @@ bool FullModelChecker::exhaustiveInstantiate(FirstOrderModelFmc* fm,
       if (ev!=d_true) {
         Trace("fmc-exh-debug") << ", add!";
         //add as instantiation
+        ie->processInstantiationRep(f, inst);
         if (ie->addInstantiation(f,
                                  inst,
                                  InferenceId::QUANTIFIERS_INST_FMF_FMC_EXH,
-                                 Node::null(),
-                                 true))
+                                 Node::null()))
         {
           Trace("fmc-exh-debug")  << " ...success.";
           addedLemmas++;
@@ -913,7 +923,8 @@ bool FullModelChecker::exhaustiveInstantiate(FirstOrderModelFmc* fm,
       Trace("fmc-exh-debug") << std::endl;
       int index = riter.increment();
       Trace("fmc-exh-debug") << "Incremented index " << index << std::endl;
-      if( !riter.isFinished() ){
+      if (!options().quantifiers.fmfBoundBlast && !riter.isFinished())
+      {
         if (index >= 0 && riter.d_index[index] > 0 && addedLemmas > 0
             && riter.d_enum_type[index] == ENUM_CUSTOM)
         {
@@ -1057,7 +1068,8 @@ void FullModelChecker::doVariableEquality( FirstOrderModelFmc * fm, Node f, Def 
     d.addEntry(fm, mkCond(cond), d_true);
   }else{
     TypeNode tn = eq[0].getType();
-    if( tn.isSort() ){
+    if (tn.isUninterpretedSort())
+    {
       int j = fm->getVariableId(f, eq[0]);
       int k = fm->getVariableId(f, eq[1]);
       const RepSet* rs = fm->getRepSet();
@@ -1074,7 +1086,9 @@ void FullModelChecker::doVariableEquality( FirstOrderModelFmc * fm, Node f, Def 
         d.addEntry( fm, mkCond(cond), d_true);
       }
       d.addEntry( fm, mkCondDefault(fm, f), d_false);
-    }else{
+    }
+    else
+    {
       d.addEntry( fm, mkCondDefault(fm, f), Node::null());
     }
   }
@@ -1292,7 +1306,8 @@ bool FullModelChecker::doMeet( FirstOrderModelFmc * fm, std::vector< Node > & co
   return true;
 }
 
-Node FullModelChecker::mkCond( std::vector< Node > & cond ) {
+Node FullModelChecker::mkCond(const std::vector<Node>& cond)
+{
   return NodeManager::currentNM()->mkNode(APPLY_UF, cond);
 }
 
@@ -1378,10 +1393,6 @@ Node FullModelChecker::getFunctionValue(FirstOrderModelFmc * fm, Node op, const 
   return fm->getFunctionValue(op, argPrefix);
 }
 
-
-bool FullModelChecker::useSimpleModels() {
-  return options().quantifiers.fmfFmcSimple;
-}
 void FullModelChecker::registerQuantifiedFormula(Node q)
 {
   if (d_quant_cond.find(q) != d_quant_cond.end())
@@ -1416,4 +1427,4 @@ bool FullModelChecker::isHandled(Node q) const
 }  // namespace fmcheck
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

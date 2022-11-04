@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Tim King, Morgan Deters
+ *   Andrew Reynolds, Aina Niemetz, Morgan Deters
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -21,7 +21,7 @@
 #include "expr/node.h"
 #include "expr/type_node.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace uf {
 
@@ -90,7 +90,7 @@ class HoApplyTypeRule
 };
 
 /**
- * Type rule for lambas. Ensures the first argument is a bound varible list
+ * Type rule for lambdas. Ensures the first argument is a bound varible list
  * (x1 ... xn). Returns the function type (-> T1 ... Tn T) where T1...Tn are
  * the types of x1..xn and T is the type of the second argument.
  */
@@ -98,10 +98,17 @@ class LambdaTypeRule
 {
  public:
   static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
-  // computes whether a lambda is a constant value, via conversion to array
-  // representation
-  static bool computeIsConst(NodeManager* nodeManager, TNode n);
 }; /* class LambdaTypeRule */
+
+/**
+ * Type rule for function array constants. Returns the function type stored
+ * in the FUNCTION_ARRAY_CONST payload of the node.
+ */
+class FunctionArrayConstTypeRule
+{
+ public:
+  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+};
 
 class FunctionProperties
 {
@@ -118,8 +125,27 @@ class FunctionProperties
   static Node mkGroundTerm(TypeNode type);
 }; /* class FuctionProperties */
 
+/** Returns builtin type */
+class IntToBitVectorOpTypeRule
+{
+ public:
+  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+};
+
+/**
+ * If n's kind is BITVECTOR_TO_NAT, expects bit-vector argument, returns
+ * integer type.
+ * If n's kind is INT_TO_BITVECTOR, expects integer argument, returns
+ * bit-vector of specified width.
+ */
+class BitVectorConversionTypeRule
+{
+ public:
+  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+};
+
 }  // namespace uf
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif /* CVC5__THEORY__UF__THEORY_UF_TYPE_RULES_H */

@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Abdalrhman Mohamed, Mathias Preiner
+ *   Andrew Reynolds, Abdalrhman Mohamed, Gereon Kremer
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -17,7 +17,6 @@
 #include "expr/skolem_manager.h"
 #include "options/quantifiers_options.h"
 #include "smt/logic_exception.h"
-#include "smt/smt_statistics_registry.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
 #include "theory/quantifiers/quantifiers_rewriter.h"
@@ -30,9 +29,9 @@
 #include "theory/quantifiers/term_util.h"
 #include "theory/smt_engine_subsolver.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
@@ -182,7 +181,8 @@ void CegSingleInv::finishInit(bool syntaxRestricted)
     }
     else
     {
-      status = CegInstantiator::isCbqiQuant(d_single_inv);
+      status = CegInstantiator::isCbqiQuant(d_single_inv,
+                                            options().quantifiers.cegqiAll);
     }
   }
   Trace("sygus-si") << "CegHandledStatus is " << status << std::endl;
@@ -565,4 +565,4 @@ bool CegSingleInv::solveTrivial(Node q)
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

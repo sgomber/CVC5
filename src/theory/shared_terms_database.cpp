@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -16,19 +16,18 @@
 
 #include "theory/shared_terms_database.h"
 
-#include "smt/smt_statistics_registry.h"
 #include "theory/theory_engine.h"
 
 using namespace std;
-using namespace cvc5::theory;
+using namespace cvc5::internal::theory;
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 SharedTermsDatabase::SharedTermsDatabase(Env& env, TheoryEngine* theoryEngine)
-    : ContextNotifyObj(env.getContext()),
-      d_env(env),
+    : EnvObj(env),
+      ContextNotifyObj(env.getContext()),
       d_statSharedTerms(
-          smtStatisticsRegistry().registerInt("theory::shared_terms")),
+          statisticsRegistry().registerInt("theory::shared_terms")),
       d_addedSharedTermsSize(env.getContext(), 0),
       d_termsToTheories(env.getContext()),
       d_alreadyNotifiedMap(env.getContext()),
@@ -322,4 +321,4 @@ TrustNode SharedTermsDatabase::explain(TNode literal) const
   return TrustNode::mkTrustPropExp(literal, exp, nullptr);
 }
 
-}  // namespace cvc5
+}  // namespace cvc5::internal

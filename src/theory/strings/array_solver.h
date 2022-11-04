@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Andres Noetzli
+ *   Andrew Reynolds, Ying Sheng
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -26,7 +26,7 @@
 #include "theory/strings/solver_state.h"
 #include "theory/strings/term_registry.h"
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
@@ -45,6 +45,7 @@ class ArraySolver : protected EnvObj
               SolverState& s,
               InferenceManager& im,
               TermRegistry& tr,
+              BaseSolver& bs,
               CoreSolver& cs,
               ExtfSolver& es,
               ExtTheory& extt);
@@ -84,7 +85,7 @@ class ArraySolver : protected EnvObj
 
  private:
   /** check terms of nth or update kind that occur in termSet */
-  void checkTerms(const std::set<Node>& termSet);
+  void checkTerms(const std::vector<Node>& terms);
   /** check inferences for the given term
    *
    * @param t the term to check
@@ -97,6 +98,8 @@ class ArraySolver : protected EnvObj
   InferenceManager& d_im;
   /** Reference to the term registry of theory of strings */
   TermRegistry& d_termReg;
+  /** reference to the base solver, used for certain queries */
+  BaseSolver& d_bsolver;
   /** reference to the core solver, used for certain queries */
   CoreSolver& d_csolver;
   /** reference to the extended solver, used for certain queries */
@@ -113,6 +116,6 @@ class ArraySolver : protected EnvObj
 
 }  // namespace strings
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal
 
 #endif

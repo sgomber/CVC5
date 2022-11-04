@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Gereon Kremer, Aina Niemetz
+ *   Andrew Reynolds, Gereon Kremer, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -23,16 +23,15 @@
 #include "theory/rewriter.h"
 #include "util/rational.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace datatypes {
 
-InferProofCons::InferProofCons(context::Context* c, ProofNodeManager* pnm)
-    : d_pnm(pnm), d_lazyFactMap(c == nullptr ? &d_context : c)
+InferProofCons::InferProofCons(Env& env, context::Context* c)
+    : EnvObj(env), d_lazyFactMap(c == nullptr ? &d_context : c)
 {
-  Assert(d_pnm != nullptr);
 }
 
 void InferProofCons::notifyFact(const std::shared_ptr<DatatypesInference>& di)
@@ -267,7 +266,7 @@ std::shared_ptr<ProofNode> InferProofCons::getProofFor(Node fact)
 {
   Trace("dt-ipc") << "dt-ipc: Ask proof for " << fact << std::endl;
   // temporary proof
-  CDProof pf(d_pnm);
+  CDProof pf(d_env);
   // get the inference
   NodeDatatypesInferenceMap::iterator it = d_lazyFactMap.find(fact);
   if (it == d_lazyFactMap.end())
@@ -295,4 +294,4 @@ std::string InferProofCons::identify() const
 
 }  // namespace datatypes
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Andres Noetzli, Aina Niemetz
+ *   Andrew Reynolds, Morgan Deters, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -18,36 +18,25 @@
 #include <stack>
 #include <utility>
 
-#include "expr/node_manager_attributes.h"
 #include "preprocessing/assertion_pipeline.h"
-#include "proof/conv_proof_generator.h"
 #include "smt/env.h"
-#include "smt/solver_engine.h"
 #include "theory/rewriter.h"
 #include "theory/theory.h"
 #include "util/resource_manager.h"
 
-using namespace cvc5::preprocessing;
-using namespace cvc5::theory;
-using namespace cvc5::kind;
+using namespace cvc5::internal::preprocessing;
+using namespace cvc5::internal::theory;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace smt {
 
-ExpandDefs::ExpandDefs(Env& env) : EnvObj(env), d_tpg(nullptr) {}
+ExpandDefs::ExpandDefs(Env& env) : EnvObj(env) {}
 
 ExpandDefs::~ExpandDefs() {}
 
 Node ExpandDefs::expandDefinitions(TNode n,
                                    std::unordered_map<Node, Node>& cache)
-{
-  TrustNode trn = expandDefinitions(n, cache, nullptr);
-  return trn.isNull() ? Node(n) : trn.getNode();
-}
-
-TrustNode ExpandDefs::expandDefinitions(TNode n,
-                                        std::unordered_map<Node, Node>& cache,
-                                        TConvProofGenerator* tpg)
 {
   const TNode orig = n;
   std::stack<std::tuple<Node, Node, bool>> worklist;
@@ -73,8 +62,9 @@ TrustNode ExpandDefs::expandDefinitions(TNode n,
     // Working downwards
     if (!childrenPushed)
     {
-      // we can short circuit (variable) leaves
-      if (n.isVar())
+      // we can short circuit (variable) leaves and closures, whose bodies
+      // are not preprocessed
+      if (n.isVar() || n.isClosure())
       {
         // don't bother putting in the cache
         result.push(n);
@@ -97,11 +87,6 @@ TrustNode ExpandDefs::expandDefinitions(TNode n,
       if (!trn.isNull())
       {
         node = trn.getNode();
-        if (tpg != nullptr)
-        {
-          tpg->addRewriteStep(
-              n, node, trn.getGenerator(), true, PfRule::THEORY_EXPAND_DEF);
-        }
       }
       else
       {
@@ -112,12 +97,10 @@ TrustNode ExpandDefs::expandDefinitions(TNode n,
       worklist.push(std::make_tuple(
           Node(n), node, true));  // Original and rewritten result
 
-      for (size_t i = 0; i < node.getNumChildren(); ++i)
+      for (const Node& nc : node)
       {
-        worklist.push(
-            std::make_tuple(node[i],
-                            node[i],
-                            false));  // Rewrite the children of the result only
+        // Rewrite the children of the result only
+        worklist.push(std::make_tuple(nc, nc, false));
       }
     }
     else
@@ -155,30 +138,8 @@ TrustNode ExpandDefs::expandDefinitions(TNode n,
 
   AlwaysAssert(result.size() == 1);
 
-  Node res = result.top();
-
-  if (res == orig)
-  {
-    return TrustNode::null();
-  }
-  return TrustNode::mkTrustRewrite(orig, res, tpg);
-}
-
-void ExpandDefs::enableProofs()
-{
-  // initialize if not done already
-  if (d_tpg == nullptr)
-  {
-    Assert(d_env.getProofNodeManager() != nullptr);
-    d_tpg.reset(new TConvProofGenerator(d_env.getProofNodeManager(),
-                                        d_env.getUserContext(),
-                                        TConvPolicy::FIXPOINT,
-                                        TConvCachePolicy::NEVER,
-                                        "ExpandDefs::TConvProofGenerator",
-                                        nullptr,
-                                        true));
-  }
+  return result.top();
 }
 
 }  // namespace smt
-}  // namespace cvc5
+}  // namespace cvc5::internal

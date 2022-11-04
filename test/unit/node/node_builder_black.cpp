@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -29,7 +29,7 @@
 #define K 30u
 #define LARGE_K UINT_MAX / 40
 
-namespace cvc5 {
+namespace cvc5::internal {
 
 using namespace kind;
 
@@ -247,7 +247,7 @@ TEST_F(TestNodeBlackNodeBuilder, operator_stream_insertion_kind)
 
 #ifdef CVC5_ASSERTIONS
   Node n;
-  ASSERT_DEATH(n = nb, "Nodes with kind ADD must have at least 2 children");
+  ASSERT_DEATH(n = nb, "Nodes with kind `\\+` must have at least 2 children");
   nb.clear(ADD);
 #endif
 
@@ -318,7 +318,7 @@ TEST_F(TestNodeBlackNodeBuilder, append)
 
 #ifdef CVC5_ASSERTIONS
   ASSERT_DEATH(d_nodeManager->mkNode(XOR, y, x, x),
-               "Nodes with kind XOR must have at most 2 children");
+               "Nodes with kind `xor` must have at most 2 children");
 #endif
 
   NodeBuilder b(d_specKind);
@@ -413,4 +413,4 @@ TEST_F(TestNodeBlackNodeBuilder, leftist_building)
   ASSERT_EQ(nexpected, n);
 }
 }  // namespace test
-}  // namespace cvc5
+}  // namespace cvc5::internal

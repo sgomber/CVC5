@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andres Noetzli
+ *   Mudathir Mohamed, Mathias Preiner, Andres Noetzli
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -24,7 +24,7 @@
 #include <cassert>
 
 using namespace std;
-using namespace cvc5::api;
+using namespace cvc5;
 
 int main()
 {
@@ -73,7 +73,7 @@ int main()
   // different rounding modes.
   Term rtp = solver.mkRoundingMode(ROUND_TOWARD_POSITIVE);
   Term rtn = solver.mkRoundingMode(ROUND_TOWARD_NEGATIVE);
-  Op op = solver.mkOp(FLOATINGPOINT_TO_SBV, 16);  // (_ fp.to_sbv 16)
+  Op op = solver.mkOp(FLOATINGPOINT_TO_SBV, {16});  // (_ fp.to_sbv 16)
   lhs = solver.mkTerm(op, {rtp, d});
   rhs = solver.mkTerm(op, {rtn, d});
   solver.assertFormula(solver.mkTerm(FLOATINGPOINT_IS_NORMAL, {d}));

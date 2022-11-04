@@ -1,10 +1,10 @@
 ###############################################################################
 # Top contributors (to current version):
-#   Gereon Kremer
+#   Gereon Kremer, Andres Noetzli, Mathias Preiner
 #
 # This file is part of the cvc5 project.
 #
-# Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+# Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
 # in the top-level source directory and their institutional affiliations.
 # All rights reserved.  See the file COPYING in the top-level source
 # directory for licensing information.
@@ -56,7 +56,7 @@ if(NOT Poly_FOUND_SYSTEM)
     unset(POLY_PATCH_CMD)
   endif()
 
-  get_target_property(GMP_INCLUDE_DIR GMP INTERFACE_INCLUDE_DIRECTORIES)
+  get_target_property(GMP_INCLUDE_DIR GMP INTERFACE_SYSTEM_INCLUDE_DIRECTORIES)
   get_target_property(GMP_LIBRARY GMP IMPORTED_LOCATION)
   get_filename_component(GMP_LIB_PATH "${GMP_LIBRARY}" DIRECTORY)
 
@@ -195,12 +195,12 @@ endif()
 
 set_target_properties(Poly PROPERTIES
   IMPORTED_LOCATION "${Poly_LIBRARIES}"
-  INTERFACE_INCLUDE_DIRECTORIES "${Poly_INCLUDE_DIR}"
+  INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${Poly_INCLUDE_DIR}"
 )
 target_link_libraries(Poly INTERFACE GMP)
 set_target_properties(Polyxx PROPERTIES
   IMPORTED_LOCATION "${PolyXX_LIBRARIES}"
-  INTERFACE_INCLUDE_DIRECTORIES "${Poly_INCLUDE_DIR}"
+  INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${Poly_INCLUDE_DIR}"
   INTERFACE_LINK_LIBRARIES Poly
 )
 

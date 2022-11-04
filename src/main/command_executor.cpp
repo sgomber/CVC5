@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Kshitij Bansal, Andrew Reynolds, Morgan Deters
+ *   Gereon Kremer, Andrew Reynolds, Morgan Deters
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -26,11 +26,12 @@
 #include <vector>
 
 #include "main/main.h"
-#include "smt/command.h"
+#include "parser/api/cpp/command.h"
 #include "smt/solver_engine.h"
 
-namespace cvc5 {
-namespace main {
+using namespace cvc5::parser;
+
+namespace cvc5::main {
 
 // Function to cancel any (externally-imposed) limit on CPU time.
 // This is used for competitions while a solution (proof or model)
@@ -48,10 +49,8 @@ void setNoLimitCPU() {
 #endif /* ! __WIN32__ */
 }
 
-CommandExecutor::CommandExecutor(std::unique_ptr<api::Solver>& solver)
-    : d_solver(solver),
-      d_symman(new SymbolManager(d_solver.get())),
-      d_result()
+CommandExecutor::CommandExecutor(std::unique_ptr<cvc5::Solver>& solver)
+    : d_solver(solver), d_symman(new SymbolManager(d_solver.get())), d_result()
 {
 }
 CommandExecutor::~CommandExecutor()
@@ -87,27 +86,12 @@ void CommandExecutor::printStatisticsSafe(int fd) const
 
 bool CommandExecutor::doCommand(Command* cmd)
 {
-  CommandSequence *seq = dynamic_cast<CommandSequence*>(cmd);
-  if(seq != nullptr) {
-    // assume no error
-    bool status = true;
-
-    for (CommandSequence::iterator subcmd = seq->begin();
-         status && subcmd != seq->end();
-         ++subcmd)
-    {
-      status = doCommand(*subcmd);
-    }
-
-    return status;
-  } else {
-    if (d_solver->getOptionInfo("verbosity").intValue() > 2)
-    {
-      d_solver->getDriverOptions().out() << "Invoking: " << *cmd << std::endl;
-    }
-
-    return doCommandSingleton(cmd);
+  if (d_solver->getOptionInfo("verbosity").intValue() > 2)
+  {
+    d_solver->getDriverOptions().out() << "Invoking: " << *cmd << std::endl;
   }
+
+  return doCommandSingleton(cmd);
 }
 
 void CommandExecutor::reset()
@@ -121,7 +105,7 @@ bool CommandExecutor::doCommandSingleton(Command* cmd)
   bool status = solverInvoke(
       d_solver.get(), d_symman.get(), cmd, d_solver->getDriverOptions().out());
 
-  api::Result res;
+  cvc5::Result res;
   const CheckSatCommand* cs = dynamic_cast<const CheckSatCommand*>(cmd);
   if(cs != nullptr) {
     d_result = res = cs->getResult();
@@ -142,7 +126,8 @@ bool CommandExecutor::doCommandSingleton(Command* cmd)
     if (d_solver->getOptionInfo("dump-models").boolValue()
         && (isResultSat
             || (res.isUnknown()
-                && res.getUnknownExplanation() == api::Result::INCOMPLETE)))
+                && res.getUnknownExplanation()
+                       == cvc5::UnknownExplanation::INCOMPLETE)))
     {
       getterCommands.emplace_back(new GetModelCommand());
     }
@@ -188,7 +173,7 @@ bool CommandExecutor::doCommandSingleton(Command* cmd)
   return status;
 }
 
-bool solverInvoke(api::Solver* solver,
+bool solverInvoke(cvc5::Solver* solver,
                   SymbolManager* sm,
                   Command* cmd,
                   std::ostream& out)
@@ -222,5 +207,4 @@ void CommandExecutor::flushOutputStreams() {
   d_solver->getDriverOptions().err() << std::flush;
 }
 
-}  // namespace main
-}  // namespace cvc5
+}  // namespace cvc5::main

@@ -1,10 +1,10 @@
 ###############################################################################
 # Top contributors (to current version):
-#   Mathias Preiner, Aina Niemetz, Gereon Kremer
+#   Mathias Preiner, Gereon Kremer, Andrew V. Jones
 #
 # This file is part of the cvc5 project.
 #
-# Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+# Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
 # in the top-level source directory and their institutional affiliations.
 # All rights reserved.  See the file COPYING in the top-level source
 # directory for licensing information.
@@ -50,25 +50,17 @@ file(GLOB_RECURSE source_files
      ${PROJECT_SOURCE_DIR}/src/*.g)
 
 add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Debug_tags.h
-  COMMAND ${PYTHON_EXECUTABLE} ${collect_tags_script} ${CMAKE_CURRENT_BINARY_DIR}/ Debug ${PROJECT_SOURCE_DIR}/src
-  DEPENDS ${collect_tags_script} ${source_files}
-)
-
-add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Trace_tags.h
-  COMMAND ${PYTHON_EXECUTABLE} ${collect_tags_script} ${CMAKE_CURRENT_BINARY_DIR}/ Trace ${PROJECT_SOURCE_DIR}/src
+  COMMAND ${PYTHON_EXECUTABLE} ${collect_tags_script} ${CMAKE_CURRENT_BINARY_DIR}/ ${PROJECT_SOURCE_DIR}/src
   DEPENDS ${collect_tags_script} ${source_files}
 )
 
 add_custom_target(gen-tags
   DEPENDS
-    ${CMAKE_CURRENT_BINARY_DIR}/Debug_tags.h
     ${CMAKE_CURRENT_BINARY_DIR}/Trace_tags.h
 )
 
 set_source_files_properties(
-  ${CMAKE_CURRENT_BINARY_DIR}/Debug_tags.h
   ${CMAKE_CURRENT_BINARY_DIR}/Trace_tags.h
   PROPERTIES GENERATED TRUE
 )

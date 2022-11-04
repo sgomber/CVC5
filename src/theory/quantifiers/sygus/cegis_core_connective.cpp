@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -27,9 +27,9 @@
 #include "theory/smt_engine_subsolver.h"
 #include "util/random.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
@@ -564,7 +564,8 @@ Result CegisCoreConnective::checkSat(Node n, std::vector<Node>& mvs) const
 {
   Trace("sygus-ccore-debug") << "...check-sat " << n << "..." << std::endl;
   n = rewrite(n);
-  Result r = checkWithSubsolver(n, d_vars, mvs, options(), logicInfo());
+  SubsolverSetupInfo ssi(d_env);
+  Result r = checkWithSubsolver(n, d_vars, mvs, ssi);
   Trace("sygus-ccore-debug") << "...got " << r << std::endl;
   return r;
 }
@@ -669,6 +670,7 @@ Node CegisCoreConnective::constructSolutionFromPool(Component& ccheck,
     // try a new core
     std::unique_ptr<SolverEngine> checkSol;
     initializeSubsolver(checkSol, d_env);
+    checkSol->setOption("sygus", "false");
     checkSol->setOption("produce-unsat-cores", "true");
     Trace("sygus-ccore") << "----- Check candidate " << an << std::endl;
     std::vector<Node> rasserts = asserts;
@@ -711,6 +713,7 @@ Node CegisCoreConnective::constructSolutionFromPool(Component& ccheck,
           Trace("sygus-ccore") << "----- Check side condition" << std::endl;
           std::unique_ptr<SolverEngine> checkSc;
           initializeSubsolver(checkSc, d_env);
+          checkSc->setOption("sygus", "false");
           checkSc->setOption("produce-unsat-cores", "true");
           std::vector<Node> scasserts;
           scasserts.insert(scasserts.end(), uasserts.begin(), uasserts.end());
@@ -795,4 +798,4 @@ Node CegisCoreConnective::constructSolutionFromPool(Component& ccheck,
 
 }  // namespace quantifiers
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

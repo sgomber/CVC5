@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Gereon Kremer
+ *   Gereon Kremer, Andres Noetzli
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -25,7 +25,18 @@
 
 #include <memory>
 
-namespace cvc5::theory::arith::nl::coverings {
+#include "util/statistics_stats.h"
+
+namespace cvc5::internal::theory::arith::nl::coverings {
+
+struct LazardEvaluationStats
+{
+  IntStat d_directAssignments;
+  IntStat d_ranAssignments;
+  IntStat d_evaluations;
+  IntStat d_reductions;
+  LazardEvaluationStats(StatisticsRegistry& reg);
+};
 
 struct LazardEvaluationState;
 /**
@@ -73,7 +84,7 @@ struct LazardEvaluationState;
 class LazardEvaluation
 {
  public:
-  LazardEvaluation();
+  LazardEvaluation(StatisticsRegistry& reg);
   ~LazardEvaluation();
 
   /**
@@ -111,7 +122,7 @@ class LazardEvaluation
   std::unique_ptr<LazardEvaluationState> d_state;
 };
 
-}  // namespace cvc5::theory::arith::nl::coverings
+}  // namespace cvc5::internal::theory::arith::nl::coverings
 
 #endif
 #endif

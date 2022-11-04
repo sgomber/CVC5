@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Gereon Kremer, Aina Niemetz
+ *   Andrew Reynolds, Gereon Kremer, Mathias Preiner
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -19,6 +19,7 @@
 #include "context/context.h"
 #include "expr/node.h"
 #include "options/base_options.h"
+#include "options/printer_options.h"
 #include "options/quantifiers_options.h"
 #include "options/smt_options.h"
 #include "options/strings_options.h"
@@ -32,23 +33,21 @@
 #include "util/resource_manager.h"
 #include "util/statistics_registry.h"
 
-using namespace cvc5::smt;
+using namespace cvc5::internal::smt;
 
-namespace cvc5 {
+namespace cvc5::internal {
 
-Env::Env(NodeManager* nm, const Options* opts)
+Env::Env(const Options* opts)
     : d_context(new context::Context()),
       d_userContext(new context::UserContext()),
-      d_nodeManager(nm),
       d_proofNodeManager(nullptr),
       d_rewriter(new theory::Rewriter()),
       d_evalRew(nullptr),
       d_eval(nullptr),
-      d_topLevelSubs(new theory::TrustSubstitutionMap(d_userContext.get())),
+      d_topLevelSubs(nullptr),
       d_logic(),
       d_statisticsRegistry(std::make_unique<StatisticsRegistry>(*this)),
       d_options(),
-      d_originalOptions(opts),
       d_resourceManager(),
       d_uninterpretedSortOwner(theory::THEORY_UF)
 {
@@ -68,13 +67,16 @@ Env::Env(NodeManager* nm, const Options* opts)
 
 Env::~Env() {}
 
-void Env::setProofNodeManager(ProofNodeManager* pnm)
+void Env::finishInit(ProofNodeManager* pnm)
 {
-  Assert(pnm != nullptr);
-  Assert(d_proofNodeManager == nullptr);
-  d_proofNodeManager = pnm;
-  d_rewriter->setProofNodeManager(pnm);
-  d_topLevelSubs->setProofNodeManager(pnm);
+  if (pnm != nullptr)
+  {
+    Assert(d_proofNodeManager == nullptr);
+    d_proofNodeManager = pnm;
+    d_rewriter->finishInit(*this);
+  }
+  d_topLevelSubs.reset(
+      new theory::TrustSubstitutionMap(*this, d_userContext.get()));
 }
 
 void Env::shutdown()
@@ -87,8 +89,6 @@ void Env::shutdown()
 context::Context* Env::getContext() { return d_context.get(); }
 
 context::UserContext* Env::getUserContext() { return d_userContext.get(); }
-
-NodeManager* Env::getNodeManager() const { return d_nodeManager; }
 
 ProofNodeManager* Env::getProofNodeManager() { return d_proofNodeManager; }
 
@@ -125,16 +125,9 @@ StatisticsRegistry& Env::getStatisticsRegistry()
 
 const Options& Env::getOptions() const { return d_options; }
 
-const Options& Env::getOriginalOptions() const { return *d_originalOptions; }
-
 ResourceManager* Env::getResourceManager() const
 {
   return d_resourceManager.get();
-}
-
-const Printer& Env::getPrinter()
-{
-  return *Printer::getPrinter(d_options.base.outputLanguage);
 }
 
 bool Env::isOutputOn(OutputTag tag) const
@@ -156,7 +149,7 @@ std::ostream& Env::output(OutputTag tag) const
   {
     return *d_options.base.out;
   }
-  return cvc5::null_os;
+  return cvc5::internal::null_os;
 }
 
 bool Env::isVerboseOn(int64_t level) const
@@ -170,7 +163,7 @@ std::ostream& Env::verbose(int64_t level) const
   {
     return *d_options.base.err;
   }
-  return cvc5::null_os;
+  return cvc5::internal::null_os;
 }
 
 std::ostream& Env::warning() const
@@ -256,4 +249,19 @@ theory::TheoryId Env::theoryOf(TNode node) const
       node, d_options.theory.theoryOfMode, d_uninterpretedSortOwner);
 }
 
-}  // namespace cvc5
+bool Env::hasSepHeap() const { return !d_sepLocType.isNull(); }
+
+TypeNode Env::getSepLocType() const { return d_sepLocType; }
+
+TypeNode Env::getSepDataType() const { return d_sepDataType; }
+
+void Env::declareSepHeap(TypeNode locT, TypeNode dataT)
+{
+  Assert(!locT.isNull());
+  Assert(!dataT.isNull());
+  // remember the types we have set
+  d_sepLocType = locT;
+  d_sepDataType = dataT;
+}
+
+}  // namespace cvc5::internal

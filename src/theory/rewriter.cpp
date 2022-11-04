@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Andres Noetzli, Dejan Jovanovic
+ *   Andrew Reynolds, Dejan Jovanovic, Andres Noetzli
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -17,9 +17,6 @@
 
 #include "options/theory_options.h"
 #include "proof/conv_proof_generator.h"
-#include "smt/smt_statistics_registry.h"
-#include "smt/solver_engine.h"
-#include "smt/solver_engine_scope.h"
 #include "theory/builtin/proof_checker.h"
 #include "theory/evaluator.h"
 #include "theory/quantifiers/extended_rewrite.h"
@@ -29,7 +26,7 @@
 
 using namespace std;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 
 // Note that this function is a simplified version of Theory::theoryOf for
@@ -93,7 +90,7 @@ Node Rewriter::rewrite(TNode node) {
     // eagerly for the sake of efficiency here.
     return node;
   }
-  return getInstance()->rewriteTo(theoryOf(node), node);
+  return rewriteTo(theoryOf(node), node);
 }
 
 Node Rewriter::extendedRewrite(TNode node, bool aggr)
@@ -110,23 +107,23 @@ TrustNode Rewriter::rewriteWithProof(TNode node,
   if (isExtEq)
   {
     // theory rewriter is responsible for rewriting the equality
-    TheoryRewriter* tr = getInstance()->d_theoryRewriters[theoryOf(node)];
+    TheoryRewriter* tr = d_theoryRewriters[theoryOf(node)];
     Assert(tr != nullptr);
     return tr->rewriteEqualityExtWithProof(node);
   }
-  Node ret = getInstance()->rewriteTo(theoryOf(node), node, d_tpg.get());
+  Node ret = rewriteTo(theoryOf(node), node, d_tpg.get());
   return TrustNode::mkTrustRewrite(node, ret, d_tpg.get());
 }
 
-void Rewriter::setProofNodeManager(ProofNodeManager* pnm)
+void Rewriter::finishInit(Env& env)
 {
   // if not already initialized with proof support
   if (d_tpg == nullptr)
   {
-    Trace("rewriter") << "Rewriter::setProofNodeManager" << std::endl;
+    Trace("rewriter") << "Rewriter::finishInit" << std::endl;
     // the rewriter is staticly determinstic, thus use static cache policy
     // for the term conversion proof generator
-    d_tpg.reset(new TConvProofGenerator(pnm,
+    d_tpg.reset(new TConvProofGenerator(env,
                                         nullptr,
                                         TConvPolicy::FIXPOINT,
                                         TConvCachePolicy::STATIC,
@@ -150,11 +147,6 @@ void Rewriter::registerTheoryRewriter(theory::TheoryId tid,
 TheoryRewriter* Rewriter::getTheoryRewriter(theory::TheoryId theoryId)
 {
   return d_theoryRewriters[theoryId];
-}
-
-Rewriter* Rewriter::getInstance()
-{
-  return smt::currentSolverEngine()->getRewriter();
 }
 
 Node Rewriter::rewriteTo(theory::TheoryId theoryId,
@@ -219,6 +211,9 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId,
           TheoryId newTheory = theoryOf(newNode);
           rewriteStackTop.d_node = newNode;
           rewriteStackTop.d_theoryId = newTheory;
+          Assert(newNode.getType() == rewriteStackTop.d_node.getType())
+              << "Pre-rewriting " << rewriteStackTop.d_node << " to " << newNode
+              << " does not preserve type";
           // In the pre-rewrite, if changing theories, we just call the other
           // theories pre-rewrite. If the kind of the node was changed, then we
           // pre-rewrite again.
@@ -306,6 +301,9 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId,
         // We continue with the response we got
         TNode newNode = response.d_node;
         TheoryId newTheoryId = theoryOf(newNode);
+        Assert(newNode.getType() == rewriteStackTop.d_node.getType())
+            << "Post-rewriting " << rewriteStackTop.d_node << " to " << newNode
+            << " does not preserve type";
         if (newTheoryId != rewriteStackTop.getTheoryId()
             || response.d_status == REWRITE_AGAIN_FULL)
         {
@@ -313,8 +311,8 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId,
           Assert(response.d_node != rewriteStackTop.d_node);
           //TODO: this is not thread-safe - should make this assertion dependent on sequential build
 #ifdef CVC5_ASSERTIONS
-          Assert(d_rewriteStack->find(response.d_node)
-                 == d_rewriteStack->end());
+          Assert(d_rewriteStack->find(response.d_node) == d_rewriteStack->end())
+              << "Non-terminating rewriting detected for: " << response.d_node;
           d_rewriteStack->insert(response.d_node);
 #endif
           Node rewritten = rewriteTo(newTheoryId, response.d_node, tcpg);
@@ -396,8 +394,9 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId,
     if (rewriteStack.size() == 1) {
       Assert(!isEquality || rewriteStackTop.d_node.getKind() == kind::EQUAL
              || rewriteStackTop.d_node.isConst());
-      Assert(rewriteStackTop.d_node.getType().isSubtypeOf(node.getType()))
-          << "Rewriting " << node << " does not preserve type";
+      Assert(rewriteStackTop.d_node.getType() == node.getType())
+          << "Rewriting " << node << " to " << rewriteStackTop.d_node
+          << " does not preserve type";
       return rewriteStackTop.d_node;
     }
 
@@ -474,19 +473,10 @@ RewriteResponse Rewriter::processTrustRewriteResponse(
   return RewriteResponse(tresponse.d_status, trn.getNode());
 }
 
-void Rewriter::clearCaches()
-{
-#ifdef CVC5_ASSERTIONS
-  d_rewriteStack.reset(nullptr);
-#endif
-
-  clearCachesInternal();
-}
-
 bool Rewriter::hasRewrittenWithProofs(TNode n) const
 {
   return d_tpgNodes.find(n) != d_tpgNodes.end();
 }
 
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal

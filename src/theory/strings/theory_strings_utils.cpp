@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Andres Noetzli, Yoni Zohar
+ *   Andrew Reynolds, Andres Noetzli, Aina Niemetz
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2021 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -31,9 +31,9 @@
 #include "util/regexp.h"
 #include "util/string.h"
 
-using namespace cvc5::kind;
+using namespace cvc5::internal::kind;
 
-namespace cvc5 {
+namespace cvc5::internal {
 namespace theory {
 namespace strings {
 namespace utils {
@@ -154,6 +154,17 @@ Node mkSuffix(Node t, Node n)
       STRING_SUBSTR, t, n, nm->mkNode(SUB, nm->mkNode(STRING_LENGTH, t), n));
 }
 
+Node mkUnit(TypeNode tn, Node n)
+{
+  NodeManager* nm = NodeManager::currentNM();
+  if (tn.isString())
+  {
+    return nm->mkNode(STRING_UNIT, n);
+  }
+  Assert(tn.isSequence());
+  return nm->mkNode(SEQ_UNIT, n);
+}
+
 Node getConstantComponent(Node t)
 {
   if (t.getKind() == STRING_TO_REGEXP)
@@ -259,7 +270,10 @@ std::pair<bool, std::vector<Node> > collectEmptyEqs(Node x)
       allEmptyEqs, std::vector<Node>(emptyNodes.begin(), emptyNodes.end()));
 }
 
-bool isConstantLike(Node n) { return n.isConst() || n.getKind() == SEQ_UNIT; }
+bool isConstantLike(Node n)
+{
+  return n.isConst() || n.getKind() == SEQ_UNIT || n.getKind() == STRING_UNIT;
+}
 
 bool isUnboundedWildcard(const std::vector<Node>& rs, size_t start)
 {
@@ -349,8 +363,8 @@ void printConcatTrace(std::vector<Node>& n, const char* c)
 
 bool isStringKind(Kind k)
 {
-  return k == STRING_STOI || k == STRING_ITOS || k == STRING_TOLOWER
-         || k == STRING_TOUPPER || k == STRING_LEQ || k == STRING_LT
+  return k == STRING_STOI || k == STRING_ITOS || k == STRING_TO_LOWER
+         || k == STRING_TO_UPPER || k == STRING_LEQ || k == STRING_LT
          || k == STRING_FROM_CODE || k == STRING_TO_CODE;
 }
 
@@ -435,7 +449,15 @@ Node mkAbstractStringValueForLength(Node n, Node len, size_t id)
   return quantifiers::mkNamedQuant(WITNESS, bvl, pred, ss.str());
 }
 
+Node mkCodeRange(Node t, uint32_t alphaCard)
+{
+  NodeManager* nm = NodeManager::currentNM();
+  return nm->mkNode(AND,
+                    nm->mkNode(GEQ, t, nm->mkConstInt(Rational(0))),
+                    nm->mkNode(LT, t, nm->mkConstInt(Rational(alphaCard))));
+}
+
 }  // namespace utils
 }  // namespace strings
 }  // namespace theory
-}  // namespace cvc5
+}  // namespace cvc5::internal
