@@ -1853,7 +1853,6 @@ Node EqualityEngine::evaluateTerm(TNode node) {
   }
   for (const Node& child : node)
   {
-    TNode child = node[i];
     TNode childRep = getRepresentative(child);
     Trace("equality::evaluation") << d_name << "::eq::evaluateTerm: " << child << " -> " << childRep << std::endl;
     Assert(childRep.isConst());
