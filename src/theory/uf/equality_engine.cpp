@@ -1851,7 +1851,8 @@ Node EqualityEngine::evaluateTerm(TNode node) {
   if (node.getMetaKind() == kind::metakind::PARAMETERIZED) {
     builder << node.getOperator();
   }
-  for (unsigned i = 0; i < node.getNumChildren(); ++ i) {
+  for (const Node& child : node)
+  {
     TNode child = node[i];
     TNode childRep = getRepresentative(child);
     Trace("equality::evaluation") << d_name << "::eq::evaluateTerm: " << child << " -> " << childRep << std::endl;
