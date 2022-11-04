@@ -191,7 +191,7 @@ void TermRegistry::preRegisterTerm(TNode n)
       ss << "Equality between regular expressions is not supported";
       throw LogicException(ss.str());
     }
-    // ee->addTriggerPredicate(n);
+    //ee->addTriggerPredicate(n);
     return;
   }
   else if (k == STRING_IN_REGEXP)
