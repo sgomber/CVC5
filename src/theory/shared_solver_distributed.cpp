@@ -40,7 +40,7 @@ void SharedSolverDistributed::preRegisterSharedInternal(TNode t)
   if (t.getKind() == kind::EQUAL)
   {
     // When sharing is enabled, we propagate from the shared terms manager also
-    d_sharedTerms.addEqualityToPropagate(t);
+    //d_sharedTerms.addEqualityToPropagate(t);
   }
 }
 
