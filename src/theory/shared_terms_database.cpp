@@ -140,17 +140,6 @@ TheoryIdSet SharedTermsDatabase::getTheoriesToNotify(TNode atom,
   return TheoryIdSetUtil::setDifference((*find).second, alreadyNotified);
 }
 
-TheoryIdSet SharedTermsDatabase::getNotifiedTheories(TNode term) const
-{
-  // Get the theories that were already notified
-  AlreadyNotifiedMap::iterator theoriesFind = d_alreadyNotifiedMap.find(term);
-  if (theoriesFind != d_alreadyNotifiedMap.end()) {
-    return (*theoriesFind).second;
-  } else {
-    return 0;
-  }
-}
-
 bool SharedTermsDatabase::propagateSharedEquality(TheoryId theory, TNode a, TNode b, bool value)
 {
   Trace("shared-terms-database") << "SharedTermsDatabase::newEquality(" << theory << "," << a << "," << b << ", " << (value ? "true" : "false") << ")" << endl;
@@ -295,17 +284,6 @@ void SharedTermsDatabase::checkForConflict()
   }
   d_theoryEngine->conflict(trnc, THEORY_BUILTIN);
   d_conflictLHS = d_conflictRHS = Node::null();
-}
-
-bool SharedTermsDatabase::isKnown(TNode literal) const {
-  Assert(d_equalityEngine != nullptr);
-  bool polarity = literal.getKind() != kind::NOT;
-  TNode equality = polarity ? literal : literal[0];
-  if (polarity) {
-    return d_equalityEngine->areEqual(equality[0], equality[1]);
-  } else {
-    return d_equalityEngine->areDisequal(equality[0], equality[1], false);
-  }
 }
 
 TrustNode SharedTermsDatabase::explain(TNode literal) const

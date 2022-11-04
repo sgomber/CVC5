@@ -179,11 +179,6 @@ class SharedTermsDatabase : protected EnvObj, public context::ContextNotifyObj
   void assertShared(TNode n, bool polarity, TNode reason);
 
   /**
-   * Return whether the equality is alreday known to the engine
-   */
-  bool isKnown(TNode literal) const;
-
-  /**
    * Returns an explanation of the propagation that came from the database.
    */
   TrustNode explain(TNode literal) const;
@@ -223,11 +218,6 @@ class SharedTermsDatabase : protected EnvObj, public context::ContextNotifyObj
    * Get the theories that share the term in a given atom (and have not yet been notified).
    */
   theory::TheoryIdSet getTheoriesToNotify(TNode atom, TNode term) const;
-
-  /**
-   * Get the theories that share the term and have been notified already.
-   */
-  theory::TheoryIdSet getNotifiedTheories(TNode term) const;
 
   /**
    * Returns true if the term is currently registered as shared with some theory.
