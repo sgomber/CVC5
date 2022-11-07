@@ -56,7 +56,7 @@ void ContextManager::notifyCheckSat(bool hasAssumptions)
   // push if there are assumptions
   if (hasAssumptions)
   {
-    internalPush();
+    //internalPush();
   }
 }
 
@@ -66,7 +66,7 @@ void ContextManager::notifyCheckSatResult(bool hasAssumptions)
   // Pop the context
   if (hasAssumptions)
   {
-    internalPop();
+    //internalPop();
   }
 }
 
