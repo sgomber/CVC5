@@ -2975,6 +2975,7 @@ set(regress_1_tests
   regress1/sygus/proj-issue183.smt2
   regress1/sygus/proj-issue185.smt2
   regress1/sygus/proj-issue264.smt2
+  regress1/sygus/proj-issue222-any-constant-exp.sy
   regress1/sygus/pLTL_5_trace.sy
   regress1/sygus/qe.sy
   regress1/sygus/qf_abv.smt2

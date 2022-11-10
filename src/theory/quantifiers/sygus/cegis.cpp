@@ -287,11 +287,22 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
       // Even if ret is true, we will exclude the skeleton as well; this means
       // that we have one chance to repair each skeleton. It is possible however
       // that we might want to repair the same skeleton multiple times.
-      std::vector<Node> exp;
+      std::vector<Node> expf;
       for (unsigned i = 0, size = enums.size(); i < size; i++)
       {
         d_tds->getExplain()->getExplanationForEquality(
-            enums[i], enum_values[i], exp);
+            enums[i], enum_values[i], expf);
+      }
+      // Remove equalities from the explanation, since these correspond to
+      // explanation of the concrete values in arguments to any-constant
+      // constructors.
+      std::vector<Node> exp;
+      for (const Node& e : expf)
+      {
+        if (e.getKind()!=EQUAL)
+        {
+          exp.push_back(e);
+        }
       }
       Assert(!exp.empty());
       NodeManager* nm = NodeManager::currentNM();
