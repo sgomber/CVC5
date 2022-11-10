@@ -204,6 +204,7 @@ void SygusExplain::getExplanationFor(TermRecBuild& trb,
     // any lemma schema that blocks the current value of an enumerator should
     // not make any assumptions about the value of the arguments of its any
     // constant constructors, since their explanation is not included here.
+    exp.push_back(n.eqNode(vn));
     return;
   }
   Assert(vn.getKind() == APPLY_CONSTRUCTOR);
