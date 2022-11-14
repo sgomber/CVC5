@@ -148,6 +148,8 @@ void SolverState::setPendingMergeConflict(Node conf, InferenceId id, bool rev)
     return;
   }
   InferInfo iiPrefixConf(id);
+  // remember whether this was a prefix/suffix, which is used when looking
+  // if the explanation can be minimized
   iiPrefixConf.d_idRev = rev;
   iiPrefixConf.d_conc = d_false;
   utils::flattenOp(AND, conf, iiPrefixConf.d_premises);

@@ -422,34 +422,6 @@ bool String::hasSuffix(const String& y) const
   return true;
 }
 
-std::size_t String::commonPrefix(const String& y) const
-{
-  size_t s = size();
-  size_t ys = y.size();
-  for (size_t i = 0; i < s; i++)
-  {
-    if (i >= ys || d_str[i] != y.d_str[i])
-    {
-      return i;
-    }
-  }
-  return s;
-}
-
-std::size_t String::commonSuffix(const String& y) const
-{
-  size_t s = size();
-  size_t ys = y.size();
-  for (size_t i = 0; i < s; i++)
-  {
-    if (i >= ys || d_str[(s - 1) - i] != y.d_str[(ys - 1) - i])
-    {
-      return i;
-    }
-  }
-  return s;
-}
-
 String String::update(std::size_t i, const String& t) const
 {
   if (i < size())

@@ -283,34 +283,6 @@ bool Sequence::hasSuffix(const Sequence& y) const
   return true;
 }
 
-std::size_t Sequence::commonPrefix(const Sequence& y) const
-{
-  size_t s = size();
-  size_t ys = y.size();
-  for (size_t i = 0; i < s; i++)
-  {
-    if (i >= ys || nth(i) != y.nth(i))
-    {
-      return i;
-    }
-  }
-  return s;
-}
-
-std::size_t Sequence::commonSuffix(const Sequence& y) const
-{
-  size_t s = size();
-  size_t ys = y.size();
-  for (size_t i = 0; i < s; i++)
-  {
-    if (i >= ys || nth((s - 1) - i) != y.nth((ys - 1) - i))
-    {
-      return i;
-    }
-  }
-  return s;
-}
-
 Sequence Sequence::update(size_t i, const Sequence& t) const
 {
   Assert(getType() == t.getType());
