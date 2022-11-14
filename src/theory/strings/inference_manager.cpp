@@ -508,7 +508,7 @@ Node InferenceManager::mkPrefixExplainMin(Node x,
       while (pindex < pchars.size() && cindex < cchars.size())
       {
         size_t pii = isSuf ? (pchars.size() - 1) - pindex : pindex;
-        size_t cii = isSuf ? (cchars.size() - 1) - pindex : cindex;
+        size_t cii = isSuf ? (cchars.size() - 1) - cindex : cindex;
         if (cchars[cii] != pchars[pii])
         {
           Trace("strings-prefix-min") << "...conflict at " << pindex
