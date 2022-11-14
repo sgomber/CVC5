@@ -279,11 +279,6 @@ void InferenceManager::markReduced(Node n, ExtReducedId id, bool contextDepend)
 void InferenceManager::processConflict(const InferInfo& ii)
 {
   Assert(!d_state.isInConflict());
-  // setup the fact to reproduce the proof in the call below
-  if (d_ipcl != nullptr)
-  {
-    d_ipcl->notifyLemma(ii);
-  }
   if (ii.getId() == InferenceId::STRINGS_PREFIX_CONFLICT)
   {
     bool isSuf = ii.d_idRev;
@@ -292,14 +287,14 @@ void InferenceManager::processConflict(const InferInfo& ii)
     //   P1 implies a prefix on string x,
     //   P2 implies a (conflicting) prefix on string y.
     // See EqcInfo::mkMergeConflict.
-    Trace("strings-prefix-min") << "Minimize prefix conflict" << ii.d_premises
+    Trace("strings-prefix-min") << "Minimize prefix conflict " << ii.d_premises
                                 << ", isSuf=" << isSuf << std::endl;
     size_t npremises = ii.d_premises.size();
     Node eq = ii.d_premises[npremises - 1];
     // if we included an equality, we will try to minimize its explanation
     if (eq.getKind() == EQUAL)
     {
-      std::vector<Node> newExp;
+      InferInfo iim(InferenceId::STRINGS_PREFIX_CONFLICT_MIN);
       Node pft[2] = {eq[0], eq[1]};
       for (size_t i = 0; i < (npremises - 1); i++)
       {
@@ -311,7 +306,7 @@ void InferenceManager::processConflict(const InferInfo& ii)
           pft[eindex] = ii.d_premises[i][1];
         }
         // include it in the explanation
-        newExp.push_back(ii.d_premises[i]);
+        iim.d_premises.push_back(ii.d_premises[i]);
       }
       Trace("strings-prefix-min")
           << "Prefix terms: " << pft[0] << " / " << pft[1] << std::endl;
@@ -322,7 +317,6 @@ void InferenceManager::processConflict(const InferInfo& ii)
       }
       Trace("strings-prefix-min")
           << "Prefixes: " << pfv[0] << " / " << pfv[1] << std::endl;
-      bool didMinExplain = false;
       for (size_t i = 0; i < 2; i++)
       {
         if (pft[1 - i] == eq[1 - i] && pft[i] != eq[i])
@@ -339,21 +333,24 @@ void InferenceManager::processConflict(const InferInfo& ii)
             Node minPrefix = isSuf ? Word::suffix(pfv[1 - i], csize + 1)
                                    : Word::prefix(pfv[1 - i], csize + 1);
             Node mexp = mkPrefixExplainMin(eqm, minPrefix, isSuf);
-            newExp.push_back(mexp);
-            didMinExplain = true;
-            break;
+            // if we minimized the conflict, process it
+            if (!mexp.isNull())
+            {
+              iim.d_premises.push_back(mexp);
+              iim.d_conc = ii.d_conc;
+              processConflict(iim);
+              return;
+            }
           }
         }
       }
-      // if we did not have a pattern that allowed minimization, just add the
-      // original.
-      if (didMinExplain)
-      {
-        TrustNode tconf = mkConflictExp(newExp, d_ipcl.get());
-        trustedConflict(tconf, InferenceId::STRINGS_PREFIX_CONFLICT);
-        return;
-      }
     }
+    // otherwise if we fail to minimize, process the original
+  }
+  // setup the fact to reproduce the proof in the call below
+  if (d_ipcl != nullptr)
+  {
+    d_ipcl->notifyLemma(ii);
   }
   // make the trust node
   TrustNode tconf = mkConflictExp(ii.d_premises, d_ipcl.get());
@@ -384,6 +381,17 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
 {
   Assert(!ii.isTrivial());
   Assert(!ii.isConflict());
+  if (ii.getId()==InferenceId::STRINGS_EXTF_N || ii.getId()==InferenceId::STRINGS_EXTF)
+  {
+    Trace("strings-prefix-min") << "Minimize prefix conflict lemma " << ii.d_premises
+                                << " => " << ii.d_conc << std::endl;
+    bool pol = ii.d_conc.getKind()!=NOT;
+    Node concAtom = pol ? ii.d_conc : ii.d_conc[0];
+    if (concAtom.getKind()==STRING_IN_REGEXP)
+    {
+      
+    }
+  }
   // set up the explanation and no-explanation
   std::vector<Node> exp;
   for (const Node& ec : ii.d_premises)
@@ -523,7 +531,7 @@ Node InferenceManager::mkPrefixExplainMin(Node eq, Node prefix, bool isSuf)
         << assumptions.size() << std::endl;
     return NodeManager::currentNM()->mkAnd(minAssumptions);
   }
-  return eq;
+  return Node::null();
 }
 
 }  // namespace strings
