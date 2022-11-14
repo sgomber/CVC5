@@ -378,12 +378,32 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
       || ii.getId() == InferenceId::STRINGS_EXTF)
   {
     Trace("strings-prefix-min")
-        << "Minimize prefix conflict lemma " << ii.d_premises << " => "
+        << "Minimize extf lemma " << ii.d_premises << " => "
         << ii.d_conc << std::endl;
     bool pol = ii.d_conc.getKind() != NOT;
     Node concAtom = pol ? ii.d_conc : ii.d_conc[0];
-    if (concAtom.getKind() == STRING_IN_REGEXP)
+    if (!pol && concAtom.getKind() == STRING_IN_REGEXP)
     {
+      for (size_t i=0; i<2; i++)
+      {
+        // maybe it corresponds to a prefix conflict?
+        bool isSuf = (i==1);
+        Node prefix = utils::getConstantEndpoint(concAtom[1], isSuf);
+        if (prefix.isNull())
+        {
+          continue;
+        }
+        Trace("strings-prefix-min") << "Try constant endpoint " << prefix << std::endl;
+        std::vector<TNode> assumptions(ii.d_premises.begin(), ii.d_premises.end());
+        Node mexp = mkPrefixExplainMin(concAtom[0], prefix, assumptions, isSuf);
+        // if we minimized the conflict, process it
+        if (!mexp.isNull())
+        {
+          ii.d_premises.clear();
+          ii.d_premises.push_back(mexp);
+          break;
+        }
+      }
     }
   }
   // set up the explanation and no-explanation
