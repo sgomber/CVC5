@@ -39,7 +39,7 @@ public:
   virtual bool isFinished() = 0;
 };
 */
-  
+
 InferenceManager::InferenceManager(Env& env,
                                    Theory& t,
                                    SolverState& s,
@@ -471,7 +471,8 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
   return tlem;
 }
 
-std::map<TNode, TNode> InferenceManager::getExplanationMap(const std::vector<TNode>& assumptions)
+std::map<TNode, TNode> InferenceManager::getExplanationMap(
+    const std::vector<TNode>& assumptions)
 {
   std::map<TNode, TNode> emap;
   for (TNode e : assumptions)
@@ -586,8 +587,8 @@ Node InferenceManager::mkPrefixExplainMin(Node x,
 }
 
 Node InferenceManager::mkSrPredExplainMin(Node x,
-                        Node predicate,
-                        const std::vector<TNode>& assumptions)
+                                          Node predicate,
+                                          const std::vector<TNode>& assumptions)
 {
   return Node::null();
   /*
