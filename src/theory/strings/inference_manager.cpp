@@ -326,7 +326,7 @@ void InferenceManager::processConflict(const InferInfo& ii)
           // get the minimal conflicting prefix
           std::vector<TNode> assumptions;
           explain(eq, assumptions);
-          Node mexp = mkPrefixExplainMin(eq[i], pfv[1 - i], assumptions, isSuf);
+          Node mexp = mkPrefixExplainMin(eq[i], pfv[i], assumptions, isSuf);
           // if we minimized the conflict, process it
           if (!mexp.isNull())
           {
