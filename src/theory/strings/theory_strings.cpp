@@ -1141,9 +1141,10 @@ void TheoryStrings::checkCodes()
         if (!codeProxyLem.isNull())
         {
           std::vector<Node> emptyVec;
-          d_im.sendInference(emptyVec, codeProxyLem, InferenceId::STRINGS_CODE_PROXY);
+          d_im.sendInference(
+              emptyVec, codeProxyLem, InferenceId::STRINGS_CODE_PROXY);
         }
-        if (Word::getLength(c)==1)
+        if (Word::getLength(c) == 1)
         {
           Node v = d_termReg.ensureProxyVariableFor(c);
           Node vc = nm->mkNode(STRING_TO_CODE, v);
