@@ -374,15 +374,16 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
 {
   Assert(!ii.isTrivial());
   Assert(!ii.isConflict());
-  if (ii.getId()==InferenceId::STRINGS_EXTF_N || ii.getId()==InferenceId::STRINGS_EXTF)
+  if (ii.getId() == InferenceId::STRINGS_EXTF_N
+      || ii.getId() == InferenceId::STRINGS_EXTF)
   {
-    Trace("strings-prefix-min") << "Minimize prefix conflict lemma " << ii.d_premises
-                                << " => " << ii.d_conc << std::endl;
-    bool pol = ii.d_conc.getKind()!=NOT;
+    Trace("strings-prefix-min")
+        << "Minimize prefix conflict lemma " << ii.d_premises << " => "
+        << ii.d_conc << std::endl;
+    bool pol = ii.d_conc.getKind() != NOT;
     Node concAtom = pol ? ii.d_conc : ii.d_conc[0];
-    if (concAtom.getKind()==STRING_IN_REGEXP)
+    if (concAtom.getKind() == STRING_IN_REGEXP)
     {
-      
     }
   }
   // set up the explanation and no-explanation
@@ -439,12 +440,15 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
   return tlem;
 }
 
-Node InferenceManager::mkPrefixExplainMin(Node x, Node prefix, const std::vector<TNode>& assumptions, bool isSuf)
+Node InferenceManager::mkPrefixExplainMin(Node x,
+                                          Node prefix,
+                                          const std::vector<TNode>& assumptions,
+                                          bool isSuf)
 {
   Assert(prefix.isConst());
   Trace("strings-prefix-min")
-      << "mkPrefixExplainMin: " << x << " for "
-      << (isSuf ? "suffix" : "prefix") << " " << prefix << std::endl;
+      << "mkPrefixExplainMin: " << x << " for " << (isSuf ? "suffix" : "prefix")
+      << " " << prefix << std::endl;
   Trace("strings-prefix-min") << "- via: " << assumptions << std::endl;
   // an equality for each term in the explanation
   std::map<Node, TNode> emap;
@@ -480,13 +484,14 @@ Node InferenceManager::mkPrefixExplainMin(Node x, Node prefix, const std::vector
       // check for conflict
       std::vector<Node> cchars = Word::getChars(c);
       size_t cindex = 0;
-      while (pindex < pchars.size() && cindex<cchars.size())
+      while (pindex < pchars.size() && cindex < cchars.size())
       {
-        size_t pii = isSuf ? (pchars.size()-1)-pindex : pindex;
-        size_t cii = isSuf ? (cchars.size()-1)-pindex : cindex;
-        if (cchars[cii]!=pchars[pii])
+        size_t pii = isSuf ? (pchars.size() - 1) - pindex : pindex;
+        size_t cii = isSuf ? (cchars.size() - 1) - pindex : cindex;
+        if (cchars[cii] != pchars[pii])
         {
-          Trace("strings-prefix-min") << "...conflict at " << pindex << " while processing " << c << std::endl;
+          Trace("strings-prefix-min") << "...conflict at " << pindex
+                                      << " while processing " << c << std::endl;
           isConflict = true;
           break;
         }

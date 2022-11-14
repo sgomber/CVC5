@@ -245,13 +245,17 @@ class InferenceManager : public InferenceManagerBuffered
    *
    * @param x A string term
    * @param prefix The prefix (suffix).
-   * @param assumptions The set of assumptions that may imply that x is in conflict with the given prefix
+   * @param assumptions The set of assumptions that may imply that x is in
+   * conflict with the given prefix
    * @param isSuf Whether prefix denotes a suffix
    * @return An explanation (a conjunction of literals that have been
    * asserted to the equality engine) that imply x does not have the given
    * prefix.
    */
-  Node mkPrefixExplainMin(Node x, Node prefix, const std::vector<TNode>& assumptions, bool isSuf = false);
+  Node mkPrefixExplainMin(Node x,
+                          Node prefix,
+                          const std::vector<TNode>& assumptions,
+                          bool isSuf = false);
   /** Reference to the solver state of the theory of strings. */
   SolverState& d_state;
   /** Reference to the term registry of theory of strings */
