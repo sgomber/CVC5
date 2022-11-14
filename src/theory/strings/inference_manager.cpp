@@ -324,23 +324,15 @@ void InferenceManager::processConflict(const InferInfo& ii)
           // if the other side is justified by itself and we are justified
           // externally, we can try to minimize the explanation of this
           // get the minimal conflicting prefix
-          size_t csize = isSuf ? Word::commonSuffix(pfv[0], pfv[1])
-                               : Word::commonPrefix(pfv[0], pfv[1]);
-          // only if this is contained (strictly) in the other side
-          if (csize + 1 < Word::getLength(pfv[1 - i]))
+          Node eqm = i == 0 ? eq : eq[1].eqNode(eq[0]);
+          Node mexp = mkPrefixExplainMin(eqm, pfv[1 - i], isSuf);
+          // if we minimized the conflict, process it
+          if (!mexp.isNull())
           {
-            Node eqm = i == 0 ? eq : eq[1].eqNode(eq[0]);
-            Node minPrefix = isSuf ? Word::suffix(pfv[1 - i], csize + 1)
-                                   : Word::prefix(pfv[1 - i], csize + 1);
-            Node mexp = mkPrefixExplainMin(eqm, minPrefix, isSuf);
-            // if we minimized the conflict, process it
-            if (!mexp.isNull())
-            {
-              iim.d_premises.push_back(mexp);
-              iim.d_conc = ii.d_conc;
-              processConflict(iim);
-              return;
-            }
+            iim.d_premises.push_back(mexp);
+            iim.d_conc = ii.d_conc;
+            processConflict(iim);
+            return;
           }
         }
       }
@@ -475,18 +467,37 @@ Node InferenceManager::mkPrefixExplainMin(Node eq, Node prefix, bool isSuf)
   std::vector<TNode> cc;
   cc.push_back(eq[0]);
   size_t pindex = 0;
-  size_t plen = Word::getLength(prefix);
+  std::vector<Node> pchars = Word::getChars(prefix);
   std::map<Node, TNode>::iterator it;
-  while (pindex < plen && !cc.empty())
+  bool isConflict = false;
+  while (pindex < pchars.size() && !cc.empty())
   {
     Trace("strings-prefix-min")
-        << "  " << pindex << "/" << plen << ", " << cc << std::endl;
+        << "  " << pindex << "/" << pchars.size() << ", " << cc << std::endl;
     TNode c = cc.back();
     cc.pop_back();
     if (c.isConst())
     {
-      // it contributes to the prefix/suffix, add it
-      pindex += Word::getLength(c);
+      // check for conflict
+      std::vector<Node> cchars = Word::getChars(c);
+      size_t cindex = 0;
+      while (pindex < pchars.size() && cindex<cchars.size())
+      {
+        size_t pii = isSuf ? (pchars.size()-1)-pindex : pindex;
+        size_t cii = isSuf ? (cchars.size()-1)-pindex : cindex;
+        if (cchars[cii]!=pchars[pii])
+        {
+          Trace("strings-prefix-min") << "...conflict at " << pindex << " while processing " << c << std::endl;
+          isConflict = true;
+          break;
+        }
+        pindex++;
+        cindex++;
+      }
+      if (isConflict)
+      {
+        break;
+      }
       continue;
     }
     it = emap.find(c);
@@ -522,7 +533,7 @@ Node InferenceManager::mkPrefixExplainMin(Node eq, Node prefix, bool isSuf)
     Trace("strings-prefix-min") << "-> no explanation for " << c << std::endl;
     break;
   }
-  if (pindex >= plen && minAssumptions.size() < assumptions.size())
+  if (isConflict && minAssumptions.size() < assumptions.size())
   {
     Trace("strings-prefix-min")
         << "-> min-explained: " << minAssumptions << std::endl;
