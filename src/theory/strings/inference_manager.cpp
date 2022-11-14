@@ -324,8 +324,9 @@ void InferenceManager::processConflict(const InferInfo& ii)
           // if the other side is justified by itself and we are justified
           // externally, we can try to minimize the explanation of this
           // get the minimal conflicting prefix
-          Node eqm = i == 0 ? eq : eq[1].eqNode(eq[0]);
-          Node mexp = mkPrefixExplainMin(eqm, pfv[1 - i], isSuf);
+          std::vector<TNode> assumptions;
+          explain(eq, assumptions);
+          Node mexp = mkPrefixExplainMin(eq[i], pfv[1 - i], assumptions, isSuf);
           // if we minimized the conflict, process it
           if (!mexp.isNull())
           {
@@ -438,15 +439,13 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
   return tlem;
 }
 
-Node InferenceManager::mkPrefixExplainMin(Node eq, Node prefix, bool isSuf)
+Node InferenceManager::mkPrefixExplainMin(Node x, Node prefix, const std::vector<TNode>& assumptions, bool isSuf)
 {
   Assert(prefix.isConst());
   Trace("strings-prefix-min")
-      << "mkPrefixExplainMin: " << eq << " for "
+      << "mkPrefixExplainMin: " << x << " for "
       << (isSuf ? "suffix" : "prefix") << " " << prefix << std::endl;
-  std::vector<TNode> assumptions;
-  explain(eq, assumptions);
-  Trace("strings-prefix-min") << "- explained: " << assumptions << std::endl;
+  Trace("strings-prefix-min") << "- via: " << assumptions << std::endl;
   // an equality for each term in the explanation
   std::map<Node, TNode> emap;
   for (TNode e : assumptions)
@@ -465,7 +464,7 @@ Node InferenceManager::mkPrefixExplainMin(Node eq, Node prefix, bool isSuf)
   std::vector<TNode> minAssumptions;
   // the current node(s) we are looking at
   std::vector<TNode> cc;
-  cc.push_back(eq[0]);
+  cc.push_back(x);
   size_t pindex = 0;
   std::vector<Node> pchars = Word::getChars(prefix);
   std::map<Node, TNode>::iterator it;
