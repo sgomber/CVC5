@@ -154,6 +154,10 @@ class String
   bool hasPrefix(const String& y) const;
   /** Returns true if y is a suffix of this */
   bool hasSuffix(const String& y) const;
+  /** Returns the number of characters that x and y share a prefix */
+  std::size_t commonPrefix(const String& y) const;
+  /** Returns the number of characters that x and y share a suffix */
+  std::size_t commonSuffix(const String& y) const;
   /** Replace the character at index i in this string with t */
   String update(std::size_t i, const String& t) const;
   /** Replace the first occurrence of s in this string with t */

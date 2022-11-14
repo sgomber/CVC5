@@ -240,6 +240,18 @@ class InferenceManager : public InferenceManagerBuffered
   void processFact(InferInfo& ii, ProofGenerator*& pg);
   /** Called when ii is ready to be processed as a lemma */
   TrustNode processLemma(InferInfo& ii, LemmaProperty& p);
+  /**
+   * min prefix explain
+   *
+   * @param eq An equality of the form (= x t) that holds in the equality engine
+   * where the prefix (suffix) of t is prefix.
+   * @param prefix The prefix (suffix).
+   * @param isSuf Whether prefix denotes a suffix
+   * @return An explanation (a conjunction of literals that have been
+   * asserted to the equality engine) that imply x has the given prefix.
+   * In the trivial case, this is the explanation of eq.
+   */
+  Node mkPrefixExplainMin(Node eq, Node prefix, bool isSuf = false);
   /** Reference to the solver state of the theory of strings. */
   SolverState& d_state;
   /** Reference to the term registry of theory of strings */

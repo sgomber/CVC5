@@ -87,6 +87,18 @@ class Word
   /** Returns true if y is a suffix of x */
   static bool hasSuffix(TNode x, TNode y);
 
+  /**
+   * Returns the number of characters for which the prefix of x and y is this
+   * same.
+   */
+  static std::size_t commonPrefix(TNode x, TNode y);
+
+  /**
+   * Returns the number of characters for which the suffix of x and y is this
+   * same.
+   */
+  static std::size_t commonSuffix(TNode x, TNode y);
+
   /** Replace the character at index n in x with t */
   static Node update(TNode x, std::size_t n, TNode t);
 

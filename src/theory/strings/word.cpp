@@ -271,6 +271,48 @@ bool Word::hasSuffix(TNode x, TNode y)
   return false;
 }
 
+std::size_t Word::commonPrefix(TNode x, TNode y)
+{
+  Kind k = x.getKind();
+  if (k == CONST_STRING)
+  {
+    Assert(y.getKind() == CONST_STRING);
+    String sx = x.getConst<String>();
+    String sy = y.getConst<String>();
+    return sx.commonPrefix(sy);
+  }
+  else if (k == CONST_SEQUENCE)
+  {
+    Assert(y.getKind() == CONST_SEQUENCE);
+    const Sequence& sx = x.getConst<Sequence>();
+    const Sequence& sy = y.getConst<Sequence>();
+    return sx.commonPrefix(sy);
+  }
+  Unimplemented();
+  return std::string::npos;
+}
+
+std::size_t Word::commonSuffix(TNode x, TNode y)
+{
+  Kind k = x.getKind();
+  if (k == CONST_STRING)
+  {
+    Assert(y.getKind() == CONST_STRING);
+    String sx = x.getConst<String>();
+    String sy = y.getConst<String>();
+    return sx.commonSuffix(sy);
+  }
+  else if (k == CONST_SEQUENCE)
+  {
+    Assert(y.getKind() == CONST_SEQUENCE);
+    const Sequence& sx = x.getConst<Sequence>();
+    const Sequence& sy = y.getConst<Sequence>();
+    return sx.commonSuffix(sy);
+  }
+  Unimplemented();
+  return std::string::npos;
+}
+
 Node Word::update(TNode x, std::size_t i, TNode t)
 {
   NodeManager* nm = NodeManager::currentNM();
