@@ -30,6 +30,16 @@ namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
+/*
+class ExplainCriteria
+{
+public:
+  virtual bool processCurrent(std::vector<TNode>& cc,
+                              bool& isConflict) = 0;
+  virtual bool isFinished() = 0;
+};
+*/
+  
 InferenceManager::InferenceManager(Env& env,
                                    Theory& t,
                                    SolverState& s,
@@ -461,6 +471,24 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
   return tlem;
 }
 
+std::map<TNode, TNode> InferenceManager::getExplanationMap(const std::vector<TNode>& assumptions)
+{
+  std::map<TNode, TNode> emap;
+  for (TNode e : assumptions)
+  {
+    if (e.getKind() != EQUAL)
+    {
+      // skip non-equalities, which could be included if we internally
+      // concluded an equality as a fact from a non-equality
+      continue;
+    }
+    for (size_t i = 0; i < 2; i++)
+    {
+      emap[e[i]] = e;
+    }
+  }
+  return emap;
+}
 Node InferenceManager::mkPrefixExplainMin(Node x,
                                           Node prefix,
                                           const std::vector<TNode>& assumptions,
@@ -472,27 +500,14 @@ Node InferenceManager::mkPrefixExplainMin(Node x,
       << " " << prefix << std::endl;
   Trace("strings-prefix-min") << "- via: " << assumptions << std::endl;
   // an equality for each term in the explanation
-  std::map<Node, TNode> emap;
-  for (TNode e : assumptions)
-  {
-    if (e.getKind() != EQUAL)
-    {
-      // skip non-equalities? could happen if we internally concluded an
-      // equality based on a fact
-      continue;
-    }
-    for (size_t i = 0; i < 2; i++)
-    {
-      emap[e[i]] = e;
-    }
-  }
+  std::map<TNode, TNode> emap = getExplanationMap(assumptions);
   std::vector<TNode> minAssumptions;
   // the current node(s) we are looking at
   std::vector<TNode> cc;
   cc.push_back(x);
   size_t pindex = 0;
   std::vector<Node> pchars = Word::getChars(prefix);
-  std::map<Node, TNode>::iterator it;
+  std::map<TNode, TNode>::iterator it;
   bool isConflict = false;
   while (pindex < pchars.size() && !cc.empty())
   {
@@ -568,6 +583,83 @@ Node InferenceManager::mkPrefixExplainMin(Node x,
     return NodeManager::currentNM()->mkAnd(minAssumptions);
   }
   return Node::null();
+}
+
+Node InferenceManager::mkSrPredExplainMin(Node x,
+                        Node predicate,
+                        const std::vector<TNode>& assumptions)
+{
+  return Node::null();
+  /*
+  Assert(prefix.isConst());
+  Trace("strings-prefix-min")
+      << "mkPrefixExplainMin: " << x << " for " << (isSuf ? "suffix" : "prefix")
+      << " " << prefix << std::endl;
+  Trace("strings-prefix-min") << "- via: " << assumptions << std::endl;
+  // an equality for each term in the explanation
+  std::map<TNode, TNode> emap = getExplanationMap(assumptions);
+  std::vector<TNode> minAssumptions;
+  // the predicate we are looking at
+  Node curr = rewrite(predicate);
+  std::vector<TNode> cc;
+  cc.push_back(x);
+  std::map<TNode, TNode>::iterator it;
+  bool isConflict = false;
+  while (pindex < pchars.size() && !cc.empty())
+  {
+    Trace("strings-prefix-min")
+        << "  " << curr << ", " << cc << std::endl;
+    TNode c = cc.back();
+    cc.pop_back();
+    if (c.isConst())
+    {
+      continue;
+    }
+    it = emap.find(c);
+    if (it != emap.end())
+    {
+      TNode ceq = it->second;
+      // do not continue if not already processed, which also avoids
+      // non-termination
+      if (std::find(minAssumptions.begin(), minAssumptions.end(), ceq)
+          == minAssumptions.end())
+      {
+        Assert(ceq.getKind() == EQUAL);
+        Assert(ceq[0] == c || ceq[1] == c);
+        // add to explanation and look at the term it is equal to
+        minAssumptions.push_back(ceq);
+        TNode oc = ceq[ceq[0] == c ? 1 : 0];
+        curr = curr.substitute(c, oc);
+        cc.push_back(oc);
+        continue;
+      }
+    }
+    // we don't know what it is equal to
+    // if it is a concatenation, try to recurse into children
+    if (c.getKind() == STRING_CONCAT)
+    {
+      for (size_t i = 0, nchild = c.getNumChildren(); i < nchild; i++)
+      {
+        // reverse if it is a prefix
+        size_t ii = isSuf ? i : (nchild - 1) - i;
+        cc.push_back(c[ii]);
+      }
+      continue;
+    }
+    Trace("strings-prefix-min") << "-> no explanation for " << c << std::endl;
+    break;
+  }
+  if (isConflict && minAssumptions.size() < assumptions.size())
+  {
+    Trace("strings-prefix-min")
+        << "-> min-explained: " << minAssumptions << std::endl;
+    Trace("strings-prefix-min-stats")
+        << "Min-explain " << minAssumptions.size() << " / "
+        << assumptions.size() << std::endl;
+    return NodeManager::currentNM()->mkAnd(minAssumptions);
+  }
+  return Node::null();
+  */
 }
 
 }  // namespace strings

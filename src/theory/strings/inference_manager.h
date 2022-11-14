@@ -256,6 +256,10 @@ class InferenceManager : public InferenceManagerBuffered
                           Node prefix,
                           const std::vector<TNode>& assumptions,
                           bool isSuf = false);
+  Node mkSrPredExplainMin(Node x,
+                          Node predicate,
+                          const std::vector<TNode>& assumptions);
+  static std::map<TNode, TNode> getExplanationMap(const std::vector<TNode>& assumptions);
   /** Reference to the solver state of the theory of strings. */
   SolverState& d_state;
   /** Reference to the term registry of theory of strings */
