@@ -258,7 +258,7 @@ class InferenceManager : public InferenceManagerBuffered
                           bool isSuf = false);
   /**
    * Min subsitution+rewriting predicate explain
-   * 
+   *
    * @param xs A list of terms used as starting points for computing
    * substitutions
    * @param predicate The reference predicate
@@ -268,9 +268,9 @@ class InferenceManager : public InferenceManagerBuffered
    * to true.
    */
   Node mkSrPredExplainMin(std::vector<TNode>& xs,
-                                          Node predicate,
-                                          const std::vector<TNode>& assumptions,
-                                          const std::map<TNode, TNode>& emap);
+                          Node predicate,
+                          const std::vector<TNode>& assumptions,
+                          const std::map<TNode, TNode>& emap);
   /**
    * Returns a mapping from terms to equalities, where t -> E if E is an
    * equality of the form (= t *) or (= * t) from assumptions.

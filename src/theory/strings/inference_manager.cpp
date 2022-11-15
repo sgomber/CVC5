@@ -337,7 +337,8 @@ void InferenceManager::processConflict(const InferInfo& ii)
           std::vector<TNode> assumptions;
           explain(eq, assumptions);
           std::map<TNode, TNode> emap = getExplanationMap(assumptions);
-          Node mexp = mkPrefixExplainMin(eq[i], pfv[i], assumptions, emap, isSuf);
+          Node mexp =
+              mkPrefixExplainMin(eq[i], pfv[i], assumptions, emap, isSuf);
           // if we minimized the conflict, process it
           if (!mexp.isNull())
           {
@@ -391,8 +392,7 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
     Trace("strings-prefix-min") << "Minimize extf lemma " << ii.d_premises
                                 << " => " << ii.d_conc << std::endl;
     // copy the assumptions and make the explanation map
-    std::vector<TNode> assumptions(ii.d_premises.begin(),
-                                    ii.d_premises.end());
+    std::vector<TNode> assumptions(ii.d_premises.begin(), ii.d_premises.end());
     std::map<TNode, TNode> emap = getExplanationMap(assumptions);
     bool pol = ii.d_conc.getKind() != NOT;
     Node concAtom = pol ? ii.d_conc : ii.d_conc[0];
@@ -411,7 +411,8 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
         }
         Trace("strings-prefix-min")
             << "Try constant endpoint " << prefix << std::endl;
-        minExp = mkPrefixExplainMin(concAtom[0], prefix, assumptions, emap, isSuf);
+        minExp =
+            mkPrefixExplainMin(concAtom[0], prefix, assumptions, emap, isSuf);
         // if we minimized the conflict, process it
         if (!minExp.isNull())
         {
@@ -424,9 +425,9 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
     {
       // get the terms that the
       Node tgt = concAtom;
-      if (concAtom.getKind()==EQUAL)
+      if (concAtom.getKind() == EQUAL)
       {
-        Assert (concAtom[1].isConst());
+        Assert(concAtom[1].isConst());
         tgt = concAtom[0];
       }
       std::vector<TNode> xs;
@@ -616,8 +617,8 @@ Node InferenceManager::mkSrPredExplainMin(std::vector<TNode>& cc,
                                           const std::vector<TNode>& assumptions,
                                           const std::map<TNode, TNode>& emap)
 {
-  Trace("strings-sr-min")
-      << "mkSrPredExplainMin: " << cc << " in " << predicate << std::endl;
+  Trace("strings-sr-min") << "mkSrPredExplainMin: " << cc << " in " << predicate
+                          << std::endl;
   Trace("strings-sr-min") << "- via: " << assumptions << std::endl;
   std::vector<TNode> minAssumptions;
   // the predicate we are looking at
@@ -625,8 +626,7 @@ Node InferenceManager::mkSrPredExplainMin(std::vector<TNode>& cc,
   std::map<TNode, TNode>::const_iterator it;
   while (!curr.isConst() && !cc.empty())
   {
-    Trace("strings-sr-min")
-        << "  " << curr << ", " << cc << std::endl;
+    Trace("strings-sr-min") << "  " << curr << ", " << cc << std::endl;
     TNode c = cc.back();
     cc.pop_back();
     if (c.isConst())
@@ -650,7 +650,7 @@ Node InferenceManager::mkSrPredExplainMin(std::vector<TNode>& cc,
         TNode oc = ceq[ceq[0] == c ? 1 : 0];
         // apply substitution + rewriting on the current predicate
         Node currn = curr.substitute(c, oc);
-        if (currn!=curr)
+        if (currn != curr)
         {
           curr = rewrite(currn);
         }
@@ -665,7 +665,7 @@ Node InferenceManager::mkSrPredExplainMin(std::vector<TNode>& cc,
       // process left-to-right, which is arbitrary
       for (size_t i = 0, nchild = c.getNumChildren(); i < nchild; i++)
       {
-        size_t ii = (nchild-1)-i;
+        size_t ii = (nchild - 1) - i;
         cc.push_back(c[ii]);
       }
       continue;
@@ -673,7 +673,8 @@ Node InferenceManager::mkSrPredExplainMin(std::vector<TNode>& cc,
     // the current node is non-constant, but we still may succeed in rewriting
     // the predicate to true
   }
-  if (curr.isConst() && curr.getConst<bool>() && minAssumptions.size() < assumptions.size())
+  if (curr.isConst() && curr.getConst<bool>()
+      && minAssumptions.size() < assumptions.size())
   {
     Trace("strings-sr-min")
         << "-> min-explained: " << minAssumptions << std::endl;
