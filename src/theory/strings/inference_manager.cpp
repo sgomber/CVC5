@@ -384,6 +384,7 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
 {
   Assert(!ii.isTrivial());
   Assert(!ii.isConflict());
+  Trace("strings-process-lemma") << "processLemma: " << ii.getId() << " " << ii.d_premises << " => " << ii.d_conc << std::endl;
   if (ii.getId() == InferenceId::STRINGS_EXTF_N
       || ii.getId() == InferenceId::STRINGS_EXTF)
   {
