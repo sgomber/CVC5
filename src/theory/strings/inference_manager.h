@@ -245,20 +245,36 @@ class InferenceManager : public InferenceManagerBuffered
    *
    * @param x A string term
    * @param prefix The prefix (suffix).
-   * @param assumptions The set of assumptions that may imply that x is in
-   * conflict with the given prefix
+   * @param assumptions The set of assumptions we are minimizing
+   * @param emap The explanation map for assumptions (getExplanationMap).
    * @param isSuf Whether prefix denotes a suffix
-   * @return An explanation (a conjunction of literals that have been
-   * asserted to the equality engine) that imply x does not have the given
+   * @return A subset of assumptions that imply x does not have the given
    * prefix.
    */
   Node mkPrefixExplainMin(Node x,
                           Node prefix,
                           const std::vector<TNode>& assumptions,
+                          const std::map<TNode, TNode>& emap,
                           bool isSuf = false);
-  Node mkSrPredExplainMin(Node x,
-                          Node predicate,
-                          const std::vector<TNode>& assumptions);
+  /**
+   * Min subsitution+rewriting predicate explain
+   * 
+   * @param xs A list of terms used as starting points for computing
+   * substitutions
+   * @param predicate The reference predicate
+   * @param assumptions The set of assumptions we are minimizing
+   * @param emap The explanation map for assumptions (getExplanationMap).
+   * @return A subset of assumptions that imply that predicate rewrites
+   * to true.
+   */
+  Node mkSrPredExplainMin(std::vector<TNode>& xs,
+                                          Node predicate,
+                                          const std::vector<TNode>& assumptions,
+                                          const std::map<TNode, TNode>& emap);
+  /**
+   * Returns a mapping from terms to equalities, where t -> E if E is an
+   * equality of the form (= t *) or (= * t) from assumptions.
+   */
   static std::map<TNode, TNode> getExplanationMap(
       const std::vector<TNode>& assumptions);
   /** Reference to the solver state of the theory of strings. */

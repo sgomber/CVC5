@@ -336,7 +336,8 @@ void InferenceManager::processConflict(const InferInfo& ii)
           // get the minimal conflicting prefix
           std::vector<TNode> assumptions;
           explain(eq, assumptions);
-          Node mexp = mkPrefixExplainMin(eq[i], pfv[i], assumptions, isSuf);
+          std::map<TNode, TNode> emap = getExplanationMap(assumptions);
+          Node mexp = mkPrefixExplainMin(eq[i], pfv[i], assumptions, emap, isSuf);
           // if we minimized the conflict, process it
           if (!mexp.isNull())
           {
@@ -384,14 +385,19 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
 {
   Assert(!ii.isTrivial());
   Assert(!ii.isConflict());
-  Trace("strings-process-lemma") << "processLemma: " << ii.getId() << " " << ii.d_premises << " => " << ii.d_conc << std::endl;
   if (ii.getId() == InferenceId::STRINGS_EXTF_N
       || ii.getId() == InferenceId::STRINGS_EXTF)
   {
     Trace("strings-prefix-min") << "Minimize extf lemma " << ii.d_premises
                                 << " => " << ii.d_conc << std::endl;
+    // copy the assumptions and make the explanation map
+    std::vector<TNode> assumptions(ii.d_premises.begin(),
+                                    ii.d_premises.end());
+    std::map<TNode, TNode> emap = getExplanationMap(assumptions);
     bool pol = ii.d_conc.getKind() != NOT;
     Node concAtom = pol ? ii.d_conc : ii.d_conc[0];
+    Node minExp;
+    // first, try the directed prefix minimization, which is more efficient?
     if (!pol && concAtom.getKind() == STRING_IN_REGEXP)
     {
       for (size_t i = 0; i < 2; i++)
@@ -405,17 +411,36 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
         }
         Trace("strings-prefix-min")
             << "Try constant endpoint " << prefix << std::endl;
-        std::vector<TNode> assumptions(ii.d_premises.begin(),
-                                       ii.d_premises.end());
-        Node mexp = mkPrefixExplainMin(concAtom[0], prefix, assumptions, isSuf);
+        minExp = mkPrefixExplainMin(concAtom[0], prefix, assumptions, emap, isSuf);
         // if we minimized the conflict, process it
-        if (!mexp.isNull())
+        if (!minExp.isNull())
         {
-          ii.d_premises.clear();
-          ii.d_premises.push_back(mexp);
           break;
         }
       }
+    }
+    // then, try the more general approach
+    if (minExp.isNull())
+    {
+      // get the terms that the
+      Node tgt = concAtom;
+      if (concAtom.getKind()==EQUAL)
+      {
+        Assert (concAtom[1].isConst());
+        tgt = concAtom[0];
+      }
+      std::vector<TNode> xs;
+      for (TNode t : tgt)
+      {
+        xs.push_back(t);
+      }
+      minExp = mkSrPredExplainMin(xs, ii.d_conc, assumptions, emap);
+    }
+    // take the minimal explanation if we succeeded
+    if (!minExp.isNull())
+    {
+      ii.d_premises.clear();
+      ii.d_premises.push_back(minExp);
     }
   }
   // set up the explanation and no-explanation
@@ -494,6 +519,7 @@ std::map<TNode, TNode> InferenceManager::getExplanationMap(
 Node InferenceManager::mkPrefixExplainMin(Node x,
                                           Node prefix,
                                           const std::vector<TNode>& assumptions,
+                                          const std::map<TNode, TNode>& emap,
                                           bool isSuf)
 {
   Assert(prefix.isConst());
@@ -501,15 +527,13 @@ Node InferenceManager::mkPrefixExplainMin(Node x,
       << "mkPrefixExplainMin: " << x << " for " << (isSuf ? "suffix" : "prefix")
       << " " << prefix << std::endl;
   Trace("strings-prefix-min") << "- via: " << assumptions << std::endl;
-  // an equality for each term in the explanation
-  std::map<TNode, TNode> emap = getExplanationMap(assumptions);
   std::vector<TNode> minAssumptions;
   // the current node(s) we are looking at
   std::vector<TNode> cc;
   cc.push_back(x);
   size_t pindex = 0;
   std::vector<Node> pchars = Word::getChars(prefix);
-  std::map<TNode, TNode>::iterator it;
+  std::map<TNode, TNode>::const_iterator it;
   bool isConflict = false;
   while (pindex < pchars.size() && !cc.empty())
   {
@@ -579,42 +603,35 @@ Node InferenceManager::mkPrefixExplainMin(Node x,
   {
     Trace("strings-prefix-min")
         << "-> min-explained: " << minAssumptions << std::endl;
-    Trace("strings-prefix-min-stats")
-        << "Min-explain " << minAssumptions.size() << " / "
+    Trace("strings-exp-min-stats")
+        << "Min-explain (prefix) " << minAssumptions.size() << " / "
         << assumptions.size() << std::endl;
     return NodeManager::currentNM()->mkAnd(minAssumptions);
   }
   return Node::null();
 }
 
-Node InferenceManager::mkSrPredExplainMin(Node x,
+Node InferenceManager::mkSrPredExplainMin(std::vector<TNode>& cc,
                                           Node predicate,
-                                          const std::vector<TNode>& assumptions)
+                                          const std::vector<TNode>& assumptions,
+                                          const std::map<TNode, TNode>& emap)
 {
-  return Node::null();
-  /*
-  Assert(prefix.isConst());
-  Trace("strings-prefix-min")
-      << "mkPrefixExplainMin: " << x << " for " << (isSuf ? "suffix" : "prefix")
-      << " " << prefix << std::endl;
-  Trace("strings-prefix-min") << "- via: " << assumptions << std::endl;
-  // an equality for each term in the explanation
-  std::map<TNode, TNode> emap = getExplanationMap(assumptions);
+  Trace("strings-sr-min")
+      << "mkSrPredExplainMin: " << cc << " in " << predicate << std::endl;
+  Trace("strings-sr-min") << "- via: " << assumptions << std::endl;
   std::vector<TNode> minAssumptions;
   // the predicate we are looking at
   Node curr = rewrite(predicate);
-  std::vector<TNode> cc;
-  cc.push_back(x);
-  std::map<TNode, TNode>::iterator it;
-  bool isConflict = false;
-  while (pindex < pchars.size() && !cc.empty())
+  std::map<TNode, TNode>::const_iterator it;
+  while (!curr.isConst() && !cc.empty())
   {
-    Trace("strings-prefix-min")
+    Trace("strings-sr-min")
         << "  " << curr << ", " << cc << std::endl;
     TNode c = cc.back();
     cc.pop_back();
     if (c.isConst())
     {
+      // don't care about constants
       continue;
     }
     it = emap.find(c);
@@ -631,7 +648,12 @@ Node InferenceManager::mkSrPredExplainMin(Node x,
         // add to explanation and look at the term it is equal to
         minAssumptions.push_back(ceq);
         TNode oc = ceq[ceq[0] == c ? 1 : 0];
-        curr = curr.substitute(c, oc);
+        // apply substitution + rewriting on the current predicate
+        Node currn = curr.substitute(c, oc);
+        if (currn!=curr)
+        {
+          curr = rewrite(currn);
+        }
         cc.push_back(oc);
         continue;
       }
@@ -640,28 +662,27 @@ Node InferenceManager::mkSrPredExplainMin(Node x,
     // if it is a concatenation, try to recurse into children
     if (c.getKind() == STRING_CONCAT)
     {
+      // process left-to-right, which is arbitrary
       for (size_t i = 0, nchild = c.getNumChildren(); i < nchild; i++)
       {
-        // reverse if it is a prefix
-        size_t ii = isSuf ? i : (nchild - 1) - i;
+        size_t ii = (nchild-1)-i;
         cc.push_back(c[ii]);
       }
       continue;
     }
-    Trace("strings-prefix-min") << "-> no explanation for " << c << std::endl;
-    break;
+    // the current node is non-constant, but we still may succeed in rewriting
+    // the predicate to true
   }
-  if (isConflict && minAssumptions.size() < assumptions.size())
+  if (curr.isConst() && curr.getConst<bool>() && minAssumptions.size() < assumptions.size())
   {
-    Trace("strings-prefix-min")
+    Trace("strings-sr-min")
         << "-> min-explained: " << minAssumptions << std::endl;
-    Trace("strings-prefix-min-stats")
-        << "Min-explain " << minAssumptions.size() << " / "
+    Trace("strings-exp-min-stats")
+        << "Min-explain (SR) " << minAssumptions.size() << " / "
         << assumptions.size() << std::endl;
     return NodeManager::currentNM()->mkAnd(minAssumptions);
   }
   return Node::null();
-  */
 }
 
 }  // namespace strings
