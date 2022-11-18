@@ -671,7 +671,7 @@ Node TermRegistry::getCodeProxyLemma(Node n)
   if (!d_state.areEqual(cc, vc))
   {
     // don't register (apply eager reduce) to the code term
-    d_registeredTerms.insert(vc);
+    //d_registeredTerms.insert(vc);
     return cc.eqNode(vc);
   }
   return Node::null();
