@@ -1328,21 +1328,6 @@ cvc5::Term Smt2::applyParseOp(ParseOp& p, std::vector<cvc5::Term>& args)
                       << std::endl;
       return ret;
     }
-    if (kind == cvc5::CARDINALITY_CONSTRAINT)
-    {
-      if (args.size() != 2)
-      {
-        parseError("Incorrect arguments for cardinality constraint");
-      }
-      cvc5::Sort sort = args[0].getSort();
-      if (!sort.isUninterpretedSort())
-      {
-        parseError("Expected uninterpreted sort for cardinality constraint");
-      }
-      uint64_t ubound = args[1].getUInt32Value();
-      cvc5::Term ret = d_solver->mkCardinalityConstraint(sort, ubound);
-      return ret;
-    }
     cvc5::Term ret = d_solver->mkTerm(kind, args);
     Trace("parser") << "applyParseOp: return default builtin " << ret
                     << std::endl;
