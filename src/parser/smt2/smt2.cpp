@@ -401,20 +401,6 @@ bool Smt2::logicIsSet() {
   return d_logicSet;
 }
 
-bool Smt2::getTesterName(cvc5::Term cons, std::string& name)
-{
-  if (strictModeEnabled())
-  {
-    // 2.6 or above uses indexed tester symbols, if we are in strict mode,
-    // we do not automatically define is-cons for constructor cons.
-    return false;
-  }
-  std::stringstream ss;
-  ss << "is-" << cons;
-  name = ss.str();
-  return true;
-}
-
 cvc5::Term Smt2::mkIndexedConstant(const std::string& name,
                                    const std::vector<uint32_t>& numerals)
 {

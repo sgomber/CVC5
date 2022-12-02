@@ -119,8 +119,6 @@ cvc5::Term Parser::getExpressionForNameAndType(const std::string& name,
   return expr;
 }
 
-bool Parser::getTesterName(cvc5::Term cons, std::string& name) { return false; }
-
 cvc5::Kind Parser::getKindForFunction(cvc5::Term fun)
 {
   cvc5::Sort t = fun.getSort();
@@ -362,17 +360,6 @@ std::vector<cvc5::Sort> Parser::bindMutualDatatypeTypes(
           consNames.insert(constructorName);
         }else{
           throw ParserException(constructorName + " already declared in this datatype");
-        }
-        std::string testerName;
-        if (getTesterName(constructor, testerName))
-        {
-          cvc5::Term tester = ctor.getTesterTerm();
-          Trace("parser-idt") << "+ define " << testerName << std::endl;
-          if (!doOverload)
-          {
-            checkDeclaration(testerName, CHECK_UNDECLARED);
-          }
-          defineVar(testerName, tester, doOverload);
         }
         for (size_t k = 0, nargs = ctor.getNumSelectors(); k < nargs; k++)
         {
