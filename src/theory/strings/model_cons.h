@@ -53,7 +53,7 @@ class ModelCons : protected EnvObj
   /**
    * Get the normal form
    */
-  virtual NormalForm& getNormalForm(Node n) = 0;
+  virtual std::vector<Node> getNormalForm(Node n) = 0;
 };
 
 }  // namespace strings

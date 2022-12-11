@@ -32,9 +32,9 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
 {
   bool ret = false;
 
+  // if successful, we will be the model constructor
   if (ret)
   {
-    // we will be the model constructor
     d_state.setModelConstructor(this);
   }
   return false;
@@ -45,6 +45,7 @@ void StringsMnf::getStringRepresentativesFrom(
     std::unordered_set<TypeNode>& repTypes,
     std::map<TypeNode, std::unordered_set<Node>>& repSet)
 {
+  // TODO
 }
 
 void StringsMnf::separateByLength(
@@ -52,12 +53,13 @@ void StringsMnf::separateByLength(
     std::map<TypeNode, std::vector<std::vector<Node>>>& cols,
     std::map<TypeNode, std::vector<Node>>& lts)
 {
+  // TODO
 }
 
-NormalForm& StringsMnf::getNormalForm(Node n)
+std::vector<Node> StringsMnf::getNormalForm(Node n)
 {
-  NormalForm nf;
-  return nf;
+  std::vector<Node> vec;
+  return vec;
 }
 
 }  // namespace strings

@@ -56,7 +56,7 @@ class StringsMnf : protected ModelCons
       std::map<TypeNode, std::vector<std::vector<Node>>>& cols,
       std::map<TypeNode, std::vector<Node>>& lts) override;
   /** Get normal form */
-  NormalForm& getNormalForm(Node n) override;
+  std::vector<Node> getNormalForm(Node n) override;
 
  protected:
   /** The solver state object */

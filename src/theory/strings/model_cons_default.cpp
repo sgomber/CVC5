@@ -56,9 +56,10 @@ void ModelConsDefault::separateByLength(
   }
 }
 
-NormalForm& ModelConsDefault::getNormalForm(Node n)
+std::vector<Node> ModelConsDefault::getNormalForm(Node n)
 {
-  return d_csolver.getNormalForm(n);
+  std::vector<Node> vec = d_csolver.getNormalForm(n).d_nf;
+  return vec;
 }
 
 }  // namespace strings

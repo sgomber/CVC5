@@ -407,12 +407,12 @@ bool TheoryStrings::collectModelInfoType(
         Trace("strings-model") << "-> constant" << std::endl;
         continue;
       }
-      NormalForm& nfe = mc->getNormalForm(eqc);
-      if (nfe.d_nf.size() != 1)
+      std::vector<Node> nfe = mc->getNormalForm(eqc);
+      if (nfe.size() != 1)
       {
         // will be assigned via a concatenation of normal form eqc
         Trace("strings-model")
-            << "  -> will be assigned by normal form " << nfe.d_nf << std::endl;
+            << "  -> will be assigned by normal form " << nfe << std::endl;
         continue;
       }
       // check if the length is too big to represent
@@ -452,26 +452,26 @@ bool TheoryStrings::collectModelInfoType(
       }
       // is it an equivalence class with a seq.unit term?
       Node assignedValue;
-      if (nfe.d_nf[0].getKind() == STRING_UNIT)
+      if (nfe[0].getKind() == STRING_UNIT)
       {
         // str.unit is applied to integers, where we are guaranteed the model
         // exists. We preempitively get the model value here, so that we
         // avoid repeated model values for strings.
-        Node val = d_valuation.getModelValue(nfe.d_nf[0][0]);
+        Node val = d_valuation.getModelValue(nfe[0][0]);
         assignedValue = utils::mkUnit(eqc.getType(), val);
         assignedValue = rewrite(assignedValue);
         Trace("strings-model")
             << "-> assign via str.unit: " << assignedValue << std::endl;
       }
-      else if (nfe.d_nf[0].getKind() == SEQ_UNIT)
+      else if (nfe[0].getKind() == SEQ_UNIT)
       {
-        if (nfe.d_nf[0][0].getType().isStringLike())
+        if (nfe[0][0].getType().isStringLike())
         {
           // By this point, we should have assigned model values for the
           // elements of this sequence type because of the check in the
           // beginning of this method
-          Node argVal = m->getRepresentative(nfe.d_nf[0][0]);
-          Assert(nfe.d_nf[0].getKind() == SEQ_UNIT);
+          Node argVal = m->getRepresentative(nfe[0][0]);
+          Assert(nfe[0].getKind() == SEQ_UNIT);
           assignedValue = utils::mkUnit(eqc.getType(), argVal);
         }
         else
@@ -480,7 +480,7 @@ bool TheoryStrings::collectModelInfoType(
           // value of this term, since it might not be available yet, as
           // it may belong to a theory that has not built its model yet.
           // Hence, we assign a (non-constant) skeleton (seq.unit argVal).
-          assignedValue = nfe.d_nf[0];
+          assignedValue = nfe[0];
         }
         assignedValue = rewrite(assignedValue);
         Trace("strings-model")
