@@ -246,15 +246,9 @@ void SolverState::separateByLength(
   }
 }
 
-void SolverState::setModelConstructor(ModelCons* mc)
-{
-  d_modelCons = mc;
-}
+void SolverState::setModelConstructor(ModelCons* mc) { d_modelCons = mc; }
 
-ModelCons * SolverState::getModelConstructor()
-{
-  return d_modelCons;
-}
+ModelCons* SolverState::getModelConstructor() { return d_modelCons; }
 
 }  // namespace strings
 }  // namespace theory

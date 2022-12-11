@@ -33,7 +33,7 @@
 namespace cvc5::internal {
 namespace theory {
 namespace strings {
-  
+
 class ModelCons;
 
 /**
@@ -153,7 +153,8 @@ class SolverState : public TheoryState
   /** Set the model constructor */
   void setModelConstructor(ModelCons* mc);
   /** Get the model constructor */
-  ModelCons * getModelConstructor();
+  ModelCons* getModelConstructor();
+
  private:
   /** Common constants */
   Node d_zero;
@@ -170,7 +171,7 @@ class SolverState : public TheoryState
   /** Map from representatives to their equivalence class information */
   std::map<Node, EqcInfo*> d_eqcInfo;
   /** The model constructor */
-  ModelCons * d_modelCons;
+  ModelCons* d_modelCons;
 };
 
 }  // namespace strings

@@ -33,6 +33,7 @@
 #include "theory/strings/extf_solver.h"
 #include "theory/strings/infer_info.h"
 #include "theory/strings/inference_manager.h"
+#include "theory/strings/model_cons_default.h"
 #include "theory/strings/normal_form.h"
 #include "theory/strings/proof_checker.h"
 #include "theory/strings/regexp_elim.h"
@@ -44,7 +45,6 @@
 #include "theory/strings/strings_fmf.h"
 #include "theory/strings/strings_rewriter.h"
 #include "theory/strings/term_registry.h"
-#include "theory/strings/model_cons_default.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
 

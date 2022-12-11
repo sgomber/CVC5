@@ -19,8 +19,8 @@
 #define CVC5__THEORY__STRINGS__DEFAULT_MODEL_CONS_H
 
 #include "smt/env_obj.h"
-#include "theory/strings/solver_state.h"
 #include "theory/strings/core_solver.h"
+#include "theory/strings/solver_state.h"
 
 namespace cvc5::internal {
 namespace theory {
@@ -47,6 +47,7 @@ class ModelConsDefault : protected ModelCons
       std::map<TypeNode, std::vector<Node>>& lts) override;
   /** Get the normal form */
   NormalForm& getNormalForm(Node n) override;
+
  protected:
   /** The solver state object */
   SolverState& d_state;

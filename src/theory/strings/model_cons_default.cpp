@@ -19,7 +19,12 @@ namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
-ModelConsDefault::ModelConsDefault(Env& env, SolverState& state, CoreSolver& csolver) : ModelCons(env), d_state(state), d_csolver(csolver){}
+ModelConsDefault::ModelConsDefault(Env& env,
+                                   SolverState& state,
+                                   CoreSolver& csolver)
+    : ModelCons(env), d_state(state), d_csolver(csolver)
+{
+}
 
 void ModelConsDefault::getStringRepresentativesFrom(
     const std::set<Node>& termSet,
@@ -42,7 +47,7 @@ NormalForm& ModelConsDefault::getNormalForm(Node n)
 {
   return d_csolver.getNormalForm(n);
 }
-  
+
 }  // namespace strings
 }  // namespace theory
 }  // namespace cvc5::internal
