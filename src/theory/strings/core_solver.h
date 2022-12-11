@@ -29,6 +29,7 @@
 #include "theory/strings/normal_form.h"
 #include "theory/strings/solver_state.h"
 #include "theory/strings/term_registry.h"
+#include "theory/strings/strings_mnf.h"
 
 namespace cvc5::internal {
 namespace theory {
@@ -543,6 +544,8 @@ class CoreSolver : protected EnvObj
   std::map<Node, std::vector<int> > d_flat_form_index;
   /** Set of equalities for which we have applied extensionality. */
   NodeSet d_extDeq;
+  /** Model normal form finding module */
+  StringsMnf d_stringsMnf;
 }; /* class CoreSolver */
 
 }  // namespace strings

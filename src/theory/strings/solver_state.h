@@ -130,6 +130,13 @@ class SolverState : public TheoryState
    * This calls entailmentCheck on the Valuation object of theory of strings.
    */
   std::pair<bool, Node> entailmentCheck(options::TheoryOfMode mode, TNode lit);
+  //------------------------------ for model construction
+  /** Get string representatives from */
+  void getStringRepresentativesFrom(const std::set<Node>& termSet,
+    
+  std::unordered_set<TypeNode>& repTypes,
+  std::map<TypeNode, std::unordered_set<Node>>& repSet
+  );
   /** Separate by length
    *
    * Separate the string representatives in argument n into a partition cols

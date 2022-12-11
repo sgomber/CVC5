@@ -48,7 +48,8 @@ CoreSolver::CoreSolver(Env& env,
       d_termReg(tr),
       d_bsolver(bs),
       d_nfPairs(context()),
-      d_extDeq(userContext())
+      d_extDeq(userContext()),
+      d_stringsMnf(env, s, im, tr, bs)
 {
   d_zero = NodeManager::currentNM()->mkConstInt(Rational(0));
   d_one = NodeManager::currentNM()->mkConstInt(Rational(1));

@@ -24,7 +24,7 @@ StringsMnf::StringsMnf(Env& env,
                        InferenceManager& im,
                        TermRegistry& tr,
                        BaseSolver& bs)
-    : EnvObj(env), d_state(s), d_im(im), d_termReg(tr), d_bsolver(bs)
+    : ModelCons(env), d_state(s), d_im(im), d_termReg(tr), d_bsolver(bs)
 {
 }
 
@@ -33,6 +33,20 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
   return false;
 }
 
+void StringsMnf::getStringRepresentativesFrom(const std::set<Node>& termSet,
+std::unordered_set<TypeNode>& repTypes,
+std::map<TypeNode, std::unordered_set<Node>>& repSet
+)
+{
+}
+
+void StringsMnf::separateByLength(
+    const std::vector<Node>& n,
+    std::map<TypeNode, std::vector<std::vector<Node>>>& cols,
+    std::map<TypeNode, std::vector<Node>>& lts)
+{
+}
+    
 }  // namespace strings
 }  // namespace theory
 }  // namespace cvc5::internal

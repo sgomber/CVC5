@@ -241,16 +241,7 @@ bool TheoryStrings::collectModelValues(TheoryModel* m,
   std::unordered_set<TypeNode> toProcess;
   // Generate model
   // get the relevant string equivalence classes
-  for (const Node& s : termSet)
-  {
-    TypeNode tn = s.getType();
-    if (tn.isStringLike())
-    {
-      Node r = d_state.getRepresentative(s);
-      repSet[tn].insert(r);
-      toProcess.insert(tn);
-    }
-  }
+  d_state.getStringRepresentativesFrom(termSet, toProcess, repSet);
 
   while (!toProcess.empty())
   {

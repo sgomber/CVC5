@@ -18,9 +18,7 @@
 #ifndef CVC5__THEORY__STRINGS__STRINGS_MNF_H
 #define CVC5__THEORY__STRINGS__STRINGS_MNF_H
 
-#include <map>
-#include <vector>
-
+#include "theory/strings/model_cons.h"
 #include "theory/strings/base_solver.h"
 #include "theory/strings/infer_info.h"
 #include "theory/strings/inference_manager.h"
@@ -34,7 +32,7 @@ namespace strings {
 
 /**
  */
-class StringsMnf : protected EnvObj
+class StringsMnf : protected ModelCons
 {
  public:
   StringsMnf(Env& env,
@@ -42,11 +40,21 @@ class StringsMnf : protected EnvObj
              InferenceManager& im,
              TermRegistry& tr,
              BaseSolver& bs);
-  ~StringsMnf();
+  ~StringsMnf() {}
 
   /** find model normal forms */
   bool findModelNormalForms(const std::vector<Node>& stringsEqc);
 
+  /** Get string representatives from */
+  void getStringRepresentativesFrom(const std::set<Node>& termSet,
+  std::unordered_set<TypeNode>& repTypes,
+  std::map<TypeNode, std::unordered_set<Node>>& repSet
+  ) override;
+  /** Separate by length */
+  void separateByLength(
+      const std::vector<Node>& n,
+      std::map<TypeNode, std::vector<std::vector<Node>>>& cols,
+      std::map<TypeNode, std::vector<Node>>& lts) override;
  protected:
   /** The solver state object */
   SolverState& d_state;
