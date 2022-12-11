@@ -242,7 +242,7 @@ bool TheoryStrings::collectModelValues(TheoryModel* m,
   std::unordered_set<TypeNode> toProcess;
   // Generate model
   ModelCons* mc = d_state.getModelConstructor();
-  Assert (mc!=nullptr);
+  Assert(mc != nullptr);
   // get the relevant string equivalence classes
   mc->getStringRepresentativesFrom(termSet, toProcess, repSet);
 
