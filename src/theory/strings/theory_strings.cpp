@@ -710,14 +710,14 @@ bool TheoryStrings::collectModelInfoType(
       continue;
     }
 
-    NormalForm& nf = d_csolver.getNormalForm(rn);
+    std::vector<Node> nf = mc->getNormalForm(rn);
     if (TraceIsOn("strings-model"))
     {
       Trace("strings-model")
           << "Construct model for " << rn << " based on normal form ";
-      for (unsigned j = 0, size = nf.d_nf.size(); j < size; j++)
+      for (unsigned j = 0, size = nf.size(); j < size; j++)
       {
-        Node n = nf.d_nf[j];
+        Node n = nf[j];
         if (j > 0)
         {
           Trace("strings-model") << " ++ ";
@@ -732,7 +732,7 @@ bool TheoryStrings::collectModelInfoType(
     }
     Trace("strings-model") << std::endl;
     std::vector<Node> nc;
-    for (const Node& n : nf.d_nf)
+    for (const Node& n : nf)
     {
       Node r = d_state.getRepresentative(n);
       Assert(r.isConst() || processed.find(r) != processed.end());
