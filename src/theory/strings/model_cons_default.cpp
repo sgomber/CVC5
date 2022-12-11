@@ -15,6 +15,8 @@
 
 #include "theory/strings/model_cons_default.h"
 
+#include "theory/valuation.h"
+
 namespace cvc5::internal {
 namespace theory {
 namespace strings {
@@ -40,7 +42,18 @@ void ModelConsDefault::separateByLength(
     std::map<TypeNode, std::vector<Node>>& lts)
 {
   d_state.separateByLength(n, cols, lts);
-  // TODO: make concrete
+  // look up the values of each length term
+  Valuation& val = d_state.getValuation();
+  for (std::pair<const TypeNode, std::vector<Node>>& l : lts)
+  {
+    for (Node& ll : l.second)
+    {
+      if (!ll.isConst())
+      {
+        ll = val.getModelValue(ll);
+      }
+    }
+  }
 }
 
 NormalForm& ModelConsDefault::getNormalForm(Node n)

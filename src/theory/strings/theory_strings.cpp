@@ -242,8 +242,9 @@ bool TheoryStrings::collectModelValues(TheoryModel* m,
   std::unordered_set<TypeNode> toProcess;
   // Generate model
   ModelCons* mc = d_state.getModelConstructor();
+  Assert (mc!=nullptr);
   // get the relevant string equivalence classes
-  d_state.getStringRepresentativesFrom(termSet, toProcess, repSet);
+  mc->getStringRepresentativesFrom(termSet, toProcess, repSet);
 
   while (!toProcess.empty())
   {
@@ -302,7 +303,7 @@ bool TheoryStrings::collectModelInfoType(
   std::map<TypeNode, std::vector<std::vector<Node> > > colT;
   std::map<TypeNode, std::vector<Node> > ltsT;
   const std::vector<Node> repVec(repSet.at(tn).begin(), repSet.at(tn).end());
-  d_state.separateByLength(repVec, colT, ltsT);
+  mc->separateByLength(repVec, colT, ltsT);
   const std::vector<std::vector<Node> >& col = colT[tn];
   const std::vector<Node>& lts = ltsT[tn];
   // indices in col that have lengths that are too big to represent
@@ -318,18 +319,7 @@ bool TheoryStrings::collectModelInfoType(
   {
     Trace("strings-model") << "Checking length for { " << col[i];
     Trace("strings-model") << " } (length is " << lts[i] << ")" << std::endl;
-    Node len_value;
-    if( lts[i].isConst() ) {
-      len_value = lts[i];
-      Trace("strings-model") << "  length is constant" << std::endl;
-    }
-    else if (!lts[i].isNull())
-    {
-      // get the model value for lts[i]
-      len_value = d_valuation.getModelValue(lts[i]);
-      Trace("strings-model")
-          << "  length from model is " << len_value << std::endl;
-    }
+    Node len_value = lts[i];
     if (len_value.isNull())
     {
       lts_values.push_back(Node::null());
@@ -417,7 +407,7 @@ bool TheoryStrings::collectModelInfoType(
         Trace("strings-model") << "-> constant" << std::endl;
         continue;
       }
-      NormalForm& nfe = d_csolver.getNormalForm(eqc);
+      NormalForm& nfe = mc->getNormalForm(eqc);
       if (nfe.d_nf.size() != 1)
       {
         // will be assigned via a concatenation of normal form eqc
@@ -926,13 +916,15 @@ void TheoryStrings::postCheck(Effort e)
     // Start the full effort check. This will compute the relevant term set,
     // which is independent of the loop below, which adds internal facts.
     d_termReg.notifyStartFullEffortCheck();
-    d_state.setModelConstructor(nullptr);
     ++(d_statistics.d_checkRuns);
     bool sentLemma = false;
     bool hadPending = false;
     Trace("strings-check") << "Full effort check..." << std::endl;
     do{
       d_im.reset();
+      // assume the default model constructor in case we answer sat after this
+      // check
+      d_state.setModelConstructor(&d_mcd);
       ++(d_statistics.d_strategyRuns);
       Trace("strings-check") << "  * Run strategy..." << std::endl;
       runStrategy(e);

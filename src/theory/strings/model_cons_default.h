@@ -29,7 +29,7 @@ namespace strings {
 /**
  * Default model construction for strings
  */
-class ModelConsDefault : protected ModelCons
+class ModelConsDefault : public ModelCons
 {
  public:
   ModelConsDefault(Env& env, SolverState& state, CoreSolver& csolver);

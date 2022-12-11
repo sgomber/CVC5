@@ -30,6 +30,14 @@ StringsMnf::StringsMnf(Env& env,
 
 bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
 {
+  bool ret = false;
+  
+  
+  if (ret)
+  {
+    // we will be the model constructor
+    d_state.setModelConstructor(this);
+  }
   return false;
 }
 
