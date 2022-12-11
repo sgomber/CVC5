@@ -286,6 +286,10 @@ class CoreSolver : protected EnvObj
 
  private:
   /**
+   * This processes one infer info in pinfer using processInferInfo.
+   */
+  void processPossibleInferInfo(std::vector<CoreInferInfo>& pinfer);
+  /**
    * This processes the infer info ii as an inference. In more detail, it calls
    * the inference manager to process the inference, and updates the set of
    * normal form pairs. Returns true if the conclusion of ii was not true
@@ -355,7 +359,8 @@ class CoreSolver : protected EnvObj
    */
   void processNEqc(Node eqc,
                    std::vector<NormalForm>& normal_forms,
-                   TypeNode stype);
+                   TypeNode stype,
+                             std::vector<CoreInferInfo>& pinfer);
   /** process simple normal equality
    *
    * This method is called when two equal terms have normal forms nfi and nfj.
