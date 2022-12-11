@@ -106,6 +106,14 @@ name   = "Strings Theory"
   help       = "use models to avoid reductions for extended functions that introduce quantified formulas"
 
 [[option]]
+  name       = "stringModelNormalForms"
+  category   = "regular"
+  long       = "strings-mnf"
+  type       = "bool"
+  default    = "false"
+  help       = "use model normal forms to eagerly search for models"
+
+[[option]]
   name       = "regExpElim"
   category   = "regular"
   long       = "re-elim=MODE"

@@ -1136,6 +1136,8 @@ libcvc5_add_sources(
   theory/strings/strings_entail.h
   theory/strings/strings_fmf.cpp
   theory/strings/strings_fmf.h
+  theory/strings/strings_mnf.cpp
+  theory/strings/strings_mnf.h
   theory/strings/strings_rewriter.cpp
   theory/strings/strings_rewriter.h
   theory/strings/theory_strings.cpp

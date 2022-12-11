@@ -579,6 +579,11 @@ void CoreSolver::checkNormalFormsEq()
   }
   if (!pinfer.empty())
   {
+    if (options().strings.stringModelNormalForms)
+    {
+      // if we are using model normal forms, eagerly check if there is a model
+      // here before sending the lemma in processPossibleInferInfo.
+    }
     // add one inference from our list of possible inferences
     processPossibleInferInfo(pinfer);
     return;
@@ -633,8 +638,7 @@ void CoreSolver::normalizeEquivalenceClass(Node eqc, TypeNode stype, std::vector
       return;
     }
     // process the normal forms
-    std::vector<CoreInferInfo> pinfer processNEqc(
-        eqc, normal_forms, stype, pinfer);
+    processNEqc(eqc, normal_forms, stype, pinfer);
     if (d_im.hasProcessed() || !pinfer.empty())
     {
       return;
