@@ -44,6 +44,7 @@
 #include "theory/strings/strings_fmf.h"
 #include "theory/strings/strings_rewriter.h"
 #include "theory/strings/term_registry.h"
+#include "theory/strings/model_cons_default.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
 
@@ -308,6 +309,8 @@ class TheoryStrings : public Theory {
   RegExpElimination d_regexp_elim;
   /** Strings finite model finding decision strategy */
   StringsFmf d_stringsFmf;
+  /** Model constructor (default) */
+  ModelConsDefault d_mcd;
   /** The representation of the strategy */
   Strategy d_strat;
   /**

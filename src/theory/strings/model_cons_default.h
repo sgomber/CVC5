@@ -15,35 +15,25 @@
 
 #include "cvc5_private.h"
 
-#ifndef CVC5__THEORY__STRINGS__STRINGS_MNF_H
-#define CVC5__THEORY__STRINGS__STRINGS_MNF_H
+#ifndef CVC5__THEORY__STRINGS__DEFAULT_MODEL_CONS_H
+#define CVC5__THEORY__STRINGS__DEFAULT_MODEL_CONS_H
 
-#include "theory/strings/base_solver.h"
-#include "theory/strings/infer_info.h"
-#include "theory/strings/inference_manager.h"
-#include "theory/strings/model_cons.h"
-#include "theory/strings/normal_form.h"
+#include "smt/env_obj.h"
 #include "theory/strings/solver_state.h"
-#include "theory/strings/term_registry.h"
+#include "theory/strings/core_solver.h"
 
 namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
 /**
+ * Default model construction for strings
  */
-class StringsMnf : protected ModelCons
+class ModelConsDefault : protected ModelCons
 {
  public:
-  StringsMnf(Env& env,
-             SolverState& s,
-             InferenceManager& im,
-             TermRegistry& tr,
-             BaseSolver& bs);
-  ~StringsMnf() {}
-
-  /** find model normal forms */
-  bool findModelNormalForms(const std::vector<Node>& stringsEqc);
+  ModelConsDefault(Env& env, SolverState& state, CoreSolver& csolver);
+  virtual ~ModelConsDefault() {}
 
   /** Get string representatives from */
   void getStringRepresentativesFrom(
@@ -55,22 +45,17 @@ class StringsMnf : protected ModelCons
       const std::vector<Node>& n,
       std::map<TypeNode, std::vector<std::vector<Node>>>& cols,
       std::map<TypeNode, std::vector<Node>>& lts) override;
-  /** Get normal form */
+  /** Get the normal form */
   NormalForm& getNormalForm(Node n) override;
-
  protected:
   /** The solver state object */
   SolverState& d_state;
-  /** The (custom) output channel of the theory of strings */
-  InferenceManager& d_im;
-  /** Reference to the term registry of theory of strings */
-  TermRegistry& d_termReg;
-  /** reference to the base solver, used for certain queries */
-  BaseSolver& d_bsolver;
+  /** The core solver */
+  CoreSolver& d_csolver;
 };
 
 }  // namespace strings
 }  // namespace theory
 }  // namespace cvc5::internal
 
-#endif /* CVC5__THEORY__STRINGS__STRINGS_MNF_H */
+#endif /* CVC5__THEORY__STRINGS__MODEL_CONS_H */

@@ -93,6 +93,7 @@ TheoryStrings::TheoryStrings(Env& env, OutputChannel& out, Valuation valuation)
           options().strings.regExpElim == options::RegExpElimMode::AGG,
           userContext()),
       d_stringsFmf(env, valuation, d_termReg),
+      d_mcd(env, d_state, d_csolver),
       d_strat(d_env),
       d_absModelCounter(0),
       d_strGapModelCounter(0),
@@ -240,6 +241,7 @@ bool TheoryStrings::collectModelValues(TheoryModel* m,
   std::map<TypeNode, std::unordered_set<Node>> repSet;
   std::unordered_set<TypeNode> toProcess;
   // Generate model
+  ModelCons * mc = d_state.getModelConstructor();
   // get the relevant string equivalence classes
   d_state.getStringRepresentativesFrom(termSet, toProcess, repSet);
 
@@ -294,6 +296,7 @@ bool TheoryStrings::collectModelInfoType(
   toProcess.erase(tn);
 
   SEnumLenSet sels;
+  ModelCons * mc = d_state.getModelConstructor();
   // get partition of strings of equal lengths for the representatives of the
   // current type
   std::map<TypeNode, std::vector<std::vector<Node> > > colT;
@@ -923,6 +926,7 @@ void TheoryStrings::postCheck(Effort e)
     // Start the full effort check. This will compute the relevant term set,
     // which is independent of the loop below, which adds internal facts.
     d_termReg.notifyStartFullEffortCheck();
+    d_state.setModelConstructor(nullptr);
     ++(d_statistics.d_checkRuns);
     bool sentLemma = false;
     bool hadPending = false;

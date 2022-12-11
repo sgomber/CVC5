@@ -33,6 +33,8 @@
 namespace cvc5::internal {
 namespace theory {
 namespace strings {
+  
+class ModelCons;
 
 /**
  * Solver state for strings.
@@ -148,7 +150,10 @@ class SolverState : public TheoryState
       const std::vector<Node>& n,
       std::map<TypeNode, std::vector<std::vector<Node>>>& cols,
       std::map<TypeNode, std::vector<Node>>& lts);
-
+  /** Set the model constructor */
+  void setModelConstructor(ModelCons* mc);
+  /** Get the model constructor */
+  ModelCons * getModelConstructor();
  private:
   /** Common constants */
   Node d_zero;
@@ -164,6 +169,8 @@ class SolverState : public TheoryState
   InferInfo d_pendingConflict;
   /** Map from representatives to their equivalence class information */
   std::map<Node, EqcInfo*> d_eqcInfo;
+  /** The model constructor */
+  ModelCons * d_modelCons;
 };
 
 }  // namespace strings

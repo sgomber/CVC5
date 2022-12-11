@@ -32,7 +32,8 @@ SolverState::SolverState(Env& env, Valuation& v)
     : TheoryState(env, v),
       d_eeDisequalities(env.getContext()),
       d_pendingConflictSet(env.getContext(), false),
-      d_pendingConflict(InferenceId::UNKNOWN)
+      d_pendingConflict(InferenceId::UNKNOWN),
+      d_modelCons(nullptr)
 {
   d_zero = NodeManager::currentNM()->mkConstInt(Rational(0));
   d_false = NodeManager::currentNM()->mkConst(false);
@@ -243,6 +244,16 @@ void SolverState::separateByLength(
     cols[stn].emplace_back(p.second.begin(), p.second.end());
     lts[stn].push_back(leqc_to_eqc[p.first].first);
   }
+}
+
+void SolverState::setModelConstructor(ModelCons* mc)
+{
+  d_modelCons = mc;
+}
+
+ModelCons * SolverState::getModelConstructor()
+{
+  return d_modelCons;
 }
 
 }  // namespace strings

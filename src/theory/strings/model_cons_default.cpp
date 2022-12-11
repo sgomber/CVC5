@@ -13,46 +13,36 @@
  * Model normal form finder for strings
  */
 
-#include "theory/strings/strings_mnf.h"
+#include "theory/strings/model_cons_default.h"
 
 namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
-StringsMnf::StringsMnf(Env& env,
-                       SolverState& s,
-                       InferenceManager& im,
-                       TermRegistry& tr,
-                       BaseSolver& bs)
-    : ModelCons(env), d_state(s), d_im(im), d_termReg(tr), d_bsolver(bs)
-{
-}
+ModelConsDefault::ModelConsDefault(Env& env, SolverState& state, CoreSolver& csolver) : ModelCons(env), d_state(state), d_csolver(csolver){}
 
-bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
-{
-  return false;
-}
-
-void StringsMnf::getStringRepresentativesFrom(
+void ModelConsDefault::getStringRepresentativesFrom(
     const std::set<Node>& termSet,
     std::unordered_set<TypeNode>& repTypes,
     std::map<TypeNode, std::unordered_set<Node>>& repSet)
 {
+  d_state.getStringRepresentativesFrom(termSet, repTypes, repSet);
 }
 
-void StringsMnf::separateByLength(
+void ModelConsDefault::separateByLength(
     const std::vector<Node>& n,
     std::map<TypeNode, std::vector<std::vector<Node>>>& cols,
     std::map<TypeNode, std::vector<Node>>& lts)
 {
+  d_state.separateByLength(n, cols, lts);
+  // TODO: make concrete
 }
 
-NormalForm& StringsMnf::getNormalForm(Node n)
+NormalForm& ModelConsDefault::getNormalForm(Node n)
 {
-  NormalForm nf;
-  return nf;
+  return d_csolver.getNormalForm(n);
 }
-
+  
 }  // namespace strings
 }  // namespace theory
 }  // namespace cvc5::internal
