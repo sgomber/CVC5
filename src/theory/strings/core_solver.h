@@ -28,8 +28,8 @@
 #include "theory/strings/inference_manager.h"
 #include "theory/strings/normal_form.h"
 #include "theory/strings/solver_state.h"
-#include "theory/strings/term_registry.h"
 #include "theory/strings/strings_mnf.h"
+#include "theory/strings/term_registry.h"
 
 namespace cvc5::internal {
 namespace theory {

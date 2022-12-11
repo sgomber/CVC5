@@ -180,10 +180,10 @@ std::pair<bool, Node> SolverState::entailmentCheck(options::TheoryOfMode mode,
   return d_valuation.entailmentCheck(mode, lit);
 }
 
-
-void SolverState::getStringRepresentativesFrom(const std::set<Node>& termSet,
-  std::unordered_set<TypeNode>& repTypes,
-  std::map<TypeNode, std::unordered_set<Node>>& repSet)
+void SolverState::getStringRepresentativesFrom(
+    const std::set<Node>& termSet,
+    std::unordered_set<TypeNode>& repTypes,
+    std::map<TypeNode, std::unordered_set<Node>>& repSet)
 {
   for (const Node& s : termSet)
   {

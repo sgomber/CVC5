@@ -18,10 +18,10 @@
 #ifndef CVC5__THEORY__STRINGS__STRINGS_MNF_H
 #define CVC5__THEORY__STRINGS__STRINGS_MNF_H
 
-#include "theory/strings/model_cons.h"
 #include "theory/strings/base_solver.h"
 #include "theory/strings/infer_info.h"
 #include "theory/strings/inference_manager.h"
+#include "theory/strings/model_cons.h"
 #include "theory/strings/normal_form.h"
 #include "theory/strings/solver_state.h"
 #include "theory/strings/term_registry.h"
@@ -46,15 +46,16 @@ class StringsMnf : protected ModelCons
   bool findModelNormalForms(const std::vector<Node>& stringsEqc);
 
   /** Get string representatives from */
-  void getStringRepresentativesFrom(const std::set<Node>& termSet,
-  std::unordered_set<TypeNode>& repTypes,
-  std::map<TypeNode, std::unordered_set<Node>>& repSet
-  ) override;
+  void getStringRepresentativesFrom(
+      const std::set<Node>& termSet,
+      std::unordered_set<TypeNode>& repTypes,
+      std::map<TypeNode, std::unordered_set<Node>>& repSet) override;
   /** Separate by length */
   void separateByLength(
       const std::vector<Node>& n,
       std::map<TypeNode, std::vector<std::vector<Node>>>& cols,
       std::map<TypeNode, std::vector<Node>>& lts) override;
+
  protected:
   /** The solver state object */
   SolverState& d_state;

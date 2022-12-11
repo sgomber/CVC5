@@ -33,10 +33,10 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
   return false;
 }
 
-void StringsMnf::getStringRepresentativesFrom(const std::set<Node>& termSet,
-std::unordered_set<TypeNode>& repTypes,
-std::map<TypeNode, std::unordered_set<Node>>& repSet
-)
+void StringsMnf::getStringRepresentativesFrom(
+    const std::set<Node>& termSet,
+    std::unordered_set<TypeNode>& repTypes,
+    std::map<TypeNode, std::unordered_set<Node>>& repSet)
 {
 }
 
@@ -46,7 +46,7 @@ void StringsMnf::separateByLength(
     std::map<TypeNode, std::vector<Node>>& lts)
 {
 }
-    
+
 }  // namespace strings
 }  // namespace theory
 }  // namespace cvc5::internal
