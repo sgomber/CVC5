@@ -605,7 +605,9 @@ void CoreSolver::checkNormalFormsEq()
 }
 
 //compute d_normal_forms_(base,exp,exp_depend)[eqc]
-void CoreSolver::normalizeEquivalenceClass(Node eqc, TypeNode stype, std::vector<CoreInferInfo>& pinfer)
+void CoreSolver::normalizeEquivalenceClass(Node eqc,
+                                           TypeNode stype,
+                                           std::vector<CoreInferInfo>& pinfer)
 {
   Trace("strings-process-debug") << "Process equivalence class " << eqc << std::endl;
   Node emp = Word::mkEmptyWord(stype);

@@ -43,10 +43,11 @@ class StringsMnf : protected EnvObj
              TermRegistry& tr,
              BaseSolver& bs);
   ~StringsMnf();
-  
+
   /** find model normal forms */
   bool findModelNormalForms(const std::vector<Node>& stringsEqc);
-protected:
+
+ protected:
   /** The solver state object */
   SolverState& d_state;
   /** The (custom) output channel of the theory of strings */

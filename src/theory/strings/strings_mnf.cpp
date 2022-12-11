@@ -20,14 +20,11 @@ namespace theory {
 namespace strings {
 
 StringsMnf::StringsMnf(Env& env,
-            SolverState& s,
-            InferenceManager& im,
-            TermRegistry& tr,
-            BaseSolver& bs) : EnvObj(env),
-      d_state(s),
-      d_im(im),
-      d_termReg(tr),
-      d_bsolver(bs)
+                       SolverState& s,
+                       InferenceManager& im,
+                       TermRegistry& tr,
+                       BaseSolver& bs)
+    : EnvObj(env), d_state(s), d_im(im), d_termReg(tr), d_bsolver(bs)
 {
 }
 
@@ -39,4 +36,3 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
 }  // namespace strings
 }  // namespace theory
 }  // namespace cvc5::internal
-
