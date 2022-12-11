@@ -330,7 +330,9 @@ class CoreSolver : protected EnvObj
    *
    * stype is the string-like type of the equivalence class we are processing.
    */
-  void normalizeEquivalenceClass(Node n, TypeNode stype);
+  void normalizeEquivalenceClass(Node n, TypeNode stype,
+    std::vector<CoreInferInfo>& pinfer
+  );
   /**
    * For each term in the equivalence class of eqc, this adds data regarding its
    * normal form to normal_forms. The map term_to_nf_index maps terms to the
@@ -360,7 +362,7 @@ class CoreSolver : protected EnvObj
   void processNEqc(Node eqc,
                    std::vector<NormalForm>& normal_forms,
                    TypeNode stype,
-                             std::vector<CoreInferInfo>& pinfer);
+                   std::vector<CoreInferInfo>& pinfer);
   /** process simple normal equality
    *
    * This method is called when two equal terms have normal forms nfi and nfj.

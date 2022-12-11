@@ -532,7 +532,7 @@ void CoreSolver::checkNormalFormsEq()
   std::vector<CoreInferInfo> pinfer;
   for (const Node& eqc : d_strings_eqc)
   {
-    Assert (pinfer.empty());
+    Assert(pinfer.empty());
     TypeNode stype = eqc.getType();
     Trace("strings-process-debug") << "- Verify normal forms are the same for "
                                    << eqc << std::endl;
@@ -600,7 +600,7 @@ void CoreSolver::checkNormalFormsEq()
 }
 
 //compute d_normal_forms_(base,exp,exp_depend)[eqc]
-void CoreSolver::normalizeEquivalenceClass(Node eqc, TypeNode stype)
+void CoreSolver::normalizeEquivalenceClass(Node eqc, TypeNode stype, std::vector<CoreInferInfo>& pinfer)
 {
   Trace("strings-process-debug") << "Process equivalence class " << eqc << std::endl;
   Node emp = Word::mkEmptyWord(stype);
@@ -633,8 +633,8 @@ void CoreSolver::normalizeEquivalenceClass(Node eqc, TypeNode stype)
       return;
     }
     // process the normal forms
-    std::vector<CoreInferInfo> pinfer
-    processNEqc(eqc, normal_forms, stype, pinfer);
+    std::vector<CoreInferInfo> pinfer processNEqc(
+        eqc, normal_forms, stype, pinfer);
     if (d_im.hasProcessed() || !pinfer.empty())
     {
       return;
@@ -1042,8 +1042,7 @@ void CoreSolver::getNormalForms(Node eqc,
 void CoreSolver::processNEqc(Node eqc,
                              std::vector<NormalForm>& normal_forms,
                              TypeNode stype,
-                             std::vector<CoreInferInfo>& pinfer
-                            )
+                             std::vector<CoreInferInfo>& pinfer)
 {
   if (normal_forms.size() <= 1)
   {
@@ -2643,7 +2642,7 @@ void CoreSolver::processPossibleInferInfo(std::vector<CoreInferInfo>& pinfer)
   unsigned use_index = 0;
   bool set_use_index = false;
   Trace("strings-solve") << "Possible inferences (" << pinfer.size()
-                        << ") : " << std::endl;
+                         << ") : " << std::endl;
   InferenceId min_id = InferenceId::UNKNOWN;
   unsigned max_index = 0;
   for (unsigned i = 0, psize = pinfer.size(); i < psize; i++)
@@ -2651,7 +2650,7 @@ void CoreSolver::processPossibleInferInfo(std::vector<CoreInferInfo>& pinfer)
     CoreInferInfo& ipii = pinfer[i];
     InferInfo& ii = ipii.d_infer;
     Trace("strings-solve") << "#" << i << ": From " << ipii.d_i << " / "
-                          << ipii.d_j << " (rev=" << ipii.d_rev << ") : ";
+                           << ipii.d_j << " (rev=" << ipii.d_rev << ") : ";
     Trace("strings-solve") << ii.d_conc << " by " << ii.getId() << std::endl;
     if (!set_use_index || ii.getId() < min_id
         || (ii.getId() == min_id && ipii.d_index > max_index))
