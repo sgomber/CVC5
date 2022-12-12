@@ -50,7 +50,9 @@ class ModelEqcInfo
    */
   void expand(const Node& n, const std::vector<Node>& nn);
   /** expand normal form */
-  static void expandNormalForm(std::vector<Node>& mnf, const Node& n, const std::vector<Node>& nn);
+  static void expandNormalForm(std::vector<Node>& mnf,
+                               const Node& n,
+                               const std::vector<Node>& nn);
 };
 
 /**

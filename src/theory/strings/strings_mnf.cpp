@@ -31,13 +31,15 @@ std::string ModelEqcInfo::toString() const
   ss << d_mnf << "/" << d_length;
   return ss.str();
 }
-  
+
 void ModelEqcInfo::expand(const Node& n, const std::vector<Node>& nn)
 {
   expandNormalForm(d_mnf, n, nn);
 }
 
-void ModelEqcInfo::expandNormalForm(std::vector<Node>& mnf, const Node& n, const std::vector<Node>& nn)
+void ModelEqcInfo::expandNormalForm(std::vector<Node>& mnf,
+                                    const Node& n,
+                                    const std::vector<Node>& nn)
 {
   Assert(!nn.empty());
   size_t i = 0;
@@ -136,7 +138,8 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
   if (d_state.areEqual(eqc, emp))
   {
     mei.d_length = d_zero;
-    Trace("strings-mnf") << "NF " << eqc << " : (empty) " << mei.toString() << std::endl;
+    Trace("strings-mnf") << "NF " << eqc << " : (empty) " << mei.toString()
+                         << std::endl;
     return true;
   }
   // NodeManager* nm = NodeManager::currentNM();
@@ -187,7 +190,8 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     Valuation& val = d_state.getValuation();
     mei.d_length = val.getModelValue(lt);
     mei.d_mnf.emplace_back(eqc);
-    Trace("strings-mnf") << "NF " << eqc << " : (singular) " << mei.toString() << std::endl;
+    Trace("strings-mnf") << "NF " << eqc << " : (singular) " << mei.toString()
+                         << std::endl;
     return true;
   }
 
@@ -224,7 +228,7 @@ bool StringsMnf::merge(const Node& a, const Node& b)
 {
   Assert(a == getModelRepresentative(a));
   Assert(b == getModelRepresentative(b));
-  
+
   return false;
 }
 
