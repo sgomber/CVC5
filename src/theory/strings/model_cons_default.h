@@ -40,7 +40,7 @@ class ModelConsDefault : public ModelCons
       const std::set<Node>& termSet,
       std::unordered_set<TypeNode>& repTypes,
       std::map<TypeNode, std::unordered_set<Node>>& repSet,
-                                    std::vector<Node>& auxEq) override;
+      std::vector<Node>& auxEq) override;
   /** Separate by length */
   void separateByLength(const std::vector<Node>& ns,
                         std::vector<std::vector<Node>>& cols,

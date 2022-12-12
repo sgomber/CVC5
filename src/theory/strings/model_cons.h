@@ -37,7 +37,7 @@ class ModelCons : protected EnvObj
       const std::set<Node>& termSet,
       std::unordered_set<TypeNode>& repTypes,
       std::map<TypeNode, std::unordered_set<Node>>& repSet,
-                                    std::vector<Node>& auxEq) = 0;
+      std::vector<Node>& auxEq) = 0;
   /** Separate by length
    *
    * Separate the string representatives in argument n into a partition cols
