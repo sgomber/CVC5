@@ -33,7 +33,16 @@ void ModelConsDefault::getStringRepresentativesFrom(
     std::unordered_set<TypeNode>& repTypes,
     std::map<TypeNode, std::unordered_set<Node>>& repSet)
 {
-  d_state.getStringRepresentativesFrom(termSet, repTypes, repSet);
+  for (const Node& s : termSet)
+  {
+    TypeNode tn = s.getType();
+    if (tn.isStringLike())
+    {
+      Node r = d_state.getRepresentative(s);
+      repSet[tn].insert(r);
+      repTypes.insert(tn);
+    }
+  }
 }
 
 void ModelConsDefault::separateByLength(const std::vector<Node>& ns,

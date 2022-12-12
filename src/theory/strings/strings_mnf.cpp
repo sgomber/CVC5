@@ -81,8 +81,8 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
   // reset the state
   d_minfo.clear();
   d_mrepMap.clear();
-  // try to find model normal form for each equivalence class, where stringsEqc
-  // is sorted based on containment ordering
+  // Try to find model normal form for each equivalence class, where stringsEqc
+  // is sorted based on containment ordering.
   for (const Node& eqc : stringsEqc)
   {
     TypeNode stype = eqc.getType();
@@ -93,7 +93,7 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
     }
   }
   Trace("strings-mnf") << "...return: " << ret << std::endl;
-  // if successful and non-trivial, this class will be the model constructor
+  // If successful and non-trivial, this class will be the model constructor.
   if (ret && !stringsEqc.empty())
   {
     d_state.setModelConstructor(this);
@@ -106,7 +106,36 @@ void StringsMnf::getStringRepresentativesFrom(
     std::unordered_set<TypeNode>& repTypes,
     std::map<TypeNode, std::unordered_set<Node>>& repSet)
 {
+  std::vector<Node> auxEq;
   // TODO
+  std::vector<Node> toProcess(termSet.begin(), termSet.end());
+  size_t i = 0;
+  std::unordered_set<Node> processed;
+  while (i<toProcess.size())
+  {
+    Node t = d_state.getRepresentative(toProcess[i]);
+    i++;
+    if (processed.find(t)!=processed.end())
+    {
+      continue;
+    }
+    processed.insert(t);
+    TypeNode tn = t.getType();
+    if (!tn.isStringLike())
+    {
+      continue;
+    }
+    Node mt = getModelRepresentative(t);
+    if (mt!=t)
+    {
+      // set equal and continue
+      toProcess.push_back(mt);
+      auxEq.push_back(t.eqNode(mt));
+      continue;
+    }
+    repTypes.insert(tn);
+    repSet[tn].insert(mt);
+  }
 }
 
 void StringsMnf::separateByLength(const std::vector<Node>& ns,
@@ -114,11 +143,33 @@ void StringsMnf::separateByLength(const std::vector<Node>& ns,
                                   std::vector<Node>& lts)
 {
   std::map<Node, ModelEqcInfo>::iterator it;
-  std::map<std::pair<TypeNode, Node>, size_t> lenToIndex;
+  std::map<Rational, size_t> lenToIndex;
+  std::map<Rational, size_t>::iterator itl;
+  NodeManager * nm = NodeManager::currentNM();
   for (const Node& n : ns)
   {
-    it = d_minfo.find(n);
-    Assert(it != d_minfo.end());
+    Rational len;
+    if (n.isConst())
+    {
+      len = Rational(Word::getLength(n));
+    }
+    else
+    {
+      it = d_minfo.find(n);
+      Assert(it != d_minfo.end());
+      len = it->second.d_length;
+    }
+    itl = lenToIndex.find(len);
+    if (itl!=lenToIndex.end())
+    {
+      cols[itl->second].push_back(n);
+    }
+    else
+    {
+      lenToIndex[len] = cols.size();
+      cols.emplace_back(std::vector<Node>{n});
+      lts.push_back(nm->mkConstInt(len));
+    }
   }
 }
 
@@ -295,7 +346,8 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
         currExpands.emplace_back(b, bvec);
       }
       // apply the expansion to the current normal form (nf.second) we are
-      // processing
+      // processing, which makes a difference in the current equivalence
+      // class has multiple occurrences of b.
       Assert(!currExpands.empty());
       std::pair<Node, std::vector<Node>> ce = currExpands.back();
       ModelEqcInfo::expandNormalForm(nf.second, ce.first, ce.second);
