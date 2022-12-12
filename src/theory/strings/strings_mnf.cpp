@@ -77,7 +77,10 @@ std::vector<Node> StringsMnf::getNormalForm(Node n)
   std::map<Node, ModelEqcInfo>::iterator it = d_minfo.find(n);
   if (it != d_minfo.end())
   {
-    vec = it->second.d_mnf;
+    for (const std::pair<Node, Node>& mnf : it->second.d_mnf)
+    {
+      vec.push_back(mnf.first);
+    }
   }
   else
   {
@@ -85,6 +88,7 @@ std::vector<Node> StringsMnf::getNormalForm(Node n)
     // likely means that n is not a representative or not a term in the current
     // context. We simply return a default normal form here in this case.
     Assert(false);
+    vec.push_back(n);
   }
   return vec;
 }
@@ -92,15 +96,16 @@ std::vector<Node> StringsMnf::getNormalForm(Node n)
 bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
 {
   ModelEqcInfo& mei = d_minfo[eqc];
-  // if empty string, we initialize length to zero, normal form to empty
+  // if empty string, we initialize normal form to empty
   Node emp = Word::mkEmptyWord(stype);
   if (d_state.areEqual(eqc, emp))
   {
-    mei.d_length = d_zero;
+    //mei.d_length = d_zero;
     return true;
   }
+  NodeManager * nm = NodeManager::currentNM();
   // otherwise, get the normal form for each term in the equivalence class
-  std::vector<std::pair<Node, std::vector<Node>>> nfs;
+  std::vector<std::pair<Node, std::vector<std::pair<Node,Node>>>> nfs;
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
   while (!eqc_i.isFinished())
@@ -112,7 +117,9 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     }
     if (utils::isConstantLike(n))
     {
-      nfs.emplace_back(n, std::vector<Node>{n});
+      Node nlen = nm->mkConstInt(Word::getLength(n));
+      std::pair<Node,Node> nf(n, nlen);
+      nfs.emplace_back(n, std::vector<std::pair<Node,Node>>{nf});
       continue;
     }
     if (n.getKind() == STRING_CONCAT)
@@ -124,15 +131,35 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
         nrs.push_back(d_state.getRepresentative(nc));
       }
       // expand the list of representatives to normal form
-      std::vector<Node> nf = expandNormalForm(nrs);
-      // add to vector
-      nfs.emplace_back(n, nf);
+      std::vector<std::pair<Node,Node>> nf = expandNormalForm(nrs);
+      // if not singular, add to vector
+      if (nf.size()>1 || (nf.size()==1 && utils::isConstantLike(nf[0].first)))
+      {
+        nfs.emplace_back(n, nf);
+      }
     }
+  }
+  
+  // if we are an atomic equivalence class, just compute the length
+  if (nfs.empty())
+  {
+    EqcInfo* ei = d_state.getOrMakeEqcInfo(eqc, false);
+    Node lt = ei ? ei->d_lengthTerm : Node::null();
+    if (lt.isNull())
+    {
+      // does not have a length term, we must fail
+      return false;
+    }
+    // otherwise, look up the model value now
+    Valuation& val = d_state.getValuation();
+    Node len = val.getModelValue(lt);
+    mei.d_mnf.emplace_back(eqc,len);
+    return true;
   }
 
   // now, process each normal form
   bool firstTime = false;
-  for (std::pair<Node, std::vector<Node>>& nf : nfs)
+  for (std::pair<Node, std::vector<std::pair<Node, Node>>>& nf : nfs)
   {
     if (firstTime)
     {
@@ -143,12 +170,14 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     }
     // compare mei.d_mnf and nf.second
   }
+  
+  // compute the length from the normal form?
   return false;
 }
 
-std::vector<Node> StringsMnf::expandNormalForm(const std::vector<Node>& nf)
+std::vector<std::pair<Node, Node>> StringsMnf::expandNormalForm(const std::vector<Node>& nf)
 {
-  std::vector<Node> exnf;
+  std::pair<Node, Node> exnf;
 }
 
 }  // namespace strings
