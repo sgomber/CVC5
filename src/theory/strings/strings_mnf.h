@@ -40,9 +40,13 @@ class ModelEqcInfo
    * Normal form is a list of pairs (t,l) where t is an atomic representative
    * and l is the model value for its length.
    */
-  std::vector<std::pair<Node, Node>> d_mnf;
+  std::vector<Node> d_mnf;
   /** The length value */
-  // Node d_length;
+  Node d_length;
+  /** 
+   * Expand all occurrences of n in d_mnf with the list nn.
+   */
+  void expand(const Node& n, const std::vector<Node>& nn);
 };
 
 /**
@@ -83,12 +87,10 @@ class StringsMnf : protected ModelCons
    * If returns true, ModelEqcInfo is set for eqc.
    */
   bool normalizeEqc(Node eqc, TypeNode stype);
-  /**
-   * Expand normal form, which returns a vector from nf where all terms in the
-   * returned vector are atomic.
-   */
-  std::vector<std::pair<Node, Node>> expandNormalForm(
-      const std::vector<Node>& nf);
+  /** Get normal form internal, assumes r is a model representative */
+  std::vector<Node> getNormalFormInternal(Node r);
+  /** Get model representative */
+  Node getModelRepresentative(Node n);
   /** The solver state object */
   SolverState& d_state;
   /** The (custom) output channel of the theory of strings */
@@ -101,8 +103,11 @@ class StringsMnf : protected ModelCons
   Node d_zero;
   /** Map from representatives to information */
   std::map<Node, ModelEqcInfo> d_minfo;
-  /** Map from atomic variables to representative */
-  std::map<Node, Node> d_repMap;
+  /** 
+   * Map from representatives in equality engine or allocated model
+   * representatives to their model representative.
+   */
+  std::map<Node, Node> d_mrepMap;
 };
 
 }  // namespace strings

@@ -25,6 +25,26 @@ namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
+void ModelEqcInfo::expand(const Node& n, const std::vector<Node>& nn)
+{
+  Assert (!nn.empty());
+  size_t i =0;
+  while (i<d_mnf.size())
+  {
+    if (d_mnf[i]==n)
+    {
+      d_mnf[i] = nn[0];
+      d_mnf.insert(d_mnf.begin()+i+1,nn.begin()+1, nn.end());
+      i += nn.size();
+    }
+    else
+    {
+      i++;
+    }
+  }
+}
+  
+  
 StringsMnf::StringsMnf(Env& env,
                        SolverState& s,
                        InferenceManager& im,
@@ -73,14 +93,18 @@ void StringsMnf::separateByLength(
 
 std::vector<Node> StringsMnf::getNormalForm(Node n)
 {
+  Node r = getModelRepresentative(n);
+  return getNormalFormInternal(r);
+}
+
+std::vector<Node> StringsMnf::getNormalFormInternal(Node n)
+{
+  Assert (n==getModelRepresentative(n));
   std::vector<Node> vec;
   std::map<Node, ModelEqcInfo>::iterator it = d_minfo.find(n);
   if (it != d_minfo.end())
   {
-    for (const std::pair<Node, Node>& mnf : it->second.d_mnf)
-    {
-      vec.push_back(mnf.first);
-    }
+    vec = it->second.d_mnf;
   }
   else
   {
@@ -100,12 +124,12 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
   Node emp = Word::mkEmptyWord(stype);
   if (d_state.areEqual(eqc, emp))
   {
-    // mei.d_length = d_zero;
+    mei.d_length = d_zero;
     return true;
   }
-  NodeManager* nm = NodeManager::currentNM();
+  //NodeManager* nm = NodeManager::currentNM();
   // otherwise, get the normal form for each term in the equivalence class
-  std::vector<std::pair<Node, std::vector<std::pair<Node, Node>>>> nfs;
+  std::vector<std::pair<Node, std::vector<Node>>> nfs;
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
   while (!eqc_i.isFinished())
@@ -117,24 +141,22 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     }
     if (utils::isConstantLike(n))
     {
-      Node nlen = nm->mkConstInt(Word::getLength(n));
-      std::pair<Node, Node> nf(n, nlen);
-      nfs.emplace_back(n, std::vector<std::pair<Node, Node>>{nf});
+      nfs.emplace_back(n, std::vector<Node>{n});
       continue;
     }
     if (n.getKind() == STRING_CONCAT)
     {
-      // start with a list of representatives of children
-      std::vector<Node> nrs;
+      // expand the normal form of the representative of each child
+      std::vector<Node> nf;
       for (const Node& nc : n)
       {
-        nrs.push_back(d_state.getRepresentative(nc));
+        Node r = getModelRepresentative(nc);
+        std::vector<Node> nfr = getNormalForm(r);
+        nf.insert(nf.end(), nfr.begin(), nfr.end());
       }
-      // expand the list of representatives to normal form
-      std::vector<std::pair<Node, Node>> nf = expandNormalForm(nrs);
       // if not singular, add to vector
       if (nf.size() > 1
-          || (nf.size() == 1 && utils::isConstantLike(nf[0].first)))
+          || (nf.size() == 1 && utils::isConstantLike(nf[0])))
       {
         nfs.emplace_back(n, nf);
       }
@@ -153,14 +175,14 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     }
     // otherwise, look up the model value now
     Valuation& val = d_state.getValuation();
-    Node len = val.getModelValue(lt);
-    mei.d_mnf.emplace_back(eqc, len);
+    mei.d_length = val.getModelValue(lt);
+    mei.d_mnf.emplace_back(eqc);
     return true;
   }
 
   // now, process each normal form
   bool firstTime = false;
-  for (std::pair<Node, std::vector<std::pair<Node, Node>>>& nf : nfs)
+  for (std::pair<Node, std::vector<Node>>& nf : nfs)
   {
     if (firstTime)
     {
@@ -176,10 +198,15 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
   return false;
 }
 
-std::vector<std::pair<Node, Node>> StringsMnf::expandNormalForm(
-    const std::vector<Node>& nf)
+Node StringsMnf::getModelRepresentative(Node n)
 {
-  std::pair<Node, Node> exnf;
+  Node r = d_state.getRepresentative(n);
+  std::map<Node, Node>::iterator it = d_mrepMap.find(r);
+  if (it!=d_mrepMap.end())
+  {
+    return it->second;
+  }
+  return r;
 }
 
 }  // namespace strings
