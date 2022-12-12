@@ -300,12 +300,10 @@ bool TheoryStrings::collectModelInfoType(
   ModelCons* mc = d_state.getModelConstructor();
   // get partition of strings of equal lengths for the representatives of the
   // current type
-  std::map<TypeNode, std::vector<std::vector<Node> > > colT;
-  std::map<TypeNode, std::vector<Node> > ltsT;
+  std::vector<std::vector<Node> > col;
+  std::vector<Node> lts;
   const std::vector<Node> repVec(repSet.at(tn).begin(), repSet.at(tn).end());
-  mc->separateByLength(repVec, colT, ltsT);
-  const std::vector<std::vector<Node> >& col = colT[tn];
-  const std::vector<Node>& lts = ltsT[tn];
+  mc->separateByLength(repVec, col, lts);
   // indices in col that have lengths that are too big to represent
   std::unordered_set<size_t> oobIndices;
 

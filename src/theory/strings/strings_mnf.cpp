@@ -107,14 +107,22 @@ void StringsMnf::getStringRepresentativesFrom(
     std::map<TypeNode, std::unordered_set<Node>>& repSet)
 {
   // TODO
+  
 }
 
 void StringsMnf::separateByLength(
-    const std::vector<Node>& n,
-    std::map<TypeNode, std::vector<std::vector<Node>>>& cols,
-    std::map<TypeNode, std::vector<Node>>& lts)
+    const std::vector<Node>& ns,
+    std::vector<std::vector<Node>>& cols,
+    std::vector<Node>& lts)
 {
-  // TODO
+  std::map<Node, ModelEqcInfo>::iterator it;
+  std::map<std::pair<TypeNode, Node>, size_t> lenToIndex;
+  for (const Node& n : ns)
+  {
+    it = d_minfo.find(n);
+    Assert (it != d_minfo.end());
+    
+  }
 }
 
 std::vector<Node> StringsMnf::getNormalForm(Node n)

@@ -146,10 +146,15 @@ class SolverState : public TheoryState
    * lts[i] for all elements in col. These vectors are furthmore separated
    * by string-like type.
    */
-  void separateByLength(
+  void separateByLengthTyped(
       const std::vector<Node>& n,
       std::map<TypeNode, std::vector<std::vector<Node>>>& cols,
       std::map<TypeNode, std::vector<Node>>& lts);
+  /** Same as above, but with a fixed type */
+  void separateByLength(
+      const std::vector<Node>& n,
+      std::vector<std::vector<Node>>& cols,
+      std::vector<Node>& lts);
   /** Set the model constructor */
   void setModelConstructor(ModelCons* mc);
   /** Get the model constructor */

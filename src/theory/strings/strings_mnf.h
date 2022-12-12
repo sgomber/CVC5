@@ -76,9 +76,9 @@ class StringsMnf : protected ModelCons
       std::map<TypeNode, std::unordered_set<Node>>& repSet) override;
   /** Separate by length */
   void separateByLength(
-      const std::vector<Node>& n,
-      std::map<TypeNode, std::vector<std::vector<Node>>>& cols,
-      std::map<TypeNode, std::vector<Node>>& lts) override;
+      const std::vector<Node>& ns,
+      std::vector<std::vector<Node>>& cols,
+      std::vector<Node>& lts) override;
   /** Get normal form */
   std::vector<Node> getNormalForm(Node n) override;
 

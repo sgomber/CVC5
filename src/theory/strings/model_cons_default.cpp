@@ -37,29 +37,25 @@ void ModelConsDefault::getStringRepresentativesFrom(
 }
 
 void ModelConsDefault::separateByLength(
-    const std::vector<Node>& n,
-    std::map<TypeNode, std::vector<std::vector<Node>>>& cols,
-    std::map<TypeNode, std::vector<Node>>& lts)
+    const std::vector<Node>& ns,
+    std::vector<std::vector<Node>>& cols,
+    std::vector<Node>& lts)
 {
-  d_state.separateByLength(n, cols, lts);
+  d_state.separateByLength(ns, cols, lts);
   // look up the values of each length term
   Valuation& val = d_state.getValuation();
-  for (std::pair<const TypeNode, std::vector<Node>>& l : lts)
+  for (Node& ll : lts)
   {
-    for (Node& ll : l.second)
+    if (!ll.isConst())
     {
-      if (!ll.isConst())
-      {
-        ll = val.getModelValue(ll);
-      }
+      ll = val.getModelValue(ll);
     }
   }
 }
 
 std::vector<Node> ModelConsDefault::getNormalForm(Node n)
 {
-  std::vector<Node> vec = d_csolver.getNormalForm(n).d_nf;
-  return vec;
+  return d_csolver.getNormalForm(n).d_nf;
 }
 
 }  // namespace strings
