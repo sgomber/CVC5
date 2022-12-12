@@ -28,7 +28,7 @@ namespace strings {
 std::string ModelEqcInfo::toString() const
 {
   std::stringstream ss;
-  ss << d_mnf << "/" << d_length;
+  ss << d_mnf << " / " << d_length;
   return ss.str();
 }
 
@@ -76,6 +76,7 @@ StringsMnf::StringsMnf(Env& env,
 
 bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
 {
+  Trace("strings-mnf") << "StringsMnf::findModelNormalForms..." << std::endl;
   bool ret = true;
   // reset the state
   d_minfo.clear();
@@ -91,6 +92,7 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
       break;
     }
   }
+  Trace("strings-mnf") << "...return: " << ret << std::endl;
   // if successful and non-trivial, this class will be the model constructor
   if (ret && !stringsEqc.empty())
   {
@@ -149,7 +151,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
   if (d_state.areEqual(eqc, emp))
   {
     mei.d_length = Rational(0);
-    Trace("strings-mnf") << "NF " << eqc << " : (empty) " << mei.toString()
+    Trace("strings-mnf") << "NF " << eqc << " (empty): " << mei.toString()
                          << std::endl;
     return true;
   }
@@ -161,6 +163,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
   while (!eqc_i.isFinished())
   {
     Node n = (*eqc_i);
+    ++eqc_i;
     if (d_bsolver.isCongruent(n))
     {
       continue;
@@ -195,19 +198,20 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     if (lt.isNull())
     {
       // does not have a length term, we must fail
+      Trace("strings-mnf") << "Fail: " << eqc << " has no length term." << std::endl;
       return false;
     }
     // otherwise, look up the model value now
     Valuation& val = d_state.getValuation();
     mei.d_length = val.getModelValue(lt).getConst<Rational>();
     mei.d_mnf.emplace_back(eqc);
-    Trace("strings-mnf") << "NF " << eqc << " : (singular) " << mei.toString()
+    Trace("strings-mnf") << "NF " << eqc << " (singular): " << mei.toString()
                          << std::endl;
     return true;
   }
 
   // now, process each normal form
-  bool firstTime = false;
+  bool firstTime = true;
   // list of modifications done to normal forms while processing this
   // equivalence class
   std::vector< std::pair<Node, std::vector<Node> > > currExpands;
@@ -226,6 +230,10 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     {
       ModelEqcInfo::expandNormalForm(nf.second, ce.first, ce.second);
     }
+    Trace("strings-mnf-solve") << "Compare: " << std::endl;
+    Trace("strings-mnf-solve") << "[1] " << mei.d_mnf << std::endl;
+    Trace("strings-mnf-solve") << "[2] " << nf.second << std::endl;
+    
     // Now, compare mei.d_mnf and nf.second left to right
     size_t i = 0;
     while (i < mei.d_mnf.size())
@@ -237,8 +245,9 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
         i++;
         continue;
       }
-      const Rational& la = getLength(a);
-      const Rational& lb = getLength(b);
+      Rational la = getLength(a);
+      Rational lb = getLength(b);
+      Trace("strings-mnf-solve") << "Compare " << a << " / " << b << ", lengths=" << la << " / " << lb << std::endl;
       // should have positive lengths
       Assert (la.sgn()==1 && lb.sgn()==1);
       // if lengths are already equal, merge b into a
@@ -247,6 +256,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
         if (!merge(a, b))
         {
           // conflict, we fail
+          Trace("strings-mnf") << "Fail: " << eqc << " while merging " << a << ", " << b << std::endl;
           return false;
         }
         i++;
@@ -272,13 +282,18 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
       ModelEqcInfo::expandNormalForm(nf.second, ce.first, ce.second);
     }
   }
-  // don't need to compute the length from the normal form
+  // otherwise don't need to compute the length from the normal form
   Trace("strings-mnf") << "NF " << eqc << " : " << mei.toString() << std::endl;
-  return false;
+  return true;
 }
 
-const Rational& StringsMnf::getLength(const Node& r)
+Rational StringsMnf::getLength(const Node& r)
 {
+  Assert (r.getType().isStringLike());
+  if (r.isConst())
+  {
+    return Word::getLength(r);
+  }
   std::map<Node, ModelEqcInfo>::iterator it = d_minfo.find(r);
   Assert(it != d_minfo.end());
   return it->second.d_length;
@@ -304,6 +319,7 @@ bool StringsMnf::merge(const Node& a, const Node& b)
     // cannot merge constants
     return false;
   }
+  Trace("strings-mnf") << "...merge " << b << ": " << a << std::endl;
   d_mrepMap[b] = a;
   // don't need the normal form info for b anymore?
   d_minfo.erase(b);
@@ -344,6 +360,7 @@ std::vector<Node> StringsMnf::split(const Node& a, const Rational& alen, const R
   // allocate new equivalence class infos
   Assert (vec.size()==2);
   std::map<Node, ModelEqcInfo>::iterator it;
+  Trace("strings-mnf") << "...split " << a << ": " << vec << std::endl;
   for (size_t i=0; i<2; i++)
   {
     it = d_minfo.find(vec[i]);
@@ -353,6 +370,7 @@ std::vector<Node> StringsMnf::split(const Node& a, const Rational& alen, const R
       ModelEqcInfo& meic = d_minfo[vec[i]];
       meic.d_mnf.push_back(vec[i]);
       meic.d_length = i==0 ? pos : alen-pos;
+      Trace("strings-mnf") << "NF " << vec[i] << " (split " << a << "): " << meic.toString() << std::endl;
     }
   }
   // expand a in all current normal forms

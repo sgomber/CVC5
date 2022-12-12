@@ -95,7 +95,7 @@ class StringsMnf : protected ModelCons
   /** Get normal form internal, assumes r is a model representative */
   std::vector<Node> getNormalFormInternal(const Node& r);
   /** Get length */
-  const Rational& getLength(const Node& r);
+  Rational getLength(const Node& r);
   /** Get model representative */
   Node getModelRepresentative(const Node& n);
   /** Merge */
