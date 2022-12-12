@@ -256,16 +256,26 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
       // if lengths are already equal, merge b into a
       if (la == lb)
       {
-        if (!merge(a, b))
+        // flip if b is constant but a is not
+        if (b.isConst())
         {
-          // conflict, we fail
-          Trace("strings-mnf") << "Fail: " << eqc << " while merging " << a
-                               << ", " << b << std::endl;
-          return false;
+          if (a.isConst())
+          {
+            // conflict, we fail
+            Trace("strings-mnf") << "Fail: " << eqc << " while merging " << a
+                                << ", " << b << std::endl;
+            return false;
+          }
+          else
+          {
+            std::swap(a,b);
+          }
         }
-        i++;
+        // otherwise merge b into a
+        merge(a, b);
         // remember the operation
         currExpands.emplace_back(b, std::vector<Node>{a});
+        i++;
       }
       else if (la > lb)
       {
@@ -314,26 +324,19 @@ Node StringsMnf::getModelRepresentative(const Node& n)
   return r;
 }
 
-bool StringsMnf::merge(const Node& a, const Node& b)
+void StringsMnf::merge(const Node& a, const Node& b)
 {
+  // should not merge constant
+  Assert (!b.isConst());
   Assert(a == getModelRepresentative(a));
   Assert(b == getModelRepresentative(b));
-  if (a.isConst() && b.isConst())
-  {
-    // cannot merge constants
-    return false;
-  }
   Trace("strings-mnf") << "...merge " << b << ": " << a << std::endl;
   d_mrepMap[b] = a;
   // don't need the normal form info for b anymore?
   d_minfo.erase(b);
   // replace b with a in all current normal forms
   std::vector<Node> vec{a};
-  for (std::pair<const Node, ModelEqcInfo>& m : d_minfo)
-  {
-    m.second.expand(b, vec);
-  }
-  return true;
+  expandNormalForms(b, vec);
 }
 
 std::vector<Node> StringsMnf::split(const Node& a,
@@ -349,9 +352,11 @@ std::vector<Node> StringsMnf::split(const Node& a,
     // since pos is less than alen which is the length of the constant, which
     // should be less than the maximum model length (or 65536).
     Assert(pos < d_maxModelLen);
+    Assert(alen < d_maxModelLen);
     std::size_t pvalue = pos.getNumerator().toUnsignedInt();
+    std::size_t alvalue = alen.getNumerator().toUnsignedInt();
     vec.push_back(Word::prefix(a, pvalue));
-    vec.push_back(Word::suffix(a, pvalue));
+    vec.push_back(Word::suffix(a, alvalue-pvalue));
   }
   else
   {
@@ -362,7 +367,9 @@ std::vector<Node> StringsMnf::split(const Node& a,
     vec.push_back(sm->mkDummySkolem("m", atn));
     vec.push_back(sm->mkDummySkolem("m", atn));
   }
-  // allocate new equivalence class infos
+  // Allocate new equivalence class infos. Note that in rare cases we may
+  // split a word into components where one of those components is already
+  // a representative. In this case, we don't 
   Assert(vec.size() == 2);
   std::map<Node, ModelEqcInfo>::iterator it;
   Trace("strings-mnf") << "...split " << a << ": " << vec << std::endl;
@@ -380,11 +387,17 @@ std::vector<Node> StringsMnf::split(const Node& a,
     }
   }
   // expand a in all current normal forms
+  expandNormalForms(a, vec);
+  return vec;
+}
+
+void StringsMnf::expandNormalForms(const Node& n, const std::vector<Node>& nn)
+{
+  // TODO: could do uselists
   for (std::pair<const Node, ModelEqcInfo>& m : d_minfo)
   {
-    m.second.expand(a, vec);
+    m.second.expand(n, nn);
   }
-  return vec;
 }
 
 }  // namespace strings

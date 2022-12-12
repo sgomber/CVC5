@@ -99,11 +99,13 @@ class StringsMnf : protected ModelCons
   /** Get model representative */
   Node getModelRepresentative(const Node& n);
   /** Merge */
-  bool merge(const Node& a, const Node& b);
+  void merge(const Node& a, const Node& b);
   /** Split */
   std::vector<Node> split(const Node& a,
                           const Rational& alen,
                           const Rational& pos);
+  /** Expand n -> nn in all normal forms */
+  void expandNormalForms(const Node& n, const std::vector<Node>& nn);
   /** The solver state object */
   SolverState& d_state;
   /** The (custom) output channel of the theory of strings */
