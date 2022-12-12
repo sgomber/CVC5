@@ -201,6 +201,9 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
 
   // now, process each normal form
   bool firstTime = false;
+  // list of modifications done to normal forms while processing this
+  // equivalence class
+  std::vector< std::pair<Node, std::vector<Node> > > currExpands;
   for (std::pair<Node, std::vector<Node>>& nf : nfs)
   {
     if (firstTime)
@@ -210,7 +213,13 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
       firstTime = false;
       continue;
     }
-    // compare mei.d_mnf and nf.second left to right
+    // First, update nf.second based on expands done for previous normal forms
+    // in this equivalence class
+    for (const std::pair<Node, std::vector<Node> >& ce : currExpands)
+    {
+      ModelEqcInfo::expandNormalForm(nf.second, ce.first, ce.second);
+    }
+    // Now, compare mei.d_mnf and nf.second left to right
     size_t i = 0;
     while (i < mei.d_mnf.size())
     {
@@ -231,11 +240,27 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
           // conflict, we fail
           return false;
         }
+        i++;
+        // remember the operation
+        currExpands.emplace_back(b, std::vector<Node>{a});
       }
-      // otherwise, split
-      if (la > lb)
+      else if (la > lb)
       {
+        // otherwise, split
+        std::vector<Node> avec = split(a, lb);
+        currExpands.emplace_back(a, avec);
       }
+      else
+      {
+        Assert (la<lb);
+        std::vector<Node> bvec = split(b, la);
+        currExpands.emplace_back(b, bvec);
+      }
+      // apply the expansion to the current normal form (nf.second) we are
+      // processing
+      Assert (!currExpands.empty());
+      std::pair<Node, std::vector<Node> > ce = currExpands.back();
+      ModelEqcInfo::expandNormalForm(nf.second, ce.first, ce.second);
     }
   }
 
@@ -274,6 +299,12 @@ bool StringsMnf::merge(const Node& a, const Node& b)
   d_mrepMap[b] = a;
   // don't need the normal form info for b anymore?
   d_minfo.erase(b);
+  // replace b with a in all current normal forms
+  std::vector<Node> vec{a};
+  for (std::pair<const Node, ModelEqcInfo>& m : d_minfo)
+  {
+    m.second.expand(b, vec);
+  }
   return true;
 }
 
