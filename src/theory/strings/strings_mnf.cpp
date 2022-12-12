@@ -100,12 +100,12 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
   Node emp = Word::mkEmptyWord(stype);
   if (d_state.areEqual(eqc, emp))
   {
-    //mei.d_length = d_zero;
+    // mei.d_length = d_zero;
     return true;
   }
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   // otherwise, get the normal form for each term in the equivalence class
-  std::vector<std::pair<Node, std::vector<std::pair<Node,Node>>>> nfs;
+  std::vector<std::pair<Node, std::vector<std::pair<Node, Node>>>> nfs;
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
   while (!eqc_i.isFinished())
@@ -118,8 +118,8 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     if (utils::isConstantLike(n))
     {
       Node nlen = nm->mkConstInt(Word::getLength(n));
-      std::pair<Node,Node> nf(n, nlen);
-      nfs.emplace_back(n, std::vector<std::pair<Node,Node>>{nf});
+      std::pair<Node, Node> nf(n, nlen);
+      nfs.emplace_back(n, std::vector<std::pair<Node, Node>>{nf});
       continue;
     }
     if (n.getKind() == STRING_CONCAT)
@@ -131,15 +131,16 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
         nrs.push_back(d_state.getRepresentative(nc));
       }
       // expand the list of representatives to normal form
-      std::vector<std::pair<Node,Node>> nf = expandNormalForm(nrs);
+      std::vector<std::pair<Node, Node>> nf = expandNormalForm(nrs);
       // if not singular, add to vector
-      if (nf.size()>1 || (nf.size()==1 && utils::isConstantLike(nf[0].first)))
+      if (nf.size() > 1
+          || (nf.size() == 1 && utils::isConstantLike(nf[0].first)))
       {
         nfs.emplace_back(n, nf);
       }
     }
   }
-  
+
   // if we are an atomic equivalence class, just compute the length
   if (nfs.empty())
   {
@@ -153,7 +154,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     // otherwise, look up the model value now
     Valuation& val = d_state.getValuation();
     Node len = val.getModelValue(lt);
-    mei.d_mnf.emplace_back(eqc,len);
+    mei.d_mnf.emplace_back(eqc, len);
     return true;
   }
 
@@ -170,12 +171,13 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     }
     // compare mei.d_mnf and nf.second
   }
-  
+
   // compute the length from the normal form?
   return false;
 }
 
-std::vector<std::pair<Node, Node>> StringsMnf::expandNormalForm(const std::vector<Node>& nf)
+std::vector<std::pair<Node, Node>> StringsMnf::expandNormalForm(
+    const std::vector<Node>& nf)
 {
   std::pair<Node, Node> exnf;
 }

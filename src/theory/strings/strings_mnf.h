@@ -35,14 +35,14 @@ class ModelEqcInfo
  public:
   ModelEqcInfo() {}
   ~ModelEqcInfo() {}
-  /** 
+  /**
    * The current normal form.
    * Normal form is a list of pairs (t,l) where t is an atomic representative
    * and l is the model value for its length.
    */
-  std::vector<std::pair<Node,Node>> d_mnf;
+  std::vector<std::pair<Node, Node>> d_mnf;
   /** The length value */
-  //Node d_length;
+  // Node d_length;
 };
 
 /**
@@ -87,7 +87,8 @@ class StringsMnf : protected ModelCons
    * Expand normal form, which returns a vector from nf where all terms in the
    * returned vector are atomic.
    */
-  std::vector<std::pair<Node,Node>> expandNormalForm(const std::vector<Node>& nf);
+  std::vector<std::pair<Node, Node>> expandNormalForm(
+      const std::vector<Node>& nf);
   /** The solver state object */
   SolverState& d_state;
   /** The (custom) output channel of the theory of strings */
