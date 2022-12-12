@@ -107,10 +107,10 @@ void StringsMnf::getStringRepresentativesFrom(
     std::map<TypeNode, std::unordered_set<Node>>& repSet)
 {
   std::vector<Node> auxEq;
-  // TODO
   std::vector<Node> toProcess(termSet.begin(), termSet.end());
   size_t i = 0;
   std::unordered_set<Node> processed;
+  std::map<Node, ModelEqcInfo>::iterator it;
   while (i < toProcess.size())
   {
     Node t = d_state.getRepresentative(toProcess[i]);
@@ -135,6 +135,13 @@ void StringsMnf::getStringRepresentativesFrom(
     }
     repTypes.insert(tn);
     repSet[tn].insert(mt);
+    // also ensure all terms in the normal form are processed, in case
+    // we split mt
+    it = d_minfo.find(mt);
+    if (it != d_minfo.end())
+    {
+      toProcess.insert(toProcess.end(), it->second.d_mnf.begin(), it->second.d_mnf.end());
+    }
   }
 }
 
