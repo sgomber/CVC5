@@ -116,7 +116,8 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
     {
       continue;
     }
-    Trace("strings-mnf") << "process-disequality " << deq << ", length " << la << std::endl;
+    Trace("strings-mnf") << "process-disequality " << deq << ", length " << la
+                         << std::endl;
     if (!normalizeDeq(a, b))
     {
       ret = false;
@@ -295,13 +296,13 @@ bool StringsMnf::normalizeEqc(Node eqc)
   {
     // does not have a length term, we must fail
     Trace("strings-mnf") << "Fail: " << eqc << " has no length term."
-                          << std::endl;
+                         << std::endl;
     return false;
   }
   // otherwise, look up the model value now
   Valuation& val = d_state.getValuation();
   mei.d_length = val.getModelValue(lt).getConst<Rational>();
-  
+
   // if we are an atomic equivalence class, just add
   if (nfs.empty())
   {
@@ -408,7 +409,7 @@ bool StringsMnf::normalizeDeq(Node ar, Node br)
   Assert(br == getModelRepresentative(br) && d_minfo.find(br) != d_minfo.end());
   ModelEqcInfo& meia = d_minfo[ar];
   ModelEqcInfo& meib = d_minfo[br];
-  
+
   Trace("strings-mnf-solve") << "Compare-disequal: " << std::endl;
   Trace("strings-mnf-solve") << "[1] " << meia.d_mnf << std::endl;
   Trace("strings-mnf-solve") << "[2] " << meib.d_mnf << std::endl;
