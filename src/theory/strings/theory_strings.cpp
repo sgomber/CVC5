@@ -244,8 +244,23 @@ bool TheoryStrings::collectModelValues(TheoryModel* m,
   ModelCons* mc = d_state.getModelConstructor();
   Assert(mc != nullptr);
   // get the relevant string equivalence classes
-  mc->getStringRepresentativesFrom(termSet, toProcess, repSet);
-
+  std::vector<Node> auxEq;
+  mc->getStringRepresentativesFrom(termSet, toProcess, repSet, auxEq);
+  // assert the auxiliary equalities
+  for (const Node& aeq : auxEq)
+  {
+    Assert (aeq.getKind()==EQUAL);
+    Trace("strings-model") << "-> auxiliary equality " << aeq << std::endl;
+    if (!m->assertEquality(aeq[0], aeq[1], true))
+    {
+      Unreachable()
+          << "TheoryStrings::collectModelValues: Inconsistent auxiliary equality"
+          << std::endl;
+      return false;
+    }
+  }
+  
+  
   while (!toProcess.empty())
   {
     // Pick one of the remaining types to collect model values for

@@ -104,9 +104,9 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
 void StringsMnf::getStringRepresentativesFrom(
     const std::set<Node>& termSet,
     std::unordered_set<TypeNode>& repTypes,
-    std::map<TypeNode, std::unordered_set<Node>>& repSet)
+    std::map<TypeNode, std::unordered_set<Node>>& repSet,
+                                    std::vector<Node>& auxEq)
 {
-  std::vector<Node> auxEq;
   std::vector<Node> toProcess(termSet.begin(), termSet.end());
   size_t i = 0;
   std::unordered_set<Node> processed;
