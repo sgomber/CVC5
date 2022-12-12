@@ -49,6 +49,7 @@ CoreSolver::CoreSolver(Env& env,
       d_bsolver(bs),
       d_nfPairs(context()),
       d_extDeq(userContext()),
+      d_hasNormalForms(false),
       d_stringsMnf(env, s, im, tr, bs)
 {
   d_zero = NodeManager::currentNM()->mkConstInt(Rational(0));
@@ -524,6 +525,7 @@ Node CoreSolver::checkCycles( Node eqc, std::vector< Node >& curr, std::vector< 
 
 void CoreSolver::checkNormalFormsEq()
 {
+  d_hasNormalForms = false;
   // calculate normal forms for each equivalence class, possibly adding
   // splitting lemmas
   d_normal_form.clear();
@@ -584,11 +586,16 @@ void CoreSolver::checkNormalFormsEq()
     {
       // if we are using model normal forms, eagerly check if there is a model
       // here before sending the lemma in processPossibleInferInfo.
+      if (d_stringsMnf.findModelNormalForms(d_strings_eqc))
+      {
+        return;
+      }
     }
     // add one inference from our list of possible inferences
     processPossibleInferInfo(pinfer);
     return;
   }
+  d_hasNormalForms = true;
   if (TraceIsOn("strings-nf"))
   {
     Trace("strings-nf") << "**** Normal forms are : " << std::endl;
@@ -665,6 +672,11 @@ void CoreSolver::normalizeEquivalenceClass(Node eqc,
   }
 }
 
+bool CoreSolver::hasNormalForms() const
+{
+  return d_hasNormalForms;
+}
+
 NormalForm& CoreSolver::getNormalForm(Node n)
 {
   std::map<Node, NormalForm>::iterator itn = d_normal_form.find(n);
@@ -683,6 +695,11 @@ NormalForm& CoreSolver::getNormalForm(Node n)
 
 Node CoreSolver::getNormalString(Node x, std::vector<Node>& nf_exp)
 {
+  if (!hasNormalForms())
+  {
+    // if normal forms not available, just return self
+    return x;
+  }
   if (!x.isConst())
   {
     Node xr = d_state.getRepresentative(x);

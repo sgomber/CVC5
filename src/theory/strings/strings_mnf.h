@@ -30,6 +30,17 @@ namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
+class ModelEqcInfo
+{
+public:
+    ModelEqcInfo(){}
+    ~ModelEqcInfo(){}
+    /** The current normal form */
+    std::vector<Node> d_mnf;
+    /** The length value */
+    Node d_length;
+};
+
 /**
  */
 class StringsMnf : protected ModelCons
@@ -59,6 +70,20 @@ class StringsMnf : protected ModelCons
   std::vector<Node> getNormalForm(Node n) override;
 
  protected:
+  /**
+   * Normalize eqc.
+   *
+   * Ensures that a normal form can be set for all concatenation and constant
+   * terms in eqc.
+   *
+   * If returns true, ModelEqcInfo is set for eqc.
+   */
+  bool normalizeEqc(Node eqc, TypeNode stype);
+  /** 
+   * Expand normal form, which returns a vector from nf where all terms in the
+   * returned vector are atomic.
+   */
+  std::vector<Node> expandNormalForm(const std::vector<Node>& nf);
   /** The solver state object */
   SolverState& d_state;
   /** The (custom) output channel of the theory of strings */
@@ -67,8 +92,10 @@ class StringsMnf : protected ModelCons
   TermRegistry& d_termReg;
   /** reference to the base solver, used for certain queries */
   BaseSolver& d_bsolver;
-  /** Map from atomic variables to a splitting */
-  std::map<Node, std::vector<Node> > d_mnf;
+  /** Common constants */
+  Node d_zero;
+  /** Map from representatives to information */
+  std::map<Node, ModelEqcInfo > d_minfo;
   /** Map from atomic variables to representative */
   std::map<Node, Node> d_repMap;
 };

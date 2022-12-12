@@ -205,6 +205,8 @@ class CoreSolver : protected EnvObj
   //-----------------------end inference steps
 
   //--------------------------- query functions
+  /** Are normal forms available? */
+  bool hasNormalForms() const;
   /**
    * Get normal form for string term n. For details on this data structure,
    * see theory/strings/normal_form.h.
@@ -544,6 +546,8 @@ class CoreSolver : protected EnvObj
   std::map<Node, std::vector<int> > d_flat_form_index;
   /** Set of equalities for which we have applied extensionality. */
   NodeSet d_extDeq;
+  /** Have we computed normal forms for all equivalence classes? */
+  bool d_hasNormalForms;
   /** Model normal form finding module */
   StringsMnf d_stringsMnf;
 }; /* class CoreSolver */
