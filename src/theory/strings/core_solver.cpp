@@ -2610,7 +2610,7 @@ void CoreSolver::checkNormalFormsDeq()
   }
 }
 
-void CoreSolver::checkLengthsEqc() 
+void CoreSolver::checkLengthsEqc()
 {
   // if we terminated early before computing normal forms, skip
   if (!hasNormalForms())
