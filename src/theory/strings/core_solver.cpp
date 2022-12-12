@@ -2610,7 +2610,13 @@ void CoreSolver::checkNormalFormsDeq()
   }
 }
 
-void CoreSolver::checkLengthsEqc() {
+void CoreSolver::checkLengthsEqc() 
+{
+  // if we terminated early before computing normal forms, skip
+  if (!hasNormalForms())
+  {
+    return;
+  }
   for (unsigned i = 0; i < d_strings_eqc.size(); i++)
   {
     TypeNode stype = d_strings_eqc[i].getType();
