@@ -140,7 +140,8 @@ void StringsMnf::getStringRepresentativesFrom(
     it = d_minfo.find(mt);
     if (it != d_minfo.end())
     {
-      toProcess.insert(toProcess.end(), it->second.d_mnf.begin(), it->second.d_mnf.end());
+      toProcess.insert(
+          toProcess.end(), it->second.d_mnf.begin(), it->second.d_mnf.end());
     }
   }
 }
