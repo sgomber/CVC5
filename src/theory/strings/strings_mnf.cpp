@@ -111,11 +111,11 @@ void StringsMnf::getStringRepresentativesFrom(
   std::vector<Node> toProcess(termSet.begin(), termSet.end());
   size_t i = 0;
   std::unordered_set<Node> processed;
-  while (i<toProcess.size())
+  while (i < toProcess.size())
   {
     Node t = d_state.getRepresentative(toProcess[i]);
     i++;
-    if (processed.find(t)!=processed.end())
+    if (processed.find(t) != processed.end())
     {
       continue;
     }
@@ -126,7 +126,7 @@ void StringsMnf::getStringRepresentativesFrom(
       continue;
     }
     Node mt = getModelRepresentative(t);
-    if (mt!=t)
+    if (mt != t)
     {
       // set equal and continue
       toProcess.push_back(mt);
@@ -145,7 +145,7 @@ void StringsMnf::separateByLength(const std::vector<Node>& ns,
   std::map<Node, ModelEqcInfo>::iterator it;
   std::map<Rational, size_t> lenToIndex;
   std::map<Rational, size_t>::iterator itl;
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   for (const Node& n : ns)
   {
     Rational len;
@@ -160,7 +160,7 @@ void StringsMnf::separateByLength(const std::vector<Node>& ns,
       len = it->second.d_length;
     }
     itl = lenToIndex.find(len);
-    if (itl!=lenToIndex.end())
+    if (itl != lenToIndex.end())
     {
       cols[itl->second].push_back(n);
     }
