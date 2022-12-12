@@ -97,26 +97,26 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
   std::map<Node, std::unordered_set<Node>> processed;
   for (const Node& deq : deqs)
   {
-    Assert (deq.getKind()==EQUAL);
+    Assert(deq.getKind() == EQUAL);
     Node a = getModelRepresentative(deq[0]);
     Node b = getModelRepresentative(deq[1]);
-    if (a<b)
+    if (a < b)
     {
       std::swap(a, b);
     }
     std::unordered_set<Node>& pa = processed[a];
-    if (pa.find(b)!=pa.end())
+    if (pa.find(b) != pa.end())
     {
       continue;
     }
     pa.insert(b);
     Rational la = getLength(a);
     Rational lb = getLength(b);
-    if (la!=lb)
+    if (la != lb)
     {
       continue;
     }
-    if (!normalizeDeq(a,b))
+    if (!normalizeDeq(a, b))
     {
       ret = false;
       break;
@@ -402,14 +402,14 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
 
 bool StringsMnf::normalizeDeq(Node ar, Node br)
 {
-  Assert (ar==getModelRepresentative(ar) && d_minfo.find(ar)!=d_minfo.end());
-  Assert (br==getModelRepresentative(br) && d_minfo.find(br)!=d_minfo.end());
+  Assert(ar == getModelRepresentative(ar) && d_minfo.find(ar) != d_minfo.end());
+  Assert(br == getModelRepresentative(br) && d_minfo.find(br) != d_minfo.end());
   ModelEqcInfo& meia = d_minfo[ar];
   ModelEqcInfo& meib = d_minfo[br];
   size_t i = 0;
   while (i < meia.d_mnf.size())
   {
-    Assert (i<meib.d_mnf.size());
+    Assert(i < meib.d_mnf.size());
     Node a = meia.d_mnf[i];
     Node b = meib.d_mnf[i];
     if (a == b)
@@ -469,12 +469,11 @@ Node StringsMnf::getModelRepresentative(const Node& n)
     {
       it = itnext;
       itnext = d_mrepMap.find(it->second);
-      if (itnext!= d_mrepMap.end())
+      if (itnext != d_mrepMap.end())
       {
         eqc.push_back(it->second);
       }
-    }
-    while (itnext != d_mrepMap.end());
+    } while (itnext != d_mrepMap.end());
     for (const Node& e : eqc)
     {
       d_mrepMap[e] = it->second;
