@@ -672,10 +672,7 @@ void CoreSolver::normalizeEquivalenceClass(Node eqc,
   }
 }
 
-bool CoreSolver::hasNormalForms() const
-{
-  return d_hasNormalForms;
-}
+bool CoreSolver::hasNormalForms() const { return d_hasNormalForms; }
 
 NormalForm& CoreSolver::getNormalForm(Node n)
 {

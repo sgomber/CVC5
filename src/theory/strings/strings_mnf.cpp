@@ -15,8 +15,8 @@
 
 #include "theory/strings/strings_mnf.h"
 
-#include "theory/strings/word.h"
 #include "theory/strings/theory_strings_utils.h"
+#include "theory/strings/word.h"
 #include "util/rational.h"
 
 using namespace cvc5::internal::kind;
@@ -74,7 +74,7 @@ void StringsMnf::separateByLength(
 std::vector<Node> StringsMnf::getNormalForm(Node n)
 {
   std::vector<Node> vec;
-  std::map<Node, ModelEqcInfo >::iterator it = d_minfo.find(n);
+  std::map<Node, ModelEqcInfo>::iterator it = d_minfo.find(n);
   if (it != d_minfo.end())
   {
     vec = it->second.d_mnf;
@@ -100,12 +100,14 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     return true;
   }
   // otherwise, get the normal form for each term in the equivalence class
-  std::vector< std::pair< Node, std::vector<Node> > > nfs;
+  std::vector<std::pair<Node, std::vector<Node>>> nfs;
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
-  eq::EqClassIterator eqc_i = eq::EqClassIterator( eqc, ee );
-  while( !eqc_i.isFinished() ){
+  eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
+  while (!eqc_i.isFinished())
+  {
     Node n = (*eqc_i);
-    if( d_bsolver.isCongruent(n) ){
+    if (d_bsolver.isCongruent(n))
+    {
       continue;
     }
     if (utils::isConstantLike(n))
@@ -127,10 +129,10 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
       nfs.emplace_back(n, nf);
     }
   }
-  
+
   // now, process each normal form
   bool firstTime = false;
-  for (std::pair<Node, std::vector<Node> >& nf : nfs)
+  for (std::pair<Node, std::vector<Node>>& nf : nfs)
   {
     if (firstTime)
     {
@@ -147,7 +149,6 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
 std::vector<Node> StringsMnf::expandNormalForm(const std::vector<Node>& nf)
 {
   std::vector<Node> exnf;
-  
 }
 
 }  // namespace strings

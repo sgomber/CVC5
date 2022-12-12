@@ -32,13 +32,13 @@ namespace strings {
 
 class ModelEqcInfo
 {
-public:
-    ModelEqcInfo(){}
-    ~ModelEqcInfo(){}
-    /** The current normal form */
-    std::vector<Node> d_mnf;
-    /** The length value */
-    Node d_length;
+ public:
+  ModelEqcInfo() {}
+  ~ModelEqcInfo() {}
+  /** The current normal form */
+  std::vector<Node> d_mnf;
+  /** The length value */
+  Node d_length;
 };
 
 /**
@@ -79,7 +79,7 @@ class StringsMnf : protected ModelCons
    * If returns true, ModelEqcInfo is set for eqc.
    */
   bool normalizeEqc(Node eqc, TypeNode stype);
-  /** 
+  /**
    * Expand normal form, which returns a vector from nf where all terms in the
    * returned vector are atomic.
    */
@@ -95,7 +95,7 @@ class StringsMnf : protected ModelCons
   /** Common constants */
   Node d_zero;
   /** Map from representatives to information */
-  std::map<Node, ModelEqcInfo > d_minfo;
+  std::map<Node, ModelEqcInfo> d_minfo;
   /** Map from atomic variables to representative */
   std::map<Node, Node> d_repMap;
 };
