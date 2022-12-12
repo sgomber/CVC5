@@ -15,9 +15,9 @@
 
 #include "theory/strings/strings_mnf.h"
 
+#include "options/strings_options.h"
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
-#include "options/strings_options.h"
 
 using namespace cvc5::internal::kind;
 
@@ -68,7 +68,7 @@ StringsMnf::StringsMnf(Env& env,
   d_zero = NodeManager::currentNM()->mkConstInt(Rational(0));
   // get the maximum model length
   d_maxModelLen = options().strings.stringsModelMaxLength;
-  if (d_maxModelLen<65536)
+  if (d_maxModelLen < 65536)
   {
     d_maxModelLen = 65536;
   }
@@ -198,7 +198,8 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     if (lt.isNull())
     {
       // does not have a length term, we must fail
-      Trace("strings-mnf") << "Fail: " << eqc << " has no length term." << std::endl;
+      Trace("strings-mnf") << "Fail: " << eqc << " has no length term."
+                           << std::endl;
       return false;
     }
     // otherwise, look up the model value now
@@ -214,7 +215,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
   bool firstTime = true;
   // list of modifications done to normal forms while processing this
   // equivalence class
-  std::vector< std::pair<Node, std::vector<Node> > > currExpands;
+  std::vector<std::pair<Node, std::vector<Node>>> currExpands;
   for (std::pair<Node, std::vector<Node>>& nf : nfs)
   {
     if (firstTime)
@@ -226,14 +227,14 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     }
     // First, update nf.second based on expands done for previous normal forms
     // in this equivalence class
-    for (const std::pair<Node, std::vector<Node> >& ce : currExpands)
+    for (const std::pair<Node, std::vector<Node>>& ce : currExpands)
     {
       ModelEqcInfo::expandNormalForm(nf.second, ce.first, ce.second);
     }
     Trace("strings-mnf-solve") << "Compare: " << std::endl;
     Trace("strings-mnf-solve") << "[1] " << mei.d_mnf << std::endl;
     Trace("strings-mnf-solve") << "[2] " << nf.second << std::endl;
-    
+
     // Now, compare mei.d_mnf and nf.second left to right
     size_t i = 0;
     while (i < mei.d_mnf.size())
@@ -247,16 +248,19 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
       }
       Rational la = getLength(a);
       Rational lb = getLength(b);
-      Trace("strings-mnf-solve") << "Compare " << a << " / " << b << ", lengths=" << la << " / " << lb << std::endl;
+      Trace("strings-mnf-solve")
+          << "Compare " << a << " / " << b << ", lengths=" << la << " / " << lb
+          << std::endl;
       // should have positive lengths
-      Assert (la.sgn()==1 && lb.sgn()==1);
+      Assert(la.sgn() == 1 && lb.sgn() == 1);
       // if lengths are already equal, merge b into a
       if (la == lb)
       {
         if (!merge(a, b))
         {
           // conflict, we fail
-          Trace("strings-mnf") << "Fail: " << eqc << " while merging " << a << ", " << b << std::endl;
+          Trace("strings-mnf") << "Fail: " << eqc << " while merging " << a
+                               << ", " << b << std::endl;
           return false;
         }
         i++;
@@ -271,14 +275,14 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
       }
       else
       {
-        Assert (la<lb);
+        Assert(la < lb);
         std::vector<Node> bvec = split(b, lb, la);
         currExpands.emplace_back(b, bvec);
       }
       // apply the expansion to the current normal form (nf.second) we are
       // processing
-      Assert (!currExpands.empty());
-      std::pair<Node, std::vector<Node> > ce = currExpands.back();
+      Assert(!currExpands.empty());
+      std::pair<Node, std::vector<Node>> ce = currExpands.back();
       ModelEqcInfo::expandNormalForm(nf.second, ce.first, ce.second);
     }
   }
@@ -289,7 +293,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
 
 Rational StringsMnf::getLength(const Node& r)
 {
-  Assert (r.getType().isStringLike());
+  Assert(r.getType().isStringLike());
   if (r.isConst())
   {
     return Word::getLength(r);
@@ -332,19 +336,20 @@ bool StringsMnf::merge(const Node& a, const Node& b)
   return true;
 }
 
-std::vector<Node> StringsMnf::split(const Node& a, const Rational& alen, const Rational& pos)
+std::vector<Node> StringsMnf::split(const Node& a,
+                                    const Rational& alen,
+                                    const Rational& pos)
 {
-  Assert (alen>pos);
-  Assert (pos.sgn()==1);
+  Assert(alen > pos);
+  Assert(pos.sgn() == 1);
   std::vector<Node> vec;
   if (a.isConst())
   {
     // split concretely
     // since pos is less than alen which is the length of the constant, which
     // should be less than the maximum model length (or 65536).
-    Assert (pos<d_maxModelLen);
-    std::size_t pvalue =
-        pos.getNumerator().toUnsignedInt();
+    Assert(pos < d_maxModelLen);
+    std::size_t pvalue = pos.getNumerator().toUnsignedInt();
     vec.push_back(Word::prefix(a, pvalue));
     vec.push_back(Word::suffix(a, pvalue));
   }
@@ -353,24 +358,25 @@ std::vector<Node> StringsMnf::split(const Node& a, const Rational& alen, const R
     // split based on skolems, these are dummy since there is no need to cache
     // them
     TypeNode atn = a.getType();
-    SkolemManager * sm = NodeManager::currentNM()->getSkolemManager();
+    SkolemManager* sm = NodeManager::currentNM()->getSkolemManager();
     vec.push_back(sm->mkDummySkolem("m", atn));
     vec.push_back(sm->mkDummySkolem("m", atn));
   }
   // allocate new equivalence class infos
-  Assert (vec.size()==2);
+  Assert(vec.size() == 2);
   std::map<Node, ModelEqcInfo>::iterator it;
   Trace("strings-mnf") << "...split " << a << ": " << vec << std::endl;
-  for (size_t i=0; i<2; i++)
+  for (size_t i = 0; i < 2; i++)
   {
     it = d_minfo.find(vec[i]);
-    if (it==d_minfo.end())
+    if (it == d_minfo.end())
     {
       // allocate, where the length depends on alen / pos
       ModelEqcInfo& meic = d_minfo[vec[i]];
       meic.d_mnf.push_back(vec[i]);
-      meic.d_length = i==0 ? pos : alen-pos;
-      Trace("strings-mnf") << "NF " << vec[i] << " (split " << a << "): " << meic.toString() << std::endl;
+      meic.d_length = i == 0 ? pos : alen - pos;
+      Trace("strings-mnf") << "NF " << vec[i] << " (split " << a
+                           << "): " << meic.toString() << std::endl;
     }
   }
   // expand a in all current normal forms

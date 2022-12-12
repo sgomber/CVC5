@@ -101,7 +101,9 @@ class StringsMnf : protected ModelCons
   /** Merge */
   bool merge(const Node& a, const Node& b);
   /** Split */
-  std::vector<Node> split(const Node& a, const Rational& alen, const Rational& pos);
+  std::vector<Node> split(const Node& a,
+                          const Rational& alen,
+                          const Rational& pos);
   /** The solver state object */
   SolverState& d_state;
   /** The (custom) output channel of the theory of strings */
