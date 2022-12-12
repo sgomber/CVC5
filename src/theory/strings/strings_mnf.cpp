@@ -107,21 +107,18 @@ void StringsMnf::getStringRepresentativesFrom(
     std::map<TypeNode, std::unordered_set<Node>>& repSet)
 {
   // TODO
-  
 }
 
-void StringsMnf::separateByLength(
-    const std::vector<Node>& ns,
-    std::vector<std::vector<Node>>& cols,
-    std::vector<Node>& lts)
+void StringsMnf::separateByLength(const std::vector<Node>& ns,
+                                  std::vector<std::vector<Node>>& cols,
+                                  std::vector<Node>& lts)
 {
   std::map<Node, ModelEqcInfo>::iterator it;
   std::map<std::pair<TypeNode, Node>, size_t> lenToIndex;
   for (const Node& n : ns)
   {
     it = d_minfo.find(n);
-    Assert (it != d_minfo.end());
-    
+    Assert(it != d_minfo.end());
   }
 }
 
@@ -271,12 +268,12 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
           {
             // conflict, we fail
             Trace("strings-mnf") << "Fail: " << eqc << " while merging " << a
-                                << ", " << b << std::endl;
+                                 << ", " << b << std::endl;
             return false;
           }
           else
           {
-            std::swap(a,b);
+            std::swap(a, b);
           }
         }
         // otherwise merge b into a
@@ -335,7 +332,7 @@ Node StringsMnf::getModelRepresentative(const Node& n)
 void StringsMnf::merge(const Node& a, const Node& b)
 {
   // should not merge constant
-  Assert (!b.isConst());
+  Assert(!b.isConst());
   Assert(a == getModelRepresentative(a));
   Assert(b == getModelRepresentative(b));
   Trace("strings-mnf") << "...merge " << b << ": " << a << std::endl;
@@ -364,7 +361,7 @@ std::vector<Node> StringsMnf::split(const Node& a,
     std::size_t pvalue = pos.getNumerator().toUnsignedInt();
     std::size_t alvalue = alen.getNumerator().toUnsignedInt();
     vec.push_back(Word::prefix(a, pvalue));
-    vec.push_back(Word::suffix(a, alvalue-pvalue));
+    vec.push_back(Word::suffix(a, alvalue - pvalue));
   }
   else
   {
@@ -377,7 +374,7 @@ std::vector<Node> StringsMnf::split(const Node& a,
   }
   // Allocate new equivalence class infos. Note that in rare cases we may
   // split a word into components where one of those components is already
-  // a representative. In this case, we don't 
+  // a representative. In this case, we don't
   Assert(vec.size() == 2);
   std::map<Node, ModelEqcInfo>::iterator it;
   Trace("strings-mnf") << "...split " << a << ": " << vec << std::endl;

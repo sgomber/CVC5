@@ -36,10 +36,9 @@ void ModelConsDefault::getStringRepresentativesFrom(
   d_state.getStringRepresentativesFrom(termSet, repTypes, repSet);
 }
 
-void ModelConsDefault::separateByLength(
-    const std::vector<Node>& ns,
-    std::vector<std::vector<Node>>& cols,
-    std::vector<Node>& lts)
+void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
+                                        std::vector<std::vector<Node>>& cols,
+                                        std::vector<Node>& lts)
 {
   d_state.separateByLength(ns, cols, lts);
   // look up the values of each length term

@@ -300,7 +300,7 @@ bool TheoryStrings::collectModelInfoType(
   ModelCons* mc = d_state.getModelConstructor();
   // get partition of strings of equal lengths for the representatives of the
   // current type
-  std::vector<std::vector<Node> > col;
+  std::vector<std::vector<Node>> col;
   std::vector<Node> lts;
   const std::vector<Node> repVec(repSet.at(tn).begin(), repSet.at(tn).end());
   mc->separateByLength(repVec, col, lts);

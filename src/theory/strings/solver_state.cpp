@@ -210,16 +210,15 @@ void SolverState::separateByLengthTyped(
     tvecs[eqc.getType()].push_back(eqc);
   }
   // separate for each type
-  for (const std::pair< const TypeNode, std::vector<Node> >& v : tvecs)
+  for (const std::pair<const TypeNode, std::vector<Node>>& v : tvecs)
   {
     separateByLength(v.second, cols[v.first], lts[v.first]);
   }
 }
 
-void SolverState::separateByLength(
-    const std::vector<Node>& n,
-    std::vector<std::vector<Node>>& cols,
-    std::vector<Node>& lts)
+void SolverState::separateByLength(const std::vector<Node>& n,
+                                   std::vector<std::vector<Node>>& cols,
+                                   std::vector<Node>& lts)
 {
   unsigned leqc_counter = 0;
   // map (length, type) to an equivalence class identifier

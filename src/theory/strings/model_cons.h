@@ -46,10 +46,9 @@ class ModelCons : protected EnvObj
    *
    * Must assign lts to *concrete* lengths.
    */
-  virtual void separateByLength(
-      const std::vector<Node>& n,
-      std::vector<std::vector<Node>>& cols,
-      std::vector<Node>& lts) = 0;
+  virtual void separateByLength(const std::vector<Node>& n,
+                                std::vector<std::vector<Node>>& cols,
+                                std::vector<Node>& lts) = 0;
   /**
    * Get the normal form
    */
