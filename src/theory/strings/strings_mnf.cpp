@@ -77,7 +77,6 @@ StringsMnf::StringsMnf(Env& env,
 bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
 {
   Trace("strings-mnf") << "StringsMnf::findModelNormalForms..." << std::endl;
-  bool ret = true;
   // reset the state
   d_minfo.clear();
   d_mrepMap.clear();
@@ -88,8 +87,8 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
     Trace("strings-mnf") << "process-equality " << eqc << std::endl;
     if (!normalizeEqc(eqc))
     {
-      ret = false;
-      break;
+      Trace("strings-mnf") << "...fail equality" << std::endl;
+      return false;
     }
   }
   // also check disequalities
@@ -110,27 +109,26 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
       continue;
     }
     pa.insert(b);
+    Trace("strings-mnf") << "process-disequality " << deq << " (" << a << ", " << b << ")" << std::endl;
     Rational la = getLength(a);
     Rational lb = getLength(b);
     if (la != lb)
     {
       continue;
     }
-    Trace("strings-mnf") << "process-disequality " << deq << ", length " << la
-                         << std::endl;
     if (!normalizeDeq(a, b))
     {
-      ret = false;
-      break;
+      Trace("strings-mnf") << "...fail disequality" << std::endl;
+      return false;
     }
   }
-  Trace("strings-mnf") << "...return: " << ret << std::endl;
+  Trace("strings-mnf") << "...success!!!" << std::endl;
   // If successful and non-trivial, this class will be the model constructor.
-  if (ret && !stringsEqc.empty())
+  if (!stringsEqc.empty())
   {
     d_state.setModelConstructor(this);
   }
-  return ret;
+  return true;
 }
 
 void StringsMnf::getStringRepresentativesFrom(
