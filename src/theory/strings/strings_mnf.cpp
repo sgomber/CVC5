@@ -85,8 +85,8 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
   // is sorted based on containment ordering.
   for (const Node& eqc : stringsEqc)
   {
-    TypeNode stype = eqc.getType();
-    if (!normalizeEqc(eqc, stype))
+    Trace("strings-mnf") << "process-equality " << eqc << std::endl;
+    if (!normalizeEqc(eqc))
     {
       ret = false;
       break;
@@ -116,6 +116,7 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
     {
       continue;
     }
+    Trace("strings-mnf") << "process-disequality " << deq << ", length " << la << std::endl;
     if (!normalizeDeq(a, b))
     {
       ret = false;
@@ -237,11 +238,11 @@ std::vector<Node> StringsMnf::getNormalFormInternal(const Node& n)
   return vec;
 }
 
-bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
+bool StringsMnf::normalizeEqc(Node eqc)
 {
   ModelEqcInfo& mei = d_minfo[eqc];
   // if empty string, we initialize normal form to empty
-  Node emp = Word::mkEmptyWord(stype);
+  Node emp = Word::mkEmptyWord(eqc.getType());
   if (d_state.areEqual(eqc, emp))
   {
     mei.d_length = Rational(0);
@@ -287,22 +288,23 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
       }
     }
   }
-
-  // if we are an atomic equivalence class, just compute the length
+  // compute the length of the equivalence class
+  EqcInfo* ei = d_state.getOrMakeEqcInfo(eqc, false);
+  Node lt = ei ? ei->d_lengthTerm : Node::null();
+  if (lt.isNull())
+  {
+    // does not have a length term, we must fail
+    Trace("strings-mnf") << "Fail: " << eqc << " has no length term."
+                          << std::endl;
+    return false;
+  }
+  // otherwise, look up the model value now
+  Valuation& val = d_state.getValuation();
+  mei.d_length = val.getModelValue(lt).getConst<Rational>();
+  
+  // if we are an atomic equivalence class, just add
   if (nfs.empty())
   {
-    EqcInfo* ei = d_state.getOrMakeEqcInfo(eqc, false);
-    Node lt = ei ? ei->d_lengthTerm : Node::null();
-    if (lt.isNull())
-    {
-      // does not have a length term, we must fail
-      Trace("strings-mnf") << "Fail: " << eqc << " has no length term."
-                           << std::endl;
-      return false;
-    }
-    // otherwise, look up the model value now
-    Valuation& val = d_state.getValuation();
-    mei.d_length = val.getModelValue(lt).getConst<Rational>();
     mei.d_mnf.emplace_back(eqc);
     Trace("strings-mnf") << "NF " << eqc << " (singular): " << mei.toString()
                          << std::endl;
@@ -395,7 +397,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
       ModelEqcInfo::expandNormalForm(nf.second, ce.first, ce.second);
     }
   }
-  // otherwise don't need to compute the length from the normal form
+  // otherwise don't need to compute the length from the normal form?
   Trace("strings-mnf") << "NF " << eqc << " : " << mei.toString() << std::endl;
   return true;
 }
@@ -406,6 +408,10 @@ bool StringsMnf::normalizeDeq(Node ar, Node br)
   Assert(br == getModelRepresentative(br) && d_minfo.find(br) != d_minfo.end());
   ModelEqcInfo& meia = d_minfo[ar];
   ModelEqcInfo& meib = d_minfo[br];
+  
+  Trace("strings-mnf-solve") << "Compare-disequal: " << std::endl;
+  Trace("strings-mnf-solve") << "[1] " << meia.d_mnf << std::endl;
+  Trace("strings-mnf-solve") << "[2] " << meib.d_mnf << std::endl;
   size_t i = 0;
   while (i < meia.d_mnf.size())
   {

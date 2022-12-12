@@ -91,7 +91,7 @@ class StringsMnf : protected ModelCons
    *
    * If returns true, ModelEqcInfo is set for eqc.
    */
-  bool normalizeEqc(Node eqc, TypeNode stype);
+  bool normalizeEqc(Node eqc);
   /**
    * Normalize deq.
    */
