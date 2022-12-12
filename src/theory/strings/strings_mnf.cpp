@@ -27,14 +27,14 @@ namespace strings {
 
 void ModelEqcInfo::expand(const Node& n, const std::vector<Node>& nn)
 {
-  Assert (!nn.empty());
-  size_t i =0;
-  while (i<d_mnf.size())
+  Assert(!nn.empty());
+  size_t i = 0;
+  while (i < d_mnf.size())
   {
-    if (d_mnf[i]==n)
+    if (d_mnf[i] == n)
     {
       d_mnf[i] = nn[0];
-      d_mnf.insert(d_mnf.begin()+i+1,nn.begin()+1, nn.end());
+      d_mnf.insert(d_mnf.begin() + i + 1, nn.begin() + 1, nn.end());
       i += nn.size();
     }
     else
@@ -43,8 +43,7 @@ void ModelEqcInfo::expand(const Node& n, const std::vector<Node>& nn)
     }
   }
 }
-  
-  
+
 StringsMnf::StringsMnf(Env& env,
                        SolverState& s,
                        InferenceManager& im,
@@ -99,7 +98,7 @@ std::vector<Node> StringsMnf::getNormalForm(Node n)
 
 std::vector<Node> StringsMnf::getNormalFormInternal(Node n)
 {
-  Assert (n==getModelRepresentative(n));
+  Assert(n == getModelRepresentative(n));
   std::vector<Node> vec;
   std::map<Node, ModelEqcInfo>::iterator it = d_minfo.find(n);
   if (it != d_minfo.end())
@@ -127,8 +126,8 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     mei.d_length = d_zero;
     return true;
   }
-  //NodeManager* nm = NodeManager::currentNM();
-  // otherwise, get the normal form for each term in the equivalence class
+  // NodeManager* nm = NodeManager::currentNM();
+  //  otherwise, get the normal form for each term in the equivalence class
   std::vector<std::pair<Node, std::vector<Node>>> nfs;
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
@@ -155,8 +154,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
         nf.insert(nf.end(), nfr.begin(), nfr.end());
       }
       // if not singular, add to vector
-      if (nf.size() > 1
-          || (nf.size() == 1 && utils::isConstantLike(nf[0])))
+      if (nf.size() > 1 || (nf.size() == 1 && utils::isConstantLike(nf[0])))
       {
         nfs.emplace_back(n, nf);
       }
@@ -202,7 +200,7 @@ Node StringsMnf::getModelRepresentative(Node n)
 {
   Node r = d_state.getRepresentative(n);
   std::map<Node, Node>::iterator it = d_mrepMap.find(r);
-  if (it!=d_mrepMap.end())
+  if (it != d_mrepMap.end())
   {
     return it->second;
   }

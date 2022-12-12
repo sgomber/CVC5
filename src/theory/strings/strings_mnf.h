@@ -43,7 +43,7 @@ class ModelEqcInfo
   std::vector<Node> d_mnf;
   /** The length value */
   Node d_length;
-  /** 
+  /**
    * Expand all occurrences of n in d_mnf with the list nn.
    */
   void expand(const Node& n, const std::vector<Node>& nn);
@@ -103,7 +103,7 @@ class StringsMnf : protected ModelCons
   Node d_zero;
   /** Map from representatives to information */
   std::map<Node, ModelEqcInfo> d_minfo;
-  /** 
+  /**
    * Map from representatives in equality engine or allocated model
    * representatives to their model representative.
    */
