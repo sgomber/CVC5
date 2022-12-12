@@ -59,6 +59,23 @@ void StringsMnf::separateByLength(
 std::vector<Node> StringsMnf::getNormalForm(Node n)
 {
   std::vector<Node> vec;
+  std::map<Node, std::vector<Node> >::iterator it;
+  vec.push_back(n);
+  size_t index = 0;
+  while (index<vec.size())
+  {
+    // expand in place
+    it = d_mnf.find(vec[index]);
+    if (it==d_mnf.end())
+    {
+      index++;
+    }
+    else
+    {
+      vec.erase(vec.begin()+index);
+      // replace by normal forms
+    }
+  }
   return vec;
 }
 

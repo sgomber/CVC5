@@ -67,6 +67,10 @@ class StringsMnf : protected ModelCons
   TermRegistry& d_termReg;
   /** reference to the base solver, used for certain queries */
   BaseSolver& d_bsolver;
+  /** Map from atomic variables to a splitting */
+  std::map<Node, std::vector<Node> > d_mnf;
+  /** Map from atomic variables to representative */
+  std::map<Node, Node> d_repMap;
 };
 
 }  // namespace strings
