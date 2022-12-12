@@ -25,6 +25,7 @@
 #include "theory/strings/normal_form.h"
 #include "theory/strings/solver_state.h"
 #include "theory/strings/term_registry.h"
+#include "util/rational.h"
 
 namespace cvc5::internal {
 namespace theory {
@@ -42,17 +43,15 @@ class ModelEqcInfo
    */
   std::vector<Node> d_mnf;
   /** The length value */
-  Node d_length;
+  Rational d_length;
   /** To string (for debugging) */
   std::string toString() const;
-  /**
-   * Expand all occurrences of n in d_mnf with the list nn.
-   */
-  void expand(const Node& n, const std::vector<Node>& nn);
-  /** expand normal form */
+  /** Expand all occurrences of n in mnf with the list nn. */
   static void expandNormalForm(std::vector<Node>& mnf,
                                const Node& n,
                                const std::vector<Node>& nn);
+  /** Call the above method for d_mnf. */
+  void expand(const Node& n, const std::vector<Node>& nn);
 };
 
 /**
@@ -95,10 +94,14 @@ class StringsMnf : protected ModelCons
   bool normalizeEqc(Node eqc, TypeNode stype);
   /** Get normal form internal, assumes r is a model representative */
   std::vector<Node> getNormalFormInternal(const Node& r);
+  /** Get length */
+  const Rational& getLength(const Node& r);
   /** Get model representative */
   Node getModelRepresentative(const Node& n);
   /** Merge */
   bool merge(const Node& a, const Node& b);
+  /** Split */
+  std::vector<Node> split(const Node& a, const Rational& pos);
   /** The solver state object */
   SolverState& d_state;
   /** The (custom) output channel of the theory of strings */

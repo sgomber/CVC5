@@ -17,7 +17,6 @@
 
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
-#include "util/rational.h"
 
 using namespace cvc5::internal::kind;
 
@@ -71,6 +70,11 @@ StringsMnf::StringsMnf(Env& env,
 bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
 {
   bool ret = true;
+  // reset the state
+  d_minfo.clear();
+  d_mrepMap.clear();
+  // try to find model normal form for each equivalence class, where stringsEqc
+  // is sorted based on containment ordering
   for (const Node& eqc : stringsEqc)
   {
     TypeNode stype = eqc.getType();
@@ -80,7 +84,7 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
       break;
     }
   }
-  // if successful and non-trivial, we will be the model constructor
+  // if successful and non-trivial, this class will be the model constructor
   if (ret && !stringsEqc.empty())
   {
     d_state.setModelConstructor(this);
@@ -137,7 +141,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
   Node emp = Word::mkEmptyWord(stype);
   if (d_state.areEqual(eqc, emp))
   {
-    mei.d_length = d_zero;
+    mei.d_length = Rational(0);
     Trace("strings-mnf") << "NF " << eqc << " : (empty) " << mei.toString()
                          << std::endl;
     return true;
@@ -188,7 +192,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     }
     // otherwise, look up the model value now
     Valuation& val = d_state.getValuation();
-    mei.d_length = val.getModelValue(lt);
+    mei.d_length = val.getModelValue(lt).getConst<Rational>();
     mei.d_mnf.emplace_back(eqc);
     Trace("strings-mnf") << "NF " << eqc << " : (singular) " << mei.toString()
                          << std::endl;
@@ -206,13 +210,49 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
       firstTime = false;
       continue;
     }
-    // compare mei.d_mnf and nf.second
+    // compare mei.d_mnf and nf.second left to right
+    size_t i = 0;
+    while (i<mei.d_mnf.size())
+    {
+      Node a = mei.d_mnf[i];
+      Node b = nf.second[i];
+      if (a==b)
+      {
+        i++;
+        continue;
+      }
+      const Rational& la = getLength(a);
+      const Rational& lb = getLength(b);
+      // if lengths are already equal, merge b into a
+      if (la==lb)
+      {
+        if (!merge(a, b))
+        {
+          // conflict, we fail
+          return false;
+        }
+      }
+      // otherwise, split
+      if (la>lb)
+      {
+        
+      }
+    }
   }
 
+  Trace("strings-mnf") << "NF " << eqc << " : " << mei.toString()
+                        << std::endl;
   // compute the length from the normal form?
   return false;
 }
 
+const Rational& StringsMnf::getLength(const Node& r)
+{
+  std::map<Node, ModelEqcInfo>::iterator it = d_minfo.find(r);
+  Assert (it != d_minfo.end());
+  return it->second.d_length;
+}
+  
 Node StringsMnf::getModelRepresentative(const Node& n)
 {
   Node r = d_state.getRepresentative(n);
@@ -228,8 +268,35 @@ bool StringsMnf::merge(const Node& a, const Node& b)
 {
   Assert(a == getModelRepresentative(a));
   Assert(b == getModelRepresentative(b));
+  if (a.isConst() && b.isConst())
+  {
+    // cannot merge constants
+    return false;
+  }
+  d_mrepMap[b] = a;
+  // don't need the normal form info for b anymore?
+  d_minfo.erase(b);
+  return true;
+}
 
-  return false;
+std::vector<Node> StringsMnf::split(const Node& a, const Rational& pos)
+{
+  std::vector<Node> vec;
+  if (a.isConst())
+  {
+    // split concretely
+  }
+  else
+  {
+    // split based on skolems
+  }
+  
+  // expand a in all current normal forms
+  for (std::pair<const Node, ModelEqcInfo>& m : d_minfo)
+  {
+    m.second.expand(a, vec);
+  }
+  return vec;
 }
 
 }  // namespace strings
