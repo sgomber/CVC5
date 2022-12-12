@@ -212,11 +212,11 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     }
     // compare mei.d_mnf and nf.second left to right
     size_t i = 0;
-    while (i<mei.d_mnf.size())
+    while (i < mei.d_mnf.size())
     {
       Node a = mei.d_mnf[i];
       Node b = nf.second[i];
-      if (a==b)
+      if (a == b)
       {
         i++;
         continue;
@@ -224,7 +224,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
       const Rational& la = getLength(a);
       const Rational& lb = getLength(b);
       // if lengths are already equal, merge b into a
-      if (la==lb)
+      if (la == lb)
       {
         if (!merge(a, b))
         {
@@ -233,15 +233,13 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
         }
       }
       // otherwise, split
-      if (la>lb)
+      if (la > lb)
       {
-        
       }
     }
   }
 
-  Trace("strings-mnf") << "NF " << eqc << " : " << mei.toString()
-                        << std::endl;
+  Trace("strings-mnf") << "NF " << eqc << " : " << mei.toString() << std::endl;
   // compute the length from the normal form?
   return false;
 }
@@ -249,10 +247,10 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
 const Rational& StringsMnf::getLength(const Node& r)
 {
   std::map<Node, ModelEqcInfo>::iterator it = d_minfo.find(r);
-  Assert (it != d_minfo.end());
+  Assert(it != d_minfo.end());
   return it->second.d_length;
 }
-  
+
 Node StringsMnf::getModelRepresentative(const Node& n)
 {
   Node r = d_state.getRepresentative(n);
@@ -290,7 +288,7 @@ std::vector<Node> StringsMnf::split(const Node& a, const Rational& pos)
   {
     // split based on skolems
   }
-  
+
   // expand a in all current normal forms
   for (std::pair<const Node, ModelEqcInfo>& m : d_minfo)
   {
