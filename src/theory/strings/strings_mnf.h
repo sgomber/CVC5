@@ -43,10 +43,14 @@ class ModelEqcInfo
   std::vector<Node> d_mnf;
   /** The length value */
   Node d_length;
+  /** To string (for debugging) */
+  std::string toString() const;
   /**
    * Expand all occurrences of n in d_mnf with the list nn.
    */
   void expand(const Node& n, const std::vector<Node>& nn);
+  /** expand normal form */
+  static void expandNormalForm(std::vector<Node>& mnf, const Node& n, const std::vector<Node>& nn);
 };
 
 /**
@@ -88,9 +92,11 @@ class StringsMnf : protected ModelCons
    */
   bool normalizeEqc(Node eqc, TypeNode stype);
   /** Get normal form internal, assumes r is a model representative */
-  std::vector<Node> getNormalFormInternal(Node r);
+  std::vector<Node> getNormalFormInternal(const Node& r);
   /** Get model representative */
-  Node getModelRepresentative(Node n);
+  Node getModelRepresentative(const Node& n);
+  /** Merge */
+  bool merge(const Node& a, const Node& b);
   /** The solver state object */
   SolverState& d_state;
   /** The (custom) output channel of the theory of strings */

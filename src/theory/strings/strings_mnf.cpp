@@ -25,16 +25,28 @@ namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
+std::string ModelEqcInfo::toString() const
+{
+  std::stringstream ss;
+  ss << d_mnf << "/" << d_length;
+  return ss.str();
+}
+  
 void ModelEqcInfo::expand(const Node& n, const std::vector<Node>& nn)
+{
+  expandNormalForm(d_mnf, n, nn);
+}
+
+void ModelEqcInfo::expandNormalForm(std::vector<Node>& mnf, const Node& n, const std::vector<Node>& nn)
 {
   Assert(!nn.empty());
   size_t i = 0;
-  while (i < d_mnf.size())
+  while (i < mnf.size())
   {
-    if (d_mnf[i] == n)
+    if (mnf[i] == n)
     {
-      d_mnf[i] = nn[0];
-      d_mnf.insert(d_mnf.begin() + i + 1, nn.begin() + 1, nn.end());
+      mnf[i] = nn[0];
+      mnf.insert(mnf.begin() + i + 1, nn.begin() + 1, nn.end());
       i += nn.size();
     }
     else
@@ -96,7 +108,7 @@ std::vector<Node> StringsMnf::getNormalForm(Node n)
   return getNormalFormInternal(r);
 }
 
-std::vector<Node> StringsMnf::getNormalFormInternal(Node n)
+std::vector<Node> StringsMnf::getNormalFormInternal(const Node& n)
 {
   Assert(n == getModelRepresentative(n));
   std::vector<Node> vec;
@@ -124,6 +136,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
   if (d_state.areEqual(eqc, emp))
   {
     mei.d_length = d_zero;
+    Trace("strings-mnf") << "NF " << eqc << " : (empty) " << mei.toString() << std::endl;
     return true;
   }
   // NodeManager* nm = NodeManager::currentNM();
@@ -149,8 +162,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
       std::vector<Node> nf;
       for (const Node& nc : n)
       {
-        Node r = getModelRepresentative(nc);
-        std::vector<Node> nfr = getNormalForm(r);
+        std::vector<Node> nfr = getNormalForm(nc);
         nf.insert(nf.end(), nfr.begin(), nfr.end());
       }
       // if not singular, add to vector
@@ -175,6 +187,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
     Valuation& val = d_state.getValuation();
     mei.d_length = val.getModelValue(lt);
     mei.d_mnf.emplace_back(eqc);
+    Trace("strings-mnf") << "NF " << eqc << " : (singular) " << mei.toString() << std::endl;
     return true;
   }
 
@@ -196,7 +209,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
   return false;
 }
 
-Node StringsMnf::getModelRepresentative(Node n)
+Node StringsMnf::getModelRepresentative(const Node& n)
 {
   Node r = d_state.getRepresentative(n);
   std::map<Node, Node>::iterator it = d_mrepMap.find(r);
@@ -205,6 +218,14 @@ Node StringsMnf::getModelRepresentative(Node n)
     return it->second;
   }
   return r;
+}
+
+bool StringsMnf::merge(const Node& a, const Node& b)
+{
+  Assert(a == getModelRepresentative(a));
+  Assert(b == getModelRepresentative(b));
+  
+  return false;
 }
 
 }  // namespace strings
