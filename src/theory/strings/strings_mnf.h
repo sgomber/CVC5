@@ -101,7 +101,7 @@ class StringsMnf : protected ModelCons
   /** Merge */
   bool merge(const Node& a, const Node& b);
   /** Split */
-  std::vector<Node> split(const Node& a, const Rational& pos);
+  std::vector<Node> split(const Node& a, const Rational& alen, const Rational& pos);
   /** The solver state object */
   SolverState& d_state;
   /** The (custom) output channel of the theory of strings */
@@ -112,6 +112,8 @@ class StringsMnf : protected ModelCons
   BaseSolver& d_bsolver;
   /** Common constants */
   Node d_zero;
+  /** Maximum model length */
+  uint64_t d_maxModelLen;
   /** Map from representatives to information */
   std::map<Node, ModelEqcInfo> d_minfo;
   /**

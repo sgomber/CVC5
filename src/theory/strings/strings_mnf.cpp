@@ -17,6 +17,7 @@
 
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
+#include "options/strings_options.h"
 
 using namespace cvc5::internal::kind;
 
@@ -65,6 +66,12 @@ StringsMnf::StringsMnf(Env& env,
     : ModelCons(env), d_state(s), d_im(im), d_termReg(tr), d_bsolver(bs)
 {
   d_zero = NodeManager::currentNM()->mkConstInt(Rational(0));
+  // get the maximum model length
+  d_maxModelLen = options().strings.stringsModelMaxLength;
+  if (d_maxModelLen<65536)
+  {
+    d_maxModelLen = 65536;
+  }
 }
 
 bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
@@ -232,6 +239,8 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
       }
       const Rational& la = getLength(a);
       const Rational& lb = getLength(b);
+      // should have positive lengths
+      Assert (la.sgn()==1 && lb.sgn()==1);
       // if lengths are already equal, merge b into a
       if (la == lb)
       {
@@ -247,13 +256,13 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
       else if (la > lb)
       {
         // otherwise, split
-        std::vector<Node> avec = split(a, lb);
+        std::vector<Node> avec = split(a, la, lb);
         currExpands.emplace_back(a, avec);
       }
       else
       {
         Assert (la<lb);
-        std::vector<Node> bvec = split(b, la);
+        std::vector<Node> bvec = split(b, lb, la);
         currExpands.emplace_back(b, bvec);
       }
       // apply the expansion to the current normal form (nf.second) we are
@@ -263,9 +272,8 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
       ModelEqcInfo::expandNormalForm(nf.second, ce.first, ce.second);
     }
   }
-
+  // don't need to compute the length from the normal form
   Trace("strings-mnf") << "NF " << eqc << " : " << mei.toString() << std::endl;
-  // compute the length from the normal form?
   return false;
 }
 
@@ -308,18 +316,45 @@ bool StringsMnf::merge(const Node& a, const Node& b)
   return true;
 }
 
-std::vector<Node> StringsMnf::split(const Node& a, const Rational& pos)
+std::vector<Node> StringsMnf::split(const Node& a, const Rational& alen, const Rational& pos)
 {
+  Assert (alen>pos);
+  Assert (pos.sgn()==1);
   std::vector<Node> vec;
   if (a.isConst())
   {
     // split concretely
+    // since pos is less than alen which is the length of the constant, which
+    // should be less than the maximum model length (or 65536).
+    Assert (pos<d_maxModelLen);
+    std::size_t pvalue =
+        pos.getNumerator().toUnsignedInt();
+    vec.push_back(Word::prefix(a, pvalue));
+    vec.push_back(Word::suffix(a, pvalue));
   }
   else
   {
-    // split based on skolems
+    // split based on skolems, these are dummy since there is no need to cache
+    // them
+    TypeNode atn = a.getType();
+    SkolemManager * sm = NodeManager::currentNM()->getSkolemManager();
+    vec.push_back(sm->mkDummySkolem("m", atn));
+    vec.push_back(sm->mkDummySkolem("m", atn));
   }
-
+  // allocate new equivalence class infos
+  Assert (vec.size()==2);
+  std::map<Node, ModelEqcInfo>::iterator it;
+  for (size_t i=0; i<2; i++)
+  {
+    it = d_minfo.find(vec[i]);
+    if (it==d_minfo.end())
+    {
+      // allocate, where the length depends on alen / pos
+      ModelEqcInfo& meic = d_minfo[vec[i]];
+      meic.d_mnf.push_back(vec[i]);
+      meic.d_length = i==0 ? pos : alen-pos;
+    }
+  }
   // expand a in all current normal forms
   for (std::pair<const Node, ModelEqcInfo>& m : d_minfo)
   {
