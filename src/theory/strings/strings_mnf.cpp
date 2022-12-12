@@ -92,6 +92,36 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
       break;
     }
   }
+  // also check disequalities
+  const context::CDList<Node>& deqs = d_state.getDisequalityList();
+  std::map<Node, std::unordered_set<Node>> processed;
+  for (const Node& deq : deqs)
+  {
+    Assert (deq.getKind()==EQUAL);
+    Node a = getModelRepresentative(deq[0]);
+    Node b = getModelRepresentative(deq[1]);
+    if (a<b)
+    {
+      std::swap(a, b);
+    }
+    std::unordered_set<Node>& pa = processed[a];
+    if (pa.find(b)!=pa.end())
+    {
+      continue;
+    }
+    pa.insert(b);
+    Rational la = getLength(a);
+    Rational lb = getLength(b);
+    if (la!=lb)
+    {
+      continue;
+    }
+    if (!normalizeDeq(a,b))
+    {
+      ret = false;
+      break;
+    }
+  }
   Trace("strings-mnf") << "...return: " << ret << std::endl;
   // If successful and non-trivial, this class will be the model constructor.
   if (ret && !stringsEqc.empty())
@@ -228,13 +258,16 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
   {
     Node n = (*eqc_i);
     ++eqc_i;
+    Trace("strings-mnf-debug") << "Compute normal form " << n << std::endl;
     if (d_bsolver.isCongruent(n))
     {
+      Trace("strings-mnf-debug") << "...congruent" << std::endl;
       continue;
     }
     if (utils::isConstantLike(n))
     {
       nfs.emplace_back(n, std::vector<Node>{n});
+      Trace("strings-mnf-debug") << "...constant-like" << std::endl;
       continue;
     }
     if (n.getKind() == STRING_CONCAT)
@@ -243,6 +276,7 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
       std::vector<Node> nf;
       for (const Node& nc : n)
       {
+        Trace("strings-mnf-debug") << "...concat child " << nc << std::endl;
         std::vector<Node> nfr = getNormalForm(nc);
         nf.insert(nf.end(), nfr.begin(), nfr.end());
       }
@@ -366,6 +400,50 @@ bool StringsMnf::normalizeEqc(Node eqc, TypeNode stype)
   return true;
 }
 
+bool StringsMnf::normalizeDeq(Node ar, Node br)
+{
+  Assert (ar==getModelRepresentative(ar) && d_minfo.find(ar)!=d_minfo.end());
+  Assert (br==getModelRepresentative(br) && d_minfo.find(br)!=d_minfo.end());
+  ModelEqcInfo& meia = d_minfo[ar];
+  ModelEqcInfo& meib = d_minfo[br];
+  size_t i = 0;
+  while (i < meia.d_mnf.size())
+  {
+    Assert (i<meib.d_mnf.size());
+    Node a = meia.d_mnf[i];
+    Node b = meib.d_mnf[i];
+    if (a == b)
+    {
+      i++;
+      continue;
+    }
+    Rational la = getLength(a);
+    Rational lb = getLength(b);
+    if (la == lb)
+    {
+      // equal length components will be assigned different values, we are done
+      return true;
+    }
+    Node s;
+    std::vector<Node> svec;
+    if (la > lb)
+    {
+      // otherwise, split
+      s = a;
+      svec = split(a, la, lb);
+    }
+    else
+    {
+      Assert(la < lb);
+      s = b;
+      svec = split(b, lb, la);
+    }
+    ModelEqcInfo::expandNormalForm(meia.d_mnf, s, svec);
+    ModelEqcInfo::expandNormalForm(meib.d_mnf, s, svec);
+  }
+  return false;
+}
+
 Rational StringsMnf::getLength(const Node& r)
 {
   Assert(r.getType().isStringLike());
@@ -384,6 +462,23 @@ Node StringsMnf::getModelRepresentative(const Node& n)
   std::map<Node, Node>::iterator it = d_mrepMap.find(r);
   if (it != d_mrepMap.end())
   {
+    // union find
+    std::vector<Node> eqc;
+    std::map<Node, Node>::iterator itnext = it;
+    do
+    {
+      it = itnext;
+      itnext = d_mrepMap.find(it->second);
+      if (itnext!= d_mrepMap.end())
+      {
+        eqc.push_back(it->second);
+      }
+    }
+    while (itnext != d_mrepMap.end());
+    for (const Node& e : eqc)
+    {
+      d_mrepMap[e] = it->second;
+    }
     return it->second;
   }
   return r;

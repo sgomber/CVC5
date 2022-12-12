@@ -1127,10 +1127,9 @@ void TheoryStrings::checkCodes()
         continue;
       }
 
-      NormalForm& nfe = d_csolver.getNormalForm(eqc);
-      if (nfe.d_nf.size() == 1 && nfe.d_nf[0].isConst())
+      if (eqc.isConst())
       {
-        Node c = nfe.d_nf[0];
+        Node c = eqc;
         Trace("strings-code-debug") << "Get proxy variable for " << c
                                     << std::endl;
         Node cc = nm->mkNode(kind::STRING_TO_CODE, c);

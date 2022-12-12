@@ -92,6 +92,10 @@ class StringsMnf : protected ModelCons
    * If returns true, ModelEqcInfo is set for eqc.
    */
   bool normalizeEqc(Node eqc, TypeNode stype);
+  /**
+   * Normalize deq.
+   */
+  bool normalizeDeq(Node a, Node b);
   /** Get normal form internal, assumes r is a model representative */
   std::vector<Node> getNormalFormInternal(const Node& r);
   /** Get length */

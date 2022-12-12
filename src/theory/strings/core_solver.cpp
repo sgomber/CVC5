@@ -2521,6 +2521,11 @@ bool CoreSolver::isNormalFormPair( Node n1, Node n2 ) {
 
 void CoreSolver::checkNormalFormsDeq()
 {
+  // if we terminated early before computing normal forms, skip
+  if (!hasNormalForms())
+  {
+    return;
+  }
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   std::map< Node, std::map< Node, bool > > processed;
 
