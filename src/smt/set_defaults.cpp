@@ -1717,7 +1717,8 @@ void SetDefaults::setDefaultsSygus(const LogicInfo& logic, Options& opts) const
   {
     if (!logic.isDecidable(true))
     {
-      opts.writeQuantifiers().sygusEvalUnfoldMode = options::SygusEvalUnfoldMode::NONE;
+      opts.writeQuantifiers().sygusEvalUnfoldMode =
+          options::SygusEvalUnfoldMode::NONE;
     }
   }
 }

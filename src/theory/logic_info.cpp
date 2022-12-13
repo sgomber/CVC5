@@ -143,7 +143,6 @@ bool LogicInfo::isPure(theory::TheoryId theory) const {
       ( isTrueTheory(theory) || d_sharingTheories == 0 );
 }
 
-
 bool LogicInfo::isDecidable(bool restrictQf) const
 {
   // Note this is imprecise

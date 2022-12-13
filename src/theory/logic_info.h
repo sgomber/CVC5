@@ -136,11 +136,11 @@ public:
    * use "isPure(theory) && !isQuantified()".
    */
   bool isPure(theory::TheoryId theory) const;
-  
+
   /**
    * Is this logic decidable? This can be used in heuristics for setting up
    * options.
-   * 
+   *
    * @param restrictQf If true, we do not consider whether this logic contains
    * quantifiers.
    */
