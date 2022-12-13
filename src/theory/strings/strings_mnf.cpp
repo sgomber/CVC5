@@ -266,7 +266,8 @@ bool StringsMnf::normalizeEqc(Node eqc)
     }
     if (utils::isConstantLike(n))
     {
-      nfs.emplace_back(n, std::vector<Node>{n});
+      Node nr = getModelRepresentative(n);
+      nfs.emplace_back(n, std::vector<Node>{nr});
       Trace("strings-mnf-debug") << "...constant-like" << std::endl;
       continue;
     }
@@ -355,7 +356,6 @@ bool StringsMnf::normalizeEqc(Node eqc)
       // if lengths are already equal, merge b into a
       if (la == lb)
       {
-        // flip if b is constant but a is not
         if (b.isConst())
         {
           if (a.isConst())
@@ -367,8 +367,17 @@ bool StringsMnf::normalizeEqc(Node eqc)
           }
           else
           {
+            // flip if b is constant but a is not
             std::swap(a, b);
           }
+        }
+        else if (!a.isConst() && !d_state.hasTerm(a) && d_state.hasTerm(b))
+        {
+          // Flip if a is an auxiliary skolem but b is not. This is required
+          // for properly tracking other information during collectModelValues,
+          // e.g. str.code, which expects equivalence classes of the equality
+          // engine.
+          std::swap(a, b);
         }
         // otherwise merge b into a
         merge(a, b);
@@ -457,7 +466,7 @@ Rational StringsMnf::getLength(const Node& r)
     return Word::getLength(r);
   }
   std::map<Node, ModelEqcInfo>::iterator it = d_minfo.find(r);
-  Assert(it != d_minfo.end());
+  Assert(it != d_minfo.end()) << "No model info for " << r;
   return it->second.d_length;
 }
 
