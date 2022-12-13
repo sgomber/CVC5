@@ -641,10 +641,12 @@ Node ExtendedRewriter::extendedRewritePullIte(Kind itek, Node n) const
         return ite_c[i][0];
       }
       if (nchildren == 2 && (n[1 - i].isVar() || n[1 - i].isConst())
-          && !n[1 - i].getType().isBoolean() && tn.isBoolean())
+          && !n[1 - i].getType().isBoolean() && tn.isBoolean() &&
+          (d_aggr || (n[i][1].getKind()!=ITE && n[i][2].getKind()!=ITE)))
       {
-        // always pull variable or constant with binary (theory) predicate
+        // pull variable or constant with binary (theory) predicate
         // e.g. P( x, ite( A, t1, t2 ) ) ---> ite( A, P( x, t1 ), P( x, t2 ) )
+        // If t1 and t2 are nested ITE, then this is an aggressive rewrite.
         Node new_ret = nm->mkNode(ITE, n[i][0], ite_c[i][0], ite_c[i][1]);
         debugExtendedRewrite(n, new_ret, "ITE pull var predicate");
         return new_ret;

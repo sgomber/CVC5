@@ -761,13 +761,11 @@ Node TermDbSygus::rewriteNode(Node n) const
 {
   Trace("sygus-rewrite") << "Rewrite node: " << n << std::endl;
   Node res;
-  if (options().datatypes.sygusRewriter == options::SygusRewriterMode::EXTENDED)
+  switch (options().datatypes.sygusRewriter)
   {
-    res = extendedRewrite(n);
-  }
-  else
-  {
-    res = rewrite(n);
+    case options::SygusRewriterMode::EXTENDED: res = extendedRewrite(n, false);break;
+    case options::SygusRewriterMode::EXTENDED_AGG: res = extendedRewrite(n, true);break;
+    default: res = rewrite(n);break;
   }
   Trace("sygus-rewrite") << "Rewrite node post-rewrite: " << res << std::endl;
   if (res.isConst())

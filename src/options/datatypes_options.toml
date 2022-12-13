@@ -100,6 +100,9 @@ name   = "Datatypes Theory"
 [[option.mode.EXTENDED]]
   name = "extended"
   help = "Use the extended rewriter."
+[[option.mode.EXTENDED_AGG]]
+  name = "extended-agg"
+  help = "Use the extended rewriter with aggressive rewrites."
 
 [[option]]
   name       = "sygusSymBreakPbe"
