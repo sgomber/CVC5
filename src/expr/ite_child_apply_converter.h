@@ -19,15 +19,16 @@
 
 #include "expr/node.h"
 #include "expr/node_converter.h"
+#include "theory/rewriter.h"
 
 namespace cvc5::internal {
 
 /**
  */
-class IteChildApplyConverter
+class IteChildApplyConverter : public NodeConverter
 {
  public:
-  IteChildApplyConverter(const Node& t, const Node& var);
+  IteChildApplyConverter(theory::Rewriter& rew, const Node& t, const Node& var);
   ~IteChildApplyConverter() {}
   /** convert node n as described above during post-order traversal */
   Node postConvertUntyped(Node orig,
@@ -36,6 +37,8 @@ class IteChildApplyConverter
 private:
   /** Should we traverse n? */
   bool shouldTraverse(Node n) override;
+  /** Rewriter */
+  theory::Rewriter& d_rew;
   /** The term */
   Node d_term;
   /** The variable */

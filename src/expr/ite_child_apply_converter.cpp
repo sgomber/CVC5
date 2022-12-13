@@ -12,31 +12,26 @@
  *
  * Implementation of annotation elimination node conversion
  */
-#include "cvc5_private.h"
 
-#ifndef CVC4__PROOF__EXPR__ITE_CHILD_APPLY_CONVERTER_H
-#define CVC4__PROOF__EXPR__ITE_CHILD_APPLY_CONVERTER_H
-
-#include "expr/node.h"
-#include "expr/node_converter.h"
+#include "expr/ite_child_apply_converter.h"
 
 namespace cvc5::internal {
 
-IteChildApplyConverter::IteChildApplyConverter(const Node& t, const Node& var) : d_term(t), d_var(var){}
+IteChildApplyConverter::IteChildApplyConverter(theory::Rewriter& rew, const Node& t, const Node& var) : d_rew(rew), d_term(t), d_var(var){}
 
 Node IteChildApplyConverter::postConvertUntyped(Node orig,
                                 const std::vector<Node>& terms,
                                 bool termsChanged)
 {
-  if (orig.getKind()==ITE)
+  if (orig.getKind()==kind::ITE)
   {
     std::vector<Node> children;
     children.push_back(terms[0]);
-    for (size_t i=0; i<2; i++)
+    for (size_t i=1; i<=2; i++)
     {
-      if (terms[i].getKind()==ITE)
+      if (orig[i].getKind()==kind::ITE)
       {
-        // take conversion
+        // take conversion if not a leaf
         children.push_back(terms[i]);
       }
       else
@@ -47,7 +42,8 @@ Node IteChildApplyConverter::postConvertUntyped(Node orig,
         children.push_back(ts);
       }
     }
-    return NodeManager::currentNM()->mkNode(ITE, children);
+    Node ret = NodeManager::currentNM()->mkNode(kind::ITE, children);
+    return d_rew.rewrite(ret);
   }
   // otherwise return original
   return orig;
@@ -55,10 +51,8 @@ Node IteChildApplyConverter::postConvertUntyped(Node orig,
 
 bool IteChildApplyConverter::shouldTraverse(Node n)
 {
-  return n.getKind()==ITE;
+  return n.getKind()==kind::ITE;
 }
-
 
 }  // namespace cvc5::internal
 
-#endif

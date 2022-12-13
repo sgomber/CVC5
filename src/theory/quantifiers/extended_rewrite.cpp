@@ -26,6 +26,7 @@
 #include "theory/strings/sequences_rewriter.h"
 #include "theory/strings/word.h"
 #include "theory/theory.h"
+#include "expr/ite_child_apply_converter.h"
 
 using namespace cvc5::internal::kind;
 using namespace std;
@@ -643,9 +644,16 @@ Node ExtendedRewriter::extendedRewritePullIte(Kind itek, Node n) const
       if (nchildren == 2 && (n[1 - i].isVar() || n[1 - i].isConst())
           && !n[1 - i].getType().isBoolean() && tn.isBoolean())
       {
+        Node achildren[2];
+        Node avar = nm->mkBoundVar(n[i].getType());
+        children[ii] = avar;
+        Node aterm = nm->mkNode(n.getKind(), children);
+        Trace("ajr-temp") << "Applying " << avar << " (type " << avar.getType() << ") / " << aterm << " to " << n[i] << std::endl;
+        IteChildApplyConverter icac(d_rew, aterm, avar);
+        Node new_ret = icac.convert(n[i], false);
+        Assert (new_ret.getType()==n.getType());
         // always pull variable or constant with binary (theory) predicate
         // e.g. P( x, ite( A, t1, t2 ) ) ---> ite( A, P( x, t1 ), P( x, t2 ) )
-        Node new_ret = nm->mkNode(ITE, n[i][0], ite_c[i][0], ite_c[i][1]);
         debugExtendedRewrite(n, new_ret, "ITE pull var predicate");
         return new_ret;
       }
