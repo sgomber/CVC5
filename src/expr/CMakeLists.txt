@@ -37,6 +37,8 @@ libcvc5_add_sources(
   emptybag.h
   function_array_const.cpp
   function_array_const.h
+  ite_child_apply_converter.cpp
+  ite_child_apply_converter.h
   kind_map.h
   match_trie.cpp
   match_trie.h
