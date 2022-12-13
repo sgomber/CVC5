@@ -143,6 +143,28 @@ bool LogicInfo::isPure(theory::TheoryId theory) const {
       ( isTrueTheory(theory) || d_sharingTheories == 0 );
 }
 
+
+bool LogicInfo::isDecidable(bool restrictQf) const
+{
+  // Note this is imprecise
+  if (isTheoryEnabled(theory::THEORY_STRINGS))
+  {
+    return false;
+  }
+  if (isTheoryEnabled(theory::THEORY_ARITH) && !isLinear())
+  {
+    return false;
+  }
+  if (!restrictQf)
+  {
+    if (isQuantified())
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool LogicInfo::areIntegersUsed() const {
   PrettyCheckArgument(d_locked, *this,
                       "This LogicInfo isn't locked yet, and cannot be queried");

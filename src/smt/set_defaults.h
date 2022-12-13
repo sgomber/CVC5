@@ -163,7 +163,7 @@ class SetDefaults : protected EnvObj
   /**
    * Set defaults related to SyGuS, called when SyGuS is enabled.
    */
-  void setDefaultsSygus(Options& opts) const;
+  void setDefaultsSygus(const LogicInfo& logic, Options& opts) const;
   /**
    * Set default decision mode
    */

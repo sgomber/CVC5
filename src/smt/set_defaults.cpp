@@ -1464,7 +1464,7 @@ void SetDefaults::setDefaultsQuantifiers(const LogicInfo& logic,
       throw OptionException(ss.str());
     }
     // now, set defaults based on sygus
-    setDefaultsSygus(opts);
+    setDefaultsSygus(logic, opts);
   }
   // counterexample-guided instantiation for non-sygus
   // enable if any possible quantifiers with arithmetic, datatypes or bitvectors
@@ -1594,7 +1594,7 @@ void SetDefaults::setDefaultsQuantifiers(const LogicInfo& logic,
   }
 }
 
-void SetDefaults::setDefaultsSygus(Options& opts) const
+void SetDefaults::setDefaultsSygus(const LogicInfo& logic, Options& opts) const
 {
   if (!opts.quantifiers.sygus)
   {
@@ -1711,6 +1711,14 @@ void SetDefaults::setDefaultsSygus(Options& opts) const
   if (!opts.quantifiers.macrosQuantWasSetByUser)
   {
     opts.writeQuantifiers().macrosQuant = false;
+  }
+  // sygus evaluation unfolding should not be used with undecidable theories
+  if (!opts.quantifiers.sygusEvalUnfoldModeWasSetByUser)
+  {
+    if (!logic.isDecidable(true))
+    {
+      opts.writeQuantifiers().sygusEvalUnfoldMode = options::SygusEvalUnfoldMode::NONE;
+    }
   }
 }
 void SetDefaults::setDefaultDecisionMode(const LogicInfo& logic,
