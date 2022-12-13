@@ -498,6 +498,9 @@ void Cegis::registerRefinementLemma(const std::vector<Node>& vars, Node lem)
 {
   addRefinementLemma(lem);
   // must be closed enumerable
+  // Note that we only add CEGIS lemmas explicitly if evaluation unfolding
+  // is enabled, since the only interaction they have in the main solver
+  // is due to evaluation unfolding lemmas.
   if (d_cexClosedEnum
       && options().quantifiers.sygusEvalUnfoldMode
              != options::SygusEvalUnfoldMode::NONE)
