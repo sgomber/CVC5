@@ -219,10 +219,7 @@ bool Valuation::needCheck() const{
 
 bool Valuation::isRelevant(Node lit) const { return d_engine->isRelevant(lit); }
 
-bool Valuation::isModelUnsound() const
-{
-  return d_engine->isModelUnsound();
-}
+bool Valuation::isModelUnsound() const { return d_engine->isModelUnsound(); }
 
 bool Valuation::isRefutationUnsound() const
 {

@@ -132,7 +132,7 @@ class StringsMnf : protected ModelCons
   /**
    * Constant-like
    */
-  std::vector< std::pair<Node, Node> > d_constLike;
+  std::vector<std::pair<Node, Node>> d_constLike;
 };
 
 }  // namespace strings

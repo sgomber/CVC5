@@ -2681,7 +2681,8 @@ void CoreSolver::checkLengthsEqc()
   }
 }
 
-size_t CoreSolver::choosePossibleInferInfo(const std::vector<CoreInferInfo>& pinfer)
+size_t CoreSolver::choosePossibleInferInfo(
+    const std::vector<CoreInferInfo>& pinfer)
 {
   // now, determine which of the possible inferences we want to add
   unsigned use_index = 0;
@@ -2717,8 +2718,7 @@ void CoreSolver::processInferInfo(CoreInferInfo& cii)
 
   if (concr == d_true)
   {
-    Unhandled() << "Failed to process infer info " << ii
-                << std::endl;
+    Unhandled() << "Failed to process infer info " << ii << std::endl;
     // conclusion rewrote to true
     return;
   }

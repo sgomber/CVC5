@@ -3493,10 +3493,10 @@ Node SequencesRewriter::rewriteStrReverse(Node node)
     Node retNode = x[0];
     return returnRewrite(node, retNode, Rewrite::STR_REV_IDEM);
   }
-  else if (x.getKind() == STRING_UNIT || x.getKind()==SEQ_UNIT)
+  else if (x.getKind() == STRING_UNIT || x.getKind() == SEQ_UNIT)
   {
     // rev( str.unit( x ) ) --> str.unit( x )
-    //return returnRewrite(node, x, Rewrite::STR_REV_UNIT);
+    // return returnRewrite(node, x, Rewrite::STR_REV_UNIT);
   }
   return node;
 }

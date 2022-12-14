@@ -81,7 +81,8 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
   // no use if model unsound
   if (d_state.getValuation().isModelUnsound())
   {
-    Trace("strings-mnf") << "StringsMnf: ...fail, already model unsound" << std::endl;
+    Trace("strings-mnf") << "StringsMnf: ...fail, already model unsound"
+                         << std::endl;
     return false;
   }
   // reset the state
@@ -117,7 +118,8 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
       continue;
     }
     pa.insert(b);
-    Trace("strings-mnf") << "process-disequality " << deq << " (" << a << ", " << b << ")" << std::endl;
+    Trace("strings-mnf") << "process-disequality " << deq << " (" << a << ", "
+                         << b << ")" << std::endl;
     Rational la = getLength(a);
     Rational lb = getLength(b);
     if (la != lb)
@@ -270,7 +272,7 @@ bool StringsMnf::normalizeEqc(Node eqc)
   }
   // otherwise, look up the model value now
   mei.d_length = val.getModelValue(lt).getConst<Rational>();
-  
+
   // get the normal form for each term in the equivalence class
   std::vector<std::pair<Node, std::vector<Node>>> nfs;
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
@@ -289,7 +291,7 @@ bool StringsMnf::normalizeEqc(Node eqc)
     if (utils::isConstantLike(n))
     {
       nfs.emplace_back(n, std::vector<Node>{n});
-      if (n!=eqc && !addedConstLike)
+      if (n != eqc && !addedConstLike)
       {
         d_constLike.emplace_back(eqc, n);
         addedConstLike = true;
@@ -362,8 +364,8 @@ bool StringsMnf::normalizeEqc(Node eqc)
         Rational la = getLength(a);
         Rational lb = getLength(b);
         Trace("strings-mnf-solve")
-            << "Compare " << a << " / " << b << ", lengths=" << la << " / " << lb
-            << std::endl;
+            << "Compare " << a << " / " << b << ", lengths=" << la << " / "
+            << lb << std::endl;
         // should have positive lengths
         Assert(la.sgn() == 1 && lb.sgn() == 1);
         // if lengths are already equal, merge b into a
@@ -375,7 +377,7 @@ bool StringsMnf::normalizeEqc(Node eqc)
             {
               // conflict, we fail
               Trace("strings-mnf") << "Fail: " << eqc << " while merging " << a
-                                  << ", " << b << std::endl;
+                                   << ", " << b << std::endl;
               return false;
             }
             else
@@ -387,9 +389,9 @@ bool StringsMnf::normalizeEqc(Node eqc)
           else if (!a.isConst() && !d_state.hasTerm(a) && d_state.hasTerm(b))
           {
             // Flip if a is an auxiliary skolem but b is not. This is required
-            // for properly tracking other information during collectModelValues,
-            // e.g. str.code, which expects equivalence classes of the equality
-            // engine.
+            // for properly tracking other information during
+            // collectModelValues, e.g. str.code, which expects equivalence
+            // classes of the equality engine.
             std::swap(a, b);
           }
           // otherwise merge b into a
@@ -418,28 +420,28 @@ bool StringsMnf::normalizeEqc(Node eqc)
         ModelEqcInfo::expandNormalForm(nf.second, ce.first, ce.second);
       }
     }
-    Trace("strings-mnf") << "NF " << eqc << " : " << mei.toString() << std::endl;
+    Trace("strings-mnf") << "NF " << eqc << " : " << mei.toString()
+                         << std::endl;
   }
 
   // if there is a code term, we look up its value and merge?
   if (!ei->d_codeTerm.get().isNull() && mei.d_length.isOne())
   {
-    NodeManager * nm = NodeManager::currentNM();
+    NodeManager* nm = NodeManager::currentNM();
     Node ct = nm->mkNode(STRING_TO_CODE, ei->d_codeTerm.get());
     Node ctv = val.getModelValue(ct);
-    unsigned cvalue =
-        ctv.getConst<Rational>().getNumerator().toUnsignedInt();
+    unsigned cvalue = ctv.getConst<Rational>().getNumerator().toUnsignedInt();
     std::vector<unsigned> vec;
     vec.push_back(cvalue);
     Node assignedValue = nm->mkConst(String(vec));
     // only if the value is not already in this equivalance class, in which
     // case it should be the representative.
-    if (assignedValue!=eqc)
+    if (assignedValue != eqc)
     {
       merge(assignedValue, eqc);
     }
   }
-  
+
   return true;
 }
 
@@ -498,7 +500,7 @@ Rational StringsMnf::getLength(const Node& r)
   {
     return Word::getLength(r);
   }
-  else if (r.getKind()==STRING_UNIT || r.getKind()==SEQ_UNIT)
+  else if (r.getKind() == STRING_UNIT || r.getKind() == SEQ_UNIT)
   {
     return Rational(1);
   }
