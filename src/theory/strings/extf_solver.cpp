@@ -231,6 +231,7 @@ bool ExtfSolver::doReduction(int effort, Node n)
     d_im.sendInference(d_emptyVec, nnlem, InferenceId::STRINGS_REDUCTION, false, true);
     Trace("strings-extf-debug")
         << "  resolve extf : " << n << " based on reduction." << std::endl;
+    // FIXME
     // add as reduction lemma
     d_reduced.insert(n);
   }
@@ -791,6 +792,16 @@ bool StringsExtfCallback::getCurrentSubstitution(
     subs.push_back(s);
   }
   return true;
+}
+
+void ExtfSolver::processFact(InferInfo& ii, ProofGenerator*& pg)
+{
+  d_im.processFact(ii, pg);
+}
+
+TrustNode ExtfSolver::processLemma(InferInfo& ii, LemmaProperty& p)
+{
+  return d_im.processLemma(ii, p);
 }
 
 std::string ExtfSolver::debugPrintModel()

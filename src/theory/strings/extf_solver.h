@@ -80,7 +80,7 @@ class ExtfInfoTmp
  * functions for the theory of strings using a combination of context-dependent
  * simplification (Reynolds et al CAV 2017) and lazy reductions.
  */
-class ExtfSolver : protected EnvObj
+class ExtfSolver : public InferSideEffectProcess, protected EnvObj
 {
   typedef context::CDHashSet<Node> NodeSet;
 
@@ -177,6 +177,11 @@ class ExtfSolver : protected EnvObj
    */
   std::string debugPrintModel();
 
+  /** Called when ii is ready to be processed as a fact */
+  void processFact(InferInfo& ii, ProofGenerator*& pg) override;
+  /** Called when ii is ready to be processed as a lemma */
+  TrustNode processLemma(InferInfo& ii, LemmaProperty& p) override;
+  
  private:
   /** do reduction
    *

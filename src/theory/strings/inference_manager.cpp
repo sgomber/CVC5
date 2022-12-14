@@ -165,8 +165,12 @@ bool InferenceManager::sendInference(const std::vector<Node>& exp,
 void InferenceManager::sendInference(InferInfo& ii, bool asLemma)
 {
   Assert(!ii.isTrivial());
-  // set that this inference manager will be processing this inference
-  ii.d_sim = this;
+  // This inference manager will be processing the side effects of this
+  // inferences if the inference manager has not been marked already.
+  if (ii.d_sim==nullptr)
+  {
+    ii.d_sim = this;
+  }
   Trace("strings-infer-debug")
       << "sendInference: " << ii << ", asLemma = " << asLemma << std::endl;
   // check if we should send a conflict, lemma or a fact
@@ -359,6 +363,12 @@ TrustNode InferenceManager::processLemma(InferInfo& ii, LemmaProperty& p)
   if (ii.getId() == InferenceId::STRINGS_REDUCTION)
   {
     p |= LemmaProperty::NEEDS_JUSTIFY;
+  }
+  // send phase requirements
+  for (const std::pair<const Node, bool>& pp : ii.d_pendingPhase)
+  {
+    Node ppr = rewrite(pp.first);
+    addPendingPhaseRequirement(ppr, pp.second);
   }
   Trace("strings-assert") << "(assert " << tlem.getNode() << ") ; lemma "
                           << ii.getId() << std::endl;

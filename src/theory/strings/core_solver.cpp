@@ -596,7 +596,10 @@ void CoreSolver::checkNormalFormsEq()
     // add one inference from our list of possible inferences
     size_t use_index = choosePossibleInferInfo(pinfer);
     Trace("strings-solve") << "...choose #" << use_index << std::endl;
-    processInferInfo(pinfer[use_index]);
+    // Send the inference, which is a lemma. This class will process the side
+    // effects of the inference.
+    pinfer[use_index].d_infer.d_sim = this;
+    d_im.sendInference(pinfer[use_index].d_infer, true);
     return;
   }
   d_hasNormalForms = true;
@@ -1440,7 +1443,7 @@ void CoreSolver::processSimpleNEq(NormalForm& nfi,
       lenEq = rewrite(lenEq);
       iinfo.d_conc = nm->mkNode(OR, lenEq, lenEq.negate());
       iinfo.setId(InferenceId::STRINGS_LEN_SPLIT);
-      info.d_pendingPhase[lenEq] = true;
+      info.d_infer.d_pendingPhase[lenEq] = true;
       pinfer.push_back(info);
       break;
     }
@@ -1951,8 +1954,8 @@ CoreSolver::ProcessLoopResult CoreSolver::processLoop(NormalForm& nfi,
   // we will be done
   iinfo.d_conc = conc;
   iinfo.setId(InferenceId::STRINGS_FLOOP);
-  info.d_nfPair[0] = nfi.d_base;
-  info.d_nfPair[1] = nfj.d_base;
+  info.d_infer.d_nfPair[0] = nfi.d_base;
+  info.d_infer.d_nfPair[1] = nfj.d_base;
   return ProcessLoopResult::INFERENCE;
 }
 
@@ -2710,34 +2713,22 @@ size_t CoreSolver::choosePossibleInferInfo(
   return use_index;
 }
 
-void CoreSolver::processInferInfo(CoreInferInfo& cii)
+void CoreSolver::processFact(InferInfo& ii, ProofGenerator*& pg)
 {
-  InferInfo& ii = cii.d_infer;
-  // rewrite the conclusion, ensure non-trivial
-  Node concr = rewrite(ii.d_conc);
-
-  if (concr == d_true)
-  {
-    Unhandled() << "Failed to process infer info " << ii << std::endl;
-    // conclusion rewrote to true
-    return;
-  }
-  // process the state change to this solver
-  if (!cii.d_nfPair[0].isNull())
-  {
-    Assert(!cii.d_nfPair[1].isNull());
-    addNormalFormPair(cii.d_nfPair[0], cii.d_nfPair[1]);
-  }
-  // send phase requirements
-  for (const std::pair<const Node, bool>& pp : cii.d_pendingPhase)
-  {
-    Node ppr = rewrite(pp.first);
-    d_im.addPendingPhaseRequirement(ppr, pp.second);
-  }
-
-  // send the inference, which is a lemma
-  d_im.sendInference(ii, true);
+  d_im.processFact(ii, pg);
 }
+
+TrustNode CoreSolver::processLemma(InferInfo& ii, LemmaProperty& p)
+{
+  // process the state change to this solver
+  if (!ii.d_nfPair[0].isNull())
+  {
+    Assert(!ii.d_nfPair[1].isNull());
+    addNormalFormPair(ii.d_nfPair[0], ii.d_nfPair[1]);
+  }
+  return d_im.processLemma(ii, p);
+}
+
 
 }  // namespace strings
 }  // namespace theory

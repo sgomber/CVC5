@@ -49,20 +49,12 @@ class CoreInferInfo
   /** The infer info of this class */
   InferInfo d_infer;
   /**
-   * The pending phase requirements, see InferenceManager::sendPhaseRequirement.
-   */
-  std::map<Node, bool> d_pendingPhase;
-  /**
    * The index in the normal forms under which this inference is addressing.
    * For example, if the inference is inferring x = y from |x|=|y| and
    *   w ++ x ++ ... = w ++ y ++ ...
    * then d_index is 1, since x and y are at index 1 in these concat terms.
    */
   unsigned d_index;
-  /**
-   * The normal form pair that is cached as a result of this inference.
-   */
-  Node d_nfPair[2];
   /** for debugging
    *
    * The base pair of strings d_i/d_j that led to the inference, and whether
@@ -79,7 +71,7 @@ class CoreInferInfo
  * This implements techniques for handling (dis)equalities involving
  * string concatenation terms based on the procedure by Liang et al CAV 2014.
  */
-class CoreSolver : protected EnvObj
+class CoreSolver : public InferSideEffectProcess, protected EnvObj
 {
   friend class InferenceManager;
   using NodeIntMap = context::CDHashMap<Node, int>;
@@ -287,19 +279,16 @@ class CoreSolver : protected EnvObj
                                      SkolemCache* skc,
                                      std::vector<Node>& newSkolems);
 
+  /** Called when ii is ready to be processed as a fact */
+  void processFact(InferInfo& ii, ProofGenerator*& pg) override;
+  /** Called when ii is ready to be processed as a lemma */
+  TrustNode processLemma(InferInfo& ii, LemmaProperty& p) override;
  private:
   /**
    * This returns the index of an infer info in pinfer that we should process
    * based on our heuristics.
    */
   size_t choosePossibleInferInfo(const std::vector<CoreInferInfo>& pinfer);
-  /**
-   * This processes the infer info ii as an inference. In more detail, it calls
-   * the inference manager to process the inference, and updates the set of
-   * normal form pairs. Returns true if the conclusion of ii was not true
-   * after rewriting. If the conclusion is true, this method does nothing.
-   */
-  void processInferInfo(CoreInferInfo& ii);
   /** Add that (n1,n2) is a normal form pair in the current context. */
   void addNormalFormPair(Node n1, Node n2);
   /** Is (n1,n2) a normal form pair in the current context? */
