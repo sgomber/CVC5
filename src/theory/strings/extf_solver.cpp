@@ -228,12 +228,14 @@ bool ExtfSolver::doReduction(int effort, Node n)
     Trace("strings-red-lemma")
         << "Reduction_" << effort << " rewritten : " << rewrite(nnlem)
         << std::endl;
-    d_im.sendInference(d_emptyVec, nnlem, InferenceId::STRINGS_REDUCTION, false, true);
+    InferInfo ii(InferenceId::STRINGS_REDUCTION);
+    ii.d_conc = nnlem;
+    // ensure that we are called to process the side effects
+    ii.d_sim = this;
+    d_im.sendInference(ii, true);
     Trace("strings-extf-debug")
         << "  resolve extf : " << n << " based on reduction." << std::endl;
-    // FIXME
-    // add as reduction lemma
-    d_reduced.insert(n);
+    d_reductionWaitingMap[nnlem] = n;
   }
   return true;
 }
@@ -801,6 +803,13 @@ void ExtfSolver::processFact(InferInfo& ii, ProofGenerator*& pg)
 
 TrustNode ExtfSolver::processLemma(InferInfo& ii, LemmaProperty& p)
 {
+  // if this was the reduction lemma for a term, mark it reduced now
+  std::map<Node, Node>::iterator it = d_reductionWaitingMap.find(ii.d_conc);
+  if (it!=d_reductionWaitingMap.end())
+  {
+    d_reduced.insert(it->second);
+    d_reductionWaitingMap.erase(it);
+  }
   return d_im.processLemma(ii, p);
 }
 

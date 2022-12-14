@@ -235,6 +235,8 @@ class ExtfSolver : public InferSideEffectProcess, protected EnvObj
   NodeSet d_extfInferCache;
   /** The set of extended functions we have sent reduction lemmas for */
   NodeSet d_reduced;
+  /** Map from lemmas to the terms they justify the reduction of */
+  std::map<Node, Node> d_reductionWaitingMap;
 };
 
 /** An extended theory callback */
