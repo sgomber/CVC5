@@ -49,6 +49,7 @@ CoreSolver::CoreSolver(Env& env,
       d_bsolver(bs),
       d_nfPairs(context()),
       d_extDeq(userContext()),
+      d_modelUnsoundId(IncompleteId::NONE),
       d_hasNormalForms(false),
       d_stringsMnf(env, s, im, tr, bs)
 {
@@ -526,6 +527,7 @@ Node CoreSolver::checkCycles( Node eqc, std::vector< Node >& curr, std::vector< 
 void CoreSolver::checkNormalFormsEq()
 {
   d_hasNormalForms = false;
+  d_modelUnsoundId = IncompleteId::NONE;
   // calculate normal forms for each equivalence class, possibly adding
   // splitting lemmas
   d_normal_form.clear();
@@ -596,6 +598,12 @@ void CoreSolver::checkNormalFormsEq()
     return;
   }
   d_hasNormalForms = true;
+  // process incompleteness
+  if (d_modelUnsoundId != IncompleteId::NONE)
+  {
+    d_im.setModelUnsound(d_modelUnsoundId);
+    d_modelUnsoundId = IncompleteId::NONE;
+  }
   if (TraceIsOn("strings-nf"))
   {
     Trace("strings-nf") << "**** Normal forms are : " << std::endl;
@@ -1758,7 +1766,7 @@ CoreSolver::ProcessLoopResult CoreSolver::processLoop(NormalForm& nfi,
     // note we cannot convert looping word equations into regular expressions if
     // we are handling sequences, since there is no analog for regular
     // expressions over sequences currently
-    d_im.setModelUnsound(IncompleteId::STRINGS_LOOP_SKIP);
+    d_modelUnsoundId = IncompleteId::STRINGS_LOOP_SKIP;
     return ProcessLoopResult::SKIPPED;
   }
 
@@ -1904,7 +1912,7 @@ CoreSolver::ProcessLoopResult CoreSolver::processLoop(NormalForm& nfi,
     else if (options().strings.stringProcessLoopMode
              == options::ProcessLoopMode::SIMPLE)
     {
-      d_im.setModelUnsound(IncompleteId::STRINGS_LOOP_SKIP);
+      d_modelUnsoundId = IncompleteId::STRINGS_LOOP_SKIP;
       return ProcessLoopResult::SKIPPED;
     }
 

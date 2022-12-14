@@ -546,6 +546,8 @@ class CoreSolver : protected EnvObj
   std::map<Node, std::vector<int> > d_flat_form_index;
   /** Set of equalities for which we have applied extensionality. */
   NodeSet d_extDeq;
+  /** Whether we set model unsound */
+  IncompleteId d_modelUnsoundId;
   /** Have we computed normal forms for all equivalence classes? */
   bool d_hasNormalForms;
   /** Model normal form finding module */

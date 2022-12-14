@@ -221,6 +221,16 @@ public:
    */
   bool isRelevant(Node lit) const;
 
+  /**
+   * Return whether or not we are model unsound (in the current SAT context).
+   * For details, see theory_inference_manager.
+   */
+  bool isModelUnsound() const;
+  /**
+   * Return whether or not we are refutation unsound (in the current user
+   * context). For details, see theory_inference_manager.
+   */
+  bool isRefutationUnsound() const;
   //------------------------------------------- access methods for assertions
   /**
    * The following methods are intended only to be used in limited use cases,

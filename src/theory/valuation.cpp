@@ -219,6 +219,16 @@ bool Valuation::needCheck() const{
 
 bool Valuation::isRelevant(Node lit) const { return d_engine->isRelevant(lit); }
 
+bool Valuation::isModelUnsound() const
+{
+  return d_engine->isModelUnsound();
+}
+
+bool Valuation::isRefutationUnsound() const
+{
+  return d_engine->isRefutationUnsound();
+}
+
 context::CDList<Assertion>::const_iterator Valuation::factsBegin(TheoryId tid)
 {
   Theory* theory = d_engine->theoryOf(tid);
