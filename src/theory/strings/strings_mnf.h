@@ -129,6 +129,10 @@ class StringsMnf : protected ModelCons
    * representatives to their model representative.
    */
   std::map<Node, Node> d_mrepMap;
+  /**
+   * Constant-like
+   */
+  std::vector< std::pair<Node, Node> > d_constLike;
 };
 
 }  // namespace strings

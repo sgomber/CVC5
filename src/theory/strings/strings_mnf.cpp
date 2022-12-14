@@ -87,14 +87,15 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
   // reset the state
   d_minfo.clear();
   d_mrepMap.clear();
+  d_constLike.clear();
   // Try to find model normal form for each equivalence class, where stringsEqc
   // is sorted based on containment ordering.
   for (const Node& eqc : stringsEqc)
   {
-    Trace("strings-mnf") << "process-equality " << eqc << std::endl;
+    Trace("strings-mnf") << "process-eqc " << eqc << std::endl;
     if (!normalizeEqc(eqc))
     {
-      Trace("strings-mnf") << "StringsMnf: ...fail equality" << std::endl;
+      Trace("strings-mnf") << "StringsMnf: ...fail eqc" << std::endl;
       return false;
     }
   }
@@ -274,6 +275,7 @@ bool StringsMnf::normalizeEqc(Node eqc)
   std::vector<std::pair<Node, std::vector<Node>>> nfs;
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
+  bool addedConstLike = false;
   while (!eqc_i.isFinished())
   {
     Node n = (*eqc_i);
@@ -286,8 +288,12 @@ bool StringsMnf::normalizeEqc(Node eqc)
     }
     if (utils::isConstantLike(n))
     {
-      Node nr = getModelRepresentative(n);
-      nfs.emplace_back(n, std::vector<Node>{nr});
+      nfs.emplace_back(n, std::vector<Node>{n});
+      if (n!=eqc && !addedConstLike)
+      {
+        d_constLike.emplace_back(eqc, n);
+        addedConstLike = true;
+      }
       Trace("strings-mnf-debug") << "...constant-like" << std::endl;
       continue;
     }
@@ -492,6 +498,10 @@ Rational StringsMnf::getLength(const Node& r)
   {
     return Word::getLength(r);
   }
+  else if (r.getKind()==STRING_UNIT || r.getKind()==SEQ_UNIT)
+  {
+    return Rational(1);
+  }
   std::map<Node, ModelEqcInfo>::iterator it = d_minfo.find(r);
   Assert(it != d_minfo.end()) << "No model info for " << r;
   return it->second.d_length;
@@ -526,11 +536,11 @@ Node StringsMnf::getModelRepresentative(const Node& n)
 
 void StringsMnf::merge(const Node& a, const Node& b)
 {
+  Trace("strings-mnf") << "...merge " << b << ": " << a << std::endl;
   // should not merge constant
   Assert(!b.isConst());
   Assert(a == getModelRepresentative(a));
   Assert(b == getModelRepresentative(b));
-  Trace("strings-mnf") << "...merge " << b << ": " << a << std::endl;
   d_mrepMap[b] = a;
   // don't need the normal form info for b anymore?
   d_minfo.erase(b);

@@ -2709,7 +2709,7 @@ size_t CoreSolver::choosePossibleInferInfo(const std::vector<CoreInferInfo>& pin
   return use_index;
 }
 
-bool CoreSolver::processInferInfo(CoreInferInfo& cii)
+void CoreSolver::processInferInfo(CoreInferInfo& cii)
 {
   InferInfo& ii = cii.d_infer;
   // rewrite the conclusion, ensure non-trivial
