@@ -767,6 +767,11 @@ void SetDefaults::setDefaultsPost(const LogicInfo& logic, Options& opts) const
     opts.writeStrings().stringProcessLoopMode =
         options::ProcessLoopMode::SIMPLE;
   }
+  if (opts.strings.stringModelNormalForms && options().strings.seqArray != options::SeqArrayMode::NONE)
+  {
+    // mnf incompatible with sequences array solver
+    opts.writeStrings().stringModelNormalForms = false;
+  }
 
   // !!! All options that require disabling models go here
   std::stringstream reasonNoModel;
