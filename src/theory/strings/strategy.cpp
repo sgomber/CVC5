@@ -116,26 +116,26 @@ void Strategy::initializeStrategy()
     }
     addStrategyStep(CHECK_EXTF_REDUCTION, 1);
     addStrategyStep(CHECK_NORMAL_FORMS_EQ);
-    addStrategyStep(CHECK_EXTF_EVAL, 1);
-    addStrategyStep(CHECK_NORMAL_FORMS_DEQ);
-    addStrategyStep(CHECK_CODES);
+    addStrategyStep(CHECK_EXTF_EVAL, 1);    // no normal forms, skip
+    addStrategyStep(CHECK_NORMAL_FORMS_DEQ);    // no normal forms, skip
+    addStrategyStep(CHECK_CODES);   // ???
     if (options().strings.stringLenNorm)
     {
-      addStrategyStep(CHECK_LENGTH_EQC);
+      addStrategyStep(CHECK_LENGTH_EQC);  // no normal forms, skip
     }
-    if (options().strings.seqArray != options::SeqArrayMode::NONE)
+    if (options().strings.seqArray != options::SeqArrayMode::NONE)  
     {
-      addStrategyStep(CHECK_SEQUENCES_ARRAY_CONCAT);
-      addStrategyStep(CHECK_SEQUENCES_ARRAY);
+      addStrategyStep(CHECK_SEQUENCES_ARRAY_CONCAT); // incompatible
+      addStrategyStep(CHECK_SEQUENCES_ARRAY); // incompatible
     }
     if (options().strings.stringExp)
     {
-      addStrategyStep(CHECK_EXTF_REDUCTION, 2);
+      addStrategyStep(CHECK_EXTF_REDUCTION, 2); // ???
     }
-    addStrategyStep(CHECK_MEMBERSHIP);
-    addStrategyStep(CHECK_CARDINALITY);
+    addStrategyStep(CHECK_MEMBERSHIP); // ???
+    addStrategyStep(CHECK_CARDINALITY); // rare
     step_end[Theory::EFFORT_FULL] = d_infer_steps.size() - 1;
-    if (options().strings.stringModelBasedReduction)
+    if (options().strings.stringModelBasedReduction)    // after model construction, ok
     {
       step_begin[Theory::EFFORT_LAST_CALL] = d_infer_steps.size();
       addStrategyStep(CHECK_EXTF_EVAL, 3);

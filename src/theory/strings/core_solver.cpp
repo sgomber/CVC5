@@ -527,6 +527,8 @@ Node CoreSolver::checkCycles( Node eqc, std::vector< Node >& curr, std::vector< 
 void CoreSolver::checkNormalFormsEq()
 {
   d_hasNormalForms = false;
+  d_hasPInfer = false;
+  d_pinfers.clear();
   d_modelUnsoundId = IncompleteId::NONE;
   // calculate normal forms for each equivalence class, possibly adding
   // splitting lemmas
@@ -534,20 +536,19 @@ void CoreSolver::checkNormalFormsEq()
   std::map<Node, Node> nf_to_eqc;
   std::map<Node, Node> eqc_to_nf;
   std::map<Node, Node> eqc_to_exp;
-  std::vector<CoreInferInfo> pinfer;
   for (const Node& eqc : d_strings_eqc)
   {
-    Assert(pinfer.empty());
+    Assert(d_pinfers.empty());
     TypeNode stype = eqc.getType();
     Trace("strings-process-debug") << "- Verify normal forms are the same for "
                                    << eqc << std::endl;
-    normalizeEquivalenceClass(eqc, stype, pinfer);
+    normalizeEquivalenceClass(eqc, stype, d_pinfers);
     Trace("strings-debug") << "Finished normalizing eqc..." << std::endl;
     if (d_im.hasProcessed())
     {
       return;
     }
-    if (!pinfer.empty())
+    if (!d_pinfers.empty())
     {
       // if we had a possible inference, we were unable to assign
       // a normal form to this equivalence class, we break.
@@ -582,8 +583,9 @@ void CoreSolver::checkNormalFormsEq()
     Trace("strings-process-debug")
         << "Done verifying normal forms are the same for " << eqc << std::endl;
   }
-  if (!pinfer.empty())
+  if (!d_pinfers.empty())
   {
+    d_hasPInfer = true;
     if (options().strings.stringModelNormalForms)
     {
       // if we are using model normal forms, eagerly check if there is a model
@@ -593,13 +595,7 @@ void CoreSolver::checkNormalFormsEq()
         return;
       }
     }
-    // add one inference from our list of possible inferences
-    size_t use_index = choosePossibleInferInfo(pinfer);
-    Trace("strings-solve") << "...choose #" << use_index << std::endl;
-    // Send the inference, which is a lemma. This class will process the side
-    // effects of the inference.
-    pinfer[use_index].d_infer.d_sim = this;
-    d_im.sendInference(pinfer[use_index].d_infer, true);
+    processPossibleInference();
     return;
   }
   d_hasNormalForms = true;
@@ -2729,6 +2725,23 @@ TrustNode CoreSolver::processLemma(InferInfo& ii, LemmaProperty& p)
   }
   // now, process it with the inference manager
   return d_im.processLemma(ii, p);
+}
+
+bool CoreSolver::processPossibleInference()
+{
+  if (!d_hasPInfer)
+  {
+    return false;
+  }
+  // add one inference from our list of possible inferences
+  size_t use_index = choosePossibleInferInfo(d_pinfers);
+  Trace("strings-solve") << "...choose #" << use_index << std::endl;
+  // Send the inference, which is a lemma. This class will process the side
+  // effects of the inference.
+  d_pinfers[use_index].d_infer.d_sim = this;
+  d_im.sendInference(d_pinfers[use_index].d_infer, true);
+  d_hasPInfer = false;
+  return true;
 }
 
 }  // namespace strings

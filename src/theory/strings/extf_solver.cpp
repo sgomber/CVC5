@@ -182,6 +182,12 @@ bool ExtfSolver::doReduction(int effort, Node n)
       return false;
     }
   }
+  /*
+  if (d_csolver.processPossibleInference())
+  {
+    return true;
+  }
+  */
   Node c_n = pol == -1 ? n.negate() : n;
   Trace("strings-process-debug")
       << "Process reduction for " << n << ", pol = " << pol << std::endl;
