@@ -283,6 +283,7 @@ class CoreSolver : public InferSideEffectProcess, protected EnvObj
   void processFact(InferInfo& ii, ProofGenerator*& pg) override;
   /** Called when ii is ready to be processed as a lemma */
   TrustNode processLemma(InferInfo& ii, LemmaProperty& p) override;
+
  private:
   /**
    * This returns the index of an infer info in pinfer that we should process

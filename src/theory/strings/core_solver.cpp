@@ -2729,7 +2729,6 @@ TrustNode CoreSolver::processLemma(InferInfo& ii, LemmaProperty& p)
   return d_im.processLemma(ii, p);
 }
 
-
 }  // namespace strings
 }  // namespace theory
 }  // namespace cvc5::internal

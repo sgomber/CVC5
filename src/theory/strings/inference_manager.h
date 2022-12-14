@@ -70,7 +70,8 @@ namespace strings {
  * theory of strings, e.g. sendPhaseRequirement, setModelUnsound, and
  * with the extended theory object e.g. markCongruent.
  */
-class InferenceManager : public InferSideEffectProcess, public InferenceManagerBuffered
+class InferenceManager : public InferSideEffectProcess,
+                         public InferenceManagerBuffered
 {
   typedef context::CDHashSet<Node> NodeSet;
   typedef context::CDHashMap<Node, Node> NodeNodeMap;
@@ -237,6 +238,7 @@ class InferenceManager : public InferSideEffectProcess, public InferenceManagerB
   void processFact(InferInfo& ii, ProofGenerator*& pg) override;
   /** Called when ii is ready to be processed as a lemma */
   TrustNode processLemma(InferInfo& ii, LemmaProperty& p) override;
+
  private:
   /** Reference to the solver state of the theory of strings. */
   SolverState& d_state;

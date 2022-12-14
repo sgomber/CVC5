@@ -52,8 +52,8 @@ class InferInfo;
 class InferSideEffectProcess
 {
  public:
-   InferSideEffectProcess(){}
-  virtual ~InferSideEffectProcess(){}
+  InferSideEffectProcess() {}
+  virtual ~InferSideEffectProcess() {}
   /** Process lemma */
   virtual TrustNode processLemma(InferInfo& ii, LemmaProperty& p) = 0;
   /** Called when ii is ready to be processed as a fact */
