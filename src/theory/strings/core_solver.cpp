@@ -596,11 +596,7 @@ void CoreSolver::checkNormalFormsEq()
     // add one inference from our list of possible inferences
     size_t use_index = choosePossibleInferInfo(pinfer);
     Trace("strings-solve") << "...choose #" << use_index << std::endl;
-    if (!processInferInfo(pinfer[use_index]))
-    {
-      Unhandled() << "Failed to process infer info " << pinfer[use_index].d_infer
-                  << std::endl;
-    }
+    processInferInfo(pinfer[use_index]);
     return;
   }
   d_hasNormalForms = true;
@@ -2721,8 +2717,10 @@ bool CoreSolver::processInferInfo(CoreInferInfo& cii)
 
   if (concr == d_true)
   {
+    Unhandled() << "Failed to process infer info " << ii
+                << std::endl;
     // conclusion rewrote to true
-    return false;
+    return;
   }
   // process the state change to this solver
   if (!cii.d_nfPair[0].isNull())
@@ -2739,8 +2737,6 @@ bool CoreSolver::processInferInfo(CoreInferInfo& cii)
 
   // send the inference, which is a lemma
   d_im.sendInference(ii, true);
-
-  return true;
 }
 
 }  // namespace strings
