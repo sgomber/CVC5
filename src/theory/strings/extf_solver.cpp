@@ -228,14 +228,23 @@ bool ExtfSolver::doReduction(int effort, Node n)
     Trace("strings-red-lemma")
         << "Reduction_" << effort << " rewritten : " << rewrite(nnlem)
         << std::endl;
-    InferInfo ii(InferenceId::STRINGS_REDUCTION);
-    ii.d_conc = nnlem;
-    // ensure that we are called to process the side effects
-    ii.d_sim = this;
-    d_im.sendInference(ii, true);
-    Trace("strings-extf-debug")
-        << "  resolve extf : " << n << " based on reduction." << std::endl;
-    d_reductionWaitingMap[nnlem] = n;
+    if (rewrite(nnlem)==d_true)
+    {
+      Trace("strings-extf-debug")
+          << "  resolve extf : " << n << " based on (trivial) reduction." << std::endl;
+      d_reduced.insert(n);
+    }
+    else
+    {
+      InferInfo ii(InferenceId::STRINGS_REDUCTION);
+      ii.d_conc = nnlem;
+      // ensure that we are called to process the side effects
+      ii.d_sim = this;
+      d_im.sendInference(ii, true);
+      Trace("strings-extf-debug")
+          << "  resolve extf : " << n << " based on reduction." << std::endl;
+      d_reductionWaitingMap[nnlem] = n;
+    }
   }
   return true;
 }
