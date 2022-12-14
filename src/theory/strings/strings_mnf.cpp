@@ -18,6 +18,7 @@
 #include "options/strings_options.h"
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
+#include "util/string.h"
 
 using namespace cvc5::internal::kind;
 
@@ -239,6 +240,7 @@ std::vector<Node> StringsMnf::getNormalFormInternal(const Node& n)
 
 bool StringsMnf::normalizeEqc(Node eqc)
 {
+  Valuation& val = d_state.getValuation();
   ModelEqcInfo& mei = d_minfo[eqc];
   // if empty string, we initialize normal form to empty
   Node emp = Word::mkEmptyWord(eqc.getType());
@@ -249,8 +251,20 @@ bool StringsMnf::normalizeEqc(Node eqc)
                          << std::endl;
     return true;
   }
-  // NodeManager* nm = NodeManager::currentNM();
-  //  otherwise, get the normal form for each term in the equivalence class
+  // compute the length of the equivalence class
+  EqcInfo* ei = d_state.getOrMakeEqcInfo(eqc, false);
+  Node lt = ei ? ei->d_lengthTerm : Node::null();
+  if (lt.isNull())
+  {
+    // does not have a length term, we must fail
+    Trace("strings-mnf") << "Fail: " << eqc << " has no length term."
+                         << std::endl;
+    return false;
+  }
+  // otherwise, look up the model value now
+  mei.d_length = val.getModelValue(lt).getConst<Rational>();
+  
+  // get the normal form for each term in the equivalence class
   std::vector<std::pair<Node, std::vector<Node>>> nfs;
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   eq::EqClassIterator eqc_i = eq::EqClassIterator(eqc, ee);
@@ -288,19 +302,6 @@ bool StringsMnf::normalizeEqc(Node eqc)
       }
     }
   }
-  // compute the length of the equivalence class
-  EqcInfo* ei = d_state.getOrMakeEqcInfo(eqc, false);
-  Node lt = ei ? ei->d_lengthTerm : Node::null();
-  if (lt.isNull())
-  {
-    // does not have a length term, we must fail
-    Trace("strings-mnf") << "Fail: " << eqc << " has no length term."
-                         << std::endl;
-    return false;
-  }
-  // otherwise, look up the model value now
-  Valuation& val = d_state.getValuation();
-  mei.d_length = val.getModelValue(lt).getConst<Rational>();
 
   // if we are an atomic equivalence class, just add
   if (nfs.empty())
@@ -308,105 +309,125 @@ bool StringsMnf::normalizeEqc(Node eqc)
     mei.d_mnf.emplace_back(eqc);
     Trace("strings-mnf") << "NF " << eqc << " (singular): " << mei.toString()
                          << std::endl;
-    return true;
   }
-
-  // now, process each normal form
-  bool firstTime = true;
-  // list of modifications done to normal forms while processing this
-  // equivalence class
-  std::vector<std::pair<Node, std::vector<Node>>> currExpands;
-  for (std::pair<Node, std::vector<Node>>& nf : nfs)
+  else
   {
-    if (firstTime)
+    // now, process each normal form
+    bool firstTime = true;
+    // list of modifications done to normal forms while processing this
+    // equivalence class
+    std::vector<std::pair<Node, std::vector<Node>>> currExpands;
+    for (std::pair<Node, std::vector<Node>>& nf : nfs)
     {
-      // first one sets the model normal form of the overall eqc
-      mei.d_mnf = nf.second;
-      firstTime = false;
-      continue;
-    }
-    // First, update nf.second based on expands done for previous normal forms
-    // in this equivalence class
-    for (const std::pair<Node, std::vector<Node>>& ce : currExpands)
-    {
-      ModelEqcInfo::expandNormalForm(nf.second, ce.first, ce.second);
-    }
-    Trace("strings-mnf-solve") << "Compare: " << std::endl;
-    Trace("strings-mnf-solve") << "[1] " << mei.d_mnf << std::endl;
-    Trace("strings-mnf-solve") << "[2] " << nf.second << std::endl;
-
-    // Now, compare mei.d_mnf and nf.second left to right
-    size_t i = 0;
-    while (i < mei.d_mnf.size())
-    {
-      Node a = mei.d_mnf[i];
-      Node b = nf.second[i];
-      if (a == b)
+      if (firstTime)
       {
-        i++;
+        // first one sets the model normal form of the overall eqc
+        mei.d_mnf = nf.second;
+        firstTime = false;
         continue;
       }
-      Rational la = getLength(a);
-      Rational lb = getLength(b);
-      Trace("strings-mnf-solve")
-          << "Compare " << a << " / " << b << ", lengths=" << la << " / " << lb
-          << std::endl;
-      // should have positive lengths
-      Assert(la.sgn() == 1 && lb.sgn() == 1);
-      // if lengths are already equal, merge b into a
-      if (la == lb)
+      // First, update nf.second based on expands done for previous normal forms
+      // in this equivalence class
+      for (const std::pair<Node, std::vector<Node>>& ce : currExpands)
       {
-        if (b.isConst())
+        ModelEqcInfo::expandNormalForm(nf.second, ce.first, ce.second);
+      }
+      Trace("strings-mnf-solve") << "Compare: " << std::endl;
+      Trace("strings-mnf-solve") << "[1] " << mei.d_mnf << std::endl;
+      Trace("strings-mnf-solve") << "[2] " << nf.second << std::endl;
+
+      // Now, compare mei.d_mnf and nf.second left to right
+      size_t i = 0;
+      while (i < mei.d_mnf.size())
+      {
+        Node a = mei.d_mnf[i];
+        Node b = nf.second[i];
+        if (a == b)
         {
-          if (a.isConst())
+          i++;
+          continue;
+        }
+        Rational la = getLength(a);
+        Rational lb = getLength(b);
+        Trace("strings-mnf-solve")
+            << "Compare " << a << " / " << b << ", lengths=" << la << " / " << lb
+            << std::endl;
+        // should have positive lengths
+        Assert(la.sgn() == 1 && lb.sgn() == 1);
+        // if lengths are already equal, merge b into a
+        if (la == lb)
+        {
+          if (b.isConst())
           {
-            // conflict, we fail
-            Trace("strings-mnf") << "Fail: " << eqc << " while merging " << a
-                                 << ", " << b << std::endl;
-            return false;
+            if (a.isConst())
+            {
+              // conflict, we fail
+              Trace("strings-mnf") << "Fail: " << eqc << " while merging " << a
+                                  << ", " << b << std::endl;
+              return false;
+            }
+            else
+            {
+              // flip if b is constant but a is not
+              std::swap(a, b);
+            }
           }
-          else
+          else if (!a.isConst() && !d_state.hasTerm(a) && d_state.hasTerm(b))
           {
-            // flip if b is constant but a is not
+            // Flip if a is an auxiliary skolem but b is not. This is required
+            // for properly tracking other information during collectModelValues,
+            // e.g. str.code, which expects equivalence classes of the equality
+            // engine.
             std::swap(a, b);
           }
+          // otherwise merge b into a
+          merge(a, b);
+          // remember the operation
+          currExpands.emplace_back(b, std::vector<Node>{a});
+          i++;
         }
-        else if (!a.isConst() && !d_state.hasTerm(a) && d_state.hasTerm(b))
+        else if (la > lb)
         {
-          // Flip if a is an auxiliary skolem but b is not. This is required
-          // for properly tracking other information during collectModelValues,
-          // e.g. str.code, which expects equivalence classes of the equality
-          // engine.
-          std::swap(a, b);
+          // otherwise, split
+          std::vector<Node> avec = split(a, la, lb);
+          currExpands.emplace_back(a, avec);
         }
-        // otherwise merge b into a
-        merge(a, b);
-        // remember the operation
-        currExpands.emplace_back(b, std::vector<Node>{a});
-        i++;
+        else
+        {
+          Assert(la < lb);
+          std::vector<Node> bvec = split(b, lb, la);
+          currExpands.emplace_back(b, bvec);
+        }
+        // apply the expansion to the current normal form (nf.second) we are
+        // processing, which makes a difference in the current equivalence
+        // class has multiple occurrences of b.
+        Assert(!currExpands.empty());
+        std::pair<Node, std::vector<Node>> ce = currExpands.back();
+        ModelEqcInfo::expandNormalForm(nf.second, ce.first, ce.second);
       }
-      else if (la > lb)
-      {
-        // otherwise, split
-        std::vector<Node> avec = split(a, la, lb);
-        currExpands.emplace_back(a, avec);
-      }
-      else
-      {
-        Assert(la < lb);
-        std::vector<Node> bvec = split(b, lb, la);
-        currExpands.emplace_back(b, bvec);
-      }
-      // apply the expansion to the current normal form (nf.second) we are
-      // processing, which makes a difference in the current equivalence
-      // class has multiple occurrences of b.
-      Assert(!currExpands.empty());
-      std::pair<Node, std::vector<Node>> ce = currExpands.back();
-      ModelEqcInfo::expandNormalForm(nf.second, ce.first, ce.second);
+    }
+    Trace("strings-mnf") << "NF " << eqc << " : " << mei.toString() << std::endl;
+  }
+
+  // if there is a code term, we look up its value and merge?
+  if (!ei->d_codeTerm.get().isNull() && mei.d_length.isOne())
+  {
+    NodeManager * nm = NodeManager::currentNM();
+    Node ct = nm->mkNode(STRING_TO_CODE, ei->d_codeTerm.get());
+    Node ctv = val.getModelValue(ct);
+    unsigned cvalue =
+        ctv.getConst<Rational>().getNumerator().toUnsignedInt();
+    std::vector<unsigned> vec;
+    vec.push_back(cvalue);
+    Node assignedValue = nm->mkConst(String(vec));
+    // only if the value is not already in this equivalance class, in which
+    // case it should be the representative.
+    if (assignedValue!=eqc)
+    {
+      merge(assignedValue, eqc);
     }
   }
-  // otherwise don't need to compute the length from the normal form?
-  Trace("strings-mnf") << "NF " << eqc << " : " << mei.toString() << std::endl;
+  
   return true;
 }
 
