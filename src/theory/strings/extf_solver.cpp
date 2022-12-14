@@ -805,7 +805,7 @@ TrustNode ExtfSolver::processLemma(InferInfo& ii, LemmaProperty& p)
 {
   // if this was the reduction lemma for a term, mark it reduced now
   std::map<Node, Node>::iterator it = d_reductionWaitingMap.find(ii.d_conc);
-  if (it!=d_reductionWaitingMap.end())
+  if (it != d_reductionWaitingMap.end())
   {
     d_reduced.insert(it->second);
     d_reductionWaitingMap.erase(it);
