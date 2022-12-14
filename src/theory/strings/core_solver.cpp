@@ -2715,6 +2715,7 @@ size_t CoreSolver::choosePossibleInferInfo(
 
 void CoreSolver::processFact(InferInfo& ii, ProofGenerator*& pg)
 {
+  // process it with the inference manager
   d_im.processFact(ii, pg);
 }
 
@@ -2726,6 +2727,7 @@ TrustNode CoreSolver::processLemma(InferInfo& ii, LemmaProperty& p)
     Assert(!ii.d_nfPair[1].isNull());
     addNormalFormPair(ii.d_nfPair[0], ii.d_nfPair[1]);
   }
+  // now, process it with the inference manager
   return d_im.processLemma(ii, p);
 }
 

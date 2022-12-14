@@ -798,6 +798,7 @@ bool StringsExtfCallback::getCurrentSubstitution(
 
 void ExtfSolver::processFact(InferInfo& ii, ProofGenerator*& pg)
 {
+  // process it with the inference manager
   d_im.processFact(ii, pg);
 }
 
@@ -810,6 +811,7 @@ TrustNode ExtfSolver::processLemma(InferInfo& ii, LemmaProperty& p)
     d_reduced.insert(it->second);
     d_reductionWaitingMap.erase(it);
   }
+  // now process it with the inference manager
   return d_im.processLemma(ii, p);
 }
 
