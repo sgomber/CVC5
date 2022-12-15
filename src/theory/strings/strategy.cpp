@@ -130,7 +130,7 @@ void Strategy::initializeStrategy()
     {
       addStrategyStep(CHECK_LENGTH_EQC);
     }
-    if (options().strings.seqArray != options::SeqArrayMode::NONE)  
+    if (options().strings.seqArray != options::SeqArrayMode::NONE)
     {
       addStrategyStep(CHECK_SEQUENCES_ARRAY_CONCAT);
       addStrategyStep(CHECK_SEQUENCES_ARRAY);

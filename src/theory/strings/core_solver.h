@@ -163,7 +163,7 @@ class CoreSolver : public InferSideEffectProcess, protected EnvObj
    * we have successfully assigned normal forms for all equivalence classes, as
    * stored in d_normal_forms. Otherwise, this method may add a fact, lemma, or
    * conflict based on inferences in the Inference enumeration above.
-   * 
+   *
    * This check is stratified into two phases. When checkNormalFormsEqProp
    * is called, this may:
    * (A) trigger new facts or conflicts,
@@ -207,7 +207,7 @@ class CoreSolver : public InferSideEffectProcess, protected EnvObj
   //-----------------------end inference steps
 
   //--------------------------- query functions
-  /** 
+  /**
    * Get the list of string equivalence classes, which respects the
    * containment ordering as described in checkCycles.
    */
@@ -296,6 +296,7 @@ class CoreSolver : public InferSideEffectProcess, protected EnvObj
   void processFact(InferInfo& ii, ProofGenerator*& pg) override;
   /** Called when ii is ready to be processed as a lemma */
   TrustNode processLemma(InferInfo& ii, LemmaProperty& p) override;
+
  private:
   /**
    * This returns the index of an infer info in pinfer that we should process

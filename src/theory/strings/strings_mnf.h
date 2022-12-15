@@ -28,7 +28,7 @@
 namespace cvc5::internal {
 namespace theory {
 namespace strings {
-  
+
 class BaseSolver;
 class CoreSolver;
 
@@ -71,7 +71,7 @@ class StringsMnf : protected ModelCons
   /** Check model normal forms */
   bool checkModelNormalforms();
 
-  /** 
+  /**
    * Has candidate model, which returns true, since this class is
    * assigned as the model constructor only when it is certain there is a model.
    */

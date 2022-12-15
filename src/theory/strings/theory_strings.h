@@ -43,11 +43,11 @@
 #include "theory/strings/solver_state.h"
 #include "theory/strings/strategy.h"
 #include "theory/strings/strings_fmf.h"
+#include "theory/strings/strings_mnf.h"
 #include "theory/strings/strings_rewriter.h"
 #include "theory/strings/term_registry.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
-#include "theory/strings/strings_mnf.h"
 
 namespace cvc5::internal {
 namespace theory {

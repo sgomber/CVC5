@@ -967,7 +967,8 @@ void TheoryStrings::postCheck(Effort e)
       }
       // repeat if we did not add a lemma or conflict, and we had pending
       // facts or lemmas.
-    } while (!d_state.isInConflict() && !d_state.hasCandidateModel() && !sentLemma && hadPending);
+    } while (!d_state.isInConflict() && !d_state.hasCandidateModel()
+             && !sentLemma && hadPending);
     // End the full effort check.
     d_termReg.notifyEndFullEffortCheck();
   }
@@ -1336,7 +1337,7 @@ void TheoryStrings::runStrategy(Theory::Effort e)
         break;
       }
       // if at full effort and we have a candidate model, we are done
-      if (e==Theory::EFFORT_FULL && d_state.hasCandidateModel())
+      if (e == Theory::EFFORT_FULL && d_state.hasCandidateModel())
       {
         break;
       }

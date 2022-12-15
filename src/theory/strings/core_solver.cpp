@@ -645,7 +645,7 @@ const std::vector<Node>& CoreSolver::getStringsEqc() const
 {
   return d_strings_eqc;
 }
-  
+
 NormalForm& CoreSolver::getNormalForm(Node n)
 {
   std::map<Node, NormalForm>::iterator itn = d_normal_form.find(n);
@@ -2689,8 +2689,8 @@ void CoreSolver::checkNormalFormsEq()
     d_im.sendInference(d_pinfers[use_index].d_infer, true);
     return;
   }
-  //d_pinfers.clear();
-  // process incompleteness
+  // d_pinfers.clear();
+  //  process incompleteness
   if (d_modelUnsoundId != IncompleteId::NONE)
   {
     d_im.setModelUnsound(d_modelUnsoundId);

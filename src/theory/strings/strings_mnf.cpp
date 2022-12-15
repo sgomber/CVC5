@@ -16,11 +16,11 @@
 #include "theory/strings/strings_mnf.h"
 
 #include "options/strings_options.h"
+#include "theory/strings/base_solver.h"
+#include "theory/strings/core_solver.h"
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
 #include "util/string.h"
-#include "theory/strings/base_solver.h"
-#include "theory/strings/core_solver.h"
 
 using namespace cvc5::internal::kind;
 
@@ -67,7 +67,12 @@ StringsMnf::StringsMnf(Env& env,
                        TermRegistry& tr,
                        BaseSolver& bs,
                        CoreSolver& cs)
-    : ModelCons(env), d_state(s), d_im(im), d_termReg(tr), d_bsolver(bs), d_csolver(cs)
+    : ModelCons(env),
+      d_state(s),
+      d_im(im),
+      d_termReg(tr),
+      d_bsolver(bs),
+      d_csolver(cs)
 {
   d_zero = NodeManager::currentNM()->mkConstInt(Rational(0));
   // get the maximum model length
@@ -145,10 +150,7 @@ bool StringsMnf::checkModelNormalforms()
   return true;
 }
 
-bool StringsMnf::hasCandidateModel()
-{
-  return true;
-}
+bool StringsMnf::hasCandidateModel() { return true; }
 
 void StringsMnf::getStringRepresentativesFrom(
     const std::set<Node>& termSet,

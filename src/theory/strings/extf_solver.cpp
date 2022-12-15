@@ -234,10 +234,11 @@ bool ExtfSolver::doReduction(int effort, Node n)
     Trace("strings-red-lemma")
         << "Reduction_" << effort << " rewritten : " << rewrite(nnlem)
         << std::endl;
-    if (rewrite(nnlem)==d_true)
+    if (rewrite(nnlem) == d_true)
     {
       Trace("strings-extf-debug")
-          << "  resolve extf : " << n << " based on (trivial) reduction." << std::endl;
+          << "  resolve extf : " << n << " based on (trivial) reduction."
+          << std::endl;
       d_reduced.insert(n);
     }
     else

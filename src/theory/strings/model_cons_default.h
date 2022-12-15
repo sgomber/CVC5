@@ -37,7 +37,7 @@ class ModelConsDefault : public ModelCons
   ModelConsDefault(Env& env, SolverState& state, CoreSolver& csolver);
   virtual ~ModelConsDefault() {}
 
-  /** 
+  /**
    * Has candidate model, which returns false, since by default we don't
    * proactively look to see if the model exists.
    */
