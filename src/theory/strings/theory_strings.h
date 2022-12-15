@@ -250,13 +250,13 @@ class TheoryStrings : public Theory {
   Node mkSkeletonFromBase(Node r, size_t currIndex, size_t nextIndex);
   //-----------------------end inference steps
   /** run the given inference step */
-  void runInferStep(InferStep s, int effort);
+  void runInferStep(InferStep s, Theory::Effort e, int effort);
   /** run strategy for effort e */
   void runStrategy(Theory::Effort e, size_t startIndex = 0);
   /** print strings equivalence classes for debugging */
   std::string debugPrintStringsEqc();
   /** Determine if it is possible to construct a candidate model */
-  bool maybeHasCandidateModel();
+  bool maybeHasModel(Theory::Effort e);
   /** Commonly used constants */
   Node d_true;
   Node d_false;

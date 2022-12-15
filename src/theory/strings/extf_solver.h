@@ -127,7 +127,7 @@ class ExtfSolver : public InferSideEffectProcess, protected EnvObj
   /**
    * Return false if the above method has a reduction to send at full effort.
    */
-  bool maybeHasCandidateModel();
+  bool maybeHasModel(Theory::Effort e);
   /** get preprocess module */
   StringsPreprocess* getPreprocess() { return &d_preproc; }
 

@@ -70,12 +70,12 @@ class RegExpSolver : protected EnvObj
    * for Regular Membership and Length Constraints over Unbounded Strings",
    * FroCoS 2015.
    */
-  void checkMemberships(int effort);
+  void checkMemberships(Theory::Effort e);
 
   /**
    * Return false if the above method may send a lemma at full effort.
    */
-  bool maybeHasCandidateModel();
+  bool maybeHasModel(Theory::Effort e);
 
  private:
   /** compute asserted memberships */
@@ -98,7 +98,7 @@ class RegExpSolver : protected EnvObj
    * (2) checkUnfold, which unfolds regular expression memberships as necessary
    */
   bool checkInclInter(const std::map<Node, std::vector<Node>>& mems);
-  void checkUnfold(const std::map<Node, std::vector<Node>>& mems, int effort);
+  void checkUnfold(const std::map<Node, std::vector<Node>>& mems, Theory::Effort effort);
   /**
    * Check memberships in equivalence class for regular expression
    * inclusion.
@@ -129,6 +129,11 @@ class RegExpSolver : protected EnvObj
    * contains (xi in Ri) and (xj in Rj) and intersect(xi,xj) is empty.
    */
   bool checkEqcIntersect(const std::vector<Node>& mems);
+  /** 
+   * Return true if we should process regular expression unfoldings with
+   * the given polarity at the given effort.
+   */
+  bool shouldUnfold(Theory::Effort e, bool pol) const;
   // Constants
   Node d_emptyString;
   Node d_emptyRegexp;

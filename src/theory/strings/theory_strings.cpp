@@ -932,7 +932,7 @@ void TheoryStrings::postCheck(Effort e)
     ++(d_statistics.d_checkRuns);
     bool sentLemma = false;
     bool hadPending = false;
-    Trace("strings-check") << "Full effort check..." << std::endl;
+    Trace("strings-check") << "Check at effort " << e << "..." << std::endl;
     do{
       d_im.reset();
       // assume the default model constructor in case we answer sat after this
@@ -1281,7 +1281,7 @@ TrustNode TheoryStrings::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
   return ret;
 }
 
-bool TheoryStrings::maybeHasCandidateModel()
+bool TheoryStrings::maybeHasModel(Theory::Effort e)
 {
   Trace("strings-mnf") << "maybeHasCandidateModel? ";
   // no use if model unsound
@@ -1291,13 +1291,13 @@ bool TheoryStrings::maybeHasCandidateModel()
     return false;
   }
   // check other reasons why we are not ready to construct a model
-  if (!d_esolver.maybeHasCandidateModel())
+  if (!d_esolver.maybeHasModel(e))
   {
     Trace("strings-mnf") << "...fail, extended functions are waiting reduction"
                          << std::endl;
     return false;
   }
-  if (!d_rsolver.maybeHasCandidateModel())
+  if (!d_rsolver.maybeHasModel(e))
   {
     Trace("strings-mnf") << "...fail, extended functions are waiting reduction"
                          << std::endl;
@@ -1308,7 +1308,7 @@ bool TheoryStrings::maybeHasCandidateModel()
 }
 
 /** run the given inference step */
-void TheoryStrings::runInferStep(InferStep s, int effort)
+void TheoryStrings::runInferStep(InferStep s, Theory::Effort e, int effort)
 {
   Trace("strings-process") << "Run " << s;
   if (effort > 0)
@@ -1327,7 +1327,7 @@ void TheoryStrings::runInferStep(InferStep s, int effort)
     case CHECK_NORMAL_FORMS_EQ: d_csolver.checkNormalFormsEq(); break;
     case CHECK_MODEL_NORMAL_FORMS:
       // this step can only run if we maybe have a candidate model
-      if (maybeHasCandidateModel())
+      if (maybeHasModel(Theory::EFFORT_FULL))
       {
         d_msolver.checkModelNormalforms();
       }
@@ -1341,8 +1341,15 @@ void TheoryStrings::runInferStep(InferStep s, int effort)
     case CHECK_REGISTER_TERMS_NF: checkRegisterTermsNormalForms(); break;
     case CHECK_EXTF_REDUCTION: d_esolver.checkExtfReductions(effort); break;
     case CHECK_MEMBERSHIP_INCLUSION: return d_rsolver.checkInclusions(); break;
-    case CHECK_MEMBERSHIP: d_rsolver.checkMemberships(effort); break;
+    case CHECK_MEMBERSHIP: d_rsolver.checkMemberships(e); break;
     case CHECK_CARDINALITY: d_bsolver.checkCardinality(); break;
+    case RECHECK_CANDIDATE_MODEL:
+      if (!maybeHasModel(Theory::EFFORT_LAST_CALL))
+      {
+        // rerun check, without models????
+        runStrategy(Theory::EFFORT_FULL);
+      }
+      break;
     default: Unreachable(); break;
   }
   Trace("strings-process") << "Done " << s
@@ -1379,7 +1386,7 @@ void TheoryStrings::runStrategy(Theory::Effort e, size_t startIndex)
     }
     else
     {
-      runInferStep(curr, effort);
+      runInferStep(curr, e, effort);
       if (d_state.isInConflict())
       {
         break;

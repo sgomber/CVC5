@@ -48,6 +48,9 @@ std::ostream& operator<<(std::ostream& out, InferStep s)
     case CHECK_SEQUENCES_ARRAY_EAGER:
       out << "check_sequences_array_eager";
       break;
+    case RECHECK_CANDIDATE_MODEL:
+      out << "recheck_candidate_model";
+      break;
     default: out << "?"; break;
   }
   return out;
@@ -154,11 +157,15 @@ void Strategy::initializeStrategy()
     {
       step_begin[Theory::EFFORT_LAST_CALL] = d_infer_steps.size();
       addStrategyStep(CHECK_EXTF_EVAL, 3);
+      if (options().strings.stringModelNormalForms)
+      {
+        //addStrategyStep(RECHECK_CANDIDATE_MODEL);
+      }
       if (options().strings.stringExp)
       {
         addStrategyStep(CHECK_EXTF_REDUCTION, 3);
       }
-      addStrategyStep(CHECK_MEMBERSHIP, 3);
+      addStrategyStep(CHECK_MEMBERSHIP);
       step_end[Theory::EFFORT_LAST_CALL] = d_infer_steps.size() - 1;
     }
     // set the beginning/ending ranges

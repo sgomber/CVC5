@@ -96,19 +96,19 @@ void RegExpSolver::checkInclusions()
   checkInclInter(d_assertedMems);
 }
 
-void RegExpSolver::checkMemberships(int effort)
+void RegExpSolver::checkMemberships(Theory::Effort e)
 {
-  Trace("regexp-process") << "Checking Memberships, effort = " << effort
+  Trace("regexp-process") << "Checking Memberships, effort = " << e
                           << " ... " << std::endl;
   // memberships were computed in checkInclusions above
-  if (effort != 0)
+  if (e == Theory::EFFORT_LAST_CALL)
   {
     computeAssertedMemberships();
   }
-  checkUnfold(d_assertedMems, effort);
+  checkUnfold(d_assertedMems, e);
 }
 
-bool RegExpSolver::maybeHasCandidateModel()
+bool RegExpSolver::maybeHasModel(Theory::Effort e)
 {
   computeAssertedMemberships();
   // under approximation: fail if there is an active membership which we
@@ -117,9 +117,19 @@ bool RegExpSolver::maybeHasCandidateModel()
   {
     for (const Node& m : mp.second)
     {
+      bool polarity = m.getKind() != NOT;
+      if (!shouldUnfold(e, polarity))
+      {
+        continue;
+      }
       // if we've processed it, skip
       if (d_regexp_ucached.find(m) != d_regexp_ucached.end()
           || d_regexp_ccached.find(m) != d_regexp_ccached.end())
+      {
+        continue;
+      }
+      Node atom = polarity ? m : m[0];
+      if (e==Theory::EFFORT_LAST_CALL && !d_esolver.isActiveInModel(atom))
       {
         continue;
       }
@@ -156,8 +166,25 @@ bool RegExpSolver::checkInclInter(
   return false;
 }
 
+bool RegExpSolver::shouldUnfold(Theory::Effort e, bool pol) const
+{
+  // Check positive, then negative memberships. If we are doing
+  // model-based reductions, we process positive ones at FULL effort, and negative
+  // ones at LAST_CALL effort.
+  if (options().strings.stringModelBasedReduction)
+  {
+    if (pol)
+    {
+      return e==Theory::EFFORT_FULL;
+    }
+    return e==Theory::EFFORT_LAST_CALL;
+  }
+  // Otherwise we don't make the distinction
+  return true;
+}
+
 void RegExpSolver::checkUnfold(const std::map<Node, std::vector<Node> >& mems,
-                               int effort)
+                               Theory::Effort e)
 {
   Trace("regexp-process") << "Checking unfold ... " << std::endl;
   bool addedLemma = false;
@@ -177,20 +204,20 @@ void RegExpSolver::checkUnfold(const std::map<Node, std::vector<Node> >& mems,
   // representatives of strings that are the LHS of positive memberships that
   // we unfolded
   std::unordered_set<Node> repUnfold;
-  // Check positive (e=0), then negative (e=1) memberships. If we are doing
-  // model-based reductions, we process positive ones at effort=0, and negative
-  // ones at effort=3.
-  bool mbr = options().strings.stringModelBasedReduction;
-  size_t startE = mbr ? (effort > 0 ? 1 : 0) : 0;
-  size_t endE = mbr ? (effort > 0 ? 2 : 1) : 2;
-  for (size_t e = startE; e < endE; e++)
+  for (size_t eval = 0; eval < 2; eval++)
   {
+    // skip if we should not unfold
+    bool checkPol = (eval==0);
+    if (!shouldUnfold(e, checkPol))
+    {
+      continue;
+    }
     for (const std::pair<const Node, Node>& mp : allMems)
     {
       Node assertion = mp.first;
       Node rep = mp.second;
       bool polarity = assertion.getKind() != NOT;
-      if (polarity != (e == 0))
+      if (polarity != checkPol)
       {
         continue;
       }
@@ -208,9 +235,9 @@ void RegExpSolver::checkUnfold(const std::map<Node, std::vector<Node> >& mems,
       Trace("strings-regexp")
           << "We have regular expression assertion : " << assertion
           << std::endl;
-      Node atom = assertion.getKind() == NOT ? assertion[0] : assertion;
+      Node atom = polarity ? assertion : assertion[0];
       Assert(atom == rewrite(atom));
-      if (effort > 0 && !d_esolver.isActiveInModel(atom))
+      if (e==Theory::EFFORT_LAST_CALL && !d_esolver.isActiveInModel(atom))
       {
         Trace("strings-regexp")
             << "...ignore since inactive in model" << std::endl;
@@ -282,7 +309,7 @@ void RegExpSolver::checkUnfold(const std::map<Node, std::vector<Node> >& mems,
           }
         }
       }
-      if (e == 1 && repUnfold.find(rep) != repUnfold.end())
+      if (!checkPol && repUnfold.find(rep) != repUnfold.end())
       {
         // do not unfold negative memberships of strings that have new
         // positive unfoldings. For example:
@@ -339,7 +366,7 @@ void RegExpSolver::checkUnfold(const std::map<Node, std::vector<Node> >& mems,
           if (d_im.sendInference(iexp, noExplain, conc, inf))
           {
             addedLemma = true;
-            if (e == 0)
+            if (checkPol)
             {
               // Remember that we have unfolded a membership for x
               // notice that we only do this here, after we have definitely
