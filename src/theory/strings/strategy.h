@@ -64,6 +64,8 @@ enum InferStep
   // check extended function reductions
   CHECK_EXTF_REDUCTION,
   // check regular expression memberships
+  CHECK_MEMBERSHIP_INCLUSION,
+  // check regular expression memberships
   CHECK_MEMBERSHIP,
   // check cardinality
   CHECK_CARDINALITY,

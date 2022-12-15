@@ -38,6 +38,7 @@ std::ostream& operator<<(std::ostream& out, InferStep s)
     case CHECK_CODES: out << "check_codes"; break;
     case CHECK_LENGTH_EQC: out << "check_length_eqc"; break;
     case CHECK_EXTF_REDUCTION: out << "check_extf_reduction"; break;
+    case CHECK_MEMBERSHIP_INCLUSION: out << "check_membership_inclusion"; break;
     case CHECK_MEMBERSHIP: out << "check_membership"; break;
     case CHECK_CARDINALITY: out << "check_cardinality"; break;
     case CHECK_SEQUENCES_ARRAY_CONCAT:
@@ -139,6 +140,7 @@ void Strategy::initializeStrategy()
     {
       addStrategyStep(CHECK_EXTF_REDUCTION, 2);
     }
+    addStrategyStep(CHECK_MEMBERSHIP_INCLUSION);
     addStrategyStep(CHECK_MEMBERSHIP);
     addStrategyStep(CHECK_CARDINALITY);
     step_end[Theory::EFFORT_FULL] = d_infer_steps.size() - 1;

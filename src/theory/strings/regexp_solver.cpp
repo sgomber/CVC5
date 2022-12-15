@@ -62,29 +62,24 @@ Node RegExpSolver::mkAnd(Node c1, Node c2)
   return NodeManager::currentNM()->mkNode(AND, c1, c2);
 }
 
-void RegExpSolver::checkMemberships(int effort)
+void RegExpSolver::computeAssertedMemberships()
 {
-  Trace("regexp-process") << "Checking Memberships, effort = " << effort
-                          << " ... " << std::endl;
+  d_assertedMems.clear();
   // add the memberships
   std::vector<Node> mems = d_esolver.getActive(STRING_IN_REGEXP);
   // maps representatives to regular expression memberships in that class
-  std::map<Node, std::vector<Node> > assertedMems;
-  const std::map<Node, ExtfInfoTmp>& einfo = d_esolver.getInfo();
-  std::map<Node, ExtfInfoTmp>::const_iterator it;
   for (unsigned i = 0; i < mems.size(); i++)
   {
     Node n = mems[i];
     Assert(n.getKind() == STRING_IN_REGEXP);
-    it = einfo.find(n);
-    Assert(it != einfo.end());
-    if (!it->second.d_const.isNull())
+    Node r = d_state.getRepresentative(n);
+    if (r.isConst())
     {
-      bool pol = it->second.d_const.getConst<bool>();
+      bool pol = r.getConst<bool>();
       Trace("strings-process-debug")
           << "  add membership : " << n << ", pol = " << pol << std::endl;
-      Node r = d_state.getRepresentative(n[0]);
-      assertedMems[r].push_back(pol ? n : n.negate());
+      r = d_state.getRepresentative(n[0]);
+      d_assertedMems[r].push_back(pol ? n : n.negate());
     }
     else
     {
@@ -92,16 +87,27 @@ void RegExpSolver::checkMemberships(int effort)
           << "  irrelevant (non-asserted) membership : " << n << std::endl;
     }
   }
-  if (effort == 0)
+}
+
+
+void RegExpSolver::checkInclusions()
+{
+  // First check for conflict. We do this only if effort is 0, otherwise
+  // we have already run these checks in this SAT context.
+  computeAssertedMemberships();
+  checkInclInter(d_assertedMems);
+}
+
+void RegExpSolver::checkMemberships(int effort)
+{
+  Trace("regexp-process") << "Checking Memberships, effort = " << effort
+                          << " ... " << std::endl;
+  // memberships were computed in checkInclusions above
+  if (effort!=0)
   {
-    // First check for conflict. We do this only if effort is 0, otherwise
-    // we have already run these checks in this SAT context.
-    if (checkInclInter(assertedMems))
-    {
-      return;
-    }
+    computeAssertedMemberships();
   }
-  checkUnfold(assertedMems, effort);
+  checkUnfold(d_assertedMems, effort);
 }
 
 bool RegExpSolver::checkInclInter(

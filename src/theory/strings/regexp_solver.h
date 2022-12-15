@@ -57,6 +57,11 @@ class RegExpSolver : protected EnvObj
                SequencesStatistics& stats);
   ~RegExpSolver() {}
 
+  /** 
+   * Check inclusions
+   */
+  void checkInclusions();
+  
   /** check regular expression memberships
    *
    * This checks the satisfiability of all regular expression memberships
@@ -68,6 +73,8 @@ class RegExpSolver : protected EnvObj
   void checkMemberships(int effort);
 
  private:
+  /** compute asserted memberships */
+  void computeAssertedMemberships();
   /** check
    *
    * Tells this solver to check whether the regular expressions in mems
@@ -161,6 +168,8 @@ class RegExpSolver : protected EnvObj
   NodeSet d_processed_memberships;
   /** regular expression operation module */
   RegExpOpr d_regexp_opr;
+  /** Asserted memberships, cached during a full effort check */
+  std::map<Node, std::vector<Node> > d_assertedMems;
 }; /* class TheoryStrings */
 
 }  // namespace strings
