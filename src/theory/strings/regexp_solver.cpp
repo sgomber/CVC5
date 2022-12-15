@@ -114,7 +114,7 @@ bool RegExpSolver::maybeHasCandidateModel()
   // under approximation: fail if there is an active membership which we
   // have not processed
   for (const std::pair<const Node, std::vector<Node>>& mp : d_assertedMems)
-  {    
+  {
     for (const Node& m : mp.second)
     {
       // if we've processed it, skip

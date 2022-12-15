@@ -1287,23 +1287,20 @@ bool TheoryStrings::maybeHasCandidateModel()
   // no use if model unsound
   if (d_state.getValuation().isModelUnsound())
   {
-    Trace("strings-mnf") << "...fail, already model unsound"
-                         << std::endl;
+    Trace("strings-mnf") << "...fail, already model unsound" << std::endl;
     return false;
   }
   // check other reasons why we are not ready to construct a model
   if (!d_esolver.maybeHasCandidateModel())
   {
-    Trace("strings-mnf")
-        << "...fail, extended functions are waiting reduction"
-        << std::endl;
+    Trace("strings-mnf") << "...fail, extended functions are waiting reduction"
+                         << std::endl;
     return false;
   }
   if (!d_rsolver.maybeHasCandidateModel())
   {
-    Trace("strings-mnf")
-        << "...fail, extended functions are waiting reduction"
-        << std::endl;
+    Trace("strings-mnf") << "...fail, extended functions are waiting reduction"
+                         << std::endl;
     return false;
   }
   Trace("strings-mnf") << "...success." << std::endl;

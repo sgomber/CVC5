@@ -71,8 +71,8 @@ class RegExpSolver : protected EnvObj
    * FroCoS 2015.
    */
   void checkMemberships(int effort);
-  
-  /** 
+
+  /**
    * Return false if the above method may send a lemma at full effort.
    */
   bool maybeHasCandidateModel();
