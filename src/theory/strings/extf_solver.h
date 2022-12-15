@@ -124,7 +124,7 @@ class ExtfSolver : public InferSideEffectProcess, protected EnvObj
    * the rest.
    */
   void checkExtfReductions(int effort);
-  /** 
+  /**
    * Return true if the above method has a reduction to send at the given
    * effort.
    */
@@ -188,7 +188,7 @@ class ExtfSolver : public InferSideEffectProcess, protected EnvObj
   TrustNode processLemma(InferInfo& ii, LemmaProperty& p) override;
 
  private:
-  /** 
+  /**
    * Helper method for checkExtfReductions / hasExtfReduction, returns true
    * if a reduction lemma was sent if doSend = true, or would have been sent
    * if doSend = false.
@@ -203,7 +203,7 @@ class ExtfSolver : public InferSideEffectProcess, protected EnvObj
    * caches that the reduction lemma was sent, or marks n as reduced in this
    * SAT-context. The argument effort has the same meaning as in
    * checkExtfReductions.
-   * 
+   *
    * @param doSend If false, we return true if the reduction would have been
    * sent, but do not send it to the inference manager.
    * @return True if a reduction lemma was sent

@@ -100,8 +100,9 @@ bool StringsMnf::checkModelNormalforms()
   // check other reasons why we are not ready to construct a model
   if (d_esolver.hasExtfReductionFull())
   {
-    Trace("strings-mnf") << "StringsMnf: ...fail, extended functions are waiting reduction"
-                         << std::endl;
+    Trace("strings-mnf")
+        << "StringsMnf: ...fail, extended functions are waiting reduction"
+        << std::endl;
     return false;
   }
   // reset the state
