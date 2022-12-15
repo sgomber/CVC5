@@ -1384,7 +1384,7 @@ void TheoryStrings::runStrategy(Theory::Effort e, size_t startIndex)
     }
     else
     {
-      runInferStep(curr, it->second);
+      runInferStep(curr, effort);
       if (d_state.isInConflict())
       {
         break;

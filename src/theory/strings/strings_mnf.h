@@ -90,6 +90,10 @@ class StringsMnf : protected ModelCons
   std::vector<Node> getNormalForm(Node n) override;
 
  protected:
+  /** check disequalities */
+  bool checkDisequalities();
+  /** check cardinality */
+  bool checkCardinality();
   /**
    * Normalize eqc.
    *

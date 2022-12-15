@@ -104,6 +104,27 @@ bool StringsMnf::checkModelNormalforms()
     }
   }
   // also check disequalities
+  if (!checkDisequalities())
+  {
+    return false;
+  }
+  // also check cardinality
+  if (!checkCardinality())
+  {
+    return false;
+  }
+
+  Trace("strings-mnf") << "StringsMnf: ...success!!!" << std::endl;
+  // If successful and non-trivial, this class will be the model constructor.
+  if (!stringsEqc.empty())
+  {
+    d_state.setModelConstructor(this);
+  }
+  return true;
+}
+
+bool StringsMnf::checkDisequalities()
+{
   const context::CDList<Node>& deqs = d_state.getDisequalityList();
   std::map<Node, std::unordered_set<Node>> processed;
   for (const Node& deq : deqs)
@@ -135,7 +156,11 @@ bool StringsMnf::checkModelNormalforms()
       return false;
     }
   }
+  return true;
+}
 
+bool StringsMnf::checkCardinality()
+{
   // ensure cardinality is ok?
   std::map<TypeNode, size_t> typeReq;
   std::map<TypeNode, size_t>::iterator itt;
@@ -185,16 +210,9 @@ bool StringsMnf::checkModelNormalforms()
       return false;
     }
   }
-
-  Trace("strings-mnf") << "StringsMnf: ...success!!!" << std::endl;
-  // If successful and non-trivial, this class will be the model constructor.
-  if (!stringsEqc.empty())
-  {
-    d_state.setModelConstructor(this);
-  }
   return true;
 }
-
+  
 bool StringsMnf::hasCandidateModel() { return true; }
 
 void StringsMnf::getStringRepresentativesFrom(
