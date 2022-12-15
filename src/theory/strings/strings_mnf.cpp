@@ -135,6 +135,52 @@ bool StringsMnf::checkModelNormalforms()
       return false;
     }
   }
+  
+  // ensure cardinality is ok?
+  std::map<TypeNode, size_t> typeReq;
+  std::map<TypeNode, size_t>::iterator itt;
+  std::map<std::pair<TypeNode, Rational>, size_t> eqcCounts;
+  for (const std::pair<const Node, ModelEqcInfo>& mi : d_minfo)
+  {
+    TypeNode tn = mi.first.getType();
+    itt = typeReq.find(tn);
+    if (itt==typeReq.end())
+    {
+      size_t typeCard;
+      BaseSolver::CardinalityResponse cr = d_bsolver.getCardinalityReq(tn, typeCard);
+      if (cr==BaseSolver::CardinalityResponse::UNHANDLED)
+      {
+        Trace("strings-mnf") << "StringsMnf: ...fail cardinality type" << std::endl;
+        return false;
+      }
+      else if (cr==BaseSolver::CardinalityResponse::NO_REQ)
+      {
+        typeReq[tn] = 0;
+        continue;
+      }
+      typeReq[tn] = typeCard;
+    }
+    else if (itt->second==0)
+    {
+      continue;
+    }
+    std::pair<TypeNode, Rational> key(tn, mi.second.d_length);
+    eqcCounts[key]++;
+  }
+  NodeManager * nm = NodeManager::currentNM();
+  for (const std::pair<const std::pair<TypeNode, Rational>, size_t>& ec : eqcCounts)
+  {
+    TypeNode tn = ec.first.first;
+    Assert (typeReq.find(tn)!=typeReq.end());
+    size_t treq = typeReq[tn];
+    Node lr = nm->mkConstInt(ec.first.second);
+    if (!d_bsolver.isCardinalityOk(treq, lr, ec.second))
+    {
+      Trace("strings-mnf") << "StringsMnf: ...fail cardinality for number of eqc " << tn << " of length " << lr << std::endl;
+      return false;
+    }
+  }
+  
   Trace("strings-mnf") << "StringsMnf: ...success!!!" << std::endl;
   // If successful and non-trivial, this class will be the model constructor.
   if (!stringsEqc.empty())

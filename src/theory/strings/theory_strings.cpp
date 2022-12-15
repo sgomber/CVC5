@@ -1352,7 +1352,7 @@ void TheoryStrings::runInferStep(InferStep s, int effort)
                            << std::endl;
 }
 
-void TheoryStrings::runStrategy(Theory::Effort e)
+void TheoryStrings::runStrategy(Theory::Effort e, size_t startIndex)
 {
   std::vector<std::pair<InferStep, int> >::iterator it = d_strat.stepBegin(e);
   std::vector<std::pair<InferStep, int> >::iterator stepEnd =
@@ -1362,7 +1362,14 @@ void TheoryStrings::runStrategy(Theory::Effort e)
   while (it != stepEnd)
   {
     InferStep curr = it->first;
-    if (curr == BREAK)
+    int effort = it->second;
+    ++it;
+    if (startIndex>0)
+    {
+      // not yet at start, skip
+      startIndex--;
+    }
+    else if (curr == BREAK)
     {
       // if we have a pending inference or lemma, we will process it
       if (d_im.hasProcessed())
@@ -1383,7 +1390,6 @@ void TheoryStrings::runStrategy(Theory::Effort e)
         break;
       }
     }
-    ++it;
   }
   Trace("strings-process") << "----finished round---" << std::endl;
 }

@@ -158,8 +158,6 @@ class RegExpSolver : protected EnvObj
    */
   bool checkPDerivative(
       Node x, Node r, Node atom, bool& addedLemma, std::vector<Node>& nf_exp);
-  Node getMembership(Node n, bool isPos, unsigned i);
-  unsigned getNumMemberships(Node n, bool isPos);
   cvc5::internal::String getHeadConst(Node x);
   bool deriveRegExp(Node x, Node r, Node atom, std::vector<Node>& ant);
   Node getNormalSymRegExp(Node r, std::vector<Node>& nf_exp);
