@@ -89,7 +89,6 @@ void RegExpSolver::computeAssertedMemberships()
   }
 }
 
-
 void RegExpSolver::checkInclusions()
 {
   // First check for conflict. We do this only if effort is 0, otherwise
@@ -103,7 +102,7 @@ void RegExpSolver::checkMemberships(int effort)
   Trace("regexp-process") << "Checking Memberships, effort = " << effort
                           << " ... " << std::endl;
   // memberships were computed in checkInclusions above
-  if (effort!=0)
+  if (effort != 0)
   {
     computeAssertedMemberships();
   }
