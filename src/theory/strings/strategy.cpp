@@ -121,24 +121,30 @@ void Strategy::initializeStrategy()
     addStrategyStep(CHECK_NORMAL_FORMS_EQ_PROP);  // ... CAV 14 propagate
     if (options().strings.stringModelNormalForms)
     {
-      addStrategyStep(CHECK_MODEL_NORMAL_FORMS);  // Only run if LOOKAHEAD pass. Computes whether equalities+disequalities+cardinality+code points can be satified.
+      addStrategyStep(CHECK_MODEL_NORMAL_FORMS);  // Only run if LOOKAHEAD pass.
+                                                  // Computes whether
+                                                  // equalities+disequalities+cardinality+code
+                                                  // points can be satified.
     }
-    addStrategyStep(CHECK_NORMAL_FORMS_EQ);       // HANDLED may send lemmas if CAV 14 is not convinced that equalities are satisfied
-    addStrategyStep(CHECK_EXTF_EVAL, 1);          // heuristic
-    addStrategyStep(CHECK_NORMAL_FORMS_DEQ);      // HANDLED
-    addStrategyStep(CHECK_CODES);                 // HANDLED
+    addStrategyStep(
+        CHECK_NORMAL_FORMS_EQ);  // HANDLED may send lemmas if CAV 14 is not
+                                 // convinced that equalities are satisfied
+    addStrategyStep(CHECK_EXTF_EVAL, 1);      // heuristic
+    addStrategyStep(CHECK_NORMAL_FORMS_DEQ);  // HANDLED
+    addStrategyStep(CHECK_CODES);             // HANDLED
     if (options().strings.stringLenNorm)
     {
-      addStrategyStep(CHECK_LENGTH_EQC);          // heuristic
+      addStrategyStep(CHECK_LENGTH_EQC);  // heuristic
     }
-    if (options().strings.seqArray != options::SeqArrayMode::NONE) // incompatible
+    if (options().strings.seqArray
+        != options::SeqArrayMode::NONE)  // incompatible
     {
       addStrategyStep(CHECK_SEQUENCES_ARRAY_CONCAT);
       addStrategyStep(CHECK_SEQUENCES_ARRAY);
     }
     if (options().strings.stringExp)
     {
-      addStrategyStep(CHECK_EXTF_REDUCTION, 2);   // LOOKAHEAD, may add lemmas
+      addStrategyStep(CHECK_EXTF_REDUCTION, 2);  // LOOKAHEAD, may add lemmas
     }
     addStrategyStep(CHECK_MEMBERSHIP_INCLUSION);  // heuristic, TODO: move up?
     addStrategyStep(CHECK_MEMBERSHIP);            // LOOKAHEAD, may add lemmas

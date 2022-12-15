@@ -452,10 +452,11 @@ bool StringsMnf::normalizeEqc(Node eqc)
           {
             // conflict, we fail
             Trace("strings-mnf") << "Fail: " << eqc << " while merging " << a
-                                  << ", " << b << std::endl;
+                                 << ", " << b << std::endl;
             return false;
           }
-          if (!constA && (constB || (!d_state.hasTerm(a) && d_state.hasTerm(b))))
+          if (!constA
+              && (constB || (!d_state.hasTerm(a) && d_state.hasTerm(b))))
           {
             // Flip is b is constant and a is not.
             // Also flip if a is an auxiliary skolem but b is not. This is
