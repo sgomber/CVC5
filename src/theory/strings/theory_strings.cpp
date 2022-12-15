@@ -1376,11 +1376,6 @@ void TheoryStrings::runStrategy(Theory::Effort e, size_t startIndex)
       {
         break;
       }
-      // if at full effort and we have a candidate model, we are done
-      if (e == Theory::EFFORT_FULL && d_state.hasCandidateModel())
-      {
-        break;
-      }
     }
     else
     {

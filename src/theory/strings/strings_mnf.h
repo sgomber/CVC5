@@ -121,6 +121,8 @@ class StringsMnf : protected ModelCons
                           const Rational& pos);
   /** Expand n -> nn in all normal forms */
   void expandNormalForms(const Node& n, const std::vector<Node>& nn);
+  /** Ensure model info */
+  void ensureModelInfo(const Node& n, const Rational& len);
   /** The solver state object */
   SolverState& d_state;
   /** The (custom) output channel of the theory of strings */

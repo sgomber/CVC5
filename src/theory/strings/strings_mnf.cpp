@@ -315,7 +315,7 @@ std::vector<Node> StringsMnf::getNormalFormInternal(const Node& n)
     // Shouln't ask for normal forms of strings that weren't computed. This
     // likely means that n is not a representative or not a term in the current
     // context. We simply return a default normal form here in this case.
-    Assert(false);
+    Assert(false) << "No normal form for " << n << std::endl;
     vec.push_back(n);
   }
   return vec;
@@ -512,6 +512,8 @@ bool StringsMnf::normalizeEqc(Node eqc)
     // case it should be the representative.
     if (assignedValue != eqc)
     {
+      Rational one(1);
+      ensureModelInfo(assignedValue, one);
       merge(assignedValue, eqc);
     }
   }
@@ -657,20 +659,11 @@ std::vector<Node> StringsMnf::split(const Node& a,
   // split a word into components where one of those components is already
   // a representative. In this case, we don't
   Assert(vec.size() == 2);
-  std::map<Node, ModelEqcInfo>::iterator it;
   Trace("strings-mnf") << "...split " << a << ": " << vec << std::endl;
   for (size_t i = 0; i < 2; i++)
   {
-    it = d_minfo.find(vec[i]);
-    if (it == d_minfo.end())
-    {
-      // allocate, where the length depends on alen / pos
-      ModelEqcInfo& meic = d_minfo[vec[i]];
-      meic.d_mnf.push_back(vec[i]);
-      meic.d_length = i == 0 ? pos : alen - pos;
-      Trace("strings-mnf") << "NF " << vec[i] << " (split " << a
-                           << "): " << meic.toString() << std::endl;
-    }
+    const Rational& len = i == 0 ? pos : alen - pos;
+    ensureModelInfo(vec[i], len);
   }
   // expand a in all current normal forms
   expandNormalForms(a, vec);
@@ -683,6 +676,19 @@ void StringsMnf::expandNormalForms(const Node& n, const std::vector<Node>& nn)
   for (std::pair<const Node, ModelEqcInfo>& m : d_minfo)
   {
     m.second.expand(n, nn);
+  }
+}
+
+void StringsMnf::ensureModelInfo(const Node& n, const Rational& len)
+{
+  std::map<Node, ModelEqcInfo>::iterator it = d_minfo.find(n);
+  if (it == d_minfo.end())
+  {
+    // allocate, where the length depends on alen / pos
+    ModelEqcInfo& meic = d_minfo[n];
+    meic.d_mnf.push_back(n);
+    meic.d_length = len;
+    Trace("strings-mnf") << "NF " << n << " (alloc): " << meic.toString() << std::endl;
   }
 }
 

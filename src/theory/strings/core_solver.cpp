@@ -2693,6 +2693,12 @@ void CoreSolver::checkNormalFormsEq()
   // we've computed the possible inferences above
   if (!d_pinfers.empty())
   {
+    // if we have a candidate model, then we are done.
+    if (d_state.hasCandidateModel())
+    {
+      d_im.markFinished();
+      return;
+    }
     // add one inference from our list of possible inferences
     size_t use_index = choosePossibleInferInfo(d_pinfers);
     // Send the inference, which is a lemma. This class will process the side

@@ -218,6 +218,8 @@ class InferenceManager : public InferSideEffectProcess,
    * a conflict.
    */
   bool hasProcessed() const;
+  /** Mark finished */
+  void markFinished();
 
   // ------------------------------------------------- extended theory
   /**
@@ -262,6 +264,8 @@ class InferenceManager : public InferSideEffectProcess,
   Node d_false;
   Node d_zero;
   Node d_one;
+  /** Whether we have been marked to process */
+  bool d_markedFinished;
 };
 
 }  // namespace strings

@@ -44,7 +44,8 @@ InferenceManager::InferenceManager(Env& env,
       d_ipc(isProofEnabled() ? new InferProofCons(env, context(), d_statistics)
                              : nullptr),
       d_ipcl(isProofEnabled() ? new InferProofCons(env, context(), d_statistics)
-                              : nullptr)
+                              : nullptr),
+      d_markedFinished(false)
 {
   NodeManager* nm = NodeManager::currentNM();
   d_zero = nm->mkConstInt(Rational(0));
@@ -55,6 +56,7 @@ InferenceManager::InferenceManager(Env& env,
 
 void InferenceManager::doPending()
 {
+  d_markedFinished = false;
   doPendingFacts();
   if (d_state.isInConflict())
   {
@@ -272,12 +274,17 @@ void InferenceManager::addToExplanation(Node lit, std::vector<Node>& exp) const
 
 bool InferenceManager::hasProcessed() const
 {
-  return d_state.isInConflict() || hasPending();
+  return d_state.isInConflict() || hasPending() || d_markedFinished;
 }
 
 void InferenceManager::markReduced(Node n, ExtReducedId id, bool contextDepend)
 {
   d_extt.markReduced(n, id, contextDepend);
+}
+
+void InferenceManager::markFinished()
+{
+  d_markedFinished = true;
 }
 
 void InferenceManager::processConflict(const InferInfo& ii)
