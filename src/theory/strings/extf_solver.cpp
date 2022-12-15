@@ -80,7 +80,7 @@ ExtfSolver::ExtfSolver(Env& env,
 
 ExtfSolver::~ExtfSolver() {}
 
-bool ExtfSolver::doReduction(int effort, Node n)
+bool ExtfSolver::doReduction(int effort, Node n, bool doSend)
 {
   Trace("strings-extf-debug")
       << "doReduction " << n << ", effort " << effort << std::endl;
@@ -131,19 +131,27 @@ bool ExtfSolver::doReduction(int effort, Node n)
         // We can reduce negative contains to a disequality when lengths are
         // equal. In other words, len( x ) = len( s ) implies
         //   ~contains( x, s ) reduces to x != s.
+        bool ret = false;
         if (!d_state.areDisequal(x, s))
         {
           // len( x ) = len( s ) ^ ~contains( x, s ) => x != s
           lexp.push_back(lenx.eqNode(lens));
           lexp.push_back(n.negate());
           Node xneqs = x.eqNode(s).negate();
-          d_im.sendInference(
-              lexp, xneqs, InferenceId::STRINGS_CTN_NEG_EQUAL, false, true);
+          if (doSend)
+          {
+            d_im.sendInference(
+                lexp, xneqs, InferenceId::STRINGS_CTN_NEG_EQUAL, false, true);
+            ret = true;
+          }
         }
-        // this depends on the current assertions, so this
-        // inference is context-dependent
-        d_extt.markReduced(n, ExtReducedId::STRINGS_NEG_CTN_DEQ, true);
-        return true;
+        if (doSend)
+        {
+          // this depends on the current assertions, so this
+          // inference is context-dependent
+          d_extt.markReduced(n, ExtReducedId::STRINGS_NEG_CTN_DEQ, true);
+        }
+        return ret;
       }
     }
     else
@@ -181,6 +189,12 @@ bool ExtfSolver::doReduction(int effort, Node n)
       // all other operators reduce at level 2
       return false;
     }
+  }
+  // below here, we definitely will send a reduction lemma, return true if
+  // doSend is false
+  if (!doSend)
+  {
+    return true;
   }
   Node c_n = pol == -1 ? n.negate() : n;
   Trace("strings-process-debug")
@@ -252,6 +266,17 @@ bool ExtfSolver::doReduction(int effort, Node n)
 
 void ExtfSolver::checkExtfReductions(int effort)
 {
+  // return value is ignored
+  checkExtfReductionsInternal(effort, true);
+}
+
+bool ExtfSolver::hasExtfReductionFull()
+{
+  return checkExtfReductionsInternal(2, false);
+}
+
+bool ExtfSolver::checkExtfReductionsInternal(int effort, bool doSend)
+{
   // Notice we don't make a standard call to ExtTheory::doReductions here,
   // since certain optimizations like context-dependent reductions and
   // stratifying effort levels are done in doReduction below.
@@ -259,23 +284,24 @@ void ExtfSolver::checkExtfReductions(int effort)
   // active (see getRelevantActive).
   std::vector<Node> extf = getRelevantActive();
   Trace("strings-process") << "  checking " << extf.size() << " active extf"
-                           << std::endl;
+                           << ", doSend = " << doSend << std::endl;
   for (const Node& n : extf)
   {
     Assert(!d_state.isInConflict());
     Trace("strings-extf-debug")
         << "  check " << n
         << ", active in model=" << d_extfInfoTmp[n].d_modelActive << std::endl;
-    bool ret = doReduction(effort, n);
+    bool ret = doReduction(effort, n, doSend);
     if (ret)
     {
       // we do not mark as reduced, since we may want to evaluate
-      if (d_im.hasProcessed())
+      if (!doSend || d_im.hasProcessed())
       {
-        return;
+        return true;
       }
     }
   }
+  return false;
 }
 
 void ExtfSolver::checkExtfEval(int effort)

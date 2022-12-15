@@ -294,8 +294,6 @@ class TheoryStrings : public Theory {
    * with length constraints.
    */
   CoreSolver d_csolver;
-  /** Model normal form finding module */
-  StringsMnf d_msolver;
   /**
    * Extended function solver, responsible for reductions and simplifications
    * involving extended string functions.
@@ -308,6 +306,8 @@ class TheoryStrings : public Theory {
   ArraySolver d_asolver;
   /** regular expression solver module */
   RegExpSolver d_rsolver;
+  /** Model normal form finding module */
+  StringsMnf d_msolver;
   /** regular expression elimination module */
   RegExpElimination d_regexp_elim;
   /** Strings finite model finding decision strategy */

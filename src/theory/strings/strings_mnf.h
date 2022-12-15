@@ -31,6 +31,7 @@ namespace strings {
 
 class BaseSolver;
 class CoreSolver;
+class ExtfSolver;
 
 class ModelEqcInfo
 {
@@ -65,7 +66,8 @@ class StringsMnf : protected ModelCons
              InferenceManager& im,
              TermRegistry& tr,
              BaseSolver& bs,
-             CoreSolver& cs);
+             CoreSolver& cs,
+             ExtfSolver& es);
   ~StringsMnf() {}
 
   /** Check model normal forms */
@@ -127,6 +129,8 @@ class StringsMnf : protected ModelCons
   BaseSolver& d_bsolver;
   /** reference to the core solver, used for certain queries */
   CoreSolver& d_csolver;
+  /** reference to the extended function solver, used for certain queries */
+  ExtfSolver& d_esolver;
   /** Common constants */
   Node d_zero;
   /** Maximum model length */

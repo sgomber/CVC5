@@ -18,6 +18,7 @@
 #include "options/strings_options.h"
 #include "theory/strings/base_solver.h"
 #include "theory/strings/core_solver.h"
+#include "theory/strings/extf_solver.h"
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
 #include "util/string.h"
@@ -66,13 +67,15 @@ StringsMnf::StringsMnf(Env& env,
                        InferenceManager& im,
                        TermRegistry& tr,
                        BaseSolver& bs,
-                       CoreSolver& cs)
+                       CoreSolver& cs,
+                       ExtfSolver& es)
     : ModelCons(env),
       d_state(s),
       d_im(im),
       d_termReg(tr),
       d_bsolver(bs),
-      d_csolver(cs)
+      d_csolver(cs),
+      d_esolver(es)
 {
   d_zero = NodeManager::currentNM()->mkConstInt(Rational(0));
   // get the maximum model length
@@ -91,6 +94,13 @@ bool StringsMnf::checkModelNormalforms()
   if (d_state.getValuation().isModelUnsound())
   {
     Trace("strings-mnf") << "StringsMnf: ...fail, already model unsound"
+                         << std::endl;
+    return false;
+  }
+  // check other reasons why we are not ready to construct a model
+  if (d_esolver.hasExtfReductionFull())
+  {
+    Trace("strings-mnf") << "StringsMnf: ...fail, extended functions are waiting reduction"
                          << std::endl;
     return false;
   }

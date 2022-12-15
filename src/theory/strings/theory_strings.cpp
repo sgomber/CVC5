@@ -69,7 +69,6 @@ TheoryStrings::TheoryStrings(Env& env, OutputChannel& out, Valuation valuation)
       d_checker(d_termReg.getAlphabetCardinality()),
       d_bsolver(env, d_state, d_im, d_termReg),
       d_csolver(env, d_state, d_im, d_termReg, d_bsolver),
-      d_msolver(env, d_state, d_im, d_termReg, d_bsolver, d_csolver),
       d_esolver(env,
                 d_state,
                 d_im,
@@ -89,6 +88,7 @@ TheoryStrings::TheoryStrings(Env& env, OutputChannel& out, Valuation valuation)
                 d_extTheory),
       d_rsolver(
           env, d_state, d_im, d_termReg, d_csolver, d_esolver, d_statistics),
+      d_msolver(env, d_state, d_im, d_termReg, d_bsolver, d_csolver, d_esolver),
       d_regexp_elim(
           env,
           options().strings.regExpElim == options::RegExpElimMode::AGG,
