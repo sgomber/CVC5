@@ -193,7 +193,7 @@ class ExtfSolver : public InferSideEffectProcess, protected EnvObj
    * sent if doSend = false.
    */
   bool checkExtfReductionsInternal(int effort, bool doSend);
-  /** 
+  /**
    * Determines if n should be reduced based on the effort level.
    */
   bool shouldDoReduction(int effort, Node n, int pol);

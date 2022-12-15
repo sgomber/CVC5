@@ -173,7 +173,7 @@ bool ExtfSolver::shouldDoReduction(int effort, Node n, int pol)
   }
   return true;
 }
-  
+
 void ExtfSolver::doReduction(int effort, Node n, int pol)
 {
   Trace("strings-extf-debug")
@@ -192,8 +192,8 @@ void ExtfSolver::doReduction(int effort, Node n, int pol)
     if (d_state.areEqual(lenx, lens))
     {
       Trace("strings-extf-debug")
-          << "  resolve extf : " << n
-          << " based on equal lengths disequality." << std::endl;
+          << "  resolve extf : " << n << " based on equal lengths disequality."
+          << std::endl;
       // We can reduce negative contains to a disequality when lengths are
       // equal. In other words, len( x ) = len( s ) implies
       //   ~contains( x, s ) reduces to x != s.
@@ -319,7 +319,7 @@ bool ExtfSolver::checkExtfReductionsInternal(int effort, bool doSend)
         pol = rep.getConst<bool>() ? 1 : -1;
       }
     }
-    if (shouldDoReduction(effort,n, pol))
+    if (shouldDoReduction(effort, n, pol))
     {
       if (!doSend)
       {
