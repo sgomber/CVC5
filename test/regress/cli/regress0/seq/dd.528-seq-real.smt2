@@ -1,0 +1,5 @@
+(set-logic QF_ALL)
+(set-info :status unsat)
+(declare-fun x () Real)
+(assert (> x (seq.nth (seq.++ (seq.++ (seq.unit x) (seq.rev (seq.++ (seq.unit x) (seq.unit x)))) (seq.unit x) (seq.unit x)) (seq.len (seq.++ (seq.unit x) (seq.unit x))))))
+(check-sat)

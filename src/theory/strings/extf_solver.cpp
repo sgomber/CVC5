@@ -174,10 +174,10 @@ bool ExtfSolver::shouldDoReduction(int effort, Node n, int pol)
   return true;
 }
 
-void ExtfSolver::doReduction(int effort, Node n, int pol)
+void ExtfSolver::doReduction(Node n, int pol)
 {
   Trace("strings-extf-debug")
-      << "doReduction " << n << ", effort " << effort << std::endl;
+      << "doReduction " << n << ", pol " << pol << std::endl;
   // polarity : 1 true, -1 false, 0 neither
   Kind k = n.getKind();
   if (k == STRING_CONTAINS && pol == -1)
@@ -249,12 +249,6 @@ void ExtfSolver::doReduction(int effort, Node n, int pol)
     new_nodes.push_back(n.eqNode(res));
     Node nnlem =
         new_nodes.size() == 1 ? new_nodes[0] : nm->mkNode(AND, new_nodes);
-    Trace("strings-red-lemma")
-        << "Reduction_" << effort << " lemma : " << nnlem << std::endl;
-    Trace("strings-red-lemma") << "...from " << n << std::endl;
-    Trace("strings-red-lemma")
-        << "Reduction_" << effort << " rewritten : " << rewrite(nnlem)
-        << std::endl;
     // in rare case where it rewrites to true, just record it is reduced
     if (rewrite(nnlem) == d_true)
     {
@@ -326,7 +320,7 @@ bool ExtfSolver::checkExtfReductionsInternal(int effort, bool doSend)
         // do not process, simply return true
         return true;
       }
-      doReduction(effort, n, pol);
+      doReduction(n, pol);
       // we do not mark as reduced, since we may want to evaluate
       if (d_im.hasProcessed())
       {

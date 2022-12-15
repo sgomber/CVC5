@@ -445,25 +445,21 @@ bool StringsMnf::normalizeEqc(Node eqc)
         // if lengths are already equal, merge b into a
         if (la == lb)
         {
-          if (b.isConst())
+          // fail if merging constant-like terms
+          bool constA = utils::isConstantLike(a);
+          bool constB = utils::isConstantLike(b);
+          if (constA && constB)
           {
-            if (a.isConst())
-            {
-              // conflict, we fail
-              Trace("strings-mnf") << "Fail: " << eqc << " while merging " << a
-                                   << ", " << b << std::endl;
-              return false;
-            }
-            else
-            {
-              // flip if b is constant but a is not
-              std::swap(a, b);
-            }
+            // conflict, we fail
+            Trace("strings-mnf") << "Fail: " << eqc << " while merging " << a
+                                  << ", " << b << std::endl;
+            return false;
           }
-          else if (!a.isConst() && !d_state.hasTerm(a) && d_state.hasTerm(b))
+          if (!constA && (constB || (!d_state.hasTerm(a) && d_state.hasTerm(b))))
           {
-            // Flip if a is an auxiliary skolem but b is not. This is required
-            // for properly tracking other information during
+            // Flip is b is constant and a is not.
+            // Also flip if a is an auxiliary skolem but b is not. This is
+            // required for properly tracking other information during
             // collectModelValues, e.g. str.code, which expects equivalence
             // classes of the equality engine.
             std::swap(a, b);

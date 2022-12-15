@@ -207,7 +207,7 @@ class ExtfSolver : public InferSideEffectProcess, protected EnvObj
    * SAT-context. The argument effort has the same meaning as in
    * checkExtfReductions.
    */
-  void doReduction(int effort, Node n, int pol);
+  void doReduction(Node n, int pol);
   /** check extended function inferences
    *
    * This function makes additional inferences for n that do not contribute
