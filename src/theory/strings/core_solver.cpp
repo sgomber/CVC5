@@ -529,9 +529,18 @@ void CoreSolver::checkNormalFormsEqProp()
   // calculate normal forms for each equivalence class, possibly adding
   // splitting lemmas
   d_normal_form.clear();
+  // map from normal form terms (the concatenation of the terms in the normal
+  // form) to the equivalence that had that normal form
   std::map<Node, Node> nf_to_eqc;
+  // map from equivalence classes to the normal form term
   std::map<Node, Node> eqc_to_nf;
+  // the explanation for the normal form for each equivalence class
   std::map<Node, Node> eqc_to_exp;
+  // A set of possible inferences, in case we failed to compute a normal form
+  // in a call to normalizeEquivalenceClass. This set typically contains
+  // lemmas that require splitting. We delay processing these lemmas until
+  // the invocation of processInferInfo below.
+  std::vector<CoreInferInfo> pinfer;
   for (const Node& eqc : d_strings_eqc)
   {
     Assert(d_pinfers.empty());
@@ -547,7 +556,9 @@ void CoreSolver::checkNormalFormsEqProp()
     if (!d_pinfers.empty())
     {
       // if we had a possible inference, we were unable to assign
-      // a normal form to this equivalence class, we return.
+      // a normal form to this equivalence class based on the call to
+      // normalizeEquivalenceClass, we return. We process the possible
+      // inferences later in checkNormalFormsEq if necessary.
       return;
     }
     NormalForm& nfe = getNormalForm(eqc);
@@ -618,6 +629,9 @@ void CoreSolver::normalizeEquivalenceClass(Node eqc,
     }
     // process the normal forms
     processNEqc(eqc, normal_forms, stype, pinfer);
+    // If we sent a lemma, or if pinfer is non-empty (a normal form could not
+    // be assigned to this equivalence class), then we return. The possible
+    // inferences (if necessary) will be processed in checkNormalFormsEq.
     if (d_im.hasProcessed() || !pinfer.empty())
     {
       return;
@@ -2628,8 +2642,7 @@ void CoreSolver::checkLengthsEqc()
   }
 }
 
-size_t CoreSolver::choosePossibleInferInfo(
-    const std::vector<CoreInferInfo>& pinfer)
+size_t CoreSolver::choosePossibleInferInfo(const std::vector<CoreInferInfo>& pinfer)
 {
   // now, determine which of the possible inferences we want to add
   unsigned use_index = 0;
@@ -2654,7 +2667,6 @@ size_t CoreSolver::choosePossibleInferInfo(
       set_use_index = true;
     }
   }
-  Trace("strings-solve") << "...choose #" << use_index << std::endl;
   return use_index;
 }
 

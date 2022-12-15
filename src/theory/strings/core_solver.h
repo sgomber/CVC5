@@ -299,8 +299,10 @@ class CoreSolver : public InferSideEffectProcess, protected EnvObj
 
  private:
   /**
-   * This returns the index of an infer info in pinfer that we should process
-   * based on our heuristics.
+   * This processes the infer info ii as an inference. In more detail, it calls
+   * the inference manager to process the inference, and updates the set of
+   * normal form pairs. Returns true if the conclusion of ii was not true
+   * after rewriting. If the conclusion is true, this method does nothing.
    */
   size_t choosePossibleInferInfo(const std::vector<CoreInferInfo>& pinfer);
   /** Add that (n1,n2) is a normal form pair in the current context. */
@@ -332,7 +334,7 @@ class CoreSolver : public InferSideEffectProcess, protected EnvObj
    * of string term n (for more details on normal forms, see normal_form.h
    * or see Liang et al CAV 2014). In particular, this method checks whether the
    * current normal form for each term in this equivalence class is identical.
-   * If it is not, then we add an inference via sendInference and abort the
+   * If it is not, then we add (at least one) inference to pinfer and abort the
    * call.
    *
    * stype is the string-like type of the equivalence class we are processing.
