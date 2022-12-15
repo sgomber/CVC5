@@ -929,6 +929,7 @@ void TheoryStrings::postCheck(Effort e)
     // Start the full effort check. This will compute the relevant term set,
     // which is independent of the loop below, which adds internal facts.
     d_termReg.notifyStartFullEffortCheck();
+    d_tryMnf = true;
     ++(d_statistics.d_checkRuns);
     bool sentLemma = false;
     bool hadPending = false;
@@ -1327,7 +1328,7 @@ void TheoryStrings::runInferStep(InferStep s, Theory::Effort e, int effort)
     case CHECK_NORMAL_FORMS_EQ: d_csolver.checkNormalFormsEq(); break;
     case CHECK_MODEL_NORMAL_FORMS:
       // this step can only run if we maybe have a candidate model
-      if (maybeHasModel(Theory::EFFORT_FULL))
+      if (d_tryMnf && maybeHasModel(Theory::EFFORT_FULL))
       {
         d_msolver.checkModelNormalforms();
       }
@@ -1343,9 +1344,10 @@ void TheoryStrings::runInferStep(InferStep s, Theory::Effort e, int effort)
     case CHECK_MEMBERSHIP_INCLUSION: return d_rsolver.checkInclusions(); break;
     case CHECK_MEMBERSHIP: d_rsolver.checkMemberships(e); break;
     case CHECK_CARDINALITY: d_bsolver.checkCardinality(); break;
-    case RECHECK_CANDIDATE_MODEL:
+    case RECHECK_FULL_IF_NO_MODEL:
       if (!maybeHasModel(Theory::EFFORT_LAST_CALL))
       {
+        d_tryMnf = false;
         // rerun check, without models????
         runStrategy(Theory::EFFORT_FULL);
       }

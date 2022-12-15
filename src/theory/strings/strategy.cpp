@@ -48,7 +48,7 @@ std::ostream& operator<<(std::ostream& out, InferStep s)
     case CHECK_SEQUENCES_ARRAY_EAGER:
       out << "check_sequences_array_eager";
       break;
-    case RECHECK_CANDIDATE_MODEL: out << "recheck_candidate_model"; break;
+    case RECHECK_FULL_IF_NO_MODEL: out << "recheck_full_if_no_model"; break;
     default: out << "?"; break;
   }
   return out;
@@ -158,7 +158,7 @@ void Strategy::initializeStrategy()
       addStrategyStep(CHECK_EXTF_EVAL, 3);
       if (options().strings.stringModelNormalForms)
       {
-        // addStrategyStep(RECHECK_CANDIDATE_MODEL);
+        addStrategyStep(RECHECK_FULL_IF_NO_MODEL);
       }
       if (options().strings.stringExp)
       {

@@ -76,7 +76,7 @@ enum InferStep
   // check sequence
   CHECK_SEQUENCES_ARRAY_EAGER,
   // recheck candidate model
-  RECHECK_CANDIDATE_MODEL
+  RECHECK_FULL_IF_NO_MODEL
 };
 std::ostream& operator<<(std::ostream& out, InferStep i);
 

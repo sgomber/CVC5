@@ -100,7 +100,7 @@ void RegExpSolver::checkMemberships(Theory::Effort e)
 {
   Trace("regexp-process") << "Checking Memberships, effort = " << e << " ... "
                           << std::endl;
-  // memberships were computed in checkInclusions above
+  // at EFFORT_FULL, memberships were computed in checkInclusions above
   if (e == Theory::EFFORT_LAST_CALL)
   {
     computeAssertedMemberships();

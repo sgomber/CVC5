@@ -331,6 +331,8 @@ class TheoryStrings : public Theory {
   size_t d_strGapModelCounter;
   /** The care pair argument callback, used for theory combination */
   CarePairArgumentCallback d_cpacb;
+  /** Try models? */
+  bool d_tryMnf;
 };/* class TheoryStrings */
 
 }  // namespace strings
