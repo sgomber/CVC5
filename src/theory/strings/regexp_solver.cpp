@@ -48,7 +48,6 @@ RegExpSolver::RegExpSolver(Env& env,
       d_statistics(stats),
       d_regexp_ucached(userContext()),
       d_regexp_ccached(context()),
-      d_processed_memberships(context()),
       d_regexp_opr(env, tr.getSkolemCache())
 {
   d_emptyString = NodeManager::currentNM()->mkConst(cvc5::internal::String(""));
@@ -107,6 +106,27 @@ void RegExpSolver::checkMemberships(int effort)
     computeAssertedMemberships();
   }
   checkUnfold(d_assertedMems, effort);
+}
+
+bool RegExpSolver::maybeHasCandidateModel()
+{
+  computeAssertedMemberships();
+  // under approximation: fail if there is an active membership which we
+  // have not processed
+  for (const std::pair<const Node, std::vector<Node>>& mp : d_assertedMems)
+  {    
+    for (const Node& m : mp.second)
+    {
+      // if we've processed it, skip
+      if (d_regexp_ucached.find(m) != d_regexp_ucached.end()
+          || d_regexp_ccached.find(m) != d_regexp_ccached.end())
+      {
+        continue;
+      }
+      return false;
+    }
+  }
+  return true;
 }
 
 bool RegExpSolver::checkInclInter(

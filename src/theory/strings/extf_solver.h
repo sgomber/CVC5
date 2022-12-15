@@ -125,10 +125,9 @@ class ExtfSolver : public InferSideEffectProcess, protected EnvObj
    */
   void checkExtfReductions(int effort);
   /**
-   * Return true if the above method has a reduction to send at the given
-   * effort.
+   * Return false if the above method has a reduction to send at full effort.
    */
-  bool hasExtfReductionFull();
+  bool maybeHasCandidateModel();
   /** get preprocess module */
   StringsPreprocess* getPreprocess() { return &d_preproc; }
 
@@ -189,9 +188,9 @@ class ExtfSolver : public InferSideEffectProcess, protected EnvObj
 
  private:
   /**
-   * Helper method for checkExtfReductions / hasExtfReduction, returns true
-   * if a reduction lemma was sent if doSend = true, or would have been sent
-   * if doSend = false.
+   * Helper method for checkExtfReductions / maybeHasCandidateModel, returns
+   * true if a reduction lemma was sent if doSend = true, or would have been
+   * sent if doSend = false.
    */
   bool checkExtfReductionsInternal(int effort, bool doSend);
   /** do reduction

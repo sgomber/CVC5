@@ -270,9 +270,14 @@ void ExtfSolver::checkExtfReductions(int effort)
   checkExtfReductionsInternal(effort, true);
 }
 
-bool ExtfSolver::hasExtfReductionFull()
+bool ExtfSolver::maybeHasCandidateModel()
 {
-  return checkExtfReductionsInternal(2, false);
+  if (checkExtfReductionsInternal(2, false))
+  {
+    // cannot construct candidate model if reductions are waiting
+    return false;
+  }
+  return true;
 }
 
 bool ExtfSolver::checkExtfReductionsInternal(int effort, bool doSend)

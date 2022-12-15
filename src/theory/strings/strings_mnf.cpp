@@ -67,15 +67,13 @@ StringsMnf::StringsMnf(Env& env,
                        InferenceManager& im,
                        TermRegistry& tr,
                        BaseSolver& bs,
-                       CoreSolver& cs,
-                       ExtfSolver& es)
+                       CoreSolver& cs)
     : ModelCons(env),
       d_state(s),
       d_im(im),
       d_termReg(tr),
       d_bsolver(bs),
-      d_csolver(cs),
-      d_esolver(es)
+      d_csolver(cs)
 {
   d_zero = NodeManager::currentNM()->mkConstInt(Rational(0));
   // get the maximum model length
@@ -90,21 +88,6 @@ bool StringsMnf::checkModelNormalforms()
 {
   const std::vector<Node>& stringsEqc = d_csolver.getStringsEqc();
   Trace("strings-mnf") << "StringsMnf: findModelNormalForms..." << std::endl;
-  // no use if model unsound
-  if (d_state.getValuation().isModelUnsound())
-  {
-    Trace("strings-mnf") << "StringsMnf: ...fail, already model unsound"
-                         << std::endl;
-    return false;
-  }
-  // check other reasons why we are not ready to construct a model
-  if (d_esolver.hasExtfReductionFull())
-  {
-    Trace("strings-mnf")
-        << "StringsMnf: ...fail, extended functions are waiting reduction"
-        << std::endl;
-    return false;
-  }
   // reset the state
   d_minfo.clear();
   d_mrepMap.clear();

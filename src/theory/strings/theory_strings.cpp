@@ -88,7 +88,7 @@ TheoryStrings::TheoryStrings(Env& env, OutputChannel& out, Valuation valuation)
                 d_extTheory),
       d_rsolver(
           env, d_state, d_im, d_termReg, d_csolver, d_esolver, d_statistics),
-      d_msolver(env, d_state, d_im, d_termReg, d_bsolver, d_csolver, d_esolver),
+      d_msolver(env, d_state, d_im, d_termReg, d_bsolver, d_csolver),
       d_regexp_elim(
           env,
           options().strings.regExpElim == options::RegExpElimMode::AGG,
@@ -1281,6 +1281,35 @@ TrustNode TheoryStrings::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
   return ret;
 }
 
+bool TheoryStrings::maybeHasCandidateModel()
+{
+  Trace("strings-mnf") << "maybeHasCandidateModel? ";
+  // no use if model unsound
+  if (d_state.getValuation().isModelUnsound())
+  {
+    Trace("strings-mnf") << "...fail, already model unsound"
+                         << std::endl;
+    return false;
+  }
+  // check other reasons why we are not ready to construct a model
+  if (!d_esolver.maybeHasCandidateModel())
+  {
+    Trace("strings-mnf")
+        << "...fail, extended functions are waiting reduction"
+        << std::endl;
+    return false;
+  }
+  if (!d_rsolver.maybeHasCandidateModel())
+  {
+    Trace("strings-mnf")
+        << "...fail, extended functions are waiting reduction"
+        << std::endl;
+    return false;
+  }
+  Trace("strings-mnf") << "...success." << std::endl;
+  return true;
+}
+
 /** run the given inference step */
 void TheoryStrings::runInferStep(InferStep s, int effort)
 {
@@ -1299,7 +1328,13 @@ void TheoryStrings::runInferStep(InferStep s, int effort)
     case CHECK_FLAT_FORMS: d_csolver.checkFlatForms(); break;
     case CHECK_NORMAL_FORMS_EQ_PROP: d_csolver.checkNormalFormsEqProp(); break;
     case CHECK_NORMAL_FORMS_EQ: d_csolver.checkNormalFormsEq(); break;
-    case CHECK_MODEL_NORMAL_FORMS: d_msolver.checkModelNormalforms(); break;
+    case CHECK_MODEL_NORMAL_FORMS:
+      // this step can only run if we maybe have a candidate model
+      if (maybeHasCandidateModel())
+      {
+        d_msolver.checkModelNormalforms();
+      }
+      break;
     case CHECK_NORMAL_FORMS_DEQ: d_csolver.checkNormalFormsDeq(); break;
     case CHECK_CODES: checkCodes(); break;
     case CHECK_LENGTH_EQC: d_csolver.checkLengthsEqc(); break;

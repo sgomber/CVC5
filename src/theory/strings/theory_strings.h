@@ -255,6 +255,8 @@ class TheoryStrings : public Theory {
   void runStrategy(Theory::Effort e);
   /** print strings equivalence classes for debugging */
   std::string debugPrintStringsEqc();
+  /** Determine if it is possible to construct a candidate model */
+  bool maybeHasCandidateModel();
   /** Commonly used constants */
   Node d_true;
   Node d_false;

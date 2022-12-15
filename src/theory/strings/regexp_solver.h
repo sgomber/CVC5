@@ -71,6 +71,11 @@ class RegExpSolver : protected EnvObj
    * FroCoS 2015.
    */
   void checkMemberships(int effort);
+  
+  /** 
+   * Return false if the above method may send a lemma at full effort.
+   */
+  bool maybeHasCandidateModel();
 
  private:
   /** compute asserted memberships */
@@ -161,11 +166,6 @@ class RegExpSolver : protected EnvObj
   // regular expression memberships
   NodeSet d_regexp_ucached;
   NodeSet d_regexp_ccached;
-  // semi normal forms for symbolic expression
-  std::map<Node, Node> d_nf_regexps;
-  std::map<Node, std::vector<Node> > d_nf_regexps_exp;
-  // processed memberships
-  NodeSet d_processed_memberships;
   /** regular expression operation module */
   RegExpOpr d_regexp_opr;
   /** Asserted memberships, cached during a full effort check */
