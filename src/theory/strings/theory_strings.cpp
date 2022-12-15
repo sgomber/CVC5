@@ -1364,7 +1364,7 @@ void TheoryStrings::runStrategy(Theory::Effort e, size_t startIndex)
     InferStep curr = it->first;
     int effort = it->second;
     ++it;
-    if (startIndex>0)
+    if (startIndex > 0)
     {
       // not yet at start, skip
       startIndex--;

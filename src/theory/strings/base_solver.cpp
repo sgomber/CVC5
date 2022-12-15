@@ -622,7 +622,8 @@ void BaseSolver::checkCardinality()
   }
 }
 
-BaseSolver::CardinalityResponse BaseSolver::getCardinalityReq(TypeNode tn, size_t& typeCardSize) const
+BaseSolver::CardinalityResponse BaseSolver::getCardinalityReq(
+    TypeNode tn, size_t& typeCardSize) const
 {
   if (tn.isString())  // string-only
   {
@@ -673,10 +674,13 @@ BaseSolver::CardinalityResponse BaseSolver::getCardinalityReq(TypeNode tn, size_
   }
   return CardinalityResponse::REQ;
 }
-  
-bool BaseSolver::isCardinalityOk(size_t typeCardSize, Node lr, size_t eqcCount, size_t& lenNeed) const
+
+bool BaseSolver::isCardinalityOk(size_t typeCardSize,
+                                 Node lr,
+                                 size_t eqcCount,
+                                 size_t& lenNeed) const
 {
-  if (eqcCount<=1)
+  if (eqcCount <= 1)
   {
     return true;
   }
@@ -689,9 +693,9 @@ bool BaseSolver::isCardinalityOk(size_t typeCardSize, Node lr, size_t eqcCount, 
   }
   Trace("strings-card")
       << "Need length " << lenNeed
-      << " for this number of strings (where alphabet size is "
-      << typeCardSize << ")." << std::endl;
-  NodeManager * nm = NodeManager::currentNM();
+      << " for this number of strings (where alphabet size is " << typeCardSize
+      << ")." << std::endl;
+  NodeManager* nm = NodeManager::currentNM();
   // check if we need to split
   bool needsSplit = true;
   if (lr.isConst())
@@ -731,28 +735,30 @@ bool BaseSolver::isCardinalityOk(size_t typeCardSize, Node lr, size_t eqcCount, 
   }
   return !needsSplit;
 }
-bool BaseSolver::isCardinalityOk(size_t typeCardSize, Node lr, size_t eqcCount) const
+bool BaseSolver::isCardinalityOk(size_t typeCardSize,
+                                 Node lr,
+                                 size_t eqcCount) const
 {
   size_t lenNeed;
   return isCardinalityOk(typeCardSize, lr, eqcCount, lenNeed);
 }
 
 void BaseSolver::checkCardinalityType(TypeNode tn,
-                                      std::vector<std::vector<Node> >& cols,
+                                      std::vector<std::vector<Node>>& cols,
                                       std::vector<Node>& lts)
 {
   Trace("strings-card") << "Check cardinality (type " << tn << ")..."
                         << std::endl;
-                        
+
   NodeManager* nm = NodeManager::currentNM();
   size_t typeCardSize;
   CardinalityResponse cr = getCardinalityReq(tn, typeCardSize);
-  if (cr==CardinalityResponse::NO_REQ)
+  if (cr == CardinalityResponse::NO_REQ)
   {
     // no requirements, return
     return;
   }
-  else if (cr==CardinalityResponse::UNHANDLED)
+  else if (cr == CardinalityResponse::UNHANDLED)
   {
     // we are in a case where the cardinality of the type is infinite
     // if not FMF, and finite given the Env's option value for FMF. In this
