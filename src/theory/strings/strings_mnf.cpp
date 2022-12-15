@@ -212,7 +212,7 @@ bool StringsMnf::checkCardinality()
   }
   return true;
 }
-  
+
 bool StringsMnf::hasCandidateModel() { return true; }
 
 void StringsMnf::getStringRepresentativesFrom(
@@ -688,7 +688,8 @@ void StringsMnf::ensureModelInfo(const Node& n, const Rational& len)
     ModelEqcInfo& meic = d_minfo[n];
     meic.d_mnf.push_back(n);
     meic.d_length = len;
-    Trace("strings-mnf") << "NF " << n << " (alloc): " << meic.toString() << std::endl;
+    Trace("strings-mnf") << "NF " << n << " (alloc): " << meic.toString()
+                         << std::endl;
   }
 }
 

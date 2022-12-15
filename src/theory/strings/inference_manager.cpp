@@ -282,10 +282,7 @@ void InferenceManager::markReduced(Node n, ExtReducedId id, bool contextDepend)
   d_extt.markReduced(n, id, contextDepend);
 }
 
-void InferenceManager::markFinished()
-{
-  d_markedFinished = true;
-}
+void InferenceManager::markFinished() { d_markedFinished = true; }
 
 void InferenceManager::processConflict(const InferInfo& ii)
 {

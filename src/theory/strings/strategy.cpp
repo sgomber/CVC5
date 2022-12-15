@@ -140,7 +140,7 @@ void Strategy::initializeStrategy()
     {
       addStrategyStep(CHECK_EXTF_REDUCTION, 2);
     }
-    addStrategyStep(CHECK_MEMBERSHIP_INCLUSION); // TODO: move up?
+    addStrategyStep(CHECK_MEMBERSHIP_INCLUSION);  // TODO: move up?
     addStrategyStep(CHECK_MEMBERSHIP);
     addStrategyStep(CHECK_CARDINALITY);
     step_end[Theory::EFFORT_FULL] = d_infer_steps.size() - 1;
