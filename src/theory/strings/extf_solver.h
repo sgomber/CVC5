@@ -193,6 +193,10 @@ class ExtfSolver : public InferSideEffectProcess, protected EnvObj
    * sent if doSend = false.
    */
   bool checkExtfReductionsInternal(int effort, bool doSend);
+  /** 
+   * Determines if n should be reduced based on the effort level.
+   */
+  bool shouldDoReduction(int effort, Node n, int pol);
   /** do reduction
    *
    * This is called when an extended function application n is not able to be
@@ -202,12 +206,8 @@ class ExtfSolver : public InferSideEffectProcess, protected EnvObj
    * caches that the reduction lemma was sent, or marks n as reduced in this
    * SAT-context. The argument effort has the same meaning as in
    * checkExtfReductions.
-   *
-   * @param doSend If false, we return true if the reduction would have been
-   * sent, but do not send it to the inference manager.
-   * @return True if a reduction lemma was sent
    */
-  bool doReduction(int effort, Node n, bool doSend);
+  void doReduction(int effort, Node n, int pol);
   /** check extended function inferences
    *
    * This function makes additional inferences for n that do not contribute
