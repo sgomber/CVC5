@@ -28,7 +28,6 @@
 #include "theory/strings/inference_manager.h"
 #include "theory/strings/normal_form.h"
 #include "theory/strings/solver_state.h"
-#include "theory/strings/strings_mnf.h"
 #include "theory/strings/term_registry.h"
 
 namespace cvc5::internal {
@@ -164,7 +163,18 @@ class CoreSolver : public InferSideEffectProcess, protected EnvObj
    * we have successfully assigned normal forms for all equivalence classes, as
    * stored in d_normal_forms. Otherwise, this method may add a fact, lemma, or
    * conflict based on inferences in the Inference enumeration above.
+   * 
+   * This check is stratified into two phases. When checkNormalFormsEqProp
+   * is called, this may:
+   * (A) trigger new facts or conflicts,
+   * (B) compute a set of possible lemmas,
+   * (C) determine that there is nothing to do, in which case normal forms
+   * are assigned for all equivalence classes.
+   * In the case of (B), the possible lemmas are buffered in this class, and
+   * are sent to the inference manager only when checkNormalFormsEq is called.
    */
+  void checkNormalFormsEqProp();
+  /** Sends a lemma computed in the above check, if one exists. */
   void checkNormalFormsEq();
   /** check normal forms disequalities
    *
@@ -197,8 +207,11 @@ class CoreSolver : public InferSideEffectProcess, protected EnvObj
   //-----------------------end inference steps
 
   //--------------------------- query functions
-  /** Are normal forms available? */
-  bool hasNormalForms() const;
+  /** 
+   * Get the list of string equivalence classes, which respects the
+   * containment ordering as described in checkCycles.
+   */
+  const std::vector<Node>& getStringsEqc() const;
   /**
    * Get normal form for string term n. For details on this data structure,
    * see theory/strings/normal_form.h.
@@ -283,9 +296,6 @@ class CoreSolver : public InferSideEffectProcess, protected EnvObj
   void processFact(InferInfo& ii, ProofGenerator*& pg) override;
   /** Called when ii is ready to be processed as a lemma */
   TrustNode processLemma(InferInfo& ii, LemmaProperty& p) override;
-  
-  /** Has pending inference */
-  bool processPossibleInference();
  private:
   /**
    * This returns the index of an infer info in pinfer that we should process
@@ -541,12 +551,7 @@ class CoreSolver : public InferSideEffectProcess, protected EnvObj
   NodeSet d_extDeq;
   /** Whether we set model unsound */
   IncompleteId d_modelUnsoundId;
-  /** Have we computed normal forms for all equivalence classes? */
-  bool d_hasNormalForms;
-  /** Model normal form finding module */
-  StringsMnf d_stringsMnf;
   /** Possible infers */
-  bool d_hasPInfer;
   std::vector<CoreInferInfo> d_pinfers;
 }; /* class CoreSolver */
 

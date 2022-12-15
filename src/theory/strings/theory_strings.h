@@ -47,6 +47,7 @@
 #include "theory/strings/term_registry.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
+#include "theory/strings/strings_mnf.h"
 
 namespace cvc5::internal {
 namespace theory {
@@ -293,6 +294,8 @@ class TheoryStrings : public Theory {
    * with length constraints.
    */
   CoreSolver d_csolver;
+  /** Model normal form finding module */
+  StringsMnf d_msolver;
   /**
    * Extended function solver, responsible for reductions and simplifications
    * involving extended string functions.

@@ -19,6 +19,8 @@
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
 #include "util/string.h"
+#include "theory/strings/base_solver.h"
+#include "theory/strings/core_solver.h"
 
 using namespace cvc5::internal::kind;
 
@@ -63,8 +65,9 @@ StringsMnf::StringsMnf(Env& env,
                        SolverState& s,
                        InferenceManager& im,
                        TermRegistry& tr,
-                       BaseSolver& bs)
-    : ModelCons(env), d_state(s), d_im(im), d_termReg(tr), d_bsolver(bs)
+                       BaseSolver& bs,
+                       CoreSolver& cs)
+    : ModelCons(env), d_state(s), d_im(im), d_termReg(tr), d_bsolver(bs), d_csolver(cs)
 {
   d_zero = NodeManager::currentNM()->mkConstInt(Rational(0));
   // get the maximum model length
@@ -75,8 +78,9 @@ StringsMnf::StringsMnf(Env& env,
   }
 }
 
-bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
+bool StringsMnf::checkModelNormalforms()
 {
+  const std::vector<Node>& stringsEqc = d_csolver.getStringsEqc();
   Trace("strings-mnf") << "StringsMnf: findModelNormalForms..." << std::endl;
   // no use if model unsound
   if (d_state.getValuation().isModelUnsound())
@@ -138,6 +142,11 @@ bool StringsMnf::findModelNormalForms(const std::vector<Node>& stringsEqc)
   {
     d_state.setModelConstructor(this);
   }
+  return true;
+}
+
+bool StringsMnf::hasCandidateModel()
+{
   return true;
 }
 

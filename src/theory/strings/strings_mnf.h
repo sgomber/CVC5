@@ -18,11 +18,9 @@
 #ifndef CVC5__THEORY__STRINGS__STRINGS_MNF_H
 #define CVC5__THEORY__STRINGS__STRINGS_MNF_H
 
-#include "theory/strings/base_solver.h"
 #include "theory/strings/infer_info.h"
 #include "theory/strings/inference_manager.h"
 #include "theory/strings/model_cons.h"
-#include "theory/strings/normal_form.h"
 #include "theory/strings/solver_state.h"
 #include "theory/strings/term_registry.h"
 #include "util/rational.h"
@@ -30,6 +28,9 @@
 namespace cvc5::internal {
 namespace theory {
 namespace strings {
+  
+class BaseSolver;
+class CoreSolver;
 
 class ModelEqcInfo
 {
@@ -63,12 +64,18 @@ class StringsMnf : protected ModelCons
              SolverState& s,
              InferenceManager& im,
              TermRegistry& tr,
-             BaseSolver& bs);
+             BaseSolver& bs,
+             CoreSolver& cs);
   ~StringsMnf() {}
 
-  /** find model normal forms */
-  bool findModelNormalForms(const std::vector<Node>& stringsEqc);
+  /** Check model normal forms */
+  bool checkModelNormalforms();
 
+  /** 
+   * Has candidate model, which returns true, since this class is
+   * assigned as the model constructor only when it is certain there is a model.
+   */
+  bool hasCandidateModel() override;
   /** Get string representatives from */
   void getStringRepresentativesFrom(
       const std::set<Node>& termSet,
@@ -118,6 +125,8 @@ class StringsMnf : protected ModelCons
   TermRegistry& d_termReg;
   /** reference to the base solver, used for certain queries */
   BaseSolver& d_bsolver;
+  /** reference to the core solver, used for certain queries */
+  CoreSolver& d_csolver;
   /** Common constants */
   Node d_zero;
   /** Maximum model length */

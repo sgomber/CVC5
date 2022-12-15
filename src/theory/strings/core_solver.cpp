@@ -49,9 +49,7 @@ CoreSolver::CoreSolver(Env& env,
       d_bsolver(bs),
       d_nfPairs(context()),
       d_extDeq(userContext()),
-      d_modelUnsoundId(IncompleteId::NONE),
-      d_hasNormalForms(false),
-      d_stringsMnf(env, s, im, tr, bs)
+      d_modelUnsoundId(IncompleteId::NONE)
 {
   d_zero = NodeManager::currentNM()->mkConstInt(Rational(0));
   d_one = NodeManager::currentNM()->mkConstInt(Rational(1));
@@ -524,10 +522,8 @@ Node CoreSolver::checkCycles( Node eqc, std::vector< Node >& curr, std::vector< 
   return Node::null();
 }
 
-void CoreSolver::checkNormalFormsEq()
+void CoreSolver::checkNormalFormsEqProp()
 {
-  d_hasNormalForms = false;
-  d_hasPInfer = false;
   d_pinfers.clear();
   d_modelUnsoundId = IncompleteId::NONE;
   // calculate normal forms for each equivalence class, possibly adding
@@ -551,8 +547,8 @@ void CoreSolver::checkNormalFormsEq()
     if (!d_pinfers.empty())
     {
       // if we had a possible inference, we were unable to assign
-      // a normal form to this equivalence class, we break.
-      break;
+      // a normal form to this equivalence class, we return.
+      return;
     }
     NormalForm& nfe = getNormalForm(eqc);
     Node nf_term = d_termReg.mkNConcat(nfe.d_nf, stype);
@@ -582,42 +578,6 @@ void CoreSolver::checkNormalFormsEq()
     }
     Trace("strings-process-debug")
         << "Done verifying normal forms are the same for " << eqc << std::endl;
-  }
-  if (!d_pinfers.empty())
-  {
-    d_hasPInfer = true;
-    if (options().strings.stringModelNormalForms)
-    {
-      // if we are using model normal forms, eagerly check if there is a model
-      // here before sending the lemma in processPossibleInferInfo.
-      if (d_stringsMnf.findModelNormalForms(d_strings_eqc))
-      {
-        return;
-      }
-    }
-    processPossibleInference();
-    return;
-  }
-  d_hasNormalForms = true;
-  // process incompleteness
-  if (d_modelUnsoundId != IncompleteId::NONE)
-  {
-    d_im.setModelUnsound(d_modelUnsoundId);
-    d_modelUnsoundId = IncompleteId::NONE;
-  }
-  if (TraceIsOn("strings-nf"))
-  {
-    Trace("strings-nf") << "**** Normal forms are : " << std::endl;
-    for (std::map<Node, Node>::iterator it = eqc_to_exp.begin();
-         it != eqc_to_exp.end();
-         ++it)
-    {
-      NormalForm& nf = getNormalForm(it->first);
-      Trace("strings-nf") << "  N[" << it->first << "] (base " << nf.d_base
-                          << ") = " << eqc_to_nf[it->first] << std::endl;
-      Trace("strings-nf") << "     exp: " << it->second << std::endl;
-    }
-    Trace("strings-nf") << std::endl;
   }
 }
 
@@ -681,8 +641,11 @@ void CoreSolver::normalizeEquivalenceClass(Node eqc,
   }
 }
 
-bool CoreSolver::hasNormalForms() const { return d_hasNormalForms; }
-
+const std::vector<Node>& CoreSolver::getStringsEqc() const
+{
+  return d_strings_eqc;
+}
+  
 NormalForm& CoreSolver::getNormalForm(Node n)
 {
   std::map<Node, NormalForm>::iterator itn = d_normal_form.find(n);
@@ -704,11 +667,6 @@ NormalForm& CoreSolver::getNormalForm(Node n)
 
 Node CoreSolver::getNormalString(Node x, std::vector<Node>& nf_exp)
 {
-  if (!hasNormalForms())
-  {
-    // if normal forms not available, just return self
-    return x;
-  }
   if (!x.isConst())
   {
     Node xr = d_state.getRepresentative(x);
@@ -2530,11 +2488,6 @@ bool CoreSolver::isNormalFormPair( Node n1, Node n2 ) {
 
 void CoreSolver::checkNormalFormsDeq()
 {
-  // if we terminated early before computing normal forms, skip
-  if (!hasNormalForms())
-  {
-    return;
-  }
   eq::EqualityEngine* ee = d_state.getEqualityEngine();
   std::map< Node, std::map< Node, bool > > processed;
 
@@ -2626,11 +2579,6 @@ void CoreSolver::checkNormalFormsDeq()
 
 void CoreSolver::checkLengthsEqc()
 {
-  // if we terminated early before computing normal forms, skip
-  if (!hasNormalForms())
-  {
-    return;
-  }
   for (unsigned i = 0; i < d_strings_eqc.size(); i++)
   {
     TypeNode stype = d_strings_eqc[i].getType();
@@ -2706,6 +2654,7 @@ size_t CoreSolver::choosePossibleInferInfo(
       set_use_index = true;
     }
   }
+  Trace("strings-solve") << "...choose #" << use_index << std::endl;
   return use_index;
 }
 
@@ -2727,21 +2676,38 @@ TrustNode CoreSolver::processLemma(InferInfo& ii, LemmaProperty& p)
   return d_im.processLemma(ii, p);
 }
 
-bool CoreSolver::processPossibleInference()
+void CoreSolver::checkNormalFormsEq()
 {
-  if (!d_hasPInfer)
+  // we've computed the possible inferences above
+  if (!d_pinfers.empty())
   {
-    return false;
+    // add one inference from our list of possible inferences
+    size_t use_index = choosePossibleInferInfo(d_pinfers);
+    // Send the inference, which is a lemma. This class will process the side
+    // effects of the inference.
+    d_pinfers[use_index].d_infer.d_sim = this;
+    d_im.sendInference(d_pinfers[use_index].d_infer, true);
+    return;
   }
-  // add one inference from our list of possible inferences
-  size_t use_index = choosePossibleInferInfo(d_pinfers);
-  Trace("strings-solve") << "...choose #" << use_index << std::endl;
-  // Send the inference, which is a lemma. This class will process the side
-  // effects of the inference.
-  d_pinfers[use_index].d_infer.d_sim = this;
-  d_im.sendInference(d_pinfers[use_index].d_infer, true);
-  d_hasPInfer = false;
-  return true;
+  //d_pinfers.clear();
+  // process incompleteness
+  if (d_modelUnsoundId != IncompleteId::NONE)
+  {
+    d_im.setModelUnsound(d_modelUnsoundId);
+    d_modelUnsoundId = IncompleteId::NONE;
+  }
+  if (TraceIsOn("strings-nf"))
+  {
+    Trace("strings-nf") << "**** Normal forms are : " << std::endl;
+    for (const Node& eqc : d_strings_eqc)
+    {
+      NormalForm& nf = getNormalForm(eqc);
+      Trace("strings-nf") << "  N[" << eqc << "] (base " << nf.d_base
+                          << ") = " << nf.d_nf << std::endl;
+      Trace("strings-nf") << "     exp: " << nf.d_exp << std::endl;
+    }
+    Trace("strings-nf") << std::endl;
+  }
 }
 
 }  // namespace strings

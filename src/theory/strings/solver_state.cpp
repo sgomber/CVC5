@@ -18,6 +18,7 @@
 #include "theory/rewriter.h"
 #include "theory/strings/theory_strings_utils.h"
 #include "theory/strings/word.h"
+#include "theory/strings/model_cons.h"
 #include "util/rational.h"
 
 using namespace std;
@@ -173,6 +174,12 @@ bool SolverState::getPendingConflict(InferInfo& ii) const
     return true;
   }
   return false;
+}
+
+bool SolverState::hasCandidateModel() const
+{
+  Assert (d_modelCons!=nullptr);
+  return d_modelCons->hasCandidateModel();
 }
 
 std::pair<bool, Node> SolverState::entailmentCheck(options::TheoryOfMode mode,

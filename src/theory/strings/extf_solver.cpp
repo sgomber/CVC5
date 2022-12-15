@@ -287,11 +287,6 @@ void ExtfSolver::checkExtfEval(int effort)
 {
   Trace("strings-extf-list")
       << "Active extended functions, effort=" << effort << " : " << std::endl;
-  if (effort >= 1 && effort < 3 && !d_csolver.hasNormalForms())
-  {
-    // not available
-    return;
-  }
   d_extfInfoTmp.clear();
   NodeManager* nm = NodeManager::currentNM();
   bool has_nreduce = false;

@@ -69,6 +69,7 @@ TheoryStrings::TheoryStrings(Env& env, OutputChannel& out, Valuation valuation)
       d_checker(d_termReg.getAlphabetCardinality()),
       d_bsolver(env, d_state, d_im, d_termReg),
       d_csolver(env, d_state, d_im, d_termReg, d_bsolver),
+      d_msolver(env, d_state, d_im, d_termReg, d_bsolver, d_csolver),
       d_esolver(env,
                 d_state,
                 d_im,
@@ -966,7 +967,7 @@ void TheoryStrings::postCheck(Effort e)
       }
       // repeat if we did not add a lemma or conflict, and we had pending
       // facts or lemmas.
-    } while (!d_state.isInConflict() && !sentLemma && hadPending);
+    } while (!d_state.isInConflict() && !d_state.hasCandidateModel() && !sentLemma && hadPending);
     // End the full effort check.
     d_termReg.notifyEndFullEffortCheck();
   }
@@ -1295,7 +1296,9 @@ void TheoryStrings::runInferStep(InferStep s, int effort)
     case CHECK_EXTF_EVAL: d_esolver.checkExtfEval(effort); break;
     case CHECK_CYCLES: d_csolver.checkCycles(); break;
     case CHECK_FLAT_FORMS: d_csolver.checkFlatForms(); break;
+    case CHECK_NORMAL_FORMS_EQ_PROP: d_csolver.checkNormalFormsEqProp(); break;
     case CHECK_NORMAL_FORMS_EQ: d_csolver.checkNormalFormsEq(); break;
+    case CHECK_MODEL_NORMAL_FORMS: d_msolver.checkModelNormalforms(); break;
     case CHECK_NORMAL_FORMS_DEQ: d_csolver.checkNormalFormsDeq(); break;
     case CHECK_CODES: checkCodes(); break;
     case CHECK_LENGTH_EQC: d_csolver.checkLengthsEqc(); break;
@@ -1327,7 +1330,13 @@ void TheoryStrings::runStrategy(Theory::Effort e)
     InferStep curr = it->first;
     if (curr == BREAK)
     {
+      // if we have a pending inference or lemma, we will process it
       if (d_im.hasProcessed())
+      {
+        break;
+      }
+      // if at full effort and we have a candidate model, we are done
+      if (e==Theory::EFFORT_FULL && d_state.hasCandidateModel())
       {
         break;
       }

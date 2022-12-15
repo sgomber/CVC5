@@ -15,7 +15,8 @@
 
 #include "theory/strings/model_cons_default.h"
 
-#include "theory/valuation.h"
+#include "theory/strings/core_solver.h"
+#include "theory/strings/solver_state.h"
 
 namespace cvc5::internal {
 namespace theory {
@@ -28,6 +29,11 @@ ModelConsDefault::ModelConsDefault(Env& env,
 {
 }
 
+bool ModelConsDefault::hasCandidateModel()
+{
+  return false;
+}
+  
 void ModelConsDefault::getStringRepresentativesFrom(
     const std::set<Node>& termSet,
     std::unordered_set<TypeNode>& repTypes,
