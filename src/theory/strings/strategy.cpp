@@ -48,9 +48,7 @@ std::ostream& operator<<(std::ostream& out, InferStep s)
     case CHECK_SEQUENCES_ARRAY_EAGER:
       out << "check_sequences_array_eager";
       break;
-    case RECHECK_CANDIDATE_MODEL:
-      out << "recheck_candidate_model";
-      break;
+    case RECHECK_CANDIDATE_MODEL: out << "recheck_candidate_model"; break;
     default: out << "?"; break;
   }
   return out;
@@ -124,10 +122,11 @@ void Strategy::initializeStrategy()
     addStrategyStep(CHECK_NORMAL_FORMS_EQ_PROP);  // ... CAV 14 propagate
     if (options().strings.stringModelNormalForms)
     {
-      addStrategyStep(CHECK_MODEL_NORMAL_FORMS);  // Only run if LOOKAHEAD pass.
-                                                  // Computes whether
-                                                  // equalities+disequalities+cardinality+code
-                                                  // points can be satified.
+      addStrategyStep(
+          CHECK_MODEL_NORMAL_FORMS);  // Only run if LOOKAHEAD pass.
+                                      // Computes whether
+                                      // equalities+disequalities+cardinality+code
+                                      // points can be satified.
     }
     addStrategyStep(
         CHECK_NORMAL_FORMS_EQ);  // HANDLED may send lemmas if CAV 14 is not
@@ -159,7 +158,7 @@ void Strategy::initializeStrategy()
       addStrategyStep(CHECK_EXTF_EVAL, 3);
       if (options().strings.stringModelNormalForms)
       {
-        //addStrategyStep(RECHECK_CANDIDATE_MODEL);
+        // addStrategyStep(RECHECK_CANDIDATE_MODEL);
       }
       if (options().strings.stringExp)
       {

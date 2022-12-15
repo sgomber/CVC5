@@ -279,7 +279,7 @@ void ExtfSolver::checkExtfReductions(int effort)
 
 bool ExtfSolver::maybeHasModel(Theory::Effort e)
 {
-  int level = e==Theory::EFFORT_FULL ? 2 : 3;
+  int level = e == Theory::EFFORT_FULL ? 2 : 3;
   if (checkExtfReductionsInternal(level, false))
   {
     // cannot construct candidate model if reductions are waiting

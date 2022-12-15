@@ -98,7 +98,8 @@ class RegExpSolver : protected EnvObj
    * (2) checkUnfold, which unfolds regular expression memberships as necessary
    */
   bool checkInclInter(const std::map<Node, std::vector<Node>>& mems);
-  void checkUnfold(const std::map<Node, std::vector<Node>>& mems, Theory::Effort effort);
+  void checkUnfold(const std::map<Node, std::vector<Node>>& mems,
+                   Theory::Effort effort);
   /**
    * Check memberships in equivalence class for regular expression
    * inclusion.
@@ -129,7 +130,7 @@ class RegExpSolver : protected EnvObj
    * contains (xi in Ri) and (xj in Rj) and intersect(xi,xj) is empty.
    */
   bool checkEqcIntersect(const std::vector<Node>& mems);
-  /** 
+  /**
    * Return true if we should process regular expression unfoldings with
    * the given polarity at the given effort.
    */
