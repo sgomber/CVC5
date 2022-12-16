@@ -1300,7 +1300,7 @@ bool TheoryStrings::maybeHasModel(Theory::Effort e)
   }
   if (!d_rsolver.maybeHasModel(e))
   {
-    Trace("strings-mnf") << "...fail, extended functions are waiting reduction"
+    Trace("strings-mnf") << "...fail, regular expressions are waiting unfolding"
                          << std::endl;
     return false;
   }
