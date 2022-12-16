@@ -1284,7 +1284,7 @@ TrustNode TheoryStrings::ppRewrite(TNode atom, std::vector<SkolemLemma>& lems)
 
 bool TheoryStrings::maybeHasModel(Theory::Effort e)
 {
-  Trace("strings-mnf") << "maybeHasCandidateModel? ";
+  Trace("strings-mnf") << "maybeHasCandidateModel? " << e;
   // no use if model unsound
   if (d_state.getValuation().isModelUnsound())
   {
