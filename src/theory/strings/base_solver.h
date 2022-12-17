@@ -82,8 +82,11 @@ class BaseSolver : protected EnvObj
   //-----------------------query functions
   enum class CardinalityResponse
   {
+    // we don't have to check cardinality for the given type
     NO_REQ,
+    // we have to check cardinality
     REQ,
+    // we don't know how to check cardinality
     UNHANDLED
   };
   /**

@@ -3496,7 +3496,7 @@ Node SequencesRewriter::rewriteStrReverse(Node node)
   else if (x.getKind() == STRING_UNIT || x.getKind() == SEQ_UNIT)
   {
     // rev( str.unit( x ) ) --> str.unit( x )
-    // return returnRewrite(node, x, Rewrite::STR_REV_UNIT);
+    return returnRewrite(node, x, Rewrite::STR_REV_UNIT);
   }
   return node;
 }

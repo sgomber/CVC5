@@ -252,7 +252,7 @@ class TheoryStrings : public Theory {
   /** run the given inference step */
   void runInferStep(InferStep s, Theory::Effort e, int effort);
   /** run strategy for effort e */
-  void runStrategy(Theory::Effort e, size_t startIndex = 0);
+  void runStrategy(Theory::Effort e);
   /** print strings equivalence classes for debugging */
   std::string debugPrintStringsEqc();
   /** Determine if it is possible to construct a candidate model */
