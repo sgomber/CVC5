@@ -1388,6 +1388,7 @@ void TheoryStrings::runStrategy(Theory::Effort e)
         break;
       }
     }
+    ++it;
   }
   Trace("strings-process") << "----finished round---" << std::endl;
 }
