@@ -109,6 +109,7 @@ const char* toString(InferenceId i)
     case InferenceId::ARITH_NL_ICP_CONFLICT: return "ARITH_NL_ICP_CONFLICT";
     case InferenceId::ARITH_NL_ICP_PROPAGATION:
       return "ARITH_NL_ICP_PROPAGATION";
+    case InferenceId::FF_LEMMA: return "FF_LEMMA";
 
     case InferenceId::ARRAYS_EXT: return "ARRAYS_EXT";
     case InferenceId::ARRAYS_READ_OVER_WRITE: return "ARRAYS_READ_OVER_WRITE";
@@ -269,6 +270,8 @@ const char* toString(InferenceId i)
       return "QUANTIFIERS_SYGUS_STREAM_EXCLUDE_CURRENT";
     case InferenceId::QUANTIFIERS_SYGUS_EXAMPLE_INFER_CONTRA:
       return "QUANTIFIERS_SYGUS_EXAMPLE_INFER_CONTRA";
+    case InferenceId::QUANTIFIERS_SYGUS_SI_INFEASIBLE:
+      return "QUANTIFIERS_SYGUS_SI_INFEASIBLE";
     case InferenceId::QUANTIFIERS_SYGUS_UNIF_PI_INTER_ENUM_SB:
       return "QUANTIFIERS_SYGUS_UNIF_PI_INTER_ENUM_SB";
     case InferenceId::QUANTIFIERS_SYGUS_UNIF_PI_SEPARATION:
@@ -303,6 +306,8 @@ const char* toString(InferenceId i)
       return "QUANTIFIERS_SYGUS_PBE_EXCLUDE";
     case InferenceId::QUANTIFIERS_SYGUS_PBE_CONSTRUCT_SOL:
       return "QUANTIFIERS_SYGUS_PBE_CONSTRUCT_SOL";
+    case InferenceId::QUANTIFIERS_SYGUS_COMPLETE_ENUM:
+      return "QUANTIFIERS_SYGUS_COMPLETE_ENUM";
     case InferenceId::QUANTIFIERS_DSPLIT: return "QUANTIFIERS_DSPLIT";
     case InferenceId::QUANTIFIERS_CONJ_GEN_SPLIT:
       return "QUANTIFIERS_CONJ_GEN_SPLIT";

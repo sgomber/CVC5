@@ -334,7 +334,9 @@ void SymbolManager::Implementation::resetAssertions()
 SymbolManager::SymbolManager(cvc5::Solver* s)
     : d_solver(s),
       d_implementation(new SymbolManager::Implementation()),
-      d_globalDeclarations(false)
+      d_globalDeclarations(false),
+      d_logicIsForced(false),
+      d_forcedLogic()
 {
 }
 
@@ -472,6 +474,19 @@ void SymbolManager::resetAssertions()
   {
     d_implementation->getSymbolTable().resetAssertions();
   }
+}
+
+void SymbolManager::forceLogic(const std::string& logic)
+{
+  Assert(!d_logicIsForced);
+  d_logicIsForced = true;
+  d_forcedLogic = logic;
+}
+bool SymbolManager::isLogicForced() const { return d_logicIsForced; }
+
+const std::string& SymbolManager::getForcedLogic() const
+{
+  return d_forcedLogic;
 }
 
 }  // namespace cvc5::parser

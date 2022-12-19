@@ -44,9 +44,7 @@
 #include "base/output.h"
 #include "parser/api/cpp/command.h"
 #include "parser/api/cpp/symbol_manager.h"
-#include "parser/input.h"
-#include "parser/parser.h"
-#include "parser/parser_builder.h"
+#include "parser/input_parser.h"
 #include "theory/logic_info.h"
 
 using namespace std;
@@ -88,20 +86,22 @@ InteractiveShell::InteractiveShell(Solver* solver,
                                    std::ostream& out,
                                    bool isInteractive)
     : d_solver(solver),
+      d_symman(sm),
       d_in(in),
       d_out(out),
       d_isInteractive(isInteractive),
       d_quit(false)
 {
-  ParserBuilder parserBuilder(solver, sm, true);
-  /* Create parser with bogus input. */
-  d_parser.reset(parserBuilder.build());
   if (d_solver->getOptionInfo("force-logic").setByUser)
   {
     LogicInfo tmp(d_solver->getOption("force-logic"));
-    d_parser->forceLogic(tmp.getLogicString());
+    sm->forceLogic(tmp.getLogicString());
   }
-
+  /* Create parser with bogus input. */
+  d_parser.reset(new cvc5::parser::InputParser(solver, sm, true));
+  // initialize for incremental string input
+  d_parser->setIncrementalStringInput(d_solver->getOption("input-language"),
+                                      INPUT_FILENAME);
 #if HAVE_LIBEDITLINE
   if (&d_in == &std::cin && isatty(fileno(stdin)))
   {
@@ -180,7 +180,6 @@ std::optional<InteractiveShell::CmdSeq> InteractiveShell::readCommand()
 {
   char* lineBuf = NULL;
   string line = "";
-
 restart:
 
   /* Don't do anything if the input is closed or if we've seen a
@@ -321,13 +320,15 @@ restart:
     }
   }
 
-  d_parser->setInput(Input::newStringInput(
-      d_solver->getOption("input-language"), input, INPUT_FILENAME));
+  d_parser->appendIncrementalStringInput(input);
 
   /* There may be more than one command in the input. Build up a
      sequence. */
   std::vector<std::unique_ptr<Command>> cmdSeq;
   Command *cmd;
+  // remember the scope level of the symbol manager, in case we hit an end of
+  // line (when catching ParserEndOfFileException).
+  size_t lastScopeLevel = d_symman->scopeLevel();
 
   try
   {
@@ -364,10 +365,16 @@ restart:
         }
 #endif /* HAVE_LIBEDITLINE */
       }
+      lastScopeLevel = d_symman->scopeLevel();
     }
   }
   catch (ParserEndOfFileException& pe)
   {
+    // pop back to the scope we were at prior to reading the last command
+    while (d_symman->scopeLevel() > lastScopeLevel)
+    {
+      d_symman->popScope();
+    }
     line += "\n";
     goto restart;
   }
