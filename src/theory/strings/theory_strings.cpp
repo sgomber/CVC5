@@ -1129,7 +1129,6 @@ void TheoryStrings::checkCodes()
       {
         continue;
       }
-
       if (eqc.isConst())
       {
         Node c = eqc;
@@ -1143,9 +1142,15 @@ void TheoryStrings::checkCodes()
         if (!d_state.areEqual(cc, vc))
         {
           std::vector<Node> emptyVec;
-          d_im.sendInference(emptyVec, cc.eqNode(vc), InferenceId::STRINGS_CODE_PROXY);
+          d_im.sendInference(
+              emptyVec, cc.eqNode(vc), InferenceId::STRINGS_CODE_PROXY);
         }
-        const_codes.push_back(vc);
+        // only relevant for injectivity if length is 1 (e.g. it has a valid
+        // code point)
+        if (Word::getLength(c) == 1)
+        {
+          const_codes.push_back(vc);
+        }
       }
       else
       {
@@ -1153,7 +1158,11 @@ void TheoryStrings::checkCodes()
         if (ei && !ei->d_codeTerm.get().isNull())
         {
           Node vc = nm->mkNode(kind::STRING_TO_CODE, ei->d_codeTerm.get());
-          nconst_codes.push_back(vc);
+          // only relevant for injectivity if not already equal to negative one
+          if (!d_state.areEqual(vc, d_neg_one))
+          {
+            nconst_codes.push_back(vc);
+          }
         }
       }
     }
@@ -1173,7 +1182,7 @@ void TheoryStrings::checkCodes()
       {
         Trace("strings-code-debug")
             << "Compare codes : " << c1 << " " << c2 << std::endl;
-        if (!d_state.areDisequal(c1, c2) && !d_state.areEqual(c1, d_neg_one))
+        if (!d_state.areDisequal(c1, c2))
         {
           Node eq_no = c1.eqNode(d_neg_one);
           Node deq = c1.eqNode(c2).negate();
