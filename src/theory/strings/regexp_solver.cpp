@@ -115,13 +115,13 @@ void RegExpSolver::checkInclusions()
 
 void RegExpSolver::checkEvaluations()
 {
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   for (const std::pair<const Node, std::vector<Node> >& mr : d_assertedMems)
   {
     Node rep = mr.first;
     for (const Node& assertion : mr.second)
     {
-      bool polarity = assertion.getKind()!=NOT;
+      bool polarity = assertion.getKind() != NOT;
       Node atom = polarity ? assertion : assertion[0];
       Trace("strings-regexp")
           << "We have regular expression assertion : " << assertion
@@ -161,7 +161,7 @@ void RegExpSolver::checkEvaluations()
         r = getNormalSymRegExp(r, rnfexp);
         nfexp.insert(nfexp.end(), rnfexp.begin(), rnfexp.end());
         Trace("strings-regexp-nf") << "Term " << atom << " is normalized to "
-                                    << nx << " IN " << r << std::endl;
+                                   << nx << " IN " << r << std::endl;
 
         // We rewrite the membership nx IN r.
         Node tmp = rewrite(nm->mkNode(STRING_IN_REGEXP, nx, r));
@@ -337,7 +337,7 @@ void RegExpSolver::checkUnfold(Theory::Effort e)
           d_statistics.d_regexpUnfoldingsNeg << atom[1].getKind();
         }
         InferenceId inf = polarity ? InferenceId::STRINGS_RE_UNFOLD_POS
-                                    : InferenceId::STRINGS_RE_UNFOLD_NEG;
+                                   : InferenceId::STRINGS_RE_UNFOLD_NEG;
         // in very rare cases, we may find out that the unfolding lemma
         // for a membership is equivalent to true, in spite of the RE
         // not being rewritten to true.
@@ -582,8 +582,10 @@ bool RegExpSolver::checkEqcIntersect(const std::vector<Node>& mems)
   return true;
 }
 
-bool RegExpSolver::checkPDerivative(
-    Node x, Node r, Node atom, std::vector<Node>& nf_exp)
+bool RegExpSolver::checkPDerivative(Node x,
+                                    Node r,
+                                    Node atom,
+                                    std::vector<Node>& nf_exp)
 {
   if (d_state.areEqual(x, d_emptyString))
   {

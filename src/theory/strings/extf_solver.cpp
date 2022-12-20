@@ -279,7 +279,7 @@ void ExtfSolver::checkExtfReductionsEager()
 
 void ExtfSolver::checkExtfReductions(Theory::Effort e)
 {
-  int effort = e==Theory::EFFORT_LAST_CALL ? 3 : 2;
+  int effort = e == Theory::EFFORT_LAST_CALL ? 3 : 2;
   // return value is ignored
   checkExtfReductionsInternal(effort, true);
 }
@@ -883,10 +883,7 @@ bool ExtfSolver::isReduced(const Node& n) const
   return d_reduced.find(n) != d_reduced.end();
 }
 
-void ExtfSolver::markReduced(const Node& n)
-{
-  d_reduced.insert(n);
-}
+void ExtfSolver::markReduced(const Node& n) { d_reduced.insert(n); }
 
 }  // namespace strings
 }  // namespace theory

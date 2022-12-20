@@ -77,7 +77,7 @@ class RegExpSolver : protected EnvObj
    * Assumes d_assertedMems has been computed.
    */
   void checkInclusions();
-  
+
   /**
    * Check evaluations
    * Assumes d_assertedMems has been computed.
@@ -164,8 +164,7 @@ class RegExpSolver : protected EnvObj
    * normalized form of atom that may be modified using a substitution whose
    * explanation is nf_exp.
    */
-  bool checkPDerivative(
-      Node x, Node r, Node atom, std::vector<Node>& nf_exp);
+  bool checkPDerivative(Node x, Node r, Node atom, std::vector<Node>& nf_exp);
   cvc5::internal::String getHeadConst(Node x);
   bool deriveRegExp(Node x, Node r, Node atom, std::vector<Node>& ant);
   Node getNormalSymRegExp(Node r, std::vector<Node>& nf_exp);
