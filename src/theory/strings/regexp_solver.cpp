@@ -371,7 +371,7 @@ bool RegExpSolver::doUnfold(const Node& assertion)
   bool ret = false;
   bool polarity = assertion.getKind() != NOT;
   Node atom = polarity ? assertion : assertion[0];
-  Assert (atom.getKind()==STRING_IN_REGEXP);
+  Assert(atom.getKind() == STRING_IN_REGEXP);
   Trace("strings-regexp") << "Simplify on " << atom << std::endl;
   Node conc = d_regexp_opr.simplify(atom, polarity);
   Trace("strings-regexp") << "...finished, got " << conc << std::endl;
@@ -392,7 +392,7 @@ bool RegExpSolver::doUnfold(const Node& assertion)
       d_statistics.d_regexpUnfoldingsNeg << atom[1].getKind();
     }
     InferenceId inf = polarity ? InferenceId::STRINGS_RE_UNFOLD_POS
-                                : InferenceId::STRINGS_RE_UNFOLD_NEG;
+                               : InferenceId::STRINGS_RE_UNFOLD_NEG;
     // in very rare cases, we may find out that the unfolding lemma
     // for a membership is equivalent to true, in spite of the RE
     // not being rewritten to true.
