@@ -221,6 +221,7 @@ void RegExpSolver::checkMembershipsEager()
 {
   if (!options().strings.reEagerReducePosConcat)
   {
+    // option not enabled
     return;
   }
   // eagerly reduce positive membership into re.++
@@ -230,10 +231,12 @@ void RegExpSolver::checkMembershipsEager()
     Assert(n.getKind() == STRING_IN_REGEXP);
     if (n[1].getKind() != REGEXP_CONCAT)
     {
+      // not a membership into concatenation
       continue;
     }
     if (d_esolver.isReduced(n))
     {
+      // already reduced
       continue;
     }
     Node r = d_state.getRepresentative(n);
@@ -249,12 +252,15 @@ void RegExpSolver::checkMembershipsEager()
 
 void RegExpSolver::checkMembershipsEval()
 {
+  // compute the memberhips
   computeAssertedMemberships();
+  // check for regular expression inclusion
   checkInclusions();
   if (d_state.isInConflict())
   {
     return;
   }
+  // check for evaluations and inferences based on derivatives
   checkEvaluations();
 }
 
