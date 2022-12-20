@@ -46,7 +46,6 @@ RegExpSolver::RegExpSolver(Env& env,
       d_csolver(cs),
       d_esolver(es),
       d_statistics(stats),
-      d_regexp_ucached(userContext()),
       d_regexp_ccached(context()),
       d_regexp_opr(env, tr.getSkolemCache())
 {
@@ -123,7 +122,7 @@ bool RegExpSolver::maybeHasModel(Theory::Effort e)
         continue;
       }
       // if we've processed it, skip
-      if (d_regexp_ucached.find(m) != d_regexp_ucached.end()
+      if (d_esolver.isReduced(m)
           || d_regexp_ccached.find(m) != d_regexp_ccached.end())
       {
         continue;
@@ -224,18 +223,18 @@ void RegExpSolver::checkUnfold(const std::map<Node, std::vector<Node>>& mems,
       // check regular expression membership
       Trace("regexp-debug")
           << "Check : " << assertion << " "
-          << (d_regexp_ucached.find(assertion) == d_regexp_ucached.end()) << " "
+          << (d_esolver.isReduced(assertion)) << " "
           << (d_regexp_ccached.find(assertion) == d_regexp_ccached.end())
           << std::endl;
-      if (d_regexp_ucached.find(assertion) != d_regexp_ucached.end()
+      if (d_esolver.isReduced(assertion)
           || d_regexp_ccached.find(assertion) != d_regexp_ccached.end())
       {
         continue;
       }
+      Node atom = polarity ? assertion : assertion[0];
       Trace("strings-regexp")
           << "We have regular expression assertion : " << assertion
           << std::endl;
-      Node atom = polarity ? assertion : assertion[0];
       Assert(atom == rewrite(atom));
       if (e == Theory::EFFORT_LAST_CALL && !d_esolver.isActiveInModel(atom))
       {
@@ -397,7 +396,7 @@ void RegExpSolver::checkUnfold(const std::map<Node, std::vector<Node>>& mems,
       {
         Trace("strings-regexp")
             << "...add " << p << " to u-cache." << std::endl;
-        d_regexp_ucached.insert(p);
+        d_esolver.markReduced(p);
       }
     }
   }
@@ -447,7 +446,7 @@ bool RegExpSolver::checkEqcInclusion(std::vector<Node>& mems)
         // where R2 is included in (re.++ (re.* R1) R2)). However, we cannot
         // mark the latter as reduced.
         bool basisUnfolded =
-            d_regexp_ucached.find(m1Neg ? m1 : m2) != d_regexp_ucached.end();
+            d_esolver.isReduced(m1Neg ? m1 : m2);
         if (!basisUnfolded)
         {
           // Both regular expression memberships have positive polarity
@@ -457,14 +456,14 @@ bool RegExpSolver::checkEqcInclusion(std::vector<Node>& mems)
             {
               // ~str.in.re(x, R1) includes ~str.in.re(x, R2) --->
               //   mark ~str.in.re(x, R2) as reduced
-              d_im.markReduced(m2Lit, ExtReducedId::STRINGS_REGEXP_INCLUDE_NEG);
+              d_im.markInactive(m2Lit, ExtReducedId::STRINGS_REGEXP_INCLUDE_NEG);
               remove.insert(m2);
             }
             else
             {
               // str.in.re(x, R1) includes str.in.re(x, R2) --->
               //   mark str.in.re(x, R1) as reduced
-              d_im.markReduced(m1Lit, ExtReducedId::STRINGS_REGEXP_INCLUDE);
+              d_im.markInactive(m1Lit, ExtReducedId::STRINGS_REGEXP_INCLUDE);
               remove.insert(m1);
 
               // We don't need to process m1 anymore
@@ -589,12 +588,12 @@ bool RegExpSolver::checkEqcIntersect(const std::vector<Node>& mems)
     {
       // if R1 = intersect( R1, R2 ), then x in R1 ^ x in R2 is equivalent
       // to x in R1, hence x in R2 can be marked redundant.
-      d_im.markReduced(m, ExtReducedId::STRINGS_REGEXP_INTER_SUBSUME);
+      d_im.markInactive(m, ExtReducedId::STRINGS_REGEXP_INTER_SUBSUME);
     }
     else if (mresr == m)
     {
       // same as above, opposite direction
-      d_im.markReduced(mi, ExtReducedId::STRINGS_REGEXP_INTER_SUBSUME);
+      d_im.markInactive(mi, ExtReducedId::STRINGS_REGEXP_INTER_SUBSUME);
     }
     else
     {
@@ -610,8 +609,8 @@ bool RegExpSolver::checkEqcIntersect(const std::vector<Node>& mems)
       d_im.sendInference(
           vec_nodes, mres, InferenceId::STRINGS_RE_INTER_INFER, false, true);
       // both are reduced
-      d_im.markReduced(m, ExtReducedId::STRINGS_REGEXP_INTER);
-      d_im.markReduced(mi, ExtReducedId::STRINGS_REGEXP_INTER);
+      d_im.markInactive(m, ExtReducedId::STRINGS_REGEXP_INTER);
+      d_im.markInactive(mi, ExtReducedId::STRINGS_REGEXP_INTER);
       // do not send more than one lemma for this class
       return true;
     }

@@ -168,7 +168,6 @@ class RegExpSolver : protected EnvObj
   bool deriveRegExp(Node x, Node r, Node atom, std::vector<Node>& ant);
   Node getNormalSymRegExp(Node r, std::vector<Node>& nf_exp);
   // regular expression memberships
-  NodeSet d_regexp_ucached;
   NodeSet d_regexp_ccached;
   /** regular expression operation module */
   RegExpOpr d_regexp_opr;

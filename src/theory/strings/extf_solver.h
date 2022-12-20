@@ -186,6 +186,10 @@ class ExtfSolver : public InferSideEffectProcess, protected EnvObj
   /** Called when ii is ready to be processed as a lemma */
   TrustNode processLemma(InferInfo& ii, LemmaProperty& p) override;
 
+  /** is reduced? */
+  bool isReduced(const Node& n) const;
+  /** mark reduced */
+  void markReduced(const Node& n);
  private:
   /**
    * Helper method for checkExtfReductions / maybeHasCandidateModel, returns

@@ -277,9 +277,9 @@ bool InferenceManager::hasProcessed() const
   return d_state.isInConflict() || hasPending() || d_markedFinished;
 }
 
-void InferenceManager::markReduced(Node n, ExtReducedId id, bool contextDepend)
+void InferenceManager::markInactive(Node n, ExtReducedId id, bool contextDepend)
 {
-  d_extt.markReduced(n, id, contextDepend);
+  d_extt.markInactive(n, id, contextDepend);
 }
 
 void InferenceManager::markFinished() { d_markedFinished = true; }
