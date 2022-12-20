@@ -252,7 +252,7 @@ name   = "Strings Theory"
   help       = "reason about str.contains in regular expression solver"
 
 [[option]]
-  name       = "reEagerInc"
+  name       = "reEagerEval"
   category   = "expert"
   long       = "re-eager-eval"
   type       = "bool"

@@ -65,9 +65,8 @@ void RegExpSolver::computeAssertedMemberships()
   // add the memberships
   std::vector<Node> mems = d_esolver.getActive(STRING_IN_REGEXP);
   // maps representatives to regular expression memberships in that class
-  for (unsigned i = 0; i < mems.size(); i++)
+  for (const Node& n : mems)
   {
-    Node n = mems[i];
     Assert(n.getKind() == STRING_IN_REGEXP);
     Node r = d_state.getRepresentative(n);
     if (r.isConst())
@@ -200,31 +199,60 @@ void RegExpSolver::checkMemberships(Theory::Effort e)
 {
   Trace("regexp-process") << "Checking Memberships, effort = " << e << " ... "
                           << std::endl;
-  computeAssertedMemberships();
-  // at EFFORT_FULL, memberships were computed in checkInclusions above
-  if (e == Theory::EFFORT_FULL)
+  if (e == Theory::EFFORT_FULL && !options().strings.reEagerEval)
   {
-    checkInclusions();
-    if (d_state.isInConflict())
-    {
-      return;
-    }
-    checkEvaluations();
+    // if we haven't checked evaluations, do it now, which will also compute
+    // asserted memberhips
+    checkMembershipsEval();
     if (d_state.isInConflict())
     {
       return;
     }
   }
+  else
+  {
+    // otherwise, compute asserted memberhips
+    computeAssertedMemberships();
+  }
   checkUnfold(e);
 }
+
 void RegExpSolver::checkMembershipsEager()
 {
-  // TODO
+  if (!options().strings.reEagerReducePosConcat)
+  {
+    return;
+  }
+  // eagerly reduce positive membership into re.++
+  std::vector<Node> mems = d_esolver.getActive(STRING_IN_REGEXP);
+  for (const Node& n : mems)
+  {
+    Assert (n.getKind()==STRING_IN_REGEXP);
+    if (n[1].getKind()!=REGEXP_CONCAT)
+    {
+      continue;
+    }
+    if (d_esolver.isReduced(n))
+    {
+      continue;
+    }
+    Node r = d_state.getRepresentative(n);
+    if (!r.isConst() || !r.getConst<bool>())
+    {
+      continue;
+    }
+  }
 }
 
 void RegExpSolver::checkMembershipsEval()
 {
-  // TODO
+  computeAssertedMemberships();
+  checkInclusions();
+  if (d_state.isInConflict())
+  {
+    return;
+  }
+  checkEvaluations();
 }
 
 bool RegExpSolver::shouldUnfold(Theory::Effort e, bool pol) const
