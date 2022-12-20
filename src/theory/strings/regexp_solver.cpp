@@ -170,7 +170,7 @@ void RegExpSolver::checkEvaluations()
           if (tmp.getConst<bool>() == polarity)
           {
             // it is satisfied in this SAT context
-            d_im.markInactive(assertion, ExtReducedId::UNKNOWN);
+            d_im.markInactive(atom, ExtReducedId::UNKNOWN);
             continue;
           }
           else
