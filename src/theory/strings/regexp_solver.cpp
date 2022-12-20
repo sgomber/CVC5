@@ -47,8 +47,10 @@ RegExpSolver::RegExpSolver(Env& env,
 {
   d_emptyString = NodeManager::currentNM()->mkConst(cvc5::internal::String(""));
   d_emptyRegexp = NodeManager::currentNM()->mkNode(REGEXP_NONE);
-  d_sigmaStar = NodeManager::currentNM()->mkNode(REGEXP_STAR, NodeManager::currentNM()->mkNode(kind::REGEXP_ALLCHAR,
-                                               std::vector<Node>{}));
+  d_sigmaStar = NodeManager::currentNM()->mkNode(
+      REGEXP_STAR,
+      NodeManager::currentNM()->mkNode(kind::REGEXP_ALLCHAR,
+                                       std::vector<Node>{}));
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
 }
@@ -96,7 +98,7 @@ void RegExpSolver::checkInclusions()
   // regular expression and intersection.
   Trace("regexp-process") << "Checking inclusion/intersection ... "
                           << std::endl;
-  for (const std::pair<const Node, std::vector<Node> >& mr : d_assertedMems)
+  for (const std::pair<const Node, std::vector<Node>>& mr : d_assertedMems)
   {
     // copy the vector because it is modified in the call below
     std::vector<Node> mems2 = mr.second;
@@ -123,7 +125,7 @@ void RegExpSolver::checkInclusions()
 void RegExpSolver::checkEvaluations()
 {
   NodeManager* nm = NodeManager::currentNM();
-  for (const std::pair<const Node, std::vector<Node> >& mr : d_assertedMems)
+  for (const std::pair<const Node, std::vector<Node>>& mr : d_assertedMems)
   {
     Node rep = mr.first;
     for (const Node& assertion : mr.second)
@@ -295,7 +297,7 @@ void RegExpSolver::checkUnfold(Theory::Effort e)
   Trace("regexp-process") << "Checking unfold ... " << std::endl;
   // get all memberships
   std::map<Node, Node> allMems;
-  for (const std::pair<const Node, std::vector<Node> >& mr : d_assertedMems)
+  for (const std::pair<const Node, std::vector<Node>>& mr : d_assertedMems)
   {
     for (const Node& m : mr.second)
     {
@@ -423,16 +425,19 @@ bool RegExpSolver::doUnfold(const Node& assertion)
 }
 Node RegExpSolver::getRegularExpressionFrom(const Node& n) const
 {
-  if (n.getKind()==STRING_IN_REGEXP)
+  if (n.getKind() == STRING_IN_REGEXP)
   {
     return n[1];
   }
-  else if (n.getKind()==STRING_CONTAINS)
+  else if (n.getKind() == STRING_CONTAINS)
   {
     if (n[1].isConst())
     {
-      NodeManager * nm = NodeManager::currentNM();
-      return nm->mkNode(REGEXP_CONCAT, d_sigmaStar, nm->mkNode(STRING_TO_REGEXP, n[1]), d_sigmaStar);
+      NodeManager* nm = NodeManager::currentNM();
+      return nm->mkNode(REGEXP_CONCAT,
+                        d_sigmaStar,
+                        nm->mkNode(STRING_TO_REGEXP, n[1]),
+                        d_sigmaStar);
     }
   }
   else
@@ -491,7 +496,8 @@ bool RegExpSolver::checkEqcInclusion(std::vector<Node>& mems)
           Node m1re = getRegularExpressionFrom(m1Lit);
           Node m2re = getRegularExpressionFrom(m2Lit);
           // Both regular expression memberships have positive polarity
-          if (!m1re.isNull() && !m2re.isNull() && d_regexp_opr.regExpIncludes(m1re, m2re))
+          if (!m1re.isNull() && !m2re.isNull()
+              && d_regexp_opr.regExpIncludes(m1re, m2re))
           {
             if (m1Neg)
             {
@@ -520,7 +526,8 @@ bool RegExpSolver::checkEqcInclusion(std::vector<Node>& mems)
         Node neg = m1Neg ? m1Lit : m2Lit;
         Node pre = getRegularExpressionFrom(pos);
         Node nre = getRegularExpressionFrom(neg);
-        if (!pre.isNull() && !nre.isNull() && d_regexp_opr.regExpIncludes(nre, pre))
+        if (!pre.isNull() && !nre.isNull()
+            && d_regexp_opr.regExpIncludes(nre, pre))
         {
           // We have a conflict because we have a case where str.in.re(x, R1)
           // and ~str.in.re(x, R2) but R2 includes R1, so there is no

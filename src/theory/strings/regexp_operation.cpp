@@ -1579,8 +1579,8 @@ std::string RegExpOpr::mkString( Node r ) {
 
 bool RegExpOpr::regExpIncludes(Node r1, Node r2)
 {
-  Assert (r1.getType().isRegExp());
-  Assert (r2.getType().isRegExp());
+  Assert(r1.getType().isRegExp());
+  Assert(r2.getType().isRegExp());
   return RegExpEntail::regExpIncludes(r1, r2, d_inclusionCache);
 }
 
