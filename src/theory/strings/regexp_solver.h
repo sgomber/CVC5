@@ -61,6 +61,11 @@ class RegExpSolver : protected EnvObj
    * Check inclusions
    */
   void checkInclusions();
+  
+  /**
+   * Check evaluations
+   */
+  void checkEvaluations();
 
   /** check regular expression memberships
    *
@@ -97,7 +102,6 @@ class RegExpSolver : protected EnvObj
    * discovered.
    * (2) checkUnfold, which unfolds regular expression memberships as necessary
    */
-  bool checkInclInter(const std::map<Node, std::vector<Node>>& mems);
   void checkUnfold(const std::map<Node, std::vector<Node>>& mems,
                    Theory::Effort effort);
   /**

@@ -88,10 +88,35 @@ void RegExpSolver::computeAssertedMemberships()
 
 void RegExpSolver::checkInclusions()
 {
-  // First check for conflict. We do this only if effort is 0, otherwise
-  // we have already run these checks in this SAT context.
+  // Check for conflict and chances to mark memberships inactive based on
+  // regular expression and intersection.
   computeAssertedMemberships();
-  checkInclInter(d_assertedMems);
+  Trace("regexp-process") << "Checking inclusion/intersection ... "
+                          << std::endl;
+  for (const std::pair<const Node, std::vector<Node> >& mr : d_assertedMems)
+  {
+    // copy the vector because it is modified in the call below
+    std::vector<Node> mems2 = mr.second;
+    Trace("regexp-process")
+        << "Memberships(" << mr.first << ") = " << mr.second << std::endl;
+    if (options().strings.stringRegexpInclusion && !checkEqcInclusion(mems2))
+    {
+      // conflict discovered, return
+      return;
+    }
+    if (!checkEqcIntersect(mems2))
+    {
+      // conflict discovered, return
+      return;
+    }
+  }
+  Trace("regexp-debug") << "... No Intersect Conflict in Memberships"
+                        << std::endl;
+}
+
+void RegExpSolver::checkEvaluations()
+{
+  
 }
 
 void RegExpSolver::checkMemberships(Theory::Effort e)
@@ -134,33 +159,6 @@ bool RegExpSolver::maybeHasModel(Theory::Effort e)
     }
   }
   return true;
-}
-
-bool RegExpSolver::checkInclInter(
-    const std::map<Node, std::vector<Node> >& mems)
-{
-  Trace("regexp-process") << "Checking inclusion/intersection ... "
-                          << std::endl;
-  for (const std::pair<const Node, std::vector<Node> >& mr : mems)
-  {
-    // copy the vector because it is modified in the call below
-    std::vector<Node> mems2 = mr.second;
-    Trace("regexp-process")
-        << "Memberships(" << mr.first << ") = " << mr.second << std::endl;
-    if (options().strings.stringRegexpInclusion && !checkEqcInclusion(mems2))
-    {
-      // conflict discovered, return
-      return true;
-    }
-    if (!checkEqcIntersect(mems2))
-    {
-      // conflict discovered, return
-      return true;
-    }
-  }
-  Trace("regexp-debug") << "... No Intersect Conflict in Memberships"
-                        << std::endl;
-  return false;
 }
 
 bool RegExpSolver::shouldUnfold(Theory::Effort e, bool pol) const
