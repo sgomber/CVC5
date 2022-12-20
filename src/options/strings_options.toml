@@ -234,3 +234,27 @@ name   = "Strings Theory"
   type       = "bool"
   default    = "false"
   help       = "eliminate code points during preprocessing"
+
+[[option]]
+  name       = "reEagerReducePosConcat"
+  category   = "expert"
+  long       = "re-eager-reduce-posc"
+  type       = "bool"
+  default    = "false"
+  help       = "eager reduction of positive concatentation"
+
+[[option]]
+  name       = "reCheckContains"
+  category   = "expert"
+  long       = "re-check-ctn"
+  type       = "bool"
+  default    = "false"
+  help       = "reason about str.contains in regular expression solver"
+
+[[option]]
+  name       = "reEagerInc"
+  category   = "expert"
+  long       = "re-eager-eval"
+  type       = "bool"
+  default    = "false"
+  help       = "eager reasoning about regular expression inclusions"
