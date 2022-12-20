@@ -219,9 +219,8 @@ void RegExpSolver::checkUnfold(const std::map<Node, std::vector<Node>>& mems,
         continue;
       }
       // check regular expression membership
-      Trace("regexp-debug")
-          << "Check : " << assertion << " " << (d_esolver.isReduced(assertion))
-          << std::endl;
+      Trace("regexp-debug") << "Check : " << assertion << " "
+                            << (d_esolver.isReduced(assertion)) << std::endl;
       if (d_esolver.isReduced(assertion))
       {
         continue;
