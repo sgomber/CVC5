@@ -51,39 +51,45 @@ RegExpSolver::RegExpSolver(Env& env,
   d_false = NodeManager::currentNM()->mkConst(false);
 }
 
-Node RegExpSolver::mkAnd(Node c1, Node c2)
+std::map<Node, std::vector<Node>> RegExpSolver::computeAssertions(Kind k) const
 {
-  return NodeManager::currentNM()->mkNode(AND, c1, c2);
-}
-
-void RegExpSolver::computeAssertedMemberships()
-{
-  d_assertedMems.clear();
+  std::map<Node, std::vector<Node>> assertions;
   // add the memberships
-  std::vector<Node> mems = d_esolver.getActive(STRING_IN_REGEXP);
+  std::vector<Node> mems = d_esolver.getActive(k);
   // maps representatives to regular expression memberships in that class
   for (const Node& n : mems)
   {
-    Assert(n.getKind() == STRING_IN_REGEXP);
+    Assert(n.getKind() == k);
     Node r = d_state.getRepresentative(n);
     if (r.isConst())
     {
       bool pol = r.getConst<bool>();
       Trace("strings-process-debug")
-          << "  add membership : " << n << ", pol = " << pol << std::endl;
+          << "  add predicate : " << n << ", pol = " << pol << std::endl;
       r = d_state.getRepresentative(n[0]);
-      d_assertedMems[r].push_back(pol ? n : n.negate());
+      assertions[r].push_back(pol ? n : n.negate());
     }
     else
     {
       Trace("strings-process-debug")
-          << "  irrelevant (non-asserted) membership : " << n << std::endl;
+          << "  irrelevant (non-asserted) predicate : " << n << std::endl;
     }
   }
+  return assertions;
+}
+
+void RegExpSolver::computeAssertedMemberships()
+{
+  d_assertedMems = computeAssertions(STRING_IN_REGEXP);
 }
 
 void RegExpSolver::checkInclusions()
 {
+  std::map<Node, std::vector<Node>> assertedCtns;
+  if (options().strings.stringRegexpInclusionCheckContains)
+  {
+    assertedCtns = computeAssertions(STRING_CONTAINS);
+  }
   // Check for conflict and chances to mark memberships inactive based on
   // regular expression and intersection.
   Trace("regexp-process") << "Checking inclusion/intersection ... "
@@ -196,7 +202,7 @@ void RegExpSolver::checkMemberships(Theory::Effort e)
 {
   Trace("regexp-process") << "Checking Memberships, effort = " << e << " ... "
                           << std::endl;
-  if (e == Theory::EFFORT_FULL && !options().strings.reEagerEval)
+  if (e == Theory::EFFORT_FULL && !options().strings.stringRegexpInclusionEager)
   {
     // if we haven't checked evaluations, do it now, which will also compute
     // asserted memberhips
@@ -216,7 +222,7 @@ void RegExpSolver::checkMemberships(Theory::Effort e)
 
 void RegExpSolver::checkMembershipsEager()
 {
-  if (!options().strings.reEagerReducePosConcat)
+  if (!options().strings.stringRegexpPosConcatEager)
   {
     // option not enabled
     return;

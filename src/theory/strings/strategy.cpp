@@ -121,7 +121,7 @@ void Strategy::initializeStrategy()
     addStrategyStep(CHECK_MEMBERSHIP_EAGER);
     addStrategyStep(CHECK_NORMAL_FORMS_EQ);
     addStrategyStep(CHECK_EXTF_EVAL, 1);
-    if (options().strings.reEagerEval)
+    if (options().strings.stringRegexpInclusionEager)
     {
       addStrategyStep(CHECK_MEMBERSHIP_EVAL);
     }

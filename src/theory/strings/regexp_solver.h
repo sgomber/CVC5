@@ -72,6 +72,7 @@ class RegExpSolver : protected EnvObj
  private:
   /** compute asserted memberships */
   void computeAssertedMemberships();
+  std::map<Node, std::vector<Node>> computeAssertions(Kind k) const;
   /**
    * Check inclusions.
    * Assumes d_assertedMems has been computed.
@@ -155,8 +156,6 @@ class RegExpSolver : protected EnvObj
   ExtfSolver& d_esolver;
   /** Reference to the statistics for the theory of strings/sequences. */
   SequencesStatistics& d_statistics;
-  // check membership constraints
-  Node mkAnd(Node c1, Node c2);
   /**
    * Check partial derivative
    *
