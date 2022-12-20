@@ -227,8 +227,8 @@ void RegExpSolver::checkMembershipsEager()
   std::vector<Node> mems = d_esolver.getActive(STRING_IN_REGEXP);
   for (const Node& n : mems)
   {
-    Assert (n.getKind()==STRING_IN_REGEXP);
-    if (n[1].getKind()!=REGEXP_CONCAT)
+    Assert(n.getKind() == STRING_IN_REGEXP);
+    if (n[1].getKind() != REGEXP_CONCAT)
     {
       continue;
     }
