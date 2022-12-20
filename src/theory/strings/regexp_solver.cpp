@@ -205,7 +205,15 @@ void RegExpSolver::checkMemberships(Theory::Effort e)
   if (e == Theory::EFFORT_FULL)
   {
     checkInclusions();
+    if (d_state.isInConflict())
+    {
+      return;
+    }
     checkEvaluations();
+    if (d_state.isInConflict())
+    {
+      return;
+    }
   }
   checkUnfold(d_assertedMems, e);
 }
