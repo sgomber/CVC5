@@ -190,6 +190,7 @@ class ExtfSolver : public InferSideEffectProcess, protected EnvObj
   bool isReduced(const Node& n) const;
   /** mark reduced */
   void markReduced(const Node& n);
+
  private:
   /**
    * Helper method for checkExtfReductions / maybeHasCandidateModel, returns

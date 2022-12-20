@@ -91,8 +91,8 @@ bool ExtfSolver::shouldDoReduction(int effort, Node n, int pol)
     return false;
   }
   // check with negation
-  Node nn = pol==-1 ? n.notNode() : n;
-  if (d_reduced.find(nn)!=d_reduced.end())
+  Node nn = pol == -1 ? n.notNode() : n;
+  if (d_reduced.find(nn) != d_reduced.end())
   {
     // already sent a reduction lemma
     Trace("strings-extf-debug") << "...skip due to reduced" << std::endl;
@@ -905,13 +905,13 @@ std::string ExtfSolver::debugPrintModel()
 
 bool ExtfSolver::isReduced(const Node& n) const
 {
-  Assert (n.getKind()!=NOT);
-  return d_reduced.find(n)!=d_reduced.end();
+  Assert(n.getKind() != NOT);
+  return d_reduced.find(n) != d_reduced.end();
 }
 
 void ExtfSolver::markReduced(const Node& n)
 {
-  Assert (n.getKind()!=NOT);
+  Assert(n.getKind() != NOT);
   d_reduced.insert(n);
 }
 

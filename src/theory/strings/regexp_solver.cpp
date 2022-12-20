@@ -222,9 +222,8 @@ void RegExpSolver::checkUnfold(const std::map<Node, std::vector<Node>>& mems,
       }
       // check regular expression membership
       Trace("regexp-debug")
-          << "Check : " << assertion << " "
-          << (d_esolver.isReduced(assertion)) << " "
-          << (d_regexp_ccached.find(assertion) == d_regexp_ccached.end())
+          << "Check : " << assertion << " " << (d_esolver.isReduced(assertion))
+          << " " << (d_regexp_ccached.find(assertion) == d_regexp_ccached.end())
           << std::endl;
       if (d_esolver.isReduced(assertion)
           || d_regexp_ccached.find(assertion) != d_regexp_ccached.end())
@@ -445,8 +444,7 @@ bool RegExpSolver::checkEqcInclusion(std::vector<Node>& mems)
         //  (not (str.in_re x R2))
         // where R2 is included in (re.++ (re.* R1) R2)). However, we cannot
         // mark the latter as reduced.
-        bool basisUnfolded =
-            d_esolver.isReduced(m1Neg ? m1 : m2);
+        bool basisUnfolded = d_esolver.isReduced(m1Neg ? m1 : m2);
         if (!basisUnfolded)
         {
           // Both regular expression memberships have positive polarity
@@ -456,7 +454,8 @@ bool RegExpSolver::checkEqcInclusion(std::vector<Node>& mems)
             {
               // ~str.in.re(x, R1) includes ~str.in.re(x, R2) --->
               //   mark ~str.in.re(x, R2) as reduced
-              d_im.markInactive(m2Lit, ExtReducedId::STRINGS_REGEXP_INCLUDE_NEG);
+              d_im.markInactive(m2Lit,
+                                ExtReducedId::STRINGS_REGEXP_INCLUDE_NEG);
               remove.insert(m2);
             }
             else
