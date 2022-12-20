@@ -905,13 +905,11 @@ std::string ExtfSolver::debugPrintModel()
 
 bool ExtfSolver::isReduced(const Node& n) const
 {
-  Assert(n.getKind() != NOT);
   return d_reduced.find(n) != d_reduced.end();
 }
 
 void ExtfSolver::markReduced(const Node& n)
 {
-  Assert(n.getKind() != NOT);
   d_reduced.insert(n);
 }
 
