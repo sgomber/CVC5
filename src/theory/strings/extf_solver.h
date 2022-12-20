@@ -123,7 +123,8 @@ class ExtfSolver : protected EnvObj
    * reduces some of the "easier" extended functions, and effort=2 reduces
    * the rest.
    */
-  void checkExtfReductions(int effort);
+  void checkExtfReductions(Theory::Effort e);
+  void checkExtfReductionsEager();
   /**
    * Return false if the above method has a reduction to send at full effort.
    */

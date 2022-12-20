@@ -57,16 +57,6 @@ class RegExpSolver : protected EnvObj
                SequencesStatistics& stats);
   ~RegExpSolver() {}
 
-  /**
-   * Check inclusions
-   */
-  void checkInclusions();
-  
-  /**
-   * Check evaluations
-   */
-  void checkEvaluations();
-
   /** check regular expression memberships
    *
    * This checks the satisfiability of all regular expression memberships
@@ -76,15 +66,23 @@ class RegExpSolver : protected EnvObj
    * FroCoS 2015.
    */
   void checkMemberships(Theory::Effort e);
-
-  /**
-   * Return false if the above method may send a lemma at full effort.
-   */
-  bool maybeHasModel(Theory::Effort e);
+  void checkMembershipsEager();
+  void checkMembershipsEval();
 
  private:
   /** compute asserted memberships */
   void computeAssertedMemberships();
+  /**
+   * Check inclusions.
+   * Assumes d_assertedMems has been computed.
+   */
+  void checkInclusions();
+  
+  /**
+   * Check evaluations
+   * Assumes d_assertedMems has been computed.
+   */
+  void checkEvaluations();
   /** check
    *
    * Tells this solver to check whether the regular expressions in mems

@@ -215,37 +215,16 @@ void RegExpSolver::checkMemberships(Theory::Effort e)
       return;
     }
   }
-  checkUnfold(d_assertedMems, e);
+  checkUnfold(e);
+}
+void RegExpSolver::checkMembershipsEager()
+{
+  // TODO
 }
 
-bool RegExpSolver::maybeHasModel(Theory::Effort e)
+void RegExpSolver::checkMembershipsEval()
 {
-  computeAssertedMemberships();
-  // under approximation: fail if there is an active membership which we
-  // have not processed
-  for (const std::pair<const Node, std::vector<Node>>& mp : d_assertedMems)
-  {
-    for (const Node& m : mp.second)
-    {
-      bool polarity = m.getKind() != NOT;
-      if (!shouldUnfold(e, polarity))
-      {
-        continue;
-      }
-      // if we've processed it, skip
-      if (d_esolver.isReduced(m))
-      {
-        continue;
-      }
-      Node atom = polarity ? m : m[0];
-      if (e == Theory::EFFORT_LAST_CALL && !d_esolver.isActiveInModel(atom))
-      {
-        continue;
-      }
-      return false;
-    }
-  }
-  return true;
+  // TODO
 }
 
 bool RegExpSolver::shouldUnfold(Theory::Effort e, bool pol) const
@@ -265,13 +244,12 @@ bool RegExpSolver::shouldUnfold(Theory::Effort e, bool pol) const
   return true;
 }
 
-void RegExpSolver::checkUnfold(const std::map<Node, std::vector<Node>>& mems,
-                               Theory::Effort e)
+void RegExpSolver::checkUnfold(Theory::Effort e)
 {
   Trace("regexp-process") << "Checking unfold ... " << std::endl;
   // get all memberships
   std::map<Node, Node> allMems;
-  for (const std::pair<const Node, std::vector<Node> >& mr : mems)
+  for (const std::pair<const Node, std::vector<Node> >& mr : d_assertedMems)
   {
     for (const Node& m : mr.second)
     {

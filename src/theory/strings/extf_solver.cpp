@@ -271,8 +271,15 @@ void ExtfSolver::doReduction(Node n, int pol)
   }
 }
 
-void ExtfSolver::checkExtfReductions(int effort)
+void ExtfSolver::checkExtfReductionsEager()
 {
+  // return value is ignored
+  checkExtfReductionsInternal(1, true);
+}
+
+void ExtfSolver::checkExtfReductions(Theory::Effort e)
+{
+  int effort = e==Theory::EFFORT_LAST_CALL ? 3 : 2;
   // return value is ignored
   checkExtfReductionsInternal(effort, true);
 }

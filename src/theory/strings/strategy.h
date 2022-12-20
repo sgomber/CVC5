@@ -58,7 +58,13 @@ enum InferStep
   // check register terms for normal forms
   CHECK_REGISTER_TERMS_NF,
   // check extended function reductions
+  CHECK_EXTF_REDUCTION_EAGER,
+  // check extended function reductions
   CHECK_EXTF_REDUCTION,
+  // check regular expression memberships
+  CHECK_MEMBERSHIP_EVAL,
+  // check regular expression memberships
+  CHECK_MEMBERSHIP_EAGER,
   // check regular expression memberships
   CHECK_MEMBERSHIP,
   // check cardinality
