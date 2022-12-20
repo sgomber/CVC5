@@ -136,6 +136,10 @@ class RegExpSolver : protected EnvObj
    * the given polarity at the given effort.
    */
   bool shouldUnfold(Theory::Effort e, bool pol) const;
+  /**
+   * do unfold
+   */
+  bool doUnfold(const Node& assertion);
   // Constants
   Node d_emptyString;
   Node d_emptyRegexp;

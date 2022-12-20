@@ -239,8 +239,11 @@ void RegExpSolver::checkMembershipsEager()
     Node r = d_state.getRepresentative(n);
     if (!r.isConst() || !r.getConst<bool>())
     {
+      // not asserted true
       continue;
     }
+    // unfold it
+    doUnfold(n);
   }
 }
 
@@ -345,46 +348,15 @@ void RegExpSolver::checkUnfold(Theory::Effort e)
       Trace("strings-regexp")
           << "Unroll/simplify membership of atomic term " << rep << std::endl;
       // if so, do simple unrolling
-      Trace("strings-regexp") << "Simplify on " << atom << std::endl;
-      Node conc = d_regexp_opr.simplify(atom, polarity);
-      Trace("strings-regexp") << "...finished, got " << conc << std::endl;
-      // if simplifying successfully generated a lemma
-      if (!conc.isNull())
+      if (doUnfold(assertion))
       {
-        std::vector<Node> iexp;
-        std::vector<Node> noExplain;
-        iexp.push_back(assertion);
-        noExplain.push_back(assertion);
-        Assert(atom.getKind() == STRING_IN_REGEXP);
-        if (polarity)
+        if (checkPol)
         {
-          d_statistics.d_regexpUnfoldingsPos << atom[1].getKind();
+          // Remember that we have unfolded a membership for x
+          // notice that we only do this here, after we have definitely
+          // added a lemma.
+          repUnfold.insert(rep);
         }
-        else
-        {
-          d_statistics.d_regexpUnfoldingsNeg << atom[1].getKind();
-        }
-        InferenceId inf = polarity ? InferenceId::STRINGS_RE_UNFOLD_POS
-                                   : InferenceId::STRINGS_RE_UNFOLD_NEG;
-        // in very rare cases, we may find out that the unfolding lemma
-        // for a membership is equivalent to true, in spite of the RE
-        // not being rewritten to true.
-        if (d_im.sendInference(iexp, noExplain, conc, inf))
-        {
-          if (checkPol)
-          {
-            // Remember that we have unfolded a membership for x
-            // notice that we only do this here, after we have definitely
-            // added a lemma.
-            repUnfold.insert(rep);
-          }
-        }
-        d_esolver.markReduced(assertion);
-      }
-      else
-      {
-        // otherwise we are incomplete
-        d_im.setModelUnsound(IncompleteId::STRINGS_REGEXP_NO_SIMPLIFY);
       }
     }
     if (d_state.isInConflict())
@@ -392,6 +364,47 @@ void RegExpSolver::checkUnfold(Theory::Effort e)
       break;
     }
   }
+}
+
+bool RegExpSolver::doUnfold(const Node& assertion)
+{
+  bool ret = false;
+  bool polarity = assertion.getKind() != NOT;
+  Node atom = polarity ? assertion : assertion[0];
+  Assert (atom.getKind()==STRING_IN_REGEXP);
+  Trace("strings-regexp") << "Simplify on " << atom << std::endl;
+  Node conc = d_regexp_opr.simplify(atom, polarity);
+  Trace("strings-regexp") << "...finished, got " << conc << std::endl;
+  // if simplifying successfully generated a lemma
+  if (!conc.isNull())
+  {
+    std::vector<Node> iexp;
+    std::vector<Node> noExplain;
+    iexp.push_back(assertion);
+    noExplain.push_back(assertion);
+    Assert(atom.getKind() == STRING_IN_REGEXP);
+    if (polarity)
+    {
+      d_statistics.d_regexpUnfoldingsPos << atom[1].getKind();
+    }
+    else
+    {
+      d_statistics.d_regexpUnfoldingsNeg << atom[1].getKind();
+    }
+    InferenceId inf = polarity ? InferenceId::STRINGS_RE_UNFOLD_POS
+                                : InferenceId::STRINGS_RE_UNFOLD_NEG;
+    // in very rare cases, we may find out that the unfolding lemma
+    // for a membership is equivalent to true, in spite of the RE
+    // not being rewritten to true.
+    ret = d_im.sendInference(iexp, noExplain, conc, inf);
+    d_esolver.markReduced(assertion);
+  }
+  else
+  {
+    // otherwise we are incomplete
+    d_im.setModelUnsound(IncompleteId::STRINGS_REGEXP_NO_SIMPLIFY);
+  }
+  return ret;
 }
 
 bool RegExpSolver::checkEqcInclusion(std::vector<Node>& mems)
