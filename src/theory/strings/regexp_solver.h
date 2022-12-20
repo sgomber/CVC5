@@ -141,9 +141,12 @@ class RegExpSolver : protected EnvObj
    * do unfold
    */
   bool doUnfold(const Node& assertion);
+  /** Get regular expression from */
+  Node getRegularExpressionFrom(const Node& n) const;
   // Constants
   Node d_emptyString;
   Node d_emptyRegexp;
+  Node d_sigmaStar;
   Node d_true;
   Node d_false;
   /** The solver state of the parent of this object */

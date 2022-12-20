@@ -47,6 +47,8 @@ RegExpSolver::RegExpSolver(Env& env,
 {
   d_emptyString = NodeManager::currentNM()->mkConst(cvc5::internal::String(""));
   d_emptyRegexp = NodeManager::currentNM()->mkNode(REGEXP_NONE);
+  d_sigmaStar = NodeManager::currentNM()->mkNode(REGEXP_STAR, NodeManager::currentNM()->mkNode(kind::REGEXP_ALLCHAR,
+                                               std::vector<Node>{}));
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
 }
@@ -98,6 +100,9 @@ void RegExpSolver::checkInclusions()
   {
     // copy the vector because it is modified in the call below
     std::vector<Node> mems2 = mr.second;
+    // insert the contains as well
+    std::vector<Node>& ctns = assertedCtns[mr.first];
+    mems2.insert(mems2.end(), ctns.begin(), ctns.end());
     Trace("regexp-process")
         << "Memberships(" << mr.first << ") = " << mr.second << std::endl;
     if (options().strings.stringRegexpInclusion && !checkEqcInclusion(mems2))
@@ -207,6 +212,7 @@ void RegExpSolver::checkMemberships(Theory::Effort e)
     // if we haven't checked evaluations, do it now, which will also compute
     // asserted memberhips
     checkMembershipsEval();
+    // if in conflict, we are done
     if (d_state.isInConflict())
     {
       return;
@@ -415,6 +421,26 @@ bool RegExpSolver::doUnfold(const Node& assertion)
   }
   return ret;
 }
+Node RegExpSolver::getRegularExpressionFrom(const Node& n) const
+{
+  if (n.getKind()==STRING_IN_REGEXP)
+  {
+    return n[1];
+  }
+  else if (n.getKind()==STRING_CONTAINS)
+  {
+    if (n[1].isConst())
+    {
+      NodeManager * nm = NodeManager::currentNM();
+      return nm->mkNode(REGEXP_CONCAT, d_sigmaStar, nm->mkNode(STRING_TO_REGEXP, n[1]), d_sigmaStar);
+    }
+  }
+  else
+  {
+    Assert(false);
+  }
+  return Node::null();
+}
 
 bool RegExpSolver::checkEqcInclusion(std::vector<Node>& mems)
 {
@@ -462,8 +488,10 @@ bool RegExpSolver::checkEqcInclusion(std::vector<Node>& mems)
         bool basisUnfolded = d_esolver.isReduced(m1Neg ? m1 : m2);
         if (!basisUnfolded)
         {
+          Node m1re = getRegularExpressionFrom(m1Lit);
+          Node m2re = getRegularExpressionFrom(m2Lit);
           // Both regular expression memberships have positive polarity
-          if (d_regexp_opr.regExpIncludes(m1Lit[1], m2Lit[1]))
+          if (!m1re.isNull() && !m2re.isNull() && d_regexp_opr.regExpIncludes(m1re, m2re))
           {
             if (m1Neg)
             {
@@ -490,7 +518,9 @@ bool RegExpSolver::checkEqcInclusion(std::vector<Node>& mems)
       {
         Node pos = m1Neg ? m2Lit : m1Lit;
         Node neg = m1Neg ? m1Lit : m2Lit;
-        if (d_regexp_opr.regExpIncludes(neg[1], pos[1]))
+        Node pre = getRegularExpressionFrom(pos);
+        Node nre = getRegularExpressionFrom(neg);
+        if (!pre.isNull() && !nre.isNull() && d_regexp_opr.regExpIncludes(nre, pre))
         {
           // We have a conflict because we have a case where str.in.re(x, R1)
           // and ~str.in.re(x, R2) but R2 includes R1, so there is no
