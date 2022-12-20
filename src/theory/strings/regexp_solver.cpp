@@ -46,7 +46,6 @@ RegExpSolver::RegExpSolver(Env& env,
       d_csolver(cs),
       d_esolver(es),
       d_statistics(stats),
-      d_regexp_ccached(context()),
       d_regexp_opr(env, tr.getSkolemCache())
 {
   d_emptyString = NodeManager::currentNM()->mkConst(cvc5::internal::String(""));
@@ -122,8 +121,7 @@ bool RegExpSolver::maybeHasModel(Theory::Effort e)
         continue;
       }
       // if we've processed it, skip
-      if (d_esolver.isReduced(m)
-          || d_regexp_ccached.find(m) != d_regexp_ccached.end())
+      if (d_esolver.isReduced(m))
       {
         continue;
       }
@@ -223,10 +221,8 @@ void RegExpSolver::checkUnfold(const std::map<Node, std::vector<Node>>& mems,
       // check regular expression membership
       Trace("regexp-debug")
           << "Check : " << assertion << " " << (d_esolver.isReduced(assertion))
-          << " " << (d_regexp_ccached.find(assertion) == d_regexp_ccached.end())
           << std::endl;
-      if (d_esolver.isReduced(assertion)
-          || d_regexp_ccached.find(assertion) != d_regexp_ccached.end())
+      if (d_esolver.isReduced(assertion))
       {
         continue;
       }
@@ -289,7 +285,7 @@ void RegExpSolver::checkUnfold(const std::map<Node, std::vector<Node>>& mems,
           if (tmp.getConst<bool>() == polarity)
           {
             // it is satisfied in this SAT context
-            d_regexp_ccached.insert(assertion);
+            d_im.markInactive(assertion, ExtReducedId::UNKNOWN);
             continue;
           }
           else
@@ -634,12 +630,12 @@ bool RegExpSolver::checkPDerivative(
         iexp.insert(iexp.end(), noExplain.begin(), noExplain.end());
         d_im.sendInference(iexp, noExplain, exp, InferenceId::STRINGS_RE_DELTA);
         addedLemma = true;
-        d_regexp_ccached.insert(atom);
+        d_im.markInactive(atom, ExtReducedId::UNKNOWN);
         return false;
       }
       case 1:
       {
-        d_regexp_ccached.insert(atom);
+        d_im.markInactive(atom, ExtReducedId::UNKNOWN);
         break;
       }
       case 2:
@@ -654,7 +650,6 @@ bool RegExpSolver::checkPDerivative(
         iexp.insert(iexp.end(), noExplain.begin(), noExplain.end());
         d_im.sendInference(iexp, noExplain, d_false, InferenceId::STRINGS_RE_DELTA_CONF);
         addedLemma = true;
-        d_regexp_ccached.insert(atom);
         return false;
       }
       default:
@@ -667,7 +662,7 @@ bool RegExpSolver::checkPDerivative(
     if (deriveRegExp(x, r, atom, nf_exp))
     {
       addedLemma = true;
-      d_regexp_ccached.insert(atom);
+      d_im.markInactive(atom, ExtReducedId::UNKNOWN);
       return false;
     }
   }
