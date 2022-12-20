@@ -100,8 +100,7 @@ class RegExpSolver : protected EnvObj
    * discovered.
    * (2) checkUnfold, which unfolds regular expression memberships as necessary
    */
-  void checkUnfold(const std::map<Node, std::vector<Node>>& mems,
-                   Theory::Effort effort);
+  void checkUnfold(Theory::Effort effort);
   /**
    * Check memberships in equivalence class for regular expression
    * inclusion.
