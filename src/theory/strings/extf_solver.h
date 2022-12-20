@@ -124,6 +124,10 @@ class ExtfSolver : protected EnvObj
    * the rest.
    */
   void checkExtfReductions(int effort);
+  /**
+   * Return false if the above method has a reduction to send at full effort.
+   */
+  bool maybeHasModel(Theory::Effort e);
   /** get preprocess module */
   StringsPreprocess* getPreprocess() { return &d_preproc; }
 
@@ -176,6 +180,11 @@ class ExtfSolver : protected EnvObj
    * string.
    */
   std::string debugPrintModel();
+
+  /** is reduced? */
+  bool isReduced(const Node& n) const;
+  /** mark reduced */
+  void markReduced(const Node& n);
 
  private:
   /**

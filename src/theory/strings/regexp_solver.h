@@ -57,6 +57,16 @@ class RegExpSolver : protected EnvObj
                SequencesStatistics& stats);
   ~RegExpSolver() {}
 
+  /**
+   * Check inclusions
+   */
+  void checkInclusions();
+  
+  /**
+   * Check evaluations
+   */
+  void checkEvaluations();
+
   /** check regular expression memberships
    *
    * This checks the satisfiability of all regular expression memberships
@@ -65,9 +75,16 @@ class RegExpSolver : protected EnvObj
    * for Regular Membership and Length Constraints over Unbounded Strings",
    * FroCoS 2015.
    */
-  void checkMemberships(int effort);
+  void checkMemberships(Theory::Effort e);
+
+  /**
+   * Return false if the above method may send a lemma at full effort.
+   */
+  bool maybeHasModel(Theory::Effort e);
 
  private:
+  /** compute asserted memberships */
+  void computeAssertedMemberships();
   /** check
    *
    * Tells this solver to check whether the regular expressions in mems
@@ -85,8 +102,8 @@ class RegExpSolver : protected EnvObj
    * discovered.
    * (2) checkUnfold, which unfolds regular expression memberships as necessary
    */
-  bool checkInclInter(const std::map<Node, std::vector<Node>>& mems);
-  void checkUnfold(const std::map<Node, std::vector<Node>>& mems, int effort);
+  void checkUnfold(const std::map<Node, std::vector<Node>>& mems,
+                   Theory::Effort effort);
   /**
    * Check memberships in equivalence class for regular expression
    * inclusion.
@@ -117,6 +134,11 @@ class RegExpSolver : protected EnvObj
    * contains (xi in Ri) and (xj in Rj) and intersect(xi,xj) is empty.
    */
   bool checkEqcIntersect(const std::vector<Node>& mems);
+  /**
+   * Return true if we should process regular expression unfoldings with
+   * the given polarity at the given effort.
+   */
+  bool shouldUnfold(Theory::Effort e, bool pol) const;
   // Constants
   Node d_emptyString;
   Node d_emptyRegexp;
@@ -145,22 +167,14 @@ class RegExpSolver : protected EnvObj
    * explanation is nf_exp.
    */
   bool checkPDerivative(
-      Node x, Node r, Node atom, bool& addedLemma, std::vector<Node>& nf_exp);
-  Node getMembership(Node n, bool isPos, unsigned i);
-  unsigned getNumMemberships(Node n, bool isPos);
+      Node x, Node r, Node atom, std::vector<Node>& nf_exp);
   cvc5::internal::String getHeadConst(Node x);
   bool deriveRegExp(Node x, Node r, Node atom, std::vector<Node>& ant);
   Node getNormalSymRegExp(Node r, std::vector<Node>& nf_exp);
-  // regular expression memberships
-  NodeSet d_regexp_ucached;
-  NodeSet d_regexp_ccached;
-  // semi normal forms for symbolic expression
-  std::map<Node, Node> d_nf_regexps;
-  std::map<Node, std::vector<Node> > d_nf_regexps_exp;
-  // processed memberships
-  NodeSet d_processed_memberships;
   /** regular expression operation module */
   RegExpOpr d_regexp_opr;
+  /** Asserted memberships, cached during a full effort check */
+  std::map<Node, std::vector<Node>> d_assertedMems;
 }; /* class TheoryStrings */
 
 }  // namespace strings
