@@ -90,7 +90,9 @@ bool ExtfSolver::shouldDoReduction(int effort, Node n, int pol)
     Trace("strings-extf-debug") << "...skip due to model active" << std::endl;
     return false;
   }
-  if (d_reduced.find(n)!=d_reduced.end())
+  // check with negation
+  Node nn = pol==-1 ? n.notNode() : n;
+  if (d_reduced.find(nn)!=d_reduced.end())
   {
     // already sent a reduction lemma
     Trace("strings-extf-debug") << "...skip due to reduced" << std::endl;
@@ -141,7 +143,7 @@ bool ExtfSolver::shouldDoReduction(int effort, Node n, int pol)
     }
   }
   else if (k == SEQ_UNIT || k == STRING_UNIT || k == STRING_IN_REGEXP
-           || k == STRING_TO_CODE || (k == STRING_CONTAINS && pol == 0))
+           || k == STRING_TO_CODE || (n.getType().isBoolean() && pol == 0))
   {
     // never necessary to reduce seq.unit. str.to_code or str.in_re here.
     // also, we do not reduce str.contains that are preregistered but not
@@ -209,7 +211,7 @@ void ExtfSolver::doReduction(Node n, int pol)
       return;
     }
   }
-  Node c_n = pol == -1 ? n.negate() : n;
+  Node nn = pol == -1 ? n.notNode() : n;
   Trace("strings-process-debug")
       << "Process reduction for " << n << ", pol = " << pol << std::endl;
   if (k == STRING_CONTAINS && pol == 1)
@@ -230,8 +232,8 @@ void ExtfSolver::doReduction(Node n, int pol)
         << std::endl;
     Trace("strings-red-lemma") << "Reduction (positive contains) lemma : " << n
                                << " => " << eq << std::endl;
-    // context-dependent because it depends on the polarity of n itself
-    d_extt.markInactive(n, ExtReducedId::STRINGS_POS_CTN, true);
+    // reduced positively
+    d_reduced.insert(nn);
   }
   else
   {
@@ -255,7 +257,7 @@ void ExtfSolver::doReduction(Node n, int pol)
       Trace("strings-extf-debug")
           << "  resolve extf : " << n << " based on (trivial) reduction."
           << std::endl;
-      d_reduced.insert(n);
+      d_reduced.insert(nn);
     }
     else
     {
@@ -266,7 +268,7 @@ void ExtfSolver::doReduction(Node n, int pol)
       d_im.sendInference(ii, true);
       Trace("strings-extf-debug")
           << "  resolve extf : " << n << " based on reduction." << std::endl;
-      d_reductionWaitingMap[nnlem] = n;
+      d_reductionWaitingMap[nnlem] = nn;
     }
   }
 }
