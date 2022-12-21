@@ -100,7 +100,9 @@ bool ExtfSolver::shouldDoReduction(int effort, Node n, int pol)
   }
   Kind k = n.getKind();
   // determine if it is the right effort
-  if (k == STRING_SUBSTR || (options().strings.stringRegexpPosConcatEager && k == STRING_CONTAINS && pol == 1))
+  if (k == STRING_SUBSTR
+      || (options().strings.stringRegexpPosConcatEager && k == STRING_CONTAINS
+          && pol == 1))
   {
     // we reduce these semi-eagerly, at effort 1
     return (effort == 1);
@@ -151,7 +153,7 @@ bool ExtfSolver::shouldDoReduction(int effort, Node n, int pol)
       return false;
     }
     else if ((k == STRING_UPDATE || k == STRING_SUBSTR)
-              && d_termReg.isHandledUpdateOrSubstr(n))
+             && d_termReg.isHandledUpdateOrSubstr(n))
     {
       // don't need to reduce certain seq.update
       // don't need to reduce certain seq.extract with length 1
@@ -159,7 +161,7 @@ bool ExtfSolver::shouldDoReduction(int effort, Node n, int pol)
     }
   }
   // all other operators reduce at level 2
-  return (effort==2);
+  return (effort == 2);
 }
 
 void ExtfSolver::doReduction(Node n, int pol)
