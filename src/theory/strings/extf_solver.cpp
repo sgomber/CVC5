@@ -111,31 +111,7 @@ bool ExtfSolver::shouldDoReduction(int effort, Node n, int pol)
   {
     // negative contains reduces at level 2, or 3 if guessing model
     int reffort = options().strings.stringModelBasedReduction ? 3 : 2;
-    if (effort == reffort)
-    {
-      Node x = n[0];
-      Node s = n[1];
-      std::vector<Node> lexp;
-      Node lenx = d_state.getLength(x, lexp);
-      Node lens = d_state.getLength(s, lexp);
-      if (d_state.areEqual(lenx, lens))
-      {
-        // We can reduce negative contains to a disequality when lengths are
-        // equal. In other words, len( x ) = len( s ) implies
-        //   ~contains( x, s ) reduces to x != s.
-        if (d_state.areDisequal(x, s))
-        {
-          Trace("strings-extf-debug")
-              << "  resolve extf : " << n
-              << " based on equal lengths disequality." << std::endl;
-          // this depends on the current assertions, so this
-          // inference is context-dependent
-          d_extt.markInactive(n, ExtReducedId::STRINGS_NEG_CTN_DEQ, true);
-        }
-      }
-      return true;
-    }
-    return false;
+    return (effort == reffort);
   }
   else if (k == SEQ_UNIT || k == STRING_UNIT || k == STRING_IN_REGEXP
            || k == STRING_TO_CODE || (n.getType().isBoolean() && pol == 0))
