@@ -209,6 +209,10 @@ void RegExpSolver::checkMemberships(Theory::Effort e)
   else
   {
     checkEvaluations();
+    if (d_state.isInConflict())
+    {
+      return;
+    }
   }
   checkUnfold(d_assertedMems, e);
 }
