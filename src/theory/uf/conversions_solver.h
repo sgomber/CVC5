@@ -65,6 +65,8 @@ class ConversionsSolver : protected EnvObj
   TheoryInferenceManager& d_im;
   /** Conversion terms that have been registered */
   NodeList d_preRegistered;
+  /** Conversion terms that have been registered */
+  NodeSet d_registered;
   /** Conversion terms that have been given reduction lemmas */
   NodeSet d_reduced;
   /** Check whether the BV conversion term n should be reduced */

@@ -19,6 +19,7 @@
 #include "theory/theory_inference_manager.h"
 #include "theory/theory_model.h"
 #include "theory/theory_state.h"
+#include "theory/bv/theory_bv_utils.h"
 
 using namespace cvc5::internal::kind;
 
@@ -32,7 +33,8 @@ ConversionsSolver::ConversionsSolver(Env& env,
     : EnvObj(env),
       d_state(state),
       d_im(im),
-      d_preRegistered(userContext()),
+      d_preRegistered(context()),
+      d_registered(userContext()),
       d_reduced(userContext())
 {
 }
@@ -42,6 +44,17 @@ ConversionsSolver::~ConversionsSolver() {}
 void ConversionsSolver::preRegisterTerm(TNode term)
 {
   d_preRegistered.push_back(term);
+  if (d_registered.find(term)==d_registered.end())
+  {
+    d_registered.insert(term);
+    NodeManager * nm = NodeManager::currentNM();
+    Node lb = nm->mkConstInt(Rational(0));
+    const unsigned size = bv::utils::getSize(term[0]);
+    Node ub = nm->mkConstInt(Rational(Integer(2).pow(size), Integer(1)));
+    Node lem = nm->mkNode(AND, nm->mkNode(LEQ, lb, term), nm->mkNode(LT, term, ub));
+    // UF_ARITH_BV_CONV_BOUND
+    d_im.lemma(lem, InferenceId::UNKNOWN);
+  }
 }
 
 void ConversionsSolver::check()
