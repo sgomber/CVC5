@@ -98,7 +98,7 @@ class SymbolManager::Implementation
   const std::string& getLastSynthName() const;
   /** get the oracle binary caller */
   OracleBinaryCaller& getOracleBinaryCaller(Solver* slv,
-                                            SymbolManager * sm,
+                                            SymbolManager* sm,
                                             const std::string& name);
 
  private:
@@ -294,7 +294,7 @@ const std::string& SymbolManager::Implementation::getLastSynthName() const
 }
 
 OracleBinaryCaller& SymbolManager::Implementation::getOracleBinaryCaller(
-    Solver* slv, SymbolManager * sm, const std::string& name)
+    Solver* slv, SymbolManager* sm, const std::string& name)
 {
   std::map<std::string, std::unique_ptr<OracleBinaryCaller>>::iterator it =
       d_oracleBinCalls.find(name);

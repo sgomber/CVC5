@@ -21,7 +21,7 @@
 #include "api/cpp/cvc5.h"
 
 namespace cvc5 {
-  
+
 namespace parser {
 class SymbolManager;
 }
@@ -29,8 +29,13 @@ class SymbolManager;
 class OracleBinaryCaller
 {
  public:
-  OracleBinaryCaller(Solver* slv, parser::SymbolManager* sm, std::string binName)
-      : d_slv(slv), d_sm(sm), d_binaryName(binName), d_parseStreamName("oracle_output_" + binName)
+  OracleBinaryCaller(Solver* slv,
+                     parser::SymbolManager* sm,
+                     std::string binName)
+      : d_slv(slv),
+        d_sm(sm),
+        d_binaryName(binName),
+        d_parseStreamName("oracle_output_" + binName)
   {
   }
   /** Run */
