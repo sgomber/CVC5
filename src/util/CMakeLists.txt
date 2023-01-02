@@ -93,10 +93,6 @@ libcvc5_add_sources(
   uninterpreted_sort_value.h
   utility.cpp
   utility.h
-  miniParser/miniParser.cpp
-  miniParser/miniParser.h
-  miniParser/tokenizer.cpp
-  miniParser/tokenizer.h
 )
 
 if(CVC5_USE_CLN_IMP)

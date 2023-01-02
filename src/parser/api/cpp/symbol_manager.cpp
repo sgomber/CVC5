@@ -124,7 +124,6 @@ class SymbolManager::Implementation
   CDO<bool> d_hasPushedScope;
   /** The last abduct or interpolant to synthesize name */
   CDO<std::string> d_lastSynthName;
-  //!!!!!!!! temporary
   /** Map binary names to oracle binary callers */
   std::map<std::string, std::unique_ptr<OracleBinaryCaller>> d_oracleBinCalls;
 };
