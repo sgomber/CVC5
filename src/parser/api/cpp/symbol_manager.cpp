@@ -98,6 +98,7 @@ class SymbolManager::Implementation
   const std::string& getLastSynthName() const;
   /** get the oracle binary caller */
   OracleBinaryCaller& getOracleBinaryCaller(Solver* slv,
+                                            SymbolManager * sm,
                                             const std::string& name);
 
  private:
@@ -293,7 +294,7 @@ const std::string& SymbolManager::Implementation::getLastSynthName() const
 }
 
 OracleBinaryCaller& SymbolManager::Implementation::getOracleBinaryCaller(
-    Solver* slv, const std::string& name)
+    Solver* slv, SymbolManager * sm, const std::string& name)
 {
   std::map<std::string, std::unique_ptr<OracleBinaryCaller>>::iterator it =
       d_oracleBinCalls.find(name);
@@ -301,7 +302,7 @@ OracleBinaryCaller& SymbolManager::Implementation::getOracleBinaryCaller(
   {
     return *it->second.get();
   }
-  d_oracleBinCalls[name].reset(new OracleBinaryCaller(slv, name));
+  d_oracleBinCalls[name].reset(new OracleBinaryCaller(slv, sm, name));
   return *d_oracleBinCalls[name].get();
 }
 
@@ -462,7 +463,7 @@ const std::string& SymbolManager::getLastSynthName() const
 OracleBinaryCaller& SymbolManager::getOracleBinaryCaller(
     const std::string& name)
 {
-  return d_implementation->getOracleBinaryCaller(d_solver, name);
+  return d_implementation->getOracleBinaryCaller(d_solver, this, name);
 }
 
 void SymbolManager::reset() { d_implementation->reset(); }

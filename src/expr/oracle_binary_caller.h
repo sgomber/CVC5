@@ -21,13 +21,16 @@
 #include "api/cpp/cvc5.h"
 
 namespace cvc5 {
+  
+namespace parser {
+class SymbolManager;
+}
 
-//!!!!!!!!!!!! TEMPORARY d_slv not necessary anymore
 class OracleBinaryCaller
 {
  public:
-  OracleBinaryCaller(Solver* slv, std::string binName)
-      : d_slv(slv), d_binaryName(binName)
+  OracleBinaryCaller(Solver* slv, parser::SymbolManager* sm, std::string binName)
+      : d_slv(slv), d_sm(sm), d_binaryName(binName), d_parseStreamName("oracle_output_" + binName)
   {
   }
   /** Run */
@@ -38,8 +41,12 @@ class OracleBinaryCaller
  private:
   /** pointer to solver */
   Solver* d_slv;
+  /** pointer to symbol manager */
+  parser::SymbolManager* d_sm;
   /** binary name */
   std::string d_binaryName;
+  /** name for parse errors */
+  std::string d_parseStreamName;
 };
 
 }  // namespace cvc5

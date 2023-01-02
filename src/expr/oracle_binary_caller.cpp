@@ -17,9 +17,8 @@
 
 #include <sstream>
 
-#include "options/base_options.h"
-#include "util/miniParser/miniParser.h"
 #include "util/run.h"
+#include "parser/input_parser.h"
 
 namespace cvc5 {
 
@@ -43,14 +42,12 @@ std::vector<Term> OracleBinaryCaller::runOracle(const std::vector<Term>& input)
 
   std::istringstream oracle_response_istream(stdout_stream.str());
 
-  // Parse response from the binary into a Node. The response from the binary
-  // should be a string that can be parsed as a (tuple of) terms in the smt2
-  // format.
-  internal::Node response =
-      internal::mini_parsert(oracle_response_istream).expression();
-
-  std::vector<Term> output =
-      Term::nodeVectorToTerms(internal::NodeManager::currentNM(), {response});
+  std::vector<Term> output;
+  parser::InputParser iparser(d_slv, d_sm, true);
+  iparser.setStreamInput(d_slv->getOption("input-language"), oracle_response_istream, d_parseStreamName);
+  // currently assumes a single output
+  Term t = iparser.nextExpression();
+  output.push_back(t);
   return output;
 }
 
