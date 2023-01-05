@@ -396,7 +396,7 @@ bool RegExpEntail::isConstRegExp(TNode t)
 }
 bool RegExpEntail::testConstStringInRegExp(String& s, TNode r)
 {
-  UnsignedPairCache cache;
+  TestRegExpCache cache;
   return testConstStringInRegExpInternal(s, r, 0, s.size(), cache);
 }
 
@@ -404,7 +404,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
                                                    TNode r,
                                                    unsigned istart,
                                                    unsigned iend,
-                                                   UnsignedPairCache& cache)
+                                                   TestRegExpCache& cache)
 {
   Assert(istart <= iend);
   Assert(iend <= s.size());
@@ -457,6 +457,9 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
           {
             for (vec_k[i] = vec_k[i] + 1; vec_k[i] <= left; ++vec_k[i])
             {
+              //unsigned istartNew = istart + start;
+              //unsigned len = vec_k[i]<0 ? 0 : (vec_k[i]>(iend-istartNew) ? (iend-istartNew) : vec_k[i]);
+              //if (testConstStringInRegExpInternal(s, r[i], istartNew, istartNew+len, cache))
               String t = s.substr(istart + start, vec_k[i]);
               if (testConstStringInRegExpInternal(t, r[i], 0, t.size(), cache))
               {
@@ -655,6 +658,8 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
       break;
     default: Assert(!utils::isRegExpKind(k)); break;
   }
+  std::tuple<Node, unsigned, unsigned> key(r, istart, iend);
+  cache[key] = ret;
   return ret;
 }
 
