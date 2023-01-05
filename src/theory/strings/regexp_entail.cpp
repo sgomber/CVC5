@@ -415,7 +415,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
   {
     case STRING_TO_REGEXP:
     {
-      String s2 = s.substr(index_start, index_end - index_start);
+      String s2 = s.substr(index_start, s.size() - index_start);
       if (r[0].isConst())
       {
         return (s2 == r[0].getConst<String>());
