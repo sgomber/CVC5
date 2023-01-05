@@ -405,9 +405,10 @@ bool RegExpEntail::testConstStringInRegExpInternal(
 {
   Assert(istart <= iend);
   Assert(iend <= s.size());
-  Trace("regexp-debug") << "Checking " << s << " in " << r << ", starting at "
-                        << istart << std::endl;
+  Trace("regexp-debug") << "Checking " << s << " in " << r << ", start/end at "
+                        << istart << "/" << iend << std::endl;
   Assert(!r.isVar());
+  std::tuple<Node, unsigned, unsigned> key(r, istart, iend);
   Kind k = r.getKind();
   bool ret = false;
   switch (k)
@@ -454,13 +455,11 @@ bool RegExpEntail::testConstStringInRegExpInternal(
           {
             for (vec_k[i] = vec_k[i] + 1; vec_k[i] <= left; ++vec_k[i])
             {
-              // unsigned istartNew = istart + start;
-              // unsigned len = vec_k[i]<0 ? 0 : (vec_k[i]>(iend-istartNew) ?
-              // (iend-istartNew) : vec_k[i]); if
-              // (testConstStringInRegExpInternal(s, r[i], istartNew,
-              // istartNew+len, cache))
-              String t = s.substr(istart + start, vec_k[i]);
-              if (testConstStringInRegExpInternal(t, r[i], 0, t.size(), cache))
+              unsigned istartNew = istart + start;
+              istartNew = istartNew>iend ? iend : istartNew;
+              unsigned len = vec_k[i]<0 ? 0 : (vec_k[i]>(int)(iend-istartNew) ?
+              (iend-istartNew) : vec_k[i]);
+              if (testConstStringInRegExpInternal(s, r[i], istartNew, istartNew+len, cache))
               {
                 start += vec_k[i];
                 left -= vec_k[i];
@@ -561,7 +560,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(
       {
         unsigned a = r[0].getConst<String>().front();
         unsigned b = r[1].getConst<String>().front();
-        unsigned c = s.back();
+        unsigned c = s.getVec()[istart];
         ret = (a <= c && c <= b);
       }
       // otherwise, ret is false
@@ -657,7 +656,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(
       break;
     default: Assert(!utils::isRegExpKind(k)); break;
   }
-  std::tuple<Node, unsigned, unsigned> key(r, istart, iend);
+  Trace("regexp-debug") << "...return " << ret << std::endl;
   cache[key] = ret;
   return ret;
 }
