@@ -469,7 +469,6 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
               }
             }
           }
-
           if (flag)
           {
             --i;
@@ -531,8 +530,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
         // ret is false initially
         for (unsigned i = index_end - index_start; i > 0; --i)
         {
-          String t = s.substr(index_start, i);
-          if (testConstStringInRegExpInternal(t, r[0], 0, t.size(), cache))
+          if (testConstStringInRegExpInternal(s, r[0], index_start, index_start+i, cache))
           {
             if (index_start + i == index_end
                 || testConstStringInRegExpInternal(
