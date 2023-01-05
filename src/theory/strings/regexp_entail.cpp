@@ -592,8 +592,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
           uint32_t u = r[2].getConst<Rational>().getNumerator().toUnsignedInt();
           for (unsigned len = index_end - index_start; len >= 1; len--)
           {
-            String t = s.substr(index_start, len);
-            if (testConstStringInRegExpInternal(t, r[0], 0, t.size(), cache))
+            if (testConstStringInRegExpInternal(s, r[0], index_start, index_start+len, cache))
             {
               if (len + index_start == index_end)
               {
@@ -636,8 +635,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
           {
             for (unsigned len = 1; len <= index_end - index_start; len++)
             {
-              String t = s.substr(index_start, len);
-              if (testConstStringInRegExpInternal(t, r[0], 0, t.size(), cache))
+              if (testConstStringInRegExpInternal(s, r[0], index_start, index_start+len, cache))
               {
                 Node num2 = nm->mkConstInt(Rational(l - 1));
                 Node r2 = nm->mkNode(REGEXP_LOOP, r[0], num2, num2);
