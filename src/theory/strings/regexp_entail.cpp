@@ -407,7 +407,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
                                                    UnsignedPairCache& cache)
 {
   Assert(index_start <= index_end);
-  Assert(index_end<=s.size());
+  Assert(index_end <= s.size());
   Trace("regexp-debug") << "Checking " << s << " in " << r << ", starting at "
                         << index_start << std::endl;
   Assert(!r.isVar());
@@ -553,7 +553,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
     case REGEXP_NONE:
       // ret is false
       break;
-    case REGEXP_ALLCHAR: 
+    case REGEXP_ALLCHAR:
       // ret is true if we contain exactly one character
       ret = (index_end == index_start + 1);
       break;
