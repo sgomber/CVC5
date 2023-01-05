@@ -25,13 +25,15 @@ namespace strings {
 
 class NfaState
 {
-public:
+ public:
   /** maps single character RE to children */
   std::map<Node, std::vector<NfaState*>> d_children;
-  
-  static NfaState* construct(Node r, NfaState* accept, std::vector<std::shared_ptr<NfaState>>& scache)
+
+  static NfaState* construct(Node r,
+                             NfaState* accept,
+                             std::vector<std::shared_ptr<NfaState>>& scache)
   {
-    NfaState * rs = constructInternal(r, scache);
+    NfaState* rs = constructInternal(r, scache);
     rs->connectTo(accept);
     return rs;
   }
@@ -39,19 +41,20 @@ public:
    * Returns the NFA for regular expression r, whose dangling arrows are in
    * d_arrows of the returned NfaState.
    */
-  static NfaState* constructInternal(Node r, std::vector<std::shared_ptr<NfaState>>& scache)
+  static NfaState* constructInternal(
+      Node r, std::vector<std::shared_ptr<NfaState>>& scache)
   {
     Kind k = r.getKind();
     // Concatenation does not introduce a new state, instead returns the
     // state of the first child.
-    if (k==REGEXP_CONCAT)
+    if (k == REGEXP_CONCAT)
     {
-      NfaState * first = nullptr;
-      NfaState * curr = nullptr;
+      NfaState* first = nullptr;
+      NfaState* curr = nullptr;
       for (const Node& rc : r)
       {
-        NfaState * rcs = constructInternal(rc, scache);
-        if (first==nullptr)
+        NfaState* rcs = constructInternal(rc, scache);
+        if (first == nullptr)
         {
           first = rcs;
           curr = first;
@@ -63,7 +66,7 @@ public:
         curr = rcs;
       }
       // should have had 2+ arguments
-      Assert (curr!=first && curr!=nullptr && first!=nullptr);
+      Assert(curr != first && curr != nullptr && first != nullptr);
       // copy arrows from last to first
       first->d_arrows = curr->d_arrows;
       curr->d_arrows.clear();
@@ -72,13 +75,13 @@ public:
     // Otherwise allocate a state.
     NfaState* s = allocateState(scache);
     std::vector<std::pair<NfaState*, Node>>& sarrows = s->d_arrows;
-    switch(k)
+    switch (k)
     {
       case STRING_TO_REGEXP:
       {
-        Assert (r[0].isConst());
+        Assert(r[0].isConst());
         const String& str = r[0].getConst<String>();
-        if (str.size()==0)
+        if (str.size() == 0)
         {
           // NOTE: does this ever happen in this fragment?
           sarrows.emplace_back(s, Node::null());
@@ -86,69 +89,66 @@ public:
         else
         {
           const std::vector<unsigned>& vec = str.getVec();
-          NfaState * curr = s;
-          NodeManager * nm = NodeManager::currentNM();
-          for (size_t i=0, nvec = vec.size(); i<nvec; i++)
+          NfaState* curr = s;
+          NodeManager* nm = NodeManager::currentNM();
+          for (size_t i = 0, nvec = vec.size(); i < nvec; i++)
           {
             std::vector<unsigned> charVec{vec[i]};
             Node nextChar = nm->mkConst(String(charVec));
-            if (i+1==vec.size())
+            if (i + 1 == vec.size())
             {
               sarrows.emplace_back(curr, nextChar);
             }
             else
             {
-              NfaState * next = allocateState(scache);
+              NfaState* next = allocateState(scache);
               curr->d_children[nextChar].push_back(next);
             }
           }
         }
       }
-        break;
+      break;
       case REGEXP_ALLCHAR:
-      case REGEXP_RANGE:
-        sarrows.emplace_back(s, r);
-        break;
+      case REGEXP_RANGE: sarrows.emplace_back(s, r); break;
       case REGEXP_UNION:
       {
         // take union of arrows
         std::vector<NfaState*>& schildren = s->d_children[Node::null()];
         for (const Node& rc : r)
         {
-          NfaState * rcs = constructInternal(rc, scache);
+          NfaState* rcs = constructInternal(rc, scache);
           schildren.push_back(rcs);
           std::vector<std::pair<NfaState*, Node>>& rcsarrows = rcs->d_arrows;
           sarrows.insert(sarrows.end(), rcsarrows.begin(), rcsarrows.end());
           rcsarrows.clear();
         }
       }
-        break;
+      break;
       case REGEXP_STAR:
       {
-        NfaState * body = constructInternal(r[0], scache);
+        NfaState* body = constructInternal(r[0], scache);
         s->d_children[Node::null()].push_back(body);
         // loops back to this state
         body->connectTo(s);
         // skip moves on
         sarrows.emplace_back(s, Node::null());
       }
-        break;
-      default:
-        Unreachable() << "Unknown regular expression " << r;
-        break;
+      break;
+      default: Unreachable() << "Unknown regular expression " << r; break;
     }
     return s;
   }
-private:
+
+ private:
   void connectTo(NfaState* s)
   {
-    for(std::pair<NfaState*, Node>& a : d_arrows)
+    for (std::pair<NfaState*, Node>& a : d_arrows)
     {
       a.first->d_children[a.second].push_back(s);
     }
     d_arrows.clear();
   }
-  static NfaState * allocateState(std::vector<std::shared_ptr<NfaState>>& scache)
+  static NfaState* allocateState(std::vector<std::shared_ptr<NfaState>>& scache)
   {
     std::shared_ptr<NfaState> ret = std::make_shared<NfaState>();
     scache.push_back(ret);
@@ -163,8 +163,7 @@ bool RegExpEval::evalMembership(String& s, const Node& r) const
   // TODO: assert no intersection, complement, or non-constant.
   NfaState accept;
   std::vector<std::shared_ptr<NfaState>> scache;
-  NfaState * rs = NfaState::construct(r, &accept, scache);
-  
+  NfaState* rs = NfaState::construct(r, &accept, scache);
 
   return false;
 }

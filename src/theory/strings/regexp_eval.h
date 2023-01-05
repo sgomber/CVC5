@@ -18,8 +18,8 @@
 #ifndef CVC5__THEORY__STRINGS__REGEXP_EVAL_H
 #define CVC5__THEORY__STRINGS__REGEXP_EVAL_H
 
-#include "util/string.h"
 #include "expr/node.h"
+#include "util/string.h"
 
 namespace cvc5::internal {
 namespace theory {
@@ -27,9 +27,10 @@ namespace strings {
 
 class RegExpEval
 {
-public:
+ public:
   bool evalMembership(String& s, const Node& r) const;
-private:
+
+ private:
   /** */
 };
 

@@ -408,7 +408,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(
   Assert(!r.isVar());
   std::tuple<Node, unsigned, unsigned> key(r, istart, iend);
   TestRegExpCache::iterator it = cache.find(key);
-  if (it!=cache.end())
+  if (it != cache.end())
   {
     return it->second;
   }
