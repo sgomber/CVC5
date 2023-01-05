@@ -485,8 +485,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
         ret = true;
         for (const Node& ri : r)
         {
-          if (!testConstStringInRegExpInternal(
-                  s, ri, istart, iend, cache))
+          if (!testConstStringInRegExpInternal(s, ri, istart, iend, cache))
           {
             ret = false;
             break;
@@ -500,8 +499,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
       // ret is false initially
       for (const Node& ri : r)
       {
-        if (testConstStringInRegExpInternal(
-                s, ri, istart, iend, cache))
+        if (testConstStringInRegExpInternal(s, ri, istart, iend, cache))
         {
           ret = true;
           break;
@@ -514,8 +512,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
       ret = true;
       for (const Node& ri : r)
       {
-        if (!testConstStringInRegExpInternal(
-                s, ri, istart, iend, cache))
+        if (!testConstStringInRegExpInternal(s, ri, istart, iend, cache))
         {
           ret = false;
           break;
@@ -575,8 +572,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
       if (iend == istart)
       {
         ret = l == 0
-              || testConstStringInRegExpInternal(
-                  s, r[0], istart, iend, cache);
+              || testConstStringInRegExpInternal(s, r[0], istart, iend, cache);
       }
       else if (l == 0 && r[1] == r[2])
       {
@@ -623,8 +619,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
           bool checkLoop = true;
           if (l > iend - istart)
           {
-            if (testConstStringInRegExpInternal(
-                    s, r[0], iend, iend, cache))
+            if (testConstStringInRegExpInternal(s, r[0], iend, iend, cache))
             {
               l = iend - istart;
             }
@@ -656,8 +651,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
     }
     break;
     case REGEXP_COMPLEMENT:
-      ret = !testConstStringInRegExpInternal(
-          s, r[0], istart, iend, cache);
+      ret = !testConstStringInRegExpInternal(s, r[0], istart, iend, cache);
       break;
     default: Assert(!utils::isRegExpKind(k)); break;
   }
