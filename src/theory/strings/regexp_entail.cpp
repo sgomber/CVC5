@@ -484,10 +484,10 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
       else
       {
         ret = true;
-        for (unsigned i = 0; i < r.getNumChildren(); ++i)
+        for (const Node& ri : r)
         {
           if (!testConstStringInRegExpInternal(
-                  s, r[i], index_start, index_end, cache))
+                  s, ri, index_start, index_end, cache))
           {
             ret = false;
             break;
@@ -499,10 +499,10 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
     case REGEXP_UNION:
     {
       // ret is false initially
-      for (unsigned i = 0; i < r.getNumChildren(); ++i)
+      for (const Node& ri : r)
       {
         if (testConstStringInRegExpInternal(
-                s, r[i], index_start, index_end, cache))
+                s, ri, index_start, index_end, cache))
         {
           ret = true;
           break;
@@ -513,10 +513,10 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
     case REGEXP_INTER:
     {
       ret = true;
-      for (unsigned i = 0; i < r.getNumChildren(); ++i)
+      for (const Node& ri : r)
       {
         if (!testConstStringInRegExpInternal(
-                s, r[i], index_start, index_end, cache))
+                s, ri, index_start, index_end, cache))
         {
           ret = false;
           break;
