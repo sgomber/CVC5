@@ -411,6 +411,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
                         << index_start << std::endl;
   Assert(!r.isVar());
   Kind k = r.getKind();
+  bool ret = false;
   switch (k)
   {
     case STRING_TO_REGEXP:
@@ -418,11 +419,14 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
       String s2 = s.substr(index_start, s.size() - index_start);
       if (r[0].isConst())
       {
-        return (s2 == r[0].getConst<String>());
+        ret = (s2 == r[0].getConst<String>());
       }
-      Assert(false) << "RegExp contains variables";
-      return false;
+      else
+      {
+        Assert(false) << "RegExp contains variables";
+      }
     }
+      break;
     case REGEXP_CONCAT:
     {
       if (s.size() != index_start)
@@ -431,6 +435,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
         int start = 0;
         int left = (int)s.size() - index_start;
         int i = 0;
+        // ret is false initially
         while (i < (int)r.getNumChildren())
         {
           bool flag = true;
@@ -439,12 +444,13 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
             if (testConstStringInRegExpInternal(
                     s, r[i], index_start + start, index_end, cache))
             {
-              return true;
+              ret = true;
+              break;
             }
           }
           else if (i == -1)
           {
-            return false;
+            break;
           }
           else
           {
@@ -473,84 +479,82 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
             }
           }
         }
-        return false;
       }
       else
       {
+        ret = true;
         for (unsigned i = 0; i < r.getNumChildren(); ++i)
         {
           if (!testConstStringInRegExpInternal(
                   s, r[i], index_start, index_end, cache))
           {
-            return false;
+            ret = false;
+            break;
           }
         }
-        return true;
       }
     }
+      break;
     case REGEXP_UNION:
     {
+      // ret is false initially
       for (unsigned i = 0; i < r.getNumChildren(); ++i)
       {
         if (testConstStringInRegExpInternal(
                 s, r[i], index_start, index_end, cache))
         {
-          return true;
+          ret = true;
+          break;
         }
       }
-      return false;
     }
+      break;
     case REGEXP_INTER:
     {
+      ret = true;
       for (unsigned i = 0; i < r.getNumChildren(); ++i)
       {
         if (!testConstStringInRegExpInternal(
                 s, r[i], index_start, index_end, cache))
         {
-          return false;
+          ret = false;
+          break;
         }
       }
-      return true;
     }
+      break;
     case REGEXP_STAR:
     {
       if (s.size() != index_start)
       {
+        // ret is false initially
         for (unsigned i = s.size() - index_start; i > 0; --i)
         {
-          cvc5::internal::String t = s.substr(index_start, i);
+          String t = s.substr(index_start, i);
           if (testConstStringInRegExpInternal(t, r[0], 0, index_end, cache))
           {
             if (index_start + i == s.size()
                 || testConstStringInRegExpInternal(
                     s, r, index_start + i, index_end, cache))
             {
-              return true;
+              ret = true;
+              break;
             }
           }
         }
-        return false;
       }
       else
       {
-        return true;
+        ret = true;
       }
     }
+      break;
     case REGEXP_NONE:
-    {
-      return false;
-    }
+      // ret is false
+      break;
     case REGEXP_ALLCHAR:
-    {
-      if (s.size() == index_start + 1)
-      {
-        return true;
-      }
-      else
-      {
-        return false;
-      }
-    }
+      ret = (s.size() == index_start + 1);
+      break;
     case REGEXP_RANGE:
     {
       if (s.size() == index_start + 1)
@@ -558,26 +562,23 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
         unsigned a = r[0].getConst<String>().front();
         unsigned b = r[1].getConst<String>().front();
         unsigned c = s.back();
-        return (a <= c && c <= b);
+        ret = (a <= c && c <= b);
       }
-      else
-      {
-        return false;
-      }
+      // otherwise, ret is false
     }
+      break;
     case REGEXP_LOOP:
     {
       NodeManager* nm = NodeManager::currentNM();
       uint32_t l = r[1].getConst<Rational>().getNumerator().toUnsignedInt();
       if (s.size() == index_start)
       {
-        return l == 0 ? true
-                      : testConstStringInRegExpInternal(
+        ret = l == 0 || testConstStringInRegExpInternal(
                           s, r[0], index_start, index_end, cache);
       }
       else if (l == 0 && r[1] == r[2])
       {
-        return false;
+        ret = false;
       }
       else
       {
@@ -585,6 +586,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
             << "String rewriter error: LOOP has 2 children";
         if (l == 0)
         {
+          // ret is false initially
           // R{0,u}
           uint32_t u = r[2].getConst<Rational>().getNumerator().toUnsignedInt();
           for (unsigned len = s.size() - index_start; len >= 1; len--)
@@ -594,7 +596,8 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
             {
               if (len + index_start == s.size())
               {
-                return true;
+                ret = true;
+                break;
               }
               else
               {
@@ -603,12 +606,12 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
                 if (testConstStringInRegExpInternal(
                         s, r2, index_start + len, index_end, cache))
                 {
-                  return true;
+                  ret = true;
+                  break;
                 }
               }
             }
           }
-          return false;
         }
         else
         {
@@ -645,18 +648,16 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
         }
       }
     }
+      break;
     case REGEXP_COMPLEMENT:
-    {
-      return !testConstStringInRegExpInternal(
+      ret = !testConstStringInRegExpInternal(
           s, r[0], index_start, index_end, cache);
       break;
-    }
     default:
-    {
       Assert(!utils::isRegExpKind(k));
-      return false;
-    }
+      break;
   }
+  return ret;
 }
 
 bool RegExpEntail::hasEpsilonNode(TNode node)
