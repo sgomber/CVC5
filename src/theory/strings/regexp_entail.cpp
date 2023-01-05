@@ -394,17 +394,17 @@ bool RegExpEntail::isConstRegExp(TNode t)
   } while (!visit.empty());
   return true;
 }
-bool RegExpEntail::testConstStringInRegExp(String& s,
-                                           TNode r)
+bool RegExpEntail::testConstStringInRegExp(String& s, TNode r)
 {
   UnsignedPairCache cache;
-  return testConstStringInRegExpInternal(s,r, 0, s.size(), cache);
+  return testConstStringInRegExpInternal(s, r, 0, s.size(), cache);
 }
 
 bool RegExpEntail::testConstStringInRegExpInternal(String& s,
-                                           TNode r,
-                                           unsigned index_start,
-                                           unsigned index_end, UnsignedPairCache& cache)
+                                                   TNode r,
+                                                   unsigned index_start,
+                                                   unsigned index_end,
+                                                   UnsignedPairCache& cache)
 {
   Assert(index_start <= s.size());
   Trace("regexp-debug") << "Checking " << s << " in " << r << ", starting at "
@@ -436,7 +436,8 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
           bool flag = true;
           if (i == (int)r.getNumChildren() - 1)
           {
-            if (testConstStringInRegExpInternal(s, r[i], index_start + start, index_end, cache))
+            if (testConstStringInRegExpInternal(
+                    s, r[i], index_start + start, index_end, cache))
             {
               return true;
             }
@@ -478,7 +479,8 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
       {
         for (unsigned i = 0; i < r.getNumChildren(); ++i)
         {
-          if (!testConstStringInRegExpInternal(s, r[i], index_start, index_end, cache))
+          if (!testConstStringInRegExpInternal(
+                  s, r[i], index_start, index_end, cache))
           {
             return false;
           }
@@ -490,7 +492,8 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
     {
       for (unsigned i = 0; i < r.getNumChildren(); ++i)
       {
-        if (testConstStringInRegExpInternal(s, r[i], index_start, index_end, cache))
+        if (testConstStringInRegExpInternal(
+                s, r[i], index_start, index_end, cache))
         {
           return true;
         }
@@ -501,7 +504,8 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
     {
       for (unsigned i = 0; i < r.getNumChildren(); ++i)
       {
-        if (!testConstStringInRegExpInternal(s, r[i], index_start, index_end, cache))
+        if (!testConstStringInRegExpInternal(
+                s, r[i], index_start, index_end, cache))
         {
           return false;
         }
@@ -518,7 +522,8 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
           if (testConstStringInRegExpInternal(t, r[0], 0, index_end, cache))
           {
             if (index_start + i == s.size()
-                || testConstStringInRegExpInternal(s, r, index_start + i, index_end, cache))
+                || testConstStringInRegExpInternal(
+                    s, r, index_start + i, index_end, cache))
             {
               return true;
             }
@@ -566,7 +571,9 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
       uint32_t l = r[1].getConst<Rational>().getNumerator().toUnsignedInt();
       if (s.size() == index_start)
       {
-        return l == 0 ? true : testConstStringInRegExpInternal(s, r[0], index_start, index_end, cache);
+        return l == 0 ? true
+                      : testConstStringInRegExpInternal(
+                          s, r[0], index_start, index_end, cache);
       }
       else if (l == 0 && r[1] == r[2])
       {
@@ -593,7 +600,8 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
               {
                 Node num2 = nm->mkConstInt(Rational(u - 1));
                 Node r2 = nm->mkNode(REGEXP_LOOP, r[0], r[1], num2);
-                if (testConstStringInRegExpInternal(s, r2, index_start + len, index_end, cache))
+                if (testConstStringInRegExpInternal(
+                        s, r2, index_start + len, index_end, cache))
                 {
                   return true;
                 }
@@ -609,7 +617,8 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
               << "String rewriter error: LOOP nums are not equal";
           if (l > s.size() - index_start)
           {
-            if (testConstStringInRegExpInternal(s, r[0], s.size(), index_end, cache))
+            if (testConstStringInRegExpInternal(
+                    s, r[0], s.size(), index_end, cache))
             {
               l = s.size() - index_start;
             }
@@ -625,7 +634,8 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
             {
               Node num2 = nm->mkConstInt(Rational(l - 1));
               Node r2 = nm->mkNode(REGEXP_LOOP, r[0], num2, num2);
-              if (testConstStringInRegExpInternal(s, r2, index_start + len, index_end, cache))
+              if (testConstStringInRegExpInternal(
+                      s, r2, index_start + len, index_end, cache))
               {
                 return true;
               }
@@ -637,7 +647,8 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
     }
     case REGEXP_COMPLEMENT:
     {
-      return !testConstStringInRegExpInternal(s, r[0], index_start, index_end, cache);
+      return !testConstStringInRegExpInternal(
+          s, r[0], index_start, index_end, cache);
       break;
     }
     default:

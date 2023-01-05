@@ -140,9 +140,16 @@ class RegExpEntail
   /** Same as above, without cache */
   static bool regExpIncludes(Node r1, Node r2);
  private:
-  using UnsignedPairHashFunction = PairHashFunction<unsigned, unsigned, std::hash<unsigned>>;
-  using UnsignedPairCache = std::unordered_map<std::pair<unsigned, unsigned>, bool, UnsignedPairHashFunction>;
-  static bool testConstStringInRegExpInternal(String& s, TNode r, unsigned index_start, unsigned index_end, UnsignedPairCache& cache);
+  using UnsignedPairHashFunction =
+      PairHashFunction<unsigned, unsigned, std::hash<unsigned>>;
+  using UnsignedPairCache = std::unordered_map<std::pair<unsigned, unsigned>,
+                                               bool,
+                                               UnsignedPairHashFunction>;
+  static bool testConstStringInRegExpInternal(String& s,
+                                              TNode r,
+                                              unsigned index_start,
+                                              unsigned index_end,
+                                              UnsignedPairCache& cache);
   /** Set bound cache, used for getConstantBoundLengthForRegexp */
   static void setConstantBoundCache(TNode n, Node ret, bool isLower);
   /**
