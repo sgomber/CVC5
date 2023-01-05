@@ -147,8 +147,8 @@ class RegExpEntail
                                                UnsignedPairHashFunction>;
   static bool testConstStringInRegExpInternal(String& s,
                                               TNode r,
-                                              unsigned index_start,
-                                              unsigned index_end,
+                                              unsigned istart,
+                                              unsigned iend,
                                               UnsignedPairCache& cache);
   /** Set bound cache, used for getConstantBoundLengthForRegexp */
   static void setConstantBoundCache(TNode n, Node ret, bool isLower);
