@@ -426,7 +426,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
         Assert(false) << "RegExp contains variables";
       }
     }
-      break;
+    break;
     case REGEXP_CONCAT:
     {
       if (s.size() != index_start)
@@ -494,7 +494,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
         }
       }
     }
-      break;
+    break;
     case REGEXP_UNION:
     {
       // ret is false initially
@@ -508,7 +508,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
         }
       }
     }
-      break;
+    break;
     case REGEXP_INTER:
     {
       ret = true;
@@ -522,7 +522,7 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
         }
       }
     }
-      break;
+    break;
     case REGEXP_STAR:
     {
       if (s.size() != index_start)
@@ -548,13 +548,11 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
         ret = true;
       }
     }
-      break;
+    break;
     case REGEXP_NONE:
       // ret is false
       break;
-    case REGEXP_ALLCHAR:
-      ret = (s.size() == index_start + 1);
-      break;
+    case REGEXP_ALLCHAR: ret = (s.size() == index_start + 1); break;
     case REGEXP_RANGE:
     {
       if (s.size() == index_start + 1)
@@ -566,15 +564,16 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
       }
       // otherwise, ret is false
     }
-      break;
+    break;
     case REGEXP_LOOP:
     {
       NodeManager* nm = NodeManager::currentNM();
       uint32_t l = r[1].getConst<Rational>().getNumerator().toUnsignedInt();
       if (s.size() == index_start)
       {
-        ret = l == 0 || testConstStringInRegExpInternal(
-                          s, r[0], index_start, index_end, cache);
+        ret = l == 0
+              || testConstStringInRegExpInternal(
+                  s, r[0], index_start, index_end, cache);
       }
       else if (l == 0 && r[1] == r[2])
       {
@@ -648,14 +647,12 @@ bool RegExpEntail::testConstStringInRegExpInternal(String& s,
         }
       }
     }
-      break;
+    break;
     case REGEXP_COMPLEMENT:
       ret = !testConstStringInRegExpInternal(
           s, r[0], index_start, index_end, cache);
       break;
-    default:
-      Assert(!utils::isRegExpKind(k));
-      break;
+    default: Assert(!utils::isRegExpKind(k)); break;
   }
   return ret;
 }
