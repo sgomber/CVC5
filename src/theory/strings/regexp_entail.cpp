@@ -456,10 +456,13 @@ bool RegExpEntail::testConstStringInRegExpInternal(
             for (vec_k[i] = vec_k[i] + 1; vec_k[i] <= left; ++vec_k[i])
             {
               unsigned istartNew = istart + start;
-              istartNew = istartNew>iend ? iend : istartNew;
-              unsigned len = vec_k[i]<0 ? 0 : (vec_k[i]>(int)(iend-istartNew) ?
-              (iend-istartNew) : vec_k[i]);
-              if (testConstStringInRegExpInternal(s, r[i], istartNew, istartNew+len, cache))
+              istartNew = istartNew > iend ? iend : istartNew;
+              unsigned len = vec_k[i] < 0 ? 0
+                                          : (vec_k[i] > (int)(iend - istartNew)
+                                                 ? (iend - istartNew)
+                                                 : vec_k[i]);
+              if (testConstStringInRegExpInternal(
+                      s, r[i], istartNew, istartNew + len, cache))
               {
                 start += vec_k[i];
                 left -= vec_k[i];
