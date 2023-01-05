@@ -405,10 +405,15 @@ bool RegExpEntail::testConstStringInRegExpInternal(
 {
   Assert(istart <= iend);
   Assert(iend <= s.size());
-  Trace("regexp-debug") << "Checking " << s << " in " << r << ", start/end at "
-                        << istart << "/" << iend << std::endl;
   Assert(!r.isVar());
   std::tuple<Node, unsigned, unsigned> key(r, istart, iend);
+  TestRegExpCache::iterator it = cache.find(key);
+  if (it!=cache.end())
+  {
+    return it->second;
+  }
+  Trace("regexp-debug") << "Checking " << s << " in " << r << ", start/end at "
+                        << istart << "/" << iend << std::endl;
   Kind k = r.getKind();
   bool ret = false;
   switch (k)
