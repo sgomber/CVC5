@@ -37,6 +37,7 @@ std::ostream& operator<<(std::ostream& out, InferStep s)
     case CHECK_NORMAL_FORMS_DEQ: out << "check_normal_forms_deq"; break;
     case CHECK_CODES: out << "check_codes"; break;
     case CHECK_LENGTH_EQC: out << "check_length_eqc"; break;
+    case CHECK_EXTF_REDUCTION_EAGER: out << "check_extf_reduction_eager"; break;
     case CHECK_EXTF_REDUCTION: out << "check_extf_reduction"; break;
     case CHECK_MEMBERSHIP_INCLUSION: out << "check_membership_inclusion"; break;
     case CHECK_MEMBERSHIP: out << "check_membership"; break;
@@ -118,7 +119,7 @@ void Strategy::initializeStrategy()
     {
       addStrategyStep(CHECK_FLAT_FORMS);
     }
-    addStrategyStep(CHECK_EXTF_REDUCTION, 1);
+    addStrategyStep(CHECK_EXTF_REDUCTION_EAGER);
     addStrategyStep(CHECK_NORMAL_FORMS_EQ_PROP);  // ... CAV 14 propagate
     if (options().strings.stringModelNormalForms)
     {
@@ -146,7 +147,7 @@ void Strategy::initializeStrategy()
     }
     if (options().strings.stringExp)
     {
-      addStrategyStep(CHECK_EXTF_REDUCTION, 2);  // LOOKAHEAD, may add lemmas
+      addStrategyStep(CHECK_EXTF_REDUCTION);
     }
     addStrategyStep(CHECK_MEMBERSHIP_INCLUSION);  // heuristic, TODO: move up?
     addStrategyStep(CHECK_MEMBERSHIP);            // LOOKAHEAD, may add lemmas
@@ -162,7 +163,7 @@ void Strategy::initializeStrategy()
       }
       if (options().strings.stringExp)
       {
-        addStrategyStep(CHECK_EXTF_REDUCTION, 3);
+        addStrategyStep(CHECK_EXTF_REDUCTION);
       }
       addStrategyStep(CHECK_MEMBERSHIP);
       step_end[Theory::EFFORT_LAST_CALL] = d_infer_steps.size() - 1;
