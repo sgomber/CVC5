@@ -25,7 +25,13 @@ namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
-bool evalMembership(String& s, const Node& r);
+class RegExpEval
+{
+public:
+  bool evalMembership(String& s, const Node& r) const;
+private:
+  /** */
+};
 
 }  // namespace strings
 }  // namespace theory
