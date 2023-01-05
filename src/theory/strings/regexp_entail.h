@@ -140,8 +140,7 @@ class RegExpEntail
   /** Same as above, without cache */
   static bool regExpIncludes(Node r1, Node r2);
  private:
-  using TestRegExpCache = std::map<std::tuple<Node, unsigned, unsigned>,
-                                               bool>;
+  using TestRegExpCache = std::map<std::tuple<Node, unsigned, unsigned>, bool>;
   static bool testConstStringInRegExpInternal(String& s,
                                               TNode r,
                                               unsigned istart,
