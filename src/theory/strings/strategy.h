@@ -51,7 +51,7 @@ enum InferStep
   CHECK_NORMAL_FORMS_EQ_PROP,
   // check model normal forms
   CHECK_MODEL_NORMAL_FORMS,
-  // check normal forms equalities, which sends a single lemma if necessary
+  // check normal forms equalities
   CHECK_NORMAL_FORMS_EQ,
   // check normal forms disequalities
   CHECK_NORMAL_FORMS_DEQ,

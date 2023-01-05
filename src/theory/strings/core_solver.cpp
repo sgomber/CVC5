@@ -524,6 +524,8 @@ Node CoreSolver::checkCycles( Node eqc, std::vector< Node >& curr, std::vector< 
 
 void CoreSolver::checkNormalFormsEqProp()
 {
+  // Reset the possible inferences and model unsoundness id. These are
+  // set in this method and processed in checkNormalFormsEq.
   d_pinfers.clear();
   d_modelUnsoundId = IncompleteId::NONE;
   // calculate normal forms for each equivalence class, possibly adding
@@ -532,15 +534,6 @@ void CoreSolver::checkNormalFormsEqProp()
   // map from normal form terms (the concatenation of the terms in the normal
   // form) to the equivalence that had that normal form
   std::map<Node, Node> nf_to_eqc;
-  // map from equivalence classes to the normal form term
-  std::map<Node, Node> eqc_to_nf;
-  // the explanation for the normal form for each equivalence class
-  std::map<Node, Node> eqc_to_exp;
-  // A set of possible inferences, in case we failed to compute a normal form
-  // in a call to normalizeEquivalenceClass. This set typically contains
-  // lemmas that require splitting. We delay processing these lemmas until
-  // the invocation of processInferInfo below.
-  std::vector<CoreInferInfo> pinfer;
   for (const Node& eqc : d_strings_eqc)
   {
     Assert(d_pinfers.empty());
@@ -569,10 +562,9 @@ void CoreSolver::checkNormalFormsEqProp()
       NormalForm& nfe_eq = getNormalForm(itn->second);
       // two equivalence classes have same normal form, merge
       std::vector<Node> nf_exp(nfe.d_exp.begin(), nfe.d_exp.end());
-      Node eexp = eqc_to_exp[itn->second];
-      if (eexp != d_true)
+      if (!nfe_eq.d_exp.empty())
       {
-        nf_exp.push_back(eexp);
+        nf_exp.push_back(utils::mkAnd(nfe_eq.d_exp));
       }
       Node eq = nfe.d_base.eqNode(nfe_eq.d_base);
       d_im.sendInference(nf_exp, eq, InferenceId::STRINGS_NORMAL_FORM);
@@ -584,8 +576,6 @@ void CoreSolver::checkNormalFormsEqProp()
     else
     {
       nf_to_eqc[nf_term] = eqc;
-      eqc_to_nf[eqc] = nf_term;
-      eqc_to_exp[eqc] = utils::mkAnd(nfe.d_exp);
     }
     Trace("strings-process-debug")
         << "Done verifying normal forms are the same for " << eqc << std::endl;
@@ -2659,7 +2649,7 @@ void CoreSolver::checkRegisterTermsNormalForms()
   }
 }
 
-size_t CoreSolver::choosePossibleInferInfo(const std::vector<CoreInferInfo>& pinfer)
+size_t CoreSolver::pickInferInfo(const std::vector<CoreInferInfo>& pinfer)
 {
   // now, determine which of the possible inferences we want to add
   unsigned use_index = 0;

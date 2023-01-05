@@ -60,7 +60,7 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
   {
     if (!ll.isConst())
     {
-      ll = val.getModelValue(ll);
+      ll = val.getCandidateModelValue(ll);
     }
   }
 }
