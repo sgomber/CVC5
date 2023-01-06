@@ -108,6 +108,7 @@ class NfaState
       }
     }
   }
+
  private:
   /**
    * Returns the (partial) NFA for regular expression r, whose dangling arrows
@@ -294,13 +295,14 @@ bool RegExpEval::evaluate(String& s, const Node& r)
   NfaState accept;
   std::vector<std::shared_ptr<NfaState>> scache;
   NfaState* rs = NfaState::construct(r, &accept, scache);
-  Trace("re-eval") << "NFA size is " << (scache.size()+1) << std::endl;
+  Trace("re-eval") << "NFA size is " << (scache.size() + 1) << std::endl;
   std::unordered_set<NfaState*> curr;
   rs->addToNext(curr);
   const std::vector<unsigned>& vec = s.getVec();
   for (size_t i = 0, nvec = vec.size(); i < nvec; i++)
   {
-    Trace("re-eval") << "..process next char " << vec[i] << ", #states=" << curr.size() << std::endl;
+    Trace("re-eval") << "..process next char " << vec[i]
+                     << ", #states=" << curr.size() << std::endl;
     std::unordered_set<NfaState*> next;
     for (NfaState* cs : curr)
     {
