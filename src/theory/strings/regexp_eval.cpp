@@ -59,27 +59,23 @@ class NfaState
         switch (r.getKind())
         {
           case CONST_STRING:
-            Assert (r.getConst<String>().size()==1);
-            accepts = (nextChar==r.getConst<String>().front());
+            Assert(r.getConst<String>().size() == 1);
+            accepts = (nextChar == r.getConst<String>().front());
             break;
           case REGEXP_RANGE:
           {
             unsigned a = r[0].getConst<String>().front();
             unsigned b = r[1].getConst<String>().front();
-            accepts = (a<=nextChar && nextChar<=b);
+            accepts = (a <= nextChar && nextChar <= b);
           }
-            break;
-          case REGEXP_ALLCHAR:
-            accepts = true;
-            break;
-          default:
-            Unreachable() << "Unknown NFA edge " << c.first;
-            break;
+          break;
+          case REGEXP_ALLCHAR: accepts = true; break;
+          default: Unreachable() << "Unknown NFA edge " << c.first; break;
         }
       }
       if (accepts)
       {
-        for (NfaState * cs : c.second)
+        for (NfaState* cs : c.second)
         {
           cs->addToNext(next);
         }
@@ -93,21 +89,23 @@ class NfaState
   {
     // have property that all child states are also added to next if this
     // state has been added to next
-    if (next.find(this)!=next.end())
+    if (next.find(this) != next.end())
     {
       return;
     }
     next.insert(this);
-    std::map<Node, std::vector<NfaState*>>::iterator it = d_children.find(Node::null());
-    if (it!=d_children.end())
+    std::map<Node, std::vector<NfaState*>>::iterator it =
+        d_children.find(Node::null());
+    if (it != d_children.end())
     {
-      for (NfaState * cs : it->second)
+      for (NfaState* cs : it->second)
       {
         cs->addToNext(next);
       }
     }
   }
-private:
+
+ private:
   /**
    * Returns the NFA for regular expression r, whose dangling arrows are in
    * d_arrows of the returned NfaState.
@@ -232,16 +230,18 @@ private:
 };
 
 bool RegExpEval::canEvaluate(const Node& r)
-{  
+{
   std::unordered_set<TNode> visited;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(r);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
 
-    if (visited.find(cur) == visited.end()) {
+    if (visited.find(cur) == visited.end())
+    {
       visited.insert(cur);
       switch (cur.getKind())
       {
@@ -252,25 +252,24 @@ bool RegExpEval::canEvaluate(const Node& r)
           }
           break;
         case REGEXP_RANGE:
-          for (size_t i=0; i<2; i++)
+          for (size_t i = 0; i < 2; i++)
           {
-            if (!cur[i].isConst() || cur[i].getConst<String>().size()!=1)
+            if (!cur[i].isConst() || cur[i].getConst<String>().size() != 1)
             {
               return false;
             }
           }
           break;
-        case REGEXP_ALLCHAR:
-          break;
+        case REGEXP_ALLCHAR: break;
         case REGEXP_UNION:
         case REGEXP_CONCAT:
         case REGEXP_STAR:
-          for (const Node& cc : cur ){
+          for (const Node& cc : cur)
+          {
             visit.push_back(cc);
           }
           break;
-        default:
-          return false;
+        default: return false;
       }
     }
   } while (!visit.empty());
@@ -286,7 +285,7 @@ bool RegExpEval::evaluate(String& s, const Node& r)
   std::unordered_set<NfaState*> curr;
   rs->addToNext(curr);
   const std::vector<unsigned>& vec = s.getVec();
-  for (size_t i=0, nvec = vec.size(); i<nvec; i++)
+  for (size_t i = 0, nvec = vec.size(); i < nvec; i++)
   {
     std::unordered_set<NfaState*> next;
     for (NfaState* cs : curr)
@@ -299,7 +298,7 @@ bool RegExpEval::evaluate(String& s, const Node& r)
     }
     curr = next;
   }
-  return curr.find(&accept)!=curr.end();
+  return curr.find(&accept) != curr.end();
 }
 
 }  // namespace strings
