@@ -48,7 +48,7 @@ class RegExpEval
    * This constructs an NFA for r whose states are roughly equivalent to the
    * number of subterms of r. It evaluates whether s is in r, which is a
    * linear scan through s while tracking the (set of) states in the NFA.
-   * 
+   *
    * Note that the NFA construction is not cached. Moreover, for this reason we
    * do not compile the NFA to a DFA, which would lead to faster evaluation if
    * testing many strings in the same regular expression.
