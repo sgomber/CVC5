@@ -28,7 +28,10 @@ class NfaState
  public:
   /** maps single character RE to children */
   std::map<Node, std::vector<NfaState*>> d_children;
-
+  /**
+   * Returns the NFA for regular expression r, connects the dangling arrows
+   * to the given accept state.
+   */
   static NfaState* construct(Node r,
                              NfaState* accept,
                              std::vector<std::shared_ptr<NfaState>>& scache)
@@ -37,6 +40,74 @@ class NfaState
     rs->connectTo(accept);
     return rs;
   }
+  /**
+   * Processes the next input character nextChar from this state. Adds all
+   * next states to process to the next set.
+   */
+  void processNextChar(unsigned nextChar, std::unordered_set<NfaState*>& next)
+  {
+    for (const std::pair<const Node, std::vector<NfaState*>>& c : d_children)
+    {
+      bool accepts = false;
+      const Node& r = c.first;
+      if (r.isNull())
+      {
+        accepts = true;
+      }
+      else
+      {
+        switch (r.getKind())
+        {
+          case CONST_STRING:
+            Assert (r.getConst<String>().size()==1);
+            accepts = (nextChar==r.getConst<String>().front());
+            break;
+          case REGEXP_RANGE:
+          {
+            unsigned a = r[0].getConst<String>().front();
+            unsigned b = r[1].getConst<String>().front();
+            accepts = (a<=nextChar && nextChar<=b);
+          }
+            break;
+          case REGEXP_ALLCHAR:
+            accepts = true;
+            break;
+          default:
+            Unreachable() << "Unknown NFA edge " << c.first;
+            break;
+        }
+      }
+      if (accepts)
+      {
+        for (NfaState * cs : c.second)
+        {
+          cs->addToNext(next);
+        }
+      }
+    }
+  }
+  /**
+   * Adds this state and all children connected by null to next.
+   */
+  void addToNext(std::unordered_set<NfaState*>& next)
+  {
+    // have property that all child states are also added to next if this
+    // state has been added to next
+    if (next.find(this)!=next.end())
+    {
+      return;
+    }
+    next.insert(this);
+    std::map<Node, std::vector<NfaState*>>::iterator it = d_children.find(Node::null());
+    if (it!=d_children.end())
+    {
+      for (NfaState * cs : it->second)
+      {
+        cs->addToNext(next);
+      }
+    }
+  }
+private:
   /**
    * Returns the NFA for regular expression r, whose dangling arrows are in
    * d_arrows of the returned NfaState.
@@ -80,6 +151,8 @@ class NfaState
       case STRING_TO_REGEXP:
       {
         Assert(r[0].isConst());
+        // this constructs N states in concatenation, where N is the length of
+        // the string
         const String& str = r[0].getConst<String>();
         if (str.size() == 0)
         {
@@ -138,8 +211,7 @@ class NfaState
     }
     return s;
   }
-
- private:
+  /** Connect dangling arrows of this to state s */
   void connectTo(NfaState* s)
   {
     for (std::pair<NfaState*, Node>& a : d_arrows)
@@ -148,24 +220,86 @@ class NfaState
     }
     d_arrows.clear();
   }
+  /** Allocate state, add to cache */
   static NfaState* allocateState(std::vector<std::shared_ptr<NfaState>>& scache)
   {
     std::shared_ptr<NfaState> ret = std::make_shared<NfaState>();
     scache.push_back(ret);
     return ret.get();
   }
-  /** Current dangling */
+  /** Current dangling pointers */
   std::vector<std::pair<NfaState*, Node>> d_arrows;
 };
 
-bool RegExpEval::evalMembership(String& s, const Node& r) const
+bool RegExpEval::canEvaluate(const Node& r)
+{  
+  std::unordered_set<TNode> visited;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(r);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+
+    if (visited.find(cur) == visited.end()) {
+      visited.insert(cur);
+      switch (cur.getKind())
+      {
+        case STRING_TO_REGEXP:
+          if (!cur[0].isConst())
+          {
+            return false;
+          }
+          break;
+        case REGEXP_RANGE:
+          for (size_t i=0; i<2; i++)
+          {
+            if (!cur[i].isConst() || cur[i].getConst<String>().size()!=1)
+            {
+              return false;
+            }
+          }
+          break;
+        case REGEXP_ALLCHAR:
+          break;
+        case REGEXP_UNION:
+        case REGEXP_CONCAT:
+        case REGEXP_STAR:
+          for (const Node& cc : cur ){
+            visit.push_back(cc);
+          }
+          break;
+        default:
+          return false;
+      }
+    }
+  } while (!visit.empty());
+  return true;
+}
+
+bool RegExpEval::evaluate(String& s, const Node& r)
 {
   // TODO: assert no intersection, complement, or non-constant.
   NfaState accept;
   std::vector<std::shared_ptr<NfaState>> scache;
   NfaState* rs = NfaState::construct(r, &accept, scache);
-
-  return false;
+  std::unordered_set<NfaState*> curr;
+  rs->addToNext(curr);
+  const std::vector<unsigned>& vec = s.getVec();
+  for (size_t i=0, nvec = vec.size(); i<nvec; i++)
+  {
+    std::unordered_set<NfaState*> next;
+    for (NfaState* cs : curr)
+    {
+      cs->processNextChar(vec[i], next);
+    }
+    if (next.empty())
+    {
+      return false;
+    }
+    curr = next;
+  }
+  return curr.find(&accept)!=curr.end();
 }
 
 }  // namespace strings

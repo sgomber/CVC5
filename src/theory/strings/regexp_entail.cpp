@@ -17,6 +17,7 @@
 
 #include "theory/rewriter.h"
 #include "theory/strings/theory_strings_utils.h"
+#include "theory/strings/regexp_eval.h"
 #include "theory/strings/word.h"
 #include "util/rational.h"
 #include "util/string.h"
@@ -396,6 +397,10 @@ bool RegExpEntail::isConstRegExp(TNode t)
 }
 bool RegExpEntail::testConstStringInRegExp(String& s, TNode r)
 {
+  if (RegExpEval::canEvaluate(r))
+  {
+    return RegExpEval::evaluate(s, r);
+  }
   TestRegExpCache cache;
   return testConstStringInRegExpInternal(s, r, 0, s.size(), cache);
 }

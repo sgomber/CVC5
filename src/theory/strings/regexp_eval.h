@@ -28,10 +28,8 @@ namespace strings {
 class RegExpEval
 {
  public:
-  bool evalMembership(String& s, const Node& r) const;
-
- private:
-  /** */
+  static bool canEvaluate(const Node& r);
+  static bool evaluate(String& s, const Node& r);
 };
 
 }  // namespace strings
