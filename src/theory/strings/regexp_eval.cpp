@@ -23,11 +23,18 @@ namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
+/**
+ * An NFA state.
+ *
+ * Edges can be marked with constant characters, re.allchar or re.range
+ * regular expressions.
+ * 
+ * Regular expressions can be compiled to an NFA via construct. Evaluation
+ * is computed via addToNext and processNextChar.
+ */
 class NfaState
 {
  public:
-  /** maps single character RE to children */
-  std::map<Node, std::vector<NfaState*>> d_children;
   /**
    * Returns the NFA for regular expression r, connects the dangling arrows
    * to the given accept state.
@@ -39,6 +46,28 @@ class NfaState
     NfaState* rs = constructInternal(r, scache);
     rs->connectTo(accept);
     return rs;
+  }
+  /**
+   * Adds this state and all children connected by null to next.
+   */
+  void addToNext(std::unordered_set<NfaState*>& next)
+  {
+    // have property that all child states are also added to next if this
+    // state has been added to next
+    if (next.find(this) != next.end())
+    {
+      return;
+    }
+    next.insert(this);
+    std::map<Node, std::vector<NfaState*>>::iterator it =
+        d_children.find(Node::null());
+    if (it != d_children.end())
+    {
+      for (NfaState* cs : it->second)
+      {
+        cs->addToNext(next);
+      }
+    }
   }
   /**
    * Processes the next input character nextChar from this state. Adds all
@@ -82,29 +111,6 @@ class NfaState
       }
     }
   }
-  /**
-   * Adds this state and all children connected by null to next.
-   */
-  void addToNext(std::unordered_set<NfaState*>& next)
-  {
-    // have property that all child states are also added to next if this
-    // state has been added to next
-    if (next.find(this) != next.end())
-    {
-      return;
-    }
-    next.insert(this);
-    std::map<Node, std::vector<NfaState*>>::iterator it =
-        d_children.find(Node::null());
-    if (it != d_children.end())
-    {
-      for (NfaState* cs : it->second)
-      {
-        cs->addToNext(next);
-      }
-    }
-  }
-
  private:
   /**
    * Returns the NFA for regular expression r, whose dangling arrows are in
@@ -154,7 +160,7 @@ class NfaState
         const String& str = r[0].getConst<String>();
         if (str.size() == 0)
         {
-          // NOTE: does this ever happen in this fragment?
+          // The regular expression is a no-op.
           sarrows.emplace_back(s, Node::null());
         }
         else
@@ -174,6 +180,7 @@ class NfaState
             {
               NfaState* next = allocateState(scache);
               curr->d_children[nextChar].push_back(next);
+              curr = next;
             }
           }
         }
@@ -225,6 +232,11 @@ class NfaState
     scache.push_back(ret);
     return ret.get();
   }
+  /**  
+   * Edges from this state. Maps constant characters, re.allchar or re.range
+   * to the list of children connected via an edge with that label.
+   */
+  std::map<Node, std::vector<NfaState*>> d_children;
   /** Current dangling pointers */
   std::vector<std::pair<NfaState*, Node>> d_arrows;
 };
@@ -278,7 +290,8 @@ bool RegExpEval::canEvaluate(const Node& r)
 
 bool RegExpEval::evaluate(String& s, const Node& r)
 {
-  // TODO: assert no intersection, complement, or non-constant.
+  // no intersection, complement, and r must be constant.
+  Assert (canEvaluate(r));
   NfaState accept;
   std::vector<std::shared_ptr<NfaState>> scache;
   NfaState* rs = NfaState::construct(r, &accept, scache);
