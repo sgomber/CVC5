@@ -397,6 +397,7 @@ bool RegExpEntail::isConstRegExp(TNode t)
 }
 bool RegExpEntail::testConstStringInRegExp(String& s, TNode r)
 {
+  // if we can evaluate it via NFA construction
   if (RegExpEval::canEvaluate(r))
   {
     return RegExpEval::evaluate(s, r);

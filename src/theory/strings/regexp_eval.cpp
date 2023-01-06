@@ -26,7 +26,7 @@ namespace strings {
 /**
  * An NFA state.
  *
- * Edges can be marked with constant characters, re.allchar or re.range
+ * Edges can be annotated with constant characters, re.allchar or re.range
  * regular expressions.
  *
  * Regular expressions can be compiled to an NFA via construct. Evaluation
