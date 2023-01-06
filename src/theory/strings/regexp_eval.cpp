@@ -156,8 +156,6 @@ class NfaState
       case STRING_TO_REGEXP:
       {
         Assert(r[0].isConst());
-        // this constructs N states in concatenation, where N is the length of
-        // the string
         const String& str = r[0].getConst<String>();
         if (str.size() == 0)
         {
@@ -166,6 +164,8 @@ class NfaState
         }
         else
         {
+          // this constructs N states in concatenation, where N is the length of
+          // the string, each connected via single characters
           const std::vector<unsigned>& vec = str.getVec();
           NfaState* curr = s;
           NodeManager* nm = NodeManager::currentNM();
@@ -175,6 +175,7 @@ class NfaState
             Node nextChar = nm->mkConst(String(charVec));
             if (i + 1 == vec.size())
             {
+              // the last edge is the dangling pointer of the first
               sarrows.emplace_back(curr, nextChar);
             }
             else
@@ -191,7 +192,7 @@ class NfaState
       case REGEXP_RANGE: sarrows.emplace_back(s, r); break;
       case REGEXP_UNION:
       {
-        // take union of arrows
+        // connect to all children via null, take union of arrows
         std::vector<NfaState*>& schildren = s->d_children[Node::null()];
         for (const Node& rc : r)
         {
@@ -207,7 +208,7 @@ class NfaState
       {
         NfaState* body = constructInternal(r[0], scache);
         s->d_children[Node::null()].push_back(body);
-        // loops back to this state
+        // body loops back to this state
         body->connectTo(s);
         // skip moves on
         sarrows.emplace_back(s, Node::null());
@@ -217,7 +218,7 @@ class NfaState
     }
     return s;
   }
-  /** Connect dangling arrows of this to state s */
+  /** Connect dangling arrows of this to state s and clear */
   void connectTo(NfaState* s)
   {
     for (std::pair<NfaState*, Node>& a : d_arrows)
@@ -226,7 +227,7 @@ class NfaState
     }
     d_arrows.clear();
   }
-  /** Allocate state, add to cache */
+  /** Allocate state, add to cache (for memory management) */
   static NfaState* allocateState(std::vector<std::shared_ptr<NfaState>>& scache)
   {
     std::shared_ptr<NfaState> ret = std::make_shared<NfaState>();
