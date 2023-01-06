@@ -345,7 +345,7 @@ bool StringsMnf::normalizeEqc(Node eqc)
     return false;
   }
   // otherwise, look up the model value now
-  mei.d_length = val.getModelValue(lt).getConst<Rational>();
+  mei.d_length = val.getCandidateModelValue(lt).getConst<Rational>();
 
   // get the normal form for each term in the equivalence class
   std::vector<std::pair<Node, std::vector<Node>>> nfs;
@@ -500,7 +500,7 @@ bool StringsMnf::normalizeEqc(Node eqc)
   {
     NodeManager* nm = NodeManager::currentNM();
     Node ct = nm->mkNode(STRING_TO_CODE, ei->d_codeTerm.get());
-    Node ctv = val.getModelValue(ct);
+    Node ctv = val.getCandidateModelValue(ct);
     unsigned cvalue = ctv.getConst<Rational>().getNumerator().toUnsignedInt();
     std::vector<unsigned> vec;
     vec.push_back(cvalue);

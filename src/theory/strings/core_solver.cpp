@@ -2707,7 +2707,7 @@ void CoreSolver::checkNormalFormsEq()
       return;
     }
     // add one inference from our list of possible inferences
-    size_t use_index = choosePossibleInferInfo(d_pinfers);
+    size_t use_index = pickInferInfo(d_pinfers);
     // Send the inference, which is a lemma. This class will process the side
     // effects of the inference.
     d_pinfers[use_index].d_infer.d_sim = this;
