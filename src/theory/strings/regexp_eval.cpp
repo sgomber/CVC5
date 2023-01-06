@@ -77,30 +77,27 @@ class NfaState
   {
     for (const std::pair<const Node, std::vector<NfaState*>>& c : d_children)
     {
-      bool accepts = false;
       const Node& r = c.first;
       if (r.isNull())
       {
-        accepts = true;
+        continue;
       }
-      else
+      bool accepts = false;
+      switch (r.getKind())
       {
-        switch (r.getKind())
-        {
-          case CONST_STRING:
-            Assert(r.getConst<String>().size() == 1);
-            accepts = (nextChar == r.getConst<String>().front());
-            break;
-          case REGEXP_RANGE:
-          {
-            unsigned a = r[0].getConst<String>().front();
-            unsigned b = r[1].getConst<String>().front();
-            accepts = (a <= nextChar && nextChar <= b);
-          }
+        case CONST_STRING:
+          Assert(r.getConst<String>().size() == 1);
+          accepts = (nextChar == r.getConst<String>().front());
           break;
-          case REGEXP_ALLCHAR: accepts = true; break;
-          default: Unreachable() << "Unknown NFA edge " << c.first; break;
+        case REGEXP_RANGE:
+        {
+          unsigned a = r[0].getConst<String>().front();
+          unsigned b = r[1].getConst<String>().front();
+          accepts = (a <= nextChar && nextChar <= b);
         }
+        break;
+        case REGEXP_ALLCHAR: accepts = true; break;
+        default: Unreachable() << "Unknown NFA edge " << c.first; break;
       }
       if (accepts)
       {
@@ -111,11 +108,10 @@ class NfaState
       }
     }
   }
-
  private:
   /**
-   * Returns the NFA for regular expression r, whose dangling arrows are in
-   * d_arrows of the returned NfaState.
+   * Returns the (partial) NFA for regular expression r, whose dangling arrows
+   * are in d_arrows of the returned NfaState.
    */
   static NfaState* constructInternal(
       Node r, std::vector<std::shared_ptr<NfaState>>& scache)
@@ -292,27 +288,32 @@ bool RegExpEval::canEvaluate(const Node& r)
 
 bool RegExpEval::evaluate(String& s, const Node& r)
 {
+  Trace("re-eval") << "Evaluate " << s << " in " << r << std::endl;
   // no intersection, complement, and r must be constant.
   Assert(canEvaluate(r));
   NfaState accept;
   std::vector<std::shared_ptr<NfaState>> scache;
   NfaState* rs = NfaState::construct(r, &accept, scache);
+  Trace("re-eval") << "NFA size is " << (scache.size()+1) << std::endl;
   std::unordered_set<NfaState*> curr;
   rs->addToNext(curr);
   const std::vector<unsigned>& vec = s.getVec();
   for (size_t i = 0, nvec = vec.size(); i < nvec; i++)
   {
+    Trace("re-eval") << "..process next char " << vec[i] << ", #states=" << curr.size() << std::endl;
     std::unordered_set<NfaState*> next;
     for (NfaState* cs : curr)
     {
       cs->processNextChar(vec[i], next);
     }
+    // if there are no more states, we are done
     if (next.empty())
     {
       return false;
     }
     curr = next;
   }
+  Trace("re-eval") << "..finish #states=" << curr.size() << std::endl;
   return curr.find(&accept) != curr.end();
 }
 

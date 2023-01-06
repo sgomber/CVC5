@@ -1,7 +1,7 @@
 (set-info :smt-lib-version 2.6)
 (set-logic QF_SLIA)
 (set-option :strings-exp true)
-(set-info :status unsat)
+;(set-info :status unsat)
 
 (declare-fun var_0 () String)
 (declare-fun var_1 () String)
