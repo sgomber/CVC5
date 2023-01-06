@@ -28,7 +28,7 @@ namespace strings {
  *
  * Edges can be marked with constant characters, re.allchar or re.range
  * regular expressions.
- * 
+ *
  * Regular expressions can be compiled to an NFA via construct. Evaluation
  * is computed via addToNext and processNextChar.
  */
@@ -111,6 +111,7 @@ class NfaState
       }
     }
   }
+
  private:
   /**
    * Returns the NFA for regular expression r, whose dangling arrows are in
@@ -232,7 +233,7 @@ class NfaState
     scache.push_back(ret);
     return ret.get();
   }
-  /**  
+  /**
    * Edges from this state. Maps constant characters, re.allchar or re.range
    * to the list of children connected via an edge with that label.
    */
@@ -291,7 +292,7 @@ bool RegExpEval::canEvaluate(const Node& r)
 bool RegExpEval::evaluate(String& s, const Node& r)
 {
   // no intersection, complement, and r must be constant.
-  Assert (canEvaluate(r));
+  Assert(canEvaluate(r));
   NfaState accept;
   std::vector<std::shared_ptr<NfaState>> scache;
   NfaState* rs = NfaState::construct(r, &accept, scache);
