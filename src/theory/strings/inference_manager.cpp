@@ -30,16 +30,6 @@ namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
-/*
-class ExplainCriteria
-{
-public:
-  virtual bool processCurrent(std::vector<TNode>& cc,
-                              bool& isConflict) = 0;
-  virtual bool isFinished() = 0;
-};
-*/
-
 InferenceManager::InferenceManager(Env& env,
                                    Theory& t,
                                    SolverState& s,
