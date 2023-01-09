@@ -1,4 +1,5 @@
 (set-logic ALL)
+(set-info :status unsat)
 (declare-fun x () String)
 (declare-fun y () String)
 (declare-fun z () String)
