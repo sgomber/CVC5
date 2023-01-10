@@ -149,7 +149,6 @@ void Strategy::initializeStrategy()
     {
       addStrategyStep(CHECK_EXTF_REDUCTION);
     }
-    addStrategyStep(CHECK_MEMBERSHIP_INCLUSION);  // heuristic, TODO: move up?
     addStrategyStep(CHECK_MEMBERSHIP);            // LOOKAHEAD, may add lemmas
     addStrategyStep(CHECK_CARDINALITY);           // HANDLED
     step_end[Theory::EFFORT_FULL] = d_infer_steps.size() - 1;
