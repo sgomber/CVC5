@@ -67,6 +67,11 @@ class RegExpSolver : protected EnvObj
    */
   void checkMemberships(Theory::Effort e);
   /**
+   * Check inclusions,
+   * Assumes d_assertedMems has been computed.
+   */
+  void checkInclusions();
+  /**
    * Return false if the above method may send a lemma at full effort.
    */
   bool maybeHasModel(Theory::Effort e);
@@ -75,11 +80,6 @@ class RegExpSolver : protected EnvObj
   void computeAssertedMemberships();
   /** Compute active extended terms of kind k, grouped by representative. */
   std::map<Node, std::vector<Node>> computeAssertions(Kind k) const;
-  /**
-   * Check inclusions,
-   * Assumes d_assertedMems has been computed.
-   */
-  void checkInclusions();
   /**
    * Check evaluations, which applies substitutions for normal forms to
    * regular expression memberships and evaluates them, and also calls
