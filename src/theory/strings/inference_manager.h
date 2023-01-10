@@ -242,6 +242,28 @@ class InferenceManager : public InferSideEffectProcess,
   TrustNode processLemma(InferInfo& ii, LemmaProperty& p) override;
 
  private:
+  /**
+   * min prefix explain
+   *
+   * @param x A string term
+   * @param prefix The prefix (suffix).
+   * @param assumptions The set of assumptions we are minimizing
+   * @param emap The explanation map for assumptions (getExplanationMap).
+   * @param isSuf Whether prefix denotes a suffix
+   * @return A subset of assumptions that imply x does not have the given
+   * prefix.
+   */
+  Node mkPrefixExplainMin(Node x,
+                          Node prefix,
+                          const std::vector<TNode>& assumptions,
+                          const std::map<TNode, TNode>& emap,
+                          bool isSuf = false);
+  /**
+   * Returns a mapping from terms to equalities, where t -> E if E is an
+   * equality of the form (= t *) or (= * t) from assumptions.
+   */
+  static std::map<TNode, TNode> getExplanationMap(
+      const std::vector<TNode>& assumptions);
   /** Reference to the solver state of the theory of strings. */
   SolverState& d_state;
   /** Reference to the term registry of theory of strings */

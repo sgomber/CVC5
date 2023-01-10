@@ -57,16 +57,6 @@ class RegExpSolver : protected EnvObj
                SequencesStatistics& stats);
   ~RegExpSolver() {}
 
-  /**
-   * Check inclusions
-   */
-  void checkInclusions();
-  
-  /**
-   * Check evaluations
-   */
-  void checkEvaluations();
-
   /** check regular expression memberships
    *
    * This checks the satisfiability of all regular expression memberships
@@ -76,34 +66,34 @@ class RegExpSolver : protected EnvObj
    * FroCoS 2015.
    */
   void checkMemberships(Theory::Effort e);
-
   /**
    * Return false if the above method may send a lemma at full effort.
    */
   bool maybeHasModel(Theory::Effort e);
-
  private:
-  /** compute asserted memberships */
+  /** compute asserted memberships, store in d_assertedMems */
   void computeAssertedMemberships();
-  /** check
-   *
-   * Tells this solver to check whether the regular expressions in mems
-   * are consistent. If they are not, then this class will call the
-   * sendInference method of its parent TheoryString object, indicating that
-   * it requires a conflict or lemma to be processed.
-   *
-   * The argument mems maps representative string terms r to memberships of the
-   * form (t in R) or ~(t in R), where t = r currently holds in the equality
-   * engine of the theory of strings.
-   *
-   * We check in two phases:
-   * (1) checkInclInter which checks if there are conflicts due to quick
-   * inclusion/intersection testing. This method returns true if a conflict is
-   * discovered.
-   * (2) checkUnfold, which unfolds regular expression memberships as necessary
+  /** Compute active extended terms of kind k, grouped by representative. */
+  std::map<Node, std::vector<Node>> computeAssertions(Kind k) const;
+  /**
+   * Check inclusions,
+   * Assumes d_assertedMems has been computed.
    */
-  void checkUnfold(const std::map<Node, std::vector<Node>>& mems,
-                   Theory::Effort effort);
+  void checkInclusions();
+  /**
+   * Check evaluations, which applies substitutions for normal forms to
+   * regular expression memberships and evaluates them, and also calls
+   * other methods (e.g. partial derivative computations) for the purposes
+   * of discovering conflictx.
+   * Assumes d_assertedMems has been computed.
+   */
+  void checkEvaluations();
+  /**
+   * Check unfold, which unfolds regular expression memberships based on the
+   * effort level.
+   * Assumes d_assertedMems has been computed.
+   */
+  void checkUnfold(Theory::Effort effort);
   /**
    * Check memberships in equivalence class for regular expression
    * inclusion.
@@ -116,7 +106,6 @@ class RegExpSolver : protected EnvObj
    *             ... (~)str.in.re(xn, Rn) where x1 = ... = xn in the
    *             current context. The function removes elements from this
    *             vector that were marked as reduced.
-   * @param expForRe Additional explanations for regular expressions.
    * @return False if a conflict was detected, true otherwise
    */
   bool checkEqcInclusion(std::vector<Node>& mems);
@@ -139,6 +128,12 @@ class RegExpSolver : protected EnvObj
    * the given polarity at the given effort.
    */
   bool shouldUnfold(Theory::Effort e, bool pol) const;
+  /**
+   * Add the unfolding lemma for asserted regular expression membership
+   * assertion. Return true if a lemma was successfully sent to the inference
+   * manager.
+   */
+  bool doUnfold(const Node& assertion);
   // Constants
   Node d_emptyString;
   Node d_emptyRegexp;
@@ -154,8 +149,6 @@ class RegExpSolver : protected EnvObj
   ExtfSolver& d_esolver;
   /** Reference to the statistics for the theory of strings/sequences. */
   SequencesStatistics& d_statistics;
-  // check membership constraints
-  Node mkAnd(Node c1, Node c2);
   /**
    * Check partial derivative
    *
@@ -166,8 +159,7 @@ class RegExpSolver : protected EnvObj
    * normalized form of atom that may be modified using a substitution whose
    * explanation is nf_exp.
    */
-  bool checkPDerivative(
-      Node x, Node r, Node atom, std::vector<Node>& nf_exp);
+  bool checkPDerivative(Node x, Node r, Node atom, std::vector<Node>& nf_exp);
   cvc5::internal::String getHeadConst(Node x);
   bool deriveRegExp(Node x, Node r, Node atom, std::vector<Node>& ant);
   Node getNormalSymRegExp(Node r, std::vector<Node>& nf_exp);
