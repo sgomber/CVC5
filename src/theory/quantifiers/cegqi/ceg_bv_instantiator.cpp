@@ -193,6 +193,10 @@ Node BvInstantiator::hasProcessAssertion(CegInstantiator* ci,
       ret = s.eqNode(t);
     }
   }
+  else if (options().quantifiers.cegqiBvIneqMode==options::CegqiBvIneqMode::IGNORE)
+  {
+    return Node::null();
+  }
   else
   {
     // turn disequality into an inequality

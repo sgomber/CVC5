@@ -1611,6 +1611,9 @@ name   = "Quantifiers"
 [[option.mode.KEEP]]
   name = "keep"
   help = "Solve for the inequality directly using side conditions for invertibility."
+[[option.mode.IGNORE]]
+  name = "ignore"
+  help = "Do not solve for inequalities."
 
 [[option]]
   name       = "cegqiBvRmExtract"
