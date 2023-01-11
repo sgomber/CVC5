@@ -105,8 +105,11 @@ bool ExtfSolver::shouldDoReduction(int effort, Node n, int pol)
       || (options().strings.stringRegexpPosConcatEager && k == STRING_CONTAINS
           && pol == 1))
   {
-    // we reduce these semi-eagerly, at effort 1
-    return (effort == 1);
+    if (options().strings.stringRegexpPosConcatEager)
+    {
+      // if option is set, we reduce these semi-eagerly, at effort 1
+      return (effort == 1);
+    }
   }
   else if (k == STRING_CONTAINS && pol == -1)
   {
