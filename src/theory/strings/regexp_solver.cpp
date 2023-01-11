@@ -59,9 +59,9 @@ std::map<Node, std::vector<Node>> RegExpSolver::computeAssertions(Kind k) const
 {
   std::map<Node, std::vector<Node>> assertions;
   // add the memberships
-  std::vector<Node> mems = d_esolver.getActive(k);
+  std::vector<Node> xts = d_esolver.getActive(k);
   // maps representatives to regular expression memberships in that class
-  for (const Node& n : mems)
+  for (const Node& n : xts)
   {
     Assert(n.getKind() == k);
     Node r = d_state.getRepresentative(n);
@@ -340,6 +340,7 @@ bool RegExpSolver::doUnfold(const Node& assertion)
   }
   return ret;
 }
+
 Node RegExpSolver::getRegularExpressionFrom(const Node& n) const
 {
   if (n.getKind() == STRING_IN_REGEXP)
@@ -604,12 +605,12 @@ bool RegExpSolver::checkPDerivative(Node x,
         std::vector<Node> iexp = nf_exp;
         iexp.insert(iexp.end(), noExplain.begin(), noExplain.end());
         d_im.sendInference(iexp, noExplain, exp, InferenceId::STRINGS_RE_DELTA);
-        d_im.markInactive(atom, ExtReducedId::UNKNOWN);
+        d_im.markInactive(atom, ExtReducedId::STRINGS_REGEXP_PDERIVATIVE);
         return false;
       }
       case 1:
       {
-        d_im.markInactive(atom, ExtReducedId::UNKNOWN);
+        d_im.markInactive(atom, ExtReducedId::STRINGS_REGEXP_PDERIVATIVE);
         break;
       }
       case 2:
@@ -634,7 +635,7 @@ bool RegExpSolver::checkPDerivative(Node x,
   {
     if (deriveRegExp(x, r, atom, nf_exp))
     {
-      d_im.markInactive(atom, ExtReducedId::UNKNOWN);
+      d_im.markInactive(atom, ExtReducedId::STRINGS_REGEXP_PDERIVATIVE);
       return false;
     }
   }
@@ -821,7 +822,7 @@ void RegExpSolver::checkEvaluations()
           if (tmp.getConst<bool>() == polarity)
           {
             // it is satisfied in this SAT context
-            d_im.markInactive(atom, ExtReducedId::UNKNOWN);
+            d_im.markInactive(atom, ExtReducedId::STRINGS_REGEXP_RE_SYM_NF);
             continue;
           }
           else
