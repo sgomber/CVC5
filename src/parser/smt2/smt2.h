@@ -86,6 +86,8 @@ class Smt2State : public ParserState
 
   bool isOperatorEnabled(const std::string& name) const;
 
+  /** Parse optimization kind */
+  ObjectiveKind getObjectiveKind(const std::string& k);
   /** Parse block models mode */
   modes::BlockModelsMode getBlockModelsMode(const std::string& mode);
   /** Parse learned literal type */

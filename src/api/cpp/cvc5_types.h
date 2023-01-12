@@ -117,10 +117,12 @@ enum RoundingMode
 };
 
 /**
- * The different reasons for returning an "unknown" result.
+ * Different kinds of objectives
  */
 enum ObjectiveKind
 {
+  OBJECTIVE_NONE,
+  // TODO
   OBJECTIVE_PARETO,
 };
 
