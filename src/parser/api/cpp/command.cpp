@@ -755,14 +755,14 @@ void CheckSynthCommand::toStream(std::ostream& out) const
   }
 }
 
-
 /* -------------------------------------------------------------------------- */
-/* class OptimizeSatNextCommand                                                         */
+/* class OptimizeSatNextCommand */
 /* -------------------------------------------------------------------------- */
 
 OptimizeSatNextCommand::OptimizeSatNextCommand() {}
 
-void OptimizeSatNextCommand::printResult(cvc5::Solver* solver, std::ostream& out) const
+void OptimizeSatNextCommand::printResult(cvc5::Solver* solver,
+                                         std::ostream& out) const
 {
   out << d_result;
 }

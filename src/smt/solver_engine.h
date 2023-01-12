@@ -29,9 +29,9 @@
 #include "options/options.h"
 #include "smt/smt_mode.h"
 #include "theory/logic_info.h"
+#include "util/omt_result.h"
 #include "util/result.h"
 #include "util/synth_result.h"
-#include "util/omt_result.h"
 
 namespace cvc5 {
 
@@ -432,13 +432,12 @@ class CVC5_EXPORT SolverEngine
 
   /*------------------------- end of sygus commands ------------------------*/
 
-  
   /*------------------------- OMT commands ------------------------------*/
   OmtResult optimizeSat(const omt::Objective& obj) const;
   OmtResult optimizeSatNext() const;
   std::string getObjective() const;
   /*------------------------- end of OMT commands ------------------------*/
-  
+
   /**
    * Declare pool whose initial value is the terms in initValue. A pool is
    * a variable of type (Set T) that is used in quantifier annotations and does

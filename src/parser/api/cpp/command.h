@@ -741,10 +741,12 @@ class CVC5_EXPORT DefineObjectiveCommand : public DeclarationDefinitionCommand
 /**
  * TODO
  */
-class CVC5_EXPORT DefineMultiObjectiveCommand : public DeclarationDefinitionCommand
+class CVC5_EXPORT DefineMultiObjectiveCommand
+    : public DeclarationDefinitionCommand
 {
  public:
-  DefineMultiObjectiveCommand(ObjectiveKind k, const std::vector<Objective>& children);
+  DefineMultiObjectiveCommand(ObjectiveKind k,
+                              const std::vector<Objective>& children);
   // TODO
  protected:
 };
@@ -775,6 +777,7 @@ class CVC5_EXPORT OptimizeSatNextCommand : public Command
   std::string getCommandName() const override;
   /** prints this command */
   void toStream(std::ostream& out) const override;
+
  protected:
   /** result of the optimize-sat-next call */
   cvc5::OmtResult d_result;

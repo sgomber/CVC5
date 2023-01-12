@@ -116,7 +116,6 @@ enum RoundingMode
   ROUND_NEAREST_TIES_TO_AWAY,
 };
 
-
 /**
  * The different reasons for returning an "unknown" result.
  */

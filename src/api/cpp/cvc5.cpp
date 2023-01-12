@@ -4822,23 +4822,19 @@ std::ostream& operator<<(std::ostream& out, const Grammar& grammar)
 }
 
 /* -------------------------------------------------------------------------- */
-/* Objective                                                                    */
+/* Objective */
 /* -------------------------------------------------------------------------- */
 
-Objective::Objective(const internal::omt::Objective& obj) : d_obj(new internal::omt::Objective(obj)) {}
-
-Objective::Objective(ObjectiveKind k, Term t)
+Objective::Objective(const internal::omt::Objective& obj)
+    : d_obj(new internal::omt::Objective(obj))
 {
 }
 
-Objective::Objective(ObjectiveKind k, const std::vector<Objective>& children)
-{
-}
+Objective::Objective(ObjectiveKind k, Term t) {}
 
-ObjectiveKind Objective::getKind() const
-{
-  
-}
+Objective::Objective(ObjectiveKind k, const std::vector<Objective>& children) {}
+
+ObjectiveKind Objective::getKind() const {}
 
 Term Objective::getTerm() const
 {
@@ -4870,10 +4866,7 @@ Objective Objective::getChild(size_t i) const
   CVC5_API_TRY_CATCH_END;
 }
 
-bool Objective::isNullHelper() const
-{
-  return d_obj!=nullptr;
-}
+bool Objective::isNullHelper() const { return d_obj != nullptr; }
 
 /* -------------------------------------------------------------------------- */
 /* Options                                                                    */

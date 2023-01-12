@@ -2035,24 +2035,29 @@ void Smt2Printer::toStreamCmdEcho(std::ostream& out,
   out << "(echo " << cvc5::internal::quoteString(output) << ')' << std::endl;
 }
 
-
-void Smt2Printer::toStreamCmdDefineObjective(std::ostream& out, ObjectiveKind k, const Node& t) const
+void Smt2Printer::toStreamCmdDefineObjective(std::ostream& out,
+                                             ObjectiveKind k,
+                                             const Node& t) const
 {
   // TODO
 }
-void Smt2Printer::toStreamCmdDefineMultiObjective(std::ostream& out, ObjectiveKind k, const std::vector<omt::Objective>& children) const
+void Smt2Printer::toStreamCmdDefineMultiObjective(
+    std::ostream& out,
+    ObjectiveKind k,
+    const std::vector<omt::Objective>& children) const
 {
   // TODO
 }
-void  Smt2Printer::toStreamCmdOptimizeSat(std::ostream& out, const omt::Objective& obj) const 
+void Smt2Printer::toStreamCmdOptimizeSat(std::ostream& out,
+                                         const omt::Objective& obj) const
 {
   // TODO
 }
-void  Smt2Printer::toStreamCmdOptimizeSatNext(std::ostream& out) const
+void Smt2Printer::toStreamCmdOptimizeSatNext(std::ostream& out) const
 {
   out << "(optimize-sat-next)" << std::endl;
 }
-void  Smt2Printer::toStreamCmdGetObjective(std::ostream& out) const
+void Smt2Printer::toStreamCmdGetObjective(std::ostream& out) const
 {
   // TODO
 }

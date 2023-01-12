@@ -47,8 +47,8 @@ class OmtResult
   OmtResult();
   /** Constructor when the solution is not successful */
   OmtResult(Status s,
-              UnknownExplanation unknownExplanation =
-                  UnknownExplanation::UNKNOWN_REASON);
+            UnknownExplanation unknownExplanation =
+                UnknownExplanation::UNKNOWN_REASON);
 
   /** Get the status */
   Status getStatus() const;

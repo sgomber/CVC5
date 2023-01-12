@@ -17,14 +17,23 @@
 namespace cvc5::internal {
 namespace omt {
 
-Objective::Objective(ObjectiveKind k, const Node& term) : d_kind(k), d_term(term) {}
-Objective::Objective(ObjectiveKind k, const std::vector<std::shared_ptr<Objective>>& children) : d_kind(k), d_children(children) {}
+Objective::Objective(ObjectiveKind k, const Node& term)
+    : d_kind(k), d_term(term)
+{
+}
+Objective::Objective(ObjectiveKind k,
+                     const std::vector<std::shared_ptr<Objective>>& children)
+    : d_kind(k), d_children(children)
+{
+}
 
 ObjectiveKind Objective::getKind() const { return d_kind; }
 const Node& Objective::getTerm() const { return d_term; }
 size_t Objective::getNumChildren() const { return d_children.size(); }
-const Objective& Objective::getChild(size_t i) const { return *d_children[i].get(); }
-
+const Objective& Objective::getChild(size_t i) const
+{
+  return *d_children[i].get();
 }
-}  // namespace cvc5::internal
 
+}  // namespace omt
+}  // namespace cvc5::internal

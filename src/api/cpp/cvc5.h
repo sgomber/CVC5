@@ -62,7 +62,7 @@ class SynthResult;
 class StatisticsRegistry;
 
 namespace omt {
-  class Objective;
+class Objective;
 }
 }  // namespace internal
 
@@ -346,7 +346,6 @@ class CVC5_EXPORT SynthResult
  */
 std::ostream& operator<<(std::ostream& out, const SynthResult& r) CVC5_EXPORT;
 
-
 /* -------------------------------------------------------------------------- */
 /* SynthResult                                                                */
 /* -------------------------------------------------------------------------- */
@@ -426,7 +425,6 @@ class CVC5_EXPORT OmtResult
  * @return The output stream.
  */
 std::ostream& operator<<(std::ostream& out, const OmtResult& r) CVC5_EXPORT;
-
 
 /* -------------------------------------------------------------------------- */
 /* Sort                                                                       */
@@ -2976,11 +2974,13 @@ class CVC5_EXPORT Objective
 {
   friend class parser::Command;
   friend class Solver;
+
  public:
   ObjectiveKind getKind() const;
   Term getTerm() const;
   size_t getNumChildren() const;
   Objective getChild(size_t i) const;
+
  private:
   /**
    * Helper for isNull checks. This prevents calling an API function with
@@ -5141,9 +5141,7 @@ class CVC5_EXPORT Solver
   OmtResult optimizeSat(const Objective& obj) const;
   OmtResult optimizeSatNext() const;
   std::string getObjective() const;
-  
-  
-  
+
   /**
    * Get a snapshot of the current state of the statistic values of this
    * solver. The returned object is completely decoupled from the solver and

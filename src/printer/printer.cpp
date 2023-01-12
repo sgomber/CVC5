@@ -552,16 +552,21 @@ void Printer::toStreamCmdDeclareHeap(std::ostream& out,
   printUnknownCommand(out, "declare-heap");
 }
 
-
-void Printer::toStreamCmdDefineObjective(std::ostream& out, ObjectiveKind k, const Node& t) const
+void Printer::toStreamCmdDefineObjective(std::ostream& out,
+                                         ObjectiveKind k,
+                                         const Node& t) const
 {
   printUnknownCommand(out, "define-objective");
 }
-void Printer::toStreamCmdDefineMultiObjective(std::ostream& out, ObjectiveKind k, const std::vector<omt::Objective>& children) const
+void Printer::toStreamCmdDefineMultiObjective(
+    std::ostream& out,
+    ObjectiveKind k,
+    const std::vector<omt::Objective>& children) const
 {
   printUnknownCommand(out, "define-multi-objective");
 }
-void Printer::toStreamCmdOptimizeSat(std::ostream& out, const omt::Objective& obj) const
+void Printer::toStreamCmdOptimizeSat(std::ostream& out,
+                                     const omt::Objective& obj) const
 {
   printUnknownCommand(out, "optimize-sat");
 }
