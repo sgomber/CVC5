@@ -22,10 +22,10 @@
 #include "context/cdlist.h"
 #include "expr/node.h"
 #include "expr/type_node.h"
-#include "smt/env_obj.h"
-#include "util/result.h"
-#include "util/omt_result.h"
 #include "omt/objective.h"
+#include "smt/env_obj.h"
+#include "util/omt_result.h"
+#include "util/result.h"
 
 namespace cvc5::internal {
 
@@ -248,7 +248,6 @@ class OptimizationSolver : protected EnvObj
    *   each containing the outcome and the value.
    **/
   std::vector<OptimizationResult> getValues();
-  
 
  private:
   /**
@@ -321,10 +320,9 @@ class OptimizationSolver : protected EnvObj
   std::vector<OptimizationResult> d_results;
 };
 
-
 class OmtSolver : protected EnvObj
 {
-public:
+ public:
   OmtSolver(Env& env);
   /** ============================================================= **/
   OmtResult optimizeSat(const omt::Objective& obj) const;

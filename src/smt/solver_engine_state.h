@@ -23,9 +23,9 @@
 #include "context/context.h"
 #include "smt/env_obj.h"
 #include "smt/smt_mode.h"
+#include "util/omt_result.h"
 #include "util/result.h"
 #include "util/synth_result.h"
-#include "util/omt_result.h"
 
 namespace cvc5::internal {
 
