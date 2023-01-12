@@ -4830,10 +4830,13 @@ Objective::Objective(const internal::omt::Objective& obj)
 {
 }
 
-Objective::Objective(ObjectiveKind k, Term t) :
-d_obj(new internal::omt::Objective(k, *t.d_node.get())){}
+Objective::Objective(ObjectiveKind k, Term t)
+    : d_obj(new internal::omt::Objective(k, *t.d_node.get()))
+{
+}
 
-Objective::Objective(ObjectiveKind k, const std::vector<Objective>& children) {
+Objective::Objective(ObjectiveKind k, const std::vector<Objective>& children)
+{
   std::vector<std::shared_ptr<internal::omt::Objective>> ichildren;
   for (const Objective& o : children)
   {
@@ -4842,7 +4845,7 @@ Objective::Objective(ObjectiveKind k, const std::vector<Objective>& children) {
   d_obj = std::make_shared<internal::omt::Objective>(k, ichildren);
 }
 
-ObjectiveKind Objective::getKind() const 
+ObjectiveKind Objective::getKind() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_CHECK_NOT_NULL;
@@ -4850,7 +4853,6 @@ ObjectiveKind Objective::getKind() const
   return d_obj->getKind();
   ////////
   CVC5_API_TRY_CATCH_END;
-  
 }
 
 Term Objective::getTerm() const

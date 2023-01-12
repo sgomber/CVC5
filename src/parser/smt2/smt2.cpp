@@ -335,7 +335,6 @@ bool Smt2State::isOperatorEnabled(const std::string& name) const
   return d_operatorKindMap.find(name) != d_operatorKindMap.end();
 }
 
-
 ObjectiveKind Smt2State::getObjectiveKind(const std::string& k)
 {
   if (k == "pareto")
