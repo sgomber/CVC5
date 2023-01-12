@@ -896,10 +896,17 @@ SynthResult SolverEngine::checkSynth(bool isNext)
     Handling OMT commands
    --------------------------------------------------------------------------
 */
-OmtResult SolverEngine::optimizeSat(const omt::Objective& obj) const {}
+OmtResult SolverEngine::optimizeSat(const omt::Objective& obj) const {
+  // TODO call internal OMT solver
+}
 
-OmtResult SolverEngine::optimizeSatNext() const {}
-std::string SolverEngine::getObjective() const {}
+OmtResult SolverEngine::optimizeSatNext() const {
+  // TODO call internal OMT solver
+}
+
+std::string SolverEngine::getObjective() const {
+  // TODO call internal OMT solver
+}
 
 /*
    --------------------------------------------------------------------------

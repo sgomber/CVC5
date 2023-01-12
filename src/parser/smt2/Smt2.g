@@ -971,7 +971,7 @@ extendedCommand[std::unique_ptr<cvc5::parser::Command>* cmd]
                                  "parentheses?");
       }
     )
-  | DEFINE_OBJECTIVE_TOK { /* TODO */ }
+  | DEFINE_OBJECTIVE_TOK { /* TODO, using PARSER_STATE->getObjectiveKind */ }
   | DEFINE_MULTI_OBJECTIVE_TOK { /* TODO */ }
   | OPTIMIZE_SAT_TOK { /* TODO */ }
   | OPTIMIZE_SAT_NEXT_TOK { cmd->reset(new OptimizeSatNextCommand()); }
