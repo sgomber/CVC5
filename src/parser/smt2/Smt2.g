@@ -971,6 +971,11 @@ extendedCommand[std::unique_ptr<cvc5::parser::Command>* cmd]
                                  "parentheses?");
       }
     )
+  | DEFINE_OBJECTIVE_TOK { /* TODO */ }
+  | DEFINE_MULTI_OBJECTIVE_TOK { /* TODO */ }
+  | OPTIMIZE_SAT_TOK { /* TODO */ }
+  | OPTIMIZE_SAT_NEXT_TOK { cmd->reset(new OptimizeSatNextCommand()); }
+  | GET_OBJECTIVE_TOK { /* TODO */ }
   ;
 
 datatypeDefCommand[bool isCo, std::unique_ptr<cvc5::parser::Command>* cmd]
@@ -2008,6 +2013,13 @@ INV_CONSTRAINT_TOK : { PARSER_STATE->sygus()}?'inv-constraint';
 SET_FEATURE_TOK : { PARSER_STATE->sygus() }? 'set-feature';
 SYGUS_CONSTANT_TOK : { PARSER_STATE->hasGrammars() }? 'Constant';
 SYGUS_VARIABLE_TOK : { PARSER_STATE->sygus() }? 'Variable';
+
+// OMT commands
+DEFINE_OBJECTIVE_TOK : { PARSER_STATE->omt()}?'define-objective';
+DEFINE_MULTI_OBJECTIVE_TOK : { PARSER_STATE->omt()}?'define-multi-objective';
+OPTIMIZE_SAT_TOK : { PARSER_STATE->omt()}?'optimize-sat';
+OPTIMIZE_SAT_NEXT_TOK : { PARSER_STATE->omt()}?'optimize-sat-next';
+GET_OBJECTIVE_TOK : { PARSER_STATE->omt()}?'get-objective';
 
 // attributes
 ATTRIBUTE_PATTERN_TOK : ':pattern';

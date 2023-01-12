@@ -24,6 +24,7 @@
 #include "options/language.h"
 #include "smt/model.h"
 #include "util/result.h"
+#include "omt/objective.h"
 
 namespace cvc5::internal {
 
@@ -299,7 +300,13 @@ class CVC5_EXPORT Printer
   virtual void toStreamCmdDeclareHeap(std::ostream& out,
                                       TypeNode locType,
                                       TypeNode dataType) const;
-
+    // TODO
+  virtual void toStreamCmdDefineObjective(std::ostream& out, ObjectiveKind k, const Node& t) const;
+  virtual void toStreamCmdDefineMultiObjective(std::ostream& out, ObjectiveKind k, const std::vector<omt::Objective>& children) const;
+  virtual void toStreamCmdOptimizeSat(std::ostream& out, const omt::Objective& obj) const;
+  virtual void toStreamCmdOptimizeSatNext(std::ostream& out) const;
+  virtual void toStreamCmdGetObjective(std::ostream& out) const;
+                                      
  protected:
   /** Derived classes can construct, but no one else. */
   Printer() {}

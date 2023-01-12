@@ -53,12 +53,17 @@ class DTypeSelector;
 class NodeManager;
 class SolverEngine;
 class TypeNode;
+class OmtResult;
 class Options;
 class Random;
 class Rational;
 class Result;
 class SynthResult;
 class StatisticsRegistry;
+
+namespace omt {
+  class Objective;
+}
 }  // namespace internal
 
 namespace parser {
@@ -340,6 +345,88 @@ class CVC5_EXPORT SynthResult
  * @return The output stream.
  */
 std::ostream& operator<<(std::ostream& out, const SynthResult& r) CVC5_EXPORT;
+
+
+/* -------------------------------------------------------------------------- */
+/* SynthResult                                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Encapsulation of a solver synth result.
+ *
+ * This is the return value of the API methods:
+ *   - Solver::optimizeSat()
+ *   - Solver::optimizeSatNext()
+ *
+ * which we call synthesis queries.  This class indicates whether the
+ * synthesis query has a solution, has no solution, or is unknown.
+ */
+class CVC5_EXPORT OmtResult
+{
+  friend class Solver;
+
+ public:
+  /** Constructor. */
+  OmtResult();
+
+  /**
+   * Return true if Result is empty, i.e., a nullary Result, and not an actual
+   * result returned from a optimizeSat() (and friends) query.
+   */
+  bool isNull() const;
+
+  /**
+   * Return true if query was a optimial solution for optimizeSat() or
+   * optimizeSatNext() query.
+   */
+  bool isOptimal() const;
+  /**
+   * Return true if query was a optimial solution for optimizeSat() or
+   * optimizeSatNext() query.
+   */
+  bool isNonOptimal() const;
+
+  /**
+   * Return true if query was an unsatisfiable optimizeSat() or
+   * optimizeSatNext() query.
+   */
+  bool isUnsat() const;
+
+  /**
+   * Return true if query was a optimizeSat() or optimizeSatNext() query and
+   * cvc5 was not able to determine (un)satisfiability.
+   */
+  bool isUnknown() const;
+  /**
+   * @return A string representation of this OMT result.
+   */
+  std::string toString() const;
+
+ private:
+  /**
+   * Constructor.
+   * @param r The internal synth result that is to be wrapped by this synth.
+   *          result
+   * @return The OmtResult.
+   */
+  OmtResult(const internal::OmtResult& r);
+  /**
+   * The internal result wrapped by this result.
+   *
+   * @note This is a `std::shared_ptr` rather than a `std::unique_ptr`
+   *       since `internal::OmtResult` is not ref counted.
+   */
+  std::shared_ptr<internal::OmtResult> d_result;
+};
+
+/**
+ * Serialize a OmtResult to given stream.
+ * @param out The output stream.
+ * @param r The result to be serialized to the given output stream.
+ * @return The output stream.
+ */
+std::ostream& operator<<(std::ostream& out, const OmtResult& r) CVC5_EXPORT;
+
 
 /* -------------------------------------------------------------------------- */
 /* Sort                                                                       */
@@ -1082,6 +1169,7 @@ class CVC5_EXPORT Term
   friend class Datatype;
   friend class DatatypeConstructor;
   friend class DatatypeSelector;
+  friend class Objective;
   friend class Solver;
   friend class Grammar;
   friend class SynthResult;
@@ -2881,6 +2969,29 @@ class CVC5_EXPORT Grammar
  */
 std::ostream& operator<<(std::ostream& out, const Grammar& g) CVC5_EXPORT;
 
+/* -------------------------------------------------------------------------- */
+/* Objectives                                                                 */
+/* -------------------------------------------------------------------------- */
+class CVC5_EXPORT Objective
+{
+  friend class parser::Command;
+  friend class Solver;
+ public:
+  ObjectiveKind getKind() const;
+  Term getTerm() const;
+  size_t getNumChildren() const;
+  Objective getChild(size_t i) const;
+ private:
+  /**
+   * Helper for isNull checks. This prevents calling an API function with
+   * CVC5_API_CHECK_NOT_NULL
+   */
+  bool isNullHelper() const;
+  Objective(const internal::omt::Objective& obj);
+  Objective(ObjectiveKind k, Term t);
+  Objective(ObjectiveKind k, const std::vector<Objective>& children);
+  std::shared_ptr<internal::omt::Objective> d_obj;
+};
 /* -------------------------------------------------------------------------- */
 /* Options                                                                    */
 /* -------------------------------------------------------------------------- */
@@ -5024,6 +5135,15 @@ class CVC5_EXPORT Solver
    */
   std::vector<Term> getSynthSolutions(const std::vector<Term>& terms) const;
 
+  // OMT
+  Objective mkObjective();
+  Objective mkMultiObjective(const std::vector<Objective>& objs);
+  OmtResult optimizeSat(const Objective& obj) const;
+  OmtResult optimizeSatNext() const;
+  std::string getObjective() const;
+  
+  
+  
   /**
    * Get a snapshot of the current state of the statistic values of this
    * solver. The returned object is completely decoupled from the solver and

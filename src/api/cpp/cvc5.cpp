@@ -55,6 +55,7 @@
 #include "expr/node_manager.h"
 #include "expr/sequence.h"
 #include "expr/type_node.h"
+#include "omt/objective.h"
 #include "options/base_options.h"
 #include "options/expr_options.h"
 #include "options/main_options.h"
@@ -76,6 +77,7 @@
 #include "util/finite_field_value.h"
 #include "util/floatingpoint.h"
 #include "util/iand.h"
+#include "util/omt_result.h"
 #include "util/random.h"
 #include "util/regexp.h"
 #include "util/result.h"
@@ -1126,6 +1128,46 @@ bool SynthResult::isUnknown() const
 std::string SynthResult::toString(void) const { return d_result->toString(); }
 
 std::ostream& operator<<(std::ostream& out, const SynthResult& sr)
+{
+  out << sr.toString();
+  return out;
+}
+
+/* -------------------------------------------------------------------------- */
+/* OmtResult */
+/* -------------------------------------------------------------------------- */
+
+OmtResult::OmtResult(const internal::OmtResult& r)
+    : d_result(new internal::OmtResult(r))
+{
+}
+
+OmtResult::OmtResult() : d_result(new internal::OmtResult()) {}
+
+bool OmtResult::isNull() const
+{
+  return d_result->getStatus() == internal::OmtResult::NONE;
+}
+bool OmtResult::isOptimal() const
+{
+  return d_result->getStatus() == internal::OmtResult::OPTIMAL;
+}
+bool OmtResult::isNonOptimal() const
+{
+  return d_result->getStatus() == internal::OmtResult::NON_OPTIMAL;
+}
+bool OmtResult::isUnsat() const
+{
+  return d_result->getStatus() == internal::OmtResult::UNSAT;
+}
+bool OmtResult::isUnknown() const
+{
+  return d_result->getStatus() == internal::OmtResult::UNKNOWN;
+}
+
+std::string OmtResult::toString(void) const { return d_result->toString(); }
+
+std::ostream& operator<<(std::ostream& out, const OmtResult& sr)
 {
   out << sr.toString();
   return out;
@@ -4780,6 +4822,60 @@ std::ostream& operator<<(std::ostream& out, const Grammar& grammar)
 }
 
 /* -------------------------------------------------------------------------- */
+/* Objective                                                                    */
+/* -------------------------------------------------------------------------- */
+
+Objective::Objective(const internal::omt::Objective& obj) : d_obj(new internal::omt::Objective(obj)) {}
+
+Objective::Objective(ObjectiveKind k, Term t)
+{
+}
+
+Objective::Objective(ObjectiveKind k, const std::vector<Objective>& children)
+{
+}
+
+ObjectiveKind Objective::getKind() const
+{
+  
+}
+
+Term Objective::getTerm() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_CHECK_NOT_NULL;
+  //////// all checks before this line
+  return Term(internal::NodeManager::currentNM(), d_obj->getTerm());
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+size_t Objective::getNumChildren() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_CHECK_NOT_NULL;
+  //////// all checks before this line
+  return d_obj->getNumChildren();
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+Objective Objective::getChild(size_t i) const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_CHECK_NOT_NULL;
+  //////// all checks before this line
+  return Objective(d_obj->getChild(i));
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+bool Objective::isNullHelper() const
+{
+  return d_obj!=nullptr;
+}
+
+/* -------------------------------------------------------------------------- */
 /* Options                                                                    */
 /* -------------------------------------------------------------------------- */
 
@@ -7780,6 +7876,34 @@ std::vector<Term> Solver::getSynthSolutions(
   }
 
   return synthSolution;
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+OmtResult Solver::optimizeSat(const Objective& obj) const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  // TODO checks
+  //////// all checks before this line
+  return d_slv->optimizeSat(*obj.d_obj);
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+OmtResult Solver::optimizeSatNext() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  // TODO checks
+  //////// all checks before this line
+  return d_slv->optimizeSatNext();
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+std::string Solver::getObjective() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  // TODO checks
+  //////// all checks before this line
+  return d_slv->getObjective();
   ////////
   CVC5_API_TRY_CATCH_END;
 }

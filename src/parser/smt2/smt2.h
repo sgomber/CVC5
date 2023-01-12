@@ -238,6 +238,10 @@ class Smt2State : public ParserState
 
   /** Are we using a sygus language? */
   bool sygus() const;
+  
+  /** Are we supporting the OMT extension? */
+  bool omt() const;
+
 
   /**
    * Are we using SyGuS grammars? This is true if the input is the SyGuS

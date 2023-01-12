@@ -261,6 +261,11 @@ class Smt2Printer : public cvc5::internal::Printer
                               TypeNode locType,
                               TypeNode dataType) const override;
 
+   void toStreamCmdDefineObjective(std::ostream& out, ObjectiveKind k, const Node& t) const override;
+void toStreamCmdDefineMultiObjective(std::ostream& out, ObjectiveKind k, const std::vector<omt::Objective>& children) const override;
+   void toStreamCmdOptimizeSat(std::ostream& out, const omt::Objective& obj) const override;
+   void toStreamCmdOptimizeSatNext(std::ostream& out) const override;
+   void toStreamCmdGetObjective(std::ostream& out) const override;
   /**
    * Get the string for a kind k, which returns how the kind k is printed in
    * the SMT-LIB format.

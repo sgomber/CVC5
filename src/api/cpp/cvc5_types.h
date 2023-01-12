@@ -116,6 +116,15 @@ enum RoundingMode
   ROUND_NEAREST_TIES_TO_AWAY,
 };
 
+
+/**
+ * The different reasons for returning an "unknown" result.
+ */
+enum ObjectiveKind
+{
+  OBJECTIVE_PARETO,
+};
+
 }  // namespace cvc5
 
 namespace cvc5::modes {

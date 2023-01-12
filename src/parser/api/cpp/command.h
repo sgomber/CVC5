@@ -725,7 +725,70 @@ class CVC5_EXPORT CheckSynthCommand : public Command
   std::stringstream d_solution;
 };
 
-/* ------------------- sygus commands  ------------------ */
+/* ------------------- end of sygus commands  ------------------ */
+
+/* ------------------- OMT commands  ------------------ */
+/**
+ * TODO
+ */
+class CVC5_EXPORT DefineObjectiveCommand : public DeclarationDefinitionCommand
+{
+ public:
+  DefineObjectiveCommand(ObjectiveKind k, Term t);
+  // TODO
+ protected:
+};
+/**
+ * TODO
+ */
+class CVC5_EXPORT DefineMultiObjectiveCommand : public DeclarationDefinitionCommand
+{
+ public:
+  DefineMultiObjectiveCommand(ObjectiveKind k, const std::vector<Objective>& children);
+  // TODO
+ protected:
+};
+/**
+ * TODO
+ */
+class CVC5_EXPORT OptimizeSatCommand : public Command
+{
+ public:
+  OptimizeSatCommand(const Objective& obj);
+  // TODO
+};
+/**
+ * TODO
+ */
+class CVC5_EXPORT OptimizeSatNextCommand : public Command
+{
+ public:
+  OptimizeSatNextCommand();
+  /** returns the result of the optimize-sat-next call */
+  cvc5::OmtResult getResult() const;
+  /** prints the result of the optimize-sat-next call */
+  void printResult(cvc5::Solver* solver, std::ostream& out) const override;
+  /** invokes this command
+   */
+  void invoke(cvc5::Solver* solver, parser::SymbolManager* sm) override;
+  /** returns this command's name */
+  std::string getCommandName() const override;
+  /** prints this command */
+  void toStream(std::ostream& out) const override;
+ protected:
+  /** result of the optimize-sat-next call */
+  cvc5::OmtResult d_result;
+};
+/**
+ * TODO
+ */
+class CVC5_EXPORT GetObjectiveCommand : public Command
+{
+ public:
+  GetObjectiveCommand();
+  // TODO
+};
+/* ------------------- end of OMT commands  ------------------ */
 
 // this is TRANSFORM in the CVC presentation language
 class CVC5_EXPORT SimplifyCommand : public Command

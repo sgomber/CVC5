@@ -941,6 +941,8 @@ Grammar* Smt2State::mkGrammar(const std::vector<Term>& boundVars,
 
 bool Smt2State::sygus() const { return d_isSygus; }
 
+bool Smt2State::omt() const { return true; }
+
 bool Smt2State::hasGrammars() const
 {
   return sygus() || d_solver->getOption("produce-abducts") == "true"

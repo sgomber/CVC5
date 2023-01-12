@@ -891,6 +891,30 @@ SynthResult SolverEngine::checkSynth(bool isNext)
    --------------------------------------------------------------------------
 */
 
+/*
+   --------------------------------------------------------------------------
+    Handling OMT commands
+   --------------------------------------------------------------------------
+*/
+OmtResult SolverEngine::optimizeSat(const omt::Objective& obj) const
+{
+}
+
+OmtResult SolverEngine::optimizeSatNext() const
+{
+  
+}
+std::string SolverEngine::getObjective() const
+{
+  
+}
+  
+/*
+   --------------------------------------------------------------------------
+    End of Handling OMT commands
+   --------------------------------------------------------------------------
+*/
+  
 void SolverEngine::declarePool(const Node& p,
                                const std::vector<Node>& initValue)
 {

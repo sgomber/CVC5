@@ -44,6 +44,8 @@ libcvc5_add_sources(
   omt/bitvector_optimizer.h
   omt/integer_optimizer.cpp
   omt/integer_optimizer.h
+  omt/objective.cpp
+  omt/objective.h
   omt/omt_optimizer.cpp
   omt/omt_optimizer.h
   options/language.cpp

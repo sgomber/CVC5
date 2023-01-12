@@ -755,6 +755,41 @@ void CheckSynthCommand::toStream(std::ostream& out) const
   }
 }
 
+
+/* -------------------------------------------------------------------------- */
+/* class OptimizeSatNextCommand                                                         */
+/* -------------------------------------------------------------------------- */
+
+OptimizeSatNextCommand::OptimizeSatNextCommand() {}
+
+void OptimizeSatNextCommand::printResult(cvc5::Solver* solver, std::ostream& out) const
+{
+  out << d_result;
+}
+
+void OptimizeSatNextCommand::invoke(cvc5::Solver* solver, SymbolManager* sm)
+{
+  try
+  {
+    d_result = solver->optimizeSatNext();
+    d_commandStatus = CommandSuccess::instance();
+  }
+  catch (exception& e)
+  {
+    d_commandStatus = new CommandFailure(e.what());
+  }
+}
+
+std::string OptimizeSatNextCommand::getCommandName() const
+{
+  return "optimize-sat-next";
+}
+
+void OptimizeSatNextCommand::toStream(std::ostream& out) const
+{
+  Printer::getPrinter(out)->toStreamCmdOptimizeSatNext(out);
+}
+
 /* -------------------------------------------------------------------------- */
 /* class ResetCommand                                                         */
 /* -------------------------------------------------------------------------- */
