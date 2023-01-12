@@ -44,7 +44,9 @@ enum class SmtMode
   // immediately after a successful call to get-interpolant
   INTERPOL,
   // immediately after a successful call to check-synth or check-synth-next
-  SYNTH
+  SYNTH,
+  // immediately after a successful call to optimize-sat
+  OPTIMIZE
 };
 /**
  * Writes a SmtMode to a stream.

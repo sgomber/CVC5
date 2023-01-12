@@ -25,6 +25,7 @@
 #include "smt/smt_mode.h"
 #include "util/result.h"
 #include "util/synth_result.h"
+#include "util/omt_result.h"
 
 namespace cvc5::internal {
 
@@ -88,6 +89,11 @@ class SolverEngineState : protected EnvObj
    * @param r The result of the check-synth or check-synth-next call.
    */
   void notifyCheckSynthResult(const SynthResult& r);
+  /**
+   * Notify that the result of the last optimize-sat or optimize-sat-next was r.
+   * @param r The result of the optimize-sat or optimize-sat-next call.
+   */
+  void notifyOptimizeSatResult(const OmtResult& r);
   /**
    * Notify that we finished an abduction query, where success is whether the
    * command was successful. This is managed independently of the above

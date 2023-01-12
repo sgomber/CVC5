@@ -24,6 +24,8 @@
 #include "expr/type_node.h"
 #include "smt/env_obj.h"
 #include "util/result.h"
+#include "util/omt_result.h"
+#include "omt/objective.h"
 
 namespace cvc5::internal {
 
@@ -246,6 +248,7 @@ class OptimizationSolver : protected EnvObj
    *   each containing the outcome and the value.
    **/
   std::vector<OptimizationResult> getValues();
+  
 
  private:
   /**
@@ -318,6 +321,16 @@ class OptimizationSolver : protected EnvObj
   std::vector<OptimizationResult> d_results;
 };
 
+
+class OmtSolver : protected EnvObj
+{
+public:
+  OmtSolver(Env& env);
+  /** ============================================================= **/
+  OmtResult optimizeSat(const omt::Objective& obj) const;
+  OmtResult optimizeSatNext() const;
+  std::string getObjective() const;
+};
 }  // namespace smt
 }  // namespace cvc5::internal
 

@@ -68,6 +68,7 @@ class SygusSolver;
 class AbductionSolver;
 class InterpolationSolver;
 class QuantElimSolver;
+class OmtSolver;
 
 struct SolverEngineStatistics;
 class PfManager;
@@ -433,9 +434,9 @@ class CVC5_EXPORT SolverEngine
   /*------------------------- end of sygus commands ------------------------*/
 
   /*------------------------- OMT commands ------------------------------*/
-  OmtResult optimizeSat(const omt::Objective& obj) const;
-  OmtResult optimizeSatNext() const;
-  std::string getObjective() const;
+  OmtResult optimizeSat(const omt::Objective& obj);
+  OmtResult optimizeSatNext();
+  std::string getObjective();
   /*------------------------- end of OMT commands ------------------------*/
 
   /**
@@ -1039,6 +1040,8 @@ class CVC5_EXPORT SolverEngine
   std::unique_ptr<smt::InterpolationSolver> d_interpolSolver;
   /** The solver for quantifier elimination queries */
   std::unique_ptr<smt::QuantElimSolver> d_quantElimSolver;
+  /** The solver for OMT queries */
+  std::unique_ptr<smt::OmtSolver> d_omtSolver;
 
   /**
    * The logic set by the user. The actual logic, which may extend the user's

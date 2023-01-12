@@ -376,6 +376,21 @@ Result OptimizationSolver::optimizeParetoNaiveGIA()
   d_optChecker->assertFormula(nm->mkOr(someObjBetter));
 
   return lastSatResult;
+}  
+
+OmtSolver::OmtSolver(Env& env) : EnvObj(env){}
+
+OmtResult OmtSolver::optimizeSat(const omt::Objective& obj) const
+{
+  // TODO
+}
+OmtResult OmtSolver::optimizeSatNext() const
+{
+  // TODO
+}
+std::string OmtSolver::getObjective() const
+{
+  // TODO
 }
 
 }  // namespace smt

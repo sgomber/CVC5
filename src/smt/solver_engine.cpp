@@ -46,6 +46,7 @@
 #include "smt/context_manager.h"
 #include "smt/env.h"
 #include "smt/expand_definitions.h"
+#include "smt/optimization_solver.h"
 #include "smt/interpolation_solver.h"
 #include "smt/listeners.h"
 #include "smt/logic_exception.h"
@@ -103,6 +104,7 @@ SolverEngine::SolverEngine(const Options* optr)
       d_abductSolver(nullptr),
       d_interpolSolver(nullptr),
       d_quantElimSolver(nullptr),
+      d_omtSolver(nullptr),
       d_isInternalSubsolver(false),
       d_stats(nullptr)
 {
@@ -118,6 +120,8 @@ SolverEngine::SolverEngine(const Options* optr)
   d_sygusSolver.reset(new SygusSolver(*d_env.get(), *d_smtSolver));
   // make the quantifier elimination solver
   d_quantElimSolver.reset(new QuantElimSolver(*d_env.get(), *d_smtSolver));
+  // make the optimization solver
+  d_omtSolver.reset(new OmtSolver(*d_env.get()));
 }
 
 bool SolverEngine::isFullyInited() const { return d_state->isFullyInited(); }
@@ -896,19 +900,41 @@ SynthResult SolverEngine::checkSynth(bool isNext)
     Handling OMT commands
    --------------------------------------------------------------------------
 */
-OmtResult SolverEngine::optimizeSat(const omt::Objective& obj) const
+OmtResult SolverEngine::optimizeSat(const omt::Objective& obj)
 {
-  // TODO call internal OMT solver
+  finishInit();
+  // call internal OMT solver
+  OmtResult result = d_omtSolver->optimizeSat(obj);
+  d_state->notifyOptimizeSatResult(result);
+  return result;
 }
 
-OmtResult SolverEngine::optimizeSatNext() const
+OmtResult SolverEngine::optimizeSatNext()
 {
-  // TODO call internal OMT solver
+  finishInit();
+  if (d_state->getMode() != SmtMode::OPTIMIZE)
+  {
+    throw RecoverableModalException(
+        "Cannot optimize-sat-next unless immediately preceded by a successful "
+        "call to optimize-sat(-next).");
+  }
+  Node abd;
+  // call internal OMT solver
+  OmtResult result = d_omtSolver->optimizeSatNext();
+  d_state->notifyOptimizeSatResult(result);
+  return result;
 }
 
-std::string SolverEngine::getObjective() const
+std::string SolverEngine::getObjective()
 {
-  // TODO call internal OMT solver
+  if (d_state->getMode() != SmtMode::OPTIMIZE)
+  {
+    throw RecoverableModalException(
+        "Cannot optimize-sat-next unless immediately preceded by a successful "
+        "call to optimize-sat(-next).");
+  }
+  finishInit();
+  return d_omtSolver->getObjective();
 }
 
 /*

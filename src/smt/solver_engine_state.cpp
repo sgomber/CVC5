@@ -99,6 +99,20 @@ void SolverEngineState::notifyCheckSynthResult(const SynthResult& r)
   }
 }
 
+void SolverEngineState::notifyOptimizeSatResult(const OmtResult& r)
+{
+  if (r.getStatus() == OmtResult::OPTIMAL || r.getStatus() == OmtResult::NON_OPTIMAL)
+  {
+    // successfully generated a synthesis solution, update to abduct state
+    d_smtMode = SmtMode::OPTIMIZE;
+  }
+  else
+  {
+    // failed, we revert to the assert state
+    d_smtMode = SmtMode::ASSERT;
+  }
+}
+
 void SolverEngineState::notifyGetAbduct(bool success)
 {
   if (success)
