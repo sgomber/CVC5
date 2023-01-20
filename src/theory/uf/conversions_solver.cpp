@@ -56,10 +56,14 @@ void ConversionsSolver::registerTerm(TNode term)
   d_registered.insert(term);
   Kind k = term.getKind();
   Node lem;
+  NodeManager * nm = NodeManager::currentNM();
   if (k == BITVECTOR_TO_NAT)
   {
+    size_t bvsize = term[0].getType().getBitVectorSize();
+    Node w = nm->mkConstInt(Rational(Integer(2).pow(bvsize)));
     // initial lemma
-    lem = 
+    lem = nm->mkNode(AND, nm->mkNode(GEQ, term, nm->mkConstInt(Rational(0))),
+                     nm->mkNode(LT, term, w));
   }
   
   if (!lem.isNull())
