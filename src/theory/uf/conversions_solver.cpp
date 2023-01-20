@@ -32,7 +32,8 @@ ConversionsSolver::ConversionsSolver(Env& env,
     : EnvObj(env),
       d_state(state),
       d_im(im),
-      d_preRegistered(userContext()),
+      d_registered(userContext()),
+      d_preRegistered(context()),
       d_reduced(userContext())
 {
 }
@@ -42,6 +43,29 @@ ConversionsSolver::~ConversionsSolver() {}
 void ConversionsSolver::preRegisterTerm(TNode term)
 {
   d_preRegistered.push_back(term);
+  // register term, which processes initial lemmas
+  registerTerm(term);
+}
+  
+void ConversionsSolver::registerTerm(TNode term)
+{
+  if (d_registered.find(term)!=d_registered.end())
+  {
+    return;
+  }
+  d_registered.insert(term);
+  Kind k = term.getKind();
+  Node lem;
+  if (k == BITVECTOR_TO_NAT)
+  {
+    // initial lemma
+    lem = 
+  }
+  
+  if (!lem.isNull())
+  {
+    d_im.lemma(lem, InferenceId::UF_ARITH_BV_CONV_REGISTER);
+  }
 }
 
 void ConversionsSolver::check()

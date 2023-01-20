@@ -938,6 +938,8 @@ enum class InferenceId
   //-------------------- end model-construction specific part
   //-------------------- end HO extension to UF
   //-------------------- UF arith/bv conversions solver
+  // registration of an arithmetic/bit-vector conversion term
+  UF_ARITH_BV_CONV_REGISTER,
   // reductions of an arithmetic/bit-vector conversion term
   UF_ARITH_BV_CONV_REDUCTION,
   //-------------------------------------- end uf theory

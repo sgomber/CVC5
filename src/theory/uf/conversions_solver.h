@@ -59,10 +59,14 @@ class ConversionsSolver : protected EnvObj
   void check();
 
  private:
+  /** register term */
+  void registerTerm(TNode term);
   /** Reference to the state object */
   TheoryState& d_state;
   /** Reference to the inference manager */
   TheoryInferenceManager& d_im;
+  /** Conversion terms that have been given reduction lemmas */
+  NodeSet d_registered;
   /** Conversion terms that have been registered */
   NodeList d_preRegistered;
   /** Conversion terms that have been given reduction lemmas */
