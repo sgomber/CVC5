@@ -56,7 +56,7 @@ class ConversionsSolver : protected EnvObj
    * Check. Run at last call effort. Adds lemms to theory inference manager
    * corresponding to reduction equalities for conversion terms.
    */
-  void check();
+  void check(const std::set<Node>& termSet);
 
  private:
   /** Reference to the state object */

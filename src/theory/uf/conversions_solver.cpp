@@ -44,7 +44,7 @@ void ConversionsSolver::preRegisterTerm(TNode term)
   d_preRegistered.push_back(term);
 }
 
-void ConversionsSolver::check()
+void ConversionsSolver::check(const std::set<Node>& termSet)
 {
   Trace("bv-convs") << "Bitvector conversion terms : " << std::endl;
   Trace("bv-convs") << "ConversionsSolver: Check reductions for "
@@ -52,7 +52,10 @@ void ConversionsSolver::check()
   // check reductions for all bv conversion terms
   for (const Node& a : d_preRegistered)
   {
-    checkReduction(a);
+    if (termSet.find(a)!=termSet.end())
+    {
+      checkReduction(a);
+    }
   }
 }
 

@@ -136,7 +136,9 @@ void TheoryUF::postCheck(Effort level)
     // check with conversions solver at last call effort
     if (d_csolver != nullptr && level == Effort::EFFORT_LAST_CALL)
     {
-      d_csolver->check();
+      std::set<Node> termSet;
+      computeRelevantTerms(termSet);
+      d_csolver->check(termSet);
     }
     // check with the higher-order extension at full effort
     if (fullEffort(level) && logicInfo().isHigherOrder())
