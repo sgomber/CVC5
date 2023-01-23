@@ -52,7 +52,9 @@ void ConversionsSolver::check(const std::set<Node>& termSet)
   // check reductions for all bv conversion terms
   for (const Node& a : d_preRegistered)
   {
-    if (termSet.find(a)!=termSet.end())
+    bool isRlv = (termSet.find(a)!=termSet.end());
+    Trace("bv-convs-debug") << "- " << a << ", is relevant = " << isRlv << std::endl;
+    if (isRlv)
     {
       checkReduction(a);
     }

@@ -137,6 +137,7 @@ void TheoryUF::postCheck(Effort level)
     if (d_csolver != nullptr && level == Effort::EFFORT_LAST_CALL)
     {
       std::set<Node> termSet;
+      collectAssertedTermsForModel(termSet);
       computeRelevantTerms(termSet);
       d_csolver->check(termSet);
     }
