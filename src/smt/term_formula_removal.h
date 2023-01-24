@@ -226,9 +226,7 @@ class RemoveTermFormulas : protected EnvObj
   /** Is proof enabled? True if proofs are enabled in any mode. */
   bool isProofEnabled() const;
   /** */
-  Node learnBranch(const Node& skolem,
-                          const Node& a,
-                          const Node& b);
+  Node learnBranch(const Node& skolem, const Node& a, const Node& b);
 }; /* class RemoveTTE */
 
 }  // namespace cvc5::internal

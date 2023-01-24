@@ -523,17 +523,18 @@ ProofGenerator* RemoveTermFormulas::getTConvProofGenerator()
 bool RemoveTermFormulas::isProofEnabled() const { return d_tpg != nullptr; }
 
 Node RemoveTermFormulas::learnBranch(const Node& skolem,
-                        const Node& a,
-                        const Node& b)
+                                     const Node& a,
+                                     const Node& b)
 {
   if (a.isConst() && b.isConst() && skolem.getType().isRealOrInt())
   {
-    NodeManager * nm = NodeManager::currentNM();
+    NodeManager* nm = NodeManager::currentNM();
     const Rational& ar = a.getConst<Rational>();
     const Rational& br = b.getConst<Rational>();
     bool aupper = (ar > br);
-    return nm->mkNode(kind::AND, nm->mkNode(kind::GEQ, aupper ? a : b, skolem),
-                      nm->mkNode(kind::GEQ, skolem, aupper ? b :a));
+    return nm->mkNode(kind::AND,
+                      nm->mkNode(kind::GEQ, aupper ? a : b, skolem),
+                      nm->mkNode(kind::GEQ, skolem, aupper ? b : a));
   }
   return Node::null();
 }
