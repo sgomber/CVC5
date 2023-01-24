@@ -313,16 +313,9 @@ Node RemoveTermFormulas::runCurrentInternal(TNode node,
       // of the lemma is used.
 
       // The new assertion
-      newAssertion = nodeManager->mkNode(
-          kind::ITE, node[0], skolem.eqNode(node[1]), skolem.eqNode(node[2]));
-      Node constraint = learnBranch(skolem, node[1], node[2]);
-      if (!constraint.isNull())
-      {
-        // not supported with proofs
-        newAssertion = nodeManager->mkNode(kind::AND, newAssertion, constraint);
-      }
+      newAssertion = getAxiomFor(node);
       // we justify it internally
-      else if (isProofEnabled())
+      if (isProofEnabled())
       {
         Trace("rtf-proof-debug")
             << "RemoveTermFormulas::run: justify " << newAssertion
@@ -336,14 +329,7 @@ Node RemoveTermFormulas::runCurrentInternal(TNode node,
         //
         // Note that the MACRO_SR_PRED_INTRO step holds due to conversion
         // of skolem into its witness form, which is node.
-        Node axiom = getAxiomFor(node);
-        d_lp->addStep(axiom, PfRule::REMOVE_TERM_FORMULA_AXIOM, {}, {node});
-        Node eq = node.eqNode(skolem);
-        d_lp->addStep(eq, PfRule::MACRO_SR_PRED_INTRO, {}, {eq});
-        d_lp->addStep(newAssertion,
-                      PfRule::MACRO_SR_PRED_TRANSFORM,
-                      {axiom, eq},
-                      {newAssertion});
+        d_lp->addStep(newAssertion, PfRule::REMOVE_TERM_FORMULA_AXIOM, {}, {node});
         newAssertionPg = d_lp.get();
       }
     }
@@ -510,7 +496,16 @@ Node RemoveTermFormulas::getAxiomFor(Node n)
   Kind k = n.getKind();
   if (k == kind::ITE)
   {
-    return nm->mkNode(kind::ITE, n[0], n.eqNode(n[1]), n.eqNode(n[2]));
+    Node skolem = nm->getSkolemManager()->mkPurifySkolem(n,
+          "termITE",
+          "a variable introduced due to term-level ITE removal");
+    Node ax = nm->mkNode(kind::ITE, n[0], skolem.eqNode(n[1]), skolem.eqNode(n[2]));
+    Node constraint = learnBranch(skolem, n[1], n[2]);
+    if (!constraint.isNull())
+    {
+      ax = nm->mkNode(kind::AND, ax, constraint);
+    }
+    return ax;
   }
   return Node::null();
 }
