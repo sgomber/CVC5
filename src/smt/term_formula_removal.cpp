@@ -25,6 +25,7 @@
 #include "proof/lazy_proof.h"
 #include "smt/env.h"
 #include "smt/logic_exception.h"
+#include "util/rational.h"
 
 using namespace std;
 
@@ -314,9 +315,14 @@ Node RemoveTermFormulas::runCurrentInternal(TNode node,
       // The new assertion
       newAssertion = nodeManager->mkNode(
           kind::ITE, node[0], skolem.eqNode(node[1]), skolem.eqNode(node[2]));
-
+      Node constraint = learnBranch(skolem, node[1], node[2]);
+      if (!constraint.isNull())
+      {
+        // not supported with proofs
+        newAssertion = nodeManager->mkNode(kind::AND, newAssertion, constraint);
+      }
       // we justify it internally
-      if (isProofEnabled())
+      else if (isProofEnabled())
       {
         Trace("rtf-proof-debug")
             << "RemoveTermFormulas::run: justify " << newAssertion
@@ -515,5 +521,21 @@ ProofGenerator* RemoveTermFormulas::getTConvProofGenerator()
 }
 
 bool RemoveTermFormulas::isProofEnabled() const { return d_tpg != nullptr; }
+
+Node RemoveTermFormulas::learnBranch(const Node& skolem,
+                        const Node& a,
+                        const Node& b)
+{
+  if (a.isConst() && b.isConst() && skolem.getType().isRealOrInt())
+  {
+    NodeManager * nm = NodeManager::currentNM();
+    const Rational& ar = a.getConst<Rational>();
+    const Rational& br = b.getConst<Rational>();
+    bool aupper = (ar > br);
+    return nm->mkNode(kind::AND, nm->mkNode(kind::GEQ, aupper ? a : b, skolem),
+                      nm->mkNode(kind::GEQ, skolem, aupper ? b :a));
+  }
+  return Node::null();
+}
 
 }  // namespace cvc5::internal
