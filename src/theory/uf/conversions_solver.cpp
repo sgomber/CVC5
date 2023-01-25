@@ -78,7 +78,7 @@ void ConversionsSolver::checkReduction(Node n)
     Trace("bv-convs") << "...already correct in model" << std::endl;
     return;
   }
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   size_t w;
   Kind k = n.getKind();
   Node rn;
@@ -88,26 +88,33 @@ void ConversionsSolver::checkReduction(Node n)
   }
   else
   {
-    Assert (k == INT_TO_BITVECTOR);
+    Assert(k == INT_TO_BITVECTOR);
     w = n.getOperator().getConst<IntToBitVector>().d_size;
   }
-  if (w>1)
+  if (w > 1)
   {
-    size_t halfW = w/2;
+    size_t halfW = w / 2;
     Node c = nm->mkConstInt(Rational(Integer(2).pow(halfW)));
     if (k == BITVECTOR_TO_NAT)
     {
-      Node rn1 = nm->mkNode(MULT, c, nm->mkNode(BITVECTOR_TO_NAT, bv::utils::mkExtract(n[0], w-1, halfW)));
-      Node rn2 = nm->mkNode(BITVECTOR_TO_NAT, bv::utils::mkExtract(n[0], halfW-1, 0));
+      Node rn1 =
+          nm->mkNode(MULT,
+                     c,
+                     nm->mkNode(BITVECTOR_TO_NAT,
+                                bv::utils::mkExtract(n[0], w - 1, halfW)));
+      Node rn2 = nm->mkNode(BITVECTOR_TO_NAT,
+                            bv::utils::mkExtract(n[0], halfW - 1, 0));
       rn = nm->mkNode(ADD, rn1, rn2);
     }
     else
     {
-      Assert (k == INT_TO_BITVECTOR);
-      Node iToBvop1 = nm->mkConst(IntToBitVector(w-halfW));
-      Node rn1 = nm->mkNode(INT_TO_BITVECTOR, iToBvop1, nm->mkNode(INTS_DIVISION, n[0], c));
+      Assert(k == INT_TO_BITVECTOR);
+      Node iToBvop1 = nm->mkConst(IntToBitVector(w - halfW));
+      Node rn1 = nm->mkNode(
+          INT_TO_BITVECTOR, iToBvop1, nm->mkNode(INTS_DIVISION, n[0], c));
       Node iToBvop2 = nm->mkConst(IntToBitVector(halfW));
-      Node rn2 = nm->mkNode(INT_TO_BITVECTOR, iToBvop2, nm->mkNode(INTS_MODULUS, n[0], c));
+      Node rn2 = nm->mkNode(
+          INT_TO_BITVECTOR, iToBvop2, nm->mkNode(INTS_MODULUS, n[0], c));
       rn = nm->mkNode(BITVECTOR_CONCAT, rn1, rn2);
     }
   }
@@ -119,7 +126,7 @@ void ConversionsSolver::checkReduction(Node n)
     }
     else
     {
-      Assert (k == INT_TO_BITVECTOR);
+      Assert(k == INT_TO_BITVECTOR);
       rn = arith::eliminateInt2Bv(n);
     }
   }
