@@ -16,9 +16,11 @@
 #include "theory/uf/conversions_solver.h"
 
 #include "theory/arith/arith_utilities.h"
+#include "theory/bv/theory_bv_utils.h"
 #include "theory/theory_inference_manager.h"
 #include "theory/theory_model.h"
 #include "theory/theory_state.h"
+#include "util/bitvector.h"
 
 using namespace cvc5::internal::kind;
 
@@ -76,18 +78,52 @@ void ConversionsSolver::checkReduction(Node n)
     Trace("bv-convs") << "...already correct in model" << std::endl;
     return;
   }
-
-  Node lem;
+  NodeManager * nm = NodeManager::currentNM();
+  size_t w;
   Kind k = n.getKind();
+  Node rn;
   if (k == BITVECTOR_TO_NAT)
   {
-    lem = arith::eliminateBv2Nat(n);
+    w = n[0].getType().getBitVectorSize();
   }
-  else if (k == INT_TO_BITVECTOR)
+  else
   {
-    lem = arith::eliminateInt2Bv(n);
+    Assert (k == INT_TO_BITVECTOR);
+    w = n.getOperator().getConst<IntToBitVector>().d_size;
   }
-  lem = n.eqNode(lem);
+  if (w>1)
+  {
+    size_t halfW = w/2;
+    Node c = nm->mkConstInt(Rational(Integer(2).pow(halfW)));
+    if (k == BITVECTOR_TO_NAT)
+    {
+      Node rn1 = nm->mkNode(MULT, c, nm->mkNode(BITVECTOR_TO_NAT, bv::utils::mkExtract(n[0], w-1, halfW)));
+      Node rn2 = nm->mkNode(BITVECTOR_TO_NAT, bv::utils::mkExtract(n[0], halfW-1, 0));
+      rn = nm->mkNode(ADD, rn1, rn2);
+    }
+    else
+    {
+      Assert (k == INT_TO_BITVECTOR);
+      Node iToBvop1 = nm->mkConst(IntToBitVector(w-halfW));
+      Node rn1 = nm->mkNode(INT_TO_BITVECTOR, iToBvop1, nm->mkNode(INTS_DIVISION, n[0], c));
+      Node iToBvop2 = nm->mkConst(IntToBitVector(halfW));
+      Node rn2 = nm->mkNode(INT_TO_BITVECTOR, iToBvop2, nm->mkNode(INTS_MODULUS, n[0], c));
+      rn = nm->mkNode(BITVECTOR_CONCAT, rn1, rn2);
+    }
+  }
+  else
+  {
+    if (k == BITVECTOR_TO_NAT)
+    {
+      rn = arith::eliminateBv2Nat(n);
+    }
+    else
+    {
+      Assert (k == INT_TO_BITVECTOR);
+      rn = arith::eliminateInt2Bv(n);
+    }
+  }
+  Node lem = n.eqNode(rn);
   d_im.lemma(lem, InferenceId::UF_ARITH_BV_CONV_REDUCTION);
   d_reduced.insert(n);
   Trace("bv-convs") << "...do reduction" << std::endl;
