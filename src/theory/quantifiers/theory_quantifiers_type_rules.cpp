@@ -86,16 +86,16 @@ TypeNode QuantifierBoundVarListTypeRule::computeType(NodeManager* nodeManager,
   if (check)
   {
     for (int i = 0; i < (int)n.getNumChildren(); i++)
-    for (const Node& nc : n)
-    {
-      if (nc.getKind() != kind::BOUND_VARIABLE)
+      for (const Node& nc : n)
       {
-        if (errOut)
+        if (nc.getKind() != kind::BOUND_VARIABLE)
         {
-          (*errOut) << "argument of bound var list is not bound variable";
+          if (errOut)
+          {
+            (*errOut) << "argument of bound var list is not bound variable";
+          }
+          return TypeNode::null();
         }
-        return TypeNode::null();
-      }
     }
   }
   return nodeManager->boundVarListType();
@@ -176,7 +176,8 @@ TypeNode QuantifierInstPatternListTypeRule::computeType(
       {
         if (errOut)
         {
-          (*errOut) << "argument of inst pattern list is not a legal quantifiers annotation";
+          (*errOut) << "argument of inst pattern list is not a legal "
+                       "quantifiers annotation";
         }
         return TypeNode::null();
       }

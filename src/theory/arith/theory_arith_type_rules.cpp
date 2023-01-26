@@ -137,10 +137,9 @@ TypeNode ArithOperatorTypeRule::computeType(NodeManager* nodeManager,
   }
   switch (k)
   {
-    case kind::TO_REAL: 
+    case kind::TO_REAL:
     case kind::DIVISION:
-    case kind::DIVISION_TOTAL:
-      return realType;
+    case kind::DIVISION_TOTAL: return realType;
     case kind::TO_INTEGER: return integerType;
     default:
     {
