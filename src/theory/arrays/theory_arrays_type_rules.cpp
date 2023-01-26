@@ -26,6 +26,11 @@ namespace cvc5::internal {
 namespace theory {
 namespace arrays {
 
+bool isMaybeArray(const TypeNode& tn)
+{
+  return tn.isArray() || tn.isFullyAbstract();
+}
+
 TypeNode ArraySelectTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
   return TypeNode::null();
@@ -70,32 +75,40 @@ TypeNode ArrayStoreTypeRule::computeType(NodeManager* nodeManager,
     TypeNode arrayType = n[0].getType(check);
     if (check)
     {
-      if (!arrayType.isArray())
+      if (!isMaybeArray(arrayType))
       {
         throw TypeCheckingExceptionPrivate(
             n, "array store operating on non-array");
         return TypeNode::null();
       }
-      TypeNode indexType = n[1].getType(check);
-      TypeNode valueType = n[2].getType(check);
-      if (indexType != arrayType.getArrayIndexType())
-      {
-        throw TypeCheckingExceptionPrivate(
-            n, "array store not indexed with correct type for array");
-        return TypeNode::null();
-      }
-      if (valueType != arrayType.getArrayConstituentType())
-      {
-        Trace("array-types")
-            << "array type: " << arrayType.getArrayConstituentType()
-            << std::endl;
-        Trace("array-types") << "value types: " << valueType << std::endl;
-        throw TypeCheckingExceptionPrivate(
-            n, "array store not assigned with correct type for array");
-        return TypeNode::null();
-      }
     }
-    return arrayType;
+    TypeNode indexType = n[1].getType(check);
+    TypeNode aindexType = arrayType.getArrayIndexType();
+    TypeNode indexjoin = indexType.join(aindexType);
+    if (indexjoin.isNull())
+    {
+      if (errOut)
+      {
+        (*errOut) << "array store not indexed with correct type for array";
+      }
+      return TypeNode::null();
+    }
+    TypeNode valueType = n[2].getType(check);
+    TypeNode avalueType = arrayType.getArrayConstituentType();
+    TypeNode valuejoin = valueType.join(avalueType);
+    if (valuejoin.isNull())
+    {
+      Trace("array-types")
+          << "array type: " << arrayType.getArrayConstituentType()
+          << std::endl;
+      Trace("array-types") << "value types: " << valueType << std::endl;
+      if (errOut)
+      {
+        (*errOut) <<  "array store not assigned with correct type for array";
+      }
+      return TypeNode::null();
+    }
+    return NodeManager::currentNM()->mkArrayType(indexjoin, valuejoin);
   }
   else
   {
@@ -207,14 +220,19 @@ TypeNode ArrayLambdaTypeRule::computeType(NodeManager* nodeManager,
   {
     if (n[0].getKind() != kind::LAMBDA)
     {
-      throw TypeCheckingExceptionPrivate(n, "array lambda arg is non-lambda");
+      if (errOut)
+      {
+        (*errOut) << "array lambda arg is non-lambda";
+      }
       return TypeNode::null();
     }
   }
   if (lamType.getNumChildren() != 2)
   {
-    throw TypeCheckingExceptionPrivate(n,
-                                       "array lambda arg is not unary lambda");
+    if (errOut)
+    {
+      (*errOut) << "array lambda arg is not unary lambda";
+    }
     return TypeNode::null();
   }
   return nodeManager->mkArrayType(lamType[0], lamType[1]);

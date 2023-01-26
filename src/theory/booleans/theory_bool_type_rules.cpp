@@ -44,10 +44,6 @@ TypeNode BooleanTypeRule::computeType(NodeManager* nodeManager,
       TypeNode tc = child.getType(check);
       if (!isMaybeBoolean(tc))
       {
-        Trace("pb") << "failed type checking: " << child << std::endl;
-        Trace("pb") << "  integer: " << child.getType(check).isInteger()
-                    << std::endl;
-        Trace("pb") << "  real: " << child.getType(check).isReal() << std::endl;
         if (errOut)
         {
           (*errOut) << "expecting a Boolean subexpression";
@@ -88,9 +84,12 @@ TypeNode IteTypeRule::computeType(NodeManager* nodeManager,
   {
     TypeNode condType = n[0].getType(check);
     TypeNode booleanType = nodeManager->booleanType();
-    if (!booleanType.isInstanceOf(condType))
+    if (!isMaybeBoolean(condType))
     {
-      throw TypeCheckingExceptionPrivate(n, "condition of ITE is not Boolean");
+      if (errOut)
+      {
+        (*errOut) << "condition of ITE is not Boolean";
+      }
       return TypeNode::null();
     }
   }

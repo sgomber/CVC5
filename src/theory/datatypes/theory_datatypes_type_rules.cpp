@@ -44,7 +44,10 @@ TypeNode DatatypeConstructorTypeRule::computeType(NodeManager* nodeManager,
   TypeNode consType = n.getOperator().getType(check);
   if (!consType.isDatatypeConstructor())
   {
-    throw TypeCheckingExceptionPrivate(n, "expected constructor to apply");
+    if (errOut)
+    {
+      (*errOut) << "expected constructor to apply";
+    }
     return TypeNode::null();
   }
   TypeNode t = consType.getDatatypeConstructorRangeType();
@@ -55,8 +58,10 @@ TypeNode DatatypeConstructorTypeRule::computeType(NodeManager* nodeManager,
   if ((t.isParametricDatatype() || check)
       && n.getNumChildren() != consType.getNumChildren() - 1)
   {
-    throw TypeCheckingExceptionPrivate(
-        n, "number of arguments does not match the constructor type");
+    if (errOut)
+    {
+      (*errOut) << "number of arguments does not match the constructor type";
+    }
     return TypeNode::null();
   }
   if (t.isParametricDatatype())
@@ -69,8 +74,10 @@ TypeNode DatatypeConstructorTypeRule::computeType(NodeManager* nodeManager,
       TypeNode childType = (*child_it).getType(check);
       if (!m.doMatching(*tchild_it, childType))
       {
-        throw TypeCheckingExceptionPrivate(
-            n, "matching failed for parameterized constructor");
+        if (errOut)
+        {
+          (*errOut) << "matching failed for parameterized constructor";
+        }
         return TypeNode::null();
       }
     }
