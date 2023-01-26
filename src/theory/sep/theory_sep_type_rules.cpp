@@ -19,6 +19,11 @@ namespace cvc5::internal {
 namespace theory {
 namespace sep {
 
+bool isMaybeBoolean(const TypeNode& tn)
+{
+  return tn.isBoolean() || tn.isFullyAbstract();
+}
+
 TypeNode SepEmpTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
   return TypeNode::null();
@@ -34,7 +39,7 @@ TypeNode SepEmpTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode SepPtoTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->booleanType();
 }
 TypeNode SepPtoTypeRule::computeType(NodeManager* nodeManager,
                                      TNode n,
@@ -47,7 +52,7 @@ TypeNode SepPtoTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode SepStarTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->booleanType();
 }
 TypeNode SepStarTypeRule::computeType(NodeManager* nodeManager,
                                       TNode n,
@@ -58,10 +63,10 @@ TypeNode SepStarTypeRule::computeType(NodeManager* nodeManager,
   Assert(n.getKind() == kind::SEP_STAR);
   if (check)
   {
-    for (unsigned i = 0; i < n.getNumChildren(); i++)
+    for (const Node& nc : n)
     {
-      TypeNode ctype = n[i].getType(check);
-      if (ctype != btype)
+      TypeNode ctype = nc.getType(check);
+      if (!isMaybeBoolean(ctype))
       {
         throw TypeCheckingExceptionPrivate(n,
                                            "child of sep star is not Boolean");
@@ -74,7 +79,7 @@ TypeNode SepStarTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode SepWandTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->booleanType();
 }
 TypeNode SepWandTypeRule::computeType(NodeManager* nodeManager,
                                       TNode n,
@@ -85,10 +90,10 @@ TypeNode SepWandTypeRule::computeType(NodeManager* nodeManager,
   Assert(n.getKind() == kind::SEP_WAND);
   if (check)
   {
-    for (unsigned i = 0; i < n.getNumChildren(); i++)
+    for (const Node& nc : n)
     {
-      TypeNode ctype = n[i].getType(check);
-      if (ctype != btype)
+      TypeNode ctype = nc.getType(check);
+      if (!isMaybeBoolean(ctype))
       {
         throw TypeCheckingExceptionPrivate(
             n, "child of sep magic wand is not Boolean");
@@ -101,7 +106,7 @@ TypeNode SepWandTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode SepLabelTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->booleanType();
 }
 TypeNode SepLabelTypeRule::computeType(NodeManager* nodeManager,
                                        TNode n,
@@ -113,7 +118,7 @@ TypeNode SepLabelTypeRule::computeType(NodeManager* nodeManager,
   if (check)
   {
     TypeNode ctype = n[0].getType(check);
-    if (ctype != btype)
+    if (!isMaybeBoolean(ctype))
     {
       throw TypeCheckingExceptionPrivate(n,
                                          "child of sep label is not Boolean");

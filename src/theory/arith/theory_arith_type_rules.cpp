@@ -26,6 +26,11 @@ bool isMaybeRealOrInt(const TypeNode& tn)
   return tn.isRealOrInt() || tn.isFullyAbstract();
 }
 
+bool isMaybeInteger(const TypeNode& tn)
+{
+  return tn.isInteger() || tn.isFullyAbstract();
+}
+
 TypeNode ArithConstantTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
   return TypeNode::null();
@@ -92,12 +97,17 @@ TypeNode ArithOperatorTypeRule::computeType(NodeManager* nodeManager,
   TypeNode realType = nodeManager->realType();
   TNode::iterator child_it = n.begin();
   TNode::iterator child_it_end = n.end();
+  bool isAbstract = false;
   bool isInteger = true;
   Kind k = n.getKind();
   for (; child_it != child_it_end; ++child_it)
   {
     TypeNode childType = (*child_it).getType(check);
-    if (!childType.isInteger())
+    if (childType.isAbstract())
+    {
+      isAbstract = true;
+    }
+    else if (!childType.isInteger())
     {
       isInteger = false;
       if (!check)
@@ -109,32 +119,44 @@ TypeNode ArithOperatorTypeRule::computeType(NodeManager* nodeManager,
     {
       if (!isMaybeRealOrInt(childType))
       {
-        throw TypeCheckingExceptionPrivate(n,
-                                           "expecting an arithmetic subterm");
+        if (errOut)
+        {
+          (*errOut) << "expecting an arithmetic subterm";
+        }
         return TypeNode::null();
       }
       if (k == kind::TO_REAL && !childType.isInteger())
       {
-        throw TypeCheckingExceptionPrivate(n, "expecting an integer subterm");
+        if (errOut)
+        {
+          (*errOut) << "expecting an integer subterm";
+        }
         return TypeNode::null();
       }
     }
   }
   switch (k)
   {
-    case kind::TO_REAL: return realType;
+    case kind::TO_REAL: 
+    case kind::DIVISION:
+    case kind::DIVISION_TOTAL:
+      return realType;
     case kind::TO_INTEGER: return integerType;
     default:
     {
-      bool isDivision = k == kind::DIVISION || k == kind::DIVISION_TOTAL;
-      return (isInteger && !isDivision ? integerType : realType);
+      if (isAbstract)
+      {
+        // fully abstract
+        return nodeManager->mkAbstractType(kind::ABSTRACT_TYPE);
+      }
+      return isInteger ? integerType : realType;
     }
   }
 }
 
 TypeNode ArithRelationTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->booleanType();
 }
 TypeNode ArithRelationTypeRule::computeType(NodeManager* nodeManager,
                                             TNode n,
@@ -147,8 +169,10 @@ TypeNode ArithRelationTypeRule::computeType(NodeManager* nodeManager,
     if (!isMaybeRealOrInt(n[0].getType(check))
         || !isMaybeRealOrInt(n[1].getType(check)))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting an arithmetic term for arithmetic relation");
+      if (errOut)
+      {
+        (*errOut) << "expecting an arithmetic subterm for arithmetic relation";
+      }
       return TypeNode::null();
     }
   }
@@ -198,8 +222,9 @@ TypeNode IAndOpTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode IAndTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->integerType();
 }
+
 TypeNode IAndTypeRule::computeType(NodeManager* nodeManager,
                                    TNode n,
                                    bool check,
@@ -211,7 +236,7 @@ TypeNode IAndTypeRule::computeType(NodeManager* nodeManager,
   {
     TypeNode arg1 = n[0].getType(check);
     TypeNode arg2 = n[1].getType(check);
-    if (!arg1.isInteger() || !arg2.isInteger())
+    if (!isMaybeInteger(arg1) || !isMaybeInteger(arg2))
     {
       if (errOut)
       {
@@ -225,8 +250,9 @@ TypeNode IAndTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode Pow2TypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->integerType();
 }
+
 TypeNode Pow2TypeRule::computeType(NodeManager* nodeManager,
                                    TNode n,
                                    bool check,
@@ -239,9 +265,12 @@ TypeNode Pow2TypeRule::computeType(NodeManager* nodeManager,
   if (check)
   {
     TypeNode arg1 = n[0].getType(check);
-    if (!arg1.isInteger())
+    if (!isMaybeInteger(arg1))
     {
-      throw TypeCheckingExceptionPrivate(n, "expecting integer terms");
+      if (errOut)
+      {
+        (*errOut) << "expecting integer terms";
+      }
       return TypeNode::null();
     }
   }
@@ -267,7 +296,7 @@ TypeNode IndexedRootPredicateTypeRule::computeType(NodeManager* nodeManager,
       return TypeNode::null();
     }
     TypeNode t2 = n[1].getType(check);
-    if (!isMaybeRealOrInt(t2))
+    if (!t2.isRealOrInt())
     {
       throw TypeCheckingExceptionPrivate(
           n, "expecting polynomial as second argument");
