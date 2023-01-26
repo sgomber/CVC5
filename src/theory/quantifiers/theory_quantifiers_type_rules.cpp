@@ -49,7 +49,7 @@ TypeNode QuantifierTypeRule::computeType(NodeManager* nodeManager,
             n,
             "third argument of quantifier is not instantiation "
             "pattern list");
-      return TypeNode::null();
+        return TypeNode::null();
       }
       for (const Node& p : n[2])
       {
@@ -60,7 +60,7 @@ TypeNode QuantifierTypeRule::computeType(NodeManager* nodeManager,
               n,
               "expected number of arguments to pool to be the same as the "
               "number of bound variables of the quantified formula");
-      return TypeNode::null();
+          return TypeNode::null();
         }
       }
     }
@@ -82,7 +82,7 @@ TypeNode QuantifierBoundVarListTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(
             n, "argument of bound var list is not bound variable");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }
@@ -125,7 +125,7 @@ TypeNode QuantifierAnnotationTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(
             n[0], "Expecting a keyword at the head of INST_ATTRIBUTE.");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }
@@ -149,7 +149,7 @@ TypeNode QuantifierInstPatternListTypeRule::computeType(
             n,
             "argument of inst pattern list is not a legal quantifiers "
             "annotation");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }

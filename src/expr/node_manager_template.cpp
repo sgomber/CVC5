@@ -541,7 +541,7 @@ TypeNode NodeManager::getType(TNode n, bool check, std::ostream* errOut)
       if (typeNode.isNull())
       {
         // !!! temporary
-        //throw TypeCheckingExceptionPrivate(cur, errOutTmp.str());
+        // throw TypeCheckingExceptionPrivate(cur, errOutTmp.str());
         return typeNode;
       }
       setAttribute(cur, ta, typeNode);

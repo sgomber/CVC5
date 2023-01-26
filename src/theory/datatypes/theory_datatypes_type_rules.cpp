@@ -41,7 +41,7 @@ TypeNode DatatypeConstructorTypeRule::computeType(NodeManager* nodeManager,
   if (!consType.isDatatypeConstructor())
   {
     throw TypeCheckingExceptionPrivate(n, "expected constructor to apply");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   TypeNode t = consType.getDatatypeConstructorRangeType();
   Assert(t.isDatatype());
@@ -53,7 +53,7 @@ TypeNode DatatypeConstructorTypeRule::computeType(NodeManager* nodeManager,
   {
     throw TypeCheckingExceptionPrivate(
         n, "number of arguments does not match the constructor type");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   if (t.isParametricDatatype())
   {
@@ -67,7 +67,7 @@ TypeNode DatatypeConstructorTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(
             n, "matching failed for parameterized constructor");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
     std::vector<TypeNode> instTypes;
@@ -99,7 +99,7 @@ TypeNode DatatypeConstructorTypeRule::computeType(NodeManager* nodeManager,
              << "not type: " << argumentType << "\n"
              << "in term : " << n;
           throw TypeCheckingExceptionPrivate(n, ss.str());
-      return TypeNode::null();
+          return TypeNode::null();
         }
       }
     }
@@ -134,7 +134,7 @@ TypeNode DatatypeSelectorTypeRule::computeType(NodeManager* nodeManager,
   {
     throw TypeCheckingExceptionPrivate(
         n, "number of arguments does not match the selector type");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   if (t.isParametricDatatype())
   {
@@ -175,7 +175,7 @@ TypeNode DatatypeSelectorTypeRule::computeType(NodeManager* nodeManager,
         Trace("typecheck-idt") << "ERROR: " << selType[0].getKind() << " "
                                << childType.getKind() << std::endl;
         throw TypeCheckingExceptionPrivate(n, "bad type for selector argument");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
     return selType[1];
@@ -209,7 +209,7 @@ TypeNode DatatypeTesterTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(
             n, "matching failed for tester argument of parameterized datatype");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
     else
@@ -219,7 +219,7 @@ TypeNode DatatypeTesterTypeRule::computeType(NodeManager* nodeManager,
       if (testType[0] != childType)
       {
         throw TypeCheckingExceptionPrivate(n, "bad type for tester argument");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }
@@ -251,13 +251,13 @@ TypeNode DatatypeUpdateTypeRule::computeType(NodeManager* nodeManager,
           throw TypeCheckingExceptionPrivate(
               n,
               "matching failed for update argument of parameterized datatype");
-      return TypeNode::null();
+          return TypeNode::null();
         }
       }
       else if (targ != childType)
       {
         throw TypeCheckingExceptionPrivate(n, "bad type for update argument");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }
@@ -370,14 +370,14 @@ TypeNode DtSygusEvalTypeRule::computeType(NodeManager* nodeManager,
   {
     throw TypeCheckingExceptionPrivate(
         n, "datatype sygus eval takes a datatype head");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   const DType& dt = headType.getDType();
   if (!dt.isSygus())
   {
     throw TypeCheckingExceptionPrivate(
         n, "datatype sygus eval must have a datatype head that is sygus");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   if (check)
   {
@@ -399,7 +399,7 @@ TypeNode DtSygusEvalTypeRule::computeType(NodeManager* nodeManager,
         throw TypeCheckingExceptionPrivate(
             n,
             "argument type mismatch in a datatype sygus evaluation function");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }
@@ -419,7 +419,7 @@ TypeNode MatchTypeRule::computeType(NodeManager* nodeManager,
   if (!headType.isDatatype())
   {
     throw TypeCheckingExceptionPrivate(n, "expecting datatype head in match");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   const DType& hdt = headType.getDType();
 
@@ -466,7 +466,7 @@ TypeNode MatchTypeRule::computeType(NodeManager* nodeManager,
               n,
               "expecting distinct bound variable as argument to "
               "constructor in pattern of match");
-      return TypeNode::null();
+          return TypeNode::null();
         }
         bvs.erase(arg);
       }
@@ -510,7 +510,7 @@ TypeNode MatchTypeRule::computeType(NodeManager* nodeManager,
   {
     throw TypeCheckingExceptionPrivate(
         n, "cases for match term are not exhaustive");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   return retType;
 }
@@ -601,7 +601,7 @@ TypeNode TupleProjectTypeRule::computeType(NodeManager* nm,
            << " is >= " << numArgs << " which is the length of tuple " << n[0]
            << std::endl;
         throw TypeCheckingExceptionPrivate(n, ss.str());
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }

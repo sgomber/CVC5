@@ -39,14 +39,14 @@ TypeNode ArraySelectTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(n,
                                          "array select operating on non-array");
-        return TypeNode::null();
+      return TypeNode::null();
     }
     TypeNode indexType = n[1].getType(check);
     if (indexType != arrayType.getArrayIndexType())
     {
       throw TypeCheckingExceptionPrivate(
           n, "array select not indexed with correct type for array");
-        return TypeNode::null();
+      return TypeNode::null();
     }
   }
   return arrayType.getArrayConstituentType();
@@ -197,28 +197,28 @@ TypeNode ArrayTableFunTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(n,
                                          "array table fun arg 0 is non-array");
-        return TypeNode::null();
+      return TypeNode::null();
     }
     TypeNode arrType2 = n[1].getType(check);
     if (!arrayType.isArray())
     {
       throw TypeCheckingExceptionPrivate(n,
                                          "array table fun arg 1 is non-array");
-        return TypeNode::null();
+      return TypeNode::null();
     }
     TypeNode indexType = n[2].getType(check);
     if (indexType != arrayType.getArrayIndexType())
     {
       throw TypeCheckingExceptionPrivate(
           n, "array table fun arg 2 does not match type of array");
-        return TypeNode::null();
+      return TypeNode::null();
     }
     indexType = n[3].getType(check);
     if (indexType != arrayType.getArrayIndexType())
     {
       throw TypeCheckingExceptionPrivate(
           n, "array table fun arg 3 does not match type of array");
-        return TypeNode::null();
+      return TypeNode::null();
     }
   }
   return arrayType.getArrayIndexType();
@@ -236,14 +236,14 @@ TypeNode ArrayLambdaTypeRule::computeType(NodeManager* nodeManager,
     if (n[0].getKind() != kind::LAMBDA)
     {
       throw TypeCheckingExceptionPrivate(n, "array lambda arg is non-lambda");
-        return TypeNode::null();
+      return TypeNode::null();
     }
   }
   if (lamType.getNumChildren() != 2)
   {
     throw TypeCheckingExceptionPrivate(n,
                                        "array lambda arg is not unary lambda");
-        return TypeNode::null();
+    return TypeNode::null();
   }
   return nodeManager->mkArrayType(lamType[0], lamType[1]);
 }
@@ -310,18 +310,18 @@ TypeNode ArrayEqRangeTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "first operand of eqrange is not an array");
-        return TypeNode::null();
+      return TypeNode::null();
     }
     if (!n1_type.isArray())
     {
       throw TypeCheckingExceptionPrivate(
           n, "second operand of eqrange is not an array");
-        return TypeNode::null();
+      return TypeNode::null();
     }
     if (n0_type != n1_type)
     {
       throw TypeCheckingExceptionPrivate(n, "array types do not match");
-        return TypeNode::null();
+      return TypeNode::null();
     }
     TypeNode indexType = n0_type.getArrayIndexType();
     TypeNode indexRangeType1 = n[2].getType(check);
@@ -330,13 +330,13 @@ TypeNode ArrayEqRangeTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "eqrange lower index type does not match array index type");
-        return TypeNode::null();
+      return TypeNode::null();
     }
     if (indexRangeType2 != indexType)
     {
       throw TypeCheckingExceptionPrivate(
           n, "eqrange upper index type does not match array index type");
-        return TypeNode::null();
+      return TypeNode::null();
     }
     if (!indexType.isBitVector() && !indexType.isFloatingPoint()
         && !indexType.isRealOrInt())
@@ -345,7 +345,7 @@ TypeNode ArrayEqRangeTypeRule::computeType(NodeManager* nodeManager,
           n,
           "eqrange only supports bit-vectors, floating-points, integers, and "
           "reals as index type");
-        return TypeNode::null();
+      return TypeNode::null();
     }
   }
   return nodeManager->booleanType();

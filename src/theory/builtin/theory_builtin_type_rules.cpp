@@ -106,7 +106,7 @@ TypeNode WitnessTypeRule::computeType(NodeManager* nodeManager,
     if (errOut)
     {
       (*errOut) << "expected a bound var list for WITNESS expression, got `"
-        << n[0].getType().toString() << "'";
+                << n[0].getType().toString() << "'";
     }
     return TypeNode::null();
   }
@@ -114,7 +114,8 @@ TypeNode WitnessTypeRule::computeType(NodeManager* nodeManager,
   {
     if (errOut)
     {
-      (*errOut) << "expected a bound var list with one argument for WITNESS expression";
+      (*errOut) << "expected a bound var list with one argument for WITNESS "
+                   "expression";
     }
     return TypeNode::null();
   }
@@ -125,7 +126,8 @@ TypeNode WitnessTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "expected a body of a WITNESS expression to have Boolean type";
+        (*errOut)
+            << "expected a body of a WITNESS expression to have Boolean type";
       }
       return TypeNode::null();
     }
@@ -135,7 +137,8 @@ TypeNode WitnessTypeRule::computeType(NodeManager* nodeManager,
       {
         if (errOut)
         {
-          (*errOut) << "third argument of witness is not instantiation pattern list";
+          (*errOut)
+              << "third argument of witness is not instantiation pattern list";
         }
         return TypeNode::null();
       }

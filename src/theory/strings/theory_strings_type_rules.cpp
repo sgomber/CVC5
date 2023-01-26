@@ -43,7 +43,7 @@ TypeNode StringConcatTypeRule::computeType(NodeManager* nodeManager,
         {
           throw TypeCheckingExceptionPrivate(
               n, "expecting string-like terms in concat");
-      return TypeNode::null();
+          return TypeNode::null();
         }
       }
       else
@@ -317,7 +317,7 @@ TypeNode RegExpRangeTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(
             n, "expecting a string term in regexp range");
-      return TypeNode::null();
+        return TypeNode::null();
       }
       ++it;
     }
@@ -378,7 +378,7 @@ TypeNode SeqNthTypeRule::computeType(NodeManager* nodeManager,
   {
     throw TypeCheckingExceptionPrivate(n,
                                        "expecting a string-like term in nth");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   if (check)
   {

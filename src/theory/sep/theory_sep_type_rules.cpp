@@ -58,7 +58,7 @@ TypeNode SepStarTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(n,
                                            "child of sep star is not Boolean");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }
@@ -81,7 +81,7 @@ TypeNode SepWandTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(
             n, "child of sep magic wand is not Boolean");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }

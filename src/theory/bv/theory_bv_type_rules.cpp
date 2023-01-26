@@ -75,7 +75,7 @@ TypeNode BitVectorFixedWidthTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(
             n, "expecting bit-vector terms of the same width");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }
@@ -230,7 +230,7 @@ TypeNode BitVectorExtractTypeRule::computeType(NodeManager* nodeManager,
   {
     throw TypeCheckingExceptionPrivate(
         n, "high extract index is smaller than the low extract index");
-      return TypeNode::null();
+    return TypeNode::null();
   }
 
   if (check)
@@ -264,13 +264,13 @@ TypeNode BitVectorRepeatTypeRule::computeType(NodeManager* nodeManager,
   if (!t.isBitVector())
   {
     throw TypeCheckingExceptionPrivate(n, "expecting bit-vector term");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   uint32_t repeatAmount = n.getOperator().getConst<BitVectorRepeat>();
   if (repeatAmount == 0)
   {
     throw TypeCheckingExceptionPrivate(n, "expecting number of repeats > 0");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   return nodeManager->mkBitVectorType(repeatAmount * t.getBitVectorSize());
 }
@@ -287,7 +287,7 @@ TypeNode BitVectorExtendTypeRule::computeType(NodeManager* nodeManager,
   if (!t.isBitVector())
   {
     throw TypeCheckingExceptionPrivate(n, "expecting bit-vector term");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   uint32_t extendAmount = n.getKind() == kind::BITVECTOR_SIGN_EXTEND
                               ? n.getOperator().getConst<BitVectorSignExtend>()

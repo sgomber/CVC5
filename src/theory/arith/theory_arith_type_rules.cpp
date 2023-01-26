@@ -40,7 +40,7 @@ TypeNode ArithConstantTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "making an integer constant from a non-integral rational");
-        return TypeNode::null();
+      return TypeNode::null();
     }
   }
   return nodeManager->integerType();
@@ -121,7 +121,7 @@ TypeNode ArithRelationTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "expecting an arithmetic term for arithmetic relation");
-        return TypeNode::null();
+      return TypeNode::null();
     }
   }
   return nodeManager->booleanType();
@@ -139,7 +139,7 @@ TypeNode RealNullaryOperatorTypeRule::computeType(NodeManager* nodeManager,
   if (realType != NodeManager::currentNM()->realType())
   {
     throw TypeCheckingExceptionPrivate(n, "expecting real type");
-        return TypeNode::null();
+    return TypeNode::null();
   }
   return realType;
 }
@@ -176,7 +176,7 @@ TypeNode IAndTypeRule::computeType(NodeManager* nodeManager,
     if (!arg1.isInteger() || !arg2.isInteger())
     {
       throw TypeCheckingExceptionPrivate(n, "expecting integer terms");
-        return TypeNode::null();
+      return TypeNode::null();
     }
   }
   return nodeManager->integerType();
@@ -197,7 +197,7 @@ TypeNode Pow2TypeRule::computeType(NodeManager* nodeManager,
     if (!arg1.isInteger())
     {
       throw TypeCheckingExceptionPrivate(n, "expecting integer terms");
-        return TypeNode::null();
+      return TypeNode::null();
     }
   }
   return nodeManager->integerType();
@@ -215,14 +215,14 @@ TypeNode IndexedRootPredicateTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "expecting boolean term as first argument");
-        return TypeNode::null();
+      return TypeNode::null();
     }
     TypeNode t2 = n[1].getType(check);
     if (!t2.isRealOrInt())
     {
       throw TypeCheckingExceptionPrivate(
           n, "expecting polynomial as second argument");
-        return TypeNode::null();
+      return TypeNode::null();
     }
   }
   return nodeManager->booleanType();

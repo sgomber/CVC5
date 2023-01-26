@@ -84,7 +84,7 @@ TypeNode FloatingPointFPTypeRule::computeType(NodeManager* nodeManager,
   {
     throw TypeCheckingExceptionPrivate(n,
                                        "arguments to fp must be bit vectors");
-      return TypeNode::null();
+    return TypeNode::null();
   }
 
   uint32_t signBits = signType.getBitVectorSize();
@@ -142,7 +142,7 @@ TypeNode FloatingPointTestTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(
             n, "floating-point test applied to mixed sorts");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }
@@ -175,7 +175,7 @@ TypeNode FloatingPointOperationTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(
             n, "floating-point test applied to mixed sorts");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }
@@ -218,7 +218,7 @@ TypeNode FloatingPointRoundingOperationTypeRule::computeType(
       {
         throw TypeCheckingExceptionPrivate(
             n, "floating-point operation applied to mixed sorts");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }
@@ -250,7 +250,7 @@ TypeNode FloatingPointPartialOperationTypeRule::computeType(
       {
         throw TypeCheckingExceptionPrivate(
             n, "floating-point partial operation applied to mixed sorts");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
 

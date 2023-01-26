@@ -61,7 +61,7 @@ TypeNode FiniteFieldFixedFieldTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(
             n, "expecting finite-field terms from the same field");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }

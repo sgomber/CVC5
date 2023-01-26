@@ -40,7 +40,7 @@ TypeNode UfTypeRule::computeType(NodeManager* nodeManager,
   {
     throw TypeCheckingExceptionPrivate(n,
                                        "operator does not have function type");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   if (check)
   {
@@ -67,7 +67,7 @@ TypeNode UfTypeRule::computeType(NodeManager* nodeManager,
            << "not type: " << *argument_type_it << "\n"
            << "in term : " << n;
         throw TypeCheckingExceptionPrivate(n, ss.str());
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }
@@ -140,7 +140,7 @@ TypeNode HoApplyTypeRule::computeType(NodeManager* nodeManager,
   {
     throw TypeCheckingExceptionPrivate(
         n, "first argument does not have function type");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   Assert(fType.getNumChildren() >= 2);
   if (check)
@@ -182,7 +182,7 @@ TypeNode LambdaTypeRule::computeType(NodeManager* nodeManager,
     ss << "expected a bound var list for LAMBDA expression, got `"
        << n[0].getType().toString() << "'";
     throw TypeCheckingExceptionPrivate(n, ss.str());
-      return TypeNode::null();
+    return TypeNode::null();
   }
   std::vector<TypeNode> argTypes;
   for (TNode::iterator i = n[0].begin(); i != n[0].end(); ++i)
@@ -252,7 +252,7 @@ TypeNode IntToBitVectorOpTypeRule::computeType(NodeManager* nodeManager,
   if (bvSize == 0)
   {
     throw TypeCheckingExceptionPrivate(n, "expecting bit-width > 0");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   return nodeManager->mkFunctionType(nodeManager->integerType(),
                                      nodeManager->mkBitVectorType(bvSize));
@@ -278,7 +278,7 @@ TypeNode BitVectorConversionTypeRule::computeType(NodeManager* nodeManager,
   if (check && !n[0].getType(check).isInteger())
   {
     throw TypeCheckingExceptionPrivate(n, "expecting integer term");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   return nodeManager->mkBitVectorType(bvSize);
 }

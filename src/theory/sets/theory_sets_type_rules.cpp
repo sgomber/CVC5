@@ -205,7 +205,7 @@ TypeNode UniverseSetTypeRule::computeType(NodeManager* nodeManager,
   {
     throw TypeCheckingExceptionPrivate(n,
                                        "Non-set type found for universe set");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   return setType;
 }
@@ -297,7 +297,7 @@ TypeNode InsertTypeRule::computeType(NodeManager* nodeManager,
             n,
             "type of element should be same as element type of set being "
             "inserted into");
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }
@@ -468,13 +468,13 @@ TypeNode RelBinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
   {
     throw TypeCheckingExceptionPrivate(
         n, " Relational operator operates on non-sets");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   if (!firstRelType[0].isTuple() || !secondRelType[0].isTuple())
   {
     throw TypeCheckingExceptionPrivate(
         n, " Relational operator operates on non-relations (sets of tuples)");
-      return TypeNode::null();
+    return TypeNode::null();
   }
 
   std::vector<TypeNode> newTupleTypes;
@@ -526,7 +526,7 @@ TypeNode RelTransposeTypeRule::computeType(NodeManager* nodeManager,
   {
     throw TypeCheckingExceptionPrivate(
         n, "relation transpose operates on non-relation");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   std::vector<TypeNode> tupleTypes = setType[0].getTupleTypes();
   std::reverse(tupleTypes.begin(), tupleTypes.end());
@@ -579,13 +579,13 @@ TypeNode JoinImageTypeRule::computeType(NodeManager* nodeManager,
   {
     throw TypeCheckingExceptionPrivate(
         n, " JoinImage operator operates on non-relations");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   if (!firstRelType[0].isTuple())
   {
     throw TypeCheckingExceptionPrivate(
         n, " JoinImage operator operates on non-relations (sets of tuples)");
-      return TypeNode::null();
+    return TypeNode::null();
   }
 
   std::vector<TypeNode> tupleTypes = firstRelType[0].getTupleTypes();
@@ -593,7 +593,7 @@ TypeNode JoinImageTypeRule::computeType(NodeManager* nodeManager,
   {
     throw TypeCheckingExceptionPrivate(
         n, " JoinImage operates on a non-binary relation");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   if (tupleTypes[0] != tupleTypes[1])
   {
@@ -601,14 +601,14 @@ TypeNode JoinImageTypeRule::computeType(NodeManager* nodeManager,
     // relationshttps://github.com/cvc5/cvc5-projects/issues/346
     throw TypeCheckingExceptionPrivate(
         n, " JoinImage operates on a pair of different types");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   TypeNode valType = n[1].getType(check);
   if (valType != nodeManager->integerType())
   {
     throw TypeCheckingExceptionPrivate(
         n, " JoinImage cardinality constraint must be integer");
-      return TypeNode::null();
+    return TypeNode::null();
   }
   std::vector<TypeNode> newTupleTypes;
   newTupleTypes.push_back(tupleTypes[0]);
@@ -804,7 +804,7 @@ TypeNode RelationProjectTypeRule::computeType(NodeManager* nm,
         ss << "Index " << index << " in term " << n << " is >= " << numArgs
            << " which is the number of columns in " << n[0] << ".";
         throw TypeCheckingExceptionPrivate(n, ss.str());
-      return TypeNode::null();
+        return TypeNode::null();
       }
     }
   }
