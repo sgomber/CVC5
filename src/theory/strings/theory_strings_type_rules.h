@@ -31,7 +31,7 @@ namespace strings {
 class StringConcatTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -40,7 +40,7 @@ class StringConcatTypeRule
 class StringSubstrTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -49,7 +49,7 @@ class StringSubstrTypeRule
 class StringUpdateTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -58,7 +58,7 @@ class StringUpdateTypeRule
 class StringAtTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -67,7 +67,7 @@ class StringAtTypeRule
 class StringIndexOfTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -76,7 +76,7 @@ class StringIndexOfTypeRule
 class StringReplaceTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -85,7 +85,7 @@ class StringReplaceTypeRule
 class StringStrToBoolTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -94,7 +94,7 @@ class StringStrToBoolTypeRule
 class StringStrToIntTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -103,7 +103,7 @@ class StringStrToIntTypeRule
 class StringStrToStrTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -112,7 +112,7 @@ class StringStrToStrTypeRule
 class StringRelationTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -120,7 +120,7 @@ class StringRelationTypeRule
 
 class RegExpRangeTypeRule {
 public:
- static TypeNode computeType(NodeManager* nodeManager,
+ static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                              TNode n,
                              bool check,
                              std::ostream* errOut);
@@ -129,7 +129,7 @@ public:
 class StringToRegExpTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -151,7 +151,7 @@ class StringToRegExpTypeRule
 class ConstSequenceTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -160,7 +160,7 @@ class ConstSequenceTypeRule
 class SeqUnitTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -169,7 +169,7 @@ class SeqUnitTypeRule
 class SeqNthTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);

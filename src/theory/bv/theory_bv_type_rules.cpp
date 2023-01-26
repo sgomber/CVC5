@@ -25,6 +25,11 @@
 namespace cvc5::internal {
 namespace theory {
 namespace bv {
+  
+bool isMaybeBitVector(const TypeNode& tn)
+{
+  return tn.isBitVector() || tn.isFullyAbstract();
+}
 
 Cardinality CardinalityComputer::computeCardinality(TypeNode type)
 {
@@ -47,7 +52,10 @@ TypeNode BitVectorConstantTypeRule::computeType(NodeManager* nodeManager,
   {
     if (n.getConst<BitVector>().getSize() == 0)
     {
-      throw TypeCheckingExceptionPrivate(n, "constant of size 0");
+      if (errOut)
+      {
+        (*errOut) << "constant of size 0";
+      }
       return TypeNode::null();
     }
   }
@@ -63,7 +71,7 @@ TypeNode BitVectorFixedWidthTypeRule::computeType(NodeManager* nodeManager,
   TypeNode t = (*it).getType(check);
   if (check)
   {
-    if (!t.isBitVector())
+    if (!isMaybeBitVector(t))
     {
       throw TypeCheckingExceptionPrivate(n, "expecting bit-vector terms");
       return TypeNode::null();
@@ -90,7 +98,7 @@ TypeNode BitVectorPredicateTypeRule::computeType(NodeManager* nodeManager,
   if (check)
   {
     TypeNode lhsType = n[0].getType(check);
-    if (!lhsType.isBitVector())
+    if (!isMaybeBitVector(lhsType))
     {
       throw TypeCheckingExceptionPrivate(n, "expecting bit-vector terms");
       return TypeNode::null();
@@ -114,7 +122,7 @@ TypeNode BitVectorRedTypeRule::computeType(NodeManager* nodeManager,
   if (check)
   {
     TypeNode type = n[0].getType(check);
-    if (!type.isBitVector())
+    if (!isMaybeBitVector(type))
     {
       throw TypeCheckingExceptionPrivate(n, "expecting bit-vector term");
       return TypeNode::null();
@@ -132,7 +140,7 @@ TypeNode BitVectorBVPredTypeRule::computeType(NodeManager* nodeManager,
   {
     TypeNode lhs = n[0].getType(check);
     TypeNode rhs = n[1].getType(check);
-    if (!lhs.isBitVector() || lhs != rhs)
+    if (!isMaybeBitVector(lhs) || lhs != rhs)
     {
       throw TypeCheckingExceptionPrivate(
           n, "expecting bit-vector terms of the same width");
@@ -154,7 +162,7 @@ TypeNode BitVectorConcatTypeRule::computeType(NodeManager* nodeManager,
     // NOTE: We're throwing a type-checking exception here even
     // when check is false, bc if we don't check that the arguments
     // are bit-vectors the result type will be inaccurate
-    if (!t.isBitVector())
+    if (!isMaybeBitVector(t))
     {
       throw TypeCheckingExceptionPrivate(n, "expecting bit-vector terms");
       return TypeNode::null();
@@ -201,7 +209,7 @@ TypeNode BitVectorBitOfTypeRule::computeType(NodeManager* nodeManager,
     BitVectorBitOf info = n.getOperator().getConst<BitVectorBitOf>();
     TypeNode t = n[0].getType(check);
 
-    if (!t.isBitVector())
+    if (!isMaybeBitVector(t))
     {
       throw TypeCheckingExceptionPrivate(n, "expecting bit-vector term");
       return TypeNode::null();
@@ -236,7 +244,7 @@ TypeNode BitVectorExtractTypeRule::computeType(NodeManager* nodeManager,
   if (check)
   {
     TypeNode t = n[0].getType(check);
-    if (!t.isBitVector())
+    if (!isMaybeBitVector(t))
     {
       throw TypeCheckingExceptionPrivate(n, "expecting bit-vector term");
       return TypeNode::null();
@@ -261,7 +269,7 @@ TypeNode BitVectorRepeatTypeRule::computeType(NodeManager* nodeManager,
   // NOTE: We're throwing a type-checking exception here even
   // when check is false, bc if the argument isn't a bit-vector
   // the result type will be inaccurate
-  if (!t.isBitVector())
+  if (!isMaybeBitVector(t))
   {
     throw TypeCheckingExceptionPrivate(n, "expecting bit-vector term");
     return TypeNode::null();
@@ -284,7 +292,7 @@ TypeNode BitVectorExtendTypeRule::computeType(NodeManager* nodeManager,
   // NOTE: We're throwing a type-checking exception here even
   // when check is false, bc if the argument isn't a bit-vector
   // the result type will be inaccurate
-  if (!t.isBitVector())
+  if (!isMaybeBitVector(t))
   {
     throw TypeCheckingExceptionPrivate(n, "expecting bit-vector term");
     return TypeNode::null();

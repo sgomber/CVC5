@@ -572,19 +572,22 @@ TypeNode TupleProjectTypeRule::computeType(NodeManager* nm,
   {
     if (n.getNumChildren() != 1)
     {
-      std::stringstream ss;
-      ss << "operands in term " << n << " are " << n.getNumChildren()
+      if (errOut)
+      {
+        (*errOut)
+       << "operands in term " << n << " are " << n.getNumChildren()
          << ", but TUPLE_PROJECT expects 1 operand.";
-      throw TypeCheckingExceptionPrivate(n, ss.str());
+      }
       return TypeNode::null();
     }
     TypeNode tupleType = n[0].getType(check);
     if (!tupleType.isTuple())
     {
-      std::stringstream ss;
-      ss << "TUPLE_PROJECT expects a tuple for " << n[0] << ". Found"
+      if (errOut)
+      {
+        (*errOut) << "TUPLE_PROJECT expects a tuple for " << n[0] << ". Found"
          << tupleType;
-      throw TypeCheckingExceptionPrivate(n, ss.str());
+      }
       return TypeNode::null();
     }
 
@@ -594,13 +597,14 @@ TypeNode TupleProjectTypeRule::computeType(NodeManager* nm,
     size_t numArgs = constructor.getNumArgs();
     for (uint32_t index : indices)
     {
-      std::stringstream ss;
       if (index >= numArgs)
       {
-        ss << "Project index " << index << " in term " << n
-           << " is >= " << numArgs << " which is the length of tuple " << n[0]
-           << std::endl;
-        throw TypeCheckingExceptionPrivate(n, ss.str());
+        if (errOut)
+        {
+          (*errOut) << "Project index " << index << " in term " << n
+            << " is >= " << numArgs << " which is the length of tuple " << n[0]
+            << std::endl;
+        }
         return TypeNode::null();
       }
     }

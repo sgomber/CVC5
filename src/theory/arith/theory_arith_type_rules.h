@@ -32,7 +32,7 @@ namespace arith {
 class ArithConstantTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -45,7 +45,7 @@ class ArithConstantTypeRule
 class ArithRealAlgebraicNumberOpTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -58,7 +58,7 @@ class ArithRealAlgebraicNumberOpTypeRule
 class ArithRealAlgebraicNumberTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -71,7 +71,7 @@ class ArithRealAlgebraicNumberTypeRule
 class ArithRelationTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -84,7 +84,7 @@ class ArithRelationTypeRule
 class ArithOperatorTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -94,7 +94,7 @@ class ArithOperatorTypeRule
 class RealNullaryOperatorTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -107,7 +107,7 @@ class RealNullaryOperatorTypeRule
 class IAndOpTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -120,7 +120,7 @@ class IAndOpTypeRule
 class IAndTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -133,7 +133,7 @@ class IAndTypeRule
 class Pow2TypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -147,7 +147,7 @@ class Pow2TypeRule
 class IndexedRootPredicateTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);

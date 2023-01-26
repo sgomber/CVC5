@@ -21,6 +21,11 @@ namespace cvc5::internal {
 namespace theory {
 namespace boolean {
 
+bool isMaybeBoolean(const TypeNode& tn)
+{
+  return tn.isBoolean() || tn.isFullyAbstract();
+}
+  
 TypeNode BooleanTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
   return nm->booleanType();
@@ -37,7 +42,7 @@ TypeNode BooleanTypeRule::computeType(NodeManager* nodeManager,
     for (const auto& child : n)
     {
       TypeNode tc = child.getType(check);
-      if (!booleanType.isInstanceOf(tc))
+      if (!isMaybeBoolean(tc))
       {
         Trace("pb") << "failed type checking: " << child << std::endl;
         Trace("pb") << "  integer: " << child.getType(check).isInteger()
