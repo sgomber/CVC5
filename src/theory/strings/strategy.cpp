@@ -40,6 +40,7 @@ std::ostream& operator<<(std::ostream& out, InferStep s)
     case CHECK_EXTF_REDUCTION_EAGER: out << "check_extf_reduction_eager"; break;
     case CHECK_EXTF_REDUCTION: out << "check_extf_reduction"; break;
     case CHECK_MEMBERSHIP_INCLUSION: out << "check_membership_inclusion"; break;
+    case CHECK_MEMBERSHIP_EAGER: out << "check_membership_eager"; break;
     case CHECK_MEMBERSHIP: out << "check_membership"; break;
     case CHECK_CARDINALITY: out << "check_cardinality"; break;
     case CHECK_SEQUENCES_ARRAY_CONCAT:
@@ -120,6 +121,7 @@ void Strategy::initializeStrategy()
       addStrategyStep(CHECK_FLAT_FORMS);
     }
     addStrategyStep(CHECK_EXTF_REDUCTION_EAGER);
+    addStrategyStep(CHECK_MEMBERSHIP_EAGER);
     addStrategyStep(CHECK_NORMAL_FORMS_EQ_PROP);  // ... CAV 14 propagate
     if (options().strings.stringModelNormalForms)
     {

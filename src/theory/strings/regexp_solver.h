@@ -67,6 +67,12 @@ class RegExpSolver : protected EnvObj
    */
   void checkMemberships(Theory::Effort e);
   /**
+   * Check regular expression memberships eagerly, before running the CAV 14
+   * procedure for word equations. Adds lemmas based on our strategy involving
+   * reductions or simplifications.
+   */
+  void checkMembershipsEager();
+  /**
    * Check inclusions,
    * Assumes d_assertedMems has been computed.
    */
