@@ -21,6 +21,11 @@ namespace cvc5::internal {
 namespace theory {
 namespace boolean {
 
+TypeNode BooleanTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return nm->booleanType();
+}
+
 TypeNode BooleanTypeRule::computeType(NodeManager* nodeManager,
                                       TNode n,
                                       bool check)
@@ -46,28 +51,37 @@ TypeNode BooleanTypeRule::computeType(NodeManager* nodeManager,
   return booleanType;
 }
 
+TypeNode IteTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
+
 TypeNode IteTypeRule::computeType(NodeManager* nodeManager, TNode n, bool check)
 {
   TypeNode thenType = n[1].getType(check);
+  TypeNode elseType = n[2].getType(check);
+  TypeNode resType = thenType.join(elseType);
+  if (resType.isNull())
+  {
+    std::stringstream ss;
+    ss << "Branches of the ITE must have the same type." << std::endl
+        << "then branch: " << n[1] << std::endl
+        << "its type   : " << thenType << std::endl
+        << "else branch: " << n[2] << std::endl
+        << "its type   : " << elseType << std::endl;
+    throw TypeCheckingExceptionPrivate(n, ss.str());
+  }
   if (check)
   {
-    TypeNode elseType = n[2].getType(check);
-    if (thenType != elseType)
-    {
-      std::stringstream ss;
-      ss << "Branches of the ITE must have the same type." << std::endl
-         << "then branch: " << n[1] << std::endl
-         << "its type   : " << thenType << std::endl
-         << "else branch: " << n[2] << std::endl
-         << "its type   : " << elseType << std::endl;
-      throw TypeCheckingExceptionPrivate(n, ss.str());
-    }
-    if (!n[0].getType(check).isBoolean())
+    TypeNode condType = n[0].getType(check);
+    TypeNode booleanType = nodeManager->booleanType();
+    if (!booleanType.isInstanceOf(condType))
     {
       throw TypeCheckingExceptionPrivate(n, "condition of ITE is not Boolean");
+      return TypeNode::null();
     }
   }
-  return thenType;
+  return resType;
 }
 
 }  // namespace boolean
