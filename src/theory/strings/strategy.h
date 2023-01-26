@@ -68,8 +68,6 @@ enum InferStep
   // check regular expression memberships
   CHECK_MEMBERSHIP_EVAL,
   // check regular expression memberships
-  CHECK_MEMBERSHIP_EAGER,
-  // check regular expression memberships
   CHECK_MEMBERSHIP,
   // check cardinality
   CHECK_CARDINALITY,
