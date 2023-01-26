@@ -20,6 +20,11 @@
 namespace cvc5::internal {
 namespace theory {
 namespace arith {
+  
+bool isMaybeRealOrInt(TypeNode tn)
+{
+  return tn.isRealOrInt() || tn.isFullyAbstract();
+}
 
 TypeNode ArithConstantTypeRule::computeType(NodeManager* nodeManager,
                                             TNode n,
@@ -83,7 +88,7 @@ TypeNode ArithOperatorTypeRule::computeType(NodeManager* nodeManager,
     }
     if (check)
     {
-      if (!childType.isRealOrInt())
+      if (!isMaybeRealOrInt(childType))
       {
         throw TypeCheckingExceptionPrivate(n,
                                            "expecting an arithmetic subterm");
@@ -116,8 +121,8 @@ TypeNode ArithRelationTypeRule::computeType(NodeManager* nodeManager,
   if (check)
   {
     Assert(n.getNumChildren() == 2);
-    if (!n[0].getType(check).isRealOrInt()
-        || !n[1].getType(check).isRealOrInt())
+    if (!isMaybeRealOrInt(n[0].getType(check))
+        || !isMaybeRealOrInt(n[1].getType(check)))
     {
       throw TypeCheckingExceptionPrivate(
           n, "expecting an arithmetic term for arithmetic relation");
@@ -218,7 +223,7 @@ TypeNode IndexedRootPredicateTypeRule::computeType(NodeManager* nodeManager,
       return TypeNode::null();
     }
     TypeNode t2 = n[1].getType(check);
-    if (!t2.isRealOrInt())
+    if (!isMaybeRealOrInt(t2))
     {
       throw TypeCheckingExceptionPrivate(
           n, "expecting polynomial as second argument");
