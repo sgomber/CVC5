@@ -26,6 +26,10 @@ namespace cvc5::internal {
 namespace theory {
 namespace arrays {
 
+TypeNode ArraySelectTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode ArraySelectTypeRule::computeType(NodeManager* nodeManager,
                                           TNode n,
                                           bool check,
@@ -52,6 +56,10 @@ TypeNode ArraySelectTypeRule::computeType(NodeManager* nodeManager,
   return arrayType.getArrayConstituentType();
 }
 
+TypeNode ArrayStoreTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode ArrayStoreTypeRule::computeType(NodeManager* nodeManager,
                                          TNode n,
                                          bool check,
@@ -184,46 +192,10 @@ bool ArrayStoreTypeRule::computeIsConst(NodeManager* nodeManager, TNode n)
   return true;
 }
 
-TypeNode ArrayTableFunTypeRule::computeType(NodeManager* nodeManager,
-                                            TNode n,
-                                            bool check,
-                                            std::ostream* errOut)
+TypeNode ArrayLambdaTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  Assert(n.getKind() == kind::ARR_TABLE_FUN);
-  TypeNode arrayType = n[0].getType(check);
-  if (check)
-  {
-    if (!arrayType.isArray())
-    {
-      throw TypeCheckingExceptionPrivate(n,
-                                         "array table fun arg 0 is non-array");
-      return TypeNode::null();
-    }
-    TypeNode arrType2 = n[1].getType(check);
-    if (!arrayType.isArray())
-    {
-      throw TypeCheckingExceptionPrivate(n,
-                                         "array table fun arg 1 is non-array");
-      return TypeNode::null();
-    }
-    TypeNode indexType = n[2].getType(check);
-    if (indexType != arrayType.getArrayIndexType())
-    {
-      throw TypeCheckingExceptionPrivate(
-          n, "array table fun arg 2 does not match type of array");
-      return TypeNode::null();
-    }
-    indexType = n[3].getType(check);
-    if (indexType != arrayType.getArrayIndexType())
-    {
-      throw TypeCheckingExceptionPrivate(
-          n, "array table fun arg 3 does not match type of array");
-      return TypeNode::null();
-    }
-  }
-  return arrayType.getArrayIndexType();
+  return TypeNode::null();
 }
-
 TypeNode ArrayLambdaTypeRule::computeType(NodeManager* nodeManager,
                                           TNode n,
                                           bool check,
@@ -286,14 +258,9 @@ Node ArraysProperties::mkGroundTerm(TypeNode type)
   return builtin::SortProperties::mkGroundTerm(type);
 }
 
-TypeNode ArrayPartialSelectTypeRule::computeType(NodeManager* nodeManager,
-                                                 TNode n,
-                                                 bool check,
-                                                 std::ostream* errOut)
+TypeNode ArrayEqRangeTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  Assert(n.getKind() == kind::PARTIAL_SELECT_0
-         || n.getKind() == kind::PARTIAL_SELECT_1);
-  return nodeManager->integerType();
+  return nm->booleanType();
 }
 
 TypeNode ArrayEqRangeTypeRule::computeType(NodeManager* nodeManager,

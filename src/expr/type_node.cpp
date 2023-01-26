@@ -326,6 +326,16 @@ bool TypeNode::isInstanceOf(const TypeNode& t) const
 
 TypeNode TypeNode::join(const TypeNode& t) const
 {
+  return unifyInternal(t, true);
+}
+
+TypeNode TypeNode::meet(const TypeNode& t) const
+{
+  return unifyInternal(t, false);
+}
+
+TypeNode TypeNode::unifyInternal(const TypeNode& t, bool isJoin) const
+{
   Assert(!isNull() && !t.isNull());
   if (*this == t)
   {
@@ -337,12 +347,12 @@ TypeNode TypeNode::join(const TypeNode& t) const
     if (tak == kind::ABSTRACT_TYPE)
     {
       // everything is subtype of the fully abstract type
-      return *this;
+      return isJoin ? *this : t;
     }
     // ABSTRACT_TYPE{k} is a subtype of types with kind k
     if (getKind() == tak)
     {
-      return *this;
+      return isJoin ? *this : t;
     }
     return TypeNode::null();
   }
@@ -363,7 +373,7 @@ TypeNode TypeNode::join(const TypeNode& t) const
   {
     TypeNode c = (*this)[i];
     TypeNode tc = t[i];
-    TypeNode jc = c.join(tc);
+    TypeNode jc = c.unifyInternal(tc, isJoin);
     if (jc.isNull())
     {
       // incompatible component type
@@ -372,6 +382,11 @@ TypeNode TypeNode::join(const TypeNode& t) const
     nb << jc;
   }
   return nb.constructTypeNode();
+}
+
+bool TypeNode::isComparableTo(const TypeNode& t) const
+{
+  return false;
 }
 
 bool TypeNode::isRealOrInt() const { return isReal() || isInteger(); }

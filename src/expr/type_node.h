@@ -538,9 +538,14 @@ class CVC5_EXPORT TypeNode
    */
   bool isInstanceOf(const TypeNode& t) const;
   /**
+   * Is comparable to
+   */
+  bool isComparableTo(const TypeNode& t) const;
+  /**
    * Join with type
    */
   TypeNode join(const TypeNode& t) const;
+  TypeNode meet(const TypeNode& t) const;
   /**
    * Get the argument types of a function, datatype constructor,
    * datatype selector, or datatype tester.
@@ -718,7 +723,8 @@ class CVC5_EXPORT TypeNode
   TypeNode getUninterpretedSortConstructor() const;
 
 private:
-
+  /** Unify internal, for computing join and meet */
+  TypeNode unifyInternal(const TypeNode& t, bool isJoin) const;
   /**
    * Indents the given stream a given amount of spaces.
    *

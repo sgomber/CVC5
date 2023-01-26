@@ -45,15 +45,6 @@ struct ArrayStoreTypeRule
   static bool computeIsConst(NodeManager* nodeManager, TNode n);
 };
 
-struct ArrayTableFunTypeRule
-{
-  static TypeNode preComputeType(NodeManager* nm, TNode n);
-  static TypeNode computeType(NodeManager* nodeManager,
-                              TNode n,
-                              bool check,
-                              std::ostream* errOut);
-};
-
 struct ArrayLambdaTypeRule
 {
   static TypeNode preComputeType(NodeManager* nm, TNode n);
@@ -70,15 +61,6 @@ struct ArraysProperties
   static bool isWellFounded(TypeNode type);
 
   static Node mkGroundTerm(TypeNode type);
-};
-
-struct ArrayPartialSelectTypeRule
-{
-  static TypeNode preComputeType(NodeManager* nm, TNode n);
-  static TypeNode computeType(NodeManager* nodeManager,
-                              TNode n,
-                              bool check,
-                              std::ostream* errOut);
 };
 
 struct ArrayEqRangeTypeRule
