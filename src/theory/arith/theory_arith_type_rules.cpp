@@ -28,15 +28,9 @@ bool isMaybeRealOrInt(const TypeNode& tn)
 
 TypeNode ArithConstantTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  // we use different kinds for constant integers and reals
-  if (n.getKind() == kind::CONST_RATIONAL)
-  {
-    // constant rationals are always real type, even if their value is integral
-    return nm->realType();
-  }
-  Assert(n.getKind() == kind::CONST_INTEGER);
-  return nm->integerType();
+  return TypeNode::null();
 }
+
 TypeNode ArithConstantTypeRule::computeType(NodeManager* nodeManager,
                                             TNode n,
                                             bool check,
