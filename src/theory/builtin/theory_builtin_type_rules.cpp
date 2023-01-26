@@ -38,7 +38,7 @@ TypeNode EqualityTypeRule::computeType(NodeManager* nodeManager,
   {
     TypeNode lhsType = n[0].getType(check);
     TypeNode rhsType = n[1].getType(check);
-    if (lhsType != rhsType)
+    if (!lhsType.isComparableTo(rhsType))
     {
       if (errOut)
       {
@@ -70,10 +70,13 @@ TypeNode DistinctTypeRule::computeType(NodeManager* nodeManager,
     for (++child_it; child_it != child_it_end; ++child_it)
     {
       TypeNode currentType = (*child_it).getType();
-      if (joinType != currentType)
+      joinType = joinType.join(currentType);
+      if (joinType.isNull())
       {
-        throw TypeCheckingExceptionPrivate(
-            n, "Not all arguments are of the same type");
+        if (errOut)
+        {
+          (*errOut) << "Not all arguments are of the same type";
+        }
         return TypeNode::null();
       }
     }

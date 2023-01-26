@@ -321,7 +321,7 @@ bool TypeNode::isStringLike() const { return isString() || isSequence(); }
 
 bool TypeNode::isInstanceOf(const TypeNode& t) const
 {
-  return !join(t).isNull();
+  return join(t)==(*this);
 }
 
 TypeNode TypeNode::join(const TypeNode& t) const
@@ -354,7 +354,20 @@ TypeNode TypeNode::unifyInternal(const TypeNode& t, bool isJoin) const
     {
       return isJoin ? *this : t;
     }
-    return TypeNode::null();
+  }
+  if (isAbstract())
+  {
+    Kind ak = getAbstractedKind();
+    if (ak == kind::ABSTRACT_TYPE)
+    {
+      // everything is subtype of the fully abstract type
+      return isJoin ? t : *this;
+    }
+    // ABSTRACT_TYPE{k} is a subtype of types with kind k
+    if (t.getKind() == ak)
+    {
+      return isJoin ? t : *this;
+    }
   }
   Kind k = getKind();
   if (k == kind::TYPE_CONSTANT || k != t.getKind())
@@ -384,7 +397,11 @@ TypeNode TypeNode::unifyInternal(const TypeNode& t, bool isJoin) const
   return nb.constructTypeNode();
 }
 
-bool TypeNode::isComparableTo(const TypeNode& t) const { return false; }
+bool TypeNode::isComparableTo(const TypeNode& t) const
+{ 
+  // could do join or meet here
+  return !unifyInternal(t, true).isNull();
+}
 
 bool TypeNode::isRealOrInt() const { return isReal() || isInteger(); }
 
