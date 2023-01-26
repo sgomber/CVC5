@@ -483,7 +483,7 @@ std::vector<NodeValue*> NodeManager::TopologicalSort(
   return order;
 } /* NodeManager::TopologicalSort() */
 
-TypeNode NodeManager::getType(TNode n, bool check)
+TypeNode NodeManager::getType(TNode n, bool check, std::ostream* errOut)
 {
   TypeNode typeNode;
   TypeAttr ta;
@@ -534,7 +534,12 @@ TypeNode NodeManager::getType(TNode n, bool check)
     {
       visited[cur] = true;
       // children now have types assigned
-      typeNode = TypeChecker::computeType(this, cur, check);
+      typeNode = TypeChecker::computeType(this, cur, check, errOut);
+      // if null, immediately return without further caching
+      if (typeNode.isNull())
+      {
+        return typeNode;
+      }
       setAttribute(cur, ta, typeNode);
       setAttribute(cur, tca, check || getAttribute(cur, tca));
     }
