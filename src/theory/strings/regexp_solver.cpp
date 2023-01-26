@@ -192,6 +192,7 @@ void RegExpSolver::checkMembershipsEval()
   checkEvaluations();
 }
 
+
 bool RegExpSolver::shouldUnfold(Theory::Effort e, bool pol) const
 {
   // Check positive, then negative memberships. If we are doing
