@@ -62,7 +62,8 @@ TypeNode ArithConstantTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->integerType();
 }
 
-TypeNode ArithRealAlgebraicNumberOpTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode ArithRealAlgebraicNumberOpTypeRule::preComputeType(NodeManager* nm,
+                                                            TNode n)
 {
   return nm->realType();
 }
@@ -71,7 +72,8 @@ TypeNode ArithRealAlgebraicNumberOpTypeRule::computeType(
 {
   return nodeManager->realType();
 }
-TypeNode ArithRealAlgebraicNumberTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode ArithRealAlgebraicNumberTypeRule::preComputeType(NodeManager* nm,
+                                                          TNode n)
 {
   return nm->realType();
 }
@@ -191,7 +193,8 @@ TypeNode IAndOpTypeRule::computeType(NodeManager* nodeManager,
                                      bool check,
                                      std::ostream* errOut)
 {
-  Assert (n.getKind() == kind::IAND_OP)<< "IAND_OP typerule invoked for " << n << " instead of IAND_OP kind";
+  Assert(n.getKind() == kind::IAND_OP)
+      << "IAND_OP typerule invoked for " << n << " instead of IAND_OP kind";
   TypeNode iType = nodeManager->integerType();
   std::vector<TypeNode> argTypes;
   argTypes.push_back(iType);
@@ -208,7 +211,8 @@ TypeNode IAndTypeRule::computeType(NodeManager* nodeManager,
                                    bool check,
                                    std::ostream* errOut)
 {
-  Assert (n.getKind() == kind::IAND)<< "IAND typerule invoked for " << n << " instead of IAND kind";
+  Assert(n.getKind() == kind::IAND)
+      << "IAND typerule invoked for " << n << " instead of IAND kind";
   if (check)
   {
     TypeNode arg1 = n[0].getType(check);

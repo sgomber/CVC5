@@ -384,10 +384,7 @@ TypeNode TypeNode::unifyInternal(const TypeNode& t, bool isJoin) const
   return nb.constructTypeNode();
 }
 
-bool TypeNode::isComparableTo(const TypeNode& t) const
-{
-  return false;
-}
+bool TypeNode::isComparableTo(const TypeNode& t) const { return false; }
 
 bool TypeNode::isRealOrInt() const { return isReal() || isInteger(); }
 
