@@ -26,7 +26,7 @@ namespace cvc5::internal {
 namespace theory {
 namespace bv {
 
-/** 
+/**
  * Return true if tn is maybe a Boolean type.
  */
 bool isMaybeBoolean(const TypeNode& tn)
@@ -34,7 +34,7 @@ bool isMaybeBoolean(const TypeNode& tn)
   return tn.isBoolean() || tn.isFullyAbstract();
 }
 
-/** 
+/**
  * Return true if tn is maybe a bit-vector type. Write to errOut if it exists
  * and tn is not a maybe bit-vector type.
  */
@@ -212,7 +212,8 @@ TypeNode BitVectorBVPredTypeRule::computeType(NodeManager* nodeManager,
   {
     TypeNode lhs = n[0].getType(check);
     TypeNode rhs = n[1].getType(check);
-    if (!checkMaybeBitVector(lhs, errOut) || !checkMaybeBitVector(rhs, errOut) || !lhs.isComparableTo(rhs))
+    if (!checkMaybeBitVector(lhs, errOut) || !checkMaybeBitVector(rhs, errOut)
+        || !lhs.isComparableTo(rhs))
     {
       if (errOut)
       {
@@ -381,7 +382,8 @@ TypeNode BitVectorExtractTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "high extract index is bigger than the size of the bit-vector";
+        (*errOut)
+            << "high extract index is bigger than the size of the bit-vector";
       }
       return TypeNode::null();
     }
