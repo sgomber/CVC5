@@ -19,6 +19,10 @@ namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
 
+TypeNode QuantifierTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode QuantifierTypeRule::computeType(NodeManager* nodeManager,
                                          TNode n,
                                          bool check,
@@ -68,6 +72,10 @@ TypeNode QuantifierTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->booleanType();
 }
 
+TypeNode QuantifierBoundVarListTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode QuantifierBoundVarListTypeRule::computeType(NodeManager* nodeManager,
                                                      TNode n,
                                                      bool check,
@@ -89,6 +97,10 @@ TypeNode QuantifierBoundVarListTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->boundVarListType();
 }
 
+TypeNode QuantifierInstPatternTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode QuantifierInstPatternTypeRule::computeType(NodeManager* nodeManager,
                                                     TNode n,
                                                     bool check,
@@ -111,6 +123,10 @@ TypeNode QuantifierInstPatternTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->instPatternType();
 }
 
+TypeNode QuantifierAnnotationTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode QuantifierAnnotationTypeRule::computeType(NodeManager* nodeManager,
                                                    TNode n,
                                                    bool check,
@@ -132,6 +148,10 @@ TypeNode QuantifierAnnotationTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->instPatternType();
 }
 
+TypeNode QuantifierInstPatternListTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode QuantifierInstPatternListTypeRule::computeType(
     NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut)
 {
@@ -154,6 +174,11 @@ TypeNode QuantifierInstPatternListTypeRule::computeType(
     }
   }
   return nodeManager->instPatternListType();
+}
+
+TypeNode QuantifierOracleFormulaGenTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
 }
 TypeNode QuantifierOracleFormulaGenTypeRule::computeType(
     NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut)

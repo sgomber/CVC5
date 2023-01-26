@@ -19,6 +19,10 @@ namespace cvc5::internal {
 namespace theory {
 namespace sep {
 
+TypeNode SepEmpTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode SepEmpTypeRule::computeType(NodeManager* nodeManager,
                                      TNode n,
                                      bool check,
@@ -28,20 +32,23 @@ TypeNode SepEmpTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->booleanType();
 }
 
+TypeNode SepPtoTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode SepPtoTypeRule::computeType(NodeManager* nodeManager,
                                      TNode n,
                                      bool check,
                                      std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SEP_PTO);
-  if (check)
-  {
-    TypeNode refType = n[0].getType(check);
-    TypeNode ptType = n[1].getType(check);
-  }
   return nodeManager->booleanType();
 }
 
+TypeNode SepStarTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode SepStarTypeRule::computeType(NodeManager* nodeManager,
                                       TNode n,
                                       bool check,
@@ -65,6 +72,10 @@ TypeNode SepStarTypeRule::computeType(NodeManager* nodeManager,
   return btype;
 }
 
+TypeNode SepWandTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode SepWandTypeRule::computeType(NodeManager* nodeManager,
                                       TNode n,
                                       bool check,
@@ -88,6 +99,10 @@ TypeNode SepWandTypeRule::computeType(NodeManager* nodeManager,
   return btype;
 }
 
+TypeNode SepLabelTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode SepLabelTypeRule::computeType(NodeManager* nodeManager,
                                        TNode n,
                                        bool check,
@@ -114,6 +129,10 @@ TypeNode SepLabelTypeRule::computeType(NodeManager* nodeManager,
   return btype;
 }
 
+TypeNode SepNilTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode SepNilTypeRule::computeType(NodeManager* nodeManager,
                                      TNode n,
                                      bool check,

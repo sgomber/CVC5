@@ -169,7 +169,7 @@ function pretyperule {
   check_theory_seen
   pretyperules="${pretyperules}
   case kind::$1:
-    //typeNode = $2::preComputeType(nodeManager, n);
+    typeNode = $2::preComputeType(nodeManager, n);
     break;
 "
 }
