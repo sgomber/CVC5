@@ -311,7 +311,8 @@ TypeNode BitVectorITETypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "expecting condition to be compatible with bit-vector term size 1";
+        (*errOut) << "expecting condition to be compatible with bit-vector "
+                     "term size 1";
       }
       return TypeNode::null();
     }

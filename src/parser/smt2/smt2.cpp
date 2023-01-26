@@ -789,8 +789,7 @@ Command* Smt2State::setLogic(std::string name, bool fromCommand)
     defineVar("set.empty", d_solver->mkEmptySet(d_solver->mkSetSort(btype)));
     // the Boolean sort is a placeholder here since we don't have type info
     // without type annotation
-    defineVar("set.universe",
-              d_solver->mkUniverseSet(btype));
+    defineVar("set.universe", d_solver->mkUniverseSet(btype));
 
     addOperator(SET_UNION, "set.union");
     addOperator(SET_INTER, "set.inter");

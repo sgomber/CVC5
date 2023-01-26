@@ -540,8 +540,6 @@ TypeNode NodeManager::getType(TNode n, bool check, std::ostream* errOut)
       // if null, immediately return without further caching
       if (typeNode.isNull())
       {
-        Trace("ajr-temp") << "No type " << cur << std::endl;
-        Assert (false);
         // !!! temporary
         throw TypeCheckingExceptionPrivate(cur, errOutTmp.str());
         return typeNode;
