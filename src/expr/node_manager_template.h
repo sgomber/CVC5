@@ -336,8 +336,7 @@ class NodeManager
    * @param check whether we should check the type as we compute it
    * (default: false)
    */
-  TypeNode getType(TNode n, bool check = false,
-                             std::ostream* errOut = nullptr);
+  TypeNode getType(TNode n, bool check = false, std::ostream* errOut = nullptr);
 
   /** Get the (singleton) type for Booleans. */
   TypeNode booleanType();
