@@ -70,7 +70,6 @@ mkConst_implementations=
 exportConstant_cases=
 
 pretyperules=
-posttyperules=
 typerules=
 construles=
 
@@ -159,7 +158,7 @@ function typerule {
   check_theory_seen
   typerules="${typerules}
   case kind::$1:
-    typeNode = $2::computeType(nodeManager, n, check);
+    typeNode = $2::computeType(nodeManager, n, check, errOut);
     break;
 "
 }
@@ -171,17 +170,6 @@ function pretyperule {
   pretyperules="${pretyperules}
   case kind::$1:
     //typeNode = $2::preComputeType(nodeManager, n);
-    break;
-"
-}
-
-function posttyperule {
-  # typerule OPERATOR typechecking-class
-  lineno=${BASH_LINENO[0]}
-  check_theory_seen
-  pretyperules="${pretyperules}
-  case kind::$1:
-    //typeNode = $2::postComputeType(nodeManager, n);
     break;
 "
 }
@@ -319,7 +307,6 @@ for var in \
     typechecker_includes \
     typerules \
     pretyperules \
-    posttyperules \
     construles \
     ; do
   eval text="\${text//\\\$\\{$var\\}/\${$var}}"

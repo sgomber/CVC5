@@ -32,7 +32,7 @@ namespace sep {
 class SepEmpTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut);
 };
 
 /**
@@ -42,7 +42,7 @@ class SepEmpTypeRule
  */
 struct SepPtoTypeRule
 {
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut);
 };
 
 /**
@@ -51,7 +51,7 @@ struct SepPtoTypeRule
  */
 struct SepStarTypeRule
 {
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut);
 };
 
 /**
@@ -60,7 +60,7 @@ struct SepStarTypeRule
  */
 struct SepWandTypeRule
 {
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut);
 };
 
 /**
@@ -70,7 +70,7 @@ struct SepWandTypeRule
  */
 struct SepLabelTypeRule
 {
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut);
 };
 
 /**
@@ -79,7 +79,7 @@ struct SepLabelTypeRule
  */
 struct SepNilTypeRule
 {
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut);
 };
 
 }  // namespace sep

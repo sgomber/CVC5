@@ -32,7 +32,7 @@ using namespace cvc5::internal::theory::datatypes;
 
 TypeNode SetsBinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
                                                  TNode n,
-                                                 bool check)
+                                                 bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SET_UNION || n.getKind() == kind::SET_INTER
          || n.getKind() == kind::SET_MINUS);
@@ -69,7 +69,7 @@ bool SetsBinaryOperatorTypeRule::computeIsConst(NodeManager* nodeManager,
 
 TypeNode SubsetTypeRule::computeType(NodeManager* nodeManager,
                                      TNode n,
-                                     bool check)
+                                     bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SET_SUBSET);
   TypeNode setType = n[0].getType(check);
@@ -91,7 +91,7 @@ TypeNode SubsetTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode MemberTypeRule::computeType(NodeManager* nodeManager,
                                      TNode n,
-                                     bool check)
+                                     bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SET_MEMBER);
   TypeNode setType = n[1].getType(check);
@@ -120,7 +120,7 @@ TypeNode MemberTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode SingletonTypeRule::computeType(NodeManager* nodeManager,
                                         TNode n,
-                                        bool check)
+                                        bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SET_SINGLETON);
   TypeNode type1 = n[0].getType(check);
@@ -135,7 +135,7 @@ bool SingletonTypeRule::computeIsConst(NodeManager* nodeManager, TNode n)
 
 TypeNode EmptySetTypeRule::computeType(NodeManager* nodeManager,
                                        TNode n,
-                                       bool check)
+                                       bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SET_EMPTY);
   EmptySet emptySet = n.getConst<EmptySet>();
@@ -144,7 +144,7 @@ TypeNode EmptySetTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode CardTypeRule::computeType(NodeManager* nodeManager,
                                    TNode n,
-                                   bool check)
+                                   bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SET_CARD);
   TypeNode setType = n[0].getType(check);
@@ -161,7 +161,7 @@ TypeNode CardTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode ComplementTypeRule::computeType(NodeManager* nodeManager,
                                          TNode n,
-                                         bool check)
+                                         bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SET_COMPLEMENT);
   TypeNode setType = n[0].getType(check);
@@ -178,7 +178,7 @@ TypeNode ComplementTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode UniverseSetTypeRule::computeType(NodeManager* nodeManager,
                                           TNode n,
-                                          bool check)
+                                          bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SET_UNIVERSE);
   // for nullary operators, we only computeType for check=true, since they are
@@ -195,7 +195,7 @@ TypeNode UniverseSetTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode ComprehensionTypeRule::computeType(NodeManager* nodeManager,
                                             TNode n,
-                                            bool check)
+                                            bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SET_COMPREHENSION);
   if (check)
@@ -216,7 +216,7 @@ TypeNode ComprehensionTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode ChooseTypeRule::computeType(NodeManager* nodeManager,
                                      TNode n,
-                                     bool check)
+                                     bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SET_CHOOSE);
   TypeNode setType = n[0].getType(check);
@@ -233,7 +233,7 @@ TypeNode ChooseTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode IsSingletonTypeRule::computeType(NodeManager* nodeManager,
                                           TNode n,
-                                          bool check)
+                                          bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SET_IS_SINGLETON);
   TypeNode setType = n[0].getType(check);
@@ -250,7 +250,7 @@ TypeNode IsSingletonTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode InsertTypeRule::computeType(NodeManager* nodeManager,
                                      TNode n,
-                                     bool check)
+                                     bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SET_INSERT);
   size_t numChildren = n.getNumChildren();
@@ -279,7 +279,7 @@ TypeNode InsertTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode SetMapTypeRule::computeType(NodeManager* nodeManager,
                                      TNode n,
-                                     bool check)
+                                     bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SET_MAP);
   TypeNode functionType = n[0].getType(check);
@@ -321,7 +321,7 @@ TypeNode SetMapTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode SetFilterTypeRule::computeType(NodeManager* nodeManager,
                                         TNode n,
-                                        bool check)
+                                        bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SET_FILTER);
   TypeNode functionType = n[0].getType(check);
@@ -363,7 +363,7 @@ TypeNode SetFilterTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode SetFoldTypeRule::computeType(NodeManager* nodeManager,
                                       TNode n,
-                                      bool check)
+                                      bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SET_FOLD);
   TypeNode functionType = n[0].getType(check);
@@ -414,7 +414,7 @@ TypeNode SetFoldTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode RelBinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
                                                 TNode n,
-                                                bool check)
+                                                bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::RELATION_PRODUCT
          || n.getKind() == kind::RELATION_JOIN);
@@ -472,7 +472,7 @@ TypeNode RelBinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode RelTransposeTypeRule::computeType(NodeManager* nodeManager,
                                            TNode n,
-                                           bool check)
+                                           bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::RELATION_TRANSPOSE);
   TypeNode setType = n[0].getType(check);
@@ -488,7 +488,7 @@ TypeNode RelTransposeTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode RelTransClosureTypeRule::computeType(NodeManager* nodeManager,
                                               TNode n,
-                                              bool check)
+                                              bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::RELATION_TCLOSURE);
   TypeNode setType = n[0].getType(check);
@@ -517,7 +517,7 @@ TypeNode RelTransClosureTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode JoinImageTypeRule::computeType(NodeManager* nodeManager,
                                         TNode n,
-                                        bool check)
+                                        bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::RELATION_JOIN_IMAGE);
 
@@ -560,7 +560,7 @@ TypeNode JoinImageTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode RelIdenTypeRule::computeType(NodeManager* nodeManager,
                                       TNode n,
-                                      bool check)
+                                      bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::RELATION_IDEN);
   TypeNode setType = n[0].getType(check);
@@ -582,7 +582,7 @@ TypeNode RelIdenTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->mkSetType(nodeManager->mkTupleType(tupleTypes));
 }
 
-TypeNode RelationGroupTypeRule::computeType(NodeManager* nm, TNode n, bool check)
+TypeNode RelationGroupTypeRule::computeType(NodeManager* nm, TNode n, bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::RELATION_GROUP && n.hasOperator()
          && n.getOperator().getKind() == kind::RELATION_GROUP_OP);
@@ -617,7 +617,7 @@ TypeNode RelationGroupTypeRule::computeType(NodeManager* nm, TNode n, bool check
 
 TypeNode RelationAggregateTypeRule::computeType(NodeManager* nm,
                                                 TNode n,
-                                                bool check)
+                                                bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::RELATION_AGGREGATE && n.hasOperator()
          && n.getOperator().getKind() == kind::RELATION_AGGREGATE_OP);
@@ -683,7 +683,7 @@ TypeNode RelationAggregateTypeRule::computeType(NodeManager* nm,
 
 TypeNode RelationProjectTypeRule::computeType(NodeManager* nm,
                                               TNode n,
-                                              bool check)
+                                              bool check, std::ostream* errOut)
 {
   Assert(n.getKind() == kind::RELATION_PROJECT && n.hasOperator()
          && n.getOperator().getKind() == kind::RELATION_PROJECT_OP);

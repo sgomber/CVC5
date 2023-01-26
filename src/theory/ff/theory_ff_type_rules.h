@@ -37,7 +37,7 @@ struct FiniteFieldProperties
 class FiniteFieldConstantTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut);
 };
 
 /* -------------------------------------------------------------------------- */
@@ -45,7 +45,7 @@ class FiniteFieldConstantTypeRule
 class FiniteFieldFixedFieldTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut);
 };
 
 }  // namespace ff

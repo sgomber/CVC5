@@ -28,7 +28,7 @@ TypeNode BooleanTypeRule::preComputeType(NodeManager* nm, TNode n)
 
 TypeNode BooleanTypeRule::computeType(NodeManager* nodeManager,
                                       TNode n,
-                                      bool check)
+                                      bool check, std::ostream* errOut)
 {
   TypeNode booleanType = nodeManager->booleanType();
   if (check)
@@ -56,7 +56,7 @@ TypeNode IteTypeRule::preComputeType(NodeManager* nm, TNode n)
   return TypeNode::null();
 }
 
-TypeNode IteTypeRule::computeType(NodeManager* nodeManager, TNode n, bool check)
+TypeNode IteTypeRule::computeType(NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut)
 {
   TypeNode thenType = n[1].getType(check);
   TypeNode elseType = n[2].getType(check);

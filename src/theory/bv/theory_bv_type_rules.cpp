@@ -40,7 +40,7 @@ Cardinality CardinalityComputer::computeCardinality(TypeNode type)
 
 TypeNode BitVectorConstantTypeRule::computeType(NodeManager* nodeManager,
                                                 TNode n,
-                                                bool check)
+                                                bool check, std::ostream* errOut)
 {
   if (check)
   {
@@ -54,7 +54,7 @@ TypeNode BitVectorConstantTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode BitVectorFixedWidthTypeRule::computeType(NodeManager* nodeManager,
                                                   TNode n,
-                                                  bool check)
+                                                  bool check, std::ostream* errOut)
 {
   TNode::iterator it = n.begin();
   TypeNode t = (*it).getType(check);
@@ -79,7 +79,7 @@ TypeNode BitVectorFixedWidthTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode BitVectorPredicateTypeRule::computeType(NodeManager* nodeManager,
                                                  TNode n,
-                                                 bool check)
+                                                 bool check, std::ostream* errOut)
 {
   if (check)
   {
@@ -100,7 +100,7 @@ TypeNode BitVectorPredicateTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode BitVectorRedTypeRule::computeType(NodeManager* nodeManager,
                                            TNode n,
-                                           bool check)
+                                           bool check, std::ostream* errOut)
 {
   if (check)
   {
@@ -115,7 +115,7 @@ TypeNode BitVectorRedTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode BitVectorBVPredTypeRule::computeType(NodeManager* nodeManager,
                                               TNode n,
-                                              bool check)
+                                              bool check, std::ostream* errOut)
 {
   if (check)
   {
@@ -132,7 +132,7 @@ TypeNode BitVectorBVPredTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode BitVectorConcatTypeRule::computeType(NodeManager* nodeManager,
                                               TNode n,
-                                              bool check)
+                                              bool check, std::ostream* errOut)
 {
   uint32_t size = 0;
   for (const auto& child : n)
@@ -152,7 +152,7 @@ TypeNode BitVectorConcatTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode BitVectorITETypeRule::computeType(NodeManager* nodeManager,
                                            TNode n,
-                                           bool check)
+                                           bool check, std::ostream* errOut)
 {
   Assert(n.getNumChildren() == 3);
   TypeNode thenpart = n[1].getType(check);
@@ -176,7 +176,7 @@ TypeNode BitVectorITETypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode BitVectorBitOfTypeRule::computeType(NodeManager* nodeManager,
                                              TNode n,
-                                             bool check)
+                                             bool check, std::ostream* errOut)
 {
   if (check)
   {
@@ -198,7 +198,7 @@ TypeNode BitVectorBitOfTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode BitVectorExtractTypeRule::computeType(NodeManager* nodeManager,
                                                TNode n,
-                                               bool check)
+                                               bool check, std::ostream* errOut)
 {
   BitVectorExtract extractInfo = n.getOperator().getConst<BitVectorExtract>();
 
@@ -230,7 +230,7 @@ TypeNode BitVectorExtractTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode BitVectorRepeatTypeRule::computeType(NodeManager* nodeManager,
                                               TNode n,
-                                              bool check)
+                                              bool check, std::ostream* errOut)
 {
   TypeNode t = n[0].getType(check);
   // NOTE: We're throwing a type-checking exception here even
@@ -250,7 +250,7 @@ TypeNode BitVectorRepeatTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode BitVectorExtendTypeRule::computeType(NodeManager* nodeManager,
                                               TNode n,
-                                              bool check)
+                                              bool check, std::ostream* errOut)
 {
   TypeNode t = n[0].getType(check);
   // NOTE: We're throwing a type-checking exception here even
@@ -268,7 +268,7 @@ TypeNode BitVectorExtendTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode BitVectorEagerAtomTypeRule::computeType(NodeManager* nodeManager,
                                                  TNode n,
-                                                 bool check)
+                                                 bool check, std::ostream* errOut)
 {
   if (check)
   {
@@ -282,7 +282,7 @@ TypeNode BitVectorEagerAtomTypeRule::computeType(NodeManager* nodeManager,
 }
 
 TypeNode BitVectorAckermanizationUdivTypeRule::computeType(
-    NodeManager* nodeManager, TNode n, bool check)
+    NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut)
 {
   TypeNode lhsType = n[0].getType(check);
   if (check)
@@ -296,7 +296,7 @@ TypeNode BitVectorAckermanizationUdivTypeRule::computeType(
 }
 
 TypeNode BitVectorAckermanizationUremTypeRule::computeType(
-    NodeManager* nodeManager, TNode n, bool check)
+    NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut)
 {
   TypeNode lhsType = n[0].getType(check);
   if (check)

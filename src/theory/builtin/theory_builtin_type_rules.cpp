@@ -25,7 +25,7 @@ namespace builtin {
 
 TypeNode EqualityTypeRule::computeType(NodeManager* nodeManager,
                                        TNode n,
-                                       bool check)
+                                       bool check, std::ostream* errOut)
 {
   TypeNode booleanType = nodeManager->booleanType();
 
@@ -50,7 +50,7 @@ TypeNode EqualityTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode DistinctTypeRule::computeType(NodeManager* nodeManager,
                                        TNode n,
-                                       bool check)
+                                       bool check, std::ostream* errOut)
 {
   if (check)
   {
@@ -72,7 +72,7 @@ TypeNode DistinctTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode SExprTypeRule::computeType(NodeManager* nodeManager,
                                     TNode n,
-                                    bool check)
+                                    bool check, std::ostream* errOut)
 {
   if (check)
   {
@@ -86,14 +86,14 @@ TypeNode SExprTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode UninterpretedSortValueTypeRule::computeType(NodeManager* nodeManager,
                                                      TNode n,
-                                                     bool check)
+                                                     bool check, std::ostream* errOut)
 {
   return n.getConst<UninterpretedSortValue>().getType();
 }
 
 TypeNode WitnessTypeRule::computeType(NodeManager* nodeManager,
                                       TNode n,
-                                      bool check)
+                                      bool check, std::ostream* errOut)
 {
   if (n[0].getType(check) != nodeManager->boundVarListType())
   {
