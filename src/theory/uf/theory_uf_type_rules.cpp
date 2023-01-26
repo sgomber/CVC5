@@ -114,7 +114,8 @@ TypeNode CardinalityConstraintTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->booleanType();
 }
 
-TypeNode CombinedCardinalityConstraintOpTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode CombinedCardinalityConstraintOpTypeRule::preComputeType(
+    NodeManager* nm, TNode n)
 {
   return TypeNode::null();
 }
@@ -135,7 +136,8 @@ TypeNode CombinedCardinalityConstraintOpTypeRule::computeType(
   return nodeManager->builtinOperatorType();
 }
 
-TypeNode CombinedCardinalityConstraintTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode CombinedCardinalityConstraintTypeRule::preComputeType(NodeManager* nm,
+                                                               TNode n)
 {
   return TypeNode::null();
 }

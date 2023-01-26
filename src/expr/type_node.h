@@ -737,7 +737,7 @@ private:
    {
      out << ' ';
    }
-  }
+ }
 
 };/* class TypeNode */
 

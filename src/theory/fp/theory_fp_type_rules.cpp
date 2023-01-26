@@ -166,7 +166,8 @@ TypeNode FloatingPointTestTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->booleanType();
 }
 
-TypeNode FloatingPointOperationTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode FloatingPointOperationTypeRule::preComputeType(NodeManager* nm,
+                                                        TNode n)
 {
   return TypeNode::null();
 }
@@ -203,7 +204,8 @@ TypeNode FloatingPointOperationTypeRule::computeType(NodeManager* nodeManager,
   return firstOperand;
 }
 
-TypeNode FloatingPointRoundingOperationTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode FloatingPointRoundingOperationTypeRule::preComputeType(NodeManager* nm,
+                                                                TNode n)
 {
   return TypeNode::null();
 }
@@ -250,7 +252,8 @@ TypeNode FloatingPointRoundingOperationTypeRule::computeType(
   return firstOperand;
 }
 
-TypeNode FloatingPointPartialOperationTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode FloatingPointPartialOperationTypeRule::preComputeType(NodeManager* nm,
+                                                               TNode n)
 {
   return TypeNode::null();
 }
@@ -297,7 +300,8 @@ TypeNode FloatingPointPartialOperationTypeRule::computeType(
   return firstOperand;
 }
 
-TypeNode FloatingPointParametricOpTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode FloatingPointParametricOpTypeRule::preComputeType(NodeManager* nm,
+                                                           TNode n)
 {
   return TypeNode::null();
 }
@@ -309,7 +313,8 @@ TypeNode FloatingPointParametricOpTypeRule::computeType(
   return nodeManager->builtinOperatorType();
 }
 
-TypeNode FloatingPointToFPIEEEBitVectorTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode FloatingPointToFPIEEEBitVectorTypeRule::preComputeType(NodeManager* nm,
+                                                                TNode n)
 {
   return TypeNode::null();
 }
@@ -349,7 +354,8 @@ TypeNode FloatingPointToFPIEEEBitVectorTypeRule::computeType(
   return nodeManager->mkFloatingPointType(info.getSize());
 }
 
-TypeNode FloatingPointToFPFloatingPointTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode FloatingPointToFPFloatingPointTypeRule::preComputeType(NodeManager* nm,
+                                                                TNode n)
 {
   return TypeNode::null();
 }
@@ -429,7 +435,8 @@ TypeNode FloatingPointToFPRealTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->mkFloatingPointType(info.getSize());
 }
 
-TypeNode FloatingPointToFPSignedBitVectorTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode FloatingPointToFPSignedBitVectorTypeRule::preComputeType(
+    NodeManager* nm, TNode n)
 {
   return TypeNode::null();
 }
@@ -468,7 +475,8 @@ TypeNode FloatingPointToFPSignedBitVectorTypeRule::computeType(
   return nodeManager->mkFloatingPointType(info.getSize());
 }
 
-TypeNode FloatingPointToFPUnsignedBitVectorTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode FloatingPointToFPUnsignedBitVectorTypeRule::preComputeType(
+    NodeManager* nm, TNode n)
 {
   return TypeNode::null();
 }
@@ -587,7 +595,8 @@ TypeNode FloatingPointToSBVTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->mkBitVectorType(info.d_bv_size);
 }
 
-TypeNode FloatingPointToUBVTotalTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode FloatingPointToUBVTotalTypeRule::preComputeType(NodeManager* nm,
+                                                         TNode n)
 {
   return TypeNode::null();
 }
@@ -642,7 +651,8 @@ TypeNode FloatingPointToUBVTotalTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->mkBitVectorType(info.d_bv_size);
 }
 
-TypeNode FloatingPointToSBVTotalTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode FloatingPointToSBVTotalTypeRule::preComputeType(NodeManager* nm,
+                                                         TNode n)
 {
   return TypeNode::null();
 }
@@ -722,7 +732,8 @@ TypeNode FloatingPointToRealTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->realType();
 }
 
-TypeNode FloatingPointToRealTotalTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode FloatingPointToRealTotalTypeRule::preComputeType(NodeManager* nm,
+                                                          TNode n)
 {
   return TypeNode::null();
 }
@@ -796,7 +807,8 @@ TypeNode FloatingPointComponentBit::computeType(NodeManager* nodeManager,
   return nodeManager->mkBitVectorType(1);
 }
 
-TypeNode FloatingPointComponentExponent::preComputeType(NodeManager* nm, TNode n)
+TypeNode FloatingPointComponentExponent::preComputeType(NodeManager* nm,
+                                                        TNode n)
 {
   return TypeNode::null();
 }
@@ -840,7 +852,8 @@ TypeNode FloatingPointComponentExponent::computeType(NodeManager* nodeManager,
   return nodeManager->mkBitVectorType(bw);
 }
 
-TypeNode FloatingPointComponentSignificand::preComputeType(NodeManager* nm, TNode n)
+TypeNode FloatingPointComponentSignificand::preComputeType(NodeManager* nm,
+                                                           TNode n)
 {
   return TypeNode::null();
 }

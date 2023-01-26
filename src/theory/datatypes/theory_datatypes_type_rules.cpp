@@ -660,7 +660,8 @@ TypeNode TupleProjectTypeRule::computeType(NodeManager* nm,
   return TupleUtils::getTupleProjectionType(indices, tupleType);
 }
 
-TypeNode CodatatypeBoundVariableTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode CodatatypeBoundVariableTypeRule::preComputeType(NodeManager* nm,
+                                                         TNode n)
 {
   return TypeNode::null();
 }

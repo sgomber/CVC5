@@ -368,7 +368,8 @@ TypeNode BitVectorEagerAtomTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->booleanType();
 }
 
-TypeNode BitVectorAckermanizationUdivTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode BitVectorAckermanizationUdivTypeRule::preComputeType(NodeManager* nm,
+                                                              TNode n)
 {
   return TypeNode::null();
 }
@@ -387,7 +388,8 @@ TypeNode BitVectorAckermanizationUdivTypeRule::computeType(
   return lhsType;
 }
 
-TypeNode BitVectorAckermanizationUremTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode BitVectorAckermanizationUremTypeRule::preComputeType(NodeManager* nm,
+                                                              TNode n)
 {
   return TypeNode::null();
 }

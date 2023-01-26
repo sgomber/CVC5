@@ -93,7 +93,8 @@ TypeNode SExprTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->sExprType();
 }
 
-TypeNode UninterpretedSortValueTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode UninterpretedSortValueTypeRule::preComputeType(NodeManager* nm,
+                                                        TNode n)
 {
   return TypeNode::null();
 }

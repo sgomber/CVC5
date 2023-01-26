@@ -72,7 +72,8 @@ TypeNode QuantifierTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->booleanType();
 }
 
-TypeNode QuantifierBoundVarListTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode QuantifierBoundVarListTypeRule::preComputeType(NodeManager* nm,
+                                                        TNode n)
 {
   return TypeNode::null();
 }
@@ -148,7 +149,8 @@ TypeNode QuantifierAnnotationTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->instPatternType();
 }
 
-TypeNode QuantifierInstPatternListTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode QuantifierInstPatternListTypeRule::preComputeType(NodeManager* nm,
+                                                           TNode n)
 {
   return TypeNode::null();
 }
@@ -176,7 +178,8 @@ TypeNode QuantifierInstPatternListTypeRule::computeType(
   return nodeManager->instPatternListType();
 }
 
-TypeNode QuantifierOracleFormulaGenTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode QuantifierOracleFormulaGenTypeRule::preComputeType(NodeManager* nm,
+                                                            TNode n)
 {
   return TypeNode::null();
 }
