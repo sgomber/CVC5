@@ -169,10 +169,10 @@ TypeNode MemberTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-      (*errOut) << "member operating on bags of different types:\n"
-         << "child type:  " << elementType << "\n"
-         << "not type: " << bagType.getBagElementType() << "\n"
-         << "in term : " << n;
+        (*errOut) << "member operating on bags of different types:\n"
+                  << "child type:  " << elementType << "\n"
+                  << "not type: " << bagType.getBagElementType() << "\n"
+                  << "in term : " << n;
       }
       return TypeNode::null();
     }

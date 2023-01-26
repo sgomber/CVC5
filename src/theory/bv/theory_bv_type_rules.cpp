@@ -26,17 +26,16 @@ namespace cvc5::internal {
 namespace theory {
 namespace bv {
 
-bool checkMaybeBitVector(const TypeNode& tn,
-                                                 std::ostream* errOut)
+bool checkMaybeBitVector(const TypeNode& tn, std::ostream* errOut)
 {
   if (tn.isBitVector())
   {
     return true;
   }
-  if (tn.getKind()==kind::ABSTRACT_TYPE)
+  if (tn.getKind() == kind::ABSTRACT_TYPE)
   {
     Kind ak = tn.getAbstractedKind();
-    if (ak==kind::ABSTRACT_TYPE || ak==kind::BITVECTOR_TYPE)
+    if (ak == kind::ABSTRACT_TYPE || ak == kind::BITVECTOR_TYPE)
     {
       return true;
     }
@@ -215,9 +214,9 @@ TypeNode BitVectorToBVTypeRule::preComputeType(NodeManager* nm, TNode n)
 }
 
 TypeNode BitVectorToBVTypeRule::computeType(NodeManager* nodeManager,
-                            TNode n,
-                            bool check,
-                            std::ostream* errOut)
+                                            TNode n,
+                                            bool check,
+                                            std::ostream* errOut)
 {
   for (const auto& child : n)
   {
@@ -229,7 +228,7 @@ TypeNode BitVectorToBVTypeRule::computeType(NodeManager* nodeManager,
   }
   return nodeManager->mkBitVectorType(n.getNumChildren());
 }
-  
+
 TypeNode BitVectorITETypeRule::preComputeType(NodeManager* nm, TNode n)
 {
   return TypeNode::null();
