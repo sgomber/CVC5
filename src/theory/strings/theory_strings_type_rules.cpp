@@ -25,6 +25,19 @@ namespace cvc5::internal {
 namespace theory {
 namespace strings {
 
+bool isMaybeStringLike(const TypeNode& tn)
+{
+  if (tn.isString())
+  {
+    return true;
+  }
+  if (tn.isMaybeKind(kind::SEQUENCE_TYPE))
+  {
+    return true;
+  }
+  return false;
+}
+
 TypeNode StringConcatTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
   return TypeNode::null();

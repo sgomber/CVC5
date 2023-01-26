@@ -26,11 +26,6 @@ namespace cvc5::internal {
 namespace theory {
 namespace arrays {
 
-bool isMaybeArray(const TypeNode& tn)
-{
-  return tn.isArray() || tn.isFullyAbstract();
-}
-
 TypeNode ArraySelectTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
   return TypeNode::null();
@@ -75,7 +70,7 @@ TypeNode ArrayStoreTypeRule::computeType(NodeManager* nodeManager,
     TypeNode arrayType = n[0].getType(check);
     if (check)
     {
-      if (!isMaybeArray(arrayType))
+      if (!arrayType.isMaybeKind(kind::ARRAY_TYPE))
       {
         throw TypeCheckingExceptionPrivate(
             n, "array store operating on non-array");

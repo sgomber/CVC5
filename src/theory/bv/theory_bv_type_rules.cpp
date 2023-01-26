@@ -26,9 +26,6 @@ namespace cvc5::internal {
 namespace theory {
 namespace bv {
 
-/**
- * Return true if tn is maybe a Boolean type.
- */
 bool isMaybeBoolean(const TypeNode& tn)
 {
   return tn.isBoolean() || tn.isFullyAbstract();
@@ -40,18 +37,9 @@ bool isMaybeBoolean(const TypeNode& tn)
  */
 bool checkMaybeBitVector(const TypeNode& tn, std::ostream* errOut)
 {
-  if (tn.isBitVector())
+  if (tn.isMaybeKind(kind::BITVECTOR_TYPE))
   {
     return true;
-  }
-  if (tn.getKind() == kind::ABSTRACT_TYPE)
-  {
-    Kind ak = tn.getAbstractedKind();
-    // could be fully abstract, or abstract bit-vector
-    if (ak == kind::ABSTRACT_TYPE || ak == kind::BITVECTOR_TYPE)
-    {
-      return true;
-    }
   }
   if (errOut)
   {
@@ -307,7 +295,7 @@ TypeNode BitVectorITETypeRule::computeType(NodeManager* nodeManager,
   if (check)
   {
     TypeNode cond = n[0].getType(check);
-    if (nodeManager->mkBitVectorType(1).isComparableTo(cond))
+    if (!nodeManager->mkBitVectorType(1).isComparableTo(cond))
     {
       if (errOut)
       {

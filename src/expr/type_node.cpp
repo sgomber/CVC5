@@ -660,6 +660,21 @@ Kind TypeNode::getAbstractedKind() const
   return ak.getKind();
 }
 
+bool TypeNode::isMaybeKind(Kind k) const
+{
+  Kind tk = getKind();
+  if (tk==k)
+  {
+    return true;
+  }
+  if (tk==kind::ABSTRACT_TYPE)
+  {
+    Kind tak = getAbstractedKind();
+    return tak==kind::ABSTRACT_TYPE || tak==k;
+  }
+  return false;
+}
+  
 std::string TypeNode::toString() const {
   std::stringstream ss;
   toStream(ss);
