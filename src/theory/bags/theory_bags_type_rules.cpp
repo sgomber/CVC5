@@ -286,7 +286,7 @@ TypeNode EmptyBagTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode CardTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->integerType();
 }
 TypeNode CardTypeRule::computeType(NodeManager* nodeManager,
                                    TNode n,

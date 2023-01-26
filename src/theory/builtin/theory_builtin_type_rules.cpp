@@ -32,8 +32,6 @@ TypeNode EqualityTypeRule::computeType(NodeManager* nodeManager,
                                        bool check,
                                        std::ostream* errOut)
 {
-  TypeNode booleanType = nodeManager->booleanType();
-
   if (check)
   {
     TypeNode lhsType = n[0].getType(check);
@@ -50,7 +48,7 @@ TypeNode EqualityTypeRule::computeType(NodeManager* nodeManager,
       return TypeNode::null();
     }
   }
-  return booleanType;
+  return nodeManager->booleanType();
 }
 
 TypeNode DistinctTypeRule::preComputeType(NodeManager* nm, TNode n)

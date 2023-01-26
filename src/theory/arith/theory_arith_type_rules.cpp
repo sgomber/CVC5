@@ -146,7 +146,8 @@ TypeNode ArithOperatorTypeRule::computeType(NodeManager* nodeManager,
     {
       if (isAbstract)
       {
-        // fully abstract
+        // fully abstract since Int and Real are incomparable
+        // NOTE: could use an abstract real???
         return nodeManager->mkAbstractType(kind::ABSTRACT_TYPE);
       }
       return isInteger ? integerType : realType;
