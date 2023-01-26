@@ -34,16 +34,16 @@ TypeNode EqualityTypeRule::computeType(NodeManager* nodeManager,
   {
     TypeNode lhsType = n[0].getType(check);
     TypeNode rhsType = n[1].getType(check);
-
     if (lhsType != rhsType)
     {
-      std::stringstream ss;
-      ss << "Subexpressions must have the same type:" << std::endl;
-      ss << "Equation: " << n << std::endl;
-      ss << "Type 1: " << lhsType << std::endl;
-      ss << "Type 2: " << rhsType << std::endl;
-
-      throw TypeCheckingExceptionPrivate(n, ss.str());
+      if (errOut)
+      {
+        (*errOut) << "Subexpressions must have the same type:" << std::endl;
+        (*errOut) << "Equation: " << n << std::endl;
+        (*errOut) << "Type 1: " << lhsType << std::endl;
+        (*errOut) << "Type 2: " << rhsType << std::endl;
+      }
+      return TypeNode::null();
     }
   }
   return booleanType;
@@ -66,6 +66,7 @@ TypeNode DistinctTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(
             n, "Not all arguments are of the same type");
+        return TypeNode::null();
       }
     }
   }
@@ -102,34 +103,41 @@ TypeNode WitnessTypeRule::computeType(NodeManager* nodeManager,
 {
   if (n[0].getType(check) != nodeManager->boundVarListType())
   {
-    std::stringstream ss;
-    ss << "expected a bound var list for WITNESS expression, got `"
-       << n[0].getType().toString() << "'";
-    throw TypeCheckingExceptionPrivate(n, ss.str());
+    if (errOut)
+    {
+      (*errOut) << "expected a bound var list for WITNESS expression, got `"
+        << n[0].getType().toString() << "'";
+    }
+    return TypeNode::null();
   }
   if (n[0].getNumChildren() != 1)
   {
-    std::stringstream ss;
-    ss << "expected a bound var list with one argument for WITNESS expression";
-    throw TypeCheckingExceptionPrivate(n, ss.str());
+    if (errOut)
+    {
+      (*errOut) << "expected a bound var list with one argument for WITNESS expression";
+    }
+    return TypeNode::null();
   }
   if (check)
   {
     TypeNode rangeType = n[1].getType(check);
     if (!rangeType.isBoolean())
     {
-      std::stringstream ss;
-      ss << "expected a body of a WITNESS expression to have Boolean type";
-      throw TypeCheckingExceptionPrivate(n, ss.str());
+      if (errOut)
+      {
+        (*errOut) << "expected a body of a WITNESS expression to have Boolean type";
+      }
+      return TypeNode::null();
     }
     if (n.getNumChildren() == 3)
     {
       if (n[2].getType(check) != nodeManager->instPatternListType())
       {
-        throw TypeCheckingExceptionPrivate(
-            n,
-            "third argument of witness is not instantiation "
-            "pattern list");
+        if (errOut)
+        {
+          (*errOut) << "third argument of witness is not instantiation pattern list";
+        }
+        return TypeNode::null();
       }
     }
   }

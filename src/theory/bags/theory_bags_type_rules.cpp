@@ -50,6 +50,7 @@ TypeNode BinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "operator expects a bag, first argument is not");
+        return TypeNode::null();
     }
     TypeNode secondBagType = n[1].getType(check);
     if (secondBagType != bagType)
@@ -59,6 +60,7 @@ TypeNode BinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
          << " expects two bags of the same type. Found types '" << bagType
          << "' and '" << secondBagType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
   }
   return bagType;
@@ -84,12 +86,14 @@ TypeNode SubBagTypeRule::computeType(NodeManager* nodeManager,
     if (!bagType.isBag())
     {
       throw TypeCheckingExceptionPrivate(n, "BAG_SUBBAG operating on non-bag");
+        return TypeNode::null();
     }
     TypeNode secondBagType = n[1].getType(check);
     if (secondBagType != bagType)
     {
       throw TypeCheckingExceptionPrivate(
           n, "BAG_SUBBAG operating on bags of different types");
+        return TypeNode::null();
     }
   }
   return nodeManager->booleanType();
@@ -108,6 +112,7 @@ TypeNode CountTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "checking for membership in a non-bag");
+        return TypeNode::null();
     }
     TypeNode elementType = n[0].getType(check);
     // e.g. (bag.count 1 (bag (BagMakeOp Real) 1.0 3))) is 3 whereas
@@ -120,6 +125,7 @@ TypeNode CountTypeRule::computeType(NodeManager* nodeManager,
          << "not type: " << bagType.getBagElementType() << "\n"
          << "in term : " << n;
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
   }
   return nodeManager->integerType();
@@ -138,6 +144,7 @@ TypeNode MemberTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "checking for membership in a non-bag");
+        return TypeNode::null();
     }
     TypeNode elementType = n[0].getType(check);
     // e.g. (bag.member 1 (bag 1.0 1)) is true whereas
@@ -150,6 +157,7 @@ TypeNode MemberTypeRule::computeType(NodeManager* nodeManager,
          << "not type: " << bagType.getBagElementType() << "\n"
          << "in term : " << n;
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
   }
   return nodeManager->booleanType();
@@ -170,6 +178,7 @@ TypeNode DuplicateRemovalTypeRule::computeType(NodeManager* nodeManager,
       ss << "Applying BAG_DUPLICATE_REMOVAL on a non-bag argument in term "
          << n;
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
   }
   return bagType;
@@ -190,6 +199,7 @@ TypeNode BagMakeTypeRule::computeType(NodeManager* nm,
       ss << "operands in term " << n << " are " << n.getNumChildren()
          << ", but BAG_MAKE expects 2 operands.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
     TypeNode type1 = n[1].getType(check);
     if (!type1.isInteger())
@@ -197,6 +207,7 @@ TypeNode BagMakeTypeRule::computeType(NodeManager* nm,
       std::stringstream ss;
       ss << "BAG_MAKE expects an integer for " << n[1] << ". Found" << type1;
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
   }
 
@@ -225,6 +236,7 @@ TypeNode IsSingletonTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "BAG_IS_SINGLETON operator expects a bag, a non-bag is found");
+        return TypeNode::null();
     }
   }
   return nodeManager->booleanType();
@@ -253,6 +265,7 @@ TypeNode CardTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "cardinality operates on a bag, non-bag object found");
+        return TypeNode::null();
     }
   }
   return nodeManager->integerType();
@@ -271,6 +284,7 @@ TypeNode ChooseTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "BAG_CHOOSE operator expects a bag, a non-bag is found");
+        return TypeNode::null();
     }
   }
   return bagType.getBagElementType();
@@ -289,6 +303,7 @@ TypeNode FromSetTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "bag.from_set operator expects a set, a non-set is found");
+        return TypeNode::null();
     }
   }
   TypeNode elementType = setType.getSetElementType();
@@ -309,6 +324,7 @@ TypeNode ToSetTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "bag.to_set operator expects a bag, a non-bag is found");
+        return TypeNode::null();
     }
   }
   TypeNode elementType = bagType.getBagElementType();
@@ -332,6 +348,7 @@ TypeNode BagMapTypeRule::computeType(NodeManager* nodeManager,
           n,
           "bag.map operator expects a bag in the second argument, "
           "a non-bag is found");
+        return TypeNode::null();
     }
 
     TypeNode elementType = bagType.getBagElementType();
@@ -343,6 +360,7 @@ TypeNode BagMapTypeRule::computeType(NodeManager* nodeManager,
          << elementType << " *) as a first argument. "
          << "Found a term of type '" << functionType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
     std::vector<TypeNode> argTypes = functionType.getArgTypes();
     if (!(argTypes.size() == 1 && argTypes[0] == elementType))
@@ -352,6 +370,7 @@ TypeNode BagMapTypeRule::computeType(NodeManager* nodeManager,
          << elementType << " *). "
          << "Found a function of type '" << functionType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
   }
   TypeNode rangeType = n[0].getType().getRangeType();
@@ -375,6 +394,7 @@ TypeNode BagFilterTypeRule::computeType(NodeManager* nodeManager,
           n,
           "bag.filter operator expects a bag in the second argument, "
           "a non-bag is found");
+        return TypeNode::null();
     }
 
     TypeNode elementType = bagType.getBagElementType();
@@ -386,6 +406,7 @@ TypeNode BagFilterTypeRule::computeType(NodeManager* nodeManager,
          << elementType << " Bool) as a first argument. "
          << "Found a term of type '" << functionType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
     std::vector<TypeNode> argTypes = functionType.getArgTypes();
     NodeManager* nm = NodeManager::currentNM();
@@ -397,6 +418,7 @@ TypeNode BagFilterTypeRule::computeType(NodeManager* nodeManager,
          << elementType << " Bool). "
          << "Found a function of type '" << functionType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
   }
   return bagType;
@@ -419,6 +441,7 @@ TypeNode BagFoldTypeRule::computeType(NodeManager* nodeManager,
           n,
           "bag.fold operator expects a bag in the third argument, "
           "a non-bag is found");
+        return TypeNode::null();
     }
 
     TypeNode elementType = bagType.getBagElementType();
@@ -430,6 +453,7 @@ TypeNode BagFoldTypeRule::computeType(NodeManager* nodeManager,
          << elementType << " T2 T2) as a first argument. "
          << "Found a term of type '" << functionType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
     std::vector<TypeNode> argTypes = functionType.getArgTypes();
     TypeNode rangeType = functionType.getRangeType();
@@ -441,6 +465,7 @@ TypeNode BagFoldTypeRule::computeType(NodeManager* nodeManager,
          << elementType << " T2 T2). "
          << "Found a function of type '" << functionType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
     if (rangeType != initialValueType)
     {
@@ -448,6 +473,7 @@ TypeNode BagFoldTypeRule::computeType(NodeManager* nodeManager,
       ss << "Operator " << n.getKind() << " expects an initial value of type "
          << rangeType << ". Found a term of type '" << initialValueType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
   }
   TypeNode retType = n[0].getType().getRangeType();
@@ -471,6 +497,7 @@ TypeNode BagPartitionTypeRule::computeType(NodeManager* nodeManager,
           n,
           "bag.partition operator expects a bag in the second argument, "
           "a non-bag is found");
+        return TypeNode::null();
     }
 
     TypeNode elementType = bagType.getBagElementType();
@@ -482,6 +509,7 @@ TypeNode BagPartitionTypeRule::computeType(NodeManager* nodeManager,
          << elementType << " " << elementType << " Bool) as a first argument. "
          << "Found a term of type '" << functionType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
     std::vector<TypeNode> argTypes = functionType.getArgTypes();
     TypeNode rangeType = functionType.getRangeType();
@@ -493,6 +521,7 @@ TypeNode BagPartitionTypeRule::computeType(NodeManager* nodeManager,
          << elementType << " " << elementType << " Bool) as a first argument. "
          << "Found a term of type '" << functionType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
   }
   TypeNode retType = nm->mkBagType(bagType);
@@ -517,6 +546,7 @@ TypeNode TableProductTypeRule::computeType(NodeManager* nodeManager,
        << "Found two terms of types '" << typeA << "' and '" << typeB
        << "' respectively.";
     throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
   }
 
   TypeNode elementAType = typeA.getBagElementType();
@@ -529,6 +559,7 @@ TypeNode TableProductTypeRule::computeType(NodeManager* nodeManager,
        << "Found two terms of types '" << typeA << "' and '" << typeB
        << "' respectively.";
     throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
   }
 
   TypeNode retTupleType =
@@ -555,6 +586,7 @@ TypeNode TableProjectTypeRule::computeType(NodeManager* nm,
       ss << "operands in term " << n << " are " << n.getNumChildren()
          << ", but TABLE_PROJECT expects 1 operand.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
 
     if (!bagType.isBag())
@@ -563,6 +595,7 @@ TypeNode TableProjectTypeRule::computeType(NodeManager* nm,
       ss << "TABLE_PROJECT operator expects a table. Found '" << n[0]
          << "' of type '" << bagType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
 
     TypeNode tupleType = bagType.getBagElementType();
@@ -572,6 +605,7 @@ TypeNode TableProjectTypeRule::computeType(NodeManager* nm,
       ss << "TABLE_PROJECT operator expects a table. Found '" << n[0]
          << "' of type '" << bagType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
 
     // make sure all indices are less than the length of the tuple type
@@ -586,6 +620,7 @@ TypeNode TableProjectTypeRule::computeType(NodeManager* nm,
         ss << "Index " << index << " in term " << n << " is >= " << numArgs
            << " which is the number of columns in " << n[0] << ".";
         throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
       }
     }
   }
@@ -617,6 +652,7 @@ TypeNode TableAggregateTypeRule::computeType(NodeManager* nm,
       ss << "TABLE_PROJECT operator expects a table. Found '" << n[2]
          << "' of type '" << bagType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
 
     TypeNode tupleType = bagType.getBagElementType();
@@ -626,6 +662,7 @@ TypeNode TableAggregateTypeRule::computeType(NodeManager* nm,
       ss << "TABLE_PROJECT operator expects a table. Found '" << n[2]
          << "' of type '" << bagType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
 
     TupleUtils::checkTypeIndices(n, tupleType, indices);
@@ -639,6 +676,7 @@ TypeNode TableAggregateTypeRule::computeType(NodeManager* nm,
          << elementType << " T T) as a first argument. "
          << "Found a term of type '" << functionType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
     std::vector<TypeNode> argTypes = functionType.getArgTypes();
     TypeNode rangeType = functionType.getRangeType();
@@ -650,6 +688,7 @@ TypeNode TableAggregateTypeRule::computeType(NodeManager* nm,
          << elementType << " T T). "
          << "Found a function of type '" << functionType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
     if (rangeType != initialValueType)
     {
@@ -657,6 +696,7 @@ TypeNode TableAggregateTypeRule::computeType(NodeManager* nm,
       ss << "Operator " << n.getKind() << " expects an initial value of type "
          << rangeType << ". Found a term of type '" << initialValueType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
   }
   return nm->mkBagType(functionType.getRangeType());
@@ -685,6 +725,7 @@ TypeNode TableJoinTypeRule::computeType(NodeManager* nm,
          << n[1] << "' of types '" << aType << "', '" << bType
          << "' respectively. ";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
 
     TypeNode aTupleType = aType.getBagElementType();
@@ -696,6 +737,7 @@ TypeNode TableJoinTypeRule::computeType(NodeManager* nm,
          << n[1] << "' of types '" << aType << "', '" << bType
          << "' respectively. ";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
 
     if (indices.size() % 2 != 0)
@@ -704,6 +746,7 @@ TypeNode TableJoinTypeRule::computeType(NodeManager* nm,
       ss << "TABLE_JOIN operator expects even number of indices. Found "
          << indices.size() << " in term " << n;
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
     auto [aIndices, bIndices] = BagsUtils::splitTableJoinIndices(n);
     TupleUtils::checkTypeIndices(n, aTupleType, aIndices);
@@ -723,6 +766,7 @@ TypeNode TableJoinTypeRule::computeType(NodeManager* nm,
            << aTypes[aIndices[i]] << " and " << bTypes[bIndices[i]]
            << "' respectively. ";
         throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
       }
     }
   }
@@ -752,6 +796,7 @@ TypeNode TableGroupTypeRule::computeType(NodeManager* nm,
       ss << "TABLE_GROUP operator expects a table. Found '" << n[0]
          << "' of type '" << bagType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
 
     TypeNode tupleType = bagType.getBagElementType();
@@ -761,6 +806,7 @@ TypeNode TableGroupTypeRule::computeType(NodeManager* nm,
       ss << "TABLE_GROUP operator expects a table. Found '" << n[0]
          << "' of type '" << bagType << "'.";
       throw TypeCheckingExceptionPrivate(n, ss.str());
+        return TypeNode::null();
     }
 
     TupleUtils::checkTypeIndices(n, tupleType, indices);

@@ -43,8 +43,10 @@ TypeNode BooleanTypeRule::computeType(NodeManager* nodeManager,
         Trace("pb") << "  integer: " << child.getType(check).isInteger()
                     << std::endl;
         Trace("pb") << "  real: " << child.getType(check).isReal() << std::endl;
-        throw TypeCheckingExceptionPrivate(n,
-                                           "expecting a Boolean subexpression");
+        if (errOut)
+        {
+          (*errOut) << "expecting a Boolean subexpression";
+        }
         return TypeNode::null();
       }
     }
@@ -67,13 +69,15 @@ TypeNode IteTypeRule::computeType(NodeManager* nodeManager,
   TypeNode resType = thenType.join(elseType);
   if (resType.isNull())
   {
-    std::stringstream ss;
-    ss << "Branches of the ITE must have the same type." << std::endl
+    if (errOut)
+    {
+    (*errOut) << "Branches of the ITE must have the same type." << std::endl
        << "then branch: " << n[1] << std::endl
        << "its type   : " << thenType << std::endl
        << "else branch: " << n[2] << std::endl
        << "its type   : " << elseType << std::endl;
-    throw TypeCheckingExceptionPrivate(n, ss.str());
+    }
+    return TypeNode::null();
   }
   if (check)
   {

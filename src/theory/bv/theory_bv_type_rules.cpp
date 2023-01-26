@@ -48,6 +48,7 @@ TypeNode BitVectorConstantTypeRule::computeType(NodeManager* nodeManager,
     if (n.getConst<BitVector>().getSize() == 0)
     {
       throw TypeCheckingExceptionPrivate(n, "constant of size 0");
+      return TypeNode::null();
     }
   }
   return nodeManager->mkBitVectorType(n.getConst<BitVector>().getSize());
@@ -65,6 +66,7 @@ TypeNode BitVectorFixedWidthTypeRule::computeType(NodeManager* nodeManager,
     if (!t.isBitVector())
     {
       throw TypeCheckingExceptionPrivate(n, "expecting bit-vector terms");
+      return TypeNode::null();
     }
     TNode::iterator it_end = n.end();
     for (++it; it != it_end; ++it)
@@ -73,6 +75,7 @@ TypeNode BitVectorFixedWidthTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(
             n, "expecting bit-vector terms of the same width");
+      return TypeNode::null();
       }
     }
   }
@@ -90,12 +93,14 @@ TypeNode BitVectorPredicateTypeRule::computeType(NodeManager* nodeManager,
     if (!lhsType.isBitVector())
     {
       throw TypeCheckingExceptionPrivate(n, "expecting bit-vector terms");
+      return TypeNode::null();
     }
     TypeNode rhsType = n[1].getType(check);
     if (lhsType != rhsType)
     {
       throw TypeCheckingExceptionPrivate(
           n, "expecting bit-vector terms of the same width");
+      return TypeNode::null();
     }
   }
   return nodeManager->booleanType();
@@ -112,6 +117,7 @@ TypeNode BitVectorRedTypeRule::computeType(NodeManager* nodeManager,
     if (!type.isBitVector())
     {
       throw TypeCheckingExceptionPrivate(n, "expecting bit-vector term");
+      return TypeNode::null();
     }
   }
   return nodeManager->mkBitVectorType(1);
@@ -130,6 +136,7 @@ TypeNode BitVectorBVPredTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "expecting bit-vector terms of the same width");
+      return TypeNode::null();
     }
   }
   return nodeManager->mkBitVectorType(1);
@@ -150,6 +157,7 @@ TypeNode BitVectorConcatTypeRule::computeType(NodeManager* nodeManager,
     if (!t.isBitVector())
     {
       throw TypeCheckingExceptionPrivate(n, "expecting bit-vector terms");
+      return TypeNode::null();
     }
     size += t.getBitVectorSize();
   }
@@ -170,12 +178,14 @@ TypeNode BitVectorITETypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "expecting condition to be bit-vector term size 1");
+      return TypeNode::null();
     }
     TypeNode elsepart = n[2].getType(check);
     if (thenpart != elsepart)
     {
       throw TypeCheckingExceptionPrivate(
           n, "expecting then and else parts to have same type");
+      return TypeNode::null();
     }
   }
   return thenpart;
@@ -194,11 +204,13 @@ TypeNode BitVectorBitOfTypeRule::computeType(NodeManager* nodeManager,
     if (!t.isBitVector())
     {
       throw TypeCheckingExceptionPrivate(n, "expecting bit-vector term");
+      return TypeNode::null();
     }
     if (info.d_bitIndex >= t.getBitVectorSize())
     {
       throw TypeCheckingExceptionPrivate(
           n, "extract index is larger than the bitvector size");
+      return TypeNode::null();
     }
   }
   return nodeManager->booleanType();
@@ -218,6 +230,7 @@ TypeNode BitVectorExtractTypeRule::computeType(NodeManager* nodeManager,
   {
     throw TypeCheckingExceptionPrivate(
         n, "high extract index is smaller than the low extract index");
+      return TypeNode::null();
   }
 
   if (check)
@@ -226,11 +239,13 @@ TypeNode BitVectorExtractTypeRule::computeType(NodeManager* nodeManager,
     if (!t.isBitVector())
     {
       throw TypeCheckingExceptionPrivate(n, "expecting bit-vector term");
+      return TypeNode::null();
     }
     if (extractInfo.d_high >= t.getBitVectorSize())
     {
       throw TypeCheckingExceptionPrivate(
           n, "high extract index is bigger than the size of the bit-vector");
+      return TypeNode::null();
     }
   }
   return nodeManager->mkBitVectorType(extractInfo.d_high - extractInfo.d_low
@@ -249,11 +264,13 @@ TypeNode BitVectorRepeatTypeRule::computeType(NodeManager* nodeManager,
   if (!t.isBitVector())
   {
     throw TypeCheckingExceptionPrivate(n, "expecting bit-vector term");
+      return TypeNode::null();
   }
   uint32_t repeatAmount = n.getOperator().getConst<BitVectorRepeat>();
   if (repeatAmount == 0)
   {
     throw TypeCheckingExceptionPrivate(n, "expecting number of repeats > 0");
+      return TypeNode::null();
   }
   return nodeManager->mkBitVectorType(repeatAmount * t.getBitVectorSize());
 }
@@ -270,6 +287,7 @@ TypeNode BitVectorExtendTypeRule::computeType(NodeManager* nodeManager,
   if (!t.isBitVector())
   {
     throw TypeCheckingExceptionPrivate(n, "expecting bit-vector term");
+      return TypeNode::null();
   }
   uint32_t extendAmount = n.getKind() == kind::BITVECTOR_SIGN_EXTEND
                               ? n.getOperator().getConst<BitVectorSignExtend>()
@@ -288,6 +306,7 @@ TypeNode BitVectorEagerAtomTypeRule::computeType(NodeManager* nodeManager,
     if (!lhsType.isBoolean())
     {
       throw TypeCheckingExceptionPrivate(n, "expecting boolean term");
+      return TypeNode::null();
     }
   }
   return nodeManager->booleanType();
@@ -302,6 +321,7 @@ TypeNode BitVectorAckermanizationUdivTypeRule::computeType(
     if (!lhsType.isBitVector())
     {
       throw TypeCheckingExceptionPrivate(n, "expecting bit-vector term");
+      return TypeNode::null();
     }
   }
   return lhsType;
@@ -316,6 +336,7 @@ TypeNode BitVectorAckermanizationUremTypeRule::computeType(
     if (!lhsType.isBitVector())
     {
       throw TypeCheckingExceptionPrivate(n, "expecting bit-vector term");
+      return TypeNode::null();
     }
   }
   return lhsType;

@@ -33,11 +33,13 @@ TypeNode QuantifierTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n, "first argument of quantifier is not bound var list");
+      return TypeNode::null();
     }
     if (n[1].getType(check) != nodeManager->booleanType())
     {
       throw TypeCheckingExceptionPrivate(n,
                                          "body of quantifier is not boolean");
+      return TypeNode::null();
     }
     if (n.getNumChildren() == 3)
     {
@@ -47,6 +49,7 @@ TypeNode QuantifierTypeRule::computeType(NodeManager* nodeManager,
             n,
             "third argument of quantifier is not instantiation "
             "pattern list");
+      return TypeNode::null();
       }
       for (const Node& p : n[2])
       {
@@ -57,6 +60,7 @@ TypeNode QuantifierTypeRule::computeType(NodeManager* nodeManager,
               n,
               "expected number of arguments to pool to be the same as the "
               "number of bound variables of the quantified formula");
+      return TypeNode::null();
         }
       }
     }
@@ -78,6 +82,7 @@ TypeNode QuantifierBoundVarListTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(
             n, "argument of bound var list is not bound variable");
+      return TypeNode::null();
       }
     }
   }
@@ -100,6 +105,7 @@ TypeNode QuantifierInstPatternTypeRule::computeType(NodeManager* nodeManager,
     {
       throw TypeCheckingExceptionPrivate(
           n[0], "Pattern must be a list of fully-applied terms.");
+      return TypeNode::null();
     }
   }
   return nodeManager->instPatternType();
@@ -119,6 +125,7 @@ TypeNode QuantifierAnnotationTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(
             n[0], "Expecting a keyword at the head of INST_ATTRIBUTE.");
+      return TypeNode::null();
       }
     }
   }
@@ -142,6 +149,7 @@ TypeNode QuantifierInstPatternListTypeRule::computeType(
             n,
             "argument of inst pattern list is not a legal quantifiers "
             "annotation");
+      return TypeNode::null();
       }
     }
   }
@@ -157,11 +165,13 @@ TypeNode QuantifierOracleFormulaGenTypeRule::computeType(
     {
       throw TypeCheckingExceptionPrivate(
           n, "expected Boolean for oracle interface assumption");
+      return TypeNode::null();
     }
     if (!n[1].getType().isBoolean())
     {
       throw TypeCheckingExceptionPrivate(
           n, "expected Boolean for oracle interface constraint");
+      return TypeNode::null();
     }
   }
   return nodeManager->booleanType();

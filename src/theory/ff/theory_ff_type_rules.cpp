@@ -52,6 +52,7 @@ TypeNode FiniteFieldFixedFieldTypeRule::computeType(NodeManager* nodeManager,
     if (t.getKind() != kind::FINITE_FIELD_TYPE)
     {
       throw TypeCheckingExceptionPrivate(n, "expecting finite-field terms");
+      return TypeNode::null();
     }
     TNode::iterator it_end = n.end();
     for (++it; it != it_end; ++it)
@@ -60,6 +61,7 @@ TypeNode FiniteFieldFixedFieldTypeRule::computeType(NodeManager* nodeManager,
       {
         throw TypeCheckingExceptionPrivate(
             n, "expecting finite-field terms from the same field");
+      return TypeNode::null();
       }
     }
   }
