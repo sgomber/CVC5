@@ -319,6 +319,61 @@ bool TypeNode::isReal() const
 
 bool TypeNode::isStringLike() const { return isString() || isSequence(); }
 
+bool TypeNode::isInstanceOf(const TypeNode& t) const
+{
+  return !join(t).isNull();
+}
+
+TypeNode TypeNode::join(const TypeNode& t) const
+{
+  Assert (!isNull() && !t.isNull());
+  if (*this == t)
+  {
+    return t;
+  }
+  if (t.isAbstract())
+  {
+    Kind tak = t.getAbstractedKind();
+    if (tak == kind::ABSTRACT_TYPE)
+    {
+      // everything is subtype of the fully abstract type
+      return *this;
+    }
+    // ABSTRACT_TYPE{k} is a subtype of types with kind k
+    if (getKind() == tak)
+    {
+      return *this;
+    }
+    return TypeNode::null();
+  }
+  Kind k = getKind();
+  if (k == kind::TYPE_CONSTANT || k != t.getKind())
+  {
+    // different kinds, or distinct constants
+    return TypeNode::null();
+  }
+  size_t nchild = getNumChildren();
+  if (nchild == 0 || nchild != t.getNumChildren())
+  {
+    // different arities
+    return TypeNode::null();
+  }
+  NodeBuilder nb(k);
+  for (size_t i = 0; i < nchild; i++)
+  {
+    TypeNode c = (*this)[i];
+    TypeNode tc = t[i];
+    TypeNode jc = c.join(tc);
+    if (jc.isNull())
+    {
+      // incompatible component type
+      return jc;
+    }
+    nb << jc;
+  }
+  return nb.constructTypeNode();
+}
+
 bool TypeNode::isRealOrInt() const { return isReal() || isInteger(); }
 
 TypeNode TypeNode::getDatatypeTesterDomainType() const

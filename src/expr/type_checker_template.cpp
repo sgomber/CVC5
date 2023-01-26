@@ -58,7 +58,7 @@ ${pretyperules}
   return typeNode;
 }
 
-TypeNode TypeChecker::computeType(NodeManager* nodeManager, TNode n, bool check)
+TypeNode TypeChecker::computeType(NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut)
 {
   TypeNode typeNode;
 
