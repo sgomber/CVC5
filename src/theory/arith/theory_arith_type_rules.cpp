@@ -20,7 +20,7 @@
 namespace cvc5::internal {
 namespace theory {
 namespace arith {
-  
+
 bool isMaybeRealOrInt(TypeNode tn)
 {
   return tn.isRealOrInt() || tn.isFullyAbstract();

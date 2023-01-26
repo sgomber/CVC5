@@ -479,7 +479,7 @@ class CVC5_EXPORT TypeNode
 
   /** Is this an abstract type? */
   bool isAbstract() const;
-  
+
   /** Is this the fully abstract type? */
   bool isFullyAbstract() const;
 
