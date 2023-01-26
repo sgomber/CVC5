@@ -90,8 +90,10 @@ TypeNode QuantifierBoundVarListTypeRule::computeType(NodeManager* nodeManager,
     {
       if (nc.getKind() != kind::BOUND_VARIABLE)
       {
-        throw TypeCheckingExceptionPrivate(
-            n, "argument of bound var list is not bound variable");
+        if (errOut)
+        {
+          (*errOut) << "argument of bound var list is not bound variable";
+        }
         return TypeNode::null();
       }
     }
@@ -117,8 +119,10 @@ TypeNode QuantifierInstPatternTypeRule::computeType(NodeManager* nodeManager,
     if (n[0].isVar() && n[0].getKind() != kind::BOUND_VARIABLE
         && tn.isFunction())
     {
-      throw TypeCheckingExceptionPrivate(
-          n[0], "Pattern must be a list of fully-applied terms.");
+      if (errOut)
+      {
+        (*errOut) << "Pattern must be a list of fully-applied terms.";
+      }
       return TypeNode::null();
     }
   }
@@ -141,8 +145,10 @@ TypeNode QuantifierAnnotationTypeRule::computeType(NodeManager* nodeManager,
       // first must be a keyword
       if (n[0].getKind() != kind::CONST_STRING)
       {
-        throw TypeCheckingExceptionPrivate(
-            n[0], "Expecting a keyword at the head of INST_ATTRIBUTE.");
+        if (errOut)
+        {
+          (*errOut) << "Expecting a keyword at the head of INST_ATTRIBUTE.";
+        }
         return TypeNode::null();
       }
     }
@@ -168,10 +174,10 @@ TypeNode QuantifierInstPatternListTypeRule::computeType(
           && k != kind::INST_ATTRIBUTE && k != kind::INST_POOL
           && k != kind::INST_ADD_TO_POOL && k != kind::SKOLEM_ADD_TO_POOL)
       {
-        throw TypeCheckingExceptionPrivate(
-            n,
-            "argument of inst pattern list is not a legal quantifiers "
-            "annotation");
+        if (errOut)
+        {
+          (*errOut) << "argument of inst pattern list is not a legal quantifiers annotation";
+        }
         return TypeNode::null();
       }
     }
@@ -192,14 +198,18 @@ TypeNode QuantifierOracleFormulaGenTypeRule::computeType(
   {
     if (!n[0].getType().isBoolean())
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expected Boolean for oracle interface assumption");
+      if (errOut)
+      {
+        (*errOut) << "expected Boolean for oracle interface assumption";
+      }
       return TypeNode::null();
     }
     if (!n[1].getType().isBoolean())
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expected Boolean for oracle interface constraint");
+      if (errOut)
+      {
+        (*errOut) << "expected Boolean for oracle interface constraint";
+      }
       return TypeNode::null();
     }
   }
