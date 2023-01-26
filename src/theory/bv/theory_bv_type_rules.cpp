@@ -280,7 +280,11 @@ TypeNode BitVectorToBVTypeRule::computeType(NodeManager* nodeManager,
     TypeNode t = child.getType(check);
     if (!isMaybeBoolean(t))
     {
-      throw TypeCheckingExceptionPrivate(n, "expecting Boolean terms");
+      if (errOut)
+      {
+        (*errOut) << "expecting Boolean terms";
+      }
+      return TypeNode::null();
     }
   }
   return nodeManager->mkBitVectorType(n.getNumChildren());
@@ -303,10 +307,12 @@ TypeNode BitVectorITETypeRule::computeType(NodeManager* nodeManager,
   if (check)
   {
     TypeNode cond = n[0].getType(check);
-    if (cond != nodeManager->mkBitVectorType(1))
+    if (nodeManager->mkBitVectorType(1).isComparableTo(cond))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting condition to be bit-vector term size 1");
+      if (errOut)
+      {
+        (*errOut) << "expecting condition to be compatible with bit-vector term size 1";
+      }
       return TypeNode::null();
     }
   }
@@ -412,7 +418,10 @@ TypeNode BitVectorRepeatTypeRule::computeType(NodeManager* nodeManager,
   uint32_t repeatAmount = n.getOperator().getConst<BitVectorRepeat>();
   if (repeatAmount == 0)
   {
-    throw TypeCheckingExceptionPrivate(n, "expecting number of repeats > 0");
+    if (errOut)
+    {
+      (*errOut) << "expecting number of repeats > 0";
+    }
     return TypeNode::null();
   }
   if (t.isAbstract())
@@ -463,9 +472,13 @@ TypeNode BitVectorEagerAtomTypeRule::computeType(NodeManager* nodeManager,
   if (check)
   {
     TypeNode lhsType = n[0].getType(check);
+    // simple check to Boolean
     if (!lhsType.isBoolean())
     {
-      throw TypeCheckingExceptionPrivate(n, "expecting boolean term");
+      if (errOut)
+      {
+        (*errOut) << "expecting boolean term";
+      }
       return TypeNode::null();
     }
   }
