@@ -28,7 +28,8 @@ TypeNode BooleanTypeRule::preComputeType(NodeManager* nm, TNode n)
 
 TypeNode BooleanTypeRule::computeType(NodeManager* nodeManager,
                                       TNode n,
-                                      bool check, std::ostream* errOut)
+                                      bool check,
+                                      std::ostream* errOut)
 {
   TypeNode booleanType = nodeManager->booleanType();
   if (check)
@@ -56,7 +57,10 @@ TypeNode IteTypeRule::preComputeType(NodeManager* nm, TNode n)
   return TypeNode::null();
 }
 
-TypeNode IteTypeRule::computeType(NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut)
+TypeNode IteTypeRule::computeType(NodeManager* nodeManager,
+                                  TNode n,
+                                  bool check,
+                                  std::ostream* errOut)
 {
   TypeNode thenType = n[1].getType(check);
   TypeNode elseType = n[2].getType(check);
@@ -65,10 +69,10 @@ TypeNode IteTypeRule::computeType(NodeManager* nodeManager, TNode n, bool check,
   {
     std::stringstream ss;
     ss << "Branches of the ITE must have the same type." << std::endl
-        << "then branch: " << n[1] << std::endl
-        << "its type   : " << thenType << std::endl
-        << "else branch: " << n[2] << std::endl
-        << "its type   : " << elseType << std::endl;
+       << "then branch: " << n[1] << std::endl
+       << "its type   : " << thenType << std::endl
+       << "else branch: " << n[2] << std::endl
+       << "its type   : " << elseType << std::endl;
     throw TypeCheckingExceptionPrivate(n, ss.str());
   }
   if (check)
