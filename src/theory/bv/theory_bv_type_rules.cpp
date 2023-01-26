@@ -52,7 +52,8 @@ bool checkMaybeBitVector(const TypeNode& tn, std::ostream* errOut)
 }
 TypeNode ensureBv(NodeManager* nm, const TypeNode& tn)
 {
-  if (tn.getKind() == kind::ABSTRACT_TYPE && tn.getAbstractedKind()==kind::ABSTRACT_TYPE)
+  if (tn.getKind() == kind::ABSTRACT_TYPE
+      && tn.getAbstractedKind() == kind::ABSTRACT_TYPE)
   {
     return nm->mkAbstractType(kind::BITVECTOR_TYPE);
   }
@@ -371,7 +372,7 @@ TypeNode BitVectorRepeatTypeRule::computeType(NodeManager* nodeManager,
   {
     return ensureBv(nodeManager, t);
   }
-  Assert (t.isBitVector());
+  Assert(t.isBitVector());
   return nodeManager->mkBitVectorType(repeatAmount * t.getBitVectorSize());
 }
 
@@ -396,7 +397,7 @@ TypeNode BitVectorExtendTypeRule::computeType(NodeManager* nodeManager,
   {
     return ensureBv(nodeManager, t);
   }
-  Assert (t.isBitVector());
+  Assert(t.isBitVector());
   uint32_t extendAmount = n.getKind() == kind::BITVECTOR_SIGN_EXTEND
                               ? n.getOperator().getConst<BitVectorSignExtend>()
                               : n.getOperator().getConst<BitVectorZeroExtend>();

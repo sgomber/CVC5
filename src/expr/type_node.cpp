@@ -321,7 +321,7 @@ bool TypeNode::isStringLike() const { return isString() || isSequence(); }
 
 bool TypeNode::isInstanceOf(const TypeNode& t) const
 {
-  return join(t)==(*this);
+  return join(t) == (*this);
 }
 
 TypeNode TypeNode::join(const TypeNode& t) const
@@ -398,7 +398,7 @@ TypeNode TypeNode::unifyInternal(const TypeNode& t, bool isJoin) const
 }
 
 bool TypeNode::isComparableTo(const TypeNode& t) const
-{ 
+{
   // could do join or meet here
   return !unifyInternal(t, true).isNull();
 }
