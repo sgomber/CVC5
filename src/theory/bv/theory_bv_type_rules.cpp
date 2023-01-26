@@ -26,10 +26,18 @@ namespace cvc5::internal {
 namespace theory {
 namespace bv {
 
+/** 
+ * Return true if tn is maybe a Boolean type.
+ */
 bool isMaybeBoolean(const TypeNode& tn)
 {
   return tn.isBoolean() || tn.isFullyAbstract();
 }
+
+/** 
+ * Return true if tn is maybe a bit-vector type. Write to errOut if it exists
+ * and tn is not a maybe bit-vector type.
+ */
 bool checkMaybeBitVector(const TypeNode& tn, std::ostream* errOut)
 {
   if (tn.isBitVector())
@@ -39,6 +47,7 @@ bool checkMaybeBitVector(const TypeNode& tn, std::ostream* errOut)
   if (tn.getKind() == kind::ABSTRACT_TYPE)
   {
     Kind ak = tn.getAbstractedKind();
+    // could be fully abstract, or abstract bit-vector
     if (ak == kind::ABSTRACT_TYPE || ak == kind::BITVECTOR_TYPE)
     {
       return true;
@@ -50,6 +59,11 @@ bool checkMaybeBitVector(const TypeNode& tn, std::ostream* errOut)
   }
   return false;
 }
+
+/**
+ * Ensure that tn is a bit-vector type.
+ * Note this is equivalent to tn.join(?BitVec).
+ */
 TypeNode ensureBv(NodeManager* nm, const TypeNode& tn)
 {
   if (tn.getKind() == kind::ABSTRACT_TYPE
@@ -104,19 +118,23 @@ TypeNode BitVectorFixedWidthTypeRule::computeType(NodeManager* nodeManager,
                                                   bool check,
                                                   std::ostream* errOut)
 {
-  TNode::iterator it = n.begin();
-  TypeNode t = (*it).getType(check);
-  if (check)
+  TypeNode t;
+  for (const Node& nc : n)
   {
-    if (!checkMaybeBitVector(t, errOut))
+    TypeNode tc = nc.getType(check);
+    if (check)
     {
-      return TypeNode::null();
+      if (!checkMaybeBitVector(tc, errOut))
+      {
+        return TypeNode::null();
+      }
     }
-  }
-  TNode::iterator it_end = n.end();
-  for (++it; it != it_end; ++it)
-  {
-    TypeNode tc = (*it).getType(check);
+    // if first child
+    if (t.isNull())
+    {
+      t = tc;
+      continue;
+    }
     t = t.join(tc);
     if (t.isNull())
     {
@@ -127,6 +145,8 @@ TypeNode BitVectorFixedWidthTypeRule::computeType(NodeManager* nodeManager,
       return TypeNode::null();
     }
   }
+  // ensure return is bitvector, e.g. if 2 fully abstract children, return
+  // ?BitVec.
   return ensureBv(nodeManager, t);
 }
 
@@ -161,7 +181,7 @@ TypeNode BitVectorPredicateTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode BitVectorRedTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->mkBitVectorType(1);
 }
 TypeNode BitVectorRedTypeRule::computeType(NodeManager* nodeManager,
                                            TNode n,
@@ -192,10 +212,12 @@ TypeNode BitVectorBVPredTypeRule::computeType(NodeManager* nodeManager,
   {
     TypeNode lhs = n[0].getType(check);
     TypeNode rhs = n[1].getType(check);
-    if (!checkMaybeBitVector(lhs, errOut) || lhs != rhs)
+    if (!checkMaybeBitVector(lhs, errOut) || !checkMaybeBitVector(rhs, errOut) || !lhs.isComparableTo(rhs))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting bit-vector terms of the same width");
+      if (errOut)
+      {
+        (*errOut) << "expecting compatible bit-vector terms";
+      }
       return TypeNode::null();
     }
   }
@@ -212,6 +234,7 @@ TypeNode BitVectorConcatTypeRule::computeType(NodeManager* nodeManager,
                                               std::ostream* errOut)
 {
   uint32_t size = 0;
+  bool isAbstract = false;
   for (const auto& child : n)
   {
     TypeNode t = child.getType(check);
@@ -222,7 +245,21 @@ TypeNode BitVectorConcatTypeRule::computeType(NodeManager* nodeManager,
     {
       return TypeNode::null();
     }
+    if (isAbstract)
+    {
+      continue;
+    }
+    else if (t.isAbstract())
+    {
+      isAbstract = true;
+      continue;
+    }
     size += t.getBitVectorSize();
+  }
+  // if any child is abstract, we are abstract
+  if (isAbstract)
+  {
+    return nodeManager->mkAbstractType(kind::BITVECTOR_TYPE);
   }
   return nodeManager->mkBitVectorType(size);
 }
@@ -240,7 +277,7 @@ TypeNode BitVectorToBVTypeRule::computeType(NodeManager* nodeManager,
   for (const auto& child : n)
   {
     TypeNode t = child.getType(check);
-    if (!t.isBoolean())
+    if (!isMaybeBoolean(t))
     {
       throw TypeCheckingExceptionPrivate(n, "expecting Boolean terms");
     }
@@ -260,6 +297,7 @@ TypeNode BitVectorITETypeRule::computeType(NodeManager* nodeManager,
   Assert(n.getNumChildren() == 3);
   TypeNode thenpart = n[1].getType(check);
   TypeNode elsepart = n[2].getType(check);
+  // like ite, return is the join of the branches
   TypeNode retType = thenpart.join(elsepart);
   if (check)
   {
@@ -291,15 +329,17 @@ TypeNode BitVectorBitOfTypeRule::computeType(NodeManager* nodeManager,
   {
     BitVectorBitOf info = n.getOperator().getConst<BitVectorBitOf>();
     TypeNode t = n[0].getType(check);
-
     if (!checkMaybeBitVector(t, errOut))
     {
       return TypeNode::null();
     }
-    if (info.d_bitIndex >= t.getBitVectorSize())
+    // note this is not checked if the argument has abstract type
+    if (t.isBitVector() && info.d_bitIndex >= t.getBitVectorSize())
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "extract index is larger than the bitvector size");
+      if (errOut)
+      {
+        (*errOut) << "extract index is larger than the bitvector size";
+      }
       return TypeNode::null();
     }
   }
@@ -322,8 +362,10 @@ TypeNode BitVectorExtractTypeRule::computeType(NodeManager* nodeManager,
   // type will be illegal
   if (extractInfo.d_high < extractInfo.d_low)
   {
-    throw TypeCheckingExceptionPrivate(
-        n, "high extract index is smaller than the low extract index");
+    if (errOut)
+    {
+      (*errOut) << "high extract index is smaller than the low extract index";
+    }
     return TypeNode::null();
   }
 
@@ -334,10 +376,13 @@ TypeNode BitVectorExtractTypeRule::computeType(NodeManager* nodeManager,
     {
       return TypeNode::null();
     }
-    if (extractInfo.d_high >= t.getBitVectorSize())
+    // note this is not checked if the argument has abstract type
+    if (t.isBitVector() && extractInfo.d_high >= t.getBitVectorSize())
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "high extract index is bigger than the size of the bit-vector");
+      if (errOut)
+      {
+        (*errOut) << "high extract index is bigger than the size of the bit-vector";
+      }
       return TypeNode::null();
     }
   }
