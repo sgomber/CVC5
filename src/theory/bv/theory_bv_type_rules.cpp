@@ -25,7 +25,7 @@
 namespace cvc5::internal {
 namespace theory {
 namespace bv {
-  
+
 bool isMaybeBitVector(const TypeNode& tn)
 {
   return tn.isBitVector() || tn.isFullyAbstract();

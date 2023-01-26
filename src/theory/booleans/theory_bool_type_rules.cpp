@@ -25,7 +25,7 @@ bool isMaybeBoolean(const TypeNode& tn)
 {
   return tn.isBoolean() || tn.isFullyAbstract();
 }
-  
+
 TypeNode BooleanTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
   return nm->booleanType();

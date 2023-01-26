@@ -32,7 +32,8 @@ namespace fp {
 class FloatingPointConstantTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -42,7 +43,8 @@ class FloatingPointConstantTypeRule
 class RoundingModeConstantTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -52,7 +54,8 @@ class RoundingModeConstantTypeRule
 class FloatingPointFPTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -65,7 +68,8 @@ class FloatingPointFPTypeRule
 class FloatingPointTestTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -79,7 +83,8 @@ class FloatingPointTestTypeRule
 class FloatingPointOperationTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -93,7 +98,8 @@ class FloatingPointOperationTypeRule
 class FloatingPointRoundingOperationTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -107,7 +113,8 @@ class FloatingPointRoundingOperationTypeRule
 class FloatingPointPartialOperationTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -121,7 +128,8 @@ class FloatingPointPartialOperationTypeRule
 class FloatingPointParametricOpTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -131,7 +139,8 @@ class FloatingPointParametricOpTypeRule
 class FloatingPointToFPIEEEBitVectorTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -141,7 +150,8 @@ class FloatingPointToFPIEEEBitVectorTypeRule
 class FloatingPointToFPFloatingPointTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -151,7 +161,8 @@ class FloatingPointToFPFloatingPointTypeRule
 class FloatingPointToFPRealTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -161,7 +172,8 @@ class FloatingPointToFPRealTypeRule
 class FloatingPointToFPSignedBitVectorTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -171,7 +183,8 @@ class FloatingPointToFPSignedBitVectorTypeRule
 class FloatingPointToFPUnsignedBitVectorTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -181,7 +194,8 @@ class FloatingPointToFPUnsignedBitVectorTypeRule
 class FloatingPointToUBVTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -191,7 +205,8 @@ class FloatingPointToUBVTypeRule
 class FloatingPointToSBVTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -204,7 +219,8 @@ class FloatingPointToSBVTypeRule
 class FloatingPointToUBVTotalTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -217,7 +233,8 @@ class FloatingPointToUBVTotalTypeRule
 class FloatingPointToSBVTotalTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -227,7 +244,8 @@ class FloatingPointToSBVTotalTypeRule
 class FloatingPointToRealTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -237,7 +255,8 @@ class FloatingPointToRealTypeRule
 class FloatingPointToRealTotalTypeRule
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -247,7 +266,8 @@ class FloatingPointToRealTotalTypeRule
 class FloatingPointComponentBit
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -257,7 +277,8 @@ class FloatingPointComponentBit
 class FloatingPointComponentExponent
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -267,7 +288,8 @@ class FloatingPointComponentExponent
 class FloatingPointComponentSignificand
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -277,7 +299,8 @@ class FloatingPointComponentSignificand
 class RoundingModeBitBlast
 {
  public:
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);

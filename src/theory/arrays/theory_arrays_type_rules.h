@@ -27,7 +27,8 @@ namespace arrays {
 
 struct ArraySelectTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -35,7 +36,8 @@ struct ArraySelectTypeRule
 
 struct ArrayStoreTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -45,7 +47,8 @@ struct ArrayStoreTypeRule
 
 struct ArrayTableFunTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -53,7 +56,8 @@ struct ArrayTableFunTypeRule
 
 struct ArrayLambdaTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -70,7 +74,8 @@ struct ArraysProperties
 
 struct ArrayPartialSelectTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -78,7 +83,8 @@ struct ArrayPartialSelectTypeRule
 
 struct ArrayEqRangeTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);

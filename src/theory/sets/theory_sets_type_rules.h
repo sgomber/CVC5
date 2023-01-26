@@ -31,7 +31,8 @@ namespace sets {
  */
 struct SetsBinaryOperatorTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -44,7 +45,8 @@ struct SetsBinaryOperatorTypeRule
  */
 struct SubsetTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -56,7 +58,8 @@ struct SubsetTypeRule
  */
 struct MemberTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -68,7 +71,8 @@ struct MemberTypeRule
  */
 struct SingletonTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -81,7 +85,8 @@ struct SingletonTypeRule
  */
 struct EmptySetTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -92,7 +97,8 @@ struct EmptySetTypeRule
  */
 struct CardTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -103,7 +109,8 @@ struct CardTypeRule
  */
 struct ComplementTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -114,7 +121,8 @@ struct ComplementTypeRule
  */
 struct UniverseSetTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -127,7 +135,8 @@ struct UniverseSetTypeRule
  */
 struct ComprehensionTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -138,7 +147,8 @@ struct ComprehensionTypeRule
  */
 struct ChooseTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -149,7 +159,8 @@ struct ChooseTypeRule
  */
 struct IsSingletonTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -161,7 +172,8 @@ struct IsSingletonTypeRule
  */
 struct InsertTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -173,7 +185,8 @@ struct InsertTypeRule
  */
 struct SetMapTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -185,7 +198,8 @@ struct SetMapTypeRule
  */
 struct SetFilterTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -197,7 +211,8 @@ struct SetFilterTypeRule
  */
 struct SetFoldTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -214,7 +229,8 @@ struct SetFoldTypeRule
  */
 struct RelBinaryOperatorTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -227,7 +243,8 @@ struct RelBinaryOperatorTypeRule
  */
 struct RelTransposeTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -239,7 +256,8 @@ struct RelTransposeTypeRule
  */
 struct RelTransClosureTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -253,7 +271,8 @@ struct RelTransClosureTypeRule
  */
 struct JoinImageTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -266,7 +285,8 @@ struct JoinImageTypeRule
  */
 struct RelIdenTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -280,7 +300,8 @@ struct RelIdenTypeRule
  */
 struct RelationGroupTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -294,7 +315,8 @@ struct RelationGroupTypeRule
  */
 struct RelationProjectTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);
@@ -310,7 +332,8 @@ struct RelationProjectTypeRule
  */
 struct RelationAggregateTypeRule
 {
-  static TypeNode preComputeType(NodeManager* nm, TNode n);static TypeNode computeType(NodeManager* nodeManager,
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
                               std::ostream* errOut);

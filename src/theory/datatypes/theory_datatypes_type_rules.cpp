@@ -574,9 +574,8 @@ TypeNode TupleProjectTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut)
-       << "operands in term " << n << " are " << n.getNumChildren()
-         << ", but TUPLE_PROJECT expects 1 operand.";
+        (*errOut) << "operands in term " << n << " are " << n.getNumChildren()
+                  << ", but TUPLE_PROJECT expects 1 operand.";
       }
       return TypeNode::null();
     }
@@ -586,7 +585,7 @@ TypeNode TupleProjectTypeRule::computeType(NodeManager* nm,
       if (errOut)
       {
         (*errOut) << "TUPLE_PROJECT expects a tuple for " << n[0] << ". Found"
-         << tupleType;
+                  << tupleType;
       }
       return TypeNode::null();
     }
@@ -602,8 +601,8 @@ TypeNode TupleProjectTypeRule::computeType(NodeManager* nm,
         if (errOut)
         {
           (*errOut) << "Project index " << index << " in term " << n
-            << " is >= " << numArgs << " which is the length of tuple " << n[0]
-            << std::endl;
+                    << " is >= " << numArgs << " which is the length of tuple "
+                    << n[0] << std::endl;
         }
         return TypeNode::null();
       }
