@@ -108,22 +108,11 @@ class BitVectorConcatTypeRule
 class BitVectorToBVTypeRule
 {
  public:
-  inline static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
   static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
-                              std::ostream* errOut)
-  {
-    for (const auto& child : n)
-    {
-      TypeNode t = child.getType(check);
-      if (!t.isBoolean())
-      {
-        throw TypeCheckingExceptionPrivate(n, "expecting Boolean terms");
-      }
-    }
-    return nodeManager->mkBitVectorType(n.getNumChildren());
-  }
+                              std::ostream* errOut);
 };
 
 class BitVectorITETypeRule

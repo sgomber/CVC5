@@ -80,7 +80,7 @@ bool BinaryOperatorTypeRule::computeIsConst(NodeManager* nodeManager, TNode n)
 
 TypeNode SubBagTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->booleanType();
 }
 TypeNode SubBagTypeRule::computeType(NodeManager* nodeManager,
                                      TNode n,
@@ -109,7 +109,7 @@ TypeNode SubBagTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode CountTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->integerType();
 }
 TypeNode CountTypeRule::computeType(NodeManager* nodeManager,
                                     TNode n,
@@ -167,12 +167,13 @@ TypeNode MemberTypeRule::computeType(NodeManager* nodeManager,
     // (bag.member 1.0 (bag 1 1)) throws a typing error
     if (elementType != bagType.getBagElementType())
     {
-      std::stringstream ss;
-      ss << "member operating on bags of different types:\n"
+      if (errOut)
+      {
+      (*errOut) << "member operating on bags of different types:\n"
          << "child type:  " << elementType << "\n"
          << "not type: " << bagType.getBagElementType() << "\n"
          << "in term : " << n;
-      throw TypeCheckingExceptionPrivate(n, ss.str());
+      }
       return TypeNode::null();
     }
   }
@@ -283,6 +284,10 @@ TypeNode EmptyBagTypeRule::computeType(NodeManager* nodeManager,
   return emptyBag.getType();
 }
 
+TypeNode CardTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode CardTypeRule::computeType(NodeManager* nodeManager,
                                    TNode n,
                                    bool check,

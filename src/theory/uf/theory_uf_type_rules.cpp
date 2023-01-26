@@ -78,6 +78,10 @@ TypeNode UfTypeRule::computeType(NodeManager* nodeManager,
   return fType.getRangeType();
 }
 
+TypeNode CardinalityConstraintOpTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode CardinalityConstraintOpTypeRule::computeType(NodeManager* nodeManager,
                                                       TNode n,
                                                       bool check,
