@@ -30,7 +30,8 @@ TypeNode BooleanTypeRule::computeType(NodeManager* nodeManager,
   {
     for (const auto& child : n)
     {
-      if (!child.getType(check).isBoolean())
+      TypeNode tc = child.getType(check);
+      if (!booleanType.isInstanceOf(tc))
       {
         Trace("pb") << "failed type checking: " << child << std::endl;
         Trace("pb") << "  integer: " << child.getType(check).isInteger()
@@ -38,6 +39,7 @@ TypeNode BooleanTypeRule::computeType(NodeManager* nodeManager,
         Trace("pb") << "  real: " << child.getType(check).isReal() << std::endl;
         throw TypeCheckingExceptionPrivate(n,
                                            "expecting a Boolean subexpression");
+        return TypeNode::null();
       }
     }
   }
