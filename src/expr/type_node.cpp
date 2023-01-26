@@ -326,7 +326,7 @@ bool TypeNode::isInstanceOf(const TypeNode& t) const
 
 TypeNode TypeNode::join(const TypeNode& t) const
 {
-  Assert (!isNull() && !t.isNull());
+  Assert(!isNull() && !t.isNull());
   if (*this == t)
   {
     return t;
