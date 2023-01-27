@@ -51,27 +51,34 @@ TypeNode StringConcatTypeRule::computeType(NodeManager* nodeManager,
   for (const Node& nc : n)
   {
     TypeNode t = nc.getType(check);
+    if (check)
+    {
+      if (!isMaybeStringLike(t))
+      {
+        if (errOut)
+        {
+          (*errOut) << "expecting string-like terms in concat";
+        }
+        return TypeNode::null();
+      }
+    }
     if (tret.isNull())
     {
       tret = t;
-      if (check)
-      {
-        if (!isMaybeStringLike(t))
-        {
-          throw TypeCheckingExceptionPrivate(
-              n, "expecting string-like terms in concat");
-          return TypeNode::null();
-        }
-      }
-      else
+      // optimization, break if string and not checking
+      if (!check && t.isString())
       {
         break;
       }
+      continue;
     }
-    else if (t != tret)
+    tret = tret.join(t);
+    if (tret.isNull())
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting all children to have the same type in concat");
+      if (errOut)
+      {
+        (*errOut) << "expecting comparable terms in concat";
+      }
       return TypeNode::null();
     }
   }
@@ -92,22 +99,25 @@ TypeNode StringSubstrTypeRule::computeType(NodeManager* nodeManager,
   {
     if (!isMaybeStringLike(t))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting a string-like term in substr");
+    if (errOut)
+    {
+      (*errOut) << "expecting a string-like term in substr"; }
       return TypeNode::null();
     }
     TypeNode t2 = n[1].getType(check);
     if (!isMaybeInteger(t2))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting an integer start term in substr");
+    if (errOut)
+    {
+      (*errOut) <<  "expecting an integer start term in substr"; }
       return TypeNode::null();
     }
     t2 = n[2].getType(check);
     if (!isMaybeInteger(t2))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting an integer length term in substr");
+    if (errOut)
+    {
+      (*errOut) << "expecting an integer length term in substr"; }
       return TypeNode::null();
     }
   }
@@ -118,36 +128,43 @@ TypeNode StringUpdateTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
   return TypeNode::null();
 }
+
 TypeNode StringUpdateTypeRule::computeType(NodeManager* nodeManager,
                                            TNode n,
                                            bool check,
                                            std::ostream* errOut)
 {
   TypeNode t = n[0].getType(check);
+  TypeNode t3 = n[2].getType(check);
+  TypeNode tret = t.join(t3);
+  if (tret.isNull())
+  {
+    if (errOut)
+    {
+      (*errOut) << "expecting compatible string-like terms";
+    }
+    return TypeNode::null();
+  }
   if (check)
   {
-    if (!isMaybeStringLike(t))
+    // check that the return is maybe string-like
+    if (!isMaybeStringLike(tret))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting a string-like term in update");
+    if (errOut)
+    {
+      (*errOut) << "expecting string-like terms in update"; }
       return TypeNode::null();
     }
     TypeNode t2 = n[1].getType(check);
     if (!isMaybeInteger(t2))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting an integer start term in update");
-      return TypeNode::null();
-    }
-    t2 = n[2].getType(check);
-    if (!isMaybeStringLike(t2))
+    if (errOut)
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting an string-like replace term in update");
+      (*errOut) <<  "expecting an integer start term in update"; }
       return TypeNode::null();
     }
   }
-  return t;
+  return tret;
 }
 
 TypeNode StringAtTypeRule::preComputeType(NodeManager* nm, TNode n)

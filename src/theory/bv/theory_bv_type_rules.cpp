@@ -128,7 +128,7 @@ TypeNode BitVectorFixedWidthTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "expecting compatible bit-vector terms";
+        (*errOut) << "expecting comparable bit-vector terms";
       }
       return TypeNode::null();
     }
@@ -159,7 +159,7 @@ TypeNode BitVectorPredicateTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "expecting compatible bit-vector terms";
+        (*errOut) << "expecting comparable bit-vector terms";
       }
       return TypeNode::null();
     }
@@ -205,7 +205,7 @@ TypeNode BitVectorBVPredTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "expecting compatible bit-vector terms";
+        (*errOut) << "expecting comparable bit-vector terms";
       }
       return TypeNode::null();
     }
@@ -299,7 +299,7 @@ TypeNode BitVectorITETypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "expecting condition to be compatible with bit-vector "
+        (*errOut) << "expecting condition to be comparable with bit-vector "
                      "term size 1";
       }
       return TypeNode::null();
@@ -307,7 +307,7 @@ TypeNode BitVectorITETypeRule::computeType(NodeManager* nodeManager,
   }
   if (retType.isNull() && errOut)
   {
-    (*errOut) << "expecting then and else parts to have compatible types";
+    (*errOut) << "expecting then and else parts to have comparable types";
   }
   return retType;
 }
