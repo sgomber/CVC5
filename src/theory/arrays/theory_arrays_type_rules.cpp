@@ -297,26 +297,26 @@ TypeNode ArrayEqRangeTypeRule::computeType(NodeManager* nodeManager,
     TypeNode n1_type = n[1].getType(check);
     if (!n0_type.isMaybeKind(kind::ARRAY_TYPE))
     {
-          if (errOut)
-          {
-            (*errOut) << "first operand of eqrange is not an array";
-          }
+      if (errOut)
+      {
+        (*errOut) << "first operand of eqrange is not an array";
+      }
       return TypeNode::null();
     }
     if (!n1_type.isMaybeKind(kind::ARRAY_TYPE))
     {
-          if (errOut)
-          {
-            (*errOut) << "second operand of eqrange is not an array";
-          }
+      if (errOut)
+      {
+        (*errOut) << "second operand of eqrange is not an array";
+      }
       return TypeNode::null();
     }
     if (!n0_type.isComparableTo(n1_type))
     {
-          if (errOut)
-          {
-            (*errOut) << "array types do not match";
-          }
+      if (errOut)
+      {
+        (*errOut) << "array types do not match";
+      }
       return TypeNode::null();
     }
     TypeNode indexType = n0_type.getArrayIndexType();
@@ -324,26 +324,29 @@ TypeNode ArrayEqRangeTypeRule::computeType(NodeManager* nodeManager,
     TypeNode indexRangeType2 = n[3].getType(check);
     if (!indexRangeType1.isComparableTo(indexType))
     {
-          if (errOut)
-          {
-            (*errOut) << "eqrange lower index type does not match array index type";
-          }
+      if (errOut)
+      {
+        (*errOut) << "eqrange lower index type does not match array index type";
+      }
       return TypeNode::null();
     }
     if (!indexRangeType2.isComparableTo(indexType))
     {
-          if (errOut)
-          {
-            (*errOut) << "eqrange upper index type does not match array index type";
-          }
+      if (errOut)
+      {
+        (*errOut) << "eqrange upper index type does not match array index type";
+      }
       return TypeNode::null();
     }
-    if (!indexType.isMaybeKind(kind::BITVECTOR_TYPE) && !indexType.isMaybeKind(kind::FLOATINGPOINT_TYPE)
+    if (!indexType.isMaybeKind(kind::BITVECTOR_TYPE)
+        && !indexType.isMaybeKind(kind::FLOATINGPOINT_TYPE)
         && !indexType.isRealOrInt())
     {
-          if (errOut)
-          {
-            (*errOut) << "eqrange only supports bit-vectors, floating-points, integers, and reals as index type"; }
+      if (errOut)
+      {
+        (*errOut) << "eqrange only supports bit-vectors, floating-points, "
+                     "integers, and reals as index type";
+      }
       return TypeNode::null();
     }
   }

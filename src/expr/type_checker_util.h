@@ -167,28 +167,31 @@ class SimpleTypeRule
     {
       if (!A0::checkArg(n, 0))
       {
-          if (errOut)
-          {
-            (*errOut) << "Expecting a " << A0::typeName
-            << " term as the first argument in '" << n.getKind() << "'"; }
-          return TypeNode::null();
+        if (errOut)
+        {
+          (*errOut) << "Expecting a " << A0::typeName
+                    << " term as the first argument in '" << n.getKind() << "'";
+        }
+        return TypeNode::null();
       }
       if (!A1::checkArg(n, 1))
       {
-          if (errOut)
-          {
-            (*errOut) << "Expecting a " << A1::typeName
-            << " term as the second argument in '" << n.getKind() << "'";
-          }
-          return TypeNode::null();
+        if (errOut)
+        {
+          (*errOut) << "Expecting a " << A1::typeName
+                    << " term as the second argument in '" << n.getKind()
+                    << "'";
+        }
+        return TypeNode::null();
       }
       if (!A2::checkArg(n, 2))
       {
-          if (errOut)
-          {
-            (*errOut) << "Expecting a " << A2::typeName
-            << " term as the third argument in '" << n.getKind() << "'"; }
-          return TypeNode::null();
+        if (errOut)
+        {
+          (*errOut) << "Expecting a " << A2::typeName
+                    << " term as the third argument in '" << n.getKind() << "'";
+        }
+        return TypeNode::null();
       }
     }
     return R::mkType(nm);
@@ -221,8 +224,9 @@ class SimpleTypeRuleVar
         {
           if (errOut)
           {
-            (*errOut) << "Expecting a " << A::typeName << " term as argument " << i
-              << " in '" << n.getKind() << "'"; }
+            (*errOut) << "Expecting a " << A::typeName << " term as argument "
+                      << i << " in '" << n.getKind() << "'";
+          }
           return TypeNode::null();
         }
       }

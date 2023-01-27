@@ -292,19 +292,19 @@ TypeNode IndexedRootPredicateTypeRule::computeType(NodeManager* nodeManager,
     TypeNode t1 = n[0].getType(check);
     if (!t1.isBoolean())
     {
-          if (errOut)
-          {
-            (*errOut) << "expecting boolean term as first argument";
-          }
+      if (errOut)
+      {
+        (*errOut) << "expecting boolean term as first argument";
+      }
       return TypeNode::null();
     }
     TypeNode t2 = n[1].getType(check);
     if (!t2.isRealOrInt())
     {
-          if (errOut)
-          {
-            (*errOut) << "expecting polynomial as second argument";
-          }
+      if (errOut)
+      {
+        (*errOut) << "expecting polynomial as second argument";
+      }
       return TypeNode::null();
     }
   }
