@@ -33,6 +33,7 @@ TypeNode UfTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
   return TypeNode::null();
 }
+
 TypeNode UfTypeRule::computeType(NodeManager* nodeManager,
                                  TNode n,
                                  bool check,
@@ -42,16 +43,26 @@ TypeNode UfTypeRule::computeType(NodeManager* nodeManager,
   TypeNode fType = f.getType(check);
   if (!fType.isFunction())
   {
-    throw TypeCheckingExceptionPrivate(n,
-                                       "operator does not have function type");
-    return TypeNode::null();
+    // if it is not even maybe a function type
+    if (!fType.isMaybeKind(kind::FUNCTION_TYPE))
+    {
+      if (errOut)
+      {
+        (*errOut) << "operator does not have function type";
+      }
+      return TypeNode::null();
+    }
+    // otherwise, application of abstract function is always abstract
+    return nodeManager->mkAbstractType(kind::ABSTRACT_TYPE);
   }
   if (check)
   {
     if (n.getNumChildren() != fType.getNumChildren() - 1)
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "number of arguments does not match the function type");
+      if (errOut)
+      {
+        (*errOut) << "number of arguments does not match the function type";
+      }
       return TypeNode::null();
     }
     TNode::iterator argument_it = n.begin();
@@ -61,16 +72,17 @@ TypeNode UfTypeRule::computeType(NodeManager* nodeManager,
     {
       TypeNode currentArgument = (*argument_it).getType();
       TypeNode currentArgumentType = *argument_type_it;
-      if (currentArgument != currentArgumentType)
+      if (!currentArgument.isComparableTo(currentArgumentType))
       {
-        std::stringstream ss;
-        ss << "argument type is not the type of the function's argument "
-           << "type:\n"
-           << "argument:  " << *argument_it << "\n"
-           << "has type:  " << (*argument_it).getType() << "\n"
-           << "not type: " << *argument_type_it << "\n"
-           << "in term : " << n;
-        throw TypeCheckingExceptionPrivate(n, ss.str());
+        if (errOut)
+        {
+          (*errOut) << "argument type is not the type of the function's argument "
+            << "type:\n"
+            << "argument:  " << *argument_it << "\n"
+            << "has type:  " << (*argument_it).getType() << "\n"
+            << "not type: " << *argument_type_it << "\n"
+            << "in term : " << n;
+        }
         return TypeNode::null();
       }
     }
@@ -83,6 +95,7 @@ TypeNode CardinalityConstraintOpTypeRule::preComputeType(NodeManager* nm,
 {
   return TypeNode::null();
 }
+
 TypeNode CardinalityConstraintOpTypeRule::computeType(NodeManager* nodeManager,
                                                       TNode n,
                                                       bool check,
@@ -93,14 +106,18 @@ TypeNode CardinalityConstraintOpTypeRule::computeType(NodeManager* nodeManager,
     const CardinalityConstraint& cc = n.getConst<CardinalityConstraint>();
     if (!cc.getType().isUninterpretedSort())
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "cardinality constraint must apply to uninterpreted sort");
+      if (errOut)
+      {
+        (*errOut) << "cardinality constraint must apply to uninterpreted sort";
+      }
       return TypeNode::null();
     }
     if (cc.getUpperBound().sgn() != 1)
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "cardinality constraint must be positive");
+      if (errOut)
+      {
+        (*errOut) << "cardinality constraint must be positive";
+      }
       return TypeNode::null();
     }
   }
@@ -133,8 +150,10 @@ TypeNode CombinedCardinalityConstraintOpTypeRule::computeType(
         n.getConst<CombinedCardinalityConstraint>();
     if (cc.getUpperBound().sgn() != 1)
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "combined cardinality constraint must be positive");
+      if (errOut)
+      {
+        (*errOut) << "combined cardinality constraint must be positive";
+      }
       return TypeNode::null();
     }
   }
@@ -165,9 +184,17 @@ TypeNode HoApplyTypeRule::computeType(NodeManager* nodeManager,
   TypeNode fType = n[0].getType(check);
   if (!fType.isFunction())
   {
-    throw TypeCheckingExceptionPrivate(
-        n, "first argument does not have function type");
-    return TypeNode::null();
+    // if it is not even maybe a function type
+    if (!fType.isMaybeKind(kind::FUNCTION_TYPE))
+    {
+      if (errOut)
+      {
+        (*errOut) << "first argument does not have function type";
+      }
+      return TypeNode::null();
+    }
+    // otherwise, application of abstract function is always abstract
+    return nodeManager->mkAbstractType(kind::ABSTRACT_TYPE);
   }
   Assert(fType.getNumChildren() >= 2);
   if (check)
@@ -175,8 +202,10 @@ TypeNode HoApplyTypeRule::computeType(NodeManager* nodeManager,
     TypeNode aType = n[1].getType(check);
     if (aType != fType[0])
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "argument does not match function type");
+      if (errOut)
+      {
+        (*errOut) << "argument does not match function type";
+      }
       return TypeNode::null();
     }
   }
@@ -209,10 +238,10 @@ TypeNode LambdaTypeRule::computeType(NodeManager* nodeManager,
 {
   if (n[0].getType(check) != nodeManager->boundVarListType())
   {
-    std::stringstream ss;
-    ss << "expected a bound var list for LAMBDA expression, got `"
-       << n[0].getType().toString() << "'";
-    throw TypeCheckingExceptionPrivate(n, ss.str());
+    if (errOut)
+    {
+      (*errOut) << "expected a bound var list for LAMBDA expression, got `" << n[0].getType().toString() << "'";
+    }
     return TypeNode::null();
   }
   std::vector<TypeNode> argTypes;
@@ -290,7 +319,10 @@ TypeNode IntToBitVectorOpTypeRule::computeType(NodeManager* nodeManager,
   size_t bvSize = n.getConst<IntToBitVector>();
   if (bvSize == 0)
   {
-    throw TypeCheckingExceptionPrivate(n, "expecting bit-width > 0");
+    if (errOut)
+    {
+      (*errOut) << "expecting bit-width > 0";
+    }
     return TypeNode::null();
   }
   return nodeManager->mkFunctionType(nodeManager->integerType(),
@@ -299,8 +331,15 @@ TypeNode IntToBitVectorOpTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode BitVectorConversionTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  if (n.getKind() == kind::BITVECTOR_TO_NAT)
+  {
+    return nm->integerType();
+  }
+  Assert(n.getKind() == kind::INT_TO_BITVECTOR);
+  size_t bvSize = n.getOperator().getConst<IntToBitVector>();
+  return nm->mkBitVectorType(bvSize);
 }
+
 TypeNode BitVectorConversionTypeRule::computeType(NodeManager* nodeManager,
                                                   TNode n,
                                                   bool check,
@@ -308,19 +347,25 @@ TypeNode BitVectorConversionTypeRule::computeType(NodeManager* nodeManager,
 {
   if (n.getKind() == kind::BITVECTOR_TO_NAT)
   {
-    if (check && !n[0].getType(check).isBitVector())
+    if (check && !n[0].getType(check).isMaybeKind(kind::BITVECTOR_TYPE))
     {
-      throw TypeCheckingExceptionPrivate(n, "expecting bit-vector term");
+      if (errOut)
+      {
+        (*errOut) << "expecting bit-vector term";
+      }
       return TypeNode::null();
     }
     return nodeManager->integerType();
   }
-
   Assert(n.getKind() == kind::INT_TO_BITVECTOR);
   size_t bvSize = n.getOperator().getConst<IntToBitVector>();
-  if (check && !n[0].getType(check).isInteger())
+  TypeNode tn = n[0].getType(check);
+  if (check && !tn.isInteger() && !tn.isFullyAbstract())
   {
-    throw TypeCheckingExceptionPrivate(n, "expecting integer term");
+    if (errOut)
+    {
+      (*errOut) << "expecting integer term";
+    }
     return TypeNode::null();
   }
   return nodeManager->mkBitVectorType(bvSize);
