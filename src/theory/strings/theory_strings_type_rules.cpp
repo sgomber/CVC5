@@ -33,6 +33,7 @@ bool isMaybeStringLike(const TypeNode& tn)
   }
   return tn.isMaybeKind(kind::SEQUENCE_TYPE);
 }
+
 bool isMaybeInteger(const TypeNode& tn)
 {
   return tn.isInteger() || tn.isFullyAbstract();
@@ -42,6 +43,7 @@ TypeNode StringConcatTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
   return TypeNode::null();
 }
+
 TypeNode StringConcatTypeRule::computeType(NodeManager* nodeManager,
                                            TNode n,
                                            bool check,
@@ -82,6 +84,7 @@ TypeNode StringConcatTypeRule::computeType(NodeManager* nodeManager,
       return TypeNode::null();
     }
   }
+  // note we could be fully abstract if all arguments are fully abstract
   return tret;
 }
 
@@ -124,6 +127,7 @@ TypeNode StringSubstrTypeRule::computeType(NodeManager* nodeManager,
       return TypeNode::null();
     }
   }
+  // note that we could be fully abstract if the argument is fully abstract
   return t;
 }
 
@@ -186,15 +190,19 @@ TypeNode StringAtTypeRule::computeType(NodeManager* nodeManager,
   {
     if (!isMaybeStringLike(t))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting a string-like term in str.at");
+      if (errOut)
+      {
+        (*errOut) << "expecting a string-like term in str.at";
+      }
       return TypeNode::null();
     }
     TypeNode t2 = n[1].getType(check);
     if (!isMaybeInteger(t2))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting an integer start term in str.at");
+      if (errOut)
+      {
+        (*errOut) <<  "expecting an integer start term in str.at";
+      }
       return TypeNode::null();
     }
   }
@@ -203,7 +211,7 @@ TypeNode StringAtTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode StringIndexOfTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->integerType();
 }
 TypeNode StringIndexOfTypeRule::computeType(NodeManager* nodeManager,
                                             TNode n,
@@ -215,24 +223,25 @@ TypeNode StringIndexOfTypeRule::computeType(NodeManager* nodeManager,
     TypeNode t = n[0].getType(check);
     if (!isMaybeStringLike(t))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting a string-like term in indexof");
+      if (errOut)
+      {
+        (*errOut) <<  "expecting a string-like term in indexof"; }
       return TypeNode::null();
     }
     TypeNode t2 = n[1].getType(check);
-    if (t != t2)
+    if (!t.isComparableTo(t2))
     {
-      throw TypeCheckingExceptionPrivate(
-          n,
-          "expecting a term in second argument of indexof that is the same "
-          "type as the first argument");
+      if (errOut)
+      {
+        (*errOut) <<  "expecting a term in second argument of indexof that is the same type as the first argument"; }
       return TypeNode::null();
     }
     t = n[2].getType(check);
     if (!t.isInteger())
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting an integer term in third argument of indexof");
+      if (errOut)
+      {
+        (*errOut) <<  "expecting an integer term in third argument of indexof"; }
       return TypeNode::null();
     }
   }
@@ -248,31 +257,34 @@ TypeNode StringReplaceTypeRule::computeType(NodeManager* nodeManager,
                                             bool check,
                                             std::ostream* errOut)
 {
-  TypeNode t = n[0].getType(check);
-  if (check)
+
+  TypeNode t;
+  for (const Node& nc : n)
   {
-    if (!isMaybeStringLike(t))
+    TypeNode tc = nc.getType(check);
+    if (check)
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting a string-like term in replace");
-      return TypeNode::null();
+      if (!isMaybeStringLike(tc))
+      {
+      if (errOut)
+      {
+        (*errOut) <<  "expecting a string-like term in replace"; }
+        return TypeNode::null();
+      }
     }
-    TypeNode t2 = n[1].getType(check);
-    if (t != t2)
+    // if first child
+    if (t.isNull())
     {
-      throw TypeCheckingExceptionPrivate(
-          n,
-          "expecting a term in second argument of replace that is the same "
-          "type as the first argument");
-      return TypeNode::null();
+      t = tc;
+      continue;
     }
-    t2 = n[2].getType(check);
-    if (t != t2)
+    t = t.join(tc);
+    if (t.isNull())
     {
-      throw TypeCheckingExceptionPrivate(
-          n,
-          "expecting a term in third argument of replace that is the same "
-          "type as the first argument");
+      if (errOut)
+      {
+        (*errOut) << "expecting comparable string-like terms";
+      }
       return TypeNode::null();
     }
   }
@@ -293,9 +305,10 @@ TypeNode StringStrToBoolTypeRule::computeType(NodeManager* nodeManager,
     TypeNode t = n[0].getType(check);
     if (!isMaybeStringLike(t))
     {
-      std::stringstream ss;
-      ss << "expecting a string-like term in argument of " << n.getKind();
-      throw TypeCheckingExceptionPrivate(n, ss.str());
+      if (errOut)
+      {
+        (*errOut) <<  "expecting a string-like term in argument of " << n.getKind();
+      }
       return TypeNode::null();
     }
   }
@@ -316,9 +329,10 @@ TypeNode StringStrToIntTypeRule::computeType(NodeManager* nodeManager,
     TypeNode t = n[0].getType(check);
     if (!isMaybeStringLike(t))
     {
-      std::stringstream ss;
-      ss << "expecting a string-like term in argument of " << n.getKind();
-      throw TypeCheckingExceptionPrivate(n, ss.str());
+      if (errOut)
+      {
+        (*errOut) << "expecting a string-like term in argument of " << n.getKind();
+      }
       return TypeNode::null();
     }
   }
@@ -339,9 +353,10 @@ TypeNode StringStrToStrTypeRule::computeType(NodeManager* nodeManager,
   {
     if (!isMaybeStringLike(t))
     {
-      std::stringstream ss;
-      ss << "expecting a string term in argument of " << n.getKind();
-      throw TypeCheckingExceptionPrivate(n, ss.str());
+      if (errOut)
+      {
+        (*errOut) << "expecting a string term in argument of " << n.getKind();
+      }
       return TypeNode::null();
     }
   }
@@ -350,7 +365,7 @@ TypeNode StringStrToStrTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode StringRelationTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->booleanType();
 }
 TypeNode StringRelationTypeRule::computeType(NodeManager* nodeManager,
                                              TNode n,
@@ -362,15 +377,19 @@ TypeNode StringRelationTypeRule::computeType(NodeManager* nodeManager,
     TypeNode t = n[0].getType(check);
     if (!isMaybeStringLike(t))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting a string-like term in relation");
+      if (errOut)
+      {
+        (*errOut) << "expecting a string-like term in relation";
+      }
       return TypeNode::null();
     }
     TypeNode t2 = n[1].getType(check);
-    if (t != t2)
+    if (!t.isComparableTo(t2))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting two terms of the same string-like type in relation");
+      if (errOut)
+      {
+        (*errOut) << "expecting two terms of comparable string-like type in relation";
+      }
       return TypeNode::null();
     }
   }
@@ -379,7 +398,7 @@ TypeNode StringRelationTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode RegExpRangeTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->regExpType();
 }
 TypeNode RegExpRangeTypeRule::computeType(NodeManager* nodeManager,
                                           TNode n,
@@ -392,10 +411,12 @@ TypeNode RegExpRangeTypeRule::computeType(NodeManager* nodeManager,
     for (int i = 0; i < 2; ++i)
     {
       TypeNode t = (*it).getType(check);
-      if (!t.isString())  // string-only
+      if (!t.isString() && !t.isFullyAbstract())  // string-only
       {
-        throw TypeCheckingExceptionPrivate(
-            n, "expecting a string term in regexp range");
+        if (errOut)
+        {
+          (*errOut) << "expecting a string term in regexp range";
+        }
         return TypeNode::null();
       }
       ++it;
@@ -406,7 +427,7 @@ TypeNode RegExpRangeTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode StringToRegExpTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->regExpType();
 }
 TypeNode StringToRegExpTypeRule::computeType(NodeManager* nodeManager,
                                              TNode n,
@@ -415,10 +436,13 @@ TypeNode StringToRegExpTypeRule::computeType(NodeManager* nodeManager,
 {
   if (check)
   {
-    if (!n[0].getType().isString())
+    TypeNode tn = n[0].getType();
+    if (!tn.isString() && !tn.isFullyAbstract())
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting string term in string to regexp");
+        if (errOut)
+        {
+          (*errOut) << "expecting string term in string to regexp";
+        }
       return TypeNode::null();
     }
   }
@@ -482,10 +506,16 @@ TypeNode SeqNthTypeRule::computeType(NodeManager* nodeManager,
     TypeNode t2 = n[1].getType(check);
     if (!isMaybeInteger(t2))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting an integer start term in nth");
+    if (errOut)
+    {
+      (*errOut) << "expecting an integer start term in nth"; }
       return TypeNode::null();
     }
+  }
+  if (t.isAbstract())
+  {
+    // if selecting from abstract, we don't know the type
+    return nodeManager->mkAbstractType(kind::ABSTRACT_TYPE);
   }
   if (t.isSequence())
   {
