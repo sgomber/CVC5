@@ -76,12 +76,13 @@ TypeNode UfTypeRule::computeType(NodeManager* nodeManager,
       {
         if (errOut)
         {
-          (*errOut) << "argument type is not the type of the function's argument "
-            << "type:\n"
-            << "argument:  " << *argument_it << "\n"
-            << "has type:  " << (*argument_it).getType() << "\n"
-            << "not type: " << *argument_type_it << "\n"
-            << "in term : " << n;
+          (*errOut)
+              << "argument type is not the type of the function's argument "
+              << "type:\n"
+              << "argument:  " << *argument_it << "\n"
+              << "has type:  " << (*argument_it).getType() << "\n"
+              << "not type: " << *argument_type_it << "\n"
+              << "in term : " << n;
         }
         return TypeNode::null();
       }
@@ -240,7 +241,8 @@ TypeNode LambdaTypeRule::computeType(NodeManager* nodeManager,
   {
     if (errOut)
     {
-      (*errOut) << "expected a bound var list for LAMBDA expression, got `" << n[0].getType().toString() << "'";
+      (*errOut) << "expected a bound var list for LAMBDA expression, got `"
+                << n[0].getType().toString() << "'";
     }
     return TypeNode::null();
   }

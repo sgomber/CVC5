@@ -235,7 +235,7 @@ class CVC5_EXPORT TypeNode
   inline Kind getKind() const {
     return Kind(d_nv->d_kind);
   }
-  
+
   /**
    * Returns the metakind of this type node.
    *
@@ -513,13 +513,13 @@ class CVC5_EXPORT TypeNode
   /** Get the abstract kind (for abstract types) */
   Kind getAbstractedKind() const;
 
-  /** 
+  /**
    * Is maybe kind. Return true if an instance of this type may have kind k.
    * This is true if the kind of this sort is k, or if it is a abstract type
    * whose abstracted kind is k or ABSTRACT_TYPE (the fully abstract type).
    */
   bool isMaybeKind(Kind k) const;
-  
+
   /**
    * Is this a function type?  Function-like things (e.g. datatype
    * selectors) that aren't actually functions are NOT considered

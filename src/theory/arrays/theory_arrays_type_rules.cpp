@@ -93,13 +93,12 @@ TypeNode ArrayStoreTypeRule::computeType(NodeManager* nodeManager,
     TypeNode valuejoin = valueType.join(avalueType);
     if (valuejoin.isNull())
     {
-      Trace("array-types")
-          << "array type: " << arrayType.getArrayConstituentType()
-          << std::endl;
+      Trace("array-types") << "array type: "
+                           << arrayType.getArrayConstituentType() << std::endl;
       Trace("array-types") << "value types: " << valueType << std::endl;
       if (errOut)
       {
-        (*errOut) <<  "array store not assigned with correct type for array";
+        (*errOut) << "array store not assigned with correct type for array";
       }
       return TypeNode::null();
     }
