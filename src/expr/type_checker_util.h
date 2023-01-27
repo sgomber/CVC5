@@ -96,7 +96,7 @@ struct AInteger
   static bool checkArg(TNode n, size_t arg)
   {
     TypeNode t = n[arg].getType(true);
-    return t.isInteger();
+    return t.isInteger() || t.isFullyAbstract();
   }
   constexpr static const char* typeName = "integer";
 };
@@ -107,7 +107,7 @@ struct AReal
   static bool checkArg(TNode n, size_t arg)
   {
     TypeNode t = n[arg].getType(true);
-    return t.isReal();
+    return t.isReal() || t.isFullyAbstract();
   }
   constexpr static const char* typeName = "real";
 };
@@ -118,7 +118,7 @@ struct ARealOrInteger
   static bool checkArg(TNode n, size_t arg)
   {
     TypeNode t = n[arg].getType(true);
-    return t.isRealOrInt();
+    return t.isRealOrInt() || t.isFullyAbstract();
   }
   constexpr static const char* typeName = "real or integer";
 };
@@ -129,7 +129,7 @@ struct ARegExp
   static bool checkArg(TNode n, size_t arg)
   {
     TypeNode t = n[arg].getType(true);
-    return t.isRegExp();
+    return t.isRegExp() || t.isFullyAbstract();
   }
   constexpr static const char* typeName = "regexp";
 };
@@ -140,7 +140,7 @@ struct AString
   static bool checkArg(TNode n, size_t arg)
   {
     TypeNode t = n[arg].getType(true);
-    return t.isString();
+    return t.isString() || t.isFullyAbstract();
   }
   constexpr static const char* typeName = "string";
 };
@@ -167,24 +167,28 @@ class SimpleTypeRule
     {
       if (!A0::checkArg(n, 0))
       {
-        std::stringstream msg;
-        msg << "Expecting a " << A0::typeName
-            << " term as the first argument in '" << n.getKind() << "'";
-        throw TypeCheckingExceptionPrivate(n, msg.str());
+          if (errOut)
+          {
+            (*errOut) << "Expecting a " << A0::typeName
+            << " term as the first argument in '" << n.getKind() << "'"; }
+          return TypeNode::null();
       }
       if (!A1::checkArg(n, 1))
       {
-        std::stringstream msg;
-        msg << "Expecting a " << A1::typeName
+          if (errOut)
+          {
+            (*errOut) << "Expecting a " << A1::typeName
             << " term as the second argument in '" << n.getKind() << "'";
-        throw TypeCheckingExceptionPrivate(n, msg.str());
+          }
+          return TypeNode::null();
       }
       if (!A2::checkArg(n, 2))
       {
-        std::stringstream msg;
-        msg << "Expecting a " << A2::typeName
-            << " term as the third argument in '" << n.getKind() << "'";
-        throw TypeCheckingExceptionPrivate(n, msg.str());
+          if (errOut)
+          {
+            (*errOut) << "Expecting a " << A2::typeName
+            << " term as the third argument in '" << n.getKind() << "'"; }
+          return TypeNode::null();
       }
     }
     return R::mkType(nm);
@@ -215,10 +219,11 @@ class SimpleTypeRuleVar
       {
         if (!A::checkArg(n, i))
         {
-          std::stringstream msg;
-          msg << "Expecting a " << A::typeName << " term as argument " << i
-              << " in '" << n.getKind() << "'";
-          throw TypeCheckingExceptionPrivate(n, msg.str());
+          if (errOut)
+          {
+            (*errOut) << "Expecting a " << A::typeName << " term as argument " << i
+              << " in '" << n.getKind() << "'"; }
+          return TypeNode::null();
         }
       }
     }

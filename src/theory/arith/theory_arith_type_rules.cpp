@@ -286,20 +286,25 @@ TypeNode IndexedRootPredicateTypeRule::computeType(NodeManager* nodeManager,
                                                    bool check,
                                                    std::ostream* errOut)
 {
+  // used internally, does not accept arguments of abstract type
   if (check)
   {
     TypeNode t1 = n[0].getType(check);
     if (!t1.isBoolean())
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting boolean term as first argument");
+          if (errOut)
+          {
+            (*errOut) << "expecting boolean term as first argument";
+          }
       return TypeNode::null();
     }
     TypeNode t2 = n[1].getType(check);
     if (!t2.isRealOrInt())
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting polynomial as second argument");
+          if (errOut)
+          {
+            (*errOut) << "expecting polynomial as second argument";
+          }
       return TypeNode::null();
     }
   }

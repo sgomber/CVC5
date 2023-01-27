@@ -295,45 +295,55 @@ TypeNode ArrayEqRangeTypeRule::computeType(NodeManager* nodeManager,
   {
     TypeNode n0_type = n[0].getType(check);
     TypeNode n1_type = n[1].getType(check);
-    if (!n0_type.isArray())
+    if (!n0_type.isMaybeKind(kind::ARRAY_TYPE))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "first operand of eqrange is not an array");
+          if (errOut)
+          {
+            (*errOut) << "first operand of eqrange is not an array";
+          }
       return TypeNode::null();
     }
-    if (!n1_type.isArray())
+    if (!n1_type.isMaybeKind(kind::ARRAY_TYPE))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "second operand of eqrange is not an array");
+          if (errOut)
+          {
+            (*errOut) << "second operand of eqrange is not an array";
+          }
       return TypeNode::null();
     }
-    if (n0_type != n1_type)
+    if (!n0_type.isComparableTo(n1_type))
     {
-      throw TypeCheckingExceptionPrivate(n, "array types do not match");
+          if (errOut)
+          {
+            (*errOut) << "array types do not match";
+          }
       return TypeNode::null();
     }
     TypeNode indexType = n0_type.getArrayIndexType();
     TypeNode indexRangeType1 = n[2].getType(check);
     TypeNode indexRangeType2 = n[3].getType(check);
-    if (indexRangeType1 != indexType)
+    if (!indexRangeType1.isComparableTo(indexType))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "eqrange lower index type does not match array index type");
+          if (errOut)
+          {
+            (*errOut) << "eqrange lower index type does not match array index type";
+          }
       return TypeNode::null();
     }
-    if (indexRangeType2 != indexType)
+    if (!indexRangeType2.isComparableTo(indexType))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "eqrange upper index type does not match array index type");
+          if (errOut)
+          {
+            (*errOut) << "eqrange upper index type does not match array index type";
+          }
       return TypeNode::null();
     }
-    if (!indexType.isBitVector() && !indexType.isFloatingPoint()
+    if (!indexType.isMaybeKind(kind::BITVECTOR_TYPE) && !indexType.isMaybeKind(kind::FLOATINGPOINT_TYPE)
         && !indexType.isRealOrInt())
     {
-      throw TypeCheckingExceptionPrivate(
-          n,
-          "eqrange only supports bit-vectors, floating-points, integers, and "
-          "reals as index type");
+          if (errOut)
+          {
+            (*errOut) << "eqrange only supports bit-vectors, floating-points, integers, and reals as index type"; }
       return TypeNode::null();
     }
   }
