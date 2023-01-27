@@ -30,6 +30,7 @@ TypeNode ArraySelectTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
   return TypeNode::null();
 }
+
 TypeNode ArraySelectTypeRule::computeType(NodeManager* nodeManager,
                                           TNode n,
                                           bool check,

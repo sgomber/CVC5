@@ -383,6 +383,8 @@ TypeNode BitVectorExtractTypeRule::computeType(NodeManager* nodeManager,
       return TypeNode::null();
     }
   }
+  // note that its type is always concrete, even if the argument has abstract
+  // type
   return nodeManager->mkBitVectorType(extractInfo.d_high - extractInfo.d_low
                                       + 1);
 }
@@ -413,6 +415,8 @@ TypeNode BitVectorRepeatTypeRule::computeType(NodeManager* nodeManager,
     }
     return TypeNode::null();
   }
+  // if abstract, we don't take into account the repeat amount, instead we
+  // return ?BitVec.
   if (t.isAbstract())
   {
     return ensureBv(nodeManager, t);
