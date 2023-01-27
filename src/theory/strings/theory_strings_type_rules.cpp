@@ -67,7 +67,7 @@ TypeNode StringConcatTypeRule::computeType(NodeManager* nodeManager,
     if (tret.isNull())
     {
       tret = t;
-      // optimization, break if string and not checking
+      // optimization: break if string and not checking
       if (!check && t.isString())
       {
         break;
@@ -240,7 +240,7 @@ TypeNode StringIndexOfTypeRule::computeType(NodeManager* nodeManager,
       return TypeNode::null();
     }
     t = n[2].getType(check);
-    if (!t.isInteger())
+    if (!isMaybeInteger(t))
     {
       if (errOut)
       {
@@ -297,7 +297,7 @@ TypeNode StringReplaceTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode StringStrToBoolTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->booleanType();
 }
 TypeNode StringStrToBoolTypeRule::computeType(NodeManager* nodeManager,
                                               TNode n,
@@ -322,7 +322,7 @@ TypeNode StringStrToBoolTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode StringStrToIntTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->integerType();
 }
 TypeNode StringStrToIntTypeRule::computeType(NodeManager* nodeManager,
                                              TNode n,

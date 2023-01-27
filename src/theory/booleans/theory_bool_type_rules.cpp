@@ -72,7 +72,7 @@ TypeNode IteTypeRule::computeType(NodeManager* nodeManager,
   {
     if (errOut)
     {
-      (*errOut) << "Branches of the ITE must have the same type." << std::endl
+      (*errOut) << "Branches of the ITE must have comparable type." << std::endl
                 << "then branch: " << n[1] << std::endl
                 << "its type   : " << thenType << std::endl
                 << "else branch: " << n[2] << std::endl
