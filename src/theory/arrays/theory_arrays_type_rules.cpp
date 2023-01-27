@@ -39,20 +39,30 @@ TypeNode ArraySelectTypeRule::computeType(NodeManager* nodeManager,
   TypeNode arrayType = n[0].getType(check);
   if (check)
   {
-    if (!arrayType.isArray())
+    if (!arrayType.isMaybeKind(kind::ARRAY_TYPE))
     {
-      throw TypeCheckingExceptionPrivate(n,
-                                         "array select operating on non-array");
+      if (errOut)
+      {
+        (*errOut) << "array select operating on non-array";
+      }
       return TypeNode::null();
     }
     TypeNode indexType = n[1].getType(check);
-    if (indexType != arrayType.getArrayIndexType())
+    if (!indexType.isComparableTo(arrayType.getArrayIndexType()))
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "array select not indexed with correct type for array");
+      if (errOut)
+      {
+        (*errOut) << "array select not indexed with correct type for array";
+      }
       return TypeNode::null();
     }
   }
+  if (arrayType.isAbstract())
+  {
+    // if selecting from a (fully) abstract array, the return is unknown.
+    return nodeManager->mkAbstractType(kind::ABSTRACT_TYPE);
+  }
+  // otheriw
   return arrayType.getArrayConstituentType();
 }
 
@@ -72,8 +82,10 @@ TypeNode ArrayStoreTypeRule::computeType(NodeManager* nodeManager,
     {
       if (!arrayType.isMaybeKind(kind::ARRAY_TYPE))
       {
-        throw TypeCheckingExceptionPrivate(
-            n, "array store operating on non-array");
+        if (errOut)
+        {
+          (*errOut) << "array store operating on non-array";
+        }
         return TypeNode::null();
       }
     }
@@ -93,9 +105,6 @@ TypeNode ArrayStoreTypeRule::computeType(NodeManager* nodeManager,
     TypeNode valuejoin = valueType.join(avalueType);
     if (valuejoin.isNull())
     {
-      Trace("array-types") << "array type: "
-                           << arrayType.getArrayConstituentType() << std::endl;
-      Trace("array-types") << "value types: " << valueType << std::endl;
       if (errOut)
       {
         (*errOut) << "array store not assigned with correct type for array";
