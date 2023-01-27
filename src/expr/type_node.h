@@ -541,17 +541,31 @@ class CVC5_EXPORT TypeNode
   bool isFunctionLike() const;
 
   /**
-   * Is instance of
+   * Is instance of, returns true if this type is equivalent to the join
+   * (see TypeNode::join) of itself and t.
    */
   bool isInstanceOf(const TypeNode& t) const;
   /**
-   * Is comparable to
+   * Is comparable to type t, returns true if this type and t have a non-null
+   * join (see TypeNode::join).
    */
   bool isComparableTo(const TypeNode& t) const;
   /**
-   * Join with type
+   * Join with type. This returns the most specific type that is an instance
+   * of both this and t, or null if this type and t are incompatible.
+   *
+   * For example:
+   * ?BitVec join ? = ?BitVec
+   * (Array ?BitVec Int) join (Array (_ BitVec 4) ?) = (Array (_ BitVec 4) Int)
+   * (Array ? Int) join (Array ? Real) = null.
    */
   TypeNode join(const TypeNode& t) const;
+  /**
+   * Meet with type. The dual of join, for example:
+   * ?BitVec join ? = ?
+   * (Array ?BitVec Int) join (Array (_ BitVec 4) ?) = (Array ?BitVec ?)
+   * (Array ? Int) join (Array ? Real) = null.
+   */
   TypeNode meet(const TypeNode& t) const;
   /**
    * Get the argument types of a function, datatype constructor,
