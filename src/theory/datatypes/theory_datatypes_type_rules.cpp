@@ -109,9 +109,9 @@ TypeNode DatatypeConstructorTypeRule::computeType(NodeManager* nodeManager,
           if (errOut)
           {
             (*errOut) << "bad type for constructor argument:\n"
-             << "child type:  " << childType << "\n"
-             << "not type: " << argumentType << "\n"
-             << "in term : " << n;
+                      << "child type:  " << childType << "\n"
+                      << "not type: " << argumentType << "\n"
+                      << "in term : " << n;
           }
           return TypeNode::null();
         }
@@ -217,10 +217,10 @@ TypeNode DatatypeTesterTypeRule::computeType(NodeManager* nodeManager,
   {
     if (n.getNumChildren() != 1)
     {
-          if (errOut)
-          {
-            (*errOut) << "number of arguments does not match the tester type";
-          }
+      if (errOut)
+      {
+        (*errOut) << "number of arguments does not match the tester type";
+      }
       return TypeNode::null();
     }
     TypeNode testType = n.getOperator().getType(check);
@@ -234,10 +234,11 @@ TypeNode DatatypeTesterTypeRule::computeType(NodeManager* nodeManager,
       TypeMatcher m(t);
       if (!m.doMatching(testType[0], childType))
       {
-          if (errOut)
-          {
-            (*errOut) << "matching failed for tester argument of parameterized datatype";
-          }
+        if (errOut)
+        {
+          (*errOut) << "matching failed for tester argument of parameterized "
+                       "datatype";
+        }
         return TypeNode::null();
       }
     }
@@ -247,10 +248,10 @@ TypeNode DatatypeTesterTypeRule::computeType(NodeManager* nodeManager,
       Trace("typecheck-idt") << "test type: " << testType << std::endl;
       if (testType[0] != childType)
       {
-          if (errOut)
-          {
-            (*errOut) << "bad type for tester argument";
-          }
+        if (errOut)
+        {
+          (*errOut) << "bad type for tester argument";
+        }
         return TypeNode::null();
       }
     }
@@ -286,17 +287,18 @@ TypeNode DatatypeUpdateTypeRule::computeType(NodeManager* nodeManager,
         {
           if (errOut)
           {
-            (*errOut) << "matching failed for update argument of parameterized datatype";
+            (*errOut) << "matching failed for update argument of parameterized "
+                         "datatype";
           }
           return TypeNode::null();
         }
       }
       else if (targ != childType)
       {
-          if (errOut)
-          {
-            (*errOut) <<  "bad type for update argument";
-          }
+        if (errOut)
+        {
+          (*errOut) << "bad type for update argument";
+        }
         return TypeNode::null();
       }
     }

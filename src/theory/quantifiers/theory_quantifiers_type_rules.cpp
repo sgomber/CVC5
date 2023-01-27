@@ -36,30 +36,30 @@ TypeNode QuantifierTypeRule::computeType(NodeManager* nodeManager,
     // bound variable lists, etc. cannot be abstracted
     if (n[0].getType(check) != nodeManager->boundVarListType())
     {
-          if (errOut)
-          {
-            (*errOut) << "first argument of quantifier is not bound var list";
-          }
+      if (errOut)
+      {
+        (*errOut) << "first argument of quantifier is not bound var list";
+      }
       return TypeNode::null();
     }
     TypeNode bodyType = n[1].getType(check);
     if (!bodyType.isBoolean() && !bodyType.isFullyAbstract())
     {
-          if (errOut)
-          {
-            (*errOut) << "body of quantifier is not boolean";
-          }
+      if (errOut)
+      {
+        (*errOut) << "body of quantifier is not boolean";
+      }
       return TypeNode::null();
     }
     if (n.getNumChildren() == 3)
     {
       if (n[2].getType(check) != nodeManager->instPatternListType())
       {
-          if (errOut)
-          {
-            (*errOut) << 
-            "third argument of quantifier is not instantiation "
-            "pattern list"; }
+        if (errOut)
+        {
+          (*errOut) << "third argument of quantifier is not instantiation "
+                       "pattern list";
+        }
         return TypeNode::null();
       }
       for (const Node& p : n[2])
@@ -69,9 +69,10 @@ TypeNode QuantifierTypeRule::computeType(NodeManager* nodeManager,
         {
           if (errOut)
           {
-            (*errOut) << 
-              "expected number of arguments to pool to be the same as the "
-              "number of bound variables of the quantified formula"; }
+            (*errOut)
+                << "expected number of arguments to pool to be the same as the "
+                   "number of bound variables of the quantified formula";
+          }
           return TypeNode::null();
         }
       }
