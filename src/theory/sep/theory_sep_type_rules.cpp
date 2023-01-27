@@ -70,7 +70,8 @@ TypeNode SepStarTypeRule::computeType(NodeManager* nodeManager,
       {
         if (errOut)
         {
-          (*errOut) << "child of sep star is not Boolean"; }
+          (*errOut) << "child of sep star is not Boolean";
+        }
         return TypeNode::null();
       }
     }
@@ -123,17 +124,19 @@ TypeNode SepLabelTypeRule::computeType(NodeManager* nodeManager,
     TypeNode ctype = n[0].getType(check);
     if (!isMaybeBoolean(ctype))
     {
-        if (errOut)
-        {
-          (*errOut) << "child of sep label is not Boolean"; }
+      if (errOut)
+      {
+        (*errOut) << "child of sep label is not Boolean";
+      }
       return TypeNode::null();
     }
     TypeNode stype = n[1].getType(check);
     if (!stype.isMaybeKind(kind::SET_TYPE))
     {
-        if (errOut)
-        {
-          (*errOut) <<  "label of sep label is not a set";}
+      if (errOut)
+      {
+        (*errOut) << "label of sep label is not a set";
+      }
       return TypeNode::null();
     }
   }

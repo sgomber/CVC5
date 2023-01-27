@@ -99,25 +99,28 @@ TypeNode StringSubstrTypeRule::computeType(NodeManager* nodeManager,
   {
     if (!isMaybeStringLike(t))
     {
-    if (errOut)
-    {
-      (*errOut) << "expecting a string-like term in substr"; }
+      if (errOut)
+      {
+        (*errOut) << "expecting a string-like term in substr";
+      }
       return TypeNode::null();
     }
     TypeNode t2 = n[1].getType(check);
     if (!isMaybeInteger(t2))
     {
-    if (errOut)
-    {
-      (*errOut) <<  "expecting an integer start term in substr"; }
+      if (errOut)
+      {
+        (*errOut) << "expecting an integer start term in substr";
+      }
       return TypeNode::null();
     }
     t2 = n[2].getType(check);
     if (!isMaybeInteger(t2))
     {
-    if (errOut)
-    {
-      (*errOut) << "expecting an integer length term in substr"; }
+      if (errOut)
+      {
+        (*errOut) << "expecting an integer length term in substr";
+      }
       return TypeNode::null();
     }
   }
@@ -150,17 +153,19 @@ TypeNode StringUpdateTypeRule::computeType(NodeManager* nodeManager,
     // check that the return is maybe string-like
     if (!isMaybeStringLike(tret))
     {
-    if (errOut)
-    {
-      (*errOut) << "expecting string-like terms in update"; }
+      if (errOut)
+      {
+        (*errOut) << "expecting string-like terms in update";
+      }
       return TypeNode::null();
     }
     TypeNode t2 = n[1].getType(check);
     if (!isMaybeInteger(t2))
     {
-    if (errOut)
-    {
-      (*errOut) <<  "expecting an integer start term in update"; }
+      if (errOut)
+      {
+        (*errOut) << "expecting an integer start term in update";
+      }
       return TypeNode::null();
     }
   }
