@@ -59,7 +59,7 @@ TypeNode FiniteFieldFixedFieldTypeRule::computeType(NodeManager* nodeManager,
     TypeNode tc = nc.getType(check);
     if (check)
     {
-      if (!t.isMaybeKind(kind::FINITE_FIELD_TYPE))
+      if (!tc.isMaybeKind(kind::FINITE_FIELD_TYPE))
       {
         if (errOut)
         {
