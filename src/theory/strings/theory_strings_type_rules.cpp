@@ -32,13 +32,11 @@ bool isMaybeStringLike(const TypeNode& tn)
     return true;
   }
   return tn.isMaybeKind(kind::SEQUENCE_TYPE);
-
 }
 bool isMaybeInteger(const TypeNode& tn)
 {
   return tn.isInteger() || tn.isFullyAbstract();
 }
-
 
 TypeNode StringConcatTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
