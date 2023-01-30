@@ -746,20 +746,6 @@ class CVC5_EXPORT TypeNode
  private:
   /** Unify internal, for computing join and meet */
   TypeNode unifyInternal(const TypeNode& t, bool isJoin) const;
-  /**
-   * Indents the given stream a given amount of spaces.
-   *
-   * @param out the stream to indent
-   * @param indent the number of spaces
-   */
-  static void indent(std::ostream& out, int indent)
-  {
-    for (int i = 0; i < indent; i++)
-    {
-      out << ' ';
-    }
-  }
-
 };/* class TypeNode */
 
 /**
