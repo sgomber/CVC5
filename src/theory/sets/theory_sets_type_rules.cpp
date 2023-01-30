@@ -963,11 +963,10 @@ TypeNode RelationAggregateTypeRule::computeType(NodeManager* nm,
   const std::vector<uint32_t>& indices = op.getIndices();
 
   TypeNode functionType = n[0].getType();
-  TypeNode initialValueType = n[1].getType();
-  TypeNode setType = n[2].getType();
 
   if (check)
   {
+    TypeNode setType = n[2].getType();
     if (!isMaybeRelation(setType))
     {
       if (errOut)
@@ -1026,6 +1025,7 @@ TypeNode RelationAggregateTypeRule::computeType(NodeManager* nm,
         }
         return TypeNode::null();
       }
+      TypeNode initialValueType = n[1].getType();
       if (!rangeType.isComparableTo(initialValueType))
       {
         if (errOut)
@@ -1062,16 +1062,6 @@ TypeNode RelationProjectTypeRule::computeType(NodeManager* nm,
   TypeNode setType = n[0].getType();
   if (check)
   {
-    if (n.getNumChildren() != 1)
-    {
-      if (errOut)
-      {
-        (*errOut) << "operands in term " << n << " are " << n.getNumChildren()
-                  << ", but RELATION_PROJECT expects 1 operand.";
-      }
-      return TypeNode::null();
-    }
-
     if (!isMaybeRelation(setType))
     {
       if (errOut)
