@@ -1081,25 +1081,32 @@ TypeNode RelationProjectTypeRule::computeType(NodeManager* nm,
       }
       return TypeNode::null();
     }
-
-    TypeNode tupleType = setType.getSetElementType();
-    // make sure all indices are less than the length of the tuple type
-    DType dType = tupleType.getDType();
-    DTypeConstructor constructor = dType[0];
-    size_t numArgs = constructor.getNumArgs();
-    for (uint32_t index : indices)
+    if (setType.isRelation())
     {
-      if (index >= numArgs)
+      TypeNode tupleType = setType.getSetElementType();
+      // make sure all indices are less than the length of the tuple type
+      const DType& dType = tupleType.getDType();
+      const DTypeConstructor& constructor = dType[0];
+      size_t numArgs = constructor.getNumArgs();
+      for (uint32_t index : indices)
       {
-        if (errOut)
+        if (index >= numArgs)
         {
-          (*errOut) << "Index " << index << " in term " << n
-                    << " is >= " << numArgs
-                    << " which is the number of columns in " << n[0] << ".";
+          if (errOut)
+          {
+            (*errOut) << "Index " << index << " in term " << n
+                      << " is >= " << numArgs
+                      << " which is the number of columns in " << n[0] << ".";
+          }
+          return TypeNode::null();
         }
-        return TypeNode::null();
       }
     }
+  }
+  // abstract relation type if applied to abstract argument
+  if (setType.isAbstract())
+  {
+    return nm->mkSetType(nm->mkAbstractType(kind::TUPLE_TYPE));
   }
   TypeNode tupleType = setType.getSetElementType();
   TypeNode retTupleType =
