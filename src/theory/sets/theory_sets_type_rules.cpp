@@ -48,7 +48,8 @@ TypeNode SetsBinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "operator expects a set, first argument is not"; }
+        (*errOut) << "operator expects a set, first argument is not";
+      }
       return TypeNode::null();
     }
     TypeNode secondSetType = n[1].getType(check);
@@ -57,8 +58,9 @@ TypeNode SetsBinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
       if (errOut)
       {
         (*errOut) << "Operator " << n.getKind()
-         << " expects two sets of the same type. Found types '" << setType
-         << "' and '" << secondSetType << "'."; }
+                  << " expects two sets of the same type. Found types '"
+                  << setType << "' and '" << secondSetType << "'.";
+      }
       return TypeNode::null();
     }
   }
@@ -92,7 +94,8 @@ TypeNode SubsetTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "set subset operating on non-set"; }
+        (*errOut) << "set subset operating on non-set";
+      }
       return TypeNode::null();
     }
     TypeNode secondSetType = n[1].getType(check);
@@ -100,7 +103,8 @@ TypeNode SubsetTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "set subset operating on sets of different types"; }
+        (*errOut) << "set subset operating on sets of different types";
+      }
       return TypeNode::null();
     }
   }
@@ -124,7 +128,8 @@ TypeNode MemberTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "checking for membership in a non-set"; }
+        (*errOut) << "checking for membership in a non-set";
+      }
       return TypeNode::null();
     }
     TypeNode elementType = n[0].getType(check);
@@ -135,9 +140,10 @@ TypeNode MemberTypeRule::computeType(NodeManager* nodeManager,
       if (errOut)
       {
         (*errOut) << "member operating on sets of different types:\n"
-         << "child type:  " << elementType << "\n"
-         << "not type: " << setType.getSetElementType() << "\n"
-         << "in term : " << n; }
+                  << "child type:  " << elementType << "\n"
+                  << "not type: " << setType.getSetElementType() << "\n"
+                  << "in term : " << n;
+      }
       return TypeNode::null();
     }
   }
@@ -195,7 +201,8 @@ TypeNode CardTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "cardinality operates on a set, non-set object found"; }
+        (*errOut) << "cardinality operates on a set, non-set object found";
+      }
       return TypeNode::null();
     }
   }
@@ -219,7 +226,8 @@ TypeNode ComplementTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "SET_COMPLEMENT operates on a set, non-set object found"; }
+        (*errOut) << "SET_COMPLEMENT operates on a set, non-set object found";
+      }
       return TypeNode::null();
     }
   }
@@ -242,9 +250,10 @@ TypeNode UniverseSetTypeRule::computeType(NodeManager* nodeManager,
   TypeNode setType = n.getType();
   if (!setType.isSet())
   {
-      if (errOut)
-      {
-        (*errOut) << "Non-set type found for universe set"; }
+    if (errOut)
+    {
+      (*errOut) << "Non-set type found for universe set";
+    }
     return TypeNode::null();
   }
   return setType;
@@ -266,14 +275,17 @@ TypeNode ComprehensionTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "first argument of set comprehension is not bound var list"; }
+        (*errOut)
+            << "first argument of set comprehension is not bound var list";
+      }
       return TypeNode::null();
     }
     if (n[1].getType(check) != nodeManager->booleanType())
     {
       if (errOut)
       {
-        (*errOut) << "body of set comprehension is not Boolean"; }
+        (*errOut) << "body of set comprehension is not Boolean";
+      }
       return TypeNode::null();
     }
   }
@@ -297,7 +309,8 @@ TypeNode ChooseTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "SET_CHOOSE operator expects a set, a non-set is found"; }
+        (*errOut) << "SET_CHOOSE operator expects a set, a non-set is found";
+      }
       return TypeNode::null();
     }
   }
@@ -321,7 +334,9 @@ TypeNode IsSingletonTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "SET_IS_SINGLETON operator expects a set, a non-set is found"; }
+        (*errOut)
+            << "SET_IS_SINGLETON operator expects a set, a non-set is found";
+      }
       return TypeNode::null();
     }
   }
@@ -347,7 +362,8 @@ TypeNode InsertTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "inserting into a non-set"; }
+        (*errOut) << "inserting into a non-set";
+      }
       return TypeNode::null();
     }
     for (size_t i = 0; i < numChildren - 1; ++i)
@@ -355,9 +371,11 @@ TypeNode InsertTypeRule::computeType(NodeManager* nodeManager,
       TypeNode elementType = n[i].getType(check);
       if (elementType != setType.getSetElementType())
       {
-      if (errOut)
-      {
-        (*errOut) << "type of element should be same as element type of set being inserted into"; }
+        if (errOut)
+        {
+          (*errOut) << "type of element should be same as element type of set "
+                       "being inserted into";
+        }
         return TypeNode::null();
       }
     }
@@ -384,7 +402,8 @@ TypeNode SetMapTypeRule::computeType(NodeManager* nodeManager,
       if (errOut)
       {
         (*errOut) << "set.map operator expects a set in the second argument, "
-          "a non-set is found"; }
+                     "a non-set is found";
+      }
       return TypeNode::null();
     }
 
@@ -394,9 +413,11 @@ TypeNode SetMapTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "Operator " << n.getKind() << " expects a function of type  (-> "
-         << elementType << " *) as a first argument. "
-         << "Found a term of type '" << functionType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects a function of type  (-> " << elementType
+                  << " *) as a first argument. "
+                  << "Found a term of type '" << functionType << "'.";
+      }
       return TypeNode::null();
     }
     std::vector<TypeNode> argTypes = functionType.getArgTypes();
@@ -404,9 +425,11 @@ TypeNode SetMapTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "Operator " << n.getKind() << " expects a function of type  (-> "
-         << elementType << " *). "
-         << "Found a function of type '" << functionType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects a function of type  (-> " << elementType
+                  << " *). "
+                  << "Found a function of type '" << functionType << "'.";
+      }
       return TypeNode::null();
     }
   }
@@ -433,7 +456,9 @@ TypeNode SetFilterTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "set.filter operator expects a set in the second argument, a non-set is found"; }
+        (*errOut) << "set.filter operator expects a set in the second "
+                     "argument, a non-set is found";
+      }
       return TypeNode::null();
     }
 
@@ -443,9 +468,11 @@ TypeNode SetFilterTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "Operator " << n.getKind() << " expects a function of type  (-> "
-         << elementType << " Bool) as a first argument. "
-         << "Found a term of type '" << functionType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects a function of type  (-> " << elementType
+                  << " Bool) as a first argument. "
+                  << "Found a term of type '" << functionType << "'.";
+      }
       return TypeNode::null();
     }
     std::vector<TypeNode> argTypes = functionType.getArgTypes();
@@ -455,9 +482,11 @@ TypeNode SetFilterTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "Operator " << n.getKind() << " expects a function of type  (-> "
-         << elementType << " Bool). "
-         << "Found a function of type '" << functionType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects a function of type  (-> " << elementType
+                  << " Bool). "
+                  << "Found a function of type '" << functionType << "'.";
+      }
       return TypeNode::null();
     }
   }
@@ -484,7 +513,8 @@ TypeNode SetFoldTypeRule::computeType(NodeManager* nodeManager,
       if (errOut)
       {
         (*errOut) << "set.fold operator expects a set in the third argument, "
-          "a non-set is found"; }
+                     "a non-set is found";
+      }
       return TypeNode::null();
     }
 
@@ -494,9 +524,11 @@ TypeNode SetFoldTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "Operator " << n.getKind() << " expects a function of type  (-> "
-         << elementType << " T2 T2) as a first argument. "
-         << "Found a term of type '" << functionType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects a function of type  (-> " << elementType
+                  << " T2 T2) as a first argument. "
+                  << "Found a term of type '" << functionType << "'.";
+      }
       return TypeNode::null();
     }
     std::vector<TypeNode> argTypes = functionType.getArgTypes();
@@ -506,17 +538,21 @@ TypeNode SetFoldTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "Operator " << n.getKind() << " expects a function of type  (-> "
-         << elementType << " T2 T2). "
-         << "Found a function of type '" << functionType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects a function of type  (-> " << elementType
+                  << " T2 T2). "
+                  << "Found a function of type '" << functionType << "'.";
+      }
       return TypeNode::null();
     }
     if (rangeType != initialValueType)
     {
       if (errOut)
       {
-        (*errOut) << "Operator " << n.getKind() << " expects an initial value of type "
-         << rangeType << ". Found a term of type '" << initialValueType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects an initial value of type " << rangeType
+                  << ". Found a term of type '" << initialValueType << "'.";
+      }
       return TypeNode::null();
     }
   }
@@ -542,9 +578,10 @@ TypeNode RelBinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
 
   if (!firstRelType.isSet() || !secondRelType.isSet())
   {
-      if (errOut)
-      {
-        (*errOut) << "Relational operator operates on non-sets"; }
+    if (errOut)
+    {
+      (*errOut) << "Relational operator operates on non-sets";
+    }
     return TypeNode::null();
   }
   if (!firstRelType[0].isTuple() || !secondRelType[0].isTuple())
@@ -565,14 +602,16 @@ TypeNode RelBinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "Join operates on two unary relations" ; }
+        (*errOut) << "Join operates on two unary relations";
+      }
       return TypeNode::null();
     }
     else if (firstTupleTypes.back() != secondTupleTypes.front())
     {
       if (errOut)
       {
-        (*errOut) << "Join operates on two non-joinable relations"; }
+        (*errOut) << "Join operates on two non-joinable relations";
+      }
       return TypeNode::null();
     }
     newTupleTypes.insert(newTupleTypes.end(),
@@ -607,9 +646,10 @@ TypeNode RelTransposeTypeRule::computeType(NodeManager* nodeManager,
   TypeNode setType = n[0].getType(check);
   if (check && (!setType.isSet() || !setType.getSetElementType().isTuple()))
   {
-      if (errOut)
-      {
-        (*errOut) << "relation transpose operates on non-relation"; }
+    if (errOut)
+    {
+      (*errOut) << "relation transpose operates on non-relation";
+    }
     return TypeNode::null();
   }
   std::vector<TypeNode> tupleTypes = setType[0].getTupleTypes();
@@ -634,7 +674,8 @@ TypeNode RelTransClosureTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "transitive closure operates on non-relation"; }
+        (*errOut) << "transitive closure operates on non-relation";
+      }
       return TypeNode::null();
     }
     std::vector<TypeNode> tupleTypes = setType[0].getTupleTypes();
@@ -642,14 +683,17 @@ TypeNode RelTransClosureTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "transitive closure operates on non-binary relations"; }
+        (*errOut) << "transitive closure operates on non-binary relations";
+      }
       return TypeNode::null();
     }
     if (tupleTypes[0] != tupleTypes[1])
     {
       if (errOut)
       {
-        (*errOut) << "transitive closure operates on non-homogeneous binary relations"; }
+        (*errOut) << "transitive closure operates on non-homogeneous binary "
+                     "relations";
+      }
       return TypeNode::null();
     }
   }
@@ -671,25 +715,29 @@ TypeNode JoinImageTypeRule::computeType(NodeManager* nodeManager,
 
   if (!firstRelType.isSet())
   {
-      if (errOut)
-      {
-        (*errOut) << "JoinImage operator operates on non-relations"; }
+    if (errOut)
+    {
+      (*errOut) << "JoinImage operator operates on non-relations";
+    }
     return TypeNode::null();
   }
   if (!firstRelType[0].isTuple())
   {
-      if (errOut)
-      {
-        (*errOut) << "JoinImage operator operates on non-relations (sets of tuples)"; }
+    if (errOut)
+    {
+      (*errOut)
+          << "JoinImage operator operates on non-relations (sets of tuples)";
+    }
     return TypeNode::null();
   }
 
   std::vector<TypeNode> tupleTypes = firstRelType[0].getTupleTypes();
   if (tupleTypes.size() != 2)
   {
-      if (errOut)
-      {
-        (*errOut) << "JoinImage operates on a non-binary relation"; }
+    if (errOut)
+    {
+      (*errOut) << "JoinImage operates on a non-binary relation";
+    }
     return TypeNode::null();
   }
   if (tupleTypes[0] != tupleTypes[1])
@@ -697,17 +745,19 @@ TypeNode JoinImageTypeRule::computeType(NodeManager* nodeManager,
     // TODO: Investigate supporting JoinImage for general binary
     // relationshttps://github.com/cvc5/cvc5-projects/issues/346
 
-      if (errOut)
-      {
-        (*errOut) << "JoinImage operates on a pair of different types"; }
+    if (errOut)
+    {
+      (*errOut) << "JoinImage operates on a pair of different types";
+    }
     return TypeNode::null();
   }
   TypeNode valType = n[1].getType(check);
   if (valType != nodeManager->integerType())
   {
-      if (errOut)
-      {
-        (*errOut) << "JoinImage cardinality constraint must be integer"; }
+    if (errOut)
+    {
+      (*errOut) << "JoinImage cardinality constraint must be integer";
+    }
     return TypeNode::null();
   }
   std::vector<TypeNode> newTupleTypes;
@@ -732,14 +782,16 @@ TypeNode RelIdenTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "Identity operates on non-relation"; }
+        (*errOut) << "Identity operates on non-relation";
+      }
       return TypeNode::null();
     }
     if (setType[0].getTupleTypes().size() != 1)
     {
       if (errOut)
       {
-        (*errOut) << "Identity operates on non-unary relations"; }
+        (*errOut) << "Identity operates on non-unary relations";
+      }
       return TypeNode::null();
     }
   }
@@ -770,8 +822,9 @@ TypeNode RelationGroupTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) << "RELATION_GROUP operator expects a relation. Found '" << n[0]
-         << "' of type '" << setType << "'."; }
+        (*errOut) << "RELATION_GROUP operator expects a relation. Found '"
+                  << n[0] << "' of type '" << setType << "'.";
+      }
       return TypeNode::null();
     }
 
@@ -780,8 +833,9 @@ TypeNode RelationGroupTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) << "RELATION_GROUP operator expects a relation. Found '" << n[0]
-         << "' of type '" << setType << "'."; }
+        (*errOut) << "RELATION_GROUP operator expects a relation. Found '"
+                  << n[0] << "' of type '" << setType << "'.";
+      }
       return TypeNode::null();
     }
 
@@ -814,8 +868,9 @@ TypeNode RelationAggregateTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) << "RELATION_AGGREGATE operator expects a set. Found '" << n[2]
-         << "' of type '" << setType << "'."; }
+        (*errOut) << "RELATION_AGGREGATE operator expects a set. Found '"
+                  << n[2] << "' of type '" << setType << "'.";
+      }
       return TypeNode::null();
     }
 
@@ -824,8 +879,9 @@ TypeNode RelationAggregateTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) << "RELATION_AGGREGATE operator expects a relation. Found '" << n[2]
-         << "' of type '" << setType << "'."; }
+        (*errOut) << "RELATION_AGGREGATE operator expects a relation. Found '"
+                  << n[2] << "' of type '" << setType << "'.";
+      }
       return TypeNode::null();
     }
 
@@ -837,9 +893,11 @@ TypeNode RelationAggregateTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) << "Operator " << n.getKind() << " expects a function of type  (-> "
-         << elementType << " T T) as a first argument. "
-         << "Found a term of type '" << functionType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects a function of type  (-> " << elementType
+                  << " T T) as a first argument. "
+                  << "Found a term of type '" << functionType << "'.";
+      }
       return TypeNode::null();
     }
     std::vector<TypeNode> argTypes = functionType.getArgTypes();
@@ -849,17 +907,21 @@ TypeNode RelationAggregateTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) << "Operator " << n.getKind() << " expects a function of type  (-> "
-         << elementType << " T T). "
-         << "Found a function of type '" << functionType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects a function of type  (-> " << elementType
+                  << " T T). "
+                  << "Found a function of type '" << functionType << "'.";
+      }
       return TypeNode::null();
     }
     if (rangeType != initialValueType)
     {
       if (errOut)
       {
-        (*errOut) << "Operator " << n.getKind() << " expects an initial value of type "
-         << rangeType << ". Found a term of type '" << initialValueType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects an initial value of type " << rangeType
+                  << ". Found a term of type '" << initialValueType << "'.";
+      }
       return TypeNode::null();
     }
   }
@@ -887,7 +949,8 @@ TypeNode RelationProjectTypeRule::computeType(NodeManager* nm,
       if (errOut)
       {
         (*errOut) << "operands in term " << n << " are " << n.getNumChildren()
-         << ", but RELATION_PROJECT expects 1 operand."; }
+                  << ", but RELATION_PROJECT expects 1 operand.";
+      }
       return TypeNode::null();
     }
 
@@ -896,7 +959,8 @@ TypeNode RelationProjectTypeRule::computeType(NodeManager* nm,
       if (errOut)
       {
         (*errOut) << "RELATION_PROJECT operator expects a set. Found '" << n[0]
-         << "' of type '" << setType << "'."; }
+                  << "' of type '" << setType << "'.";
+      }
       return TypeNode::null();
     }
 
@@ -905,8 +969,9 @@ TypeNode RelationProjectTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) << "RELATION_PROJECT operator expects a relation. Found '" << n[0]
-         << "' of type '" << setType << "'."; }
+        (*errOut) << "RELATION_PROJECT operator expects a relation. Found '"
+                  << n[0] << "' of type '" << setType << "'.";
+      }
       return TypeNode::null();
     }
 
@@ -918,10 +983,12 @@ TypeNode RelationProjectTypeRule::computeType(NodeManager* nm,
     {
       if (index >= numArgs)
       {
-      if (errOut)
-      {
-        (*errOut) << "Index " << index << " in term " << n << " is >= " << numArgs
-           << " which is the number of columns in " << n[0] << "."; }
+        if (errOut)
+        {
+          (*errOut) << "Index " << index << " in term " << n
+                    << " is >= " << numArgs
+                    << " which is the number of columns in " << n[0] << ".";
+        }
         return TypeNode::null();
       }
     }
