@@ -79,7 +79,7 @@ bool SetsBinaryOperatorTypeRule::computeIsConst(NodeManager* nodeManager,
 
 TypeNode SubsetTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->booleanType();
 }
 TypeNode SubsetTypeRule::computeType(NodeManager* nodeManager,
                                      TNode n,
@@ -113,7 +113,7 @@ TypeNode SubsetTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode MemberTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->booleanType();
 }
 TypeNode MemberTypeRule::computeType(NodeManager* nodeManager,
                                      TNode n,
@@ -186,7 +186,7 @@ TypeNode EmptySetTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode CardTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->integerType();
 }
 TypeNode CardTypeRule::computeType(NodeManager* nodeManager,
                                    TNode n,
@@ -280,7 +280,7 @@ TypeNode ComprehensionTypeRule::computeType(NodeManager* nodeManager,
       }
       return TypeNode::null();
     }
-    if (n[1].getType(check) != nodeManager->booleanType())
+    if (!n[1].getType(check).isBoolean())
     {
       if (errOut)
       {
@@ -319,7 +319,7 @@ TypeNode ChooseTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode IsSingletonTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
-  return TypeNode::null();
+  return nm->booleanType();
 }
 TypeNode IsSingletonTypeRule::computeType(NodeManager* nodeManager,
                                           TNode n,
@@ -586,8 +586,9 @@ TypeNode RelBinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
   }
   if (!firstRelType[0].isTuple() || !secondRelType[0].isTuple())
   {
-    throw TypeCheckingExceptionPrivate(
-        n, " Relational operator operates on non-relations (sets of tuples)");
+      if (errOut)
+      {
+        (*errOut) << "Relational operator operates on non-relations (sets of tuples)"; }
     return TypeNode::null();
   }
 
