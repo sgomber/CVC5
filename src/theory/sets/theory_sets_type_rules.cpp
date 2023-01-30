@@ -727,10 +727,10 @@ TypeNode RelTransposeTypeRule::computeType(NodeManager* nodeManager,
     }
     return TypeNode::null();
   }
-  // transpose for ? is ?Set.
+  // transpose for ? is abstract relation.
   if (setType.isAbstract())
   {
-    return nodeManager->mkAbstractType(kind::SET_TYPE);
+    return nodeManager->mkSetType(nodeManager->mkAbstractType(kind::TUPLE_TYPE));
   }
   // otherwise, reverse the types
   std::vector<TypeNode> tupleTypes = setType[0].getTupleTypes();
@@ -781,10 +781,10 @@ TypeNode RelTransClosureTypeRule::computeType(NodeManager* nodeManager,
       }
     }
   }
-  // we are ?Set if argument is ?
+  // return abstract relation if argument is ?
   if (setType.isFullyAbstract())
   {
-    return nodeManager->mkAbstractType(kind::SET_TYPE);
+    return nodeManager->mkSetType(nodeManager->mkAbstractType(kind::TUPLE_TYPE));
   }
   return setType;
 }
@@ -802,7 +802,7 @@ TypeNode JoinImageTypeRule::computeType(NodeManager* nodeManager,
 
   TypeNode firstRelType = n[0].getType();
 
-  if (!firstRelType.isMaybeKind(kind::SET_TYPE))
+  if (!isMaybeRelation(firstRelType))
   {
     if (errOut)
     {
@@ -810,17 +810,10 @@ TypeNode JoinImageTypeRule::computeType(NodeManager* nodeManager,
     }
     return TypeNode::null();
   }
-  // FIXME
-  if (!firstRelType[0].isMaybeKind(kind::TUPLE_TYPE))
+  if (!firstRelType.isRelation())
   {
-    if (errOut)
-    {
-      (*errOut)
-          << "JoinImage operator operates on non-relations (sets of tuples)";
-    }
-    return TypeNode::null();
+    return nodeManager->mkSetType(nodeManager->mkAbstractType(kind::TUPLE_TYPE));
   }
-
   std::vector<TypeNode> tupleTypes = firstRelType[0].getTupleTypes();
   if (tupleTypes.size() != 2)
   {
@@ -853,6 +846,7 @@ TypeNode JoinImageTypeRule::computeType(NodeManager* nodeManager,
   std::vector<TypeNode> newTupleTypes;
   newTupleTypes.push_back(tupleTypes[0]);
   return nodeManager->mkSetType(nodeManager->mkTupleType(newTupleTypes));
+  
 }
 
 TypeNode RelIdenTypeRule::preComputeType(NodeManager* nm, TNode n)
