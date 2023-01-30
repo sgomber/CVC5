@@ -743,7 +743,7 @@ class CVC5_EXPORT TypeNode
    */
   TypeNode getUninterpretedSortConstructor() const;
 
-private:
+ private:
  /** Unify internal, for computing join and meet */
  TypeNode unifyInternal(const TypeNode& t, bool isJoin) const;
  /**
