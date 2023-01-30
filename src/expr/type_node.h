@@ -470,6 +470,9 @@ class CVC5_EXPORT TypeNode
 
   /** Is this a Set type? */
   bool isSet() const;
+  
+  /** Is this a Relation type (set of tuples)? */
+  bool isRelation() const;
 
   /** Is this a Bag type? */
   bool isBag() const;

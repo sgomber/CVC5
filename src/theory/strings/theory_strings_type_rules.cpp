@@ -84,7 +84,8 @@ TypeNode StringConcatTypeRule::computeType(NodeManager* nodeManager,
       return TypeNode::null();
     }
   }
-  // note we could be fully abstract if all arguments are fully abstract
+  // note we could be fully abstract if all arguments are fully abstract,
+  // this is due to the fact that string/sequence are not comparable.
   return tret;
 }
 
