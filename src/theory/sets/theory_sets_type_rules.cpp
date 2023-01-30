@@ -730,7 +730,8 @@ TypeNode RelTransposeTypeRule::computeType(NodeManager* nodeManager,
   // transpose for ? is abstract relation.
   if (setType.isAbstract())
   {
-    return nodeManager->mkSetType(nodeManager->mkAbstractType(kind::TUPLE_TYPE));
+    return nodeManager->mkSetType(
+        nodeManager->mkAbstractType(kind::TUPLE_TYPE));
   }
   // otherwise, reverse the types
   std::vector<TypeNode> tupleTypes = setType[0].getTupleTypes();
@@ -784,7 +785,8 @@ TypeNode RelTransClosureTypeRule::computeType(NodeManager* nodeManager,
   // return abstract relation if argument is ?
   if (setType.isFullyAbstract())
   {
-    return nodeManager->mkSetType(nodeManager->mkAbstractType(kind::TUPLE_TYPE));
+    return nodeManager->mkSetType(
+        nodeManager->mkAbstractType(kind::TUPLE_TYPE));
   }
   return setType;
 }
@@ -813,7 +815,8 @@ TypeNode JoinImageTypeRule::computeType(NodeManager* nodeManager,
   if (!firstRelType.isRelation())
   {
     // abstract relation if the argument is not concreate
-    return nodeManager->mkSetType(nodeManager->mkAbstractType(kind::TUPLE_TYPE));
+    return nodeManager->mkSetType(
+        nodeManager->mkAbstractType(kind::TUPLE_TYPE));
   }
   std::vector<TypeNode> tupleTypes = firstRelType[0].getTupleTypes();
   if (check)
@@ -849,7 +852,6 @@ TypeNode JoinImageTypeRule::computeType(NodeManager* nodeManager,
   std::vector<TypeNode> newTupleTypes;
   newTupleTypes.push_back(tupleTypes[0]);
   return nodeManager->mkSetType(nodeManager->mkTupleType(newTupleTypes));
-  
 }
 
 TypeNode RelIdenTypeRule::preComputeType(NodeManager* nm, TNode n)
@@ -888,7 +890,8 @@ TypeNode RelIdenTypeRule::computeType(NodeManager* nodeManager,
   // abstract relation if argument is not a concrete relation type
   if (!setType.isRelation())
   {
-    return nodeManager->mkSetType(nodeManager->mkAbstractType(kind::TUPLE_TYPE));
+    return nodeManager->mkSetType(
+        nodeManager->mkAbstractType(kind::TUPLE_TYPE));
   }
   std::vector<TypeNode> tupleTypes = setType[0].getTupleTypes();
   tupleTypes.push_back(tupleTypes[0]);
@@ -1002,7 +1005,8 @@ TypeNode RelationAggregateTypeRule::computeType(NodeManager* nm,
     {
       std::vector<TypeNode> argTypes = functionType.getArgTypes();
       TypeNode rangeType = functionType.getRangeType();
-      if (!(argTypes.size() == 2 && (tupleType.isNull() || argTypes[0].isComparableTo(tupleType))
+      if (!(argTypes.size() == 2
+            && (tupleType.isNull() || argTypes[0].isComparableTo(tupleType))
             && argTypes[1].isComparableTo(rangeType)))
       {
         if (errOut)
@@ -1033,7 +1037,6 @@ TypeNode RelationAggregateTypeRule::computeType(NodeManager* nm,
         return TypeNode::null();
       }
     }
-    
   }
   if (functionType.isAbstract())
   {
@@ -1073,8 +1076,8 @@ TypeNode RelationProjectTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) << "RELATION_PROJECT operator expects a relation. Found '" << n[0]
-                  << "' of type '" << setType << "'.";
+        (*errOut) << "RELATION_PROJECT operator expects a relation. Found '"
+                  << n[0] << "' of type '" << setType << "'.";
       }
       return TypeNode::null();
     }
