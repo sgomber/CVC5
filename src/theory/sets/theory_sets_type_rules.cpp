@@ -812,36 +812,39 @@ TypeNode JoinImageTypeRule::computeType(NodeManager* nodeManager,
   }
   if (!firstRelType.isRelation())
   {
+    // abstract relation if the argument is not concreate
     return nodeManager->mkSetType(nodeManager->mkAbstractType(kind::TUPLE_TYPE));
   }
   std::vector<TypeNode> tupleTypes = firstRelType[0].getTupleTypes();
-  if (tupleTypes.size() != 2)
+  if (check)
   {
-    if (errOut)
+    if (tupleTypes.size() != 2)
     {
-      (*errOut) << "JoinImage operates on a non-binary relation";
+      if (errOut)
+      {
+        (*errOut) << "JoinImage operates on a non-binary relation";
+      }
+      return TypeNode::null();
     }
-    return TypeNode::null();
-  }
-  if (tupleTypes[0] != tupleTypes[1])
-  {
-    // TODO: Investigate supporting JoinImage for general binary
-    // relationshttps://github.com/cvc5/cvc5-projects/issues/346
-    if (errOut)
+    if (!tupleTypes[0].isComparableTo(tupleTypes[1]))
     {
-      (*errOut) << "JoinImage operates on a pair of different types";
+      // TODO: Investigate supporting JoinImage for general binary
+      // relations https://github.com/cvc5/cvc5-projects/issues/346
+      if (errOut)
+      {
+        (*errOut) << "JoinImage operates on a pair of different types";
+      }
+      return TypeNode::null();
     }
-    return TypeNode::null();
-  }
-
-  TypeNode valType = n[1].getType();
-  if (valType != nodeManager->integerType())
-  {
-    if (errOut)
+    TypeNode valType = n[1].getType();
+    if (!valType.isInteger() && !valType.isFullyAbstract())
     {
-      (*errOut) << "JoinImage cardinality constraint must be integer";
+      if (errOut)
+      {
+        (*errOut) << "JoinImage cardinality constraint must be integer";
+      }
+      return TypeNode::null();
     }
-    return TypeNode::null();
   }
   std::vector<TypeNode> newTupleTypes;
   newTupleTypes.push_back(tupleTypes[0]);
@@ -862,7 +865,7 @@ TypeNode RelIdenTypeRule::computeType(NodeManager* nodeManager,
   TypeNode setType = n[0].getType();
   if (check)
   {
-    if (!setType.isSet() && !setType.getSetElementType().isTuple())
+    if (!isMaybeRelation(setType))
     {
       if (errOut)
       {
@@ -870,14 +873,22 @@ TypeNode RelIdenTypeRule::computeType(NodeManager* nodeManager,
       }
       return TypeNode::null();
     }
-    if (setType[0].getTupleTypes().size() != 1)
+    if (setType.isRelation())
     {
-      if (errOut)
+      if (setType[0].getTupleTypes().size() != 1)
       {
-        (*errOut) << "Identity operates on non-unary relations";
+        if (errOut)
+        {
+          (*errOut) << "Identity operates on non-unary relations";
+        }
+        return TypeNode::null();
       }
-      return TypeNode::null();
     }
+  }
+  // abstract relation if argument is not a concrete relation type
+  if (!setType.isRelation())
+  {
+    return nodeManager->mkSetType(nodeManager->mkAbstractType(kind::TUPLE_TYPE));
   }
   std::vector<TypeNode> tupleTypes = setType[0].getTupleTypes();
   tupleTypes.push_back(tupleTypes[0]);
@@ -925,6 +936,12 @@ TypeNode RelationGroupTypeRule::computeType(NodeManager* nm,
       }
     }
   }
+  // we know the argument should be a relation, thus we ensure it has at least
+  // that information before constructing the return type
+  if (!setType.isRelation())
+  {
+    setType = nm->mkSetType(nm->mkAbstractType(kind::TUPLE_TYPE));
+  }
   return nm->mkSetType(setType);
 }
 
@@ -948,18 +965,7 @@ TypeNode RelationAggregateTypeRule::computeType(NodeManager* nm,
 
   if (check)
   {
-    if (!setType.isSet())
-    {
-      if (errOut)
-      {
-        (*errOut) << "RELATION_AGGREGATE operator expects a set. Found '"
-                  << n[2] << "' of type '" << setType << "'.";
-      }
-      return TypeNode::null();
-    }
-
-    TypeNode tupleType = setType.getSetElementType();
-    if (!tupleType.isTuple())
+    if (!isMaybeRelation(setType))
     {
       if (errOut)
       {
@@ -968,54 +974,71 @@ TypeNode RelationAggregateTypeRule::computeType(NodeManager* nm,
       }
       return TypeNode::null();
     }
-
-    if (!TupleUtils::checkTypeIndices(tupleType, indices))
+    TypeNode tupleType;
+    if (setType.isRelation())
     {
-      if (errOut)
+      tupleType = setType.getSetElementType();
+      if (!TupleUtils::checkTypeIndices(tupleType, indices))
       {
-        (*errOut) << "Index in operator of " << n
-                  << " is out of range for the type of its arguments";
+        if (errOut)
+        {
+          (*errOut) << "Index in operator of " << n
+                    << " is out of range for the type of its arguments";
+        }
+        return TypeNode::null();
       }
-      return TypeNode::null();
     }
-
-    TypeNode elementType = setType.getSetElementType();
-
-    if (!(functionType.isFunction()))
+    if (!functionType.isMaybeKind(kind::FUNCTION_TYPE))
     {
       if (errOut)
       {
         (*errOut) << "Operator " << n.getKind()
-                  << " expects a function of type  (-> " << elementType
-                  << " T T) as a first argument. "
+                  << " expects a function as a first argument. "
                   << "Found a term of type '" << functionType << "'.";
       }
       return TypeNode::null();
     }
-    std::vector<TypeNode> argTypes = functionType.getArgTypes();
-    TypeNode rangeType = functionType.getRangeType();
-    if (!(argTypes.size() == 2 && argTypes[0] == elementType
-          && argTypes[1] == rangeType))
+    if (functionType.isFunction())
     {
-      if (errOut)
+      std::vector<TypeNode> argTypes = functionType.getArgTypes();
+      TypeNode rangeType = functionType.getRangeType();
+      if (!(argTypes.size() == 2 && (tupleType.isNull() || argTypes[0].isComparableTo(tupleType))
+            && argTypes[1].isComparableTo(rangeType)))
       {
-        (*errOut) << "Operator " << n.getKind()
-                  << " expects a function of type  (-> " << elementType
-                  << " T T). "
-                  << "Found a function of type '" << functionType << "'.";
+        if (errOut)
+        {
+          (*errOut) << "Operator " << n.getKind()
+                    << " expects a function of type (-> ";
+          if (!tupleType.isNull())
+          {
+            (*errOut) << tupleType;
+          }
+          else
+          {
+            (*errOut) << "?";
+          }
+          (*errOut) << " T T). ";
+          (*errOut) << "Found a function of type '" << functionType << "'.";
+        }
+        return TypeNode::null();
       }
-      return TypeNode::null();
-    }
-    if (rangeType != initialValueType)
-    {
-      if (errOut)
+      if (!rangeType.isComparableTo(initialValueType))
       {
-        (*errOut) << "Operator " << n.getKind()
-                  << " expects an initial value of type " << rangeType
-                  << ". Found a term of type '" << initialValueType << "'.";
+        if (errOut)
+        {
+          (*errOut) << "Operator " << n.getKind()
+                    << " expects an initial value of type " << rangeType
+                    << ". Found a term of type '" << initialValueType << "'.";
+        }
+        return TypeNode::null();
       }
-      return TypeNode::null();
     }
+    
+  }
+  if (functionType.isAbstract())
+  {
+    // if an abstract function, return ?Set
+    return nm->mkSetType(nm->mkAbstractType(kind::ABSTRACT_TYPE));
   }
   return nm->mkSetType(functionType.getRangeType());
 }
@@ -1046,27 +1069,17 @@ TypeNode RelationProjectTypeRule::computeType(NodeManager* nm,
       return TypeNode::null();
     }
 
-    if (!setType.isSet())
+    if (!isMaybeRelation(setType))
     {
       if (errOut)
       {
-        (*errOut) << "RELATION_PROJECT operator expects a set. Found '" << n[0]
+        (*errOut) << "RELATION_PROJECT operator expects a relation. Found '" << n[0]
                   << "' of type '" << setType << "'.";
       }
       return TypeNode::null();
     }
 
     TypeNode tupleType = setType.getSetElementType();
-    if (!tupleType.isTuple())
-    {
-      if (errOut)
-      {
-        (*errOut) << "RELATION_PROJECT operator expects a relation. Found '"
-                  << n[0] << "' of type '" << setType << "'.";
-      }
-      return TypeNode::null();
-    }
-
     // make sure all indices are less than the length of the tuple type
     DType dType = tupleType.getDType();
     DTypeConstructor constructor = dType[0];
