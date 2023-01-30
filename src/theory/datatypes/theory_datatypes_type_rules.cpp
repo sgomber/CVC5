@@ -725,8 +725,8 @@ TypeNode TupleProjectTypeRule::computeType(NodeManager* nm,
           if (errOut)
           {
             (*errOut) << "Project index " << index << " in term " << n
-                      << " is >= " << numArgs << " which is the length of tuple "
-                      << n[0] << std::endl;
+                      << " is >= " << numArgs
+                      << " which is the length of tuple " << n[0] << std::endl;
           }
           return TypeNode::null();
         }

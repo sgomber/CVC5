@@ -46,7 +46,8 @@ TypeNode SetsBinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
   TypeNode retType = setType.join(secondSetType);
   if (check)
   {
-    if (!setType.isMaybeKind(kind::SET_TYPE) || !secondSetType.isMaybeKind(kind::SET_TYPE))
+    if (!setType.isMaybeKind(kind::SET_TYPE)
+        || !secondSetType.isMaybeKind(kind::SET_TYPE))
     {
       if (errOut)
       {
@@ -92,7 +93,8 @@ TypeNode SubsetTypeRule::computeType(NodeManager* nodeManager,
   if (check)
   {
     TypeNode secondSetType = n[1].getType();
-    if (!setType.isMaybeKind(kind::SET_TYPE) || !secondSetType.isMaybeKind(kind::SET_TYPE))
+    if (!setType.isMaybeKind(kind::SET_TYPE)
+        || !secondSetType.isMaybeKind(kind::SET_TYPE))
     {
       if (errOut)
       {
@@ -387,18 +389,19 @@ TypeNode InsertTypeRule::computeType(NodeManager* nodeManager,
   for (size_t i = 0; i < numChildren - 1; ++i)
   {
     TypeNode elementType = n[i].getType();
-    retElementType = retElementType.isNull() ? elementType : retElementType.join(elementType);
+    retElementType = retElementType.isNull() ? elementType
+                                             : retElementType.join(elementType);
     if (retElementType.isNull())
     {
       if (errOut)
       {
         (*errOut) << "type of element should be same as element type of set "
-                      "being inserted into";
+                     "being inserted into";
       }
       return TypeNode::null();
     }
   }
-  Assert (!retElementType.isNull());
+  Assert(!retElementType.isNull());
   return nodeManager->mkSetType(retElementType);
 }
 
@@ -447,17 +450,20 @@ TypeNode SetMapTypeRule::computeType(NodeManager* nodeManager,
     if (functionType.isFunction())
     {
       std::vector<TypeNode> argTypes = functionType.getArgTypes();
-      if (!(argTypes.size() == 1 && (elementType.isNull() || argTypes[0].isComparableTo(elementType))))
+      if (!(argTypes.size() == 1
+            && (elementType.isNull()
+                || argTypes[0].isComparableTo(elementType))))
       {
         if (errOut)
         {
           (*errOut) << "Operator " << n.getKind()
-                    << " expects a function whose type is comparable to the type of elements in the set";
-              if (!elementType.isNull())
-              {
-                (*errOut)<< " (" << elementType << ")";
-              }
-           (*errOut)<< ". Found a function of type '" << functionType << "'.";
+                    << " expects a function whose type is comparable to the "
+                       "type of elements in the set";
+          if (!elementType.isNull())
+          {
+            (*errOut) << " (" << elementType << ")";
+          }
+          (*errOut) << ". Found a function of type '" << functionType << "'.";
         }
         return TypeNode::null();
       }
@@ -628,9 +634,11 @@ TypeNode RelBinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
   }
   if (!firstRelType[0].isTuple() || !secondRelType[0].isTuple())
   {
-      if (errOut)
-      {
-        (*errOut) << "Relational operator operates on non-relations (sets of tuples)"; }
+    if (errOut)
+    {
+      (*errOut)
+          << "Relational operator operates on non-relations (sets of tuples)";
+    }
     return TypeNode::null();
   }
 
