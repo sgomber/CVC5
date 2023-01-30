@@ -41,7 +41,7 @@ TypeNode DatatypeConstructorTypeRule::computeType(NodeManager* nodeManager,
                                                   std::ostream* errOut)
 {
   Assert(n.getKind() == kind::APPLY_CONSTRUCTOR);
-  TypeNode consType = n.getOperator().getType(check);
+  TypeNode consType = n.getOperator().getType();
   // note that datatype constructors cannot be abstracted
   if (!consType.isDatatypeConstructor())
   {
@@ -72,7 +72,7 @@ TypeNode DatatypeConstructorTypeRule::computeType(NodeManager* nodeManager,
     TypeMatcher m(t);
     for (; child_it != child_it_end; ++child_it, ++tchild_it)
     {
-      TypeNode childType = (*child_it).getType(check);
+      TypeNode childType = (*child_it).getType();
       // FIXME
       if (!m.doMatching(*tchild_it, childType))
       {
@@ -100,7 +100,7 @@ TypeNode DatatypeConstructorTypeRule::computeType(NodeManager* nodeManager,
                              << consType.getNumChildren() << std::endl;
       for (; child_it != child_it_end; ++child_it, ++tchild_it)
       {
-        TypeNode childType = (*child_it).getType(check);
+        TypeNode childType = (*child_it).getType();
         Trace("typecheck-idt") << "typecheck cons arg: " << childType << " "
                                << (*tchild_it) << std::endl;
         TypeNode argumentType = *tchild_it;
@@ -145,7 +145,7 @@ TypeNode DatatypeSelectorTypeRule::computeType(NodeManager* nodeManager,
                                                std::ostream* errOut)
 {
   Assert(n.getKind() == kind::APPLY_SELECTOR);
-  TypeNode selType = n.getOperator().getType(check);
+  TypeNode selType = n.getOperator().getType();
   TypeNode t = selType[0];
   Assert(t.isDatatype());
   if ((t.isParametricDatatype() || check) && n.getNumChildren() != 1)
@@ -160,7 +160,7 @@ TypeNode DatatypeSelectorTypeRule::computeType(NodeManager* nodeManager,
   {
     Trace("typecheck-idt") << "typecheck parameterized sel: " << n << std::endl;
     TypeMatcher m(t);
-    TypeNode childType = n[0].getType(check);
+    TypeNode childType = n[0].getType();
     if (!childType.isInstantiatedDatatype())
     {
       if (errOut)
@@ -195,7 +195,7 @@ TypeNode DatatypeSelectorTypeRule::computeType(NodeManager* nodeManager,
     {
       Trace("typecheck-idt") << "typecheck sel: " << n << std::endl;
       Trace("typecheck-idt") << "sel type: " << selType << std::endl;
-      TypeNode childType = n[0].getType(check);
+      TypeNode childType = n[0].getType();
       if (selType[0] != childType)
       {
         Trace("typecheck-idt") << "ERROR: " << selType[0].getKind() << " "
@@ -231,8 +231,8 @@ TypeNode DatatypeTesterTypeRule::computeType(NodeManager* nodeManager,
       }
       return TypeNode::null();
     }
-    TypeNode testType = n.getOperator().getType(check);
-    TypeNode childType = n[0].getType(check);
+    TypeNode testType = n.getOperator().getType();
+    TypeNode childType = n[0].getType();
     TypeNode t = testType[0];
     Assert(t.isDatatype());
     if (t.isParametricDatatype())
@@ -277,14 +277,14 @@ TypeNode DatatypeUpdateTypeRule::computeType(NodeManager* nodeManager,
                                              std::ostream* errOut)
 {
   Assert(n.getKind() == kind::APPLY_UPDATER);
-  TypeNode updType = n.getOperator().getType(check);
+  TypeNode updType = n.getOperator().getType();
   Assert(updType.getNumChildren() == 2);
   if (check)
   {
     TypeNode t = updType[0];
     for (size_t i = 0; i < 2; i++)
     {
-      TypeNode childType = n[i].getType(check);
+      TypeNode childType = n[i].getType();
       TypeNode targ = updType[i];
       Trace("typecheck-idt") << "typecheck update: " << n << "[" << i
                              << "]: " << targ << " " << childType << std::endl;
@@ -329,7 +329,7 @@ TypeNode DatatypeAscriptionTypeRule::computeType(NodeManager* nodeManager,
   TypeNode t = n.getOperator().getConst<AscriptionType>().getType();
   if (check)
   {
-    TypeNode childType = n[0].getType(check);
+    TypeNode childType = n[0].getType();
 
     TypeMatcher m;
     if (childType.getKind() == kind::CONSTRUCTOR_TYPE)
@@ -378,7 +378,7 @@ TypeNode DtSizeTypeRule::computeType(NodeManager* nodeManager,
 {
   if (check)
   {
-    TypeNode t = n[0].getType(check);
+    TypeNode t = n[0].getType();
     if (!t.isDatatype())
     {
       if (errOut)
@@ -402,7 +402,7 @@ TypeNode DtBoundTypeRule::computeType(NodeManager* nodeManager,
 {
   if (check)
   {
-    TypeNode t = n[0].getType(check);
+    TypeNode t = n[0].getType();
     if (!t.isDatatype())
     {
       if (errOut)
@@ -440,7 +440,7 @@ TypeNode DtSygusEvalTypeRule::computeType(NodeManager* nodeManager,
                                           bool check,
                                           std::ostream* errOut)
 {
-  TypeNode headType = n[0].getType(check);
+  TypeNode headType = n[0].getType();
   if (!headType.isDatatype())
   {
     if (errOut)
@@ -473,8 +473,8 @@ TypeNode DtSygusEvalTypeRule::computeType(NodeManager* nodeManager,
     }
     for (unsigned i = 0, nvars = svl.getNumChildren(); i < nvars; i++)
     {
-      TypeNode vtype = svl[i].getType(check);
-      TypeNode atype = n[i + 1].getType(check);
+      TypeNode vtype = svl[i].getType();
+      TypeNode atype = n[i + 1].getType();
       if (vtype != atype)
       {
         if (errOut)
@@ -502,7 +502,7 @@ TypeNode MatchTypeRule::computeType(NodeManager* nodeManager,
 
   TypeNode retType;
 
-  TypeNode headType = n[0].getType(check);
+  TypeNode headType = n[0].getType();
   if (!headType.isDatatype())
   {
     if (errOut)
@@ -592,7 +592,7 @@ TypeNode MatchTypeRule::computeType(NodeManager* nodeManager,
       }
       return TypeNode::null();
     }
-    TypeNode currType = nc.getType(check);
+    TypeNode currType = nc.getType();
     if (i == 1)
     {
       retType = currType;
@@ -630,7 +630,7 @@ TypeNode MatchCaseTypeRule::computeType(NodeManager* nodeManager,
   Assert(n.getKind() == kind::MATCH_CASE);
   if (check)
   {
-    TypeNode patType = n[0].getType(check);
+    TypeNode patType = n[0].getType();
     if (!patType.isDatatype())
     {
       if (errOut)
@@ -640,7 +640,7 @@ TypeNode MatchCaseTypeRule::computeType(NodeManager* nodeManager,
       return TypeNode::null();
     }
   }
-  return n[1].getType(check);
+  return n[1].getType();
 }
 
 TypeNode MatchBindCaseTypeRule::preComputeType(NodeManager* nm, TNode n)
@@ -663,7 +663,7 @@ TypeNode MatchBindCaseTypeRule::computeType(NodeManager* nodeManager,
       }
       return TypeNode::null();
     }
-    TypeNode patType = n[1].getType(check);
+    TypeNode patType = n[1].getType();
     if (!patType.isDatatype())
     {
       if (errOut)
@@ -673,7 +673,7 @@ TypeNode MatchBindCaseTypeRule::computeType(NodeManager* nodeManager,
       return TypeNode::null();
     }
   }
-  return n[2].getType(check);
+  return n[2].getType();
 }
 
 TypeNode TupleProjectTypeRule::preComputeType(NodeManager* nm, TNode n)
@@ -700,8 +700,8 @@ TypeNode TupleProjectTypeRule::computeType(NodeManager* nm,
       }
       return TypeNode::null();
     }
-    TypeNode tupleType = n[0].getType(check);
-    if (!tupleType.isTuple())
+    TypeNode tupleType = n[0].getType();
+    if (!tupleType.isMaybeKind(kind::TUPLE_TYPE))
     {
       if (errOut)
       {
@@ -711,25 +711,29 @@ TypeNode TupleProjectTypeRule::computeType(NodeManager* nm,
       return TypeNode::null();
     }
 
-    // make sure all indices are less than the length of the tuple type
-    DType dType = tupleType.getDType();
-    DTypeConstructor constructor = dType[0];
-    size_t numArgs = constructor.getNumArgs();
-    for (uint32_t index : indices)
+    // check indicies if we are a concrete tuple
+    if (tupleType.isTuple())
     {
-      if (index >= numArgs)
+      // make sure all indices are less than the length of the tuple type
+      const DType& dType = tupleType.getDType();
+      DTypeConstructor constructor = dType[0];
+      size_t numArgs = constructor.getNumArgs();
+      for (uint32_t index : indices)
       {
-        if (errOut)
+        if (index >= numArgs)
         {
-          (*errOut) << "Project index " << index << " in term " << n
-                    << " is >= " << numArgs << " which is the length of tuple "
-                    << n[0] << std::endl;
+          if (errOut)
+          {
+            (*errOut) << "Project index " << index << " in term " << n
+                      << " is >= " << numArgs << " which is the length of tuple "
+                      << n[0] << std::endl;
+          }
+          return TypeNode::null();
         }
-        return TypeNode::null();
       }
     }
   }
-  TypeNode tupleType = n[0].getType(check);
+  TypeNode tupleType = n[0].getType();
   return TupleUtils::getTupleProjectionType(indices, tupleType);
 }
 

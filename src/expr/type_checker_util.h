@@ -95,7 +95,7 @@ struct AInteger
 {
   static bool checkArg(TNode n, size_t arg)
   {
-    TypeNode t = n[arg].getType(true);
+    TypeNode t = n[arg].getType();
     return t.isInteger() || t.isFullyAbstract();
   }
   constexpr static const char* typeName = "integer";
@@ -106,7 +106,7 @@ struct AReal
 {
   static bool checkArg(TNode n, size_t arg)
   {
-    TypeNode t = n[arg].getType(true);
+    TypeNode t = n[arg].getType();
     return t.isReal() || t.isFullyAbstract();
   }
   constexpr static const char* typeName = "real";
@@ -117,7 +117,7 @@ struct ARealOrInteger
 {
   static bool checkArg(TNode n, size_t arg)
   {
-    TypeNode t = n[arg].getType(true);
+    TypeNode t = n[arg].getType();
     return t.isRealOrInt() || t.isFullyAbstract();
   }
   constexpr static const char* typeName = "real or integer";
@@ -128,7 +128,7 @@ struct ARegExp
 {
   static bool checkArg(TNode n, size_t arg)
   {
-    TypeNode t = n[arg].getType(true);
+    TypeNode t = n[arg].getType();
     return t.isRegExp() || t.isFullyAbstract();
   }
   constexpr static const char* typeName = "regexp";
@@ -139,7 +139,7 @@ struct AString
 {
   static bool checkArg(TNode n, size_t arg)
   {
-    TypeNode t = n[arg].getType(true);
+    TypeNode t = n[arg].getType();
     return t.isString() || t.isFullyAbstract();
   }
   constexpr static const char* typeName = "string";

@@ -37,7 +37,7 @@ TypeNode ArraySelectTypeRule::computeType(NodeManager* nodeManager,
                                           std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SELECT);
-  TypeNode arrayType = n[0].getType(check);
+  TypeNode arrayType = n[0].getType();
   if (check)
   {
     if (!arrayType.isMaybeKind(kind::ARRAY_TYPE))
@@ -48,7 +48,7 @@ TypeNode ArraySelectTypeRule::computeType(NodeManager* nodeManager,
       }
       return TypeNode::null();
     }
-    TypeNode indexType = n[1].getType(check);
+    TypeNode indexType = n[1].getType();
     if (!indexType.isComparableTo(arrayType.getArrayIndexType()))
     {
       if (errOut)
@@ -78,7 +78,7 @@ TypeNode ArrayStoreTypeRule::computeType(NodeManager* nodeManager,
 {
   if (n.getKind() == kind::STORE)
   {
-    TypeNode arrayType = n[0].getType(check);
+    TypeNode arrayType = n[0].getType();
     if (check)
     {
       if (!arrayType.isMaybeKind(kind::ARRAY_TYPE))
@@ -90,7 +90,7 @@ TypeNode ArrayStoreTypeRule::computeType(NodeManager* nodeManager,
         return TypeNode::null();
       }
     }
-    TypeNode indexType = n[1].getType(check);
+    TypeNode indexType = n[1].getType();
     TypeNode aindexType = arrayType.getArrayIndexType();
     TypeNode indexjoin = indexType.join(aindexType);
     if (indexjoin.isNull())
@@ -101,7 +101,7 @@ TypeNode ArrayStoreTypeRule::computeType(NodeManager* nodeManager,
       }
       return TypeNode::null();
     }
-    TypeNode valueType = n[2].getType(check);
+    TypeNode valueType = n[2].getType();
     TypeNode avalueType = arrayType.getArrayConstituentType();
     TypeNode valuejoin = valueType.join(avalueType);
     if (valuejoin.isNull())
@@ -219,7 +219,7 @@ TypeNode ArrayLambdaTypeRule::computeType(NodeManager* nodeManager,
                                           std::ostream* errOut)
 {
   Assert(n.getKind() == kind::ARRAY_LAMBDA);
-  TypeNode lamType = n[0].getType(check);
+  TypeNode lamType = n[0].getType();
   if (check)
   {
     if (n[0].getKind() != kind::LAMBDA)
@@ -293,8 +293,8 @@ TypeNode ArrayEqRangeTypeRule::computeType(NodeManager* nodeManager,
   Assert(n.getKind() == kind::EQ_RANGE);
   if (check)
   {
-    TypeNode n0_type = n[0].getType(check);
-    TypeNode n1_type = n[1].getType(check);
+    TypeNode n0_type = n[0].getType();
+    TypeNode n1_type = n[1].getType();
     if (!n0_type.isMaybeKind(kind::ARRAY_TYPE))
     {
       if (errOut)
@@ -320,8 +320,8 @@ TypeNode ArrayEqRangeTypeRule::computeType(NodeManager* nodeManager,
       return TypeNode::null();
     }
     TypeNode indexType = n0_type.getArrayIndexType();
-    TypeNode indexRangeType1 = n[2].getType(check);
-    TypeNode indexRangeType2 = n[3].getType(check);
+    TypeNode indexRangeType1 = n[2].getType();
+    TypeNode indexRangeType2 = n[3].getType();
     if (!indexRangeType1.isComparableTo(indexType))
     {
       if (errOut)
