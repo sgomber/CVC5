@@ -806,7 +806,8 @@ TypeNode TableAggregateTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) << "Index in operator of " << n << " is out of range of for the type of its argument";
+        (*errOut) << "Index in operator of " << n
+                  << " is out of range of for the type of its argument";
       }
       return TypeNode::null();
     }
@@ -911,7 +912,8 @@ TypeNode TableJoinTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) << "Index in operator of " << n << " is out of range for the type of its first argument";
+        (*errOut) << "Index in operator of " << n
+                  << " is out of range for the type of its first argument";
       }
       return TypeNode::null();
     }
@@ -919,7 +921,8 @@ TypeNode TableJoinTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) << "Index in operator of " << n << " is out of range for the type of its second argument";
+        (*errOut) << "Index in operator of " << n
+                  << " is out of range for the type of its second argument";
       }
       return TypeNode::null();
     }
@@ -992,7 +995,8 @@ TypeNode TableGroupTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) << "Index in operator of " << n << " is out of range for the type of its argument";
+        (*errOut) << "Index in operator of " << n
+                  << " is out of range for the type of its argument";
       }
       return TypeNode::null();
     }

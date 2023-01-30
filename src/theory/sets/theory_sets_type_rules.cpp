@@ -45,8 +45,10 @@ bool isMaybeRelation(const TypeNode& tn)
   return true;
 }
 
-bool checkFunctionTypeFor(const Node& n, const TypeNode& functionType, const TypeNode& setType,
-                                                 std::ostream* errOut)
+bool checkFunctionTypeFor(const Node& n,
+                          const TypeNode& functionType,
+                          const TypeNode& setType,
+                          std::ostream* errOut)
 {
   // get the element type of the second argument, if it exists
   TypeNode elementType;
@@ -58,7 +60,8 @@ bool checkFunctionTypeFor(const Node& n, const TypeNode& functionType, const Typ
   {
     if (errOut)
     {
-      (*errOut) << "Operator " << n.getKind() << " expects a function as a first argument. "
+      (*errOut) << "Operator " << n.getKind()
+                << " expects a function as a first argument. "
                 << "Found a term of type '" << functionType << "'.";
     }
     return false;
@@ -69,14 +72,13 @@ bool checkFunctionTypeFor(const Node& n, const TypeNode& functionType, const Typ
   {
     std::vector<TypeNode> argTypes = functionType.getArgTypes();
     if (!(argTypes.size() == 1
-          && (elementType.isNull()
-              || argTypes[0].isComparableTo(elementType))))
+          && (elementType.isNull() || argTypes[0].isComparableTo(elementType))))
     {
       if (errOut)
       {
         (*errOut) << "Operator " << n.getKind()
                   << " expects a function whose type is comparable to the "
-                      "type of elements in the set";
+                     "type of elements in the set";
         if (!elementType.isNull())
         {
           (*errOut) << " (" << elementType << ")";
@@ -648,7 +650,8 @@ TypeNode RelBinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "Relational operator operates on non-relations (sets of tuples)";
+        (*errOut)
+            << "Relational operator operates on non-relations (sets of tuples)";
       }
       return TypeNode::null();
     }
@@ -679,25 +682,28 @@ TypeNode RelBinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
         return TypeNode::null();
       }
       newTupleTypes.insert(newTupleTypes.end(),
-                          firstTupleTypes.begin(),
-                          firstTupleTypes.end() - 1);
+                           firstTupleTypes.begin(),
+                           firstTupleTypes.end() - 1);
       newTupleTypes.insert(newTupleTypes.end(),
-                          secondTupleTypes.begin() + 1,
-                          secondTupleTypes.end());
+                           secondTupleTypes.begin() + 1,
+                           secondTupleTypes.end());
     }
     else if (n.getKind() == kind::RELATION_PRODUCT)
     {
       newTupleTypes.insert(
           newTupleTypes.end(), firstTupleTypes.begin(), firstTupleTypes.end());
-      newTupleTypes.insert(
-          newTupleTypes.end(), secondTupleTypes.begin(), secondTupleTypes.end());
+      newTupleTypes.insert(newTupleTypes.end(),
+                           secondTupleTypes.begin(),
+                           secondTupleTypes.end());
     }
-    resultType = nodeManager->mkSetType(nodeManager->mkTupleType(newTupleTypes));
+    resultType =
+        nodeManager->mkSetType(nodeManager->mkTupleType(newTupleTypes));
   }
   else
   {
     // otherwise, an abstract relation type
-    resultType = nodeManager->mkSetType(nodeManager->mkAbstractType(kind::TUPLE_TYPE));
+    resultType =
+        nodeManager->mkSetType(nodeManager->mkAbstractType(kind::TUPLE_TYPE));
   }
   return resultType;
 }
@@ -768,7 +774,8 @@ TypeNode RelTransClosureTypeRule::computeType(NodeManager* nodeManager,
       {
         if (errOut)
         {
-          (*errOut) << "transitive closure operates on incompatible binary relation";
+          (*errOut)
+              << "transitive closure operates on incompatible binary relation";
         }
         return TypeNode::null();
       }
@@ -917,7 +924,8 @@ TypeNode RelationGroupTypeRule::computeType(NodeManager* nm,
       {
         if (errOut)
         {
-          (*errOut) << "Index in operator of " << n << " is out of range for the type of its arguments";
+          (*errOut) << "Index in operator of " << n
+                    << " is out of range for the type of its arguments";
         }
         return TypeNode::null();
       }
@@ -969,11 +977,12 @@ TypeNode RelationAggregateTypeRule::computeType(NodeManager* nm,
 
     if (!TupleUtils::checkTypeIndices(tupleType, indices))
     {
-        if (errOut)
-        {
-          (*errOut) << "Index in operator of " << n << " is out of range for the type of its arguments";
-        }
-        return TypeNode::null();
+      if (errOut)
+      {
+        (*errOut) << "Index in operator of " << n
+                  << " is out of range for the type of its arguments";
+      }
+      return TypeNode::null();
     }
 
     TypeNode elementType = setType.getSetElementType();

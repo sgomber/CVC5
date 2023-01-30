@@ -687,7 +687,8 @@ const DType& TypeNode::getDType() const
 
 bool TypeNode::isRelation() const
 {
-  return getKind() == kind::SET_TYPE && (*this)[0].getKind() == kind::TUPLE_TYPE;
+  return getKind() == kind::SET_TYPE
+         && (*this)[0].getKind() == kind::TUPLE_TYPE;
 }
 
 bool TypeNode::isBag() const
