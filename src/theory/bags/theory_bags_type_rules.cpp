@@ -55,16 +55,18 @@ TypeNode BinaryOperatorTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "operator expects a bag, first argument is not"; }
+        (*errOut) << "operator expects a bag, first argument is not";
+      }
       return TypeNode::null();
     }
     if (secondBagType != bagType)
     {
       if (errOut)
       {
-        (*errOut) <<  "Operator " << n.getKind()
-         << " expects two bags of the same type. Found types '" << bagType
-         << "' and '" << secondBagType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects two bags of the same type. Found types '"
+                  << bagType << "' and '" << secondBagType << "'.";
+      }
       return TypeNode::null();
     }
   }
@@ -96,7 +98,8 @@ TypeNode SubBagTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "BAG_SUBBAG operating on non-bag"; }
+        (*errOut) << "BAG_SUBBAG operating on non-bag";
+      }
       return TypeNode::null();
     }
     TypeNode secondBagType = n[1].getType(check);
@@ -104,7 +107,8 @@ TypeNode SubBagTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "BAG_SUBBAG operating on bags of different types"; }
+        (*errOut) << "BAG_SUBBAG operating on bags of different types";
+      }
       return TypeNode::null();
     }
   }
@@ -137,10 +141,11 @@ TypeNode CountTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) <<  "member operating on bags of different types:\n"
-         << "child type:  " << elementType << "\n"
-         << "not type: " << bagType.getBagElementType() << "\n"
-         << "in term : " << n; }
+        (*errOut) << "member operating on bags of different types:\n"
+                  << "child type:  " << elementType << "\n"
+                  << "not type: " << bagType.getBagElementType() << "\n"
+                  << "in term : " << n;
+      }
       return TypeNode::null();
     }
   }
@@ -164,7 +169,8 @@ TypeNode MemberTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "checking for membership in a non-bag"; }
+        (*errOut) << "checking for membership in a non-bag";
+      }
       return TypeNode::null();
     }
     TypeNode elementType = n[0].getType(check);
@@ -201,8 +207,10 @@ TypeNode DuplicateRemovalTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) <<  "Applying BAG_DUPLICATE_REMOVAL on a non-bag argument in term "
-         << n; }
+        (*errOut)
+            << "Applying BAG_DUPLICATE_REMOVAL on a non-bag argument in term "
+            << n;
+      }
       return TypeNode::null();
     }
   }
@@ -227,7 +235,7 @@ TypeNode BagMakeTypeRule::computeType(NodeManager* nm,
       if (errOut)
       {
         (*errOut) << "operands in term " << n << " are " << n.getNumChildren()
-         << ", but BAG_MAKE expects 2 operands.";
+                  << ", but BAG_MAKE expects 2 operands.";
       }
       return TypeNode::null();
     }
@@ -236,7 +244,8 @@ TypeNode BagMakeTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) << "BAG_MAKE expects an integer for " << n[1] << ". Found" << type1;
+        (*errOut) << "BAG_MAKE expects an integer for " << n[1] << ". Found"
+                  << type1;
       }
       return TypeNode::null();
     }
@@ -271,7 +280,9 @@ TypeNode IsSingletonTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "BAG_IS_SINGLETON operator expects a bag, a non-bag is found"; }
+        (*errOut)
+            << "BAG_IS_SINGLETON operator expects a bag, a non-bag is found";
+      }
       return TypeNode::null();
     }
   }
@@ -309,7 +320,8 @@ TypeNode CardTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) <<"cardinality operates on a bag, non-bag object found"; }
+        (*errOut) << "cardinality operates on a bag, non-bag object found";
+      }
       return TypeNode::null();
     }
   }
@@ -333,7 +345,8 @@ TypeNode ChooseTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "BAG_CHOOSE operator expects a bag, a non-bag is found"; }
+        (*errOut) << "BAG_CHOOSE operator expects a bag, a non-bag is found";
+      }
       return TypeNode::null();
     }
   }
@@ -357,7 +370,8 @@ TypeNode FromSetTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) <<"bag.from_set operator expects a set, a non-set is found"; }
+        (*errOut) << "bag.from_set operator expects a set, a non-set is found";
+      }
       return TypeNode::null();
     }
   }
@@ -383,7 +397,8 @@ TypeNode ToSetTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "bag.to_set operator expects a bag, a non-bag is found"; }
+        (*errOut) << "bag.to_set operator expects a bag, a non-bag is found";
+      }
       return TypeNode::null();
     }
   }
@@ -410,7 +425,9 @@ TypeNode BagMapTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) <<"bag.map operator expects a bag in the second argument, a non-bag is found"; }
+        (*errOut) << "bag.map operator expects a bag in the second argument, a "
+                     "non-bag is found";
+      }
       return TypeNode::null();
     }
 
@@ -420,9 +437,11 @@ TypeNode BagMapTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "Operator " << n.getKind() << " expects a function of type  (-> "
-         << elementType << " *) as a first argument. "
-         << "Found a term of type '" << functionType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects a function of type  (-> " << elementType
+                  << " *) as a first argument. "
+                  << "Found a term of type '" << functionType << "'.";
+      }
       return TypeNode::null();
     }
     std::vector<TypeNode> argTypes = functionType.getArgTypes();
@@ -430,9 +449,11 @@ TypeNode BagMapTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "Operator " << n.getKind() << " expects a function of type  (-> "
-         << elementType << " *). "
-         << "Found a function of type '" << functionType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects a function of type  (-> " << elementType
+                  << " *). "
+                  << "Found a function of type '" << functionType << "'.";
+      }
       return TypeNode::null();
     }
   }
@@ -459,7 +480,9 @@ TypeNode BagFilterTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "bag.filter operator expects a bag in the second argument, a non-bag is found"; }
+        (*errOut) << "bag.filter operator expects a bag in the second "
+                     "argument, a non-bag is found";
+      }
       return TypeNode::null();
     }
 
@@ -469,9 +492,11 @@ TypeNode BagFilterTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "Operator " << n.getKind() << " expects a function of type  (-> "
-         << elementType << " Bool) as a first argument. "
-         << "Found a term of type '" << functionType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects a function of type  (-> " << elementType
+                  << " Bool) as a first argument. "
+                  << "Found a term of type '" << functionType << "'.";
+      }
       return TypeNode::null();
     }
     std::vector<TypeNode> argTypes = functionType.getArgTypes();
@@ -569,7 +594,9 @@ TypeNode BagPartitionTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "bag.partition operator expects a bag in the second argument, a non-bag is found"; }
+        (*errOut) << "bag.partition operator expects a bag in the second "
+                     "argument, a non-bag is found";
+      }
       return TypeNode::null();
     }
 
@@ -579,9 +606,11 @@ TypeNode BagPartitionTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "Operator " << n.getKind() << " expects a function of type  (-> "
-         << elementType << " " << elementType << " Bool) as a first argument. "
-         << "Found a term of type '" << functionType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects a function of type  (-> " << elementType << " "
+                  << elementType << " Bool) as a first argument. "
+                  << "Found a term of type '" << functionType << "'.";
+      }
       return TypeNode::null();
     }
     std::vector<TypeNode> argTypes = functionType.getArgTypes();
@@ -591,9 +620,11 @@ TypeNode BagPartitionTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) <<  "Operator " << n.getKind() << " expects a function of type  (-> "
-         << elementType << " " << elementType << " Bool) as a first argument. "
-         << "Found a term of type '" << functionType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects a function of type  (-> " << elementType << " "
+                  << elementType << " Bool) as a first argument. "
+                  << "Found a term of type '" << functionType << "'.";
+      }
       return TypeNode::null();
     }
   }
@@ -618,11 +649,12 @@ TypeNode TableProductTypeRule::computeType(NodeManager* nodeManager,
 
   if (check && !(typeA.isBag() && typeB.isBag()))
   {
-      if (errOut)
-      {
-        (*errOut) <<  "Operator " << n.getKind() << " expects two bags. "
-       << "Found two terms of types '" << typeA << "' and '" << typeB
-       << "' respectively."; }
+    if (errOut)
+    {
+      (*errOut) << "Operator " << n.getKind() << " expects two bags. "
+                << "Found two terms of types '" << typeA << "' and '" << typeB
+                << "' respectively.";
+    }
     return TypeNode::null();
   }
 
@@ -631,11 +663,13 @@ TypeNode TableProductTypeRule::computeType(NodeManager* nodeManager,
 
   if (check && !(elementAType.isTuple() && elementBType.isTuple()))
   {
-      if (errOut)
-      {
-        (*errOut) <<  "Operator " << n.getKind() << " expects two tables (bags of tuples). "
-       << "Found two terms of types '" << typeA << "' and '" << typeB
-       << "' respectively."; }
+    if (errOut)
+    {
+      (*errOut) << "Operator " << n.getKind()
+                << " expects two tables (bags of tuples). "
+                << "Found two terms of types '" << typeA << "' and '" << typeB
+                << "' respectively.";
+    }
     return TypeNode::null();
   }
 
@@ -665,8 +699,9 @@ TypeNode TableProjectTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) <<  "operands in term " << n << " are " << n.getNumChildren()
-         << ", but TABLE_PROJECT expects 1 operand."; }
+        (*errOut) << "operands in term " << n << " are " << n.getNumChildren()
+                  << ", but TABLE_PROJECT expects 1 operand.";
+      }
       return TypeNode::null();
     }
 
@@ -674,8 +709,9 @@ TypeNode TableProjectTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) <<  "TABLE_PROJECT operator expects a table. Found '" << n[0]
-         << "' of type '" << bagType << "'."; }
+        (*errOut) << "TABLE_PROJECT operator expects a table. Found '" << n[0]
+                  << "' of type '" << bagType << "'.";
+      }
       return TypeNode::null();
     }
 
@@ -684,8 +720,9 @@ TypeNode TableProjectTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) <<  "TABLE_PROJECT operator expects a table. Found '" << n[0]
-         << "' of type '" << bagType << "'.";}
+        (*errOut) << "TABLE_PROJECT operator expects a table. Found '" << n[0]
+                  << "' of type '" << bagType << "'.";
+      }
       return TypeNode::null();
     }
 
@@ -697,11 +734,12 @@ TypeNode TableProjectTypeRule::computeType(NodeManager* nm,
     {
       if (index >= numArgs)
       {
-      if (errOut)
-      {
-        (*errOut) <<  "Index " << index << " in term " << n << " is >= " << numArgs
-           << " which is the number of columns in " << n[0] << ".";
-      }
+        if (errOut)
+        {
+          (*errOut) << "Index " << index << " in term " << n
+                    << " is >= " << numArgs
+                    << " which is the number of columns in " << n[0] << ".";
+        }
         return TypeNode::null();
       }
     }
@@ -736,8 +774,9 @@ TypeNode TableAggregateTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) <<  "TABLE_PROJECT operator expects a table. Found '" << n[2]
-         << "' of type '" << bagType << "'."; }
+        (*errOut) << "TABLE_PROJECT operator expects a table. Found '" << n[2]
+                  << "' of type '" << bagType << "'.";
+      }
       return TypeNode::null();
     }
 
@@ -746,8 +785,9 @@ TypeNode TableAggregateTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) <<  "TABLE_PROJECT operator expects a table. Found '" << n[2]
-         << "' of type '" << bagType << "'."; }
+        (*errOut) << "TABLE_PROJECT operator expects a table. Found '" << n[2]
+                  << "' of type '" << bagType << "'.";
+      }
       return TypeNode::null();
     }
 
@@ -759,9 +799,11 @@ TypeNode TableAggregateTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) <<  "Operator " << n.getKind() << " expects a function of type  (-> "
-         << elementType << " T T) as a first argument. "
-         << "Found a term of type '" << functionType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects a function of type  (-> " << elementType
+                  << " T T) as a first argument. "
+                  << "Found a term of type '" << functionType << "'.";
+      }
       return TypeNode::null();
     }
     std::vector<TypeNode> argTypes = functionType.getArgTypes();
@@ -771,17 +813,21 @@ TypeNode TableAggregateTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) <<  "Operator " << n.getKind() << " expects a function of type  (-> "
-         << elementType << " T T). "
-         << "Found a function of type '" << functionType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects a function of type  (-> " << elementType
+                  << " T T). "
+                  << "Found a function of type '" << functionType << "'.";
+      }
       return TypeNode::null();
     }
     if (rangeType != initialValueType)
     {
       if (errOut)
       {
-        (*errOut) << "Operator " << n.getKind() << " expects an initial value of type "
-         << rangeType << ". Found a term of type '" << initialValueType << "'."; }
+        (*errOut) << "Operator " << n.getKind()
+                  << " expects an initial value of type " << rangeType
+                  << ". Found a term of type '" << initialValueType << "'.";
+      }
       return TypeNode::null();
     }
   }
@@ -812,9 +858,10 @@ TypeNode TableJoinTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) <<  "TABLE_JOIN operator expects two tables. Found '" << n[0] << "', '"
-         << n[1] << "' of types '" << aType << "', '" << bType
-         << "' respectively. "; }
+        (*errOut) << "TABLE_JOIN operator expects two tables. Found '" << n[0]
+                  << "', '" << n[1] << "' of types '" << aType << "', '"
+                  << bType << "' respectively. ";
+      }
       return TypeNode::null();
     }
 
@@ -824,9 +871,10 @@ TypeNode TableJoinTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) <<  "TABLE_JOIN operator expects two tables. Found '" << n[0] << "', '"
-         << n[1] << "' of types '" << aType << "', '" << bType
-         << "' respectively. "; }
+        (*errOut) << "TABLE_JOIN operator expects two tables. Found '" << n[0]
+                  << "', '" << n[1] << "' of types '" << aType << "', '"
+                  << bType << "' respectively. ";
+      }
       return TypeNode::null();
     }
 
@@ -834,8 +882,10 @@ TypeNode TableJoinTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) <<  "TABLE_JOIN operator expects even number of indices. Found "
-         << indices.size() << " in term " << n; }
+        (*errOut)
+            << "TABLE_JOIN operator expects even number of indices. Found "
+            << indices.size() << " in term " << n;
+      }
       return TypeNode::null();
     }
     auto [aIndices, bIndices] = BagsUtils::splitTableJoinIndices(n);
@@ -849,13 +899,14 @@ TypeNode TableJoinTypeRule::computeType(NodeManager* nm,
     {
       if (aTypes[aIndices[i]] != bTypes[bIndices[i]])
       {
-      if (errOut)
-      {
-        (*errOut) <<  "TABLE_JOIN operator expects column " << aIndices[i]
-           << " in table " << n[0] << " to match column " << bIndices[i]
-           << " in table " << n[1] << ". But their types are "
-           << aTypes[aIndices[i]] << " and " << bTypes[bIndices[i]]
-           << "' respectively. "; }
+        if (errOut)
+        {
+          (*errOut) << "TABLE_JOIN operator expects column " << aIndices[i]
+                    << " in table " << n[0] << " to match column "
+                    << bIndices[i] << " in table " << n[1]
+                    << ". But their types are " << aTypes[aIndices[i]]
+                    << " and " << bTypes[bIndices[i]] << "' respectively. ";
+        }
         return TypeNode::null();
       }
     }
@@ -888,8 +939,9 @@ TypeNode TableGroupTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) <<  "TABLE_GROUP operator expects a table. Found '" << n[0]
-         << "' of type '" << bagType << "'."; }
+        (*errOut) << "TABLE_GROUP operator expects a table. Found '" << n[0]
+                  << "' of type '" << bagType << "'.";
+      }
       return TypeNode::null();
     }
 
@@ -898,8 +950,9 @@ TypeNode TableGroupTypeRule::computeType(NodeManager* nm,
     {
       if (errOut)
       {
-        (*errOut) <<  "TABLE_GROUP operator expects a table. Found '" << n[0]
-         << "' of type '" << bagType << "'."; }
+        (*errOut) << "TABLE_GROUP operator expects a table. Found '" << n[0]
+                  << "' of type '" << bagType << "'.";
+      }
       return TypeNode::null();
     }
 
