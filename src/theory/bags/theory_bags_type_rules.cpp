@@ -130,8 +130,9 @@ TypeNode CountTypeRule::computeType(NodeManager* nodeManager,
   {
     if (!bagType.isBag())
     {
-      throw TypeCheckingExceptionPrivate(
-          n, "checking for membership in a non-bag");
+      if (errOut)
+      {
+        (*errOut) << "checking for membership in a non-bag"; }
       return TypeNode::null();
     }
     TypeNode elementType = n[0].getType(check);
@@ -504,11 +505,11 @@ TypeNode BagFilterTypeRule::computeType(NodeManager* nodeManager,
     if (!(argTypes.size() == 1 && argTypes[0] == elementType
           && functionType.getRangeType() == nm->booleanType()))
     {
-      std::stringstream ss;
-      ss << "Operator " << n.getKind() << " expects a function of type  (-> "
+      if (errOut)
+      {
+        (*errOut) << "Operator " << n.getKind() << " expects a function of type  (-> "
          << elementType << " Bool). "
-         << "Found a function of type '" << functionType << "'.";
-      throw TypeCheckingExceptionPrivate(n, ss.str());
+         << "Found a function of type '" << functionType << "'."; }
       return TypeNode::null();
     }
   }
@@ -532,10 +533,9 @@ TypeNode BagFoldTypeRule::computeType(NodeManager* nodeManager,
   {
     if (!bagType.isBag())
     {
-      throw TypeCheckingExceptionPrivate(
-          n,
-          "bag.fold operator expects a bag in the third argument, "
-          "a non-bag is found");
+      if (errOut)
+      {
+        (*errOut) << "bag.fold operator expects a bag in the third argument, a non-bag is found"; }
       return TypeNode::null();
     }
 
@@ -543,11 +543,11 @@ TypeNode BagFoldTypeRule::computeType(NodeManager* nodeManager,
 
     if (!(functionType.isFunction()))
     {
-      std::stringstream ss;
-      ss << "Operator " << n.getKind() << " expects a function of type  (-> "
+      if (errOut)
+      {
+        (*errOut) << "Operator " << n.getKind() << " expects a function of type  (-> "
          << elementType << " T2 T2) as a first argument. "
-         << "Found a term of type '" << functionType << "'.";
-      throw TypeCheckingExceptionPrivate(n, ss.str());
+         << "Found a term of type '" << functionType << "'."; }
       return TypeNode::null();
     }
     std::vector<TypeNode> argTypes = functionType.getArgTypes();
@@ -555,19 +555,19 @@ TypeNode BagFoldTypeRule::computeType(NodeManager* nodeManager,
     if (!(argTypes.size() == 2 && argTypes[0] == elementType
           && argTypes[1] == rangeType))
     {
-      std::stringstream ss;
-      ss << "Operator " << n.getKind() << " expects a function of type  (-> "
+      if (errOut)
+      {
+        (*errOut) << "Operator " << n.getKind() << " expects a function of type  (-> "
          << elementType << " T2 T2). "
-         << "Found a function of type '" << functionType << "'.";
-      throw TypeCheckingExceptionPrivate(n, ss.str());
+         << "Found a function of type '" << functionType << "'."; }
       return TypeNode::null();
     }
     if (rangeType != initialValueType)
     {
-      std::stringstream ss;
-      ss << "Operator " << n.getKind() << " expects an initial value of type "
-         << rangeType << ". Found a term of type '" << initialValueType << "'.";
-      throw TypeCheckingExceptionPrivate(n, ss.str());
+      if (errOut)
+      {
+        (*errOut) << "Operator " << n.getKind() << " expects an initial value of type "
+         << rangeType << ". Found a term of type '" << initialValueType << "'."; }
       return TypeNode::null();
     }
   }
