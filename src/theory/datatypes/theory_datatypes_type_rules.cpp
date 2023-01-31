@@ -680,6 +680,7 @@ TypeNode TupleProjectTypeRule::preComputeType(NodeManager* nm, TNode n)
 {
   return TypeNode::null();
 }
+
 TypeNode TupleProjectTypeRule::computeType(NodeManager* nm,
                                            TNode n,
                                            bool check,
