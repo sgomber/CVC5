@@ -970,6 +970,21 @@ Node SolverEngine::getValue(const Node& t) const
   ensureWellFormedTerm(t, "get value");
   Trace("smt") << "SMT getValue(" << t << ")" << endl;
   TypeNode expectedType = t.getType();
+  
+  // optimization: if it is a SAT literal, look up value immediately
+  if (expectedType.isBoolean())
+  {
+    PropEngine* pe = d_smtSolver->getPropEngine();
+    if (pe->isSatLiteral(t))
+    {
+      bool value;
+      if (pe->hasValue(t, value))
+      {
+        Trace("ajr-temp") << "getValue SAT!" << std::endl;
+        return NodeManager::currentNM()->mkConst(value);
+      }
+    }
+  }
 
   // Substitute out any abstract values in node.
   Node tt = d_absValues->substituteAbstractValues(t);

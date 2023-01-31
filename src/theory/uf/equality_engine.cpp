@@ -937,6 +937,7 @@ void EqualityEngine::backtrack() {
   }
 
   if (d_nodes.size() > d_nodesCount) {
+    Trace("ajr-temp") << "Resize nodes " << d_nodes.size() << " to " << d_nodesCount << std::endl;
     // Go down the nodes, check the application nodes and remove them from use-lists
     for(int i = d_nodes.size() - 1, i_end = (int)d_nodesCount; i >= i_end; -- i) {
       // Remove from the node -> id map
