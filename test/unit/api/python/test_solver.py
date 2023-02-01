@@ -15,7 +15,7 @@ import pytest
 import cvc5
 import sys
 
-from cvc5 import Kind, BlockModelsMode, RoundingMode, LearnedLitType, ProofComponent
+from cvc5 import Kind, SortKind, BlockModelsMode, RoundingMode, LearnedLitType, ProofComponent
 
 
 @pytest.fixture
@@ -283,6 +283,16 @@ def test_mk_sequence_sort(solver):
     slv.mkSequenceSort(solver.getIntegerSort())
 
 
+
+def test_mk_abstract_sort(solver):
+    solver.mkAbstractSort(SortKind.ARRAY_SORT)
+    solver.mkAbstractSort(SortKind.BITVECTOR_SORT)
+    solver.mkAbstractSort(SortKind.TUPLE_SORT)
+    solver.mkAbstractSort(SortKind.SET_SORT)
+    with pytest.raises(RuntimeError):
+        solver.mkAbstractSort(SortKind.BOOLEAN_SORT)
+
+
 def test_mk_uninterpreted_sort(solver):
     solver.mkUninterpretedSort("u")
     solver.mkUninterpretedSort("")
@@ -448,7 +458,8 @@ def test_mk_cardinality_constraint(solver):
 def test_mk_empty_set(solver):
     slv = cvc5.Solver()
     s = solver.mkSetSort(solver.getBooleanSort())
-    solver.mkEmptySet(cvc5.Sort(solver))
+    with pytest.raises(RuntimeError):
+        solver.mkEmptySet(cvc5.Sort(solver))
     solver.mkEmptySet(s)
     with pytest.raises(RuntimeError):
         solver.mkEmptySet(solver.getBooleanSort())
@@ -458,7 +469,8 @@ def test_mk_empty_set(solver):
 def test_mk_empty_bag(solver):
     slv = cvc5.Solver()
     s = solver.mkBagSort(solver.getBooleanSort())
-    solver.mkEmptyBag(cvc5.Sort(solver))
+    with pytest.raises(RuntimeError):
+        solver.mkEmptyBag(cvc5.Sort(solver))
     solver.mkEmptyBag(s)
     with pytest.raises(RuntimeError):
         solver.mkEmptyBag(solver.getBooleanSort())
@@ -788,6 +800,7 @@ def test_mk_term(solver):
         [s_bool, s_bool, s_bool], s_bool))
     solver.mkTerm(Kind.HO_APPLY, t_fun, t_bool, t_bool, t_bool)
     solver.mkTerm(solver.mkOp(Kind.HO_APPLY), t_fun, t_bool, t_bool, t_bool)
+    
 
 def test_mk_term_from_op(solver):
     bv32 = solver.mkBitVectorSort(32)
