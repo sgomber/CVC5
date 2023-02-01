@@ -20,6 +20,7 @@
 
 #include "smt/smt_driver.h"
 #include "util/result.h"
+#include "expr/subs.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -45,10 +46,16 @@ class SmtDriverAbstractRefine : public SmtDriver
   Node booleanAbstractionOf(const Node& n);
   /** check model */
   bool checkModel();
+  /** get abstraction variable for */
+  Node getAbstractionVariableFor(const Node& n);
   /** Initialized */
   bool d_initialized;
   /** The assertions */
   std::vector<Node> d_currAssertions;
+  /** Mapping terms to abstraction variables */
+  std::map<Node, Node> d_termToAVar;
+  /** Reverse of above */
+  std::map<Node, Node> d_avarToTerm;
 };
 
 }  // namespace smt

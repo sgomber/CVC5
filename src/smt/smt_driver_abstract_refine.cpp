@@ -18,6 +18,7 @@
 #include "prop/prop_engine.h"
 #include "smt/env.h"
 #include "smt/smt_solver.h"
+#include "expr/node_algorithm.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -36,7 +37,7 @@ Result SmtDriverAbstractRefine::checkSatNext(
   d_smt.assertToInternal(ap);
   Result result = d_smt.checkSatInternal();
   // check again if we didn't solve and there are learned literals
-  if (result.getStatus() == Result::SAT)
+  if (result.getStatus() != Result::UNSAT)
   {
     if (!checkModel())
     {
@@ -67,9 +68,66 @@ void SmtDriverAbstractRefine::getNextAssertions(
   }
 }
 
-Node SmtDriverAbstractRefine::booleanAbstractionOf(const Node& n) { return n; }
+Node SmtDriverAbstractRefine::booleanAbstractionOf(const Node& n) {
+  NodeManager * nm = NodeManager::currentNM();
+  std::unordered_map<TNode, Node> visited;
+  std::unordered_map<TNode, Node>::iterator it;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do {
+    cur = visit.back();
+    visit.pop_back();
+    it = visited.find(cur);
+    if (it == visited.end()) {
+      if (!expr::isBooleanConnective(cur))
+      {
+        visited[cur] = getAbstractionVariableFor(cur);
+      }
+      else
+      {
+        visited[cur] = Node::null();
+        visit.push_back(cur);
+        for (const Node& cn : cur) {
+          visit.push_back(cn);
+        }
+      }
+    } else if (it->second.isNull()) {
+      Node ret = cur;
+      bool childChanged = false;
+      std::vector<Node> children;
+      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED) {
+        children.push_back(cur.getOperator());
+      }
+      for (const Node& cn : cur) {
+        it = visited.find(cn);
+        Assert(it != visited.end());
+        Assert(!it->second.isNull());
+        childChanged = childChanged || cn != it->second;
+        children.push_back(it->second);
+      }
+      if (childChanged) {
+        ret = nm->mkNode(cur.getKind(), children);
+      }
+      visited[cur] = ret;
+    }
+  } while (!visit.empty());
+  Assert(visited.find(n) != visited.end());
+  Assert(!visited.find(n)->second.isNull());
+  return visited[n];
+}
 
-bool SmtDriverAbstractRefine::checkModel() { return true; }
+bool SmtDriverAbstractRefine::checkModel() 
+{
+  Subs s;
+  
+  return true;
+}
+
+Node SmtDriverAbstractRefine::getAbstractionVariableFor(const Node& n)
+{
+  return Node::null();
+}
 
 }  // namespace smt
 }  // namespace cvc5::internal
