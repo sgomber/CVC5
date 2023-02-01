@@ -34,11 +34,12 @@ class SmtDriverAbstractRefine : public SmtDriver
 {
  public:
   SmtDriverAbstractRefine(Env& env, SmtSolver& smt, ContextManager* ctx);
-  virtual ~SmtDriverAbstractRefine(){}
+  virtual ~SmtDriverAbstractRefine() {}
 
  protected:
   Result checkSatNext(preprocessing::AssertionPipeline& ap) override;
   void getNextAssertions(preprocessing::AssertionPipeline& ap) override;
+
  private:
   /** return the Boolean abstraction of n */
   Node booleanAbstractionOf(const Node& n);

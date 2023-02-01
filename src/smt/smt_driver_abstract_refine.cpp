@@ -22,13 +22,15 @@
 namespace cvc5::internal {
 namespace smt {
 
-SmtDriverAbstractRefine::SmtDriverAbstractRefine(Env& env, SmtSolver& smt, ContextManager* ctx) :
-SmtDriver(env, smt, ctx), d_initialized(false)
+SmtDriverAbstractRefine::SmtDriverAbstractRefine(Env& env,
+                                                 SmtSolver& smt,
+                                                 ContextManager* ctx)
+    : SmtDriver(env, smt, ctx), d_initialized(false)
 {
-   
 }
 
-Result SmtDriverAbstractRefine::checkSatNext(preprocessing::AssertionPipeline& ap)
+Result SmtDriverAbstractRefine::checkSatNext(
+    preprocessing::AssertionPipeline& ap)
 {
   d_smt.preprocess(ap);
   d_smt.assertToInternal(ap);
@@ -44,7 +46,8 @@ Result SmtDriverAbstractRefine::checkSatNext(preprocessing::AssertionPipeline& a
   return result;
 }
 
-void SmtDriverAbstractRefine::getNextAssertions(preprocessing::AssertionPipeline& ap)
+void SmtDriverAbstractRefine::getNextAssertions(
+    preprocessing::AssertionPipeline& ap)
 {
   if (!d_initialized)
   {
@@ -58,21 +61,15 @@ void SmtDriverAbstractRefine::getNextAssertions(preprocessing::AssertionPipeline
     d_initialized = true;
   }
   // take all assertions
-   for (const Node& a : d_currAssertions)
-   {
-      ap.push_back(a, true);
-   }
+  for (const Node& a : d_currAssertions)
+  {
+    ap.push_back(a, true);
+  }
 }
 
-Node SmtDriverAbstractRefine::booleanAbstractionOf(const Node& n)
-{
-   return n;
-}
+Node SmtDriverAbstractRefine::booleanAbstractionOf(const Node& n) { return n; }
 
-bool SmtDriverAbstractRefine::checkModel()
-{
-   return true;
-}
+bool SmtDriverAbstractRefine::checkModel() { return true; }
 
 }  // namespace smt
 }  // namespace cvc5::internal
