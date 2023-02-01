@@ -15,6 +15,10 @@
 
 #include "smt/smt_driver_abstract_refine.h"
 
+#include "prop/prop_engine.h"
+#include "smt/env.h"
+#include "smt/smt_solver.h"
+
 namespace cvc5::internal {
 namespace smt {
 
@@ -23,7 +27,6 @@ SmtDriver(env, smt, ctx), d_initialized(false)
 {
    
 }
-SmtDriverAbstractRefine::~SmtDriverAbstractRefine(){}
 
 Result SmtDriverAbstractRefine::checkSatNext(preprocessing::AssertionPipeline& ap)
 {
