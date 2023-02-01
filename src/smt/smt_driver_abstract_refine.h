@@ -46,8 +46,8 @@ class SmtDriverAbstractRefine : public SmtDriver
   bool checkModel();
   /** Initialized */
   bool d_initialized;
-   /** The assertions */
-   std::vector<Node> d_currAssertions;
+  /** The assertions */
+  std::vector<Node> d_currAssertions;
 };
 
 }  // namespace smt

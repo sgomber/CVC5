@@ -48,19 +48,20 @@ void SmtDriverAbstractRefine::getNextAssertions(preprocessing::AssertionPipeline
 {
   if (!d_initialized)
   {
-    // On the first time, we take all assertions. Notice that this driver
-    // does not handle incremental mode yet, so we always take all assertions
-    // here.
+    // On the first time, we take the Boolean abstraction of all assertions.
     Assertions& as = d_smt.getAssertions();
     const context::CDList<Node>& al = as.getAssertionList();
     for (const Node& a : al)
     {
-      ap.push_back(booleanAbstractionOf(a), true);
+      d_currAssertions.push_back(booleanAbstractionOf(a));
     }
     d_initialized = true;
-    return;
   }
-  // otherwise 
+  // take all assertions
+   for (const Node& a : d_currAssertions)
+   {
+      ap.push_back(a, true);
+   }
 }
 
 Node SmtDriverAbstractRefine::booleanAbstractionOf(const Node& n)
