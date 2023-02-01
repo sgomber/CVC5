@@ -195,10 +195,5 @@ void Assertions::ensureBoolean(const Node& n)
   }
 }
 
-void Assertions::enableProofs(smt::PreprocessProofGenerator* pppg)
-{
-  d_assertions.enableProofs(pppg);
-}
-
 }  // namespace smt
 }  // namespace cvc5::internal

@@ -36,13 +36,11 @@ SmtDriverMinAssert::SmtDriverMinAssert(Env& env,
   d_false = NodeManager::currentNM()->mkConst(false);
 }
 
-Result SmtDriverMinAssert::checkSatNext()
+Result SmtDriverMinAssert::checkSatNext(preprocessing::AssertionPipeline& ap)
 {
   Trace("smt-min-assert") << "--- checkSatNext #models=" << d_modelValues.size()
                           << std::endl;
   Trace("smt-min-assert") << "checkSatNext: preprocess" << std::endl;
-  preprocessing::AssertionPipeline& ap =
-      d_smt.getAssertions().getAssertionPipeline();
   d_smt.preprocess(ap);
   if (!d_initialized)
   {
@@ -87,7 +85,7 @@ Result SmtDriverMinAssert::checkSatNext()
   return result;
 }
 
-void SmtDriverMinAssert::getNextAssertions(Assertions& as)
+void SmtDriverMinAssert::getNextAssertions(preprocessing::AssertionPipeline& ap)
 {
   if (!d_initialized)
   {
@@ -161,8 +159,7 @@ void SmtDriverMinAssert::getNextAssertions(Assertions& as)
                           << std::endl;
 
   // now have a list of assertions to include
-  preprocessing::AssertionPipeline& apr = as.getAssertionPipeline();
-  preprocessing::IteSkolemMap& ismr = apr.getIteSkolemMap();
+  preprocessing::IteSkolemMap& ismr = ap.getIteSkolemMap();
   for (std::pair<const size_t, AssertInfo>& a : d_ainfo)
   {
     Assert(a.first < d_ppAsserts.size());
@@ -171,9 +168,9 @@ void SmtDriverMinAssert::getNextAssertions(Assertions& as)
     // carry the skolem mapping as well
     if (!a.second.d_skolem.isNull())
     {
-      ismr[apr.size()] = a.second.d_skolem;
+      ismr[ap.size()] = a.second.d_skolem;
     }
-    apr.push_back(pa);
+    ap.push_back(pa);
   }
   Trace("smt-min-assert")
       << "...finished get next assertions, #current assertions = "

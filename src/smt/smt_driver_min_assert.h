@@ -33,8 +33,8 @@ class SmtDriverMinAssert : public SmtDriver
   SmtDriverMinAssert(Env& env, SmtSolver& smt, ContextManager* ctx);
 
  protected:
-  Result checkSatNext() override;
-  void getNextAssertions(Assertions& as) override;
+  Result checkSatNext(preprocessing::AssertionPipeline& ap) override;
+  void getNextAssertions(preprocessing::AssertionPipeline& ap) override;
 
  private:
   /** initialize assertions */
