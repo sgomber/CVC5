@@ -45,7 +45,7 @@ class SmtDriverAbstractRefine : public SmtDriver
   /** return the Boolean abstraction of n */
   Node booleanAbstractionOf(const Node& n);
   /** check model */
-  bool checkModel();
+  Result checkResult(const Result& result);
   /** get abstraction variable for */
   Node getAbstractionVariableFor(const Node& n);
   /** Initialized */

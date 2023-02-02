@@ -20,6 +20,7 @@
 #include "prop/prop_engine.h"
 #include "smt/env.h"
 #include "smt/smt_solver.h"
+#include "theory/theory_engine.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -40,10 +41,7 @@ Result SmtDriverAbstractRefine::checkSatNext(
   // check again if we didn't solve and there are learned literals
   if (result.getStatus() != Result::UNSAT)
   {
-    if (!checkModel())
-    {
-      return Result(Result::UNKNOWN, REQUIRES_CHECK_AGAIN);
-    }
+    return checkResult(result);
   }
   return result;
 }
@@ -61,6 +59,7 @@ void SmtDriverAbstractRefine::getNextAssertions(
       d_currAssertions.push_back(booleanAbstractionOf(a));
     }
     d_initialized = true;
+    Trace("smt-abs-refine") << "SmtDriverAbstractRefine: initialize with " << d_avarToTerm.size() << " variables." << std::endl;
   }
   // take all assertions
   for (const Node& a : d_currAssertions)
@@ -127,11 +126,27 @@ Node SmtDriverAbstractRefine::booleanAbstractionOf(const Node& n)
   return visited[n];
 }
 
-bool SmtDriverAbstractRefine::checkModel()
+Result SmtDriverAbstractRefine::checkResult(const Result& result)
 {
-  Subs s;
-
-  return true;
+  bool success;
+  std::unordered_set<TNode> rasserts = d_smt.getTheoryEngine()->getRelevantAssertions(success);
+  // maybe all assertions are not abstracted? if so, we are truly SAT
+  if (!success)
+  {
+    // failed to 
+    return Result(Result::UNKNOWN);
+  }
+  if (TraceIsOn("smt-abs-refine"))
+  {
+    Trace("smt-abs-refine") << "Check result with relevant assertions:" << std::endl;
+    for (TNode a : rasserts)
+    {
+      Trace("smt-abs-refine") << "- " << a << std::endl;
+    }
+  }
+  
+  
+  return Result(Result::UNKNOWN);
 }
 
 Node SmtDriverAbstractRefine::getAbstractionVariableFor(const Node& n)

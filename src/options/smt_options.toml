@@ -521,3 +521,11 @@ name   = "SMT Layer"
   type       = "bool"
   default    = "false"
   help       = "use minimal assertion algorithm for checking satisfiability"
+
+[[option]]
+  name       = "smtAbsRefine"
+  category   = "expert"
+  long       = "smt-abs-refine"
+  type       = "bool"
+  default    = "false"
+  help       = "use abstraction refinement for checking satisfiability"

@@ -56,6 +56,7 @@
 #include "smt/quant_elim_solver.h"
 #include "smt/set_defaults.h"
 #include "smt/smt_driver.h"
+#include "smt/smt_driver_abstract_refine.h"
 #include "smt/smt_driver_deep_restarts.h"
 #include "smt/smt_driver_min_assert.h"
 #include "smt/smt_solver.h"
@@ -191,6 +192,11 @@ void SolverEngine::finishInit()
   else if (options().smt.smtMinAssert)
   {
     d_smtDriver.reset(new SmtDriverMinAssert(
+        *d_env.get(), *d_smtSolver.get(), d_ctxManager.get()));
+  }
+  else if (options().smt.smtAbsRefine)
+  {
+    d_smtDriver.reset(new SmtDriverAbstractRefine(
         *d_env.get(), *d_smtSolver.get(), d_ctxManager.get()));
   }
   else
