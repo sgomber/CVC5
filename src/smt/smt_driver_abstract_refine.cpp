@@ -19,6 +19,7 @@
 #include "smt/env.h"
 #include "smt/smt_solver.h"
 #include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -126,7 +127,16 @@ bool SmtDriverAbstractRefine::checkModel()
 
 Node SmtDriverAbstractRefine::getAbstractionVariableFor(const Node& n)
 {
-  return Node::null();
+  std::map<Node, Node>::iterator it = d_termToAVar.find(n);
+  if (it != d_termToAVar.end())
+  {
+    return it->second;
+  }
+  SkolemManager * skm = NodeManager::currentNM()->getSkolemManager();
+  Node k = skm->mkDummySkolem("a", n.getType());
+  d_termToAVar[n] = k;
+  d_avarToTerm[k] = n;
+  return k;
 }
 
 }  // namespace smt
