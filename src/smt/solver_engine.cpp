@@ -1110,6 +1110,20 @@ std::string SolverEngine::getModel(const std::vector<TypeNode>& declaredSorts,
   return ssm.str();
 }
 
+std::unordered_set<TNode> SolverEngine::getRelevantAssertions(bool& success)
+{
+  // must be in SAT mode
+  if (d_state->getMode() != SmtMode::SAT
+      && d_state->getMode() != SmtMode::SAT_UNKNOWN)
+  {
+    std::stringstream ss;
+    ss << "Cannot get relevant assertions unless immediately preceded by SAT or UNKNOWN response.";
+    throw RecoverableModalException(ss.str().c_str());
+  }
+  TheoryEngine* te = d_smtSolver->getTheoryEngine();
+  return te->getRelevantAssertions(success);
+}
+
 void SolverEngine::blockModel(modes::BlockModelsMode mode)
 {
   Trace("smt") << "SMT blockModel()" << endl;
