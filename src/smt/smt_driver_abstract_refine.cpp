@@ -20,8 +20,8 @@
 #include "prop/prop_engine.h"
 #include "smt/env.h"
 #include "smt/smt_solver.h"
-#include "theory/theory_engine.h"
 #include "theory/smt_engine_subsolver.h"
+#include "theory/theory_engine.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -38,7 +38,8 @@ Result SmtDriverAbstractRefine::checkSatNext(
 {
   d_smt.preprocess(ap);
   d_smt.assertToInternal(ap);
-  Trace("smt-abs-refine") << "SmtDriverAbstractRefine::checkSatNext" << std::endl;
+  Trace("smt-abs-refine") << "SmtDriverAbstractRefine::checkSatNext"
+                          << std::endl;
   Result result = d_smt.checkSatInternal();
   Trace("smt-abs-refine") << "...returns " << result << std::endl;
   // check again if we didn't solve and there are learned literals
@@ -84,7 +85,7 @@ Node SmtDriverAbstractRefine::booleanAbstractionOf(const Node& n)
   do
   {
     cur = visit.back();
-    Assert (cur.getType().isBoolean());
+    Assert(cur.getType().isBoolean());
     visit.pop_back();
     it = visited.find(cur);
     if (it == visited.end())
@@ -138,14 +139,16 @@ Node SmtDriverAbstractRefine::booleanAbstractionOf(const Node& n)
 
 Result SmtDriverAbstractRefine::checkResult(const Result& result)
 {
-  Trace("smt-abs-refine") << "SmtDriverAbstractRefine::checkResult: " << result << std::endl;
+  Trace("smt-abs-refine") << "SmtDriverAbstractRefine::checkResult: " << result
+                          << std::endl;
   bool success;
   std::unordered_set<TNode> rasserts =
       d_smt.getTheoryEngine()->getRelevantAssertions(success);
   // maybe all assertions are not abstracted? if so, we are truly SAT
   if (!success)
   {
-      Trace("smt-abs-refine") << "...return unknown (failed to get relevant assertions)" << std::endl;
+    Trace("smt-abs-refine")
+        << "...return unknown (failed to get relevant assertions)" << std::endl;
     // failed to
     return Result(Result::UNKNOWN);
   }
@@ -155,7 +158,7 @@ Result SmtDriverAbstractRefine::checkResult(const Result& result)
   std::map<Node, Node>::iterator it;
   for (TNode a : rasserts)
   {
-    bool apol = a.getKind()!=kind::NOT;
+    bool apol = a.getKind() != kind::NOT;
     Node atom = apol ? a : a[0];
     it = d_avarToTerm.find(atom);
     if (it != d_avarToTerm.end())
@@ -163,7 +166,7 @@ Result SmtDriverAbstractRefine::checkResult(const Result& result)
       wasAbstract = true;
       query.push_back(apol ? it->second : it->second.notNode());
     }
-    else if (d_elimAVar.find(a)==d_elimAVar.end())
+    else if (d_elimAVar.find(a) == d_elimAVar.end())
     {
       query.push_back(a);
     }
@@ -178,12 +181,14 @@ Result SmtDriverAbstractRefine::checkResult(const Result& result)
     if (it != d_avarToTerm.end())
     {
       wasAbstract = true;
-      query.push_back(s.second.getConst<bool>() ? it->second : it->second.notNode());
+      query.push_back(s.second.getConst<bool>() ? it->second
+                                                : it->second.notNode());
     }
   }
   if (!wasAbstract)
   {
-      Trace("smt-abs-refine") << "...return sat (concrete assignment from main solver)" << std::endl;
+    Trace("smt-abs-refine")
+        << "...return sat (concrete assignment from main solver)" << std::endl;
     // if nothing was abstract, return SAT
     return Result(Result::SAT);
   }
@@ -208,13 +213,13 @@ Result SmtDriverAbstractRefine::checkResult(const Result& result)
   }
   Result rsub = checkAssignment->checkSat();
   Trace("smt-abs-refine") << "...result: " << rsub << std::endl;
-  if (rsub.getStatus()==Result::SAT)
+  if (rsub.getStatus() == Result::SAT)
   {
     // the concrete version is SAT, we are done
     Trace("smt-abs-refine") << "...return SAT (from subsolver)" << std::endl;
     return rsub;
   }
-  if (rsub.getStatus()==Result::UNSAT)
+  if (rsub.getStatus() == Result::UNSAT)
   {
     // get the unsat core and unabstract those in the unsat core
     std::vector<Node> uasserts;
@@ -226,9 +231,9 @@ Result SmtDriverAbstractRefine::checkResult(const Result& result)
     for (const Node& u : uasserts)
     {
       Trace("smt-abs-refine") << "- " << u;
-      Node atom = u.getKind()==kind::NOT ? u[0] : u;
+      Node atom = u.getKind() == kind::NOT ? u[0] : u;
       it = d_termToAVar.find(atom);
-      if (it!=d_termToAVar.end())
+      if (it != d_termToAVar.end())
       {
         Trace("smt-abs-refine") << ", corresponding to " << it->second;
         subs.add(it->second, atom);
@@ -240,10 +245,11 @@ Result SmtDriverAbstractRefine::checkResult(const Result& result)
     }
     if (subs.empty())
     {
-      Trace("smt-abs-refine") << "...return unknown (no refinement from unsat core)" << std::endl;
+      Trace("smt-abs-refine")
+          << "...return unknown (no refinement from unsat core)" << std::endl;
       // In a strange case where we constructed an unsat core that was
       // not refuted in the main solver. In this case, we give up
-      Assert (result.getStatus()==Result::UNKNOWN);
+      Assert(result.getStatus() == Result::UNKNOWN);
       return Result(Result::UNKNOWN);
     }
     // apply the substitution to the current assertions
@@ -255,7 +261,7 @@ Result SmtDriverAbstractRefine::checkResult(const Result& result)
     return Result(Result::UNKNOWN, REQUIRES_CHECK_AGAIN);
   }
   Trace("smt-abs-refine") << "...return unknown (from subsolver)" << std::endl;
-  Assert (rsub.getStatus()==Result::UNKNOWN);
+  Assert(rsub.getStatus() == Result::UNKNOWN);
   return rsub;
 }
 

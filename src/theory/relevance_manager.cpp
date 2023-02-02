@@ -522,7 +522,7 @@ std::unordered_set<TNode> RelevanceManager::getRelevantAssertions(bool& success)
   if (success)
   {
     for (const Node& a : d_rset)
-    {    
+    {
       // look up the value
       bool value;
       if (d_val.hasSatValue(a, value))
