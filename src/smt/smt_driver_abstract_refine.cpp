@@ -136,9 +136,21 @@ Result SmtDriverAbstractRefine::checkResult(const Result& result)
   // maybe all assertions are not abstracted? if so, we are truly SAT
   if (!success)
   {
+    Trace("smt-abs-refine") << "...failed to get relevant assertions" << std::endl;
     // failed to
     return Result(Result::UNKNOWN);
   }
+  const theory::SubstitutionMap& sm = d_env.getTopLevelSubstitutions().get();
+  const std::unordered_map<Node, Node>& ss = sm.getSubstitutions();
+  for (const std::pair<const Node, Node>& s : ss)
+  {
+    // abstraction variable in a top-level substitution
+    if (d_avarToTerm.find(s.first)!=d_avarToTerm.end())
+    {
+      rasserts.insert(s.second.getConst<bool>() ? s.first : s.first.notNode());
+    }
+  }
+  
   if (TraceIsOn("smt-abs-refine"))
   {
     Trace("smt-abs-refine")
@@ -148,6 +160,7 @@ Result SmtDriverAbstractRefine::checkResult(const Result& result)
       Trace("smt-abs-refine") << "- " << a << std::endl;
     }
   }
+  // check the conjunction separately
 
   return Result(Result::UNKNOWN);
 }
