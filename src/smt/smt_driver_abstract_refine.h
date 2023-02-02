@@ -18,9 +18,9 @@
 #ifndef CVC5__SMT__SMT_DRIVER_ABSTRACT_REFINE_H
 #define CVC5__SMT__SMT_DRIVER_ABSTRACT_REFINE_H
 
+#include "expr/subs.h"
 #include "smt/smt_driver.h"
 #include "util/result.h"
-#include "expr/subs.h"
 
 namespace cvc5::internal {
 namespace smt {

@@ -1117,7 +1117,8 @@ std::unordered_set<TNode> SolverEngine::getRelevantAssertions(bool& success)
       && d_state->getMode() != SmtMode::SAT_UNKNOWN)
   {
     std::stringstream ss;
-    ss << "Cannot get relevant assertions unless immediately preceded by SAT or UNKNOWN response.";
+    ss << "Cannot get relevant assertions unless immediately preceded by SAT "
+          "or UNKNOWN response.";
     throw RecoverableModalException(ss.str().c_str());
   }
   TheoryEngine* te = d_smtSolver->getTheoryEngine();

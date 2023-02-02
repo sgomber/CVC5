@@ -15,11 +15,11 @@
 
 #include "smt/smt_driver_abstract_refine.h"
 
+#include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
 #include "prop/prop_engine.h"
 #include "smt/env.h"
 #include "smt/smt_solver.h"
-#include "expr/node_algorithm.h"
-#include "expr/skolem_manager.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -69,18 +69,21 @@ void SmtDriverAbstractRefine::getNextAssertions(
   }
 }
 
-Node SmtDriverAbstractRefine::booleanAbstractionOf(const Node& n) {
-  NodeManager * nm = NodeManager::currentNM();
+Node SmtDriverAbstractRefine::booleanAbstractionOf(const Node& n)
+{
+  NodeManager* nm = NodeManager::currentNM();
   std::unordered_map<TNode, Node> visited;
   std::unordered_map<TNode, Node>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
     it = visited.find(cur);
-    if (it == visited.end()) {
+    if (it == visited.end())
+    {
       if (!expr::isBooleanConnective(cur))
       {
         visited[cur] = getAbstractionVariableFor(cur);
@@ -89,25 +92,31 @@ Node SmtDriverAbstractRefine::booleanAbstractionOf(const Node& n) {
       {
         visited[cur] = Node::null();
         visit.push_back(cur);
-        for (const Node& cn : cur) {
+        for (const Node& cn : cur)
+        {
           visit.push_back(cn);
         }
       }
-    } else if (it->second.isNull()) {
+    }
+    else if (it->second.isNull())
+    {
       Node ret = cur;
       bool childChanged = false;
       std::vector<Node> children;
-      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED) {
+      if (cur.getMetaKind() == kind::metakind::PARAMETERIZED)
+      {
         children.push_back(cur.getOperator());
       }
-      for (const Node& cn : cur) {
+      for (const Node& cn : cur)
+      {
         it = visited.find(cn);
         Assert(it != visited.end());
         Assert(!it->second.isNull());
         childChanged = childChanged || cn != it->second;
         children.push_back(it->second);
       }
-      if (childChanged) {
+      if (childChanged)
+      {
         ret = nm->mkNode(cur.getKind(), children);
       }
       visited[cur] = ret;
@@ -118,10 +127,10 @@ Node SmtDriverAbstractRefine::booleanAbstractionOf(const Node& n) {
   return visited[n];
 }
 
-bool SmtDriverAbstractRefine::checkModel() 
+bool SmtDriverAbstractRefine::checkModel()
 {
   Subs s;
-  
+
   return true;
 }
 
@@ -132,7 +141,7 @@ Node SmtDriverAbstractRefine::getAbstractionVariableFor(const Node& n)
   {
     return it->second;
   }
-  SkolemManager * skm = NodeManager::currentNM()->getSkolemManager();
+  SkolemManager* skm = NodeManager::currentNM()->getSkolemManager();
   Node k = skm->mkDummySkolem("a", n.getType());
   d_termToAVar[n] = k;
   d_avarToTerm[k] = n;
