@@ -59,7 +59,9 @@ void SmtDriverAbstractRefine::getNextAssertions(
       d_currAssertions.push_back(booleanAbstractionOf(a));
     }
     d_initialized = true;
-    Trace("smt-abs-refine") << "SmtDriverAbstractRefine: initialize with " << d_avarToTerm.size() << " variables." << std::endl;
+    Trace("smt-abs-refine")
+        << "SmtDriverAbstractRefine: initialize with " << d_avarToTerm.size()
+        << " variables." << std::endl;
   }
   // take all assertions
   for (const Node& a : d_currAssertions)
@@ -129,23 +131,24 @@ Node SmtDriverAbstractRefine::booleanAbstractionOf(const Node& n)
 Result SmtDriverAbstractRefine::checkResult(const Result& result)
 {
   bool success;
-  std::unordered_set<TNode> rasserts = d_smt.getTheoryEngine()->getRelevantAssertions(success);
+  std::unordered_set<TNode> rasserts =
+      d_smt.getTheoryEngine()->getRelevantAssertions(success);
   // maybe all assertions are not abstracted? if so, we are truly SAT
   if (!success)
   {
-    // failed to 
+    // failed to
     return Result(Result::UNKNOWN);
   }
   if (TraceIsOn("smt-abs-refine"))
   {
-    Trace("smt-abs-refine") << "Check result with relevant assertions:" << std::endl;
+    Trace("smt-abs-refine")
+        << "Check result with relevant assertions:" << std::endl;
     for (TNode a : rasserts)
     {
       Trace("smt-abs-refine") << "- " << a << std::endl;
     }
   }
-  
-  
+
   return Result(Result::UNKNOWN);
 }
 
