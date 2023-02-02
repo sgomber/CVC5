@@ -56,6 +56,8 @@ class SmtDriverAbstractRefine : public SmtDriver
   std::map<Node, Node> d_termToAVar;
   /** Reverse of above */
   std::map<Node, Node> d_avarToTerm;
+  /** Reverse of above */
+  std::unordered_set<Node> d_elimAVar;
 };
 
 }  // namespace smt

@@ -21,6 +21,7 @@
 #include "smt/env.h"
 #include "smt/smt_solver.h"
 #include "theory/theory_engine.h"
+#include "theory/smt_engine_subsolver.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -37,7 +38,9 @@ Result SmtDriverAbstractRefine::checkSatNext(
 {
   d_smt.preprocess(ap);
   d_smt.assertToInternal(ap);
+  Trace("smt-abs-refine") << "SmtDriverAbstractRefine::checkSatNext" << std::endl;
   Result result = d_smt.checkSatInternal();
+  Trace("smt-abs-refine") << "...returns " << result << std::endl;
   // check again if we didn't solve and there are learned literals
   if (result.getStatus() != Result::UNSAT)
   {
@@ -81,11 +84,16 @@ Node SmtDriverAbstractRefine::booleanAbstractionOf(const Node& n)
   do
   {
     cur = visit.back();
+    Assert (cur.getType().isBoolean());
     visit.pop_back();
     it = visited.find(cur);
     if (it == visited.end())
     {
-      if (!expr::isBooleanConnective(cur))
+      if (cur.isConst() || cur.isVar())
+      {
+        visited[cur] = cur;
+      }
+      else if (!expr::isBooleanConnective(cur))
       {
         visited[cur] = getAbstractionVariableFor(cur);
       }
@@ -130,40 +138,125 @@ Node SmtDriverAbstractRefine::booleanAbstractionOf(const Node& n)
 
 Result SmtDriverAbstractRefine::checkResult(const Result& result)
 {
+  Trace("smt-abs-refine") << "SmtDriverAbstractRefine::checkResult: " << result << std::endl;
   bool success;
   std::unordered_set<TNode> rasserts =
       d_smt.getTheoryEngine()->getRelevantAssertions(success);
   // maybe all assertions are not abstracted? if so, we are truly SAT
   if (!success)
   {
-    Trace("smt-abs-refine")
-        << "...failed to get relevant assertions" << std::endl;
+      Trace("smt-abs-refine") << "...return unknown (failed to get relevant assertions)" << std::endl;
     // failed to
     return Result(Result::UNKNOWN);
   }
+  bool wasAbstract = false;
+  // change to concrete form
+  std::vector<Node> query;
+  std::map<Node, Node>::iterator it;
+  for (TNode a : rasserts)
+  {
+    bool apol = a.getKind()!=kind::NOT;
+    Node atom = apol ? a : a[0];
+    it = d_avarToTerm.find(atom);
+    if (it != d_avarToTerm.end())
+    {
+      wasAbstract = true;
+      query.push_back(apol ? it->second : it->second.notNode());
+    }
+    else if (d_elimAVar.find(a)==d_elimAVar.end())
+    {
+      query.push_back(a);
+    }
+  }
+  // also take substitutions
   const theory::SubstitutionMap& sm = d_env.getTopLevelSubstitutions().get();
   const std::unordered_map<Node, Node>& ss = sm.getSubstitutions();
   for (const std::pair<const Node, Node>& s : ss)
   {
     // abstraction variable in a top-level substitution
-    if (d_avarToTerm.find(s.first) != d_avarToTerm.end())
+    it = d_avarToTerm.find(s.first);
+    if (it != d_avarToTerm.end())
     {
-      rasserts.insert(s.second.getConst<bool>() ? s.first : s.first.notNode());
+      wasAbstract = true;
+      query.push_back(s.second.getConst<bool>() ? it->second : it->second.notNode());
     }
+  }
+  if (!wasAbstract)
+  {
+      Trace("smt-abs-refine") << "...return sat (concrete assignment from main solver)" << std::endl;
+    // if nothing was abstract, return SAT
+    return Result(Result::SAT);
   }
 
   if (TraceIsOn("smt-abs-refine"))
   {
     Trace("smt-abs-refine")
         << "Check result with relevant assertions:" << std::endl;
-    for (TNode a : rasserts)
+    for (const Node& a : query)
     {
       Trace("smt-abs-refine") << "- " << a << std::endl;
     }
   }
   // check the conjunction separately
-
-  return Result(Result::UNKNOWN);
+  std::unique_ptr<SolverEngine> checkAssignment;
+  theory::initializeSubsolver(checkAssignment, d_env);
+  checkAssignment->setOption("produce-unsat-cores", "true");
+  checkAssignment->setOption("smt-abs-refine", "false");
+  for (const Node& a : query)
+  {
+    checkAssignment->assertFormula(a);
+  }
+  Result rsub = checkAssignment->checkSat();
+  Trace("smt-abs-refine") << "...result: " << rsub << std::endl;
+  if (rsub.getStatus()==Result::SAT)
+  {
+    // the concrete version is SAT, we are done
+    Trace("smt-abs-refine") << "...return SAT (from subsolver)" << std::endl;
+    return rsub;
+  }
+  if (rsub.getStatus()==Result::UNSAT)
+  {
+    // get the unsat core and unabstract those in the unsat core
+    std::vector<Node> uasserts;
+    theory::getUnsatCoreFromSubsolver(*checkAssignment.get(), uasserts);
+    // take the literals in the unsat core that were abstracted and permanently
+    // concretize them
+    Subs subs;
+    Trace("smt-abs-refine") << "Unsat core: " << std::endl;
+    for (const Node& u : uasserts)
+    {
+      Trace("smt-abs-refine") << "- " << u;
+      Node atom = u.getKind()==kind::NOT ? u[0] : u;
+      it = d_termToAVar.find(atom);
+      if (it!=d_termToAVar.end())
+      {
+        Trace("smt-abs-refine") << ", corresponding to " << it->second;
+        subs.add(it->second, atom);
+        d_elimAVar.insert(it->second);
+        d_avarToTerm.erase(it->second);
+        d_termToAVar.erase(it);
+      }
+      Trace("smt-abs-refine") << std::endl;
+    }
+    if (subs.empty())
+    {
+      Trace("smt-abs-refine") << "...return unknown (no refinement from unsat core)" << std::endl;
+      // In a strange case where we constructed an unsat core that was
+      // not refuted in the main solver. In this case, we give up
+      Assert (result.getStatus()==Result::UNKNOWN);
+      return Result(Result::UNKNOWN);
+    }
+    // apply the substitution to the current assertions
+    for (Node& a : d_currAssertions)
+    {
+      a = subs.apply(a);
+    }
+    Trace("smt-abs-refine") << "...return check again" << std::endl;
+    return Result(Result::UNKNOWN, REQUIRES_CHECK_AGAIN);
+  }
+  Trace("smt-abs-refine") << "...return unknown (from subsolver)" << std::endl;
+  Assert (rsub.getStatus()==Result::UNKNOWN);
+  return rsub;
 }
 
 Node SmtDriverAbstractRefine::getAbstractionVariableFor(const Node& n)
@@ -174,7 +267,7 @@ Node SmtDriverAbstractRefine::getAbstractionVariableFor(const Node& n)
     return it->second;
   }
   SkolemManager* skm = NodeManager::currentNM()->getSkolemManager();
-  Node k = skm->mkDummySkolem("a", n.getType());
+  Node k = skm->mkDummySkolem("av", n.getType());
   d_termToAVar[n] = k;
   d_avarToTerm[k] = n;
   return k;
