@@ -562,14 +562,14 @@ class CVC5_EXPORT TypeNode
    * (Array ?BitVec Int) join (Array (_ BitVec 4) ?) = (Array (_ BitVec 4) Int)
    * (Array ? Int) join (Array ? Real) = null.
    */
-  TypeNode join(const TypeNode& t) const;
+  TypeNode leastUpperBound(const TypeNode& t) const;
   /**
    * Meet with type. The dual of join, for example:
    * ?BitVec join ? = ?
    * (Array ?BitVec Int) join (Array (_ BitVec 4) ?) = (Array ?BitVec ?)
    * (Array ? Int) join (Array ? Real) = null.
    */
-  TypeNode meet(const TypeNode& t) const;
+  TypeNode greatestLowerBound(const TypeNode& t) const;
   /**
    * Get the argument types of a function, datatype constructor,
    * datatype selector, or datatype tester.

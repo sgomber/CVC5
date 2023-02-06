@@ -68,7 +68,7 @@ TypeNode DistinctTypeRule::computeType(NodeManager* nodeManager,
     for (++child_it; child_it != child_it_end; ++child_it)
     {
       TypeNode currentType = (*child_it).getType();
-      joinType = joinType.join(currentType);
+      joinType = joinType.leastUpperBound(currentType);
       if (joinType.isNull())
       {
         if (errOut)
