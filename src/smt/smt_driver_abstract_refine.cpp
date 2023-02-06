@@ -213,56 +213,53 @@ Result SmtDriverAbstractRefine::checkResult(const Result& result)
   }
   Result rsub = checkAssignment->checkSat();
   Trace("smt-abs-refine") << "...result: " << rsub << std::endl;
-  if (rsub.getStatus() == Result::SAT)
-  {
-    // the concrete version is SAT, we are done
-    Trace("smt-abs-refine") << "...return SAT (from subsolver)" << std::endl;
-    return rsub;
-  }
+  std::vector<Node> uasserts;
   if (rsub.getStatus() == Result::UNSAT)
   {
     // get the unsat core and unabstract those in the unsat core
-    std::vector<Node> uasserts;
     theory::getUnsatCoreFromSubsolver(*checkAssignment.get(), uasserts);
-    // take the literals in the unsat core that were abstracted and permanently
-    // concretize them
-    Subs subs;
-    Trace("smt-abs-refine") << "Unsat core: " << std::endl;
-    for (const Node& u : uasserts)
-    {
-      Trace("smt-abs-refine") << "- " << u;
-      Node atom = u.getKind() == kind::NOT ? u[0] : u;
-      it = d_termToAVar.find(atom);
-      if (it != d_termToAVar.end())
-      {
-        Trace("smt-abs-refine") << ", corresponding to " << it->second;
-        subs.add(it->second, atom);
-        d_elimAVar.insert(it->second);
-        d_avarToTerm.erase(it->second);
-        d_termToAVar.erase(it);
-      }
-      Trace("smt-abs-refine") << std::endl;
-    }
-    if (subs.empty())
-    {
-      Trace("smt-abs-refine")
-          << "...return unknown (no refinement from unsat core)" << std::endl;
-      // In a strange case where we constructed an unsat core that was
-      // not refuted in the main solver. In this case, we give up
-      Assert(result.getStatus() == Result::UNKNOWN);
-      return Result(Result::UNKNOWN);
-    }
-    // apply the substitution to the current assertions
-    for (Node& a : d_currAssertions)
-    {
-      a = subs.apply(a);
-    }
-    Trace("smt-abs-refine") << "...return check again" << std::endl;
-    return Result(Result::UNKNOWN, REQUIRES_CHECK_AGAIN);
   }
-  Trace("smt-abs-refine") << "...return unknown (from subsolver)" << std::endl;
-  Assert(rsub.getStatus() == Result::UNKNOWN);
-  return rsub;
+  else
+  {
+    // otherwise include all?
+    uasserts = query;
+  }
+  // take the literals in the unsat core that were abstracted and permanently
+  // concretize them
+  Subs subs;
+  Trace("smt-abs-refine") << "Unsat core: " << std::endl;
+  for (const Node& u : uasserts)
+  {
+    Trace("smt-abs-refine") << "- " << u;
+    Node atom = u.getKind() == kind::NOT ? u[0] : u;
+    it = d_termToAVar.find(atom);
+    if (it != d_termToAVar.end())
+    {
+      Trace("smt-abs-refine") << ", corresponding to " << it->second;
+      subs.add(it->second, atom);
+      d_elimAVar.insert(it->second);
+      d_avarToTerm.erase(it->second);
+      d_termToAVar.erase(it);
+    }
+    Trace("smt-abs-refine") << std::endl;
+  }
+  if (subs.empty())
+  {
+    Trace("smt-abs-refine")
+        << "...return unknown (no refinement from unsat core)" << std::endl;
+    // In a strange case where we constructed an unsat core that was
+    // not refuted in the main solver. In this case, we give up
+    Assert(result.getStatus() == Result::UNKNOWN);
+    return Result(Result::UNKNOWN);
+  }
+  // apply the substitution to the current assertions
+  for (Node& a : d_currAssertions)
+  {
+    a = subs.apply(a);
+  }
+  Trace("smt-abs-refine") << "...return check again" << std::endl;
+  return Result(Result::UNKNOWN, REQUIRES_CHECK_AGAIN);
+
 }
 
 Node SmtDriverAbstractRefine::getAbstractionVariableFor(const Node& n)
