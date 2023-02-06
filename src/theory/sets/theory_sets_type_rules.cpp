@@ -458,8 +458,9 @@ TypeNode InsertTypeRule::computeType(NodeManager* nodeManager,
   for (size_t i = 0; i < numChildren - 1; ++i)
   {
     TypeNode elementType = n[i].getType();
-    retElementType = retElementType.isNull() ? elementType
-                                             : retElementType.leastUpperBound(elementType);
+    retElementType = retElementType.isNull()
+                         ? elementType
+                         : retElementType.leastUpperBound(elementType);
     if (retElementType.isNull())
     {
       if (errOut)
