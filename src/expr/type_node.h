@@ -748,7 +748,7 @@ class CVC5_EXPORT TypeNode
 
  private:
   /** Unify internal, for computing join and meet */
-  TypeNode unifyInternal(const TypeNode& t, bool isJoin) const;
+  TypeNode unifyInternal(const TypeNode& t, bool isLub) const;
 };/* class TypeNode */
 
 /**
