@@ -325,6 +325,7 @@ void TermRegistry::registerType(TypeNode tn)
 
 TrustNode TermRegistry::getRegisterTermLemma(Node n)
 {
+  return TrustNode::null();
   Assert(n.getType().isStringLike());
   NodeManager* nm = NodeManager::currentNM();
   // register length information:

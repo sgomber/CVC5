@@ -56,6 +56,10 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
   Valuation& val = d_state.getValuation();
   for (Node& ll : lts)
   {
+    if (ll.isNull())
+    {
+      continue;
+    }
     if (!ll.isConst())
     {
       ll = val.getCandidateModelValue(ll);
