@@ -25,10 +25,18 @@
 #include "expr/nary_term_util.h"
 #include "expr/node.h"
 #include "expr/term_canonize.h"
+#include "rewriter/rewrite_proof_rule.h"
 #include "rewriter/rewrites.h"
 
 namespace cvc5::internal {
 namespace rewriter {
+
+/** Type class callback */
+class IsListTypeClassCallback : public expr::TypeClassCallback
+{
+ public:
+  uint32_t getTypeClass(TNode v) override;
+};
 
 /**
  * A database of conditional rewrite rules. The rules of this class are
@@ -60,6 +68,37 @@ class RewriteDb
                Node cond,
                Node context,
                bool isFlatForm = false);
+  /** get matches */
+  void getMatches(Node eq, expr::NotifyMatch* ntm);
+  /** get rule for id */
+  const RewriteProofRule& getRule(DslPfRule id) const;
+  /** get ids for conclusion */
+  const std::vector<DslPfRule>& getRuleIdsForConclusion(Node eq) const;
+  /** get ids for head */
+  const std::vector<DslPfRule>& getRuleIdsForHead(Node h) const;
+  /** the union of free variables in all rules */
+  const std::unordered_set<Node>& getAllFreeVariables() const;
+
+ private:
+  /** common constants */
+  Node d_true;
+  Node d_false;
+  /** Callback to distinguish list variables */
+  IsListTypeClassCallback d_canonCb;
+  /** the term canonization utility */
+  expr::TermCanonize d_canon;
+  /** The match trie */
+  expr::NaryMatchTrie d_mt;
+  /** map ids to rewrite db rule information */
+  std::map<DslPfRule, RewriteProofRule> d_rewDbRule;
+  /** map conclusions to proof ids */
+  std::map<Node, std::vector<DslPfRule> > d_concToRules;
+  /** map head to proof ids */
+  std::map<Node, std::vector<DslPfRule> > d_headToRules;
+  /** dummy empty vector */
+  std::vector<DslPfRule> d_emptyVec;
+  /** All free variables in all rules */
+  std::unordered_set<Node> d_allFv;
 };
 
 }  // namespace rewriter
