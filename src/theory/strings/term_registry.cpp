@@ -588,8 +588,8 @@ Node TermRegistry::ensureProxyVariableFor(Node n)
   Node proxy = getProxyVariableFor(n);
   if (proxy.isNull())
   {
-    registerTerm(n);
-    proxy = getProxyVariableFor(n);
+    proxy = d_skCache.mkSkolemCached(n, SkolemCache::SK_PURIFY, "lsym");
+    d_proxyVar[n] = proxy;
   }
   Assert(!proxy.isNull());
   return proxy;
