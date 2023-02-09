@@ -28,9 +28,9 @@ using namespace cvc5::internal::kind;
 namespace cvc5::internal {
 namespace theory {
 
-RelevanceManager::RelevanceManager(Env& env, Valuation val)
-    : EnvObj(env),
-      d_val(val),
+RelevanceManager::RelevanceManager(Env& env, TheoryEngine* engine)
+    : TheoryEngineModule(env, engine, "RelevanceManager"),
+      d_val(engine),
       d_input(userContext()),
       d_lemmas(userContext()),
       d_atomMap(userContext()),
@@ -43,7 +43,7 @@ RelevanceManager::RelevanceManager(Env& env, Valuation val)
 {
   if (options().smt.produceDifficulty)
   {
-    d_dman = std::make_unique<DifficultyManager>(env, this, val);
+    d_dman = std::make_unique<DifficultyManager>(env, this, d_val);
     // we cannot miniscope AND at the top level, since we need to
     // preserve the exact form of preprocessed assertions so the dependencies
     // are tracked.
@@ -129,15 +129,21 @@ void RelevanceManager::addInputToAtomsMap(TNode input,
   } while (!visit.empty());
 }
 
-void RelevanceManager::beginRound()
+void RelevanceManager::check(Theory::Effort effort)
 {
-  d_inFullEffortCheck = true;
-  d_success = true;
-  d_computedRelevance = false;
-  d_computedRelevanceForLemmas = false;
+  if (Theory::fullEffort(effort))
+  {
+    d_inFullEffortCheck = true;
+    d_success = true;
+    d_computedRelevance = false;
+    d_computedRelevanceForLemmas = false;
+  }
 }
 
-void RelevanceManager::endRound() { d_inFullEffortCheck = false; }
+void RelevanceManager::postCheck(Theory::Effort effort)
+{
+  d_inFullEffortCheck = false;
+}
 
 void RelevanceManager::computeRelevance()
 {
@@ -541,6 +547,8 @@ RelevanceManager::NodeList* RelevanceManager::getInputListFor(TNode atom,
 
 std::unordered_set<TNode> RelevanceManager::getRelevantAssertions(bool& success)
 {
+  // set in full effort check temporarily
+  d_inFullEffortCheck = true;
   computeRelevance();
   // update success flag
   success = d_success;
@@ -552,24 +560,29 @@ std::unordered_set<TNode> RelevanceManager::getRelevantAssertions(bool& success)
       rset.insert(a);
     }
   }
+  // reset in full effort check
+  d_inFullEffortCheck = false;
   return rset;
 }
 
-void RelevanceManager::notifyLemma(Node lem,
-                                   const std::vector<Node>& skLemmas,
-                                   bool needsJustify)
+
+void RelevanceManager::notifyLemma(TNode n,
+                                   theory::LemmaProperty p,
+                                   const std::vector<Node>& skAsserts,
+                                   const std::vector<Node>& sks)
 {
-  if (needsJustify)
+  // add to assertions
+  if (isLemmaPropertyNeedsJustify(p))
   {
-    notifyPreprocessedAssertion(lem, false);
-    notifyPreprocessedAssertions(skLemmas, false);
+    notifyPreprocessedAssertion(n, false);
+    notifyPreprocessedAssertions(skAsserts, false);
   }
   else
   {
     // if it is not incorporated as an input formula, include it as a lemma
     std::vector<Node> toProcess;
-    toProcess.push_back(lem);
-    toProcess.insert(toProcess.end(), skLemmas.begin(), skLemmas.end());
+    toProcess.push_back(n);
+    toProcess.insert(toProcess.end(), skAsserts.begin(), skAsserts.end());
     addAssertionsInternal(toProcess, d_lemmas);
   }
   // notice that we may be in FULL or STANDARD effort here.
@@ -577,7 +590,7 @@ void RelevanceManager::notifyLemma(Node lem,
   {
     // notice that we don't compute relevance here, instead it is computed
     // on demand based on the literals in lem.
-    d_dman->notifyLemma(lem, d_inFullEffortCheck);
+    d_dman->notifyLemma(n, d_inFullEffortCheck);
   }
 }
 

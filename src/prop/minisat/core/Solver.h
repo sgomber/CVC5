@@ -413,6 +413,7 @@ protected:
         CRef cref;
         Lit  blocker;
         Watcher(CRef cr, Lit p) : cref(cr), blocker(p) {}
+
         bool operator==(const Watcher& w) const { return cref == w.cref; }
         bool operator!=(const Watcher& w) const { return cref != w.cref; }
     };
@@ -473,9 +474,7 @@ protected:
       // Check and perform theory reasoning
       CHECK_WITH_THEORY,
       // The SAT abstraction of the problem is satisfiable, perform a full theory check
-      CHECK_FINAL,
-      // Perform a full theory check even if not done with everything
-      CHECK_FINAL_FAKE
+      CHECK_FINAL
     };
 
     // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is

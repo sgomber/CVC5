@@ -34,6 +34,8 @@
 #include "theory/rewriter.h"
 #include "theory/sort_inference.h"
 #include "theory/theory.h"
+#include "theory/theory_engine_module.h"
+#include "theory/theory_engine_statistics.h"
 #include "theory/theory_preprocessor.h"
 #include "theory/trust_substitutions.h"
 #include "theory/uf/equality_engine.h"
@@ -185,8 +187,16 @@ class TheoryEngine : protected EnvObj
   /** Notify (preprocessed) assertions. */
   void notifyPreprocessedAssertions(const std::vector<Node>& assertions);
 
-  /** Return whether or not we are incomplete (in the current context). */
-  bool isIncomplete() const { return d_incomplete; }
+  /**
+   * Return whether or not we are model unsound (in the current SAT context).
+   * For details, see theory_inference_manager.
+   */
+  bool isModelUnsound() const { return d_modelUnsound; }
+  /**
+   * Return whether or not we are refutation unsound (in the current user
+   * context). For details, see theory_inference_manager.
+   */
+  bool isRefutationUnsound() const { return d_refutationUnsound; }
 
   /**
    * Returns true if we need another round of checking.  If this
@@ -218,6 +228,19 @@ class TheoryEngine : protected EnvObj
    * This method should only be called at FULL effort check.
    */
   TNode getExplanationForAsserted(TNode lit) const;
+  /**
+   * Returns true if the node has a current SAT assignment. If yes, the
+   * argument "value" is set to its value.
+   *
+   * @return true if the literal has a current assignment, and returns the
+   * value in the "value" argument; otherwise false and the "value"
+   * argument is unmodified.
+   */
+  bool hasSatValue(TNode n, bool& value) const;
+  /**
+   * Same as above, without setting the value.
+   */
+  bool hasSatValue(TNode n) const;
   /**
    * Solve the given literal with a theory that owns it. The proof of tliteral
    * is carried in the trust node. The proof added to substitutionOut should
@@ -354,7 +377,7 @@ class TheoryEngine : protected EnvObj
    * Returns the value that a theory that owns the type of var currently
    * has (or null if none);
    */
-  Node getModelValue(TNode var);
+  Node getCandidateModelValue(TNode var);
 
   /**
    * Get relevant assertions. This returns a set of assertions that are
@@ -378,8 +401,10 @@ class TheoryEngine : protected EnvObj
    */
   void getDifficultyMap(std::map<Node, Node>& dmap);
 
-  /** Get incomplete id, valid immediately after an `unknown` response. */
-  theory::IncompleteId getIncompleteId() const;
+  /** Get incomplete id, valid when isModelUnsound is true. */
+  theory::IncompleteId getModelUnsoundId() const;
+  /** Get unsound id, valid when isRefutationUnsound is true. */
+  theory::IncompleteId getRefutationUnsoundId() const;
 
   /**
    * Forwards an entailment check according to the given theoryOfMode.
@@ -415,10 +440,10 @@ class TheoryEngine : protected EnvObj
   /** set in conflict */
   void markInConflict();
 
-  /**
-   * Called by the theories to notify that the current branch is incomplete.
-   */
-  void setIncomplete(theory::TheoryId theory, theory::IncompleteId id);
+  /** Called by the theories to notify that the current branch is incomplete. */
+  void setModelUnsound(theory::TheoryId theory, theory::IncompleteId id);
+  /** Called by the theories to notify that we are unsound (user-context). */
+  void setRefutationUnsound(theory::TheoryId theory, theory::IncompleteId id);
 
   /**
    * Called by the output channel to propagate literals and facts
@@ -538,13 +563,21 @@ class TheoryEngine : protected EnvObj
   context::CDO<bool> d_inConflict;
 
   /**
-   * True if a theory has notified us of incompleteness (at this
+   * True if a theory has notified us of model unsoundness (at this SAT
+   * context level or below). For details, see theory_inference_manager.
+   */
+  context::CDO<bool> d_modelUnsound;
+  /** The theory and identifier that (most recently) set model unsound */
+  context::CDO<theory::TheoryId> d_modelUnsoundTheory;
+  context::CDO<theory::IncompleteId> d_modelUnsoundId;
+  /**
+   * True if a theory has notified us of refutation unsoundness (at this user
    * context level or below).
    */
-  context::CDO<bool> d_incomplete;
+  context::CDO<bool> d_refutationUnsound;
   /** The theory and identifier that (most recently) set incomplete */
-  context::CDO<theory::TheoryId> d_incompleteTheory;
-  context::CDO<theory::IncompleteId> d_incompleteId;
+  context::CDO<theory::TheoryId> d_refutationUnsoundTheory;
+  context::CDO<theory::IncompleteId> d_refutationUnsoundId;
 
   /**
    * Mapping of propagations from recievers to senders.
@@ -588,8 +621,8 @@ class TheoryEngine : protected EnvObj
   /** sort inference module */
   std::unique_ptr<theory::SortInference> d_sortInfer;
 
-  /** Time spent in theory combination */
-  TimerStat d_combineTheoriesTime;
+  /** Statistics */
+  theory::TheoryEngineStatistics d_stats;
 
   Node d_true;
   Node d_false;
@@ -618,6 +651,8 @@ class TheoryEngine : protected EnvObj
    * used.
    */
   std::unique_ptr<theory::PartitionGenerator> d_partitionGen;
+  /** The list of modules */
+  std::vector<theory::TheoryEngineModule*> d_modules;
 
 }; /* class TheoryEngine */
 

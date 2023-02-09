@@ -120,7 +120,7 @@ void ArrayCoreSolver::checkUpdate(const std::vector<Node>& updateTerms)
 
     // note that the term could rewrites to a skolem
     // get proxy variable for the update term as t
-    Node termProxy = d_termReg.getProxyVariableFor(n);
+    Node termProxy = d_termReg.ensureProxyVariableFor(n);
 
     if (d_registeredUpdates.find(n) == d_registeredUpdates.end())
     {
@@ -142,7 +142,11 @@ void ArrayCoreSolver::checkUpdate(const std::vector<Node>& updateTerms)
       Node lem = nm->mkNode(EQUAL, left, right);
 
       std::vector<Node> exp;
-      d_im.addToExplanation(termProxy, n, exp);
+      // We don't have to add (termProxy = n) to the explanation, since this
+      // is always true and justified by definition. Also note that if lazy
+      // term registration is enabled, this equality may not (yet) hold in
+      // the equality engine, since termProxy may have been introduced in this
+      // call.
       d_im.sendInference(exp,
                          lem,
                          InferenceId::STRINGS_ARRAY_NTH_TERM_FROM_UPDATE,
@@ -264,7 +268,7 @@ void ArrayCoreSolver::check(const std::vector<Node>& nthTerms,
       Node ret = nm->mkNode(SEQ_NTH, s, iRev);
       d_im.sendInference(
           {}, nexp, n.eqNode(ret), InferenceId::STRINGS_ARRAY_NTH_REV);
-      d_extt.markReduced(n, ExtReducedId::STRINGS_NTH_REV);
+      d_extt.markInactive(n, ExtReducedId::STRINGS_NTH_REV);
     }
   }
   checkNth(nthTerms);

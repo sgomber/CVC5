@@ -1344,7 +1344,7 @@ void TheorySetsPrivate::postCheck(Theory::Effort level)
         if (!d_state.isInConflict() && !d_im.hasSentLemma()
             && d_fullCheckIncomplete)
         {
-          d_im.setIncomplete(d_fullCheckIncompleteId);
+          d_im.setModelUnsound(d_fullCheckIncompleteId);
         }
       }
     }
@@ -1656,7 +1656,7 @@ void TheorySetsPrivate::preRegisterTerm(TNode node)
     case kind::SET_MEMBER:
     {
       // add trigger predicate for equality and membership
-      d_equalityEngine->addTriggerPredicate(node);
+      d_state.addEqualityEngineTriggerPredicate(node);
     }
     break;
     case kind::RELATION_JOIN_IMAGE:
