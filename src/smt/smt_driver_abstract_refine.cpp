@@ -259,7 +259,6 @@ Result SmtDriverAbstractRefine::checkResult(const Result& result)
   }
   Trace("smt-abs-refine") << "...return check again" << std::endl;
   return Result(Result::UNKNOWN, REQUIRES_CHECK_AGAIN);
-
 }
 
 Node SmtDriverAbstractRefine::getAbstractionVariableFor(const Node& n)

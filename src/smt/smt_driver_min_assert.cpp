@@ -20,11 +20,11 @@
 #include "prop/prop_engine.h"
 #include "smt/env.h"
 #include "smt/smt_solver.h"
+#include "smt/solver_engine.h"
+#include "theory/smt_engine_subsolver.h"
 #include "theory/theory_engine.h"
 #include "theory/theory_model.h"
 #include "util/random.h"
-#include "smt/solver_engine.h"
-#include "theory/smt_engine_subsolver.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -32,7 +32,10 @@ namespace smt {
 SmtDriverMinAssert::SmtDriverMinAssert(Env& env,
                                        SmtSolver& smt,
                                        ContextManager* ctx)
-    : SmtDriver(env, smt, ctx), d_initialized(false), d_nextIndexToInclude(0), d_useSubsolver(false)
+    : SmtDriver(env, smt, ctx),
+      d_initialized(false),
+      d_nextIndexToInclude(0),
+      d_useSubsolver(false)
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
@@ -51,7 +54,7 @@ Result SmtDriverMinAssert::checkSatNext(preprocessing::AssertionPipeline& ap)
     Trace("smt-min-assert") << "...return, initialize" << std::endl;
     return Result(Result::UNKNOWN, UnknownExplanation::REQUIRES_CHECK_AGAIN);
   }
-  SolverEngine * subSolver = nullptr;
+  SolverEngine* subSolver = nullptr;
   Result result;
   if (d_useSubsolver)
   {
@@ -62,8 +65,8 @@ Result SmtDriverMinAssert::checkSatNext(preprocessing::AssertionPipeline& ap)
     d_smt.assertToInternal(ap);
     Trace("smt-min-assert") << "checkSatNext: checkSatInternal" << std::endl;
     result = d_smt.checkSatInternal();
-    Trace("smt-min-assert") << "checkSatNext: checkSatInternal returns " << result
-                            << std::endl;
+    Trace("smt-min-assert")
+        << "checkSatNext: checkSatInternal returns " << result << std::endl;
   }
   // if UNSAT, we are done
   if (result.getStatus() == Result::UNSAT)
@@ -246,14 +249,15 @@ void SmtDriverMinAssert::initializePreprocessedAssertions()
   }
 }
 
-bool SmtDriverMinAssert::recordCurrentModel(bool& allAssertsSat, SolverEngine* subSolver)
+bool SmtDriverMinAssert::recordCurrentModel(bool& allAssertsSat,
+                                            SolverEngine* subSolver)
 {
   d_nextIndexToInclude = 0;
   allAssertsSat = true;
   bool indexSet = false;
   bool indexSetToFalse = false;
   theory::TheoryModel* m = nullptr;
-  if (subSolver==nullptr)
+  if (subSolver == nullptr)
   {
     TheoryEngine* te = d_smt.getTheoryEngine();
     Assert(te != nullptr);
@@ -271,7 +275,7 @@ bool SmtDriverMinAssert::recordCurrentModel(bool& allAssertsSat, SolverEngine* s
     Node a = d_ppAsserts[ii];
     Node av;
     // if no subsolver, get from the model of the SMT solver
-    if (subSolver==nullptr)
+    if (subSolver == nullptr)
     {
       av = m->getValue(a);
     }

@@ -49,7 +49,8 @@ class SmtDriverMinAssert : public SmtDriver
    * @param allAssertsSat set to true if the current model satisfies all
    * assertions.
    */
-  bool recordCurrentModel(bool& allAssertsSat, SolverEngine* subSolver = nullptr);
+  bool recordCurrentModel(bool& allAssertsSat,
+                          SolverEngine* subSolver = nullptr);
   /** Common nodes */
   Node d_true;
   Node d_false;
