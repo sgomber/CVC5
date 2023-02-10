@@ -15,15 +15,20 @@
 
 #include "smt/smt_driver_min_assert.h"
 
+#include <fstream>
+
 #include "api/cpp/cvc5_types.h"
 #include "options/base_options.h"
 #include "prop/prop_engine.h"
+#include "options/smt_options.h"
 #include "smt/env.h"
 #include "smt/smt_solver.h"
 #include "smt/solver_engine.h"
 #include "theory/smt_engine_subsolver.h"
 #include "theory/theory_engine.h"
 #include "theory/theory_model.h"
+#include "smt/print_benchmark.h"
+#include "printer/printer.h"
 #include "util/random.h"
 
 namespace cvc5::internal {
@@ -35,10 +40,14 @@ SmtDriverMinAssert::SmtDriverMinAssert(Env& env,
     : SmtDriver(env, smt, ctx),
       d_initialized(false),
       d_nextIndexToInclude(0),
-      d_useSubsolver(false)
+      d_useSubsolver(false), d_queryCount(0)
 {
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
+  if (options().smt.smtMinAssertTimeoutWasSetByUser)
+  {
+    d_useSubsolver = true;
+  }
 }
 
 Result SmtDriverMinAssert::checkSatNext(preprocessing::AssertionPipeline& ap)
@@ -49,15 +58,43 @@ Result SmtDriverMinAssert::checkSatNext(preprocessing::AssertionPipeline& ap)
   d_smt.preprocess(ap);
   if (!d_initialized)
   {
+    initializePreprocessedAssertions(ap);
+    d_initialized = true;
     // just preprocess on the first check, preprocessed assertions will be
     // recorded below
     Trace("smt-min-assert") << "...return, initialize" << std::endl;
     return Result(Result::UNKNOWN, UnknownExplanation::REQUIRES_CHECK_AGAIN);
   }
-  SolverEngine* subSolver = nullptr;
+  std::unique_ptr<SolverEngine> subSolver;
   Result result;
   if (d_useSubsolver)
   {
+    theory::initializeSubsolver(subSolver, d_env, options().smt.smtMinAssertTimeoutWasSetByUser, options().smt.smtMinAssertTimeout);
+    subSolver->setOption("smt-min-assert", "false");
+    subSolver->setOption("produce-models", "true");
+    Trace("smt-min-assert") << "checkSatNext: assert to subsolver" << std::endl;
+    for (const Node& a : ap)
+    {
+      subSolver->assertFormula(a);
+    }
+    Trace("smt-min-assert") << "checkSatNext: check with subsolver" << std::endl;
+    result = subSolver->checkSat();
+    Trace("smt-min-assert")
+        << "checkSatNext: ...result is " << result << std::endl;
+    if (options().smt.dumpSmtMinAssert && result.getStatus() == Result::UNKNOWN)
+    {
+    Trace("smt-min-assert")
+        << "checkSatNext: dump benchmark " << d_queryCount << std::endl;
+      std::vector<Node> bench(ap.begin(), ap.end());
+      // Print the query to to queryN.smt2
+      std::stringstream fname;
+      fname << "query" << d_queryCount << ".smt2";
+      std::ofstream fs(fname.str(), std::ofstream::out);
+      smt::PrintBenchmark pb(Printer::getPrinter(fs));
+      pb.printBenchmark(fs, d_env.getLogicInfo().getLogicString(), {}, bench);
+      fs.close();
+      d_queryCount++;
+    }
   }
   else
   {
@@ -66,7 +103,7 @@ Result SmtDriverMinAssert::checkSatNext(preprocessing::AssertionPipeline& ap)
     Trace("smt-min-assert") << "checkSatNext: checkSatInternal" << std::endl;
     result = d_smt.checkSatInternal();
     Trace("smt-min-assert")
-        << "checkSatNext: checkSatInternal returns " << result << std::endl;
+        << "checkSatNext: ...result is " << result << std::endl;
   }
   // if UNSAT, we are done
   if (result.getStatus() == Result::UNSAT)
@@ -76,7 +113,7 @@ Result SmtDriverMinAssert::checkSatNext(preprocessing::AssertionPipeline& ap)
   }
   Trace("smt-min-assert") << "checkSatNext: recordCurrentModel" << std::endl;
   bool allAssertsSat;
-  if (recordCurrentModel(allAssertsSat, subSolver))
+  if (recordCurrentModel(allAssertsSat, subSolver.get()))
   {
     Trace("smt-min-assert") << "...return, check again" << std::endl;
     return Result(Result::UNKNOWN, UnknownExplanation::REQUIRES_CHECK_AGAIN);
@@ -102,11 +139,21 @@ void SmtDriverMinAssert::getNextAssertions(preprocessing::AssertionPipeline& ap)
 {
   if (!d_initialized)
   {
-    initializePreprocessedAssertions();
-    Trace("smt-min-assert") << "Have " << d_ppAsserts.size()
-                            << " preprocessed assertions" << std::endl;
-    d_initialized = true;
-    // do not provide any assertions initially
+    Trace("smt-min-assert") << "Initialize assertions..." << std::endl;
+    // provide all assertions initially
+    Assertions& as = d_smt.getAssertions();
+    const context::CDList<Node>& al = as.getAssertionList();
+    for (const Node& a : al)
+    {
+      ap.push_back(a, true);
+    }
+    return;
+  }
+  Trace("smt-min-assert") << "Get next assertions..." << std::endl;
+  // on the first round, provide no assertions
+  if (d_modelValues.empty())
+  {
+    Trace("smt-min-assert") << "...initialized empty" << std::endl;
     return;
   }
   // should have set d_nextIndexToInclude which is not already included
@@ -190,14 +237,14 @@ void SmtDriverMinAssert::getNextAssertions(preprocessing::AssertionPipeline& ap)
       << d_ainfo.size() << std::endl;
 }
 
-void SmtDriverMinAssert::initializePreprocessedAssertions()
+void SmtDriverMinAssert::initializePreprocessedAssertions(preprocessing::AssertionPipeline& ap)
 {
   d_ppAsserts.clear();
   d_ppSkolemMap.clear();
 
-  const std::vector<Node>& ppAsserts = d_smt.getPreprocessedAssertions();
+  const std::vector<Node>& ppAsserts = ap.ref();
   const std::unordered_map<size_t, Node>& ppSkolemMap =
-      d_smt.getPreprocessedSkolemMap();
+      ap.getIteSkolemMap();
   std::unordered_map<size_t, Node>::const_iterator it;
   for (size_t i = 0, nasserts = ppAsserts.size(); i < nasserts; i++)
   {

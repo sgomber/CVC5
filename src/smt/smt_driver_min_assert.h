@@ -41,7 +41,7 @@ class SmtDriverMinAssert : public SmtDriver
 
  private:
   /** initialize assertions */
-  void initializePreprocessedAssertions();
+  void initializePreprocessedAssertions(preprocessing::AssertionPipeline& ap);
   /**
    * Record current model, return true if we set d_nextIndexToInclude,
    * indicating that we want to include a new assertion.
@@ -84,6 +84,8 @@ class SmtDriverMinAssert : public SmtDriver
   std::map<size_t, AssertInfo> d_ainfo;
   /** Use subsolver */
   bool d_useSubsolver;
+  /** Query count */
+  size_t d_queryCount;
 };
 
 }  // namespace smt

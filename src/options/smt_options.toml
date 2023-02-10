@@ -523,6 +523,22 @@ name   = "SMT Layer"
   help       = "use minimal assertion algorithm for checking satisfiability"
 
 [[option]]
+  name       = "smtMinAssertTimeout"
+  category   = "expert"
+  long       = "smt-min-assert-timeout=N"
+  type       = "uint64_t"
+  default    = "0"
+  help       = "timeout (in milliseconds) for satisfiability checks from min assert"
+
+[[option]]
+  name       = "dumpSmtMinAssert"
+  category   = "expert"
+  long       = "dump-smt-min-assert"
+  type       = "bool"
+  default    = "false"
+  help       = "dump timeout benchmarks for minimal assertion algorithm for checking satisfiability"
+  
+[[option]]
   name       = "smtAbsRefine"
   category   = "expert"
   long       = "smt-abs-refine"
