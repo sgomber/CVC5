@@ -22,6 +22,9 @@
 #include "util/result.h"
 
 namespace cvc5::internal {
+
+class SolverEngine;
+
 namespace smt {
 
 class SmtSolver;
@@ -46,7 +49,7 @@ class SmtDriverMinAssert : public SmtDriver
    * @param allAssertsSat set to true if the current model satisfies all
    * assertions.
    */
-  bool recordCurrentModel(bool& allAssertsSat);
+  bool recordCurrentModel(bool& allAssertsSat, SolverEngine* subSolver = nullptr);
   /** Common nodes */
   Node d_true;
   Node d_false;
@@ -78,6 +81,8 @@ class SmtDriverMinAssert : public SmtDriver
   };
   /** The current indices in d_ppAsserts we are considering */
   std::map<size_t, AssertInfo> d_ainfo;
+  /** Use subsolver */
+  bool d_useSubsolver;
 };
 
 }  // namespace smt
