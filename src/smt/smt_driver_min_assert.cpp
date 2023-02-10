@@ -30,6 +30,7 @@
 #include "smt/print_benchmark.h"
 #include "printer/printer.h"
 #include "util/random.h"
+#include "expr/node_algorithm.h"
 
 namespace cvc5::internal {
 namespace smt {
@@ -242,6 +243,7 @@ void SmtDriverMinAssert::initializePreprocessedAssertions(preprocessing::Asserti
   d_ppAsserts.clear();
   d_ppSkolemMap.clear();
 
+  Trace("smt-min-assert") << "initializePreprocessedAssertions" << std::endl;
   const std::vector<Node>& ppAsserts = ap.ref();
   const std::unordered_map<size_t, Node>& ppSkolemMap =
       ap.getIteSkolemMap();
@@ -293,6 +295,11 @@ void SmtDriverMinAssert::initializePreprocessedAssertions(preprocessing::Asserti
       }
       d_ppAsserts.push_back(pa);
     }
+  }
+  Trace("smt-min-assert") << "get symbols..." << std::endl;
+  for (size_t i=0, npasserts = d_ppAsserts.size(); i<npasserts; i++)
+  {
+    expr::getSymbols(d_ppAsserts[i], d_syms[i]);
   }
 }
 

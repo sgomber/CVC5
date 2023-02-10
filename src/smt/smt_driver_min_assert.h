@@ -86,6 +86,10 @@ class SmtDriverMinAssert : public SmtDriver
   bool d_useSubsolver;
   /** Query count */
   size_t d_queryCount;
+  /** Current free variables */
+  std::unordered_set<Node> d_asymbols;
+  /** Free symbols of each assertion */
+  std::map<size_t, std::unordered_set<Node>> d_syms;
 };
 
 }  // namespace smt
