@@ -180,6 +180,7 @@ void SmtDriverMinAssert::getNextAssertions(preprocessing::AssertionPipeline& ap)
   // iterate over previous models
   std::unordered_map<size_t, size_t>::iterator itp;
   std::map<size_t, AssertInfo>::iterator ita;
+  bool recomputeSymbols = false;
   for (size_t i = 0; i < currModelIndex; i++)
   {
     Assert(d_modelValues[i].size() == d_ppAsserts.size());
@@ -211,6 +212,7 @@ void SmtDriverMinAssert::getNextAssertions(preprocessing::AssertionPipeline& ap)
             << "Remove assertion #" << itp->second << std::endl;
         // a previous assertion no longer is necessary
         d_ainfo.erase(ita);
+        recomputeSymbols = true;
       }
       d_modelToAssert[i] = d_nextIndexToInclude;
       ainext.d_coverModels++;
@@ -233,9 +235,26 @@ void SmtDriverMinAssert::getNextAssertions(preprocessing::AssertionPipeline& ap)
     }
     ap.push_back(pa);
   }
+  if (recomputeSymbols)
+  {
+    // we have to recompute symbols from scratch
+    d_asymbols.clear();
+    for (std::pair<const size_t, AssertInfo>& a : d_ainfo)
+    {
+      std::unordered_set<Node>& syms = d_syms[a.first];
+      d_asymbols.insert(syms.begin(), syms.end());
+    }
+  }
+  else
+  {
+    // otherwise, add to current symbols
+    std::unordered_set<Node>& syms = d_syms[d_nextIndexToInclude];
+    d_asymbols.insert(syms.begin(), syms.end());
+  }
+    
   Trace("smt-min-assert")
       << "...finished get next assertions, #current assertions = "
-      << d_ainfo.size() << std::endl;
+      << d_ainfo.size() << ", #free variables = " << d_asymbols.size() << std::endl;
 }
 
 void SmtDriverMinAssert::initializePreprocessedAssertions(preprocessing::AssertionPipeline& ap)
@@ -306,10 +325,7 @@ void SmtDriverMinAssert::initializePreprocessedAssertions(preprocessing::Asserti
 bool SmtDriverMinAssert::recordCurrentModel(bool& allAssertsSat,
                                             SolverEngine* subSolver)
 {
-  d_nextIndexToInclude = 0;
-  allAssertsSat = true;
-  bool indexSet = false;
-  bool indexSetToFalse = false;
+  // get the model reference
   theory::TheoryModel* m = nullptr;
   if (subSolver == nullptr)
   {
@@ -317,12 +333,18 @@ bool SmtDriverMinAssert::recordCurrentModel(bool& allAssertsSat,
     Assert(te != nullptr);
     m = te->getBuiltModel();
   }
+  // allocate the model value vector
   d_modelValues.emplace_back();
   std::vector<Node>& currModel = d_modelValues.back();
+  d_nextIndexToInclude = 0;
+  allAssertsSat = true;
+  bool indexSet = false;
+  size_t indexScore = 0;
   size_t nasserts = d_ppAsserts.size();
   Assert(nasserts > 0);
   size_t startIndex = Random::getRandom().pick(0, nasserts - 1);
   currModel.resize(nasserts);
+  bool hadFalseAssert = false;
   for (size_t i = 0; i < nasserts; i++)
   {
     size_t ii = (i + startIndex) % nasserts;
@@ -344,6 +366,8 @@ bool SmtDriverMinAssert::recordCurrentModel(bool& allAssertsSat,
       continue;
     }
     allAssertsSat = false;
+    bool isFalse = (av == d_false);
+    hadFalseAssert = hadFalseAssert || isFalse;
     // if its already included in our assertions
     if (d_ainfo.find(ii) != d_ainfo.end())
     {
@@ -352,29 +376,65 @@ bool SmtDriverMinAssert::recordCurrentModel(bool& allAssertsSat,
       // a different one
       continue;
     }
-    if (indexSetToFalse)
+    if (indexScore==3)
     {
-      // already have a false assertion
+      // already max score
       continue;
     }
-    bool isFalse = (av == d_false);
-    if (!isFalse && indexSet)
+    // prefer false over unknown, shared symbols over no shared symbols
+    size_t currScore = (isFalse ? 1 : 0) + (hasCurrentSharedSymbol(ii) ? 2 : 0);
+    Trace("smt-min-assert") << "score " << currScore << std::endl;
+    if (indexSet && indexScore>=currScore)
     {
-      // already have an unknown assertion
       continue;
     }
     // include this one, remembering if it is false or not
+    indexScore = currScore;
     d_nextIndexToInclude = ii;
-    indexSetToFalse = isFalse;
     indexSet = true;
   }
+  Trace("smt-min-assert") << "selected new assertion, score=" << indexScore << std::endl;
   // if we did not find a false assertion, remember it
-  if (!allAssertsSat && !indexSetToFalse)
+  if (!allAssertsSat && !hadFalseAssert)
   {
     d_unkModels.insert(d_modelValues.size());
   }
+  
+/*
+  if (subSolver != nullptr)
+  {
+    bool success;
+    std::unordered_set<TNode> rasserts =
+        subSolver->getRelevantAssertions(success);
+    d_asymbols.clear();
+    std::unordered_set<TNode> visited;
+    for (TNode a : rasserts)
+    {
+      expr::getSymbols(a, d_asymbols, visited);
+    }
+  }
+*/
+  
   // we are successful if we have a new assertion to include
   return indexSet;
+}
+
+bool SmtDriverMinAssert::hasCurrentSharedSymbol(size_t i) const
+{
+  std::map<size_t, std::unordered_set<Node>>::const_iterator it = d_syms.find(i);
+  if (it==d_syms.end())
+  {
+    return false;
+  }
+  const std::unordered_set<Node>& syms = it->second;
+  for (const Node& n : syms)
+  {
+    if (d_asymbols.find(n)!=d_asymbols.end())
+    {
+      return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace smt

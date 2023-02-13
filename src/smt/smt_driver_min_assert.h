@@ -51,6 +51,8 @@ class SmtDriverMinAssert : public SmtDriver
    */
   bool recordCurrentModel(bool& allAssertsSat,
                           SolverEngine* subSolver = nullptr);
+  /** has current shared symbol */
+  bool hasCurrentSharedSymbol(size_t i) const;
   /** Common nodes */
   Node d_true;
   Node d_false;
