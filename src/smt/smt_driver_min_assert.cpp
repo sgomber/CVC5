@@ -266,6 +266,7 @@ void SmtDriverMinAssert::initializePreprocessedAssertions(preprocessing::Asserti
   const std::vector<Node>& ppAsserts = ap.ref();
   const std::unordered_map<size_t, Node>& ppSkolemMap =
       ap.getIteSkolemMap();
+  Trace("smt-min-assert") << "# asserts = " << ppAsserts.size() << ", # skolem map = " << ppSkolemMap.size() << std::endl;
   std::unordered_map<size_t, Node>::const_iterator it;
   for (size_t i = 0, nasserts = ppAsserts.size(); i < nasserts; i++)
   {
