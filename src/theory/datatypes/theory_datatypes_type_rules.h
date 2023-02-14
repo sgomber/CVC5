@@ -33,7 +33,10 @@ namespace datatypes {
  * for type substitution sigma, and returns T * sigma.
  */
 struct DatatypeConstructorTypeRule {
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
 
   /**
    * A constructor term is constant if it is an AST built from constructor
@@ -48,7 +51,10 @@ struct DatatypeConstructorTypeRule {
  * This rule is generalized for parametric datatypes.
  */
 struct DatatypeSelectorTypeRule {
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
 };
 
 /**
@@ -57,7 +63,10 @@ struct DatatypeSelectorTypeRule {
  * This rule is generalized for parametric datatypes.
  */
 struct DatatypeTesterTypeRule {
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
 };
 
 /**
@@ -67,7 +76,10 @@ struct DatatypeTesterTypeRule {
  */
 struct DatatypeUpdateTypeRule
 {
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
 };
 
 /**
@@ -77,7 +89,10 @@ struct DatatypeUpdateTypeRule
  */
 struct DatatypeAscriptionTypeRule
 {
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
 };
 
 struct ConstructorProperties
@@ -90,7 +105,10 @@ struct ConstructorProperties
  */
 class DtSizeTypeRule {
  public:
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
 };
 
 /**
@@ -99,7 +117,10 @@ class DtSizeTypeRule {
  */
 class DtBoundTypeRule {
  public:
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
 };
 
 /**
@@ -111,7 +132,10 @@ class DtBoundTypeRule {
 class DtSygusEvalTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
 };
 
 /**
@@ -126,16 +150,18 @@ class DtSygusEvalTypeRule
  * - The head is a datatype T,
  * - The remaining children are either MATCH_BIND_CASE or MATCH_CASE,
  * - The patterns for the cases are over the same datatype as the head term,
- * - The return types for the cases are comparable,
+ * - The return types for the cases are the same,
  * - The patterns specified by the children are exhaustive for T.
  *
- * The type rule returns the (least common subtype) of the return types of the
- * cases.
+ * The type rule returns the return type of the cases.
  */
 class MatchTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
 };
 
 /**
@@ -145,7 +171,10 @@ class MatchTypeRule
 class MatchCaseTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
 };
 
 /**
@@ -156,7 +185,10 @@ class MatchCaseTypeRule
 class MatchBindCaseTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
 };
 
 /**
@@ -168,7 +200,10 @@ class MatchBindCaseTypeRule
 class TupleProjectTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nm, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nm,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
 };
 
 /**
@@ -178,7 +213,10 @@ class TupleProjectTypeRule
 class CodatatypeBoundVariableTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nodeManager, TNode n, bool check);
+  static TypeNode computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
 };
 
 }  // namespace datatypes

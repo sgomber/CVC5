@@ -88,13 +88,19 @@ BoundVarType QuantifiersBoundInference::getBoundVarType(Node q, Node v)
 {
   if (d_bint)
   {
-    return d_bint->getBoundVarType(q, v);
+    BoundVarType bvt = d_bint->getBoundVarType(q, v);
+    // If the bounded integer module has a bound, use it. Otherwise, we fall
+    // through.
+    if (bvt != BOUND_NONE)
+    {
+      return bvt;
+    }
   }
   return isFiniteBound(q, v) ? BOUND_FINITE : BOUND_NONE;
 }
 
 void QuantifiersBoundInference::getBoundVarIndices(
-    Node q, std::vector<unsigned>& indices) const
+    Node q, std::vector<size_t>& indices) const
 {
   Assert(indices.empty());
   // we take the bounded variables first

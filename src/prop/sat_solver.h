@@ -96,7 +96,7 @@ public:
   virtual SatValue modelValue(SatLiteral l) = 0;
 
   /** Get the current assertion level */
-  virtual unsigned getAssertionLevel() const = 0;
+  virtual uint32_t getAssertionLevel() const = 0;
 
   /** Check if the solver is in an inconsistent state */
   virtual bool ok() const = 0;
@@ -147,6 +147,12 @@ class CDCLTSatSolverInterface : public SatSolver
    * Return the current list of decisions made by the SAT solver.
    */
   virtual std::vector<SatLiteral> getDecisions() const = 0;
+
+  /**
+   * Return the order heap of the SAT solver, which is a priority queueue
+   * of literals ordered with respect to variable activity.
+   */
+  virtual std::vector<Node> getOrderHeap() const = 0;
 
   /**
    * Return the current decision level of `lit`.

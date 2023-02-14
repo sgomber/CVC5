@@ -112,6 +112,17 @@ struct AReal
   constexpr static const char* typeName = "real";
 };
 
+/** Argument is a real or an integer */
+struct ARealOrInteger
+{
+  static bool checkArg(TNode n, size_t arg)
+  {
+    TypeNode t = n[arg].getType(true);
+    return t.isRealOrInt();
+  }
+  constexpr static const char* typeName = "real or integer";
+};
+
 /** Argument is a regexp */
 struct ARegExp
 {
@@ -143,7 +154,10 @@ template <class R, class A0 = ANone, class A1 = ANone, class A2 = ANone>
 class SimpleTypeRule
 {
  public:
-  static TypeNode computeType(NodeManager* nm, TNode n, bool check)
+  static TypeNode computeType(NodeManager* nm,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut)
   {
     if (check)
     {
@@ -182,7 +196,10 @@ template <class R, class A>
 class SimpleTypeRuleVar
 {
  public:
-  static TypeNode computeType(NodeManager* nm, TNode n, bool check)
+  static TypeNode computeType(NodeManager* nm,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut)
   {
     if (check)
     {

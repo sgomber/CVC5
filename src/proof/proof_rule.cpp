@@ -45,6 +45,7 @@ const char* toString(PfRule id)
     case PfRule::THEORY_EXPAND_DEF: return "THEORY_EXPAND_DEF";
     case PfRule::WITNESS_AXIOM: return "WITNESS_AXIOM";
     case PfRule::TRUST_REWRITE: return "TRUST_REWRITE";
+    case PfRule::TRUST_FLATTENING_REWRITE: return "TRUST_FLATTENING_REWRITE";
     case PfRule::TRUST_SUBS: return "TRUST_SUBS";
     case PfRule::TRUST_SUBS_MAP: return "TRUST_SUBS_MAP";
     case PfRule::TRUST_SUBS_EQ: return "TRUST_SUBS_EQ";
@@ -114,6 +115,7 @@ const char* toString(PfRule id)
     case PfRule::FALSE_ELIM: return "FALSE_ELIM";
     case PfRule::HO_APP_ENCODE: return "HO_APP_ENCODE";
     case PfRule::HO_CONG: return "HO_CONG";
+    case PfRule::BETA_REDUCE: return "BETA_REDUCE";
     //================================================= Array rules
     case PfRule::ARRAYS_READ_OVER_WRITE: return "ARRAYS_READ_OVER_WRITE";
     case PfRule::ARRAYS_READ_OVER_WRITE_CONTRA:
@@ -160,8 +162,7 @@ const char* toString(PfRule id)
     case PfRule::STRING_SEQ_UNIT_INJ: return "STRING_SEQ_UNIT_INJ";
     case PfRule::STRING_INFERENCE: return "STRING_INFERENCE";
     //================================================= Arith rules
-    case PfRule::MACRO_ARITH_SCALE_SUM_UB:
-      return "ARITH_SCALE_SUM_UPPER_BOUNDS";
+    case PfRule::MACRO_ARITH_SCALE_SUM_UB: return "MACRO_ARITH_SCALE_SUM_UB";
     case PfRule::ARITH_SUM_UB: return "ARITH_SUM_UB";
     case PfRule::ARITH_TRICHOTOMY: return "ARITH_TRICHOTOMY";
     case PfRule::INT_TIGHT_LB: return "INT_TIGHT_LB";

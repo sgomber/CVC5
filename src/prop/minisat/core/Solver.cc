@@ -394,7 +394,8 @@ CRef Solver::reason(Var x) {
   if (needProof() && explLevel < assertionLevel)
   {
     Trace("pf::sat") << "..user level is " << userContext()->getLevel() << "\n";
-    Assert(userContext()->getLevel() == (assertionLevel + 1));
+    Assert(userContext()->getLevel()
+           == static_cast<uint32_t>(assertionLevel + 1));
     d_proxy->notifyCurrPropagationInsertedAtLevel(explLevel);
   }
   // Construct the reason
@@ -443,8 +444,8 @@ bool Solver::addClause_(vec<Lit>& ps, bool removable, ClauseId& id)
       // If a literal is false at 0 level (both sat and user level) we also
       // ignore it, unless we are tracking the SAT solver's reasoning
       if (value(ps[i]) == l_False) {
-        if (!options().smt.unsatCores && !needProof() && level(var(ps[i])) == 0
-            && user_level(var(ps[i])) == 0)
+        if (!options().smt.produceUnsatCores && !needProof()
+            && level(var(ps[i])) == 0 && user_level(var(ps[i])) == 0)
         {
           continue;
         }
@@ -481,7 +482,7 @@ bool Solver::addClause_(vec<Lit>& ps, bool removable, ClauseId& id)
 
       // If all false, we're in conflict
       if (ps.size() == falseLiteralsCount) {
-        if (options().smt.unsatCores || needProof())
+        if (options().smt.produceUnsatCores || needProof())
         {
           // Take care of false units here; otherwise, we need to
           // construct the clause below to give to the proof manager
@@ -527,7 +528,7 @@ bool Solver::addClause_(vec<Lit>& ps, bool removable, ClauseId& id)
           MinisatSatSolver::toSatClause(ca[cr], satClause);
           d_proxy->notifyClauseInsertedAtLevel(satClause, clauseLevel);
         }
-        if (options().smt.unsatCores || needProof())
+        if (options().smt.produceUnsatCores || needProof())
         {
           if (ps.size() == falseLiteralsCount)
           {
@@ -1235,11 +1236,7 @@ CRef Solver::propagate(TheoryCheckType type)
         // If no conflict, do the theory check
         if (confl == CRef_Undef && type != CHECK_WITHOUT_THEORY) {
             // Do the theory check
-            if (type == CHECK_FINAL_FAKE) {
-              theoryCheck(cvc5::internal::theory::Theory::EFFORT_FULL);
-            } else {
-              theoryCheck(cvc5::internal::theory::Theory::EFFORT_STANDARD);
-            }
+            theoryCheck(cvc5::internal::theory::Theory::EFFORT_STANDARD);
             // Pick up the theory propagated literals
             propagateTheory();
             // If there are lemmas (or conflicts) update them
@@ -1655,10 +1652,6 @@ lbool Solver::search(int nof_conflicts)
           return l_True;
         }
       }
-      else if (check_type == CHECK_FINAL_FAKE)
-      {
-        check_type = CHECK_WITH_THEORY;
-      }
 
       if ((nof_conflicts >= 0 && conflictC >= nof_conflicts)
           || !withinBudget(Resource::SatConflictStep))
@@ -2072,7 +2065,7 @@ CRef Solver::updateLemmas() {
 
       // If it's an empty lemma, we have a conflict at zero level
       if (lemma.size() == 0) {
-        Assert(!options().smt.unsatCores && !needProof());
+        Assert(!options().smt.produceUnsatCores && !needProof());
         conflict = CRef_Lazy;
         backtrackLevel = 0;
         Trace("minisat::lemmas") << "Solver::updateLemmas(): found empty clause" << std::endl;
@@ -2240,8 +2233,19 @@ bool Solver::needProof() const
 
 bool Solver::assertionLevelOnly() const
 {
-  return options().smt.unsatCores && !needProof()
+  return options().smt.produceUnsatCores && !needProof()
          && options().base.incrementalSolving;
+}
+
+const std::vector<Node> Solver::getMiniSatOrderHeap()
+{
+  std::vector<Node> heapList;
+  for (size_t i = 0, hsize = order_heap.size(); i < hsize; ++i)
+  {
+    Node n = d_proxy->getNode(order_heap[i]);
+    heapList.push_back(n);
+  }
+  return heapList;
 }
 
 }  // namespace Minisat

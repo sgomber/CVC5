@@ -30,9 +30,9 @@
 #include <string>
 
 #include "api/cpp/cvc5.h"
-#include "parser/parser.h"
+#include "parser/api/cpp/command.h"
+#include "parser/parser_antlr.h"
 #include "parser/parser_builder.h"
-#include "smt/command.h"
 
 using namespace cvc5;
 using namespace cvc5::internal;
@@ -97,6 +97,8 @@ std::string parse(std::string instr,
     // get the declarations
     while (Command* c = parser->nextCommand())
     {
+      // invoke the command, which may bind symbols
+      c->invoke(&solver, &symman);
       delete c;
     }
   assert(parser->done());  // parser should be done

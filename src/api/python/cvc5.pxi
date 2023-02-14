@@ -37,12 +37,13 @@ from cvc5 cimport wstring as c_wstring
 from cvc5 cimport tuple as c_tuple
 from cvc5 cimport get0, get1, get2
 from cvc5kinds cimport Kind as c_Kind
+from cvc5sortkinds cimport SortKind as c_SortKind
 from cvc5types cimport BlockModelsMode as c_BlockModelsMode
 from cvc5types cimport RoundingMode as c_RoundingMode
 from cvc5types cimport UnknownExplanation as c_UnknownExplanation
 
 cdef extern from "Python.h":
-    wchar_t* PyUnicode_AsWideCharString(object, Py_ssize_t *)
+    wchar_t* PyUnicode_AsWideCharString(object, Py_ssize_t *) except NULL
     object PyUnicode_FromWideChar(const wchar_t*, Py_ssize_t)
     void PyMem_Free(void*)
 
@@ -259,9 +260,9 @@ cdef class DatatypeConstructor:
         return self.cdc.getName().decode()
 
     def getTerm(self):
-        """   
+        """
             Get the constructor term of this datatype constructor.
-            
+
             Datatype constructors are a special class of function-like terms
             whose sort is datatype constructor
             (:py:meth:`Sort.isDatatypeConstructor()`). All datatype
@@ -653,6 +654,9 @@ cdef class Grammar:
         self.solver = solver
         self.cgrammar = c_Grammar()
 
+    def __str__(self):
+        return self.cgrammar.toString().decode()
+
     def addRule(self, Term ntSymbol, Term rule):
         """
             Add ``rule`` to the set of rules corresponding to ``ntSymbol``.
@@ -833,14 +837,6 @@ cdef class Solver:
         sort.csort = self.csolver.getIntegerSort()
         return sort
 
-    def getNullSort(self):
-        """
-            :return: A null sort object.
-        """
-        cdef Sort sort = Sort(self)
-        sort.csort = self.csolver.getNullSort()
-        return sort
-
     def getRealSort(self):
         """
             :return: Sort Real.
@@ -904,6 +900,16 @@ cdef class Solver:
         """
         cdef Sort sort = Sort(self)
         sort.csort = self.csolver.mkFloatingPointSort(exp, sig)
+        return sort
+
+    def mkFiniteFieldSort(self, size):
+        """
+            Create a finite field sort.
+
+            :param size: The size of the field. Must be a prime-power.
+        """
+        cdef Sort sort = Sort(self)
+        sort.csort = self.csolver.mkFiniteFieldSort(str(size).encode())
         return sort
 
     def mkDatatypeSort(self, DatatypeDecl dtypedecl):
@@ -1053,6 +1059,40 @@ cdef class Solver:
         sort.csort = self.csolver.mkSequenceSort(elemSort.csort)
         return sort
 
+    def mkAbstractSort(self, k):
+        """
+            Create an abstract sort. An abstract sort represents a sort for a 
+            given kind whose parameters and arguments are unspecified.
+            
+            The kind ``k`` must be the kind of a sort that can be abstracted, i.e., 
+            a sort that has indices or argument sorts. For example, ARRAY_SORT
+            and :py:obj:`BITVECTOR_SORT <Kind.BITVECTOR_SORT>` can be
+            passed as the kind ``k`` to this method, while
+            :py:obj:`INTEGER_SORT <Kind.INTEGER_SORT>` and
+            :py:obj:`STRING_SORT <Kind.STRING_SORT>` cannot.
+            
+            .. note::
+            Providing the kind :py:obj:`ABSTRACT_SORT <Kind.ABSTRACT_SORT>`
+            as an argument to this method returns the (fully) unspecified sort,
+            denoted ``?``.
+            
+            .. note::
+            Providing a kind ``k`` of sort that has no indices and a fixed arity of
+            argument sorts will return the sort of kind ``k`` whose arguments are
+            the unspecified sort. For example, ``mkAbstractSort(ARRAY_SORT)`` will
+            return the sort ``(ARRAY_SORT ? ?)`` instead of the abstract sort whose
+            abstract kind is py:obj:`ARRAY_SORT <Kind.ARRAY_SORT>`.
+            
+            :param k: The kind of the abstract sort
+            :return: The abstract sort.
+            
+            .. warning:: This method is experimental and may change in future
+                         versions.
+        """
+        cdef Sort sort = Sort(self)
+        sort.csort = self.csolver.mkAbstractSort(<c_SortKind> k.value)
+        return sort
+
     def mkUninterpretedSort(self, str name = None):
         """
             Create an uninterpreted sort.
@@ -1122,11 +1162,11 @@ cdef class Solver:
             Supports the following arguments:
 
             - ``Term mkTerm(Kind kind)``
-            - ``Term mkTerm(Kind kind, List[Term] children)``
             - ``Term mkTerm(Op op)``
-            - ``Term mkTerm(Op op, List[Term] children)``
+            - ``Term mkTerm(Kind kind, *args)``
+            - ``Term mkTerm(Op op, *args)``
 
-            where ``List[Term]`` can also be comma-separated arguments
+            where ``*args`` is a comma-separated list of terms.
         """
         cdef Term term = Term(self)
         cdef vector[c_Term] v
@@ -1442,6 +1482,18 @@ cdef class Solver:
             raise ValueError("Unexpected inputs to mkBitVector")
         return term
 
+    def mkFiniteFieldElem(self, value, Sort sort):
+        """
+            Create finite field value.
+
+            :return: A Term representing a finite field value.
+            :param value: The value of the element's integer representation.
+            :param sort: The field to create the element in.
+        """
+        cdef Term term = Term(self)
+        term.cterm = self.csolver.mkFiniteFieldElem(str(value).encode(), sort.csort)
+        return term
+
     def mkConstArray(self, Sort sort, Term val):
         """
             Create a constant array with the provided constant value stored at
@@ -1749,6 +1801,18 @@ cdef class Solver:
         """
         self.csolver.addSygusConstraint(t.cterm)
 
+    def getSygusConstraints(self):
+        """
+            Get the list of sygus constraints.
+            :return: The list of sygus constraints.
+        """
+        constraints = []
+        for c in self.csolver.getSygusConstraints():
+            term = Term(self)
+            term.cterm = c
+            constraints.append(term)
+        return constraints
+
     def addSygusAssume(self, Term t):
         """
             Add a formula to the set of Sygus assumptions.
@@ -1762,6 +1826,18 @@ cdef class Solver:
             :param term: The formuula to add as an assumption.
         """
         self.csolver.addSygusAssume(t.cterm)
+
+    def getSygusAssumptions(self):
+        """
+            Get the list of sygus assumptions.
+            :return: The list of sygus assumptions.
+        """
+        assumptions = []
+        for a in self.csolver.getSygusAssumptions():
+            term = Term(self)
+            term.cterm = a
+            assumptions.append(term)
+        return assumptions
 
     def addSygusInvConstraint(self, Term inv_f, Term pre_f, Term trans_f, Term post_f):
         """
@@ -2066,7 +2142,7 @@ cdef class Solver:
         for bv in bound_vars:
             v.push_back((<Term?> bv).cterm)
 
-        if t is not None:
+        if isinstance(sym_or_fun, str):
             term.cterm = self.csolver.defineFunRec((<str?> sym_or_fun).encode(),
                                                 <const vector[c_Term] &> v,
                                                 (<Sort?> sort_or_term).csort,
@@ -2080,7 +2156,7 @@ cdef class Solver:
 
         return term
 
-    def defineFunsRec(self, funs, bound_vars, terms):
+    def defineFunsRec(self, funs, bound_vars, terms, glb = False):
         """
             Define recursive functions.
 
@@ -2095,9 +2171,8 @@ cdef class Solver:
             :param funs: The sorted functions.
             :param bound_vars: The list of parameters to the functions.
             :param terms: The list of function bodies of the functions.
-            :param global: Determines whether this definition is global (i.e.
-                           persists when popping the context).
-            :return: The function.
+            :param glb: Determines whether this definition is global (i.e.
+                        persists when popping the context).
         """
         cdef vector[c_Term] vf
         cdef vector[vector[c_Term]] vbv
@@ -2114,30 +2189,32 @@ cdef class Solver:
             temp.clear()
 
         for t in terms:
-            vf.push_back((<Term?> t).cterm)
+            vt.push_back((<Term?> t).cterm)
 
-    def getProof(self):
+        self.csolver.defineFunsRec(vf, vbv, vt, glb)
+
+    def getProof(self, c = ProofComponent.PROOF_COMPONENT_FULL):
         """
-            Get the refutation proof
+            Get a proof associated with the most recent call to checkSat.
 
             SMT-LIB:
 
             .. code-block:: smtlib
 
-               (get-proof)
+               (get-proof :c)
 
             Requires to enable option
             :ref:`produce-proofs <lbl-option-produce-proofs>`.
 
             .. warning:: This method is experimental and may change in future
                          versions.
-
-            :return: A string representing the proof, according to the value of
-                     :ref:`proof-format-mode <lbl-option-proof-format-mode>`.
+            :param c: The component of the proof to return 
+            :return: A string representing the proof. This takes into account
+            proof-format-mode when c is PROOF_COMPONENT_FULL.
         """
-        return self.csolver.getProof()
+        return self.csolver.getProof(<c_ProofComponent> c.value)
 
-    def getLearnedLiterals(self):
+    def getLearnedLiterals(self, type = LearnedLitType.LEARNED_LIT_INPUT):
         """
             Get a list of literals that are entailed by the current set of assertions
 
@@ -2150,10 +2227,11 @@ cdef class Solver:
             .. warning:: This method is experimental and may change in future
                          versions.
 
+            :param type: The type of learned literals to return
             :return: The list of literals.
         """
         lits = []
-        for a in self.csolver.getLearnedLiterals():
+        for a in self.csolver.getLearnedLiterals(<c_LearnedLitType> type.value):
             term = Term(self)
             term.cterm = a
             lits.append(term)
@@ -2377,21 +2455,26 @@ cdef class Solver:
             diffi[termk] = termv
         return diffi
 
-    def getValue(self, Term t):
+    def getValue(self, term_or_list):
         """
-            Get the value of the given term in the current model.
+            Get the value of the given term or list of terms in the current
+            model.
 
             SMT-LIB:
 
             .. code-block:: smtlib
 
-                ( get-value ( <term> ) )
+                ( get-value ( <term>* ) )
 
-            :param term: The term for which the value is queried.
-            :return: The value of the given term.
+            :param term_or_list: The term or list of terms for which the value
+                                 is queried.
+            :return: The value or list of values of the given term or list of
+                     terms.
         """
+        if isinstance(term_or_list, list):
+            return [self.getValue(t) for t in term_or_list]
         cdef Term term = Term(self)
-        term.cterm = self.csolver.getValue(t.cterm)
+        term.cterm = self.csolver.getValue((<Term> term_or_list).cterm)
         return term
 
     def getModelDomainElements(self, Sort s):
@@ -2844,8 +2927,7 @@ cdef class Solver:
     def blockModelValues(self, terms):
         """
            Block the current model values of (at least) the values in terms.
-           Can be called only if immediately preceded by a SAT or NOT_ENTAILED
-           query.
+           Can be called only if immediately preceded by a SAT query.
 
            SMT-LIB:
 
@@ -2876,13 +2958,19 @@ cdef class Solver:
 
     def getStatistics(self):
         """
-            Returns a snapshot of the current state of the statistic values of
+            Return a snapshot of the current state of the statistic values of
             this solver. The returned object is completely decoupled from the
             solver and will not change when the solver is used again.
         """
         res = Statistics()
         res.cstats = self.csolver.getStatistics()
         return res
+
+    def getVersion(self):
+        """
+            Return a string representation of the version of this solver.
+        """
+        return self.csolver.getVersion()
 
 
 cdef class Sort:
@@ -2923,6 +3011,15 @@ cdef class Sort:
 
     def __hash__(self):
         return csorthash(self.csort)
+
+    def getKind(self):
+        """
+            .. warning:: This method is experimental and may change in future
+                         versions.
+
+            :return: The :py:class:`SortKind` of this sort.
+        """
+        return SortKind(<int> self.csort.getKind())
 
     def hasSymbol(self):
         """
@@ -3097,6 +3194,14 @@ cdef class Sort:
         """
         return self.csort.isArray()
 
+    def isFiniteField(self):
+        """
+            Determine if this is a finite field sort.
+
+            :return: True if the sort is an array sort.
+        """
+        return self.csort.isFiniteField()
+
     def isSet(self):
         """
             Determine if this is a set sort.
@@ -3120,6 +3225,17 @@ cdef class Sort:
             :return: True if the sort is a sequence sort.
         """
         return self.csort.isSequence()
+
+    def isAbstract(self):
+        """
+            Determine if this is an abstract sort.
+
+            :return: True if the sort is an abstract sort.
+
+            .. warning:: This method is experimental and may change in future
+                         versions.
+        """
+        return self.csort.isAbstract()
 
     def isUninterpretedSort(self):
         """
@@ -3236,8 +3352,8 @@ cdef class Sort:
         cdef vector[c_Sort] ces
         cdef vector[c_Sort] creplacements
 
-        # normalize the input parameters to be lists
         if isinstance(sort_or_list_1, list):
+            # call the API substitute method with lists
             assert isinstance(sort_or_list_2, list)
             es = sort_or_list_1
             replacements = sort_or_list_2
@@ -3250,14 +3366,11 @@ cdef class Sort:
             for e, r in zip(es, replacements):
                 ces.push_back((<Sort?> e).csort)
                 creplacements.push_back((<Sort?> r).csort)
-
+            sort.csort = self.csort.substitute(ces, creplacements)
         else:
-            # add the single elements to the vectors
-            ces.push_back((<Sort?> sort_or_list_1).csort)
-            creplacements.push_back((<Sort?> sort_or_list_2).csort)
+            # call the API substitute method with single sorts
+            sort.csort = self.csort.substitute((<Sort?> sort_or_list_1).csort, (<Sort?> sort_or_list_2).csort)
 
-        # call the API substitute method with lists
-        sort.csort = self.csort.substitute(ces, creplacements)
         return sort
 
 
@@ -3384,6 +3497,16 @@ cdef class Sort:
         sort.csort = self.csort.getSequenceElementSort()
         return sort
 
+    def getAbstractedKind(self):
+        """
+            :return: The sort kind of an abstract sort, which denotes the kind
+            of sorts that this abstract sort denotes.
+
+            .. warning:: This method is experimental and may change in future
+                         versions.
+        """
+        return SortKind(<int> self.csort.getAbstractedKind())
+
     def getUninterpretedSortConstructorArity(self):
         """
             :return: The arity of a sort constructor sort.
@@ -3395,6 +3518,12 @@ cdef class Sort:
             :return: The bit-width of the bit-vector sort.
         """
         return self.csort.getBitVectorSize()
+
+    def getFiniteFieldSize(self):
+        """
+            :return: The size of the finite field sort.
+        """
+        return int(self.csort.getFiniteFieldSize().decode())
 
     def getFloatingPointExponentSize(self):
         """
@@ -3594,8 +3723,8 @@ cdef class Term:
         cdef vector[c_Term] ces
         cdef vector[c_Term] creplacements
 
-        # normalize the input parameters to be lists
         if isinstance(term_or_list_1, list):
+            # call the API substitute method with lists
             assert isinstance(term_or_list_2, list)
             es = term_or_list_1
             replacements = term_or_list_2
@@ -3607,14 +3736,11 @@ cdef class Term:
             for e, r in zip(es, replacements):
                 ces.push_back((<Term?> e).cterm)
                 creplacements.push_back((<Term?> r).cterm)
-
+            term.cterm = self.cterm.substitute(ces, creplacements)
         else:
-            # add the single elements to the vectors
-            ces.push_back((<Term?> term_or_list_1).cterm)
-            creplacements.push_back((<Term?> term_or_list_2).cterm)
+            # call the API substitute method with single terms
+            term.cterm = self.cterm.substitute((<Term?> term_or_list_1).cterm, (<Term?> term_or_list_2).cterm)
 
-        # call the API substitute method with lists
-        term.cterm = self.cterm.substitute(ces, creplacements)
         return term
 
     def hasOp(self):
@@ -4040,6 +4166,22 @@ cdef class Term:
         """
         return self.cterm.getBitVectorValue(base).decode()
 
+    def isFiniteFieldValue(self):
+        """
+            :return: True iff this term is a finite field value.
+        """
+        return self.cterm.isFiniteFieldValue()
+
+    def getFiniteFieldValue(self):
+        """
+           .. note:: Asserts :py:meth:`isFiniteFieldValue()`.
+
+           .. note:: Uses the integer representative of smallest absolute value.
+
+           :return: The representation of a finite field value as an integer.
+        """
+        return int(self.cterm.getFiniteFieldValue().decode())
+
     def toPythonObj(self):
         """
             Converts a constant value Term to a Python object.
@@ -4050,6 +4192,7 @@ cdef class Term:
             - **Int    :** Returns a Python int
             - **Real   :** Returns a Python Fraction
             - **BV     :** Returns a Python int (treats BV as unsigned)
+            - **FF     :** Returns a Python int (gives the FF integer representative of smallest absolute value)
             - **String :** Returns a Python Unicode string
             - **Array  :** Returns a Python dict mapping indices to values. The constant base is returned as the default value.
 
@@ -4063,6 +4206,8 @@ cdef class Term:
             return self.getRealValue()
         elif self.isBitVectorValue():
             return int(self.getBitVectorValue(), 2)
+        elif self.isFiniteFieldValue():
+            return self.getFiniteFieldValue()
         elif self.isStringValue():
             return self.getStringValue()
         elif self.getSort().isArray():

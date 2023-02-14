@@ -780,17 +780,16 @@ class Constraint {
   class ConstraintRuleCleanup
   {
    public:
-    inline void operator()(ConstraintRule* crp)
+    inline void operator()(ConstraintRule& crp)
     {
-      Assert(crp != NULL);
-      ConstraintP constraint = crp->d_constraint;
+      ConstraintP constraint = crp.d_constraint;
       Assert(constraint->d_crid != ConstraintRuleIdSentinel);
       constraint->d_crid = ConstraintRuleIdSentinel;
       if (constraint->isProofProducing())
       {
-        if (crp->d_farkasCoefficients != RationalVectorCPSentinel)
+        if (crp.d_farkasCoefficients != RationalVectorCPSentinel)
         {
-          delete crp->d_farkasCoefficients;
+          delete crp.d_farkasCoefficients;
         }
       }
     }
@@ -799,9 +798,8 @@ class Constraint {
   class CanBePropagatedCleanup
   {
    public:
-    inline void operator()(ConstraintP* p)
+    inline void operator()(ConstraintP& constraint)
     {
-      ConstraintP constraint = *p;
       Assert(constraint->d_canBePropagated);
       constraint->d_canBePropagated = false;
     }
@@ -810,9 +808,8 @@ class Constraint {
   class AssertionOrderCleanup
   {
    public:
-    inline void operator()(ConstraintP* p)
+    inline void operator()(ConstraintP& constraint)
     {
-      ConstraintP constraint = *p;
       Assert(constraint->assertedToTheTheory());
       constraint->d_assertionOrder = AssertionOrderSentinel;
       constraint->d_witness = TNode::null();
@@ -823,9 +820,8 @@ class Constraint {
   class SplitCleanup
   {
    public:
-    inline void operator()(ConstraintP* p)
+    inline void operator()(ConstraintP& constraint)
     {
-      ConstraintP constraint = *p;
       Assert(constraint->d_split);
       constraint->d_split = false;
     }
@@ -1150,12 +1146,6 @@ class ConstraintDatabase : protected EnvObj
   bool variableDatabaseIsSetup(ArithVar v) const;
   void removeVariable(ArithVar v);
 
-  /** Get an explanation and proof for this constraint from the equality engine
-   */
-  TrustNode eeExplain(ConstraintCP c) const;
-  /** Get an explanation for this constraint from the equality engine */
-  void eeExplain(ConstraintCP c, NodeBuilder& nb) const;
-
   /**
    * Returns a constraint with the variable v, the constraint type t, and a value
    * dominated by r (explained below) if such a constraint exists in the database.
@@ -1255,7 +1245,7 @@ class ConstraintDatabase : protected EnvObj
     IntStat d_unatePropagateCalls;
     IntStat d_unatePropagateImplications;
 
-    Statistics();
+    Statistics(StatisticsRegistry& sr);
   } d_statistics;
 
 }; /* ConstraintDatabase */

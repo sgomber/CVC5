@@ -26,7 +26,15 @@ name   = "SMT Layer"
   help = "Save up all ASSERTions; run nonclausal simplification and clausal (MiniSat) propagation for all of them only after reaching a querying command (CHECKSAT or QUERY or predicate SUBTYPE declaration)."
 
 [[option]]
-  name       = "doStaticLearning"
+  name       = "simplificationBoolConstProp"
+  category   = "expert"
+  long       = "simplification-bcp"
+  type       = "bool"
+  default    = "false"
+  help       = "apply Boolean constant propagation as a substituion during simplification"
+
+[[option]]
+  name       = "staticLearning"
   category   = "regular"
   long       = "static-learning"
   type       = "bool"
@@ -134,7 +142,7 @@ name   = "SMT Layer"
   help       = "after UNSAT/VALID, check the generated proof (with proof)"
 
 [[option]]
-  name       = "unsatCores"
+  name       = "produceUnsatCores"
   category   = "regular"
   long       = "produce-unsat-cores"
   type       = "bool"
@@ -166,6 +174,14 @@ name   = "SMT Layer"
   type       = "bool"
   default    = "false"
   help       = "if an unsat core is produced, it is reduced to a minimal unsat core"
+
+[[option]]
+  name       = "printUnsatCoresFull"
+  category   = "regular"
+  long       = "print-unsat-cores-full"
+  type       = "bool"
+  default    = "false"
+  help       = "when printing unsat cores, include unlabeled assertions"
 
 [[option]]
   name       = "checkUnsatCores"
@@ -345,7 +361,7 @@ name   = "SMT Layer"
   help = "Do not translate bit-vectors to integers"
 [[option.mode.SUM]]
   name = "sum"
-  help = "Generate a sum expression for each bvand instance, based on the value in --solbv-bv-as-int-granularity"
+  help = "Generate a sum expression for each bvand instance, based on the value in --solve-bv-as-int-granularity"
 [[option.mode.IAND]]
   name = "iand"
   help = "Translate bvand to the iand operator (experimental)"
@@ -370,6 +386,7 @@ name   = "SMT Layer"
   long       = "bvand-integer-granularity=N"
   type       = "uint64_t"
   default    = "1"
+  maximum    = "8"
   help       = "granularity to use in --solve-bv-as-int mode and for iand operator (experimental)"
 
 [[option]]
@@ -396,6 +413,7 @@ name   = "SMT Layer"
   long       = "solve-int-as-bv=N"
   type       = "uint64_t"
   default    = "0"
+  maximum    = "4294967295"
   help       = "attempt to solve a pure integer satisfiable problem by bitblasting in sufficient bitwidth (experimental)"
 
 [[option]]
@@ -407,7 +425,7 @@ name   = "SMT Layer"
   help       = "attempt to solve a pure real satisfiable problem as an integer problem (for non-linear)"
 
 [[option]]
-  name       = "interpolants"
+  name       = "produceInterpolants"
   category   = "regular"
   long       = "produce-interpolants"
   type       = "bool"

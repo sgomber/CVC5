@@ -288,7 +288,14 @@ public:
                      bool b);  // Declare if a variable should be eligible for
                                // selection in the decision heuristic.
 
+ // Return the decision trail
  const vec<Lit>& getMiniSatDecisions() { return trail; }
+
+ // Return the order_heap, which is a priority queue of variables ordered with
+ // respect to the variable activity. The order heap is made available here
+ // in order to make partitions based on the literals contained in the heap.
+
+ const std::vector<Node> getMiniSatOrderHeap();
 
  // Read state:
  //
@@ -406,6 +413,7 @@ protected:
         CRef cref;
         Lit  blocker;
         Watcher(CRef cr, Lit p) : cref(cr), blocker(p) {}
+
         bool operator==(const Watcher& w) const { return cref == w.cref; }
         bool operator!=(const Watcher& w) const { return cref != w.cref; }
     };
@@ -466,9 +474,7 @@ protected:
       // Check and perform theory reasoning
       CHECK_WITH_THEORY,
       // The SAT abstraction of the problem is satisfiable, perform a full theory check
-      CHECK_FINAL,
-      // Perform a full theory check even if not done with everything
-      CHECK_FINAL_FAKE
+      CHECK_FINAL
     };
 
     // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is

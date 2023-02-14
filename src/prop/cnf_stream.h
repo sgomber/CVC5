@@ -30,10 +30,10 @@
 #include "context/cdinsert_hashmap.h"
 #include "context/cdlist.h"
 #include "expr/node.h"
-#include "prop/proof_cnf_stream.h"
 #include "prop/registrar.h"
 #include "prop/sat_solver_types.h"
 #include "smt/env_obj.h"
+#include "util/statistics_stats.h"
 
 namespace cvc5::internal {
 
@@ -50,6 +50,8 @@ enum class FormulaLitPolicy : uint32_t
 {
   // literals for formulas are notified
   TRACK_AND_NOTIFY,
+  // literals for Boolean variables are notified
+  TRACK_AND_NOTIFY_VAR,
   // literals for formulas are added to node map
   TRACK,
   // literals for formulas are kept internal (default)
@@ -104,13 +106,8 @@ class CnfStream : protected EnvObj
    * @param node node to convert and assert
    * @param removable whether the sat solver can choose to remove the clauses
    * @param negated whether we are asserting the node negated
-   * @param input whether it is an input assertion (rather than a lemma). This
-   * information is only relevant for unsat core tracking.
    */
-  void convertAndAssert(TNode node,
-                        bool removable,
-                        bool negated,
-                        bool input = false);
+  void convertAndAssert(TNode node, bool removable, bool negated);
   /**
    * Get the node that is represented by the given SatLiteral.
    * @param literal the literal from the sat solver
@@ -285,13 +282,15 @@ class CnfStream : protected EnvObj
    * @param node a formula
    * @param isTheoryAtom is this a theory atom that needs to be asserted to
    * theory.
-   * @param preRegister whether to preregister the atom with the theory
+   * @param notifyTheory whether to notify the theory of the atom
    * @param canEliminate whether the sat solver can safely eliminate this
    * variable.
    * @return the literal corresponding to the formula
    */
-  SatLiteral newLiteral(TNode node, bool isTheoryAtom = false,
-                        bool preRegister = false, bool canEliminate = true);
+  SatLiteral newLiteral(TNode node,
+                        bool isTheoryAtom = false,
+                        bool notifyTheory = false,
+                        bool canEliminate = true);
 
   /**
    * Constructs a new literal for an atom and returns it.  Calls
@@ -309,7 +308,7 @@ class CnfStream : protected EnvObj
  private:
   struct Statistics
   {
-    Statistics(const std::string& name);
+    Statistics(StatisticsRegistry& sr, const std::string& name);
     TimerStat d_cnfConversionTime;
   } d_stats;
 

@@ -28,7 +28,8 @@ namespace arrays {
 
 TypeNode ArraySelectTypeRule::computeType(NodeManager* nodeManager,
                                           TNode n,
-                                          bool check)
+                                          bool check,
+                                          std::ostream* errOut)
 {
   Assert(n.getKind() == kind::SELECT);
   TypeNode arrayType = n[0].getType(check);
@@ -40,7 +41,7 @@ TypeNode ArraySelectTypeRule::computeType(NodeManager* nodeManager,
                                          "array select operating on non-array");
     }
     TypeNode indexType = n[1].getType(check);
-    if (!indexType.isSubtypeOf(arrayType.getArrayIndexType()))
+    if (indexType != arrayType.getArrayIndexType())
     {
       throw TypeCheckingExceptionPrivate(
           n, "array select not indexed with correct type for array");
@@ -51,7 +52,8 @@ TypeNode ArraySelectTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode ArrayStoreTypeRule::computeType(NodeManager* nodeManager,
                                          TNode n,
-                                         bool check)
+                                         bool check,
+                                         std::ostream* errOut)
 {
   if (n.getKind() == kind::STORE)
   {
@@ -65,12 +67,12 @@ TypeNode ArrayStoreTypeRule::computeType(NodeManager* nodeManager,
       }
       TypeNode indexType = n[1].getType(check);
       TypeNode valueType = n[2].getType(check);
-      if (!indexType.isSubtypeOf(arrayType.getArrayIndexType()))
+      if (indexType != arrayType.getArrayIndexType())
       {
         throw TypeCheckingExceptionPrivate(
             n, "array store not indexed with correct type for array");
       }
-      if (!valueType.isSubtypeOf(arrayType.getArrayConstituentType()))
+      if (valueType != arrayType.getArrayConstituentType())
       {
         Trace("array-types")
             << "array type: " << arrayType.getArrayConstituentType()
@@ -177,44 +179,10 @@ bool ArrayStoreTypeRule::computeIsConst(NodeManager* nodeManager, TNode n)
   return true;
 }
 
-TypeNode ArrayTableFunTypeRule::computeType(NodeManager* nodeManager,
-                                            TNode n,
-                                            bool check)
-{
-  Assert(n.getKind() == kind::ARR_TABLE_FUN);
-  TypeNode arrayType = n[0].getType(check);
-  if (check)
-  {
-    if (!arrayType.isArray())
-    {
-      throw TypeCheckingExceptionPrivate(n,
-                                         "array table fun arg 0 is non-array");
-    }
-    TypeNode arrType2 = n[1].getType(check);
-    if (!arrayType.isArray())
-    {
-      throw TypeCheckingExceptionPrivate(n,
-                                         "array table fun arg 1 is non-array");
-    }
-    TypeNode indexType = n[2].getType(check);
-    if (!indexType.isComparableTo(arrayType.getArrayIndexType()))
-    {
-      throw TypeCheckingExceptionPrivate(
-          n, "array table fun arg 2 does not match type of array");
-    }
-    indexType = n[3].getType(check);
-    if (!indexType.isComparableTo(arrayType.getArrayIndexType()))
-    {
-      throw TypeCheckingExceptionPrivate(
-          n, "array table fun arg 3 does not match type of array");
-    }
-  }
-  return arrayType.getArrayIndexType();
-}
-
 TypeNode ArrayLambdaTypeRule::computeType(NodeManager* nodeManager,
                                           TNode n,
-                                          bool check)
+                                          bool check,
+                                          std::ostream* errOut)
 {
   Assert(n.getKind() == kind::ARRAY_LAMBDA);
   TypeNode lamType = n[0].getType(check);
@@ -271,18 +239,10 @@ Node ArraysProperties::mkGroundTerm(TypeNode type)
   return builtin::SortProperties::mkGroundTerm(type);
 }
 
-TypeNode ArrayPartialSelectTypeRule::computeType(NodeManager* nodeManager,
-                                                 TNode n,
-                                                 bool check)
-{
-  Assert(n.getKind() == kind::PARTIAL_SELECT_0
-         || n.getKind() == kind::PARTIAL_SELECT_1);
-  return nodeManager->integerType();
-}
-
 TypeNode ArrayEqRangeTypeRule::computeType(NodeManager* nodeManager,
                                            TNode n,
-                                           bool check)
+                                           bool check,
+                                           std::ostream* errOut)
 {
   Assert(n.getKind() == kind::EQ_RANGE);
   if (check)
@@ -306,12 +266,12 @@ TypeNode ArrayEqRangeTypeRule::computeType(NodeManager* nodeManager,
     TypeNode indexType = n0_type.getArrayIndexType();
     TypeNode indexRangeType1 = n[2].getType(check);
     TypeNode indexRangeType2 = n[3].getType(check);
-    if (!indexRangeType1.isSubtypeOf(indexType))
+    if (indexRangeType1 != indexType)
     {
       throw TypeCheckingExceptionPrivate(
           n, "eqrange lower index type does not match array index type");
     }
-    if (!indexRangeType2.isSubtypeOf(indexType))
+    if (indexRangeType2 != indexType)
     {
       throw TypeCheckingExceptionPrivate(
           n, "eqrange upper index type does not match array index type");

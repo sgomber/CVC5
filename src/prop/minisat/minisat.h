@@ -82,7 +82,7 @@ class MinisatSatSolver : public CDCLTSatSolverInterface, protected EnvObj
 
   /** Incremental interface */
 
-  unsigned getAssertionLevel() const override;
+  uint32_t getAssertionLevel() const override;
 
   void push() override;
 
@@ -98,6 +98,10 @@ class MinisatSatSolver : public CDCLTSatSolverInterface, protected EnvObj
    * solver at the point when this function is called.
    */
   std::vector<SatLiteral> getDecisions() const override;
+
+  /** Return the order heap.
+   */
+  std::vector<Node> getOrderHeap() const override;
 
   /** Return decision level at which `lit` was decided on. */
   int32_t getDecisionLevel(SatVariable v) const override;

@@ -126,7 +126,7 @@ bool EagerSolver::checkForMergeConflict(Node a,
                                         EqcInfo* eb)
 {
   Assert(eb != nullptr && ea != nullptr);
-  Assert(a.getType().isComparableTo(b.getType()))
+  Assert(a.getType() == b.getType())
       << "bad types for merge " << a << ", " << b;
   // usages of isRealOrInt are only due to subtyping, where seq.nth for
   // sequences of Real are merged to integer equivalence classes
@@ -219,7 +219,8 @@ bool EagerSolver::addEndpointConst(EqcInfo* e, Node t, Node c, bool isSuf)
   Node conf = e->addEndpointConst(t, c, isSuf);
   if (!conf.isNull())
   {
-    d_state.setPendingMergeConflict(conf, InferenceId::STRINGS_PREFIX_CONFLICT);
+    d_state.setPendingMergeConflict(
+        conf, InferenceId::STRINGS_PREFIX_CONFLICT, isSuf);
     return true;
   }
   return false;

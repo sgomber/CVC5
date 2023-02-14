@@ -23,34 +23,45 @@ namespace arith {
 
 TypeNode ArithConstantTypeRule::computeType(NodeManager* nodeManager,
                                             TNode n,
-                                            bool check)
+                                            bool check,
+                                            std::ostream* errOut)
 {
-  Assert(n.getKind() == kind::CONST_RATIONAL);
-  if (n.getConst<Rational>().isIntegral())
+  // we use different kinds for constant integers and reals
+  if (n.getKind() == kind::CONST_RATIONAL)
   {
-    return nodeManager->integerType();
-  }
-  else
-  {
+    // constant rationals are always real type, even if their value is integral
     return nodeManager->realType();
   }
+  Assert(n.getKind() == kind::CONST_INTEGER);
+  // constant integers should always have integral value
+  if (check)
+  {
+    if (!n.getConst<Rational>().isIntegral())
+    {
+      throw TypeCheckingExceptionPrivate(
+          n, "making an integer constant from a non-integral rational");
+    }
+  }
+  return nodeManager->integerType();
 }
 
 TypeNode ArithRealAlgebraicNumberOpTypeRule::computeType(
-    NodeManager* nodeManager, TNode n, bool check)
+    NodeManager* nodeManager, TNode n, bool check, std::ostream* errOut)
 {
   return nodeManager->realType();
 }
 TypeNode ArithRealAlgebraicNumberTypeRule::computeType(NodeManager* nodeManager,
                                                        TNode n,
-                                                       bool check)
+                                                       bool check,
+                                                       std::ostream* errOut)
 {
   return nodeManager->realType();
 }
 
 TypeNode ArithOperatorTypeRule::computeType(NodeManager* nodeManager,
                                             TNode n,
-                                            bool check)
+                                            bool check,
+                                            std::ostream* errOut)
 {
   TypeNode integerType = nodeManager->integerType();
   TypeNode realType = nodeManager->realType();
@@ -84,8 +95,7 @@ TypeNode ArithOperatorTypeRule::computeType(NodeManager* nodeManager,
   }
   switch (k)
   {
-    case kind::TO_REAL:
-    case kind::CAST_TO_REAL: return realType;
+    case kind::TO_REAL: return realType;
     case kind::TO_INTEGER: return integerType;
     default:
     {
@@ -97,22 +107,17 @@ TypeNode ArithOperatorTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode ArithRelationTypeRule::computeType(NodeManager* nodeManager,
                                             TNode n,
-                                            bool check)
+                                            bool check,
+                                            std::ostream* errOut)
 {
   if (check)
   {
     Assert(n.getNumChildren() == 2);
-    TypeNode t1 = n[0].getType(check);
-    if (!t1.isRealOrInt())
+    if (!n[0].getType(check).isRealOrInt()
+        || !n[1].getType(check).isRealOrInt())
     {
       throw TypeCheckingExceptionPrivate(
           n, "expecting an arithmetic term for arithmetic relation");
-    }
-    TypeNode t2 = n[1].getType(check);
-    if (!t1.isComparableTo(t2))
-    {
-      throw TypeCheckingExceptionPrivate(
-          n, "expecting arithmetic terms of comparable type");
     }
   }
   return nodeManager->booleanType();
@@ -120,7 +125,8 @@ TypeNode ArithRelationTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode RealNullaryOperatorTypeRule::computeType(NodeManager* nodeManager,
                                                   TNode n,
-                                                  bool check)
+                                                  bool check,
+                                                  std::ostream* errOut)
 {
   // for nullary operators, we only computeType for check=true, since they are
   // given TypeAttr() on creation
@@ -135,7 +141,8 @@ TypeNode RealNullaryOperatorTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode IAndOpTypeRule::computeType(NodeManager* nodeManager,
                                      TNode n,
-                                     bool check)
+                                     bool check,
+                                     std::ostream* errOut)
 {
   if (n.getKind() != kind::IAND_OP)
   {
@@ -150,7 +157,8 @@ TypeNode IAndOpTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode IAndTypeRule::computeType(NodeManager* nodeManager,
                                    TNode n,
-                                   bool check)
+                                   bool check,
+                                   std::ostream* errOut)
 {
   if (n.getKind() != kind::IAND)
   {
@@ -170,7 +178,8 @@ TypeNode IAndTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode Pow2TypeRule::computeType(NodeManager* nodeManager,
                                    TNode n,
-                                   bool check)
+                                   bool check,
+                                   std::ostream* errOut)
 {
   if (n.getKind() != kind::POW2)
   {
@@ -189,7 +198,8 @@ TypeNode Pow2TypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode IndexedRootPredicateTypeRule::computeType(NodeManager* nodeManager,
                                                    TNode n,
-                                                   bool check)
+                                                   bool check,
+                                                   std::ostream* errOut)
 {
   if (check)
   {
