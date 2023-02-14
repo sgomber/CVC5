@@ -251,16 +251,41 @@ void SmtDriverMinAssert::getNextAssertions(preprocessing::AssertionPipeline& ap)
     std::unordered_set<Node>& syms = d_syms[d_nextIndexToInclude];
     d_asymbols.insert(syms.begin(), syms.end());
   }
+  // include relevant skolem definitions
+  std::unordered_map<Node, size_t>::iterator iti;
+  std::unordered_set<size_t> skolemDefAdded;
+  std::unordered_set<Node> symsToCheck = d_asymbols;
+  while (!symsToCheck.empty())
+  {
+    std::unordered_set<Node> nextSyms;
+    for (const Node& k : symsToCheck)
+    {
+      if (k.getKind()==kind::SKOLEM)
+      {
+        iti = d_invPpSkolemMap.find(k);
+        if (iti!=d_invPpSkolemMap.end() && skolemDefAdded.find(iti->second)==skolemDefAdded.end())
+        {
+          skolemDefAdded.insert(iti->second);
+          ismr[ap.size()] = k;
+          ap.push_back(d_ppAsserts[iti->second]);
+          nextSyms.insert(d_syms[iti->second].begin(), d_syms[iti->second].end());
+        }
+      }
+    }
+    symsToCheck = nextSyms;
+  }
+  
     
   Trace("smt-min-assert")
       << "...finished get next assertions, #current assertions = "
-      << d_ainfo.size() << ", #free variables = " << d_asymbols.size() << std::endl;
+      << d_ainfo.size() << ", #free variables = " << d_asymbols.size() << ", #rlv skolem defs = " << skolemDefAdded.size() << std::endl;
 }
 
 void SmtDriverMinAssert::initializePreprocessedAssertions(preprocessing::AssertionPipeline& ap)
 {
   d_ppAsserts.clear();
   d_ppSkolemMap.clear();
+        d_invPpSkolemMap.clear();
 
   Trace("smt-min-assert") << "initializePreprocessedAssertions" << std::endl;
   const std::vector<Node>& ppAsserts = ap.ref();
@@ -283,6 +308,7 @@ void SmtDriverMinAssert::initializePreprocessedAssertions(preprocessing::Asserti
         // false assertion, we are done
         d_ppAsserts.clear();
         d_ppSkolemMap.clear();
+        d_invPpSkolemMap.clear();
         d_ppAsserts.push_back(pa);
         return;
       }
@@ -292,6 +318,7 @@ void SmtDriverMinAssert::initializePreprocessedAssertions(preprocessing::Asserti
     if (it != ppSkolemMap.end())
     {
       d_ppSkolemMap[d_ppAsserts.size()] = it->second;
+      d_invPpSkolemMap[it->second] = d_ppAsserts.size();
       d_ppAsserts.push_back(pa);
       continue;
     }
@@ -370,7 +397,7 @@ bool SmtDriverMinAssert::recordCurrentModel(bool& allAssertsSat,
     bool isFalse = (av == d_false);
     hadFalseAssert = hadFalseAssert || isFalse;
     // if its already included in our assertions
-    if (d_ainfo.find(ii) != d_ainfo.end())
+    if (d_ainfo.find(ii) != d_ainfo.end() || d_ppSkolemMap.find(ii)!=d_ppSkolemMap.end())
     {
       // we were unable to satisfy this assertion; the result from the last
       // check-sat was likely "unknown", we skip this assertion and look for

@@ -62,6 +62,8 @@ class SmtDriverMinAssert : public SmtDriver
   std::vector<Node> d_ppAsserts;
   /** The original skolem map */
   std::unordered_map<size_t, Node> d_ppSkolemMap;
+  /** Inverse */
+  std::unordered_map<Node, size_t> d_invPpSkolemMap;
   /** the model value map */
   std::vector<std::vector<Node>> d_modelValues;
   /** set of model indices that only had unknown points */
