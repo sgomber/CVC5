@@ -74,10 +74,10 @@ class NotifyResetAssertions : public context::ContextNotifyObj
  *
  * This registrar is needed when --bitblast=eager is enabled.
  */
-class BBRegistrar : public prop::Registrar
+class BBProxy : public prop::Proxy
 {
  public:
-  BBRegistrar(NodeBitblaster* bb) : d_bitblaster(bb) {}
+  BBProxy(NodeBitblaster* bb) : d_bitblaster(bb) {}
 
   void notifySatLiteral(Node n) override
   {
@@ -112,7 +112,7 @@ BVSolverBitblast::BVSolverBitblast(Env& env,
                                    TheoryInferenceManager& inferMgr)
     : BVSolver(env, *s, inferMgr),
       d_bitblaster(new NodeBitblaster(env, s)),
-      d_bbRegistrar(new BBRegistrar(d_bitblaster.get())),
+      d_bbProxy(new BBProxy(d_bitblaster.get())),
       d_nullContext(new context::Context()),
       d_bbFacts(context()),
       d_bbInputFacts(context()),
@@ -343,7 +343,7 @@ void BVSolverBitblast::initSatSolver()
   }
   d_cnfStream.reset(new prop::CnfStream(d_env,
                                         d_satSolver.get(),
-                                        d_bbRegistrar.get(),
+                                        d_bbProxy.get(),
                                         d_nullContext.get(),
                                         prop::FormulaLitPolicy::INTERNAL,
                                         "theory::bv::BVSolverBitblast"));
@@ -398,7 +398,7 @@ void BVSolverBitblast::handleEagerAtom(TNode fact, bool assertFact)
   /* convertAndAssert() does not make the connection between the bit-vector
    * atom and it's bit-blasted form (it only calls preRegister() from the
    * registrar). Thus, we add the equalities now. */
-  auto& registeredAtoms = d_bbRegistrar->getRegisteredAtoms();
+  auto& registeredAtoms = d_bbProxy->getRegisteredAtoms();
   for (auto atom : registeredAtoms)
   {
     Node bb_atom = d_bitblaster->getStoredBBAtom(atom);

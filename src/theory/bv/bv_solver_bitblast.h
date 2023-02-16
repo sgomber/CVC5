@@ -35,7 +35,7 @@ namespace theory {
 namespace bv {
 
 class NotifyResetAssertions;
-class BBRegistrar;
+class BBProxy;
 
 /**
  * Bit-blasting solver with support for different SAT back ends.
@@ -93,7 +93,7 @@ class BVSolverBitblast : public BVSolver
   std::unique_ptr<NodeBitblaster> d_bitblaster;
 
   /** Used for initializing `d_cnfStream`. */
-  std::unique_ptr<BBRegistrar> d_bbRegistrar;
+  std::unique_ptr<BBProxy> d_bbProxy;
   std::unique_ptr<context::Context> d_nullContext;
 
   /** SAT solver back end (configured via options::bvSatSolver. */

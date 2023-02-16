@@ -54,7 +54,7 @@ class ZeroLevelLearner;
 /**
  * The proxy class that allows the SatSolver to communicate with the theories
  */
-class TheoryProxy : protected EnvObj, public Registrar
+class TheoryProxy : protected EnvObj, public Proxy
 {
   using NodeSet = context::CDHashSet<Node>;
 
