@@ -17,7 +17,7 @@
 
 #include <sstream>
 
-#include "parser/input_parser.h"
+#include "parser/api/cpp/input_parser.h"
 #include "util/run.h"
 
 namespace cvc5 {
