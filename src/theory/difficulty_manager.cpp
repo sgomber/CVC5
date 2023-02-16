@@ -55,8 +55,19 @@ void DifficultyManager::getDifficultyMap(std::map<Node, Node>& dmap)
   }
 }
 
+uint64_t DifficultyManager::getCurrentDifficulty(const Node& n) const
+{
+  NodeUIntMap::const_iterator it = d_dfmap.find(n);
+  if (it!=d_dfmap.end())
+  {
+    return it->second;
+  }
+  return 0;
+}
+
 void DifficultyManager::notifyLemma(Node n, bool inFullEffortCheck)
 {
+  d_input.insert(n);
   // compute if we should consider the lemma
   bool considerLemma = false;
   if (options().smt.difficultyMode
@@ -120,15 +131,10 @@ void DifficultyManager::incrementDifficultyOnRlvExp(std::vector<Node>& lits)
     Trace("diff-man-debug")
         << "Check literal: " << atom << ", has reason = " << (!exp.isNull())
         << std::endl;
-    // must be an input assertion
-    if (!exp.isNull() && d_input.find(exp) != d_input.end())
+    // could be input assertion or lemma
+    if (!exp.isNull())
     {
-      Trace("diff-man-debug") << "From input: " << exp << std::endl;
       incrementDifficulty(exp);
-    }
-    else
-    {
-      Trace("diff-man-debug") << "Not from input: " << exp << std::endl;
     }
   }
 }
@@ -160,6 +166,7 @@ void DifficultyManager::notifyCandidateModel(TheoryModel* m)
 void DifficultyManager::incrementDifficulty(TNode a, uint64_t amount)
 {
   Assert(a.getType().isBoolean());
+  Trace("diff-man") << "incrementDifficulty: " << a << " +" << amount << std::endl;
   d_dfmap[a] = d_dfmap[a] + amount;
 }
 

@@ -584,6 +584,9 @@ void RelevanceManager::notifyLemma(TNode n,
     toProcess.push_back(n);
     toProcess.insert(toProcess.end(), skAsserts.begin(), skAsserts.end());
     addAssertionsInternal(toProcess, d_lemmas);
+    std::unordered_set<TNode> visited;
+    // add to atoms map
+    addInputToAtomsMap(n, visited);
   }
   // notice that we may be in FULL or STANDARD effort here.
   if (d_dman != nullptr)

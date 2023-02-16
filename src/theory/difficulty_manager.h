@@ -49,6 +49,9 @@ class DifficultyManager : protected EnvObj
    */
   void getDifficultyMap(std::map<Node, Node>& dmap);
   /**
+   */
+  uint64_t getCurrentDifficulty(const Node& n) const;
+  /**
    * Notify lemma, for difficulty measurements. This increments the difficulty
    * of assertions that share literals with that lemma if the difficulty mode
    * is LEMMA_LITERAL. In particular, for each literal lit in the lemma lem, we
