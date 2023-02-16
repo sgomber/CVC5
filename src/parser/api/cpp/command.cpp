@@ -27,7 +27,7 @@
 #include "base/modal_exception.h"
 #include "base/output.h"
 #include "expr/node.h"
-#include "expr/oracle_binary_caller.h"
+#include "parser/api/cpp/oracle_binary_caller.h"
 #include "expr/type_node.h"
 #include "options/io_utils.h"
 #include "options/main_options.h"

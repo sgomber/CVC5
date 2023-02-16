@@ -64,8 +64,6 @@ libcvc5_add_sources(
   node_traversal.h
   node_value.cpp
   node_value.h
-  oracle_binary_caller.cpp
-  oracle_binary_caller.h
   oracle.h
   oracle_caller.cpp
   oracle_caller.h

@@ -19,7 +19,7 @@
 #include "context/cdhashset.h"
 #include "context/cdlist.h"
 #include "context/cdo.h"
-#include "expr/oracle_binary_caller.h"
+#include "parser/api/cpp/oracle_binary_caller.h"
 #include "parser/symbol_table.h"
 
 using namespace cvc5::context;

@@ -35,6 +35,8 @@ set(libcvc5parserapi_src_files
   api/cpp/symbol_manager.h
   api/cpp/input_parser.cpp
   api/cpp/input_parser.h
+  api/cpp/oracle_binary_caller.cpp
+  api/cpp/oracle_binary_caller.h
 )
 
 set(libcvc5parser_src_files

@@ -13,7 +13,7 @@
  * Oracle caller
  */
 
-#include "expr/oracle_binary_caller.h"
+#include "parser/api/cpp/oracle_binary_caller.h"
 
 #include <sstream>
 
@@ -43,7 +43,7 @@ std::vector<Term> OracleBinaryCaller::runOracle(const std::vector<Term>& input)
   std::istringstream oracle_response_istream(stdout_stream.str());
 
   // initialize a new parser for the given solver and symbol manager
-  parser::InputParser iparser(d_slv, d_sm, true);
+  parser::InputParser iparser(d_slv, d_sm);
   iparser.setStreamInput(d_slv->getOption("input-language"),
                          oracle_response_istream,
                          d_parseStreamName);
