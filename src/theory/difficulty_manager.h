@@ -72,6 +72,8 @@ class DifficultyManager : protected EnvObj
   void notifyCandidateModel(TheoryModel* m);
 
  private:
+  /** Increment difficulty on explanations */
+  void incrementDifficultyOnRlvExp(std::vector<Node>& lits);
   /** Increment difficulty on assertion a */
   void incrementDifficulty(TNode a, uint64_t amount = 1);
   /** Pointer to the parent relevance manager */

@@ -77,7 +77,7 @@ void DifficultyManager::notifyLemma(Node n, bool inFullEffortCheck)
   Kind nk = n.getKind();
   // for lemma (or a_1 ... a_n), if a_i is a literal that is not true in the
   // valuation, then we increment the difficulty of that assertion
-  std::vector<TNode> litsToCheck;
+  std::vector<Node> litsToCheck;
   if (nk == kind::OR)
   {
     litsToCheck.insert(litsToCheck.end(), n.begin(), n.end());
@@ -91,8 +91,29 @@ void DifficultyManager::notifyLemma(Node n, bool inFullEffortCheck)
   {
     litsToCheck.push_back(n);
   }
-  for (TNode nc : litsToCheck)
+  incrementDifficultyOnRlvExp(litsToCheck);
+}
+
+void DifficultyManager::incrementDifficultyOnRlvExp(std::vector<Node>& lits)
+{
+  size_t index = 0;
+  while(index<lits.size())
   {
+    Node nc = lits[index];
+    index++;
+    if (nc.getKind()==OR)
+    {
+      lits.insert(lits.end(), nc.begin(), nc.end());
+      continue;
+    }
+    else if (nc.getKind()==NOT && nc[0].getKind()==AND)
+    {
+      for (const Node& ncc : nc[0])
+      {
+        lits.push_back(ncc.negate());
+      }
+      continue;
+    }
     bool pol = nc.getKind() != kind::NOT;
     TNode atom = pol ? nc : nc[0];
     TNode exp = d_rlv->getExplanationForRelevant(atom);
@@ -102,7 +123,12 @@ void DifficultyManager::notifyLemma(Node n, bool inFullEffortCheck)
     // must be an input assertion
     if (!exp.isNull() && d_input.find(exp) != d_input.end())
     {
+      Trace("diff-man-debug") << "From input: " << exp << std::endl;
       incrementDifficulty(exp);
+    }
+    else
+    {
+      Trace("diff-man-debug") << "Not from input: " << exp << std::endl;
     }
   }
 }
