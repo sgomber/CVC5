@@ -58,7 +58,7 @@ void DifficultyManager::getDifficultyMap(std::map<Node, Node>& dmap)
 uint64_t DifficultyManager::getCurrentDifficulty(const Node& n) const
 {
   NodeUIntMap::const_iterator it = d_dfmap.find(n);
-  if (it!=d_dfmap.end())
+  if (it != d_dfmap.end())
   {
     return it->second;
   }
@@ -108,16 +108,16 @@ void DifficultyManager::notifyLemma(Node n, bool inFullEffortCheck)
 void DifficultyManager::incrementDifficultyOnRlvExp(std::vector<Node>& lits)
 {
   size_t index = 0;
-  while(index<lits.size())
+  while (index < lits.size())
   {
     Node nc = lits[index];
     index++;
-    if (nc.getKind()==OR)
+    if (nc.getKind() == OR)
     {
       lits.insert(lits.end(), nc.begin(), nc.end());
       continue;
     }
-    else if (nc.getKind()==NOT && nc[0].getKind()==AND)
+    else if (nc.getKind() == NOT && nc[0].getKind() == AND)
     {
       for (const Node& ncc : nc[0])
       {
@@ -166,7 +166,8 @@ void DifficultyManager::notifyCandidateModel(TheoryModel* m)
 void DifficultyManager::incrementDifficulty(TNode a, uint64_t amount)
 {
   Assert(a.getType().isBoolean());
-  Trace("diff-man") << "incrementDifficulty: " << a << " +" << amount << std::endl;
+  Trace("diff-man") << "incrementDifficulty: " << a << " +" << amount
+                    << std::endl;
   d_dfmap[a] = d_dfmap[a] + amount;
 }
 

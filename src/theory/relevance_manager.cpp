@@ -565,7 +565,6 @@ std::unordered_set<TNode> RelevanceManager::getRelevantAssertions(bool& success)
   return rset;
 }
 
-
 void RelevanceManager::notifyLemma(TNode n,
                                    theory::LemmaProperty p,
                                    const std::vector<Node>& skAsserts,

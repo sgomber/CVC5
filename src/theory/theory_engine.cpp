@@ -1212,11 +1212,12 @@ TrustNode TheoryEngine::getExplanation(TNode node)
   }
   else
   {
-    Trace("theory::explain") << "TheoryEngine::getExplanation: sharing IS enabled"
-                            << std::endl;
+    Trace("theory::explain")
+        << "TheoryEngine::getExplanation: sharing IS enabled" << std::endl;
 
     // Initial thing to explain
-    NodeTheoryPair toExplain(node, THEORY_SAT_SOLVER, d_propagationMapTimestamp);
+    NodeTheoryPair toExplain(
+        node, THEORY_SAT_SOLVER, d_propagationMapTimestamp);
     Assert(d_propagationMap.find(toExplain) != d_propagationMap.end());
 
     NodeTheoryPair nodeExplainerPair = d_propagationMap[toExplain];
@@ -1229,13 +1230,14 @@ TrustNode TheoryEngine::getExplanation(TNode node)
     std::vector<NodeTheoryPair> vec{d_propagationMap[toExplain]};
     // Process the explanation
     texplanation = getExplanation(vec);
-    Trace("theory::explain") << "TheoryEngine::getExplanation(" << node << ") => "
-                            << texplanation.getNode() << endl;
+    Trace("theory::explain") << "TheoryEngine::getExplanation(" << node
+                             << ") => " << texplanation.getNode() << endl;
   }
   // notify the conflict as a lemma
   for (TheoryEngineModule* tem : d_modules)
   {
-    tem->notifyLemma(texplanation.getProven(), LemmaProperty::REMOVABLE, {}, {});
+    tem->notifyLemma(
+        texplanation.getProven(), LemmaProperty::REMOVABLE, {}, {});
   }
   return texplanation;
 }
