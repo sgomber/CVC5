@@ -269,7 +269,7 @@ libcvc5_add_sources(
   prop/prop_engine.h
   prop/prop_proof_manager.cpp
   prop/prop_proof_manager.h
-  prop/registrar.h
+  prop/proxy.h
   prop/sat_solver.h
   prop/sat_proof_manager.cpp
   prop/sat_proof_manager.h

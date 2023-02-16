@@ -10,7 +10,7 @@
  * directory for licensing information.
  * ****************************************************************************
  *
- * Class to encapsulate preregistration duties
+ * Class to encapsulate interactions with the SAT solver
  *
  * This class permits the CNF stream implementation to reach into the theory
  * engine to preregister only those terms with an associated SAT literal (at
@@ -20,26 +20,26 @@
 
 #include "cvc5_private.h"
 
-#ifndef CVC5__PROP__REGISTRAR_H
-#define CVC5__PROP__REGISTRAR_H
+#ifndef CVC5__PROP__PROXY_H
+#define CVC5__PROP__PROXY_H
 
 namespace cvc5::internal {
 namespace prop {
 
-class Registrar {
+class Proxy {
 public:
-  virtual ~Registrar() {}
+  virtual ~Proxy() {}
   virtual void notifySatLiteral(Node n) = 0;
 
-};/* class Registrar */
+};/* class Proxy */
 
-class NullRegistrar : public Registrar {
+class NullProxy : public Proxy {
 public:
  void notifySatLiteral(Node n) override {}
 
-};/* class NullRegistrar */
+};/* class NullProxy */
 
 }  // namespace prop
 }  // namespace cvc5::internal
 
-#endif /* CVC5__PROP__REGISTRAR_H */
+#endif /* CVC5__PROP__PROXY_H */

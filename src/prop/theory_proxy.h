@@ -15,8 +15,8 @@
 
 #include "cvc5_private.h"
 
-#ifndef CVC5__PROP__SAT_H
-#define CVC5__PROP__SAT_H
+#ifndef CVC5__PROP__THEORY_PROXY_H
+#define CVC5__PROP__THEORY_PROXY_H
 
 #include <unordered_set>
 
@@ -26,7 +26,7 @@
 #include "expr/node.h"
 #include "proof/trust_node.h"
 #include "prop/learned_db.h"
-#include "prop/registrar.h"
+#include "prop/proxy.h"
 #include "prop/sat_solver_types.h"
 #include "prop/theory_preregistrar.h"
 #include "smt/env_obj.h"

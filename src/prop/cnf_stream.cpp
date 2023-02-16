@@ -35,7 +35,7 @@ namespace prop {
 
 CnfStream::CnfStream(Env& env,
                      SatSolver* satSolver,
-                     Registrar* registrar,
+                     Proxy* proxy,
                      context::Context* c,
                      FormulaLitPolicy flpol,
                      std::string name)
@@ -46,7 +46,7 @@ CnfStream::CnfStream(Env& env,
       d_nodeToLiteralMap(c),
       d_literalToNodeMap(c),
       d_flitPolicy(flpol),
-      d_registrar(registrar),
+      d_proxy(proxy),
       d_name(name),
       d_removable(false),
       d_stats(statisticsRegistry(), name)
@@ -199,7 +199,7 @@ SatLiteral CnfStream::newLiteral(TNode node,
   {
     // In case we are re-entered due to lemmas, save our state
     bool backupRemovable = d_removable;
-    d_registrar->notifySatLiteral(node);
+    d_proxy->notifySatLiteral(node);
     d_removable = backupRemovable;
   }
   // Here, you can have it

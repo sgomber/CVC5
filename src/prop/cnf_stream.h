@@ -30,7 +30,7 @@
 #include "context/cdinsert_hashmap.h"
 #include "context/cdlist.h"
 #include "expr/node.h"
-#include "prop/registrar.h"
+#include "prop/proxy.h"
 #include "prop/sat_solver_types.h"
 #include "smt/env_obj.h"
 #include "util/statistics_stats.h"
@@ -83,11 +83,11 @@ class CnfStream : protected EnvObj
   /**
    * Constructs a CnfStream that performs equisatisfiable CNF transformations
    * and sends the generated clauses and to the given SAT solver. This does not
-   * take ownership of satSolver, registrar, or context.
+   * take ownership of satSolver, proxy, or context.
    *
    * @param env reference to the environment
    * @param satSolver the sat solver to use.
-   * @param registrar the entity that takes care of preregistration of Nodes.
+   * @param proxy the entity that takes care of preregistration of Nodes.
    * @param c the context that the CNF should respect.
    * @param flpol policy for literals corresponding to formulas (those that are
    * not-theory literals).
@@ -96,7 +96,7 @@ class CnfStream : protected EnvObj
    */
   CnfStream(Env& env,
             SatSolver* satSolver,
-            Registrar* registrar,
+            Proxy* proxy,
             context::Context* c,
             FormulaLitPolicy flpol = FormulaLitPolicy::INTERNAL,
             std::string name = "");
@@ -288,8 +288,8 @@ class CnfStream : protected EnvObj
    */
   const FormulaLitPolicy d_flitPolicy;
 
-  /** The "registrar" for pre-registration of terms */
-  Registrar* d_registrar;
+  /** The "proxy" for pre-registration of terms */
+  Proxy* d_proxy;
 
   /** The name of this CNF stream*/
   std::string d_name;
