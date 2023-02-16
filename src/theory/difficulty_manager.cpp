@@ -20,6 +20,7 @@
 #include "theory/relevance_manager.h"
 #include "theory/theory_model.h"
 #include "util/rational.h"
+#include "expr/node_algorithm.h"
 
 using namespace cvc5::internal::kind;
 
@@ -102,34 +103,19 @@ void DifficultyManager::notifyLemma(Node n, bool inFullEffortCheck)
   {
     litsToCheck.push_back(n);
   }
-  incrementDifficultyOnRlvExp(litsToCheck);
-}
-
-void DifficultyManager::incrementDifficultyOnRlvExp(std::vector<Node>& lits)
-{
   size_t index = 0;
-  while (index < lits.size())
+  while (index < litsToCheck.size())
   {
-    Node nc = lits[index];
+    Node nc = litsToCheck[index];
     index++;
-    if (nc.getKind() == OR)
+    if (expr::isBooleanConnective(nc))
     {
-      lits.insert(lits.end(), nc.begin(), nc.end());
+      litsToCheck.insert(litsToCheck.end(), nc.begin(), nc.end());
       continue;
     }
-    else if (nc.getKind() == NOT && nc[0].getKind() == AND)
-    {
-      for (const Node& ncc : nc[0])
-      {
-        lits.push_back(ncc.negate());
-      }
-      continue;
-    }
-    bool pol = nc.getKind() != kind::NOT;
-    TNode atom = pol ? nc : nc[0];
-    TNode exp = d_rlv->getExplanationForRelevant(atom);
+    TNode exp = d_rlv->getExplanationForRelevant(nc);
     Trace("diff-man-debug")
-        << "Check literal: " << atom << ", has reason = " << (!exp.isNull())
+        << "Check literal: " << nc << ", has reason = " << (!exp.isNull())
         << std::endl;
     // could be input assertion or lemma
     if (!exp.isNull())
