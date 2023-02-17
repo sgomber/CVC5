@@ -58,6 +58,13 @@ void DifficultyManager::getDifficultyMap(std::map<Node, Node>& dmap)
 
 uint64_t DifficultyManager::getCurrentDifficulty(const Node& n) const
 {
+  if (TraceIsOn("diff-warn"))
+  {
+    if (d_input.find(n)==d_input.end())
+    {
+      Trace("diff-warn") << "DifficultyManager::getCurrentDifficulty: not tracking difficulty for " << n << std::endl;
+    }
+  }
   NodeUIntMap::const_iterator it = d_dfmap.find(n);
   if (it != d_dfmap.end())
   {
