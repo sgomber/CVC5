@@ -1143,7 +1143,7 @@ void TheoryEngine::getDifficultyMap(std::map<Node, Node>& dmap)
 
 uint64_t TheoryEngine::getCurrentDifficulty(const Node& n) const
 {
-  if (d_relManager!=nullptr)
+  if (d_relManager != nullptr)
   {
     return d_relManager->getCurrentDifficulty(n);
   }
