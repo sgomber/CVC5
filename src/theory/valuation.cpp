@@ -227,6 +227,11 @@ TNode Valuation::getExplanationForAsserted(TNode lit) const
   return d_engine->getExplanationForAsserted(lit);
 }
 
+uint64_t Valuation::getCurrentDifficulty(const Node& n) const
+{
+  return d_engine->getCurrentDifficulty(n);
+}
+
 context::CDList<Assertion>::const_iterator Valuation::factsBegin(
     TheoryId tid) const
 {

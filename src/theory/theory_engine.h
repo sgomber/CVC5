@@ -400,6 +400,10 @@ class TheoryEngine : protected EnvObj
    * For details, see theory/difficuly_manager.h.
    */
   void getDifficultyMap(std::map<Node, Node>& dmap);
+  /**
+   * Get the current difficulty for input formula or lemma n.
+   */
+  uint64_t getCurrentDifficulty(const Node& n) const;
 
   /** Get incomplete id, valid when isModelUnsound is true. */
   theory::IncompleteId getModelUnsoundId() const;

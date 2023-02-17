@@ -612,5 +612,14 @@ void RelevanceManager::getDifficultyMap(std::map<Node, Node>& dmap)
   }
 }
 
+uint64_t RelevanceManager::getCurrentDifficulty(const Node& n) const
+{
+  if (d_dman != nullptr)
+  {
+    return d_dman->getCurrentDifficulty(n);
+  }
+  return 0;
+}
+
 }  // namespace theory
 }  // namespace cvc5::internal

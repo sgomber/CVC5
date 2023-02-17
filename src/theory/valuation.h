@@ -234,6 +234,10 @@ public:
    * This method should only be called at FULL effort check.
    */
   TNode getExplanationForAsserted(TNode lit) const;
+  /**
+   * Get the current difficulty for input formula or lemma n.
+   */
+  uint64_t getCurrentDifficulty(const Node& n) const;
   //------------------------------------------- access methods for assertions
   /**
    * The following methods are intended only to be used in limited use cases,

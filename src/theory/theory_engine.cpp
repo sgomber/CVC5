@@ -1141,6 +1141,15 @@ void TheoryEngine::getDifficultyMap(std::map<Node, Node>& dmap)
   d_relManager->getDifficultyMap(dmap);
 }
 
+uint64_t TheoryEngine::getCurrentDifficulty(const Node& n) const
+{
+  if (d_relManager!=nullptr)
+  {
+    return d_relManager->getCurrentDifficulty(n);
+  }
+  return 0;
+}
+
 theory::IncompleteId TheoryEngine::getModelUnsoundId() const
 {
   return d_modelUnsoundId.get();
