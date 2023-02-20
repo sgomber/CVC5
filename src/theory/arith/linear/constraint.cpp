@@ -1105,7 +1105,7 @@ std::vector<TrustNode> Constraint::split(bool doPurify)
 
   TNode eqNode = eq->getLiteral();
   Assert(eqNode.getKind() == kind::EQUAL);
-  
+
   TNode lhs = eqNode[0];
   TNode rhs = eqNode[1];
 

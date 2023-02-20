@@ -888,7 +888,8 @@ bool TheoryArithPrivate::AssertDisequality(ConstraintP constraint){
 
   if(!split && c_i == d_partialModel.getAssignment(x_i)){
     Trace("arith::eq") << "lemma now! " << constraint << endl;
-    std::vector<TrustNode> lemmas = constraint->split(needsPurifySplit(constraint));
+    std::vector<TrustNode> lemmas =
+        constraint->split(needsPurifySplit(constraint));
     for (const TrustNode& lemma : lemmas)
     {
       outputTrustedLemma(lemma, InferenceId::ARITH_SPLIT_DEQ);

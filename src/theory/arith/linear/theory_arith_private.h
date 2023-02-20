@@ -768,7 +768,7 @@ private:
   uint32_t d_solveIntMaybeHelp, d_solveIntAttempts;
 
   RationalVector d_farkasBuffer;
-  
+
   bool needsPurifySplit(const ConstraintP& c);
 
   //---------------- during check
