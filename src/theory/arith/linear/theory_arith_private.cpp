@@ -3517,9 +3517,16 @@ std::vector<TrustNode> TheoryArithPrivate::roundRobinBranch()
   }
 }
 
-bool TheoryArithPrivate::needsPurifySplit(const ConstraintP& c)
+bool TheoryArithPrivate::needsPurifySplit(ConstraintP c)
 {
-  return false;
+  Assert (c->isEquality() || c->isDisequality());
+  TNode eqNode = c->isEquality() ? c->getLiteral() : c->getNegation()->getLiteral();
+  Assert(eqNode.getKind() == kind::EQUAL);
+  TNode lhs = eqNode[0];
+  TNode rhs = eqNode[1];
+  Node leqNode = NodeBuilder(kind::LEQ) << lhs << rhs;
+  leqNode = rewrite(leqNode);
+  return leqNode.getKind()!=kind::GEQ;
 }
 
 bool TheoryArithPrivate::splitDisequalities(){

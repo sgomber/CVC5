@@ -1108,7 +1108,19 @@ std::vector<TrustNode> Constraint::split(bool doPurify)
 
   TNode lhs = eqNode[0];
   TNode rhs = eqNode[1];
+  
+  TrustNode trustedLemma = splitEq(lhs, rhs);
 
+  ret.push_back(trustedLemma);
+
+  eq->d_database->pushSplitWatch(eq);
+  diseq->d_database->pushSplitWatch(diseq);
+
+  return ret;
+}
+
+TrustNode Constraint::splitEq(const Node& lhs, const Node& rhs)
+{
   Node leqNode = NodeBuilder(kind::LEQ) << lhs << rhs;
   Node ltNode = NodeBuilder(kind::LT) << lhs << rhs;
   Node gtNode = NodeBuilder(kind::GT) << lhs << rhs;
@@ -1149,12 +1161,7 @@ std::vector<TrustNode> Constraint::split(bool doPurify)
   {
     trustedLemma = TrustNode::mkTrustLemma(lemma);
   }
-  ret.push_back(trustedLemma);
-
-  eq->d_database->pushSplitWatch(eq);
-  diseq->d_database->pushSplitWatch(diseq);
-
-  return ret;
+  return trustedLemma;
 }
 
 bool ConstraintDatabase::hasLiteral(TNode literal) const {

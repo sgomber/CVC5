@@ -769,7 +769,7 @@ private:
 
   RationalVector d_farkasBuffer;
 
-  bool needsPurifySplit(const ConstraintP& c);
+  bool needsPurifySplit(ConstraintP c);
 
   //---------------- during check
   /** Whether there were new facts during preCheck */

@@ -776,6 +776,8 @@ class Constraint {
   void initialize(ConstraintDatabase* db,
                   SortedConstraintMapIterator v,
                   ConstraintP negation);
+  /** split equality */
+  TrustNode splitEq(const Node& lhs, const Node& rhs);
 
   class ConstraintRuleCleanup
   {
