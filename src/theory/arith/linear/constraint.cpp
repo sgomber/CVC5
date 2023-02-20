@@ -32,6 +32,7 @@
 #include "theory/arith/linear/partial_model.h"
 #include "theory/builtin/proof_checker.h"
 #include "theory/rewriter.h"
+#include "expr/skolem_manager.h"
 
 using namespace std;
 using namespace cvc5::internal::kind;
@@ -1109,9 +1110,22 @@ std::vector<TrustNode> Constraint::split(bool doPurify)
   TNode lhs = eqNode[0];
   TNode rhs = eqNode[1];
   
-  TrustNode trustedLemma = splitEq(lhs, rhs);
+  if (doPurify)
+  {
+    NodeManager * nm = NodeManager::currentNM();
+    SkolemManager * skm = nm->getSkolemManager();
+    Node t = nm->mkNode(kind::SUB, lhs, rhs);
+    Node k = skm->mkPurifySkolem(t, "spl");
+    Node lemma = nm->mkNode(kind::IMPLIES, eqNode, k.eqNode(nm->mkConstRealOrInt(k.getType(), Rational(0))));
+    
+    ret.push_back(TrustNode::mkTrustLemma(lemma));
+  }
+  else
+  {
+    TrustNode trustedLemma = splitEq(lhs, rhs);
 
-  ret.push_back(trustedLemma);
+    ret.push_back(trustedLemma);
+  }
 
   eq->d_database->pushSplitWatch(eq);
   diseq->d_database->pushSplitWatch(diseq);

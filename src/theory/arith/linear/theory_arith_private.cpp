@@ -3524,9 +3524,18 @@ bool TheoryArithPrivate::needsPurifySplit(ConstraintP c)
   Assert(eqNode.getKind() == kind::EQUAL);
   TNode lhs = eqNode[0];
   TNode rhs = eqNode[1];
-  Node leqNode = NodeBuilder(kind::LEQ) << lhs << rhs;
-  leqNode = rewrite(leqNode);
-  return leqNode.getKind()!=kind::GEQ;
+  for (size_t i=0; i<2; i++)
+  {
+    Node leqNode = NodeBuilder(i==0 ? kind::LEQ : kind::GEQ) << lhs << rhs;
+    leqNode = rewrite(leqNode);
+    Node leqAtom = leqNode.getKind()==kind::NOT ? leqNode[0] : leqNode;
+    Trace("ajr-temp") << "Needs purify split " << eqNode << " returns " << (leqAtom.getKind()!=kind::GEQ) << " via " << leqAtom << std::endl;
+    if (leqAtom.getKind()!=kind::GEQ)
+    {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool TheoryArithPrivate::splitDisequalities(){
