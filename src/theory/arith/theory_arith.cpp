@@ -157,12 +157,13 @@ void TheoryArith::preRegisterTerm(TNode n)
     d_nonlinearExtension->preRegisterTerm(n);
   }
   d_internal->preRegisterTerm(n);
-  
+
   // conversions to BV
   if (isRelationOperator(n.getKind()))
   {
     Node rbvN = ArithRewriter::rewriteToBv(n);
-    Trace("ajr-temp") << "Check rewrite to bv: " << n << " -> " << rbvN << std::endl;
+    Trace("ajr-temp") << "Check rewrite to bv: " << n << " -> " << rbvN
+                      << std::endl;
     if (!rbvN.isNull())
     {
       Node lem = NodeManager::currentNM()->mkNode(IMPLIES, n, rbvN);

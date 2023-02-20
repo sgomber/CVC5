@@ -188,17 +188,17 @@ RewriteResponse ArithRewriter::postRewriteAtom(TNode atom)
   rewriter::addToSum(sum, left, negate);
   rewriter::addToSum(sum, right, !negate);
 
-/*
-  if (kind != Kind::EQUAL)
-  {
-    // see if we should convert the inequality to a bitvector inequality
-    RewriteResponse rineqBv = rewriteIneqToBv(kind, sum, atom);
-    if (rineqBv.d_node != atom)
+  /*
+    if (kind != Kind::EQUAL)
     {
-      return rineqBv;
+      // see if we should convert the inequality to a bitvector inequality
+      RewriteResponse rineqBv = rewriteIneqToBv(kind, sum, atom);
+      if (rineqBv.d_node != atom)
+      {
+        return rineqBv;
+      }
     }
-  }
-  */
+    */
 
   // Now we have (sum <kind> 0)
   if (rewriter::isIntegral(sum))
@@ -1225,8 +1225,11 @@ RewriteResponse ArithRewriter::rewriteIneqToBv(Kind kind,
   if (convertible && !bv2natTerm.isNull())
   {
     Node zero = nm->mkConstInt(Rational(0));
-    Kind bvKind = (kind == EQUAL ? EQUAL : (kind == GT ? (bv2natPol ? BITVECTOR_UGT : BITVECTOR_ULT)
-                              : (bv2natPol ? BITVECTOR_UGE : BITVECTOR_ULE)));
+    Kind bvKind =
+        (kind == EQUAL
+             ? EQUAL
+             : (kind == GT ? (bv2natPol ? BITVECTOR_UGT : BITVECTOR_ULT)
+                           : (bv2natPol ? BITVECTOR_UGE : BITVECTOR_ULE)));
     Node bvt = bv2natTerm[0];
     size_t bvsize = bvt.getType().getBitVectorSize();
     Node w = nm->mkConstInt(Rational(Integer(2).pow(bvsize)));
