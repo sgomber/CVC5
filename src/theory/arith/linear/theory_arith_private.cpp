@@ -888,7 +888,11 @@ bool TheoryArithPrivate::AssertDisequality(ConstraintP constraint){
 
   if(!split && c_i == d_partialModel.getAssignment(x_i)){
     Trace("arith::eq") << "lemma now! " << constraint << endl;
-    outputTrustedLemma(constraint->split(), InferenceId::ARITH_SPLIT_DEQ);
+    std::vector<TrustNode> lemmas = constraint->split(needsPurifySplit(constraint));
+    for (const TrustNode& lemma : lemmas)
+    {
+      outputTrustedLemma(lemma, InferenceId::ARITH_SPLIT_DEQ);
+    }
     return false;
   }else if(d_partialModel.strictlyLessThanLowerBound(x_i, c_i)){
     Trace("arith::eq") << "can drop as less than lb" << constraint << endl;
@@ -3512,6 +3516,11 @@ std::vector<TrustNode> TheoryArithPrivate::roundRobinBranch()
   }
 }
 
+bool TheoryArithPrivate::needsPurifySplit(const ConstraintP& c)
+{
+  return false;
+}
+
 bool TheoryArithPrivate::splitDisequalities(){
   bool splitSomething = false;
 
@@ -3534,11 +3543,13 @@ bool TheoryArithPrivate::splitDisequalities(){
         Trace("arith::lemma") << "Splitting on " << front << endl;
         Trace("arith::lemma") << "LHS value = " << lhsValue << endl;
         Trace("arith::lemma") << "RHS value = " << rhsValue << endl;
-        TrustNode lemma = front->split();
+        std::vector<TrustNode> lemmas = front->split(needsPurifySplit(front));
         ++(d_statistics.d_statDisequalitySplits);
-
-        Trace("arith::lemma") << "Now " << lemma.getNode() << endl;
-        outputTrustedLemma(lemma, InferenceId::ARITH_SPLIT_DEQ);
+        for (TrustNode lemma : lemmas)
+        {
+          Trace("arith::lemma") << "Now " << lemma.getNode() << endl;
+          outputTrustedLemma(lemma, InferenceId::ARITH_SPLIT_DEQ);
+        }
         splitSomething = true;
       }else if(d_partialModel.strictlyLessThanLowerBound(lhsVar, rhsValue)){
         Trace("arith::eq") << "can drop as less than lb" << front << endl;

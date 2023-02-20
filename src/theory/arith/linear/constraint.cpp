@@ -1093,8 +1093,9 @@ bool Constraint::contextDependentDataIsSet() const{
   return hasProof() || isSplit() || canBePropagated() || assertedToTheTheory();
 }
 
-TrustNode Constraint::split()
+std::vector<TrustNode> Constraint::split(bool doPurify)
 {
+  std::vector<TrustNode> ret;
   Assert(isEquality() || isDisequality());
 
   bool isEq = isEquality();
@@ -1104,6 +1105,7 @@ TrustNode Constraint::split()
 
   TNode eqNode = eq->getLiteral();
   Assert(eqNode.getKind() == kind::EQUAL);
+  
   TNode lhs = eqNode[0];
   TNode rhs = eqNode[1];
 
@@ -1147,11 +1149,12 @@ TrustNode Constraint::split()
   {
     trustedLemma = TrustNode::mkTrustLemma(lemma);
   }
+  ret.push_back(trustedLemma);
 
   eq->d_database->pushSplitWatch(eq);
   diseq->d_database->pushSplitWatch(diseq);
 
-  return trustedLemma;
+  return ret;
 }
 
 bool ConstraintDatabase::hasLiteral(TNode literal) const {
@@ -2205,7 +2208,8 @@ void ConstraintDatabase::outputUnateEqualityLemmas(std::vector<TrustNode>& out,
       vc.getUpperBound() : eq->getStrictlyWeakerUpperBound(true, false);
 
     if(hasUB && hasLB && !eq->isSplit()){
-      out.push_back(eq->split());
+      std::vector<TrustNode> lemmas = eq->split();
+      out.insert(out.end(), lemmas.begin(), lemmas.end());
     }
     if(lb != NullConstraint){
       implies(out, eq, lb);

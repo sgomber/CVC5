@@ -397,7 +397,7 @@ class Constraint {
    * Returns a lemma that is assumed to be true for the rest of the user context.
    * Constraint must be an equality or disequality.
    */
-  TrustNode split();
+  std::vector<TrustNode> split(bool doPurify = false);
 
   bool canBePropagated() const {
     return d_canBePropagated;
