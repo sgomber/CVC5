@@ -58,6 +58,7 @@ const char* toString(InferenceId i)
     case InferenceId::ARITH_SPLIT_FOR_NL_MODEL:
       return "ARITH_SPLIT_FOR_NL_MODEL";
     case InferenceId::ARITH_DEMAND_RESTART: return "ARITH_DEMAND_RESTART";
+    case InferenceId::ARITH_CONV_TO_BV: return "ARITH_CONV_TO_BV";
     case InferenceId::ARITH_PP_ELIM_OPERATORS: return "ARITH_PP_ELIM_OPERATORS";
     case InferenceId::ARITH_PP_ELIM_OPERATORS_LEMMA:
       return "ARITH_PP_ELIM_OPERATORS_LEMMA";

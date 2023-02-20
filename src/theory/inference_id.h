@@ -96,6 +96,8 @@ enum class InferenceId
   ARITH_SPLIT_FOR_NL_MODEL,
   // dummy lemma to demand a restart
   ARITH_DEMAND_RESTART,
+  // conversion to bitvector, e.g. (= (bv2nat x) N) => (= x ((_ int2bv w) N))
+  ARITH_CONV_TO_BV,
   //-------------------- preprocessing
   // equivalence of term and its preprocessed form
   ARITH_PP_ELIM_OPERATORS,
