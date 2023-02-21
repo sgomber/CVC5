@@ -19,6 +19,7 @@
 
 #include "parser/api/cpp/input_parser.h"
 #include "util/run.h"
+#include "base/output.h"
 
 namespace cvc5 {
 
@@ -27,12 +28,19 @@ std::vector<Term> OracleBinaryCaller::runOracle(const std::vector<Term>& input)
   std::vector<std::string> sargs;
   sargs.push_back(d_binaryName);
 
+  std::ostringstream oss;
+  bool firstTime = true;
   for (const Term& arg : input)
   {
-    std::ostringstream oss;
+    if (!firstTime)
+    {
+      oss << " ";
+    }
+    firstTime = false;
     oss << arg;
-    sargs.push_back(oss.str());
   }
+  sargs.push_back(oss.str());
+  //Trace("ajr-temp") << "Input : \"" << oss.str() << "\"" << std::endl;
 
   // Run the oracle binary for `sargs`, which indicates a list of
   // smt2 terms as strings.
@@ -40,7 +48,10 @@ std::vector<Term> OracleBinaryCaller::runOracle(const std::vector<Term>& input)
 
   run(d_binaryName, sargs, "", stdout_stream, "");
 
+  //std::cout << "Got: " << stdout_stream.str() << std::endl;
+  
   std::istringstream oracle_response_istream(stdout_stream.str());
+  
 
   // initialize a new parser for the given solver and symbol manager
   parser::InputParser iparser(d_slv, d_sm);
