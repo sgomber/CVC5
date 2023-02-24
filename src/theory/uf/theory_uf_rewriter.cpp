@@ -259,12 +259,14 @@ RewriteResponse TheoryUfRewriter::rewriteIntToBV(TNode node)
     {
       return RewriteResponse(REWRITE_AGAIN_FULL, node[0][0]);
     }
-    NodeManager * nm = NodeManager::currentNM();
     size_t osize = otype.getBitVectorSize();
     size_t isize = itype.getBitVectorSize();
     if (osize>isize)
     {
-      // ((_ int2bv w) (bv2nat x)) ---> ((_ extract w 0) x)
+      // ((_ int2bv w) (bv2nat x)) ---> (concat (_ bv0 v) x)
+      Node zero = bv::utils::mkZero(osize-isize);
+      Node concat = NodeManager::currentNM()->mkNode(kind::BITVECTOR_CONCAT, zero, node[0][0]);
+      return RewriteResponse(REWRITE_AGAIN_FULL, concat);
     }
     else
     {
