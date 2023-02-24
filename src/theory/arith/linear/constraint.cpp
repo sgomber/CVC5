@@ -22,6 +22,7 @@
 #include <unordered_set>
 
 #include "base/output.h"
+#include "expr/skolem_manager.h"
 #include "options/smt_options.h"
 #include "proof/eager_proof_generator.h"
 #include "proof/proof_node_manager.h"
@@ -32,7 +33,6 @@
 #include "theory/arith/linear/partial_model.h"
 #include "theory/builtin/proof_checker.h"
 #include "theory/rewriter.h"
-#include "expr/skolem_manager.h"
 
 using namespace std;
 using namespace cvc5::internal::kind;
@@ -1109,15 +1109,18 @@ std::vector<TrustNode> Constraint::split(bool doPurify)
 
   TNode lhs = eqNode[0];
   TNode rhs = eqNode[1];
-  
+
   if (doPurify)
   {
-    NodeManager * nm = NodeManager::currentNM();
-    SkolemManager * skm = nm->getSkolemManager();
+    NodeManager* nm = NodeManager::currentNM();
+    SkolemManager* skm = nm->getSkolemManager();
     Node t = nm->mkNode(kind::SUB, lhs, rhs);
     Node k = skm->mkPurifySkolem(t, "spl");
-    Node lemma = nm->mkNode(kind::IMPLIES, eqNode, k.eqNode(nm->mkConstRealOrInt(k.getType(), Rational(0))));
-    
+    Node lemma =
+        nm->mkNode(kind::IMPLIES,
+                   eqNode,
+                   k.eqNode(nm->mkConstRealOrInt(k.getType(), Rational(0))));
+
     ret.push_back(TrustNode::mkTrustLemma(lemma));
   }
   else

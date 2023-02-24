@@ -3519,18 +3519,21 @@ std::vector<TrustNode> TheoryArithPrivate::roundRobinBranch()
 
 bool TheoryArithPrivate::needsPurifySplit(ConstraintP c)
 {
-  Assert (c->isEquality() || c->isDisequality());
-  TNode eqNode = c->isEquality() ? c->getLiteral() : c->getNegation()->getLiteral();
+  Assert(c->isEquality() || c->isDisequality());
+  TNode eqNode =
+      c->isEquality() ? c->getLiteral() : c->getNegation()->getLiteral();
   Assert(eqNode.getKind() == kind::EQUAL);
   TNode lhs = eqNode[0];
   TNode rhs = eqNode[1];
-  for (size_t i=0; i<2; i++)
+  for (size_t i = 0; i < 2; i++)
   {
-    Node leqNode = NodeBuilder(i==0 ? kind::LEQ : kind::GEQ) << lhs << rhs;
+    Node leqNode = NodeBuilder(i == 0 ? kind::LEQ : kind::GEQ) << lhs << rhs;
     leqNode = rewrite(leqNode);
-    Node leqAtom = leqNode.getKind()==kind::NOT ? leqNode[0] : leqNode;
-    Trace("ajr-temp") << "Needs purify split " << eqNode << " returns " << (leqAtom.getKind()!=kind::GEQ) << " via " << leqAtom << std::endl;
-    if (leqAtom.getKind()!=kind::GEQ)
+    Node leqAtom = leqNode.getKind() == kind::NOT ? leqNode[0] : leqNode;
+    Trace("ajr-temp") << "Needs purify split " << eqNode << " returns "
+                      << (leqAtom.getKind() != kind::GEQ) << " via " << leqAtom
+                      << std::endl;
+    if (leqAtom.getKind() != kind::GEQ)
     {
       return true;
     }
