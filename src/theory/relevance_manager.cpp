@@ -133,6 +133,7 @@ void RelevanceManager::check(Theory::Effort effort)
 {
   if (Theory::fullEffort(effort))
   {
+    d_currLemmas.clear();
     d_inFullEffortCheck = true;
     d_success = true;
     d_computedRelevance = false;
@@ -194,7 +195,7 @@ bool RelevanceManager::computeRelevanceFor(TNode input)
     // isRelevant cannot be trusted. It might also be the case that the
     // assertion has no value (val == 0), since it may correspond to an
     // irrelevant Skolem definition, in this case we don't throw a warning.
-    if (d_inFullEffortCheck)
+    if (d_inFullEffortCheck && d_currLemmas.find(input)==d_currLemmas.end())
     {
       std::stringstream serr;
       serr << "RelevanceManager::computeRelevance: WARNING: failed to justify "
@@ -570,6 +571,12 @@ void RelevanceManager::notifyLemma(TNode n,
                                    const std::vector<Node>& skAsserts,
                                    const std::vector<Node>& sks)
 {
+  // if we are in a full effort check, then remember the lemma, since it
+  // not guaranteed to be justified.
+  if (d_inFullEffortCheck)
+  {
+    d_currLemmas.insert(n);
+  }
   // add to assertions
   if (isLemmaPropertyNeedsJustify(p))
   {

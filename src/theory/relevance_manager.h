@@ -288,6 +288,8 @@ class RelevanceManager : public TheoryEngineModule
   RlvPairIntMap d_jcache;
   /** Difficulty module */
   std::unique_ptr<DifficultyManager> d_dman;
+  /** Lemmas added during a full effort check */
+  std::unordered_set<Node> d_currLemmas;
 };
 
 }  // namespace theory
