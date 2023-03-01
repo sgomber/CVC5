@@ -195,7 +195,7 @@ bool RelevanceManager::computeRelevanceFor(TNode input)
     // isRelevant cannot be trusted. It might also be the case that the
     // assertion has no value (val == 0), since it may correspond to an
     // irrelevant Skolem definition, in this case we don't throw a warning.
-    if (d_inFullEffortCheck && d_currLemmas.find(input)==d_currLemmas.end())
+    if (d_inFullEffortCheck && d_currLemmas.find(input) == d_currLemmas.end())
     {
       std::stringstream serr;
       serr << "RelevanceManager::computeRelevance: WARNING: failed to justify "
@@ -229,12 +229,14 @@ bool RelevanceManager::updateJustifyLastChild(const RlvPair& cur,
   int32_t lastChildJustify = d_jcache[cp];
   if (TraceIsOn("rel-manager-debug2"))
   {
-    Trace("rel-manager-debug2") << "updateJustifyLastChild: " << cur.first << ", " << cur.second << " [";
+    Trace("rel-manager-debug2") << "updateJustifyLastChild: " << cur.first
+                                << ", " << cur.second << " [";
     for (int32_t j : childrenJustify)
     {
       Trace("rel-manager-debug2") << j << " ";
     }
-    Trace("rel-manager-debug2") << "], last justify = " << lastChildJustify << std::endl;
+    Trace("rel-manager-debug2")
+        << "], last justify = " << lastChildJustify << std::endl;
   }
   if (k == NOT)
   {
@@ -400,8 +402,8 @@ int32_t RelevanceManager::justify(TNode n, bool needsJustify)
                 << hasPol << "/" << pol << std::endl;
           }
         }
-        Trace("rel-manager-justify")
-            << "Justify " << cur.first << ", " << cur.second << ": " << ret << std::endl;
+        Trace("rel-manager-justify") << "Justify " << cur.first << ", "
+                                     << cur.second << ": " << ret << std::endl;
         d_jcache[cur] = ret;
         if (ret == 0)
         {
@@ -429,7 +431,9 @@ int32_t RelevanceManager::justify(TNode n, bool needsJustify)
         }
         else
         {
-          Trace("rel-manager-justify") << "Justify " << cur.first << ", " << cur.second << ": " << val << std::endl;
+          Trace("rel-manager-justify")
+              << "Justify " << cur.first << ", " << cur.second << ": " << val
+              << std::endl;
         }
       }
     }
