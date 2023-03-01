@@ -227,6 +227,15 @@ bool RelevanceManager::updateJustifyLastChild(const RlvPair& cur,
              d_ptctx.computeValue(cur.first, cur.second, index));
   Assert(d_jcache.find(cp) != d_jcache.end());
   int32_t lastChildJustify = d_jcache[cp];
+  if (TraceIsOn("rel-manager-debug2"))
+  {
+    Trace("rel-manager-debug2") << "updateJustifyLastChild: " << cur.first << ", " << cur.second << " [";
+    for (int32_t j : childrenJustify)
+    {
+      Trace("rel-manager-debug2") << j << " ";
+    }
+    Trace("rel-manager-debug2") << "], last justify = " << lastChildJustify << std::endl;
+  }
   if (k == NOT)
   {
     d_jcache[cur] = -lastChildJustify;
@@ -240,10 +249,12 @@ bool RelevanceManager::updateJustifyLastChild(const RlvPair& cur,
       if (lastChildJustify
           == ((k == AND || (k == IMPLIES && index == 0)) ? -1 : 1))
       {
+        Trace("rel-manager-debug2") << "...short circuit" << std::endl;
         d_jcache[cur] = k == AND ? -1 : 1;
         return false;
       }
     }
+    childrenJustify.push_back(lastChildJustify);
     if (index + 1 == nchildren)
     {
       // finished all children, compute the overall value
@@ -261,7 +272,6 @@ bool RelevanceManager::updateJustifyLastChild(const RlvPair& cur,
     else
     {
       // continue
-      childrenJustify.push_back(lastChildJustify);
       return true;
     }
   }
@@ -390,9 +400,8 @@ int32_t RelevanceManager::justify(TNode n, bool needsJustify)
                 << hasPol << "/" << pol << std::endl;
           }
         }
-        Trace("rel-manager-exp")
-            << "Reason for " << cur.first << " is " << n << ", polarity is "
-            << hasPol << "/" << pol << std::endl;
+        Trace("rel-manager-justify")
+            << "Justify " << cur.first << ", " << cur.second << ": " << ret << std::endl;
         d_jcache[cur] = ret;
         if (ret == 0)
         {
@@ -420,7 +429,7 @@ int32_t RelevanceManager::justify(TNode n, bool needsJustify)
         }
         else
         {
-          Trace("rel-manager-exp") << "Justify " << cur.first << ", " << cur.second << ": " << val << std::endl;
+          Trace("rel-manager-justify") << "Justify " << cur.first << ", " << cur.second << ": " << val << std::endl;
         }
       }
     }
