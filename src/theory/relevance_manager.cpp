@@ -390,6 +390,9 @@ int32_t RelevanceManager::justify(TNode n, bool needsJustify)
                 << hasPol << "/" << pol << std::endl;
           }
         }
+        Trace("rel-manager-exp")
+            << "Reason for " << cur.first << " is " << n << ", polarity is "
+            << hasPol << "/" << pol << std::endl;
         d_jcache[cur] = ret;
         if (ret == 0)
         {
@@ -410,9 +413,14 @@ int32_t RelevanceManager::justify(TNode n, bool needsJustify)
       {
         visit.pop();
         Assert(d_jcache.find(cur) != d_jcache.end());
-        if (d_jcache[cur] == 0)
+        int32_t val = d_jcache[cur];
+        if (val == 0)
         {
           noJustify.insert(cur);
+        }
+        else
+        {
+          Trace("rel-manager-exp") << "Justify " << cur.first << ", " << cur.second << ": " << val << std::endl;
         }
       }
     }
