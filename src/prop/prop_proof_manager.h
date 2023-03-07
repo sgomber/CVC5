@@ -69,7 +69,7 @@ class PropPfManager : protected EnvObj
    */
   std::shared_ptr<ProofNode> getProof(bool connectCnf);
 
-  /** 
+  /**
    * Get leaves of the proof with proof component pc.
    */
   std::vector<Node> getLeaves(modes::ProofComponent pc);

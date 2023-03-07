@@ -77,7 +77,7 @@ std::vector<Node> PropPfManager::getLeaves(modes::ProofComponent pc)
   expr::getFreeAssumptions(satPf.get(), satLeaves);
   return satLeaves;
 }
-  
+
 std::vector<std::shared_ptr<ProofNode>> PropPfManager::getProofLeaves(
     modes::ProofComponent pc)
 {
