@@ -70,7 +70,7 @@ void PropPfManager::checkProof(const context::CDList<Node>& assertions)
                      "PropPfManager::checkProof");
 }
 
-std::vector<Node> PropPfManager::getLeaves(modes::ProofComponent pc)
+std::vector<Node> PropPfManager::getLeaves()
 {
   std::shared_ptr<ProofNode> satPf = getProof(false);
   std::vector<Node> satLeaves;
@@ -90,7 +90,7 @@ std::vector<std::shared_ptr<ProofNode>> PropPfManager::getProofLeaves(
       pc == modes::PROOF_COMPONENT_THEORY_LEMMAS
           ? d_proofCnfStream->getLemmaClausesProofs()
           : d_proofCnfStream->getInputClausesProofs();
-  std::vector<Node> satLeaves = getLeaves(pc);
+  std::vector<Node> satLeaves = getLeaves();
   std::vector<std::shared_ptr<ProofNode>> usedPfs;
   for (const std::shared_ptr<ProofNode>& pf : pfs)
   {

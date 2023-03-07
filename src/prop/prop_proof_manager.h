@@ -72,7 +72,7 @@ class PropPfManager : protected EnvObj
   /**
    * Get leaves of the proof with proof component pc.
    */
-  std::vector<Node> getLeaves(modes::ProofComponent pc);
+  std::vector<Node> getLeaves();
   /** Return the vector of proofs for the respective proof component requested.
    *
    * The components may be of theory lemma proofs (closed proofs of valid theory
