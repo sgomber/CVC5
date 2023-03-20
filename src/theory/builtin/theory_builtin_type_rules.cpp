@@ -163,6 +163,11 @@ TypeNode WitnessTypeRule::computeType(NodeManager* nodeManager,
   return n[0][0].getType();
 }
 
+TypeNode ApplyIndexedSymbolicTypeRule::preComputeType(NodeManager* nm,
+                                                        TNode n)
+{
+  return TypeNode::null();
+}
 TypeNode ApplyIndexedSymbolicTypeRule::computeType(NodeManager* nodeManager,
                                                    TNode n,
                                                    bool check,

@@ -80,6 +80,7 @@ class WitnessTypeRule
 class ApplyIndexedSymbolicTypeRule
 {
  public:
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
   static TypeNode computeType(NodeManager* nodeManager,
                               TNode n,
                               bool check,
