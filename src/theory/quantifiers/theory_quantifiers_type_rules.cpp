@@ -15,6 +15,8 @@
 
 #include "theory/quantifiers/theory_quantifiers_type_rules.h"
 
+#include "theory/quantifiers/inst_strategy_pool.h"
+
 namespace cvc5::internal {
 namespace theory {
 namespace quantifiers {
@@ -64,14 +66,17 @@ TypeNode QuantifierTypeRule::computeType(NodeManager* nodeManager,
       }
       for (const Node& p : n[2])
       {
-        if (p.getKind() == kind::INST_POOL
-            && p.getNumChildren() != n[0].getNumChildren())
+        if (p.getKind() != kind::INST_POOL)
+        {
+          continue;
+        }
+        if (!InstStrategyPool::hasProductSemantics(n, p)
+            && !InstStrategyPool::hasTupleSemantics(n, p))
         {
           if (errOut)
           {
             (*errOut)
-                << "expected number of arguments to pool to be the same as the "
-                   "number of bound variables of the quantified formula";
+                << "Pool annotation does not match the types of the variables of the quantified formula.";
           }
           return TypeNode::null();
         }
@@ -146,16 +151,45 @@ TypeNode QuantifierAnnotationTypeRule::computeType(NodeManager* nodeManager,
                                                    bool check,
                                                    std::ostream* errOut)
 {
-  if (n.getKind() == kind::INST_ATTRIBUTE)
+  if (check)
   {
-    if (n.getNumChildren() > 1)
+    Kind k = n.getKind();
+    if (k == kind::INST_ATTRIBUTE)
     {
-      // first must be a keyword
-      if (n[0].getKind() != kind::CONST_STRING)
+      if (n.getNumChildren() > 1)
+      {
+        // first must be a keyword
+        if (n[0].getKind() != kind::CONST_STRING)
+        {
+          throw TypeCheckingExceptionPrivate(
+              n[0], "Expecting a keyword at the head of INST_ATTRIBUTE.");
+        }
+      }
+    }
+    else if (k == kind::INST_POOL)
+    {
+      // arguments must have set types
+      for (const Node& nn : n)
+      {
+        if (!nn.getType().isSet())
+        {
+          throw TypeCheckingExceptionPrivate(n, "Expecting a set as argument.");
+        }
+      }
+    }
+    else if (k == kind::INST_ADD_TO_POOL || k == kind::SKOLEM_ADD_TO_POOL)
+    {
+      TypeNode tn = n[0].getType();
+      TypeNode tn1 = n[1].getType();
+      if (!tn1.isSet())
+      {
+        throw TypeCheckingExceptionPrivate(n, "Expecting a set as argument.");
+      }
+      if (tn1.getSetElementType() != tn)
       {
         if (errOut)
         {
-          (*errOut) << "Expecting a keyword at the head of INST_ATTRIBUTE.";
+          (*errOut) << "Type of term must match the element type of the pool.";
         }
         return TypeNode::null();
       }
