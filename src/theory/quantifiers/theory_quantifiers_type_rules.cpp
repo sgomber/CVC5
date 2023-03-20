@@ -75,8 +75,8 @@ TypeNode QuantifierTypeRule::computeType(NodeManager* nodeManager,
         {
           if (errOut)
           {
-            (*errOut)
-                << "Pool annotation does not match the types of the variables of the quantified formula.";
+            (*errOut) << "Pool annotation does not match the types of the "
+                         "variables of the quantified formula.";
           }
           return TypeNode::null();
         }
