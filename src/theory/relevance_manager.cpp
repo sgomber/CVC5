@@ -256,6 +256,7 @@ bool RelevanceManager::updateJustifyLastChild(const RlvPair& cur,
         return false;
       }
     }
+    // add current child to list first before (possibly) computing result
     childrenJustify.push_back(lastChildJustify);
     if (index + 1 == nchildren)
     {
