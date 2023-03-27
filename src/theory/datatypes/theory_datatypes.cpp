@@ -1195,7 +1195,9 @@ bool TheoryDatatypes::instantiate(EqcInfo* eqc, Node n)
   return instantiate(tt, static_cast<size_t>(index), exp);
 }
 
-bool TheoryDatatypes::instantiate(const Node& n, size_t index, const std::vector<Node>& exp)
+bool TheoryDatatypes::instantiate(const Node& n,
+                                  size_t index,
+                                  const std::vector<Node>& exp)
 {
   Node ncons = getInstantiateCons(n, dt, index);
   if (n == ncons)
