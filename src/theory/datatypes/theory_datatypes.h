@@ -270,9 +270,11 @@ private:
   /** get singleton lemma */
   Node getSingletonLemma( TypeNode tn, bool pol );
   /** get instantiate cons */
-  Node getInstantiateCons(Node n, const DType& dt, int index);
+  Node getInstantiateCons(Node n, const DType& dt, size_t index);
   /** check instantiate, return true if an inference was generated. */
   bool instantiate(EqcInfo* eqc, Node n);
+  /** check instantiate, return true if an inference was generated. */
+  bool instantiate(const Node& n, size_t index, const std::vector<Node>& exp);
 
  private:
   //equality queries

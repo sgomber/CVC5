@@ -1155,7 +1155,7 @@ void TheoryDatatypes::registerInitialLemmas(Node n)
   }
 }
 
-Node TheoryDatatypes::getInstantiateCons(Node n, const DType& dt, int index)
+Node TheoryDatatypes::getInstantiateCons(Node n, const DType& dt, size_t index)
 {
   if( n.getKind()==APPLY_CONSTRUCTOR && n.getNumChildren()==0 ){
     return n;
@@ -1190,17 +1190,22 @@ bool TheoryDatatypes::instantiate(EqcInfo* eqc, Node n)
     exp = getLabel(n);
     tt = exp[0];
   }
-  TypeNode ttn = tt.getType();
-  const DType& dt = ttn.getDType();
   // instantiate this equivalence class
   eqc->d_inst = true;
-  Node tt_cons = getInstantiateCons(tt, dt, index);
-  if (tt == tt_cons)
+  return instantiate(tt, static_cast<size_t>(index), exp);
+}
+
+bool TheoryDatatypes::instantiate(const Node& n, size_t index, const std::vector<Node>& exp)
+{
+  Node ncons = getInstantiateCons(n, dt, index);
+  if (n == ncons)
   {
     // not necessary
     return false;
   }
-  Node eq = tt.eqNode(tt_cons);
+  TypeNode ttn = n.getType();
+  const DType& dt = ttn.getDType();
+  Node eq = n.eqNode(ncons);
   // Determine if the equality must be sent out as a lemma. Notice that
   // we  keep new equalities from the instantiate rule internal
   // as long as they are for datatype constructors that have no arguments that
@@ -1649,12 +1654,12 @@ void TheoryDatatypes::checkSplit()
     }
     if (dt.getNumConstructors() == 1)
     {
-      // this may not be necessary?
-      // if only one constructor, then this term must be this constructor
-      Node t = utils::mkTester(n, 0, dt);
-      d_im.addPendingInference(t, InferenceId::DATATYPES_SPLIT, d_true);
-      Trace("datatypes-infer")
-          << "DtInfer : 1-cons (full) : " << t << std::endl;
+      // If only one constructor, then this term must be this constructor.
+      // We skip testers and go straight to instantiation.
+      if (instantiate(n, 0, {}))
+      {
+        d_im.process();
+      }
     }
     else
     {
@@ -1668,7 +1673,7 @@ void TheoryDatatypes::checkSplit()
         NodeBuilder nb(kind::OR);
         nb << test << test.notNode();
         Node lemma = nb;
-        d_im.lemma(lemma, InferenceId::DATATYPES_BINARY_SPLIT);
+        d_im.sendDtLemma(lemma, InferenceId::DATATYPES_BINARY_SPLIT);
         d_im.requirePhase(test, true);
       }
       else
