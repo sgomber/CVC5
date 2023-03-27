@@ -1195,9 +1195,7 @@ bool TheoryDatatypes::instantiate(EqcInfo* eqc, Node n)
   return instantiate(tt, static_cast<size_t>(index), exp);
 }
 
-bool TheoryDatatypes::instantiate(const Node& n,
-                                  size_t index,
-                                  const Node& exp)
+bool TheoryDatatypes::instantiate(const Node& n, size_t index, const Node& exp)
 {
   TypeNode ttn = n.getType();
   const DType& dt = ttn.getDType();
