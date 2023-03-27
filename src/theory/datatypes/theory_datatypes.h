@@ -274,7 +274,7 @@ private:
   /** check instantiate, return true if an inference was generated. */
   bool instantiate(EqcInfo* eqc, Node n);
   /** check instantiate, return true if an inference was generated. */
-  bool instantiate(const Node& n, size_t index, const std::vector<Node>& exp);
+  bool instantiate(const Node& n, size_t index, const Node& exp);
 
  private:
   //equality queries

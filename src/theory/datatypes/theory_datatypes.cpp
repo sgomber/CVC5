@@ -1197,16 +1197,16 @@ bool TheoryDatatypes::instantiate(EqcInfo* eqc, Node n)
 
 bool TheoryDatatypes::instantiate(const Node& n,
                                   size_t index,
-                                  const std::vector<Node>& exp)
+                                  const Node& exp)
 {
+  TypeNode ttn = n.getType();
+  const DType& dt = ttn.getDType();
   Node ncons = getInstantiateCons(n, dt, index);
   if (n == ncons)
   {
     // not necessary
     return false;
   }
-  TypeNode ttn = n.getType();
-  const DType& dt = ttn.getDType();
   Node eq = n.eqNode(ncons);
   // Determine if the equality must be sent out as a lemma. Notice that
   // we  keep new equalities from the instantiate rule internal
@@ -1226,7 +1226,7 @@ bool TheoryDatatypes::instantiate(const Node& n,
   {
     forceLemma = dt.involvesExternalType();
   }
-  Trace("datatypes-infer-debug") << "DtInstantiate : " << eqc << " " << eq
+  Trace("datatypes-infer-debug") << "DtInstantiate : " << n << " " << eq
                                  << " forceLemma = " << forceLemma << std::endl;
   Trace("datatypes-infer") << "DtInfer : instantiate : " << eq << " by " << exp
                            << std::endl;
@@ -1658,7 +1658,7 @@ void TheoryDatatypes::checkSplit()
     {
       // If only one constructor, then this term must be this constructor.
       // We skip testers and go straight to instantiation.
-      if (instantiate(n, 0, {}))
+      if (instantiate(n, 0, d_true))
       {
         d_im.process();
       }
