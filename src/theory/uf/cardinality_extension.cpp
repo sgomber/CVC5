@@ -1563,6 +1563,35 @@ void CardinalityExtension::check(Theory::Effort level)
   }
 }
 
+
+bool CardinalityExtension::collectModelValues(TheoryModel* m, const std::set<Node>& termSet)
+{
+  TypeSet tset;
+  std::unordered_set<Node> repsProcessed;
+  eq::EqualityEngine* ee = getTheory()->getEqualityEngine();
+  for (const Node& n : termSet)
+  {
+    TypeNode tn = n.getType();
+    if (!tn.isUninterpretedSort())
+    {
+      continue;
+    }
+    Node nr = ee->getRepresentative(n);
+    if (repsProcessed.find(nr)!=repsProcessed.end())
+    {
+      continue;
+    }
+    repsProcessed.insert(nr);
+    Node val = tset.nextTypeEnum(tn);
+    if (!m->assertEquality(n, val, true))
+    {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
 void CardinalityExtension::presolve()
 {
   d_initializedCombinedCardinality = false;

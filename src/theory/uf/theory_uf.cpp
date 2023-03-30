@@ -379,7 +379,11 @@ bool TheoryUF::collectModelValues(TheoryModel* m, const std::set<Node>& termSet)
       return false;
     }
   }
-
+  // check with the cardinality constraints extension
+  if (d_thss != nullptr)
+  {
+    d_thss->collectModelValues(m, termSet);
+  }
   Trace("uf") << "UF : finish collectModelInfo " << std::endl;
   return true;
 }

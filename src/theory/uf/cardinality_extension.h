@@ -374,6 +374,8 @@ class CardinalityExtension : protected EnvObj
   bool areDisequal( Node a, Node b );
   /** check */
   void check( Theory::Effort level );
+  /** collect model values */
+  bool collectModelValues(TheoryModel* m, const std::set<Node>& termSet);
   /** presolve */
   void presolve();
   /** preregister a term */
