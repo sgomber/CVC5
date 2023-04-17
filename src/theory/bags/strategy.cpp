@@ -27,6 +27,7 @@ std::ostream& operator<<(std::ostream& out, InferStep s)
     case CHECK_INIT: out << "check_init"; break;
     case CHECK_BAG_MAKE: out << "check_bag_make"; break;
     case CHECK_BASIC_OPERATIONS: out << "CHECK_BASIC_OPERATIONS"; break;
+    case CHECK_DISEQUALITY: out << "CHECK_DISEQUALITY"; break;
     case CHECK_CARDINALITY_CONSTRAINTS:
       out << "CHECK_CARDINALITY_CONSTRAINTS";
       break;
@@ -87,8 +88,13 @@ void Strategy::initializeStrategy()
     step_begin[Theory::EFFORT_FULL] = 0;
     // add the inference steps
     addStrategyStep(CHECK_INIT);
+    addStrategyStep(BREAK);
     addStrategyStep(CHECK_BAG_MAKE);
+    addStrategyStep(BREAK);
     addStrategyStep(CHECK_BASIC_OPERATIONS);
+    addStrategyStep(BREAK);
+    addStrategyStep(CHECK_DISEQUALITY);
+    addStrategyStep(BREAK);
     addStrategyStep(CHECK_CARDINALITY_CONSTRAINTS);
     step_end[Theory::EFFORT_FULL] = d_infer_steps.size() - 1;
 

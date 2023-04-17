@@ -325,6 +325,7 @@ bool TheoryBags::runInferStep(InferStep s, int effort)
       break;
     }
     case CHECK_BASIC_OPERATIONS: d_solver.checkBasicOperations(); break;
+    case CHECK_DISEQUALITY: d_solver.checkDisequalBagTerms(); break;
     case CHECK_CARDINALITY_CONSTRAINTS:
       d_cardSolver.checkCardinalityGraph();
       break;

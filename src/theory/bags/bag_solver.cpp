@@ -53,7 +53,6 @@ BagSolver::~BagSolver() {}
 
 void BagSolver::checkBasicOperations()
 {
-  checkDisequalBagTerms();
 
   // At this point, all bag and count representatives should be in the solver
   // state.

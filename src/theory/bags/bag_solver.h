@@ -46,6 +46,9 @@ class BagSolver : protected EnvObj
    * BAG_DIFFERENCE_SUBTRACT, BAG_DIFFERENCE_REMOVE, BAG_DUPLICATE_REMOVAL
    */
   void checkBasicOperations();
+  
+  /** apply inference rules for disequal bag terms */
+  void checkDisequalBagTerms();
 
   /**
    * apply inference rules for BAG_MAKE terms.
@@ -92,8 +95,6 @@ class BagSolver : protected EnvObj
   void checkDuplicateRemoval(Node n);
   /** apply non negative constraints for multiplicities */
   void checkNonNegativeCountTerms(const Node& bag, const Node& element);
-  /** apply inference rules for disequal bag terms */
-  void checkDisequalBagTerms();
   /** apply inference rules for map operator */
   void checkMap(Node n);
   /** apply inference rules for filter operator */

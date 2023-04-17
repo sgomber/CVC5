@@ -43,6 +43,8 @@ enum InferStep
   CHECK_BAG_MAKE,
   // check basic operations
   CHECK_BASIC_OPERATIONS,
+  // check disequality
+  CHECK_DISEQUALITY,
   // check cardinality constraints
   CHECK_CARDINALITY_CONSTRAINTS
 };
