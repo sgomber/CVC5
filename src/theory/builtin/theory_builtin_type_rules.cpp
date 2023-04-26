@@ -146,6 +146,14 @@ TypeNode ApplyIndexedSymbolicTypeRule::computeType(NodeManager* nodeManager,
   // of indexed operator, but we don't do this for simplicity.
   return nodeManager->mkAbstractType(kind::ABSTRACT_TYPE);
 }
+
+TypeNode ProofTermTypeRule::computeType(NodeManager* nodeManager,
+                                                   TNode n,
+                                                   bool check,
+                                                   std::ostream* errOut)
+{
+  return nodeManager->booleanType();
+}
 /**
  * Attribute for caching the ground term for each type. Maps TypeNode to the
  * skolem to return for mkGroundTerm.

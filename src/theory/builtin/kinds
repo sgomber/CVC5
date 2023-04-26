@@ -298,6 +298,12 @@ variable VARIABLE "a variable (not permitted in bindings)"
 variable BOUND_VARIABLE "a bound variable (permitted in bindings and the associated lambda and quantifier bodies only)"
 variable SKOLEM "a Skolem variable (internal only)"
 operator SEXPR 0: "a symbolic expression (any arity)"
+operator PROOF_TERM 0: "a proof term (any arity)"
+
+typerule PROOF_TERM ::cvc5::internal::theory::builtin::ProofTermTypeRule
+
+nullaryoperator PROOF_ERROR "proof error"
+typerule PROOF_ERROR "SimpleTypeRule<RBool>"
 
 operator WITNESS 2:3 "a witness expression; first parameter is a BOUND_VAR_LIST, second is the witness body"
 
