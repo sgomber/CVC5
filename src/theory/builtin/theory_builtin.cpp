@@ -54,6 +54,13 @@ void TheoryBuiltin::finishInit()
   // hence it is easy to check for illegal eliminations via TheoryModel
   // (see TheoryModel::isLegalElimination) since there are no unevaluated kinds
   // present.
+  ProofNodeManager * pnm = d_env.getProofNodeManager();
+  if (pnm!=nullptr)
+  {
+    ProofChecker * pc = pnm->getChecker();
+    Assert (pc!=nullptr);
+    d_rewriter.setProofChecker(pc);
+  }
 }
 
 }  // namespace builtin

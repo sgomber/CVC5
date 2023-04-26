@@ -183,6 +183,11 @@ TypeNode NodeManager::instPatternListType()
   return mkTypeConst<TypeConstant>(INST_PATTERN_LIST_TYPE);
 }
 
+TypeNode NodeManager::proofType()
+{
+  return mkTypeConst<TypeConstant>(PROOF_TYPE);
+}
+
 TypeNode NodeManager::builtinOperatorType()
 {
   return mkTypeConst<TypeConstant>(BUILTIN_OPERATOR_TYPE);
@@ -1034,8 +1039,6 @@ Node NodeManager::getBoundVarListForFunctionType(TypeNode tn)
       vars.push_back(mkBoundVar(tn[i]));
     }
     bvl = mkNode(kind::BOUND_VAR_LIST, vars);
-    Trace("functions") << "Make standard bound var list " << bvl << " for "
-                       << tn << std::endl;
     tn.setAttribute(LambdaBoundVarListAttr(), bvl);
   }
   return bvl;
@@ -1387,6 +1390,11 @@ Node NodeManager::mkRealAlgebraicNumber(const RealAlgebraicNumber& ran)
     inner = mkConst(Kind::REAL_ALGEBRAIC_NUMBER_OP, cur);
   }
   return mkNode(Kind::REAL_ALGEBRAIC_NUMBER, inner);
+}
+
+Node NodeManager::mkProofError()
+{
+  return mkNullaryOperator(booleanType(), kind::PROOF_ERROR);
 }
 
 }  // namespace cvc5::internal

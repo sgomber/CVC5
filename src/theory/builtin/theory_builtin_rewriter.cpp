@@ -24,12 +24,43 @@
 #include "expr/elim_shadow_converter.h"
 #include "expr/node_algorithm.h"
 #include "theory/builtin/generic_op.h"
+#include "theory/builtin/proof_premise_op.h"
+#include "proof/proof_checker.h"
+#include "util/rational.h"
 
 using namespace std;
 
 namespace cvc5::internal {
 namespace theory {
 namespace builtin {
+
+/** Make a proof rule node */
+Node mkPfRule(PfRule id)
+{
+  return NodeManager::currentNM()->mkConstInt(
+      Rational(static_cast<uint32_t>(id)));
+}
+
+/** get a proof rule from a node, return false if we fail */
+bool getPfRule(TNode n, PfRule& i)
+{
+  uint32_t index;
+  if (!ProofRuleChecker::getUInt32(n, index))
+  {
+    return false;
+  }
+  i = static_cast<PfRule>(index);
+  return true;
+}
+  
+TheoryBuiltinRewriter::TheoryBuiltinRewriter() : d_pc(nullptr)
+{
+}
+
+void TheoryBuiltinRewriter::setProofChecker(ProofChecker * pc)
+{
+  d_pc = pc;
+}
 
 Node TheoryBuiltinRewriter::blastDistinct(TNode in)
 {
@@ -65,6 +96,57 @@ Node TheoryBuiltinRewriter::blastDistinct(TNode in)
 }
 
 RewriteResponse TheoryBuiltinRewriter::postRewrite(TNode node) {
+  if (node.getKind()==kind::PROOF_TERM)
+  {
+    NodeManager* nm = NodeManager::currentNM();
+    std::vector<Node> children;
+    std::vector<Node> args;
+    PfRule r;
+    Node res;
+    if (d_pc!=nullptr && getPfRule(node[0], r))
+    {
+      for (size_t i=1, nchildren = node.getNumChildren(); i<nchildren; i++)
+      {
+        Node nn = node[i];
+        if (nn.getType().isProof())
+        {
+          Node cproven;
+          Kind nk = nn.getKind();
+          if (nk==kind::PROOF_PREMISE)
+          {
+            cproven = nn.getOperator().getConst<ProofPremiseOp>().getProven();
+          }
+          else
+          {
+            // otherwise, dummy predicate
+            //cproven = 
+          }
+          // if a child proof is error, we are error
+          if (cproven.getKind()==kind::PROOF_ERROR)
+          {
+            return RewriteResponse(REWRITE_DONE, cproven);
+          }
+          children.push_back(cproven);
+        }
+        else
+        {
+          args.push_back(nn[0]);
+        }
+      }
+      res = d_pc->checkDebug(r, children, args);
+    }
+    // if we failed, it is an error
+    Node provenNode;
+    if (res.isNull())
+    {
+      provenNode = nm->mkProofError();
+    }
+    else
+    {
+      provenNode = nm->mkConst(ProofPremiseOp(res));
+    }
+    return RewriteResponse(REWRITE_DONE, provenNode);
+  }
   // otherwise, do the default call
   return doRewrite(node);
 }

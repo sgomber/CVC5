@@ -298,12 +298,6 @@ variable VARIABLE "a variable (not permitted in bindings)"
 variable BOUND_VARIABLE "a bound variable (permitted in bindings and the associated lambda and quantifier bodies only)"
 variable SKOLEM "a Skolem variable (internal only)"
 operator SEXPR 0: "a symbolic expression (any arity)"
-operator PROOF_TERM 0: "a proof term (any arity)"
-
-typerule PROOF_TERM ::cvc5::internal::theory::builtin::ProofTermTypeRule
-
-nullaryoperator PROOF_ERROR "proof error"
-typerule PROOF_ERROR "SimpleTypeRule<RBool>"
 
 operator WITNESS 2:3 "a witness expression; first parameter is a BOUND_VAR_LIST, second is the witness body"
 
@@ -344,5 +338,28 @@ parameterized APPLY_INDEXED_SYMBOLIC APPLY_INDEXED_SYMBOLIC_OP 1: "generic index
 
 typerule APPLY_INDEXED_SYMBOLIC_OP "SimpleTypeRule<RBuiltinOperator>"
 typerule APPLY_INDEXED_SYMBOLIC ::cvc5::internal::theory::builtin::ApplyIndexedSymbolicTypeRule
+
+
+sort PROOF_TYPE \
+    Cardinality::INTEGERS \
+    well-founded \
+        "NodeManager::currentNM()->mkProofError()" \
+        "expr/node_manager.h" \
+    "proof type"
+    
+operator PROOF_TERM 1: "a proof term (any arity)"
+typerule PROOF_TERM ::cvc5::internal::theory::builtin::ProofTermTypeRule
+
+constant PROOF_PREMISE_OP \
+  class \
+  ProofPremiseOp \
+  ::cvc5::internal::ProofPremiseOpHashFunction \
+  "theory/builtin/proof_premise_op.h" \
+  "operator for proof premises; payload is an instance of the cvc5::internal::ProofPremiseOp class"
+parameterized PROOF_PREMISE PROOF_PREMISE_OP 1: "proof proven"
+typerule PROOF_PREMISE "SimpleTypeRule<RBool>"
+
+nullaryoperator PROOF_ERROR "proof error"
+typerule PROOF_ERROR "SimpleTypeRule<RBool>"
 
 endtheory

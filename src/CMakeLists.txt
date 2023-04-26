@@ -601,6 +601,8 @@ libcvc5_add_sources(
   theory/builtin/generic_op.h
   theory/builtin/proof_checker.cpp
   theory/builtin/proof_checker.h
+  theory/builtin/proof_premise_op.cpp
+  theory/builtin/proof_premise_op.h
   theory/builtin/theory_builtin.cpp
   theory/builtin/theory_builtin.h
   theory/builtin/theory_builtin_rewriter.cpp

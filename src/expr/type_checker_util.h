@@ -65,6 +65,12 @@ struct RString
   static TypeNode mkType(NodeManager* nm) { return nm->stringType(); }
 };
 
+/** Type check returns the proof sort */
+struct RProof
+{
+  static TypeNode mkType(NodeManager* nm) { return nm->proofType(); }
+};
+
 /** Argument does not exist */
 struct ANone
 {
@@ -144,6 +150,18 @@ struct AString
   }
   constexpr static const char* typeName = "string";
 };
+
+/** Argument is a proof */
+struct AProof
+{
+  static bool checkArg(TNode n, size_t arg)
+  {
+    TypeNode t = n[arg].getType(true);
+    return t.isProof();
+  }
+  constexpr static const char* typeName = "proof";
+};
+
 
 /** 
  * The SimpleTypeRule template can be used to obtain a simple type rule by

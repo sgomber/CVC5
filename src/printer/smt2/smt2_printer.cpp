@@ -194,6 +194,7 @@ void Smt2Printer::toStream(std::ostream& out,
       case STRING_TYPE: out << "String"; break;
       case REGEXP_TYPE: out << "RegLan"; break;
       case ROUNDINGMODE_TYPE: out << "RoundingMode"; break;
+      case PROOF_TYPE: out << "Proof"; break;
       default:
         // fall back on whatever operator<< does on underlying type; we
         // might luck out and be SMT-LIB v2 compliant
@@ -1007,6 +1008,9 @@ void Smt2Printer::toStream(std::ostream& out,
   case kind::INST_PATTERN:
   case kind::INST_NO_PATTERN:
   case kind::INST_PATTERN_LIST: break;
+  case kind::PROOF_PREMISE:
+      // operator is printed as kind
+    break;
   default:
     // by default, print the kind using the smtKindString utility
     out << smtKindString(k);
@@ -1347,6 +1351,10 @@ std::string Smt2Printer::smtKindString(Kind k)
 
     // HO
     case kind::HO_APPLY: return "@";
+    
+    // other
+    case kind::PROOF_TERM: return "proof";
+    case kind::PROOF_ERROR: return "proof.error";
 
     default:; /* fall through */
   }

@@ -21,6 +21,9 @@
 #include "theory/theory_rewriter.h"
 
 namespace cvc5::internal {
+
+class ProofChecker;
+
 namespace theory {
 namespace builtin {
 
@@ -29,12 +32,15 @@ class TheoryBuiltinRewriter : public TheoryRewriter
   static Node blastDistinct(TNode node);
 
  public:
-
+  TheoryBuiltinRewriter();
+  void setProofChecker(ProofChecker * pc);
   RewriteResponse postRewrite(TNode node) override;
 
   RewriteResponse preRewrite(TNode node) override { return doRewrite(node); }
 
  public:
+  /** Proof checker */
+  ProofChecker * d_pc;
   /**
    * The default rewriter for rewrites that occur at both pre and post rewrite.
    */

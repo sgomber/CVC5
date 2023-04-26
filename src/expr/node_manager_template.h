@@ -347,7 +347,7 @@ class NodeManager
 
   /** Get the (singleton) type for reals. */
   TypeNode realType();
-
+  
   /** Get the (singleton) type for strings. */
   TypeNode stringType();
 
@@ -365,6 +365,9 @@ class NodeManager
 
   /** Get the instantiation pattern type. */
   TypeNode instPatternListType();
+
+  /** Get the (singleton) type for proofs. */
+  TypeNode proofType();
 
   /**
    * Get the (singleton) type for builtin operators (that is, the type
@@ -695,6 +698,9 @@ class NodeManager
    * Rational as well.
    */
   Node mkRealAlgebraicNumber(const RealAlgebraicNumber& ran);
+
+  /** Make proof error */
+  Node mkProofError();
 
   /** Create a node with children. */
   TypeNode mkTypeNode(Kind kind, TypeNode child1);
