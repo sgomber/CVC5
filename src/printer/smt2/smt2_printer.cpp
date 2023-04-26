@@ -1009,7 +1009,7 @@ void Smt2Printer::toStream(std::ostream& out,
   case kind::INST_NO_PATTERN:
   case kind::INST_PATTERN_LIST: break;
   case kind::PROOF_PREMISE:
-      // operator is printed as kind
+    // operator is printed as kind
     break;
   default:
     // by default, print the kind using the smtKindString utility
@@ -1351,7 +1351,7 @@ std::string Smt2Printer::smtKindString(Kind k)
 
     // HO
     case kind::HO_APPLY: return "@";
-    
+
     // other
     case kind::PROOF_TERM: return "proof";
     case kind::PROOF_ERROR: return "proof.error";

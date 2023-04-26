@@ -33,14 +33,14 @@ class TheoryBuiltinRewriter : public TheoryRewriter
 
  public:
   TheoryBuiltinRewriter();
-  void setProofChecker(ProofChecker * pc);
+  void setProofChecker(ProofChecker* pc);
   RewriteResponse postRewrite(TNode node) override;
 
   RewriteResponse preRewrite(TNode node) override { return doRewrite(node); }
 
  public:
   /** Proof checker */
-  ProofChecker * d_pc;
+  ProofChecker* d_pc;
   /**
    * The default rewriter for rewrites that occur at both pre and post rewrite.
    */

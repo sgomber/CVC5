@@ -148,9 +148,9 @@ TypeNode ApplyIndexedSymbolicTypeRule::computeType(NodeManager* nodeManager,
 }
 
 TypeNode ProofTermTypeRule::computeType(NodeManager* nodeManager,
-                                                   TNode n,
-                                                   bool check,
-                                                   std::ostream* errOut)
+                                        TNode n,
+                                        bool check,
+                                        std::ostream* errOut)
 {
   return nodeManager->booleanType();
 }

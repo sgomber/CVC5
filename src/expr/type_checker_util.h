@@ -162,7 +162,6 @@ struct AProof
   constexpr static const char* typeName = "proof";
 };
 
-
 /** 
  * The SimpleTypeRule template can be used to obtain a simple type rule by
  * defining a return type and the argument types (up to three arguments are

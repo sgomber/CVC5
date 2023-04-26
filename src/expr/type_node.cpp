@@ -654,8 +654,8 @@ bool TypeNode::isFullyAbstract() const
 
 bool TypeNode::isProof() const
 {
-  return getKind() == kind::TYPE_CONSTANT &&
-  getConst<TypeConstant>() == PROOF_TYPE;
+  return getKind() == kind::TYPE_CONSTANT
+         && getConst<TypeConstant>() == PROOF_TYPE;
 }
 
 Kind TypeNode::getAbstractedKind() const

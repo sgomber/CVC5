@@ -485,7 +485,7 @@ class CVC5_EXPORT TypeNode
 
   /** Is this the proof type? */
   bool isProof() const;
-  
+
   /** Get the index type (for array types) */
   TypeNode getArrayIndexType() const;
 

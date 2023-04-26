@@ -347,7 +347,7 @@ class NodeManager
 
   /** Get the (singleton) type for reals. */
   TypeNode realType();
-  
+
   /** Get the (singleton) type for strings. */
   TypeNode stringType();
 

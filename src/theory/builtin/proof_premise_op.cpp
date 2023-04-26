@@ -17,6 +17,7 @@
 
 #include <iostream>
 #include <sstream>
+
 #include "expr/node.h"
 
 using namespace cvc5::internal::kind;
@@ -35,7 +36,10 @@ size_t ProofPremiseOpHashFunction::operator()(const ProofPremiseOp& op) const
 
 ProofPremiseOp::ProofPremiseOp(const Node& p) : d_proven(new Node(p)) {}
 
-ProofPremiseOp::ProofPremiseOp(const ProofPremiseOp& op) : d_proven(new Node(op.getProven())) {}
+ProofPremiseOp::ProofPremiseOp(const ProofPremiseOp& op)
+    : d_proven(new Node(op.getProven()))
+{
+}
 
 const Node& ProofPremiseOp::getProven() const { return *d_proven; }
 

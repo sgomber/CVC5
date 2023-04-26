@@ -18,8 +18,8 @@
 #ifndef CVC5__THEORY__BUILTIN__PROOF_PREMISE_OP_H
 #define CVC5__THEORY__BUILTIN__PROOF_PREMISE_OP_H
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 namespace cvc5::internal {
 
