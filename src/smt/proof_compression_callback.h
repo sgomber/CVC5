@@ -29,7 +29,8 @@ namespace cvc5::internal {
 namespace smt {
 
 /** Compression callback class, for stats and pedantic checking */
-class ProofCompressionCallback : protected EnvObj, public ProofNodeUpdaterCallback
+class ProofCompressionCallback : protected EnvObj,
+                                 public ProofNodeUpdaterCallback
 {
  public:
   ProofCompressionCallback(Env& env);
@@ -51,8 +52,9 @@ class ProofCompressionCallback : protected EnvObj, public ProofNodeUpdaterCallba
               bool& continueUpdate) override;
   /** Get unprocessed scopes */
   std::unordered_set<std::shared_ptr<ProofNode>>& getUnprocessedScopes();
-private:
-  std::unordered_map<Node,std::shared_ptr<ProofNode>> d_proven;
+
+ private:
+  std::unordered_map<Node, std::shared_ptr<ProofNode>> d_proven;
   /** List of scopes */
   std::unordered_set<std::shared_ptr<ProofNode>> d_unprocessedScopes;
 };
@@ -66,7 +68,8 @@ class ProofCompressor : protected EnvObj
   ProofCompressor(Env& env);
   /** compress */
   void compress(std::shared_ptr<ProofNode> pn);
-private:
+
+ private:
   /** The compressor callback */
   ProofCompressionCallback d_ccb;
   /**

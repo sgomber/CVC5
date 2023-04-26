@@ -21,10 +21,7 @@ using namespace cvc5::internal::theory;
 namespace cvc5::internal {
 namespace smt {
 
-ProofCompressionCallback::ProofCompressionCallback(Env& env)
-    : EnvObj(env)
-{
-}
+ProofCompressionCallback::ProofCompressionCallback(Env& env) : EnvObj(env) {}
 
 void ProofCompressionCallback::analyze(std::shared_ptr<ProofNode> pn)
 {
@@ -43,7 +40,7 @@ void ProofCompressionCallback::analyze(std::shared_ptr<ProofNode> pn)
     {
       visited.insert(cur);
       d_proven[cur->getResult()] = cur;
-      if (cur->getRule()!=PfRule::SCOPE)
+      if (cur->getRule() != PfRule::SCOPE)
       {
         const std::vector<std::shared_ptr<ProofNode>>& children =
             cur->getChildren();
@@ -61,29 +58,30 @@ void ProofCompressionCallback::analyze(std::shared_ptr<ProofNode> pn)
 }
 
 bool ProofCompressionCallback::shouldUpdate(std::shared_ptr<ProofNode> pn,
-                                      const std::vector<Node>& fa,
-                                      bool& continueUpdate)
+                                            const std::vector<Node>& fa,
+                                            bool& continueUpdate)
 {
   return false;
 }
 bool ProofCompressionCallback::update(Node res,
-            PfRule id,
-            const std::vector<Node>& children,
-            const std::vector<Node>& args,
-            CDProof* cdp,
-            bool& continueUpdate)
+                                      PfRule id,
+                                      const std::vector<Node>& children,
+                                      const std::vector<Node>& args,
+                                      CDProof* cdp,
+                                      bool& continueUpdate)
 {
   return false;
 }
 
-std::unordered_set<std::shared_ptr<ProofNode>>& ProofCompressionCallback::getUnprocessedScopes()
+std::unordered_set<std::shared_ptr<ProofNode>>&
+ProofCompressionCallback::getUnprocessedScopes()
 {
   return d_unprocessedScopes;
 }
 
-ProofCompressor::ProofCompressor(Env& env) : EnvObj(env), d_ccb(env), d_compressor(env, d_ccb)
+ProofCompressor::ProofCompressor(Env& env)
+    : EnvObj(env), d_ccb(env), d_compressor(env, d_ccb)
 {
-  
 }
 void ProofCompressor::compress(std::shared_ptr<ProofNode> pn)
 {
@@ -103,7 +101,8 @@ void ProofCompressor::compress(std::shared_ptr<ProofNode> pn)
       d_ccb.analyze(cur);
       d_compressor.process(pn);
       // FIXME: could be that a SCOPE is no longer used in compressed proof
-      std::unordered_set<std::shared_ptr<ProofNode>>& scopes = d_ccb.getUnprocessedScopes();
+      std::unordered_set<std::shared_ptr<ProofNode>>& scopes =
+          d_ccb.getUnprocessedScopes();
       visit.insert(visit.end(), scopes.begin(), scopes.end());
     }
   }
