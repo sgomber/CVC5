@@ -349,7 +349,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
   Assert(!n.isNull());
   if (d_sec != nullptr)
   {
-    if (!d_sec->addTerm(n, d_bterms))
+    if (!d_sec->addTerm(n))
     {
       Trace("sygus-enum-exc")
           << "Exclude: " << datatypes::utils::sygusToBuiltin(n)

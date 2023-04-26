@@ -224,8 +224,6 @@ class SygusEnumerator : public EnumValGenerator
 
     /** the list of sygus terms we have enumerated */
     std::vector<Node> d_terms;
-    /** the set of builtin terms corresponding to the above list */
-    std::unordered_set<Node> d_bterms;
     /**
      * The index of first term whose size is greater than or equal to that size,
      * if it exists.

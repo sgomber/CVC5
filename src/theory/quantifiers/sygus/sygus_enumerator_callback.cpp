@@ -35,7 +35,7 @@ SygusEnumeratorCallback::SygusEnumeratorCallback(Env& env,
   d_tn = e.getType();
 }
 
-bool SygusEnumeratorCallback::addTerm(Node n, std::unordered_set<Node>& bterms)
+bool SygusEnumeratorCallback::addTerm(Node n)
 {
   Node bn = datatypes::utils::sygusToBuiltin(n);
   Node bnr = d_tds == nullptr ? extendedRewrite(bn) : d_tds->rewriteNode(bn);
@@ -45,6 +45,7 @@ bool SygusEnumeratorCallback::addTerm(Node n, std::unordered_set<Node>& bterms)
   }
   // call the solver-specific notify term
   notifyTermInternal(n, bn, bnr);
+  std::unordered_set<Node>& bterms = d_bterms[n.getType()];
   // check whether we should keep the term, which is based on the callback,
   // and the builtin terms
   // First, must be unique up to rewriting

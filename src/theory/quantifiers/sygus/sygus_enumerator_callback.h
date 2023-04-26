@@ -55,7 +55,7 @@ class SygusEnumeratorCallback : protected EnvObj
    * @param bterms The (rewritten, builtin) terms we have already enumerated
    * @return true if n should be considered in the enumeration.
    */
-  virtual bool addTerm(Node n, std::unordered_set<Node>& bterms);
+  bool addTerm(Node n);
 
  protected:
   /**
@@ -83,6 +83,7 @@ class SygusEnumeratorCallback : protected EnvObj
   TermDbSygus* d_tds;
   /** pointer to the statistics */
   SygusStatistics* d_stats;
+  std::map<TypeNode, std::unordered_set<Node>> d_bterms;
 };
 
 class SygusEnumeratorCallbackDefault : public SygusEnumeratorCallback
