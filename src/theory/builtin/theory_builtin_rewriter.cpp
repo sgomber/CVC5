@@ -23,11 +23,11 @@
 #include "expr/attribute.h"
 #include "expr/elim_shadow_converter.h"
 #include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
 #include "proof/proof_checker.h"
 #include "theory/builtin/generic_op.h"
 #include "theory/builtin/proof_premise_op.h"
 #include "util/rational.h"
-#include "expr/skolem_manager.h"
 
 using namespace std;
 
@@ -108,7 +108,7 @@ RewriteResponse TheoryBuiltinRewriter::postRewrite(TNode node) {
         {
           Node cproven;
           Kind nk = nn.getKind();
-          if (nk== kind::PROOF_ERROR)
+          if (nk == kind::PROOF_ERROR)
           {
             // if a child proof is error, we are error
             return RewriteResponse(REWRITE_DONE, nn);
@@ -120,8 +120,10 @@ RewriteResponse TheoryBuiltinRewriter::postRewrite(TNode node) {
           else
           {
             // otherwise, dummy predicate
-            SkolemManager * skm =nm->getSkolemManager();
-            cproven = skm->mkSkolemFunction(SkolemFunId::PROOF_PREMISE, nm->booleanType(), nm->mkConstInt(Rational(i)));
+            SkolemManager* skm = nm->getSkolemManager();
+            cproven = skm->mkSkolemFunction(SkolemFunId::PROOF_PREMISE,
+                                            nm->booleanType(),
+                                            nm->mkConstInt(Rational(i)));
           }
           children.push_back(cproven);
         }
