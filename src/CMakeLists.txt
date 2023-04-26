@@ -322,6 +322,8 @@ libcvc5_add_sources(
   smt/print_benchmark.h
   smt/process_assertions.cpp
   smt/process_assertions.h
+  smt/proof_compression_callback.cpp
+  smt/proof_compression_callback.h
   smt/proof_manager.cpp
   smt/proof_manager.h
   smt/proof_final_callback.cpp

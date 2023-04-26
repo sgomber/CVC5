@@ -27,6 +27,7 @@
 #include "rewriter/rewrite_db_proof_cons.h"
 #include "smt/env_obj.h"
 #include "smt/proof_final_callback.h"
+#include "smt/proof_compression_callback.h"
 #include "smt/witness_form.h"
 #include "theory/inference_id.h"
 #include "util/statistics_stats.h"

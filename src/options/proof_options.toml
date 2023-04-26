@@ -43,6 +43,14 @@ name   = "Proof"
   help       = "assertion failure for any incorrect rule application or untrusted lemma having pedantic level <=N with proof"
 
 [[option]]
+  name       = "proofCompression"
+  category   = "expert"
+  long       = "proof-compression"
+  type       = "bool"
+  default    = "true"
+  help       = "Compress proofs"
+
+[[option]]
   name       = "proofCheck"
   category   = "expert"
   long       = "proof-check=MODE"

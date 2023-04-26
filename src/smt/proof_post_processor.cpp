@@ -1088,6 +1088,12 @@ void ProofPostprocess::process(std::shared_ptr<ProofNode> pf,
   d_cb.initializeUpdate(pppg);
   // now, process
   d_updater.process(pf);
+  // if compressing, run the compressor
+  if (options().proof.proofCompression)
+  {
+    ProofCompressor pc(d_env);
+    pc.compress(pf);
+  }
   // take stats and check pedantic
   d_finalCb.initializeUpdate();
   d_finalizer.process(pf);
