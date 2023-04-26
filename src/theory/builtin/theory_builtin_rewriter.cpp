@@ -27,6 +27,7 @@
 #include "theory/builtin/generic_op.h"
 #include "theory/builtin/proof_premise_op.h"
 #include "util/rational.h"
+#include "expr/skolem_manager.h"
 
 using namespace std;
 
@@ -107,6 +108,11 @@ RewriteResponse TheoryBuiltinRewriter::postRewrite(TNode node) {
         {
           Node cproven;
           Kind nk = nn.getKind();
+          if (nk== kind::PROOF_ERROR)
+          {
+            // if a child proof is error, we are error
+            return RewriteResponse(REWRITE_DONE, nn);
+          }
           if (nk == kind::PROOF_PREMISE)
           {
             cproven = nn.getOperator().getConst<ProofPremiseOp>().getProven();
@@ -114,12 +120,8 @@ RewriteResponse TheoryBuiltinRewriter::postRewrite(TNode node) {
           else
           {
             // otherwise, dummy predicate
-            // cproven =
-          }
-          // if a child proof is error, we are error
-          if (cproven.getKind() == kind::PROOF_ERROR)
-          {
-            return RewriteResponse(REWRITE_DONE, cproven);
+            SkolemManager * skm =nm->getSkolemManager();
+            cproven = skm->mkSkolemFunction(SkolemFunId::PROOF_PREMISE, nm->booleanType(), nm->mkConstInt(Rational(i)));
           }
           children.push_back(cproven);
         }
