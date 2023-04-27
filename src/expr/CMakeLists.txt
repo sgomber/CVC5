@@ -87,6 +87,8 @@ libcvc5_add_sources(
   type_matcher.h
   type_node.cpp
   type_node.h
+  unification.cpp
+  unification.h
   dtype.h
   dtype.cpp
   dtype_cons.h
