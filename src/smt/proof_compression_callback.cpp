@@ -25,7 +25,14 @@ ProofCompressionCallback::ProofCompressionCallback(Env& env) : EnvObj(env) {}
 
 void ProofCompressionCallback::analyze(std::shared_ptr<ProofNode> pn)
 {
+  // collect subproofs of pn
+  collectSubproofs(pn);
+}
+
+void ProofCompressionCallback::collectSubproofs(std::shared_ptr<ProofNode> pn)
+{
   d_proven.clear();
+  d_unprocessedScopes.clear();
   std::unordered_set<std::shared_ptr<ProofNode>> visited;
   std::unordered_set<std::shared_ptr<ProofNode>>::iterator it;
   std::vector<std::shared_ptr<ProofNode>> visit;

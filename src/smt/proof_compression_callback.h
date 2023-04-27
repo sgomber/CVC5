@@ -54,6 +54,9 @@ class ProofCompressionCallback : protected EnvObj,
   std::unordered_set<std::shared_ptr<ProofNode>>& getUnprocessedScopes();
 
  private:
+  /** Collect subproofs, which populates d_proven and d_unprocessedScopes */
+  void collectSubproofs(std::shared_ptr<ProofNode> pn);
+  /** Map formulas proven to proof nodes */
   std::unordered_map<Node, std::shared_ptr<ProofNode>> d_proven;
   /** List of scopes */
   std::unordered_set<std::shared_ptr<ProofNode>> d_unprocessedScopes;
