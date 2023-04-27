@@ -467,6 +467,9 @@ class NodeManager
    */
   static bool isSortKindAbstractable(Kind k);
 
+  /** Make the fully abstract type */
+  TypeNode mkFullyAbstractType();
+  
   /** Make the abstract type with the given kind */
   TypeNode mkAbstractType(Kind k);
 

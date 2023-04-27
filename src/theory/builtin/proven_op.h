@@ -15,8 +15,8 @@
 
 #include "cvc5_public.h"
 
-#ifndef CVC5__THEORY__BUILTIN__PROOF_PREMISE_OP_H
-#define CVC5__THEORY__BUILTIN__PROOF_PREMISE_OP_H
+#ifndef CVC5__THEORY__BUILTIN__PROVEN_OP_H
+#define CVC5__THEORY__BUILTIN__PROVEN_OP_H
 
 #include <memory>
 #include <vector>
@@ -30,33 +30,33 @@ typedef NodeTemplate<true> Node;
 /**
  * The payload for proof premises, payload is a formula that is proven.
  */
-class ProofPremiseOp
+class ProvenOp
 {
  public:
-  ProofPremiseOp(const Node& p);
-  ProofPremiseOp(const ProofPremiseOp& op);
+  ProvenOp(const Node& p);
+  ProvenOp(const ProvenOp& op);
 
   /** Return the kind of indexed operator this operator represents */
   const Node& getProven() const;
 
-  bool operator==(const ProofPremiseOp& op) const;
+  bool operator==(const ProvenOp& op) const;
 
  private:
-  ProofPremiseOp();
+  ProvenOp();
   /** The kind of indexed operator this operator represents */
   std::unique_ptr<Node> d_proven;
 };
 
-std::ostream& operator<<(std::ostream& out, const ProofPremiseOp& op);
+std::ostream& operator<<(std::ostream& out, const ProvenOp& op);
 
 /**
- * Hash function for the ProofPremiseOp objects.
+ * Hash function for the ProvenOp objects.
  */
-struct ProofPremiseOpHashFunction
+struct ProvenOpHashFunction
 {
-  size_t operator()(const ProofPremiseOp& op) const;
+  size_t operator()(const ProvenOp& op) const;
 };
 
 }  // namespace cvc5::internal
 
-#endif /* CVC5__THEORY__BUILTIN__PROOF_PREMISE_OP_H */
+#endif /* CVC5__THEORY__BUILTIN__PROVEN_OP_H */

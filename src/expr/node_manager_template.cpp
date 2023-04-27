@@ -585,6 +585,11 @@ bool NodeManager::isSortKindAbstractable(Kind k)
          || k == kind::SEQUENCE_TYPE || k == kind::SET_TYPE;
 }
 
+TypeNode NodeManager::mkFullyAbstractType()
+{
+  return mkAbstractType(kind::ABSTRACT_TYPE);
+}
+
 TypeNode NodeManager::mkAbstractType(Kind k)
 {
   if (!isSortKindAbstractable(k))

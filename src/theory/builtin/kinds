@@ -346,20 +346,26 @@ sort PROOF_TYPE \
         "NodeManager::currentNM()->mkProofError()" \
         "expr/node_manager.h" \
     "proof type"
-    
-operator PROOF_TERM 1: "a proof term (any arity)"
-typerule PROOF_TERM ::cvc5::internal::theory::builtin::ProofTermTypeRule
 
-constant PROOF_PREMISE_OP \
+constant PROOF_OP \
   class \
-  ProofPremiseOp \
-  ::cvc5::internal::ProofPremiseOpHashFunction \
-  "theory/builtin/proof_premise_op.h" \
-  "operator for proof premises; payload is an instance of the cvc5::internal::ProofPremiseOp class"
-parameterized PROOF_PREMISE PROOF_PREMISE_OP 1: "proof proven"
-typerule PROOF_PREMISE "SimpleTypeRule<RBool>"
+  ProofOp \
+  ::cvc5::internal::ProofOpHashFunction \
+  "theory/builtin/proof_op.h" \
+  "operator for proof terms; payload is an instance of the cvc5::internal::ProofOp class"
+parameterized PROOF PROOF_OP 0: "proof proven"
+typerule PROOF "SimpleTypeRule<RProof>"
+
+constant PROVEN_OP \
+  class \
+  ProvenOp \
+  ::cvc5::internal::ProvenOpHashFunction \
+  "theory/builtin/proven_op.h" \
+  "operator for proof premises; payload is an instance of the cvc5::internal::ProvenOp class"
+parameterized PROVEN PROVEN_OP 0 "proof proven"
+typerule PROVEN "SimpleTypeRule<RProof>"
 
 nullaryoperator PROOF_ERROR "proof error"
-typerule PROOF_ERROR "SimpleTypeRule<RBool>"
+typerule PROOF_ERROR "SimpleTypeRule<RProof>"
 
 endtheory

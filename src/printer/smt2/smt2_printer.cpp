@@ -40,6 +40,8 @@
 #include "proof/unsat_core.h"
 #include "theory/arrays/theory_arrays_rewriter.h"
 #include "theory/builtin/abstract_type.h"
+#include "theory/builtin/proof_op.h"
+//#include "theory/builtin/proven_op.h"
 #include "theory/datatypes/project_op.h"
 #include "theory/datatypes/sygus_datatype_utils.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
@@ -505,6 +507,15 @@ void Smt2Printer::toStream(std::ostream& out,
       }
     }
       break;
+    case kind::PROOF_OP:
+    out << "(_ proof " << n.getConst<ProofOp>().getRule() << ")";
+    break;
+    case kind::PROVEN_OP:
+    {
+      //const Node& p = n.getConst<ProvenOp>().getProven();
+      //out << "(_ proven " << p.toString() << ")";
+    }
+      //break;
     default:
       // fall back on whatever operator<< does on underlying type; we
       // might luck out and be SMT-LIB v2 compliant
@@ -1008,8 +1019,9 @@ void Smt2Printer::toStream(std::ostream& out,
   case kind::INST_PATTERN:
   case kind::INST_NO_PATTERN:
   case kind::INST_PATTERN_LIST: break;
-  case kind::PROOF_PREMISE:
-    // operator is printed as kind
+  case kind::PROOF:
+  case kind::PROVEN:
+    // operator is printed below
     break;
   default:
     // by default, print the kind using the smtKindString utility
@@ -1353,7 +1365,6 @@ std::string Smt2Printer::smtKindString(Kind k)
     case kind::HO_APPLY: return "@";
 
     // other
-    case kind::PROOF_TERM: return "proof";
     case kind::PROOF_ERROR: return "proof.error";
 
     default:; /* fall through */

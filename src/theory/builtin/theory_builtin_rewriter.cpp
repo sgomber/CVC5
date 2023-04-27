@@ -26,7 +26,8 @@
 #include "expr/skolem_manager.h"
 #include "proof/proof_checker.h"
 #include "theory/builtin/generic_op.h"
-#include "theory/builtin/proof_premise_op.h"
+#include "theory/builtin/proof_op.h"
+#include "theory/builtin/proven_op.h"
 #include "util/rational.h"
 
 using namespace std;
@@ -34,25 +35,6 @@ using namespace std;
 namespace cvc5::internal {
 namespace theory {
 namespace builtin {
-
-/** Make a proof rule node */
-Node mkPfRule(PfRule id)
-{
-  return NodeManager::currentNM()->mkConstInt(
-      Rational(static_cast<uint32_t>(id)));
-}
-
-/** get a proof rule from a node, return false if we fail */
-bool getPfRule(TNode n, PfRule& i)
-{
-  uint32_t index;
-  if (!ProofRuleChecker::getUInt32(n, index))
-  {
-    return false;
-  }
-  i = static_cast<PfRule>(index);
-  return true;
-}
 
 TheoryBuiltinRewriter::TheoryBuiltinRewriter() : d_pc(nullptr) {}
 
@@ -92,15 +74,15 @@ Node TheoryBuiltinRewriter::blastDistinct(TNode in)
 }
 
 RewriteResponse TheoryBuiltinRewriter::postRewrite(TNode node) {
-  if (node.getKind() == kind::PROOF_TERM)
+  if (node.getKind() == kind::PROOF)
   {
     NodeManager* nm = NodeManager::currentNM();
     std::vector<Node> children;
     std::vector<Node> args;
-    PfRule r;
     Node res;
-    if (d_pc != nullptr && getPfRule(node[0], r))
+    if (d_pc != nullptr)
     {
+      PfRule r = node.getOperator().getConst<ProofOp>().getRule();
       for (size_t i = 1, nchildren = node.getNumChildren(); i < nchildren; i++)
       {
         Node nn = node[i];
@@ -113,17 +95,17 @@ RewriteResponse TheoryBuiltinRewriter::postRewrite(TNode node) {
             // if a child proof is error, we are error
             return RewriteResponse(REWRITE_DONE, nn);
           }
-          if (nk == kind::PROOF_PREMISE)
+          if (nk == kind::PROVEN)
           {
-            cproven = nn.getOperator().getConst<ProofPremiseOp>().getProven();
+            cproven = nn.getOperator().getConst<ProvenOp>().getProven();
           }
           else
           {
-            // otherwise, dummy predicate
+            // otherwise, dummy predicate of abstract type
             SkolemManager* skm = nm->getSkolemManager();
             cproven = skm->mkSkolemFunction(SkolemFunId::PROOF_PREMISE,
-                                            nm->booleanType(),
-                                            nm->mkConstInt(Rational(i)));
+                                            nm->mkFullyAbstractType(),
+                                            {node, nm->mkConstInt(Rational(i))});
           }
           children.push_back(cproven);
         }
@@ -142,7 +124,7 @@ RewriteResponse TheoryBuiltinRewriter::postRewrite(TNode node) {
     }
     else
     {
-      provenNode = nm->mkConst(ProofPremiseOp(res));
+      provenNode = nm->mkConst(ProvenOp(res));
     }
     return RewriteResponse(REWRITE_DONE, provenNode);
   }

@@ -13,7 +13,7 @@
  * A class for representing proof premises
  */
 
-#include "theory/builtin/proof_premise_op.h"
+#include "theory/builtin/proven_op.h"
 
 #include <iostream>
 #include <sstream>
@@ -24,26 +24,26 @@ using namespace cvc5::internal::kind;
 
 namespace cvc5::internal {
 
-std::ostream& operator<<(std::ostream& out, const ProofPremiseOp& op)
+std::ostream& operator<<(std::ostream& out, const ProvenOp& op)
 {
-  return out << "(proves " << op.getProven().toString() << ')';
+  return out << "(proven_op " << op.getProven().getId() << ')';
 }
 
-size_t ProofPremiseOpHashFunction::operator()(const ProofPremiseOp& op) const
+size_t ProvenOpHashFunction::operator()(const ProvenOp& op) const
 {
   return std::hash<Node>()(op.getProven());
 }
 
-ProofPremiseOp::ProofPremiseOp(const Node& p) : d_proven(new Node(p)) {}
+ProvenOp::ProvenOp(const Node& p) : d_proven(new Node(p)) {}
 
-ProofPremiseOp::ProofPremiseOp(const ProofPremiseOp& op)
+ProvenOp::ProvenOp(const ProvenOp& op)
     : d_proven(new Node(op.getProven()))
 {
 }
 
-const Node& ProofPremiseOp::getProven() const { return *d_proven; }
+const Node& ProvenOp::getProven() const { return *d_proven; }
 
-bool ProofPremiseOp::operator==(const ProofPremiseOp& op) const
+bool ProvenOp::operator==(const ProvenOp& op) const
 {
   return getProven() == op.getProven();
 }
