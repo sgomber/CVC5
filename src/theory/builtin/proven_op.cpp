@@ -36,10 +36,7 @@ size_t ProvenOpHashFunction::operator()(const ProvenOp& op) const
 
 ProvenOp::ProvenOp(const Node& p) : d_proven(new Node(p)) {}
 
-ProvenOp::ProvenOp(const ProvenOp& op)
-    : d_proven(new Node(op.getProven()))
-{
-}
+ProvenOp::ProvenOp(const ProvenOp& op) : d_proven(new Node(op.getProven())) {}
 
 const Node& ProvenOp::getProven() const { return *d_proven; }
 

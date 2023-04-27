@@ -103,9 +103,10 @@ RewriteResponse TheoryBuiltinRewriter::postRewrite(TNode node) {
           {
             // otherwise, dummy predicate of abstract type
             SkolemManager* skm = nm->getSkolemManager();
-            cproven = skm->mkSkolemFunction(SkolemFunId::PROOF_PREMISE,
-                                            nm->mkFullyAbstractType(),
-                                            {node, nm->mkConstInt(Rational(i))});
+            cproven =
+                skm->mkSkolemFunction(SkolemFunId::PROOF_PREMISE,
+                                      nm->mkFullyAbstractType(),
+                                      {node, nm->mkConstInt(Rational(i))});
           }
           children.push_back(cproven);
         }
