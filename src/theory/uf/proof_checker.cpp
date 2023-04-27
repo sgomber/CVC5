@@ -58,14 +58,11 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
     Assert(args.empty());
     bool polarity = children[0].getKind() != NOT;
     Node eqp = polarity ? children[0] : children[0][0];
-    if (eqp.getKind() != EQUAL)
+    eqp = checkIsEqual(eqp);
+    if (eqp.isNull())
     {
-      eqp = instantiateHoleEqual(eqp);
-      if (eqp.isNull())
-      {
-        // not a (dis)equality
-        return Node::null();
-      }
+      // not a (dis)equality
+      return Node::null();
     }
     Node conc = eqp[1].eqNode(eqp[0]);
     return polarity ? conc : conc.notNode();
@@ -79,13 +76,10 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
     for (size_t i = 0, nchild = children.size(); i < nchild; i++)
     {
       Node eqp = children[i];
-      if (eqp.getKind() != EQUAL)
-      {      
-        eqp = instantiateHoleEqual(eqp);
-        if (eqp.isNull())
-        {
-          return Node::null();
-        }
+      eqp = checkIsEqual(eqp);
+      if (eqp.isNull())
+      {
+        return Node::null();
       }
       if (first.isNull())
       {
@@ -136,13 +130,10 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
     for (size_t i = 0, nchild = children.size(); i < nchild; i++)
     {
       Node eqp = children[i];
-      if (eqp.getKind() != EQUAL)
-      {        
-        eqp = instantiateHoleEqual(eqp);
-        if (eqp.isNull())
-        {
-          return Node::null();
-        }
+      eqp = checkIsEqual(eqp);
+      if (eqp.isNull())
+      {
+        return Node::null();
       }
       lchildren.push_back(eqp[0]);
       rchildren.push_back(eqp[1]);
@@ -163,13 +154,10 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
     Assert(children.size() == 1);
     Assert(args.empty());
     Node p = children[0];
-    if (p.getKind()!=EQUAL)
+    p = checkIsEqual(p);
+    if (p.isNull())
     {
-      p = instantiateHoleEqual(p);
-      if (p.isNull())
-      {
-        return Node::null();
-      }
+      return Node::null();
     }
     if (!p[1].isConst() || !p[1].getConst<bool>())
     {
@@ -185,13 +173,10 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
     Assert(children.size() == 1);
     Assert(args.empty());
     Node p = children[0];
-    if (p.getKind() != kind::NOT)
+    p = checkIs(p, NOT, 1);
+    if (p.isNull())
     {
-      p = instantiateHole(p, NOT, 1);
-      if (p.isNull())
-      {
-        return Node::null();
-      }
+      return Node::null();
     }
     Node falseNode = NodeManager::currentNM()->mkConst(false);
     return p[0].eqNode(falseNode);
@@ -201,13 +186,10 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
     Assert(children.size() == 1);
     Assert(args.empty());
     Node p = children[0];
-    if (p.getKind()!=EQUAL)
+    p = checkIsEqual(p);
+    if (p.isNull())
     {
-      p = instantiateHoleEqual(p);
-      if (p.isNull())
-      {
-        return Node::null();
-      }
+      return Node::null();
     }
     if (!p[1].isConst() || p[1].getConst<bool>())
     {
@@ -226,13 +208,10 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
     for (size_t i = 0, nchild = children.size(); i < nchild; ++i)
     {
       Node eqp = children[i];
-      if (eqp.getKind() != EQUAL)
-      {        
-        eqp = instantiateHoleEqual(eqp);
-        if (eqp.isNull())
-        {
-          return Node::null();
-        }
+      eqp = checkIsEqual(eqp);
+      if (eqp.isNull())
+      {
+        return Node::null();
       }
       lchildren.push_back(eqp[0]);
       rchildren.push_back(eqp[1]);
@@ -273,8 +252,13 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
   return Node::null();
 }
 
-Node UfProofRuleChecker::instantiateHole(const Node& n, Kind k, size_t nargs) const
+Node UfProofRuleChecker::checkIs(const Node& n, Kind k, size_t nargs) const
 {
+  if (n.getKind()==k)
+  {
+    // already proper kind
+    return n;
+  }
   if (!isProofHole(n))
   {
     return Node::null();
@@ -290,9 +274,9 @@ Node UfProofRuleChecker::instantiateHole(const Node& n, Kind k, size_t nargs) co
   return nm->mkNode(k, children);
 }
 
-Node UfProofRuleChecker::instantiateHoleEqual(const Node& n) const
+Node UfProofRuleChecker::checkIsEqual(const Node& n) const
 {
-  return instantiateHole(n, kind::EQUAL, 2);
+  return checkIs(n, kind::EQUAL, 2);
 }
 
 }  // namespace uf
