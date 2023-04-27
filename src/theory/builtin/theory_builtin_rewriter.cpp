@@ -97,7 +97,8 @@ RewriteResponse TheoryBuiltinRewriter::postRewrite(TNode node) {
             return RewriteResponse(REWRITE_DONE, nn);
           }
           // check whether it is a PROVEN skolem
-          if (!skm->isSkolemFunction(nn, kid, cproven) || kid!=SkolemFunId::PROVEN)
+          if (!skm->isSkolemFunction(nn, kid, cproven)
+              || kid != SkolemFunId::PROVEN)
           {
             // otherwise, dummy predicate of abstract type
             cproven =
@@ -122,7 +123,8 @@ RewriteResponse TheoryBuiltinRewriter::postRewrite(TNode node) {
     }
     else
     {
-      provenNode = skm->mkSkolemFunction(SkolemFunId::PROVEN, nm->proofType(), {res});
+      provenNode =
+          skm->mkSkolemFunction(SkolemFunId::PROVEN, nm->proofType(), {res});
     }
     return RewriteResponse(REWRITE_DONE, provenNode);
   }
