@@ -44,7 +44,7 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
                                        const std::vector<Node>& children,
                                        const std::vector<Node>& args)
 {
-    NodeManager* nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   // compute what was proven
   if (id == PfRule::REFL)
   {
@@ -254,7 +254,7 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
 
 Node UfProofRuleChecker::checkIs(const Node& n, Kind k, size_t nargs) const
 {
-  if (n.getKind()==k)
+  if (n.getKind() == k)
   {
     // already proper kind
     return n;
@@ -266,7 +266,7 @@ Node UfProofRuleChecker::checkIs(const Node& n, Kind k, size_t nargs) const
   NodeManager* nm = NodeManager::currentNM();
   TypeNode abst = nm->mkFullyAbstractType();
   std::vector<Node> children;
-  for (size_t i=0; i<nargs; i++)
+  for (size_t i = 0; i < nargs; i++)
   {
     // children are indexed by their argument position
     children.push_back(mkProofHole(abst, {n, nm->mkConstInt(Rational(i))}));

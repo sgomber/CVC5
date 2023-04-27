@@ -103,18 +103,17 @@ Node Subs::apply(const Node& n) const
   return apply(n, cache);
 }
 
-Node Subs::apply(const Node& n,
-                std::unordered_map<TNode, TNode>& cache) const
+Node Subs::apply(const Node& n, std::unordered_map<TNode, TNode>& cache) const
 {
   if (d_vars.empty())
   {
     return n;
   }
-  Node ns =
-      n.substitute(d_vars.begin(), d_vars.end(), d_subs.begin(), d_subs.end(), cache);
+  Node ns = n.substitute(
+      d_vars.begin(), d_vars.end(), d_subs.begin(), d_subs.end(), cache);
   return ns;
 }
-  
+
 Node Subs::rapply(Node n) const
 {
   if (d_vars.empty())

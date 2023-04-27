@@ -222,7 +222,7 @@ enum class SkolemFunId
   IEVAL_SOME,
   /** Proven, indexed by formula F proven */
   PROVEN,
-  /** 
+  /**
    * Proof hole, indexed by a unique vector that identifies its role
    */
   PROOF_HOLE

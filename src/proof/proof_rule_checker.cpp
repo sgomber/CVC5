@@ -15,10 +15,10 @@
 
 #include "proof/proof_rule_checker.h"
 
-#include "proof/proof_node.h"
-#include "util/rational.h"
 #include "expr/node_manager.h"
 #include "expr/skolem_manager.h"
+#include "proof/proof_node.h"
+#include "util/rational.h"
 
 using namespace cvc5::internal::kind;
 
@@ -79,13 +79,14 @@ Node ProofRuleChecker::mkKindNode(Kind k)
 
 bool ProofRuleChecker::isProofHole(TNode k)
 {
-  SkolemManager * skm = NodeManager::currentNM()->getSkolemManager();
-  return skm->getSkolemFunctionId(k)==SkolemFunId::PROOF_HOLE;
+  SkolemManager* skm = NodeManager::currentNM()->getSkolemManager();
+  return skm->getSkolemFunctionId(k) == SkolemFunId::PROOF_HOLE;
 }
 
-Node ProofRuleChecker::mkProofHole(TypeNode tn, const std::vector<Node>& cacheVals)
+Node ProofRuleChecker::mkProofHole(TypeNode tn,
+                                   const std::vector<Node>& cacheVals)
 {
-  SkolemManager * skm = NodeManager::currentNM()->getSkolemManager();
+  SkolemManager* skm = NodeManager::currentNM()->getSkolemManager();
   return skm->mkSkolemFunction(SkolemFunId::PROOF_HOLE, tn, cacheVals);
 }
 
