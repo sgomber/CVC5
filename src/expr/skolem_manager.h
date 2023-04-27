@@ -220,6 +220,8 @@ enum class SkolemFunId
   IEVAL_NONE,
   /** the "some" term, for instantiation evaluation */
   IEVAL_SOME,
+  /** Proven */
+  PROVEN,
   /** Proof premise */
   PROOF_PREMISE
 };

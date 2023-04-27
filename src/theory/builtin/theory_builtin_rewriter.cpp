@@ -27,7 +27,6 @@
 #include "proof/proof_checker.h"
 #include "theory/builtin/generic_op.h"
 #include "theory/builtin/proof_op.h"
-#include "theory/builtin/proven_op.h"
 #include "util/rational.h"
 
 using namespace std;
@@ -77,12 +76,14 @@ RewriteResponse TheoryBuiltinRewriter::postRewrite(TNode node) {
   if (node.getKind() == kind::PROOF)
   {
     NodeManager* nm = NodeManager::currentNM();
-    std::vector<Node> children;
-    std::vector<Node> args;
+    SkolemManager* skm = nm->getSkolemManager();
     Node res;
     if (d_pc != nullptr)
     {
       PfRule r = node.getOperator().getConst<ProofOp>().getRule();
+      std::vector<Node> children;
+      std::vector<Node> args;
+      SkolemFunId kid;
       for (size_t i = 1, nchildren = node.getNumChildren(); i < nchildren; i++)
       {
         Node nn = node[i];
@@ -95,14 +96,10 @@ RewriteResponse TheoryBuiltinRewriter::postRewrite(TNode node) {
             // if a child proof is error, we are error
             return RewriteResponse(REWRITE_DONE, nn);
           }
-          if (nk == kind::PROVEN)
-          {
-            cproven = nn.getOperator().getConst<ProvenOp>().getProven();
-          }
-          else
+          // check whether it is a PROVEN skolem
+          if (!skm->isSkolemFunction(nn, kid, cproven) || kid!=SkolemFunId::PROVEN)
           {
             // otherwise, dummy predicate of abstract type
-            SkolemManager* skm = nm->getSkolemManager();
             cproven =
                 skm->mkSkolemFunction(SkolemFunId::PROOF_PREMISE,
                                       nm->mkFullyAbstractType(),
@@ -125,7 +122,7 @@ RewriteResponse TheoryBuiltinRewriter::postRewrite(TNode node) {
     }
     else
     {
-      provenNode = nm->mkConst(ProvenOp(res));
+      provenNode = skm->mkSkolemFunction(SkolemFunId::PROVEN, nm->proofType(), {res});
     }
     return RewriteResponse(REWRITE_DONE, provenNode);
   }

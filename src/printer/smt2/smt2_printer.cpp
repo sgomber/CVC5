@@ -510,12 +510,6 @@ void Smt2Printer::toStream(std::ostream& out,
       case kind::PROOF_OP:
         out << "(_ proof " << n.getConst<ProofOp>().getRule() << ")";
         break;
-      case kind::PROVEN_OP:
-      {
-        // const Node& p = n.getConst<ProvenOp>().getProven();
-        // out << "(_ proven " << p.toString() << ")";
-      }
-        // break;
       default:
         // fall back on whatever operator<< does on underlying type; we
         // might luck out and be SMT-LIB v2 compliant
@@ -1020,7 +1014,6 @@ void Smt2Printer::toStream(std::ostream& out,
   case kind::INST_NO_PATTERN:
   case kind::INST_PATTERN_LIST: break;
   case kind::PROOF:
-  case kind::PROVEN:
     // operator is printed below
     break;
   default:

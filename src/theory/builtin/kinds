@@ -356,15 +356,6 @@ constant PROOF_OP \
 parameterized PROOF PROOF_OP 0: "proof proven"
 typerule PROOF "SimpleTypeRule<RProof>"
 
-constant PROVEN_OP \
-  class \
-  ProvenOp \
-  ::cvc5::internal::ProvenOpHashFunction \
-  "theory/builtin/proven_op.h" \
-  "operator for proof premises; payload is an instance of the cvc5::internal::ProvenOp class"
-parameterized PROVEN PROVEN_OP 0 "proof proven"
-typerule PROVEN "SimpleTypeRule<RProof>"
-
 nullaryoperator PROOF_ERROR "proof error"
 typerule PROOF_ERROR "SimpleTypeRule<RProof>"
 
