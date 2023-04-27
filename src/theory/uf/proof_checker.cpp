@@ -15,28 +15,33 @@
 
 #include "theory/uf/proof_checker.h"
 
+#include "expr/skolem_manager.h"
+#include "expr/unification.h"
 #include "theory/uf/theory_uf_rewriter.h"
 #include "util/rational.h"
-#include "expr/unification.h"
-#include "expr/skolem_manager.h"
 
 using namespace cvc5::internal::kind;
 
 namespace cvc5::internal {
 namespace theory {
 namespace uf {
-  
+
 class ProofHoleVariableCriteria : public expr::VariableCriteria
 {
  public:
-   ProofHoleVariableCriteria() : expr::VariableCriteria()
-   {
-     d_skm = NodeManager::currentNM()->getSkolemManager();
-   }
-  ~ProofHoleVariableCriteria(){}
-  bool isVariable(const Node& v) override { return v.isVar() && d_skm->getSkolemFunctionId(v)==SkolemFunId::PROOF_HOLE; }
-private:
-  SkolemManager * d_skm;
+  ProofHoleVariableCriteria() : expr::VariableCriteria()
+  {
+    d_skm = NodeManager::currentNM()->getSkolemManager();
+  }
+  ~ProofHoleVariableCriteria() {}
+  bool isVariable(const Node& v) override
+  {
+    return v.isVar()
+           && d_skm->getSkolemFunctionId(v) == SkolemFunId::PROOF_HOLE;
+  }
+
+ private:
+  SkolemManager* d_skm;
 };
 
 void UfProofRuleChecker::registerTo(ProofChecker* pc)
