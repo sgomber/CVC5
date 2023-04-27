@@ -17,12 +17,27 @@
 
 #include "theory/uf/theory_uf_rewriter.h"
 #include "util/rational.h"
+#include "expr/unification.h"
+#include "expr/skolem_manager.h"
 
 using namespace cvc5::internal::kind;
 
 namespace cvc5::internal {
 namespace theory {
 namespace uf {
+  
+class ProofHoleVariableCriteria : public expr::VariableCriteria
+{
+ public:
+   ProofHoleVariableCriteria() : expr::VariableCriteria()
+   {
+     d_skm = NodeManager::currentNM()->getSkolemManager();
+   }
+  ~ProofHoleVariableCriteria(){}
+  bool isVariable(const Node& v) override { return v.isVar() && d_skm->getSkolemFunctionId(v)==SkolemFunId::PROOF_HOLE; }
+private:
+  SkolemManager * d_skm;
+};
 
 void UfProofRuleChecker::registerTo(ProofChecker* pc)
 {
@@ -73,6 +88,8 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
     Assert(args.empty());
     Node first;
     Node curr;
+    ProofHoleVariableCriteria phv;
+    Subs usubs;
     for (size_t i = 0, nchild = children.size(); i < nchild; i++)
     {
       Node eqp = children[i];
@@ -85,14 +102,15 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
       {
         first = eqp[0];
       }
-      else if (eqp[0] != curr)
+      else if (!expr::unify(eqp[0], curr, usubs, &phv))
       {
-        // TODO: unification
         return Node::null();
       }
       curr = eqp[1];
     }
-    return first.eqNode(curr);
+    Node sfirst = usubs.apply(first);
+    Node scurr = usubs.apply(curr);
+    return sfirst.eqNode(scurr);
   }
   else if (id == PfRule::CONG)
   {
