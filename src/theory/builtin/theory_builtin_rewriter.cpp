@@ -102,8 +102,8 @@ RewriteResponse TheoryBuiltinRewriter::postRewrite(TNode node) {
           {
             // otherwise, dummy predicate of abstract type
             cproven =
-                skm->mkSkolemFunction(SkolemFunId::PROOF_PREMISE,
-                                      nm->mkFullyAbstractType(),
+                skm->mkSkolemFunction(SkolemFunId::PROOF_HOLE,
+                                      nm->booleanType(),
                                       {node, nm->mkConstInt(Rational(i))});
           }
           children.push_back(cproven);

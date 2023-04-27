@@ -41,6 +41,10 @@ class UfProofRuleChecker : public ProofRuleChecker
   Node checkInternal(PfRule id,
                      const std::vector<Node>& children,
                      const std::vector<Node>& args) override;
+  /** Instantiate hole as an application of kind k with nargs */
+  Node instantiateHole(const Node& n, Kind k, size_t nargs) const;
+  /** Instantiate that n is an equality */
+  Node instantiateHoleEqual(const Node& n) const;
 };
 
 }  // namespace uf

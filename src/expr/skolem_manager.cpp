@@ -112,7 +112,7 @@ const char* toString(SkolemFunId id)
     case SkolemFunId::IEVAL_NONE: return "IEVAL_NONE";
     case SkolemFunId::IEVAL_SOME: return "IEVAL_SOME";
     case SkolemFunId::PROVEN: return "PROVEN";
-    case SkolemFunId::PROOF_PREMISE: return "PROOF_PREMISE";
+    case SkolemFunId::PROOF_HOLE: return "PROOF_HOLE";
     default: return "?";
   }
 }
@@ -302,6 +302,17 @@ bool SkolemManager::isSkolemFunction(Node k,
   id = std::get<0>(it->second);
   cacheVal = std::get<2>(it->second);
   return true;
+}
+
+SkolemFunId SkolemManager::getSkolemFunctionId(Node k) const
+{
+  std::map<Node, std::tuple<SkolemFunId, TypeNode, Node>>::const_iterator it =
+      d_skolemFunMap.find(k);
+  if (it == d_skolemFunMap.end())
+  {
+    return SkolemFunId::NONE;
+  }
+  return std::get<0>(it->second);
 }
 
 Node SkolemManager::mkDummySkolem(const std::string& prefix,

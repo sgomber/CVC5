@@ -220,10 +220,12 @@ enum class SkolemFunId
   IEVAL_NONE,
   /** the "some" term, for instantiation evaluation */
   IEVAL_SOME,
-  /** Proven */
+  /** Proven, indexed by formula F proven */
   PROVEN,
-  /** Proof premise */
-  PROOF_PREMISE
+  /** 
+   * Proof hole, indexed by a unique vector that identifies its role
+   */
+  PROOF_HOLE
 };
 /** Converts a skolem function name to a string. */
 const char* toString(SkolemFunId id);
@@ -394,6 +396,7 @@ class SkolemManager
    * call. Updates the arguments to the values used when constructing it.
    */
   bool isSkolemFunction(Node k, SkolemFunId& id, Node& cacheVal) const;
+  SkolemFunId getSkolemFunctionId(Node k) const;
   /**
    * Create a skolem constant with the given name, type, and comment. This
    * should only be used if the definition of the skolem does not matter.

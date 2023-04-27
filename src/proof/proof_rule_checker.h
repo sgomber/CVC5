@@ -64,6 +64,10 @@ class ProofRuleChecker
   static bool getKind(TNode n, Kind& k);
   /** Make a Kind into a node */
   static Node mkKindNode(Kind k);
+  /** Is proof hole */
+  static bool isProofHole(TNode k);
+  /** Make proof hole */
+  static Node mkProofHole(TypeNode tn, const std::vector<Node>& cacheVals);
 
   /** Register all rules owned by this rule checker into pc. */
   virtual void registerTo(ProofChecker* pc) {}

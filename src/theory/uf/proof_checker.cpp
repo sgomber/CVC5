@@ -16,6 +16,7 @@
 #include "theory/uf/proof_checker.h"
 
 #include "theory/uf/theory_uf_rewriter.h"
+#include "util/rational.h"
 
 using namespace cvc5::internal::kind;
 
@@ -43,6 +44,7 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
                                        const std::vector<Node>& children,
                                        const std::vector<Node>& args)
 {
+    NodeManager* nm = NodeManager::currentNM();
   // compute what was proven
   if (id == PfRule::REFL)
   {
@@ -58,8 +60,12 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
     Node eqp = polarity ? children[0] : children[0][0];
     if (eqp.getKind() != EQUAL)
     {
-      // not a (dis)equality
-      return Node::null();
+      eqp = instantiateHoleEqual(eqp);
+      if (eqp.isNull())
+      {
+        // not a (dis)equality
+        return Node::null();
+      }
     }
     Node conc = eqp[1].eqNode(eqp[0]);
     return polarity ? conc : conc.notNode();
@@ -74,8 +80,12 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
     {
       Node eqp = children[i];
       if (eqp.getKind() != EQUAL)
-      {
-        return Node::null();
+      {      
+        eqp = instantiateHoleEqual(eqp);
+        if (eqp.isNull())
+        {
+          return Node::null();
+        }
       }
       if (first.isNull())
       {
@@ -83,6 +93,7 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
       }
       else if (eqp[0] != curr)
       {
+        // TODO: unification
         return Node::null();
       }
       curr = eqp[1];
@@ -126,13 +137,16 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
     {
       Node eqp = children[i];
       if (eqp.getKind() != EQUAL)
-      {
-        return Node::null();
+      {        
+        eqp = instantiateHoleEqual(eqp);
+        if (eqp.isNull())
+        {
+          return Node::null();
+        }
       }
       lchildren.push_back(eqp[0]);
       rchildren.push_back(eqp[1]);
     }
-    NodeManager* nm = NodeManager::currentNM();
     Node l = nm->mkNode(k, lchildren);
     Node r = nm->mkNode(k, rchildren);
     return l.eqNode(r);
@@ -148,34 +162,61 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
   {
     Assert(children.size() == 1);
     Assert(args.empty());
-    if (children[0].getKind() != EQUAL || !children[0][1].isConst()
-        || !children[0][1].getConst<bool>())
+    Node p = children[0];
+    if (p.getKind()!=EQUAL)
     {
-      return Node::null();
+      p = instantiateHoleEqual(p);
+      if (p.isNull())
+      {
+        return Node::null();
+      }
     }
-    return children[0][0];
+    if (!p[1].isConst() || !p[1].getConst<bool>())
+    {
+      if (!isProofHole(p[1]))
+      {
+        return Node::null();
+      }
+    }
+    return p[0];
   }
   else if (id == PfRule::FALSE_INTRO)
   {
     Assert(children.size() == 1);
     Assert(args.empty());
-    if (children[0].getKind() != kind::NOT)
+    Node p = children[0];
+    if (p.getKind() != kind::NOT)
     {
-      return Node::null();
+      p = instantiateHole(p, NOT, 1);
+      if (p.isNull())
+      {
+        return Node::null();
+      }
     }
     Node falseNode = NodeManager::currentNM()->mkConst(false);
-    return children[0][0].eqNode(falseNode);
+    return p[0].eqNode(falseNode);
   }
   else if (id == PfRule::FALSE_ELIM)
   {
     Assert(children.size() == 1);
     Assert(args.empty());
-    if (children[0].getKind() != EQUAL || !children[0][1].isConst()
-        || children[0][1].getConst<bool>())
+    Node p = children[0];
+    if (p.getKind()!=EQUAL)
     {
-      return Node::null();
+      p = instantiateHoleEqual(p);
+      if (p.isNull())
+      {
+        return Node::null();
+      }
     }
-    return children[0][0].notNode();
+    if (!p[1].isConst() || p[1].getConst<bool>())
+    {
+      if (!isProofHole(p[1]))
+      {
+        return Node::null();
+      }
+    }
+    return p[0].notNode();
   }
   if (id == PfRule::HO_CONG)
   {
@@ -186,13 +227,16 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
     {
       Node eqp = children[i];
       if (eqp.getKind() != EQUAL)
-      {
-        return Node::null();
+      {        
+        eqp = instantiateHoleEqual(eqp);
+        if (eqp.isNull())
+        {
+          return Node::null();
+        }
       }
       lchildren.push_back(eqp[0]);
       rchildren.push_back(eqp[1]);
     }
-    NodeManager* nm = NodeManager::currentNM();
     Node l = nm->mkNode(kind::APPLY_UF, lchildren);
     Node r = nm->mkNode(kind::APPLY_UF, rchildren);
     return l.eqNode(r);
@@ -217,7 +261,6 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
     {
       return Node::null();
     }
-    NodeManager* nm = NodeManager::currentNM();
     std::vector<Node> appArgs;
     appArgs.push_back(lambda);
     appArgs.insert(appArgs.end(), subs.begin(), subs.end());
@@ -228,6 +271,28 @@ Node UfProofRuleChecker::checkInternal(PfRule id,
   }
   // no rule
   return Node::null();
+}
+
+Node UfProofRuleChecker::instantiateHole(const Node& n, Kind k, size_t nargs) const
+{
+  if (!isProofHole(n))
+  {
+    return Node::null();
+  }
+  NodeManager* nm = NodeManager::currentNM();
+  TypeNode abst = nm->mkFullyAbstractType();
+  std::vector<Node> children;
+  for (size_t i=0; i<nargs; i++)
+  {
+    // children are indexed by their argument position
+    children.push_back(mkProofHole(abst, {n, nm->mkConstInt(Rational(i))}));
+  }
+  return nm->mkNode(k, children);
+}
+
+Node UfProofRuleChecker::instantiateHoleEqual(const Node& n) const
+{
+  return instantiateHole(n, kind::EQUAL, 2);
 }
 
 }  // namespace uf
