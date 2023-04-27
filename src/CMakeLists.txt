@@ -983,6 +983,8 @@ libcvc5_add_sources(
   theory/quantifiers/sygus/sygus_pbe.h
   theory/quantifiers/sygus/sygus_process_conj.cpp
   theory/quantifiers/sygus/sygus_process_conj.h
+  theory/quantifiers/sygus/sygus_proof.cpp
+  theory/quantifiers/sygus/sygus_proof.h
   theory/quantifiers/sygus/sygus_qe_preproc.cpp
   theory/quantifiers/sygus/sygus_qe_preproc.h
   theory/quantifiers/sygus/sygus_random_enumerator.cpp
