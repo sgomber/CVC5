@@ -128,7 +128,7 @@ public:
    std::unordered_set<Node> extra_cons;
    if (!bvl.isNull())
    {
-       Assert (bvl.getKind()==BOUND_VARIABLE_LIST);
+       Assert (bvl.getKind()==BOUND_VAR_LIST);
        extra_cons.insert(bvl.begin(), bvl.end());
    }
    std::unordered_set<Node> exclude_cons;

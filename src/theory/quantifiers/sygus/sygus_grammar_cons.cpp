@@ -578,7 +578,7 @@ void CegGrammarConstructor::mkSygusDefaultTypeInternal(
   std::vector<TypeNode> types;
   // Collect connected types for each of the variables
   std::map<TypeNode, std::unordered_set<Node>> extraConsType;
-  for (const Node& n : extra_cons)
+  for (const Node& n : exclude_cons)
   {
     TypeNode tni = n.getType();
     extraConsType[tni].insert(n);
