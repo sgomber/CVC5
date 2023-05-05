@@ -173,14 +173,14 @@ void getMinGroundTerms(const Options& options,
  *                    addition to the default grammar.
  */
 void addSpecialValues(const TypeNode& tn,
-                      std::map<TypeNode, std::unordered_set<Node>>& extra_cons)
+                      std::unordered_set<Node>& extra_cons)
 {
   if (tn.isBitVector())
   {
     uint32_t size = tn.getBitVectorSize();
-    extra_cons[tn].insert(bv::utils::mkOnes(size));
-    extra_cons[tn].insert(bv::utils::mkMinSigned(size));
-    extra_cons[tn].insert(bv::utils::mkMaxSigned(size));
+    extra_cons.insert(bv::utils::mkOnes(size));
+    extra_cons.insert(bv::utils::mkMinSigned(size));
+    extra_cons.insert(bv::utils::mkMaxSigned(size));
   }
 }
 
@@ -365,10 +365,8 @@ void SygusInst::registerQuantifier(Node q)
 
   Trace("sygus-inst") << "Register " << q << std::endl;
 
-  std::map<TypeNode, std::unordered_set<Node>> extra_cons;
-  std::map<TypeNode, std::unordered_set<Node>> exclude_cons;
-  std::map<TypeNode, std::unordered_set<Node>> include_cons;
-  std::unordered_set<Node> term_irrelevant;
+  std::unordered_set<Node> extra_cons;
+  std::unordered_set<Node> exclude_cons;
 
   /* Collect relevant local ground terms for each variable type. */
   if (options().quantifiers.sygusInstScope == options::SygusInstScope::IN
@@ -395,8 +393,7 @@ void SygusInst::registerQuantifier(Node q)
       auto& terms = relevant_terms[tn];
       for (const auto& t : terms)
       {
-        TypeNode ttn = t.getType();
-        extra_cons[ttn].insert(t);
+        extra_cons.insert(t);
         Trace("sygus-inst") << "Adding (local) extra cons: " << t << std::endl;
       }
     }
@@ -431,8 +428,7 @@ void SygusInst::registerQuantifier(Node q)
       {
         for (const auto& t : (*it).second)
         {
-          TypeNode ttn = t.getType();
-          extra_cons[ttn].insert(t);
+          extra_cons.insert(t);
           Trace("sygus-inst")
               << "Adding (global) extra cons: " << t << std::endl;
         }
@@ -451,9 +447,7 @@ void SygusInst::registerQuantifier(Node q)
                                                             Node(),
                                                             var.toString(),
                                                             extra_cons,
-                                                            exclude_cons,
-                                                            include_cons,
-                                                            term_irrelevant);
+                                                            exclude_cons);
     types.push_back(tn);
 
     Trace("sygus-inst") << "Construct (default) datatype for " << var

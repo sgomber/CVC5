@@ -114,10 +114,8 @@ public:
      TypeNode range,
      Node bvl,
      const std::string& fun,
-     std::map<TypeNode, std::unordered_set<Node>>& extra_cons,
-     std::map<TypeNode, std::unordered_set<Node>>& exclude_cons,
-     std::map<TypeNode, std::unordered_set<Node>>& include_cons,
-     std::unordered_set<Node>& term_irrelevant);
+     const std::unordered_set<Node>& extra_cons,
+     const std::unordered_set<Node>& exclude_cons);
 
  /**
   * Make the default sygus datatype type corresponding to builtin type range.
@@ -127,18 +125,19 @@ public:
                                     Node bvl,
                                     const std::string& fun)
  {
-   std::map<TypeNode, std::unordered_set<Node>> extra_cons;
-   std::map<TypeNode, std::unordered_set<Node>> exclude_cons;
-   std::map<TypeNode, std::unordered_set<Node>> include_cons;
-   std::unordered_set<Node> term_irrelevant;
+   std::unordered_set<Node> extra_cons;
+   if (!bvl.isNull())
+   {
+       Assert (bvl.getKind()==BOUND_VARIABLE_LIST);
+       extra_cons.insert(bvl.begin(), bvl.end());
+   }
+   std::unordered_set<Node> exclude_cons;
    return mkSygusDefaultType(opts,
                              range,
                              bvl,
                              fun,
                              extra_cons,
-                             exclude_cons,
-                             include_cons,
-                             term_irrelevant);
+                             exclude_cons);
   }
 
   /** make the sygus datatype type that encodes the solution space (lambda
@@ -186,8 +185,8 @@ public:
   /** is the syntax restricted? */
   bool d_is_syntax_restricted;
   /** collect terms */
-  void collectTerms(Node n,
-                    std::map<TypeNode, std::unordered_set<Node>>& consts);
+  static void collectTerms(Node n,
+                    std::unordered_set<Node>& consts);
   //---------------- grammar construction
   /** A class for generating sygus datatypes */
   class SygusDatatypeGenerator
@@ -232,14 +231,12 @@ public:
   * Collects a set of mutually recursive datatypes "datatypes" corresponding to
   * encoding type "range" to SyGuS.
   */
-  static void mkSygusDefaultGrammar(
+  static void mkSygusDefaultTypeInternal(
       TypeNode range,
       Node bvl,
       const std::string& fun,
-      std::map<TypeNode, std::unordered_set<Node>>& extra_cons,
-      std::map<TypeNode, std::unordered_set<Node>>& exclude_cons,
-      const std::map<TypeNode, std::unordered_set<Node>>& include_cons,
-      std::unordered_set<Node>& term_irrelevant,
+      const std::unordered_set<Node>& extra_cons,
+      const std::unordered_set<Node>& exclude_cons,
       std::vector<SygusDatatypeGenerator>& sdts,
       options::SygusGrammarConsMode sgcm);
 
