@@ -3356,15 +3356,20 @@ bool TheoryArithPrivate::postCheck(Theory::Effort effortLevel)
        << " conf/split " << emmittedConflictOrSplit
        << " fulleffort " << Theory::fullEffort(effortLevel) << endl;
 
-
-  if(Theory::fullEffort(effortLevel)){
-    if(TraceIsOn("arith::consistency::final")){
+  if (Theory::fullEffort(effortLevel))
+  {
+    if (TraceIsOn("arith::consistency::final"))
+    {
       entireStateIsConsistent("arith::consistency::final");
     }
   }
 
-  if(TraceIsOn("paranoid:check_tableau")){ d_linEq.debugCheckTableau(); }
-  if(TraceIsOn("arith::print_model")) {
+  if (TraceIsOn("paranoid:check_tableau"))
+  {
+    d_linEq.debugCheckTableau();
+  }
+  if (TraceIsOn("arith::print_model"))
+  {
     debugPrintModel(Trace("arith::print_model"));
   }
   Trace("arith") << "TheoryArithPrivate::check end" << std::endl;
@@ -3373,7 +3378,8 @@ bool TheoryArithPrivate::postCheck(Theory::Effort effortLevel)
 
 bool TheoryArithPrivate::postCheckInteger()
 {
-  if(hasIntegerModel()){
+  if (hasIntegerModel())
+  {
     // nothing to do be done
     return false;
   }
@@ -3382,7 +3388,8 @@ bool TheoryArithPrivate::postCheckInteger()
   if (options().arith.arithDioSolver)
   {
     possibleConflict = callDioSolver();
-    if(possibleConflict != Node::null()){
+    if (possibleConflict != Node::null())
+    {
       revertOutOfConflict();
       Trace("arith::conflict") << "dio conflict   " << possibleConflict << endl;
       // TODO (project #37): justify (proofs in the DIO solver)
@@ -3395,9 +3402,11 @@ bool TheoryArithPrivate::postCheckInteger()
   if (!emmittedConflictOrSplit && d_hasDoneWorkSinceCut
       && options().arith.arithDioSolver)
   {
-    if(getDioCuttingResource()){
+    if (getDioCuttingResource())
+    {
       TrustNode possibleLemma = dioCutting();
-      if(!possibleLemma.isNull()){
+      if (!possibleLemma.isNull())
+      {
         d_hasDoneWorkSinceCut = false;
         d_cutCount = d_cutCount + 1;
         Trace("arith::lemma") << "dio cut   " << possibleLemma << endl;
@@ -3409,7 +3418,8 @@ bool TheoryArithPrivate::postCheckInteger()
     }
   }
 
-  if(!emmittedConflictOrSplit) {
+  if (!emmittedConflictOrSplit)
+  {
     std::vector<TrustNode> possibleLemmas = roundRobinBranch();
     if (!possibleLemmas.empty())
     {
@@ -3428,14 +3438,18 @@ bool TheoryArithPrivate::postCheckInteger()
 
   if (options().arith.maxCutsInContext <= d_cutCount)
   {
-    if(d_diosolver.hasMoreDecompositionLemmas()){
-      while(d_diosolver.hasMoreDecompositionLemmas()){
+    if (d_diosolver.hasMoreDecompositionLemmas())
+    {
+      while (d_diosolver.hasMoreDecompositionLemmas())
+      {
         Node decompositionLemma = d_diosolver.nextDecompositionLemma();
-        Trace("arith::lemma") << "dio decomposition lemma "
-                              << decompositionLemma << endl;
+        Trace("arith::lemma")
+            << "dio decomposition lemma " << decompositionLemma << endl;
         outputLemma(decompositionLemma, InferenceId::ARITH_DIO_DECOMPOSITION);
       }
-    }else{
+    }
+    else
+    {
       Trace("arith::restart") << "arith restart!" << endl;
       outputRestart();
     }
