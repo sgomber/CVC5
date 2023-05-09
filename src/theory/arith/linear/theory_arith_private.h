@@ -494,6 +494,8 @@ private:
    * true if a conflict or lemma was emitted.
    */
   bool postCheck(Theory::Effort level);
+  /** post check integer */
+  bool postCheckInteger();
   //--------------------------------- end standard check
   /**
    * Found non-linear? This returns true if this solver ever encountered

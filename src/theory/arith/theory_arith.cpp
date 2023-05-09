@@ -275,10 +275,10 @@ void TheoryArith::postCheck(Effort level)
         return;
       }
     }
-    else if (d_internal->foundNonlinear())
+    // post check integer
+    if (d_internal->postCheckInteger())
     {
-      // set incomplete
-      d_im.setModelUnsound(IncompleteId::ARITH_NL_DISABLED);
+      return;
     }
     // If we won't be doing a last call effort check (which implies that
     // models will be computed), we must sanity check the integer model
@@ -286,6 +286,11 @@ void TheoryArith::postCheck(Effort level)
     // if we did not do so above.
     if (d_nonlinearExtension == nullptr)
     {
+      if (d_internal->foundNonlinear())
+      {
+        // set incomplete
+        d_im.setModelUnsound(IncompleteId::ARITH_NL_DISABLED);
+      }
       updateModelCache(termSet);
     }
     sanityCheckIntegerModel();

@@ -3356,70 +3356,6 @@ bool TheoryArithPrivate::postCheck(Theory::Effort effortLevel)
        << " conf/split " << emmittedConflictOrSplit
        << " fulleffort " << Theory::fullEffort(effortLevel) << endl;
 
-  if(!emmittedConflictOrSplit && Theory::fullEffort(effortLevel) && !hasIntegerModel()){
-    Node possibleConflict = Node::null();
-    if (!emmittedConflictOrSplit && options().arith.arithDioSolver)
-    {
-      possibleConflict = callDioSolver();
-      if(possibleConflict != Node::null()){
-        revertOutOfConflict();
-        Trace("arith::conflict") << "dio conflict   " << possibleConflict << endl;
-        // TODO (project #37): justify (proofs in the DIO solver)
-        raiseBlackBoxConflict(possibleConflict);
-        outputConflicts();
-        emmittedConflictOrSplit = true;
-      }
-    }
-
-    if (!emmittedConflictOrSplit && d_hasDoneWorkSinceCut
-        && options().arith.arithDioSolver)
-    {
-      if(getDioCuttingResource()){
-        TrustNode possibleLemma = dioCutting();
-        if(!possibleLemma.isNull()){
-          d_hasDoneWorkSinceCut = false;
-          d_cutCount = d_cutCount + 1;
-          Trace("arith::lemma") << "dio cut   " << possibleLemma << endl;
-          if (outputTrustedLemma(possibleLemma, InferenceId::ARITH_DIO_CUT))
-          {
-            emmittedConflictOrSplit = true;
-          }
-        }
-      }
-    }
-
-    if(!emmittedConflictOrSplit) {
-      std::vector<TrustNode> possibleLemmas = roundRobinBranch();
-      if (!possibleLemmas.empty())
-      {
-        ++(d_statistics.d_externalBranchAndBounds);
-        d_cutCount = d_cutCount + 1;
-        for (const TrustNode& possibleLemma : possibleLemmas)
-        {
-          Trace("arith::lemma") << "rrbranch lemma" << possibleLemma << endl;
-          if (outputTrustedLemma(possibleLemma, InferenceId::ARITH_BB_LEMMA))
-          {
-            emmittedConflictOrSplit = true;
-          }
-        }
-      }
-    }
-
-    if (options().arith.maxCutsInContext <= d_cutCount)
-    {
-      if(d_diosolver.hasMoreDecompositionLemmas()){
-        while(d_diosolver.hasMoreDecompositionLemmas()){
-          Node decompositionLemma = d_diosolver.nextDecompositionLemma();
-          Trace("arith::lemma") << "dio decomposition lemma "
-                                << decompositionLemma << endl;
-          outputLemma(decompositionLemma, InferenceId::ARITH_DIO_DECOMPOSITION);
-        }
-      }else{
-        Trace("arith::restart") << "arith restart!" << endl;
-        outputRestart();
-      }
-    }
-  }//if !emmittedConflictOrSplit && fullEffort(effortLevel) && !hasIntegerModel()
 
   if(Theory::fullEffort(effortLevel)){
     if(TraceIsOn("arith::consistency::final")){
@@ -3432,6 +3368,78 @@ bool TheoryArithPrivate::postCheck(Theory::Effort effortLevel)
     debugPrintModel(Trace("arith::print_model"));
   }
   Trace("arith") << "TheoryArithPrivate::check end" << std::endl;
+  return emmittedConflictOrSplit;
+}
+
+bool TheoryArithPrivate::postCheckInteger()
+{
+  if(hasIntegerModel()){
+    // nothing to do be done
+    return false;
+  }
+  bool emmittedConflictOrSplit = false;
+  Node possibleConflict = Node::null();
+  if (options().arith.arithDioSolver)
+  {
+    possibleConflict = callDioSolver();
+    if(possibleConflict != Node::null()){
+      revertOutOfConflict();
+      Trace("arith::conflict") << "dio conflict   " << possibleConflict << endl;
+      // TODO (project #37): justify (proofs in the DIO solver)
+      raiseBlackBoxConflict(possibleConflict);
+      outputConflicts();
+      emmittedConflictOrSplit = true;
+    }
+  }
+
+  if (!emmittedConflictOrSplit && d_hasDoneWorkSinceCut
+      && options().arith.arithDioSolver)
+  {
+    if(getDioCuttingResource()){
+      TrustNode possibleLemma = dioCutting();
+      if(!possibleLemma.isNull()){
+        d_hasDoneWorkSinceCut = false;
+        d_cutCount = d_cutCount + 1;
+        Trace("arith::lemma") << "dio cut   " << possibleLemma << endl;
+        if (outputTrustedLemma(possibleLemma, InferenceId::ARITH_DIO_CUT))
+        {
+          emmittedConflictOrSplit = true;
+        }
+      }
+    }
+  }
+
+  if(!emmittedConflictOrSplit) {
+    std::vector<TrustNode> possibleLemmas = roundRobinBranch();
+    if (!possibleLemmas.empty())
+    {
+      ++(d_statistics.d_externalBranchAndBounds);
+      d_cutCount = d_cutCount + 1;
+      for (const TrustNode& possibleLemma : possibleLemmas)
+      {
+        Trace("arith::lemma") << "rrbranch lemma" << possibleLemma << endl;
+        if (outputTrustedLemma(possibleLemma, InferenceId::ARITH_BB_LEMMA))
+        {
+          emmittedConflictOrSplit = true;
+        }
+      }
+    }
+  }
+
+  if (options().arith.maxCutsInContext <= d_cutCount)
+  {
+    if(d_diosolver.hasMoreDecompositionLemmas()){
+      while(d_diosolver.hasMoreDecompositionLemmas()){
+        Node decompositionLemma = d_diosolver.nextDecompositionLemma();
+        Trace("arith::lemma") << "dio decomposition lemma "
+                              << decompositionLemma << endl;
+        outputLemma(decompositionLemma, InferenceId::ARITH_DIO_DECOMPOSITION);
+      }
+    }else{
+      Trace("arith::restart") << "arith restart!" << endl;
+      outputRestart();
+    }
+  }
   return emmittedConflictOrSplit;
 }
 
