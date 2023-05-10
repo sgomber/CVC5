@@ -19,9 +19,7 @@ using namespace cvc5::internal::kind;
 
 namespace cvc5::internal {
 
-Assigner::Assigner(const Node& n) {
-  d_valid = init(n);
-}
+Assigner::Assigner(const Node& n) { d_valid = init(n); }
 
 bool Assigner::isValid() const { return d_valid; }
 
@@ -30,7 +28,7 @@ const std::vector<Node>& Assigner::getVariables() const { return d_vars; }
 const std::vector<Node>& Assigner::getAssignments(const Node& v) const
 {
   std::map<Node, std::vector<Node>>::const_iterator it = d_assignments.find(v);
-  Assert (it!=d_assignments.end());
+  Assert(it != d_assignments.end());
   return it->second;
 }
 
@@ -38,17 +36,17 @@ const std::vector<Node>& Assigner::getLiterals() const { return d_literals; }
 
 bool Assigner::init(const Node& n)
 {
-  Assert (n.getKind()==OR);
+  Assert(n.getKind() == OR);
   size_t nargs = n.getNumChildren();
   // split to cubes
   std::vector<std::vector<Node>> cubes;
   cubes.resize(nargs);
   size_t csize = 0;
-  for (size_t i=0; i<nargs; i++)
+  for (size_t i = 0; i < nargs; i++)
   {
     const Node& nc = n[i];
     std::vector<Node>& cc = cubes[i];
-    if (nc.getKind()==AND)
+    if (nc.getKind() == AND)
     {
       cc.insert(cc.end(), nc.begin(), nc.end());
     }
@@ -56,11 +54,11 @@ bool Assigner::init(const Node& n)
     {
       cc.push_back(nc);
     }
-    if (i==0)
+    if (i == 0)
     {
       csize = cc.size();
     }
-    else if (cc.size()!=csize)
+    else if (cc.size() != csize)
     {
       // cube size is not the same for all disjuncts
       return false;
@@ -69,7 +67,7 @@ bool Assigner::init(const Node& n)
   // infer the variables for the first argument
   Node vtmp;
   Node ctmp;
-  for (size_t i=0; i<nargs; i++)
+  for (size_t i = 0; i < nargs; i++)
   {
     std::vector<Node>& cc = cubes[i];
     std::unordered_set<Node> varUsed;
@@ -80,10 +78,10 @@ bool Assigner::init(const Node& n)
       {
         return false;
       }
-      if (i==0)
+      if (i == 0)
       {
         // all variables in each cube must be unique
-        if (d_varIndex.find(vtmp)!=d_varIndex.end())
+        if (d_varIndex.find(vtmp) != d_varIndex.end())
         {
           return false;
         }
@@ -93,7 +91,8 @@ bool Assigner::init(const Node& n)
       else
       {
         // must be a previous variable not used already this iteration
-        if (d_varIndex.find(vtmp)==d_varIndex.end() || varUsed.find(vtmp)!=varUsed.end())
+        if (d_varIndex.find(vtmp) == d_varIndex.end()
+            || varUsed.find(vtmp) != varUsed.end())
         {
           return false;
         }
@@ -108,22 +107,22 @@ bool Assigner::init(const Node& n)
 
 bool Assigner::isAssignEq(const Node& n, Node& v, Node& c)
 {
-  if (n.getKind()!=EQUAL)
+  if (n.getKind() != EQUAL)
   {
     return false;
   }
-  for (size_t i=0; i<2; i++)
+  for (size_t i = 0; i < 2; i++)
   {
-    if (n[i].isVar() && n[1-i].isConst())
+    if (n[i].isVar() && n[1 - i].isConst())
     {
       v = n[i];
-      c = n[1-i];
+      c = n[1 - i];
       return true;
     }
   }
   return false;
 }
-  
+
 AssignerDb::AssignerDb() {}
 
 bool AssignerDb::registerToDb(const Node& n)

@@ -30,7 +30,7 @@ class Assigner
  public:
   /** */
   Assigner(const Node& n);
-  ~Assigner(){}
+  ~Assigner() {}
   bool isValid() const;
   const std::vector<Node>& getVariables() const;
   const std::vector<Node>& getAssignments(const Node& v) const;
@@ -51,7 +51,7 @@ class AssignerDb
 {
  public:
   AssignerDb();
-  ~AssignerDb(){}
+  ~AssignerDb() {}
   bool registerToDb(const Node& n);
   const Assigner* getAssigner(const Node& n) const;
 
