@@ -284,7 +284,7 @@ bool ProcessAssertions::apply(AssertionPipeline& ap)
   {
     applyPass("assigner-infer", ap);
   }
-  
+
   if (options().smt.earlyIteRemoval)
   {
     d_slvStats.d_numAssertionsPre += ap.size();

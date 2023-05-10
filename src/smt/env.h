@@ -266,6 +266,7 @@ class Env
 
   /** Register assigner */
   std::vector<Assigner*> getAssignersFor(const Node& lit);
+
  private:
   /* Private initialization ------------------------------------------------- */
 

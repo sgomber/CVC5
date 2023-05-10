@@ -17,8 +17,8 @@
 #include "smt/env.h"
 
 #include "context/context.h"
-#include "expr/node.h"
 #include "expr/assigner.h"
+#include "expr/node.h"
 #include "options/base_options.h"
 #include "options/printer_options.h"
 #include "options/quantifiers_options.h"
@@ -265,7 +265,6 @@ void Env::declareSepHeap(TypeNode locT, TypeNode dataT)
   d_sepLocType = locT;
   d_sepDataType = dataT;
 }
-
 
 Assigner* Env::registerAssigner(const Node& n)
 {

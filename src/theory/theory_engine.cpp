@@ -19,8 +19,8 @@
 
 #include "base/map_util.h"
 #include "decision/decision_engine.h"
-#include "expr/attribute.h"
 #include "expr/assigner.h"
+#include "expr/attribute.h"
 #include "expr/node_builder.h"
 #include "expr/node_visitor.h"
 #include "options/parallel_options.h"
@@ -28,13 +28,13 @@
 #include "options/smt_options.h"
 #include "options/theory_options.h"
 #include "printer/printer.h"
-#include "smt/solver_engine_state.h"
 #include "proof/lazy_proof.h"
 #include "proof/proof_checker.h"
 #include "proof/proof_ensure_closed.h"
 #include "prop/prop_engine.h"
 #include "smt/env.h"
 #include "smt/logic_exception.h"
+#include "smt/solver_engine_state.h"
 #include "theory/combination_care_graph.h"
 #include "theory/decision_manager.h"
 #include "theory/ee_manager_central.h"
@@ -793,7 +793,7 @@ std::vector<Assigner*> TheoryEngine::getActiveAssigners(const Node& lit) const
 {
   std::vector<Assigner*> ret;
   std::vector<Assigner*> assigners = d_env.getAssignersFor(lit);
-  for (Assigner * a : ret)
+  for (Assigner* a : ret)
   {
     const Node& lit = a->getSatLiteral();
     bool value;
@@ -804,7 +804,7 @@ std::vector<Assigner*> TheoryEngine::getActiveAssigners(const Node& lit) const
   }
   return ret;
 }
-  
+
 theory::Theory::PPAssertStatus TheoryEngine::solve(
     TrustNode tliteral, TrustSubstitutionMap& substitutionOut)
 {
