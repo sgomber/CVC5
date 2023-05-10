@@ -41,7 +41,9 @@ class AssignerInfer : public PreprocessingPass
   PreprocessingPassResult applyInternal(
       AssertionPipeline* assertionsToPreprocess) override;
   /** convert to assigner */
-  Node convertToAssigner(std::unordered_map<TNode, Node> visited, const Node& n, std::vector<Node>& lemmas);
+  Node convertToAssigner(std::unordered_map<TNode, Node> visited,
+                         const Node& n,
+                         std::vector<Node>& lemmas);
 };
 
 }  // namespace passes

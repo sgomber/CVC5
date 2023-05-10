@@ -21,7 +21,8 @@ using namespace cvc5::internal::kind;
 
 namespace cvc5::internal {
 
-Assigner::Assigner(const Node& n) : d_node(n) { 
+Assigner::Assigner(const Node& n) : d_node(n)
+{
   d_valid = init(n);
   d_satLiteral = getSatLiteral(n);
 }
@@ -54,8 +55,8 @@ bool Assigner::isAssigner(const Node& n)
 
 Node Assigner::getSatLiteral(const Node& n)
 {
-  NodeManager * nm = NodeManager::currentNM();
-  SkolemManager * skm = nm->getSkolemManager();
+  NodeManager* nm = NodeManager::currentNM();
+  SkolemManager* skm = nm->getSkolemManager();
   return skm->mkSkolemFunction(SkolemFunId::ASSIGNER, nm->booleanType(), n);
 }
 
@@ -184,7 +185,7 @@ Assigner* AssignerDb::getAssigner(const Node& n)
   return it->second.get();
 }
 
-void AssignerDb::registerAssigner(const Node& n, Assigner * a)
+void AssignerDb::registerAssigner(const Node& n, Assigner* a)
 {
   const std::vector<Node>& lits = a->getLiterals();
   for (const Node& l : lits)

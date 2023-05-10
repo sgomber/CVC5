@@ -39,6 +39,7 @@ class Assigner
   const std::vector<Node>& getLiterals() const;
   static bool isAssigner(const Node& n);
   static Node getSatLiteral(const Node& n);
+
  private:
   bool init(const Node& n);
   static bool initInternal(const Node& n,
@@ -62,11 +63,12 @@ class AssignerDb
   AssignerDb();
   ~AssignerDb() {}
   Assigner* getAssigner(const Node& n);
+
  private:
-   void registerAssigner(const Node& n, Assigner * a);
+  void registerAssigner(const Node& n, Assigner* a);
   std::map<Node, std::unique_ptr<Assigner>> d_db;
   /** literals to assigners */
-  std::map<Node, std::vector<Assigner *>> d_litsToAssigners;
+  std::map<Node, std::vector<Assigner*>> d_litsToAssigners;
 };
 
 }  // namespace cvc5::internal

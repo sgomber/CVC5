@@ -18,9 +18,9 @@
 
 #include "preprocessing/passes/assigner_infer.h"
 
+#include "expr/assigner.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/preprocessing_pass_context.h"
-#include "expr/assigner.h"
 #include "smt/env.h"
 
 namespace cvc5::internal {
@@ -44,29 +44,31 @@ PreprocessingPassResult AssignerInfer::applyInternal(
     const Node& aa = convertToAssigner(visited, assertion, lemmas);
     if (aa != assertion)
     {
-      assertionsToPreprocess->replace(
-          i,
-          aa);
+      assertionsToPreprocess->replace(i, aa);
     }
   }
   return PreprocessingPassResult::NO_CONFLICT;
 }
 
-Node AssignerInfer::convertToAssigner(std::unordered_map<TNode, Node> visited, const Node& n, std::vector<Node>& lemmas)
+Node AssignerInfer::convertToAssigner(std::unordered_map<TNode, Node> visited,
+                                      const Node& n,
+                                      std::vector<Node>& lemmas)
 {
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   std::unordered_map<TNode, Node>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
   Kind k;
-  do {
+  do
+  {
     cur = visit.back();
     visit.pop_back();
     it = visited.find(cur);
-    if (it == visited.end()) {
+    if (it == visited.end())
+    {
       k = cur.getKind();
-      if (k==kind::OR)
+      if (k == kind::OR)
       {
         // if assigner, replace by its variable
         if (Assigner::isAssigner(cur))
@@ -78,7 +80,7 @@ Node AssignerInfer::convertToAssigner(std::unordered_map<TNode, Node> visited, c
           continue;
         }
       }
-      else if (k==kind::AND)
+      else if (k == kind::AND)
       {
         visited[cur] = Node::null();
         visit.push_back(cur);
@@ -86,18 +88,22 @@ Node AssignerInfer::convertToAssigner(std::unordered_map<TNode, Node> visited, c
         continue;
       }
       visited[cur] = cur;
-    } else if (it->second.isNull()) {
+    }
+    else if (it->second.isNull())
+    {
       Node ret = cur;
       bool childChanged = false;
       std::vector<Node> children;
-      for (const Node& cn : cur) {
+      for (const Node& cn : cur)
+      {
         it = visited.find(cn);
         Assert(it != visited.end());
         Assert(!it->second.isNull());
         childChanged = childChanged || cn != it->second;
         children.push_back(it->second);
       }
-      if (childChanged) {
+      if (childChanged)
+      {
         ret = nm->mkNode(cur.getKind(), children);
       }
       visited[cur] = ret;
