@@ -40,6 +40,7 @@
 #include "theory/trust_substitutions.h"
 #include "theory/uf/equality_engine.h"
 #include "theory/valuation.h"
+#include "theory/conflict_processor.h"
 #include "util/hash.h"
 #include "util/statistics_stats.h"
 
@@ -653,7 +654,8 @@ class TheoryEngine : protected EnvObj
   std::unique_ptr<theory::PartitionGenerator> d_partitionGen;
   /** The list of modules */
   std::vector<theory::TheoryEngineModule*> d_modules;
-
+  /** Conflict processor */
+  ConflictProcessor d_cp;
 }; /* class TheoryEngine */
 
 }  // namespace cvc5::internal
