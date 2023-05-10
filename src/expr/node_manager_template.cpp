@@ -21,6 +21,7 @@
 #include "base/listener.h"
 #include "expr/attribute.h"
 #include "expr/bound_var_manager.h"
+#include "expr/assigner.h"
 #include "expr/dtype.h"
 #include "expr/dtype_cons.h"
 #include "expr/metakind.h"
@@ -1390,6 +1391,12 @@ Node NodeManager::mkRealAlgebraicNumber(const RealAlgebraicNumber& ran)
     inner = mkConst(Kind::REAL_ALGEBRAIC_NUMBER_OP, cur);
   }
   return mkNode(Kind::REAL_ALGEBRAIC_NUMBER, inner);
+}
+
+
+Assigner* NodeManager::getAssigner(const Node& n)
+{
+  return d_assignerDb->getAssigner(n);
 }
 
 }  // namespace cvc5::internal

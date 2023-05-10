@@ -43,6 +43,8 @@ using Record = std::vector<std::pair<std::string, TypeNode>>;
 class ResourceManager;
 class SkolemManager;
 class BoundVarManager;
+class AssignerDb;
+class Assigner;
 
 class DType;
 class Oracle;
@@ -961,6 +963,8 @@ class NodeManager
   std::unique_ptr<SkolemManager> d_skManager;
   /** The bound variable manager */
   std::unique_ptr<BoundVarManager> d_bvManager;
+  /** Assigner db */
+  std::unique_ptr<AssignerDb> d_assignerDb;
 
   NodeValuePool d_nodeValuePool;
 

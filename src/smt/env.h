@@ -39,8 +39,6 @@ class StatisticsRegistry;
 class ProofNodeManager;
 class Printer;
 class ResourceManager;
-class Assigner;
-class AssignerDb;
 namespace options {
 enum class OutputTag;
 }
@@ -326,8 +324,6 @@ class Env
   Options d_options;
   /** Manager for limiting time and abstract resource usage. */
   std::unique_ptr<ResourceManager> d_resourceManager;
-  /** Assigner db */
-  std::unique_ptr<AssignerDb> d_assignerDb;
   /** The theory that owns the uninterpreted sort. */
   theory::TheoryId d_uninterpretedSortOwner;
   /** The separation logic location and data types */
