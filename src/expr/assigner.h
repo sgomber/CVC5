@@ -36,13 +36,14 @@ class Assigner
   const std::vector<Node>& getAssignments(const Node& v) const;
   const std::vector<Node>& getLiterals() const;
   static bool isAssigner(const Node& n);
+
  private:
   bool init(const Node& n);
   static bool initInternal(const Node& n,
-  std::vector<Node>& vars,
-  std::map<Node, size_t>& varIndex,
-  std::map<Node, std::vector<Node>>& assignments,
-  std::vector<Node>& literals);
+                           std::vector<Node>& vars,
+                           std::map<Node, size_t>& varIndex,
+                           std::map<Node, std::vector<Node>>& assignments,
+                           std::vector<Node>& literals);
   static bool isAssignEq(const Node& n, Node& v, Node& c);
   bool d_valid;
   std::vector<Node> d_vars;
