@@ -262,7 +262,8 @@ class Env
   TypeNode getSepDataType() const;
 
   /** Get assigner */
-  Assigner * getAssigner(const Node& n);
+  Assigner* getAssigner(const Node& n);
+
  private:
   /* Private initialization ------------------------------------------------- */
 

@@ -17,8 +17,8 @@
 #include "smt/env.h"
 
 #include "context/context.h"
-#include "expr/node.h"
 #include "expr/assigner.h"
+#include "expr/node.h"
 #include "options/base_options.h"
 #include "options/printer_options.h"
 #include "options/quantifiers_options.h"
@@ -266,10 +266,9 @@ void Env::declareSepHeap(TypeNode locT, TypeNode dataT)
   d_sepDataType = dataT;
 }
 
-Assigner * Env::getAssigner(const Node& n)
+Assigner* Env::getAssigner(const Node& n)
 {
   return d_assignerDb->getAssigner(n);
 }
-  
 
 }  // namespace cvc5::internal

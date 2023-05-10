@@ -51,7 +51,7 @@ bool Assigner::init(const Node& n)
     {
       cc.insert(cc.end(), nc.begin(), nc.end());
     }
-    else if (nck==EQUAL)
+    else if (nck == EQUAL)
     {
       cc.push_back(nc);
     }
