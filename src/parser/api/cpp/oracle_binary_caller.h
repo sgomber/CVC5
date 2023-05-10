@@ -18,7 +18,7 @@
 #ifndef CVC5__EXPR__ORACLE_BINARY_CALLER_H
 #define CVC5__EXPR__ORACLE_BINARY_CALLER_H
 
-#include "api/cpp/cvc5.h"
+#include <cvc5/cvc5.h>
 
 namespace cvc5 {
 

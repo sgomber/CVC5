@@ -18,6 +18,7 @@
 #include <sstream>
 
 #include "parser/api/cpp/input_parser.h"
+#include "parser/api/cpp/command.h"
 #include "util/run.h"
 #include "base/output.h"
 
