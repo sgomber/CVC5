@@ -216,6 +216,13 @@ bool Valuation::needCheck() const{
 
 bool Valuation::isRelevant(Node lit) const { return d_engine->isRelevant(lit); }
 
+std::vector<Assigner*> Valuation::getActiveAssigners() const
+{
+  std::vector<Assigner*> as;
+  
+  return as;
+}
+
 context::CDList<Assertion>::const_iterator Valuation::factsBegin(TheoryId tid)
 {
   Theory* theory = d_engine->theoryOf(tid);

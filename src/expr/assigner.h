@@ -62,13 +62,15 @@ class AssignerDb
  public:
   AssignerDb();
   ~AssignerDb() {}
-  Assigner* getAssigner(const Node& n);
-
+  Assigner* registerAssigner(const Node& n);
+  const std::vector<Assigner*>& getAssignersFor(const Node& lit) const;
  private:
-  void registerAssigner(const Node& n, Assigner* a);
+  void registerLitsForAssigner(const Node& n, Assigner* a);
   std::map<Node, std::unique_ptr<Assigner>> d_db;
   /** literals to assigners */
   std::map<Node, std::vector<Assigner*>> d_litsToAssigners;
+  /** Empty vec */
+  std::vector<Assigner*> d_emptyVec;
 };
 
 }  // namespace cvc5::internal

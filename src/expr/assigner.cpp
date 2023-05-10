@@ -167,7 +167,7 @@ bool Assigner::isAssignEq(const Node& n, Node& v, Node& c)
 
 AssignerDb::AssignerDb() {}
 
-Assigner* AssignerDb::getAssigner(const Node& n)
+Assigner* AssignerDb::registerAssigner(const Node& n)
 {
   std::map<Node, std::unique_ptr<Assigner>>::iterator it = d_db.find(n);
   if (it == d_db.end())
@@ -176,7 +176,7 @@ Assigner* AssignerDb::getAssigner(const Node& n)
     Assigner* a = d_db[n].get();
     if (a->isValid())
     {
-      registerAssigner(n, a);
+      registerLitsForAssigner(n, a);
       return a;
     }
     d_db.erase(n);
@@ -185,13 +185,22 @@ Assigner* AssignerDb::getAssigner(const Node& n)
   return it->second.get();
 }
 
-void AssignerDb::registerAssigner(const Node& n, Assigner* a)
+void AssignerDb::registerLitsForAssigner(const Node& n, Assigner* a)
 {
   const std::vector<Node>& lits = a->getLiterals();
   for (const Node& l : lits)
   {
     d_litsToAssigners[l].push_back(a);
   }
+}
+const std::vector<Assigner*>& AssignerDb::getAssignersFor(const Node& lit) const
+{
+  std::map<Node, std::vector<Assigner*>>::const_iterator it = d_litsToAssigners.find(lit);
+  if (it==d_litsToAssigners.end())
+  {
+    return d_emptyVec;
+  }
+  return it->second;
 }
 
 }  // namespace cvc5::internal

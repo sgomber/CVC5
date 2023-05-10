@@ -110,6 +110,7 @@ typedef expr::Attribute<attr::LambdaBoundVarListTag, Node>
 NodeManager::NodeManager()
     : d_skManager(new SkolemManager),
       d_bvManager(new BoundVarManager),
+      d_assignerDb(new AssignerDb),
       d_nextId(0),
       d_attrManager(new expr::attr::AttributeManager()),
       d_nodeUnderDeletion(nullptr),
@@ -1008,6 +1009,16 @@ const Oracle& NodeManager::getOracleFor(const Node& n) const
   size_t index = n.getAttribute(OracleIndexAttr());
   Assert(index < d_oracles.size());
   return *d_oracles[index];
+}
+
+Assigner* NodeManager::registerAssigner(const Node& n)
+{
+  return d_assignerDb->registerAssigner(n);
+}
+
+std::vector<Assigner*> NodeManager::getAssignersFor(const Node& lit)
+{
+  return d_assignerDb->getAssignersFor(lit);
 }
 
 Node NodeManager::mkVar(const std::string& name, const TypeNode& type)

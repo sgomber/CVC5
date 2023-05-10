@@ -49,7 +49,6 @@ Env::Env(const Options* opts)
       d_statisticsRegistry(std::make_unique<StatisticsRegistry>(*this)),
       d_options(),
       d_resourceManager(),
-      d_assignerDb(new AssignerDb),
       d_uninterpretedSortOwner(theory::THEORY_UF)
 {
   if (opts != nullptr)

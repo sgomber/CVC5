@@ -35,6 +35,7 @@ namespace theory {
 struct Assertion;
 class TheoryModel;
 class SortInference;
+class Assigner;
 
 /**
  * The status of an equality in the current context.
@@ -217,6 +218,10 @@ public:
    */
   bool isRelevant(Node lit) const;
 
+  /**
+   * Get active assigners
+   */
+  std::vector<Assigner*> getActiveAssigners() const;
   //------------------------------------------- access methods for assertions
   /**
    * The following methods are intended only to be used in limited use cases,
