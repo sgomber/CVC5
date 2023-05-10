@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Mathias Preiner, Tim King
+ *   Andrew Reynolds, Tim King, Andres Noetzli
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2023 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -476,9 +476,13 @@ bool SymbolTable::Implementation::isBoundType(const string& name) const
 Sort SymbolTable::Implementation::lookupType(const string& name) const
 {
   std::pair<std::vector<Sort>, Sort> p = (*d_typeMap.find(name)).second;
-  Assert(p.first.size() == 0)
-      << "type constructor arity is wrong: `" << name << "' requires "
-      << p.first.size() << " parameters but was provided 0";
+  if (p.first.size() != 0)
+  {
+    std::stringstream ss;
+    ss << "type constructor arity is wrong: `" << name << "' requires "
+       << p.first.size() << " parameters but was provided 0";
+    throw Exception(ss.str());
+  }
   return p.second;
 }
 
@@ -486,9 +490,13 @@ Sort SymbolTable::Implementation::lookupType(const string& name,
                                              const vector<Sort>& params) const
 {
   std::pair<std::vector<Sort>, Sort> p = (*d_typeMap.find(name)).second;
-  Assert(p.first.size() == params.size())
-      << "type constructor arity is wrong: `" << name.c_str() << "' requires "
-      << p.first.size() << " parameters but was provided " << params.size();
+  if (p.first.size() != params.size())
+  {
+    std::stringstream ss;
+    ss << "type constructor arity is wrong: `" << name.c_str() << "' requires "
+       << p.first.size() << " parameters but was provided " << params.size();
+    throw Exception(ss.str());
+  }
   if (p.first.size() == 0)
   {
     Assert(p.second.isUninterpretedSort());

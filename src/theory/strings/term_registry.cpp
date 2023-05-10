@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Andres Noetzli, Morgan Deters
+ *   Andrew Reynolds, Andres Noetzli, Tianyi Liang
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2023 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -249,7 +249,13 @@ void TermRegistry::registerSubterms(Node n)
     if (d_registeredTerms.find(cur) == d_registeredTerms.end())
     {
       registerTermInternal(cur);
-      visit.insert(visit.end(), cur.begin(), cur.end());
+      // only traverse beneath operators belonging to strings
+      if (theory::kindToTheoryId(cur.getKind())==THEORY_STRINGS)
+      {
+        // strings does not have any closure kinds
+        Assert (!cur.isClosure());
+        visit.insert(visit.end(), cur.begin(), cur.end());
+      }
     }
   } while (!visit.empty());
 }

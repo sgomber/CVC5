@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Aina Niemetz, Mudathir Mohamed
+ *   Andrew Reynolds, Abdalrhman Mohamed, Aina Niemetz
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2023 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -508,7 +508,10 @@ Node LfscNodeConverter::mkApplyUf(Node op, const std::vector<Node>& args) const
   }
   else
   {
+    // Note that dag threshold is disabled for printing operators.
     std::stringstream ss;
+    options::ioutils::applyOutputLanguage(ss, Language::LANG_SMTLIB_V2_6);
+    options::ioutils::applyDagThresh(ss, 0);
     ss << op;
     Node opv = nm->mkRawSymbol(ss.str(), op.getType());
     aargs.push_back(opv);

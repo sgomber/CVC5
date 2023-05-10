@@ -1,10 +1,10 @@
 /* ****************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Morgan Deters, Mathias Preiner
+ *   Andrew Reynolds, Morgan Deters, Christopher L. Conway
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2023 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -410,6 +410,9 @@ command [std::unique_ptr<cvc5::parser::Command>* cmd]
   | /* get-unsat-core */
     GET_UNSAT_CORE_TOK { PARSER_STATE->checkThatLogicIsSet(); }
     { cmd->reset(new GetUnsatCoreCommand); }
+  | /* get-timeout-core */
+    GET_TIMEOUT_CORE_TOK { PARSER_STATE->checkThatLogicIsSet(); }
+    { cmd->reset(new GetTimeoutCoreCommand); }
   | /* get-difficulty */
     GET_DIFFICULTY_TOK { PARSER_STATE->checkThatLogicIsSet(); }
     { cmd->reset(new GetDifficultyCommand); }
@@ -1158,7 +1161,7 @@ datatypesDef[bool isCo,
     }
     PARSER_STATE->popScope();
     cmd->reset(new DatatypeDeclarationCommand(
-        PARSER_STATE->bindMutualDatatypeTypes(dts, true)));
+        PARSER_STATE->mkMutualDatatypeTypes(dts)));
   }
   ;
 
@@ -1381,13 +1384,10 @@ termNonVariable[cvc5::Term& expr, cvc5::Term& expr2]
           {
             f = PARSER_STATE->getVariable(name);
             type = f.getSort();
-            if (!type.isDatatypeConstructor() ||
-                !type.getDatatypeConstructorDomainSorts().empty())
+            if (!type.isDatatype())
             {
               PARSER_STATE->parseError("Must apply constructors of arity greater than 0 to arguments in pattern.");
             }
-            // make nullary constructor application
-            f = MK_TERM(cvc5::APPLY_CONSTRUCTOR, f);
           }
           else
           {
@@ -2007,6 +2007,7 @@ GET_ASSERTIONS_TOK : 'get-assertions';
 GET_PROOF_TOK : 'get-proof';
 GET_UNSAT_ASSUMPTIONS_TOK : 'get-unsat-assumptions';
 GET_UNSAT_CORE_TOK : 'get-unsat-core';
+GET_TIMEOUT_CORE_TOK : 'get-timeout-core';
 GET_DIFFICULTY_TOK : 'get-difficulty';
 GET_LEARNED_LITERALS_TOK : 'get-learned-literals';
 EXIT_TOK : 'exit';

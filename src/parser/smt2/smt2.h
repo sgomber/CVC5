@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Andres Noetzli, Mathias Preiner
+ *   Andrew Reynolds, Andres Noetzli, Morgan Deters
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2023 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -449,9 +449,13 @@ class Smt2State : public ParserState
    */
   Term mkAnd(const std::vector<Term>& es) const;
   /**
-   * Is term t a constant integer?
+   * @return True if term t an integer value.
    */
   static bool isConstInt(const Term& t);
+  /**
+   * @return True if term t is a bit-vector value.
+   */
+  static bool isConstBv(const Term& t);
 
   /** Are we parsing a sygus file? */
   bool d_isSygus;

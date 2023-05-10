@@ -1,10 +1,10 @@
 ###############################################################################
 # Top contributors (to current version):
-#   Mathias Preiner, Andrew Reynolds, Gereon Kremer
+#   Andrew Reynolds, Mathias Preiner, Gereon Kremer
 #
 # This file is part of the cvc5 project.
 #
-# Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+# Copyright (c) 2009-2023 by the authors listed in the file AUTHORS
 # in the top-level source directory and their institutional affiliations.
 # All rights reserved.  See the file COPYING in the top-level source
 # directory for licensing information.
@@ -348,6 +348,8 @@ libcvc5_add_sources(
   smt/sygus_solver.h
   smt/term_formula_removal.cpp
   smt/term_formula_removal.h
+  smt/timeout_core_manager.cpp
+  smt/timeout_core_manager.h
   smt/unsat_core_manager.cpp
   smt/unsat_core_manager.h
   smt/witness_form.cpp

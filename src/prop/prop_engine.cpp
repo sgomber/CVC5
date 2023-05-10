@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Haniel Barbosa, Mathias Preiner
+ *   Andrew Reynolds, Haniel Barbosa, Morgan Deters
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2023 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -184,7 +184,7 @@ void PropEngine::assertLemma(TrustNode tlemma, theory::LemmaProperty p)
   TrustNode tplemma = d_theoryProxy->preprocessLemma(tlemma, ppLemmas);
 
   // do final checks on the lemmas we are about to send
-  if (isProofEnabled()
+  if (d_env.isTheoryProofProducing()
       && options().proof.proofCheck == options::ProofCheckMode::EAGER)
   {
     Assert(tplemma.getGenerator() != nullptr);
