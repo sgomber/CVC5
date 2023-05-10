@@ -41,7 +41,6 @@
 #include "theory/trust_substitutions.h"
 #include "theory/uf/equality_engine.h"
 #include "theory/valuation.h"
-#include "theory/conflict_processor.h"
 #include "util/hash.h"
 #include "util/statistics_stats.h"
 

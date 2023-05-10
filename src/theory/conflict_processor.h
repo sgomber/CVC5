@@ -19,8 +19,8 @@
 #define CVC5__THEORY__CONFLICT_PROCESSOR_H
 
 #include "expr/node.h"
-#include "smt/env_obj.h"
 #include "proof/trust_node.h"
+#include "smt/env_obj.h"
 
 namespace cvc5::internal {
 
@@ -33,14 +33,14 @@ class ConflictProcessor : protected EnvObj
  public:
   ConflictProcessor(Env& env, TheoryEngine* te);
   ~ConflictProcessor() {}
-  
+
   TrustNode processConflict(const TrustNode& conflict);
 
  private:
   TheoryEngine* d_engine;
 };
 
-}
+}  // namespace theory
 }  // namespace cvc5::internal
 
 #endif /* CVC5__ASSIGNER_H */

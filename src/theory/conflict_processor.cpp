@@ -18,13 +18,15 @@
 namespace cvc5::internal {
 namespace theory {
 
-  ConflictProcessor::ConflictProcessor(Env& env, TheoryEngine* te) : EnvObj(env), d_engine(te) {}
-  
-  TrustNode ConflictProcessor::processConflict(const TrustNode& conflict)
-  {
-    return conflict;
-  }
-
+ConflictProcessor::ConflictProcessor(Env& env, TheoryEngine* te)
+    : EnvObj(env), d_engine(te)
+{
 }
-}  // namespace cvc5::internal
 
+TrustNode ConflictProcessor::processConflict(const TrustNode& conflict)
+{
+  return conflict;
+}
+
+}  // namespace theory
+}  // namespace cvc5::internal
