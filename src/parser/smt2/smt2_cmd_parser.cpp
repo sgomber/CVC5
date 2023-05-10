@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2023 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -135,8 +135,8 @@ std::unique_ptr<Command> Smt2CmdParser::parseNextCommand()
       // parse <datatype_dec>
       std::vector<DatatypeDecl> dts =
           d_tparser.parseDatatypesDef(isCo, dnames, arities);
-      cmd.reset(new DatatypeDeclarationCommand(
-          d_state.bindMutualDatatypeTypes(dts, true)));
+      cmd.reset(
+          new DatatypeDeclarationCommand(d_state.mkMutualDatatypeTypes(dts)));
     }
     break;
     // multiple datatype
@@ -169,8 +169,8 @@ std::unique_ptr<Command> Smt2CmdParser::parseNextCommand()
       std::vector<DatatypeDecl> dts =
           d_tparser.parseDatatypesDef(isCo, dnames, arities);
       d_lex.eatToken(Token::RPAREN_TOK);
-      cmd.reset(new DatatypeDeclarationCommand(
-          d_state.bindMutualDatatypeTypes(dts, true)));
+      cmd.reset(
+          new DatatypeDeclarationCommand(d_state.mkMutualDatatypeTypes(dts)));
     }
     break;
     // (declare-fun <symbol> (<sort>∗) <sort>)
@@ -562,6 +562,13 @@ std::unique_ptr<Command> Smt2CmdParser::parseNextCommand()
       cmd.reset(new GetQuantifierEliminationCommand(t, isFull));
     }
     break;
+    // (get-timeout-core)
+    case Token::GET_TIMEOUT_CORE_TOK:
+    {
+      d_state.checkThatLogicIsSet();
+      cmd.reset(new GetTimeoutCoreCommand);
+    }
+    break;
     // (get-unsat-assumptions)
     case Token::GET_UNSAT_ASSUMPTIONS_TOK:
     {
@@ -686,6 +693,15 @@ std::unique_ptr<Command> Smt2CmdParser::parseNextCommand()
       std::string key = d_tparser.parseKeyword();
       Term sexpr = d_tparser.parseSymbolicExpr();
       std::string ss = sexprToString(sexpr);
+      // special case: for channel settings, we are expected to parse e.g.
+      // `"stdin"` which should be treated as `stdin`
+      // Note we could consider a more general solution where knowing whether
+      // this special case holds can be queried via OptionInfo.
+      if (key == "diagnostic-output-channel" || key == "regular-output-channel"
+          || key == "in" || key == "out")
+      {
+        ss = d_state.stripQuotes(ss);
+      }
       cmd.reset(new SetOptionCommand(key, ss));
       // Ugly that this changes the state of the parser; but
       // global-declarations affects parsing, so we can't hold off

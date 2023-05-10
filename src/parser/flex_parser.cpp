@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2023 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -17,6 +17,7 @@
 
 #include "base/check.h"
 #include "base/output.h"
+#include "parser/api/cpp/command.h"
 #include "parser/flex_lexer.h"
 #include "parser/parser_exception.h"
 #include "parser/smt2/smt2_parser.h"
@@ -65,15 +66,18 @@ void FlexParser::unexpectedEOF(const std::string& msg)
   d_lex->parseError(msg, true);
 }
 
-void FlexParser::preemptCommand(Command* cmd) { d_commandQueue.push_back(cmd); }
+void FlexParser::preemptCommand(std::unique_ptr<Command> cmd)
+{
+  d_commandQueue.push_back(std::move(cmd));
+}
 
-Command* FlexParser::nextCommand()
+std::unique_ptr<Command> FlexParser::nextCommand()
 {
   Trace("parser") << "nextCommand()" << std::endl;
-  Command* cmd = nullptr;
+  std::unique_ptr<Command> cmd;
   if (!d_commandQueue.empty())
   {
-    cmd = d_commandQueue.front();
+    cmd = std::move(d_commandQueue.front());
     d_commandQueue.pop_front();
     setDone(cmd == nullptr);
   }
@@ -82,8 +86,8 @@ Command* FlexParser::nextCommand()
     try
     {
       cmd = parseNextCommand();
-      d_commandQueue.push_back(cmd);
-      cmd = d_commandQueue.front();
+      d_commandQueue.push_back(std::move(cmd));
+      cmd = std::move(d_commandQueue.front());
       d_commandQueue.pop_front();
       setDone(cmd == nullptr);
     }
@@ -98,7 +102,7 @@ Command* FlexParser::nextCommand()
       parseError(e.what());
     }
   }
-  Trace("parser") << "nextCommand() => " << cmd << std::endl;
+  Trace("parser") << "nextCommand() => " << cmd.get() << std::endl;
   return cmd;
 }
 
@@ -142,7 +146,11 @@ std::unique_ptr<FlexParser> FlexParser::mkFlexParser(const std::string& lang,
   else if (lang == "LANG_TPTP")
   {
     // TPTP is not supported
-    Unhandled() << "The TPTP input language is not supported with flex.";
+    Unhandled() << "the TPTP input language is not supported with flex.";
+  }
+  else
+  {
+    Unhandled() << "unable to detect input file format, try --lang";
   }
   return parser;
 }

@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Mathias Preiner, Andres Noetzli, Andrew Reynolds
+ *   Mathias Preiner, Andrew Reynolds, Andres Noetzli
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2022 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2023 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -248,8 +248,7 @@ bool BVSolverBitblast::preNotifyFact(
    * If this is the case we can assert `fact` to the SAT solver instead of
    * using assumptions.
    */
-  if (options().bv.bvAssertInput && val.isSatLiteral(fact)
-      && val.getDecisionLevel(fact) == 0 && val.getIntroLevel(fact) == 0)
+  if (options().bv.bvAssertInput && val.isFixed(fact))
   {
     Assert(!val.isDecision(fact));
     d_bbInputFacts.push_back(fact);
