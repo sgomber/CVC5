@@ -70,11 +70,12 @@ Node AssignerInfer::convertToAssigner(std::unordered_map<TNode, Node> visited,
       k = cur.getKind();
       if (k == kind::OR)
       {
-        // if assigner, register to node manager, and replace by its assigner variable
+        // if assigner, register to node manager, and replace by its assigner
+        // variable
         if (Assigner::isAssigner(cur))
         {
-          Assigner * a = nm->registerAssigner(cur);
-          Assert (a!=nullptr);
+          Assigner* a = nm->registerAssigner(cur);
+          Assert(a != nullptr);
           Node lit = a->getSatLiteral();
           visited[cur] = lit;
           Node lem = nm->mkNode(kind::IMPLIES, lit, cur);

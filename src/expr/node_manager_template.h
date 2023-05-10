@@ -736,9 +736,10 @@ class NodeManager
 
   /** Register assigner */
   Assigner* registerAssigner(const Node& n);
-  
+
   /** Register assigner */
   std::vector<Assigner*> getAssignersFor(const Node& lit);
+
  private:
   /**
    * Make a set of types representing the given datatypes, which may
@@ -969,7 +970,7 @@ class NodeManager
   /** The bound variable manager */
   std::unique_ptr<BoundVarManager> d_bvManager;
   /** Assigner db */
-  std::unique_ptr<AssignerDb> d_assignerDb; 
+  std::unique_ptr<AssignerDb> d_assignerDb;
 
   NodeValuePool d_nodeValuePool;
 

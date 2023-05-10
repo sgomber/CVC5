@@ -195,8 +195,9 @@ void AssignerDb::registerLitsForAssigner(const Node& n, Assigner* a)
 }
 const std::vector<Assigner*>& AssignerDb::getAssignersFor(const Node& lit) const
 {
-  std::map<Node, std::vector<Assigner*>>::const_iterator it = d_litsToAssigners.find(lit);
-  if (it==d_litsToAssigners.end())
+  std::map<Node, std::vector<Assigner*>>::const_iterator it =
+      d_litsToAssigners.find(lit);
+  if (it == d_litsToAssigners.end())
   {
     return d_emptyVec;
   }

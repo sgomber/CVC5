@@ -219,7 +219,7 @@ bool Valuation::isRelevant(Node lit) const { return d_engine->isRelevant(lit); }
 std::vector<Assigner*> Valuation::getActiveAssigners() const
 {
   std::vector<Assigner*> as;
-  
+
   return as;
 }
 
