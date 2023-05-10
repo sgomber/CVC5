@@ -25,6 +25,7 @@
 #include "base/map_util.h"
 #include "base/output.h"
 #include "preprocessing/passes/ackermann.h"
+#include "preprocessing/passes/assigner_infer.h"
 #include "preprocessing/passes/apply_substs.h"
 #include "preprocessing/passes/bool_to_bv.h"
 #include "preprocessing/passes/bv_eager_atoms.h"
@@ -154,6 +155,7 @@ PreprocessingPassRegistry::PreprocessingPassRegistry()
   registerPassInfo("fun-def-fmf", callCtor<FunDefFmf>);
   registerPassInfo("theory-pp-static-rewrite", callCtor<TheoryPpStaticRewrite>);
   registerPassInfo("strings-eager-pp", callCtor<StringsEagerPp>);
+  registerPassInfo("assigner-infer", callCtor<AssignerInfer>);
 }
 
 }  // namespace preprocessing

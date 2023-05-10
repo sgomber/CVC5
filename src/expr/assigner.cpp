@@ -15,11 +15,20 @@
 
 #include "expr/assigner.h"
 
+#include "expr/skolem_manager.h"
+
 using namespace cvc5::internal::kind;
 
 namespace cvc5::internal {
 
-Assigner::Assigner(const Node& n) { d_valid = init(n); }
+Assigner::Assigner(const Node& n) : d_node(n) { 
+  d_valid = init(n);
+  d_satLiteral = getSatLiteral(n);
+}
+
+const Node& Assigner::getNode() const { return d_node; }
+
+const Node& Assigner::getSatLiteral() const { return d_satLiteral; }
 
 bool Assigner::isValid() const { return d_valid; }
 
@@ -42,6 +51,14 @@ bool Assigner::isAssigner(const Node& n)
   std::vector<Node> literals;
   return initInternal(n, vars, varIndex, assignments, literals);
 }
+
+Node Assigner::getSatLiteral(const Node& n)
+{
+  NodeManager * nm = NodeManager::currentNM();
+  SkolemManager * skm = nm->getSkolemManager();
+  return skm->mkSkolemFunction(SkolemFunId::ASSIGNER, nm->booleanType(), n);
+}
+
 bool Assigner::init(const Node& n)
 {
   return initInternal(n, d_vars, d_varIndex, d_assignments, d_literals);
@@ -52,7 +69,10 @@ bool Assigner::initInternal(const Node& n,
                             std::map<Node, std::vector<Node>>& assignments,
                             std::vector<Node>& literals)
 {
-  Assert(n.getKind() == OR);
+  if (n.getKind() != OR)
+  {
+    return false;
+  }
   size_t nargs = n.getNumChildren();
   // split to cubes
   std::vector<std::vector<Node>> cubes;
@@ -155,12 +175,22 @@ Assigner* AssignerDb::getAssigner(const Node& n)
     Assigner* a = d_db[n].get();
     if (a->isValid())
     {
+      registerAssigner(n, a);
       return a;
     }
     d_db.erase(n);
     return nullptr;
   }
   return it->second.get();
+}
+
+void AssignerDb::registerAssigner(const Node& n, Assigner * a)
+{
+  const std::vector<Node>& lits = a->getLiterals();
+  for (const Node& l : lits)
+  {
+    d_litsToAssigners[l].push_back(a);
+  }
 }
 
 }  // namespace cvc5::internal

@@ -219,7 +219,9 @@ enum class SkolemFunId
   /** the "none" term, for instantiation evaluation */
   IEVAL_NONE,
   /** the "some" term, for instantiation evaluation */
-  IEVAL_SOME
+  IEVAL_SOME,
+  /** assigner */
+  ASSIGNER
 };
 /** Converts a skolem function name to a string. */
 const char* toString(SkolemFunId id);

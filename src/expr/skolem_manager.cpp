@@ -111,6 +111,7 @@ const char* toString(SkolemFunId id)
     case SkolemFunId::HO_TYPE_MATCH_PRED: return "HO_TYPE_MATCH_PRED";
     case SkolemFunId::IEVAL_NONE: return "IEVAL_NONE";
     case SkolemFunId::IEVAL_SOME: return "IEVAL_SOME";
+    case SkolemFunId::ASSIGNER: return "ASSIGNER";
     default: return "?";
   }
 }
