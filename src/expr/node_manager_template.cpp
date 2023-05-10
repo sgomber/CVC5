@@ -1392,9 +1392,4 @@ Node NodeManager::mkRealAlgebraicNumber(const RealAlgebraicNumber& ran)
   return mkNode(Kind::REAL_ALGEBRAIC_NUMBER, inner);
 }
 
-Assigner* NodeManager::getAssigner(const Node& n)
-{
-  return d_assignerDb->getAssigner(n);
-}
-
 }  // namespace cvc5::internal

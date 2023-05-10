@@ -280,6 +280,11 @@ bool ProcessAssertions::apply(AssertionPipeline& ap)
     applyPass("learned-rewrite", ap);
   }
 
+  if (options().smt.assignerInfer)
+  {
+    applyPass("assigner-infer", ap);
+  }
+  
   if (options().smt.earlyIteRemoval)
   {
     d_slvStats.d_numAssertionsPre += ap.size();

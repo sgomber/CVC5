@@ -47,6 +47,12 @@ PreprocessingPassResult AssignerInfer::applyInternal(
       assertionsToPreprocess->replace(i, aa);
     }
   }
+  if (!lemmas.empty())
+  {
+    NodeManager* nm = NodeManager::currentNM();
+    Node newAssertion = nm->mkAnd(lemmas);
+    assertionsToPreprocess->push_back(newAssertion);
+  }
   return PreprocessingPassResult::NO_CONFLICT;
 }
 
