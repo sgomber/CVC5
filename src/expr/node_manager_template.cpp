@@ -19,9 +19,9 @@
 
 #include "base/check.h"
 #include "base/listener.h"
+#include "expr/assigner.h"
 #include "expr/attribute.h"
 #include "expr/bound_var_manager.h"
-#include "expr/assigner.h"
 #include "expr/dtype.h"
 #include "expr/dtype_cons.h"
 #include "expr/metakind.h"
@@ -1392,7 +1392,6 @@ Node NodeManager::mkRealAlgebraicNumber(const RealAlgebraicNumber& ran)
   }
   return mkNode(Kind::REAL_ALGEBRAIC_NUMBER, inner);
 }
-
 
 Assigner* NodeManager::getAssigner(const Node& n)
 {
