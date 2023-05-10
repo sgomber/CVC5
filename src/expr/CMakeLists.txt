@@ -21,6 +21,8 @@ libcvc5_add_sources(
   array_store_all.h
   ascription_type.cpp
   ascription_type.h
+  assigner.cpp
+  assigner.h
   attribute.h
   attribute.cpp
   attribute_internals.h
