@@ -35,7 +35,6 @@ class Assigner
   const std::vector<Node>& getVariables() const;
   const std::vector<Node>& getAssignments(const Node& v) const;
   const std::vector<Node>& getLiterals() const;
-
  private:
   bool init(const Node& n);
   bool isAssignEq(const Node& n, Node& v, Node& c);
@@ -52,9 +51,7 @@ class AssignerDb
  public:
   AssignerDb();
   ~AssignerDb() {}
-  bool registerToDb(const Node& n);
-  const Assigner* getAssigner(const Node& n) const;
-
+  Assigner* getAssigner(const Node& n);
  private:
   std::map<Node, std::unique_ptr<Assigner>> d_db;
 };

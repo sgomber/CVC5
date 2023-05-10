@@ -46,13 +46,18 @@ bool Assigner::init(const Node& n)
   {
     const Node& nc = n[i];
     std::vector<Node>& cc = cubes[i];
-    if (nc.getKind() == AND)
+    Kind nck = nc.getKind();
+    if (nck == AND)
     {
       cc.insert(cc.end(), nc.begin(), nc.end());
     }
-    else
+    else if (nck==EQUAL)
     {
       cc.push_back(nc);
+    }
+    else
+    {
+      return false;
     }
     if (i == 0)
     {
@@ -125,22 +130,21 @@ bool Assigner::isAssignEq(const Node& n, Node& v, Node& c)
 
 AssignerDb::AssignerDb() {}
 
-bool AssignerDb::registerToDb(const Node& n)
+Assigner* AssignerDb::getAssigner(const Node& n)
 {
   std::map<Node, std::unique_ptr<Assigner>>::iterator it = d_db.find(n);
   if (it == d_db.end())
   {
     d_db[n].reset(new Assigner(n));
-    return d_db[n]->isValid();
+    a = d_db[n].get();
+    if (a->isValid())
+    {
+      return a;
+    }
+    d_db.erase(n);
+    return nullptr;
   }
-  return it->second->isValid();
-}
-
-const Assigner* AssignerDb::getAssigner(const Node& n) const
-{
-  std::map<Node, std::unique_ptr<Assigner>>::const_iterator it = d_db.find(n);
-  Assert(it != d_db.end());
-  return it->second.get();
+  return it->second;
 }
 
 }  // namespace cvc5::internal
