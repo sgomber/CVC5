@@ -34,7 +34,22 @@ const std::vector<Node>& Assigner::getAssignments(const Node& v) const
 
 const std::vector<Node>& Assigner::getLiterals() const { return d_literals; }
 
+bool Assigner::isAssigner(const Node& n){
+std::vector<Node> vars;
+std::map<Node, size_t> varIndex;
+std::map<Node, std::vector<Node>> assignments;
+std::vector<Node> literals;
+return initInternal(n, vars, varIndex, assignments, literals);
+}
 bool Assigner::init(const Node& n)
+{
+  return initInternal(n, d_vars, d_varIndex, d_assignments, d_literals);
+}
+bool Assigner::initInternal(const Node& n,
+std::vector<Node>& vars,
+std::map<Node, size_t>& varIndex,
+std::map<Node, std::vector<Node>>& assignments,
+std::vector<Node>& literals)
 {
   Assert(n.getKind() == OR);
   size_t nargs = n.getNumChildren();
@@ -86,25 +101,25 @@ bool Assigner::init(const Node& n)
       if (i == 0)
       {
         // all variables in each cube must be unique
-        if (d_varIndex.find(vtmp) != d_varIndex.end())
+        if (varIndex.find(vtmp) != varIndex.end())
         {
           return false;
         }
-        d_varIndex[vtmp] = d_vars.size();
-        d_vars.push_back(vtmp);
+        varIndex[vtmp] = vars.size();
+        vars.push_back(vtmp);
       }
       else
       {
         // must be a previous variable not used already this iteration
-        if (d_varIndex.find(vtmp) == d_varIndex.end()
+        if (varIndex.find(vtmp) == varIndex.end()
             || varUsed.find(vtmp) != varUsed.end())
         {
           return false;
         }
         varUsed.insert(vtmp);
       }
-      d_assignments[vtmp].push_back(ctmp);
-      d_literals.push_back(eq);
+      assignments[vtmp].push_back(ctmp);
+      literals.push_back(eq);
     }
   }
   return true;
@@ -136,7 +151,7 @@ Assigner* AssignerDb::getAssigner(const Node& n)
   if (it == d_db.end())
   {
     d_db[n].reset(new Assigner(n));
-    a = d_db[n].get();
+    Assigner * a = d_db[n].get();
     if (a->isValid())
     {
       return a;
@@ -144,7 +159,7 @@ Assigner* AssignerDb::getAssigner(const Node& n)
     d_db.erase(n);
     return nullptr;
   }
-  return it->second;
+  return it->second.get();
 }
 
 }  // namespace cvc5::internal
