@@ -796,9 +796,9 @@ std::vector<Assigner*> TheoryEngine::getActiveAssigners(const Node& lit) const
   std::vector<Assigner*> assigners = d_env.getAssignersFor(lit);
   for (Assigner* a : ret)
   {
-    const Node& lit = a->getSatLiteral();
+    const Node& l = a->getSatLiteral();
     bool value;
-    if (hasSatValue(lit, value) && value)
+    if (hasSatValue(l, value) && value)
     {
       ret.push_back(a);
     }

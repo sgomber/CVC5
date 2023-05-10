@@ -647,6 +647,8 @@ libcvc5_add_sources(
   theory/care_graph.h
   theory/care_pair_argument_callback.cpp
   theory/care_pair_argument_callback.cpp
+  theory/conflict_processor.cpp
+  theory/conflict_processor.h
   theory/combination_care_graph.cpp
   theory/combination_care_graph.h
   theory/combination_engine.cpp

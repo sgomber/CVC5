@@ -28,6 +28,7 @@
 #include "proof/trust_node.h"
 #include "smt/env_obj.h"
 #include "theory/atom_requests.h"
+#include "theory/conflict_processor.h"
 #include "theory/engine_output_channel.h"
 #include "theory/interrupted.h"
 #include "theory/partition_generator.h"
@@ -655,7 +656,7 @@ class TheoryEngine : protected EnvObj
   /** The list of modules */
   std::vector<theory::TheoryEngineModule*> d_modules;
   /** Conflict processor */
-  ConflictProcessor d_cp;
+  theory::ConflictProcessor d_cp;
 }; /* class TheoryEngine */
 
 }  // namespace cvc5::internal
