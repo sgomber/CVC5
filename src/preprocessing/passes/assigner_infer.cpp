@@ -74,7 +74,7 @@ Node AssignerInfer::convertToAssigner(std::unordered_map<TNode, Node> visited,
         // variable
         if (Assigner::isAssigner(cur))
         {
-          Assigner* a = nm->registerAssigner(cur);
+          Assigner* a = d_env.registerAssigner(cur);
           Assert(a != nullptr);
           Node lit = a->getSatLiteral();
           visited[cur] = lit;

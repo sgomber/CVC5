@@ -20,6 +20,7 @@
 #include "base/map_util.h"
 #include "decision/decision_engine.h"
 #include "expr/attribute.h"
+#include "expr/assigner.h"
 #include "expr/node_builder.h"
 #include "expr/node_visitor.h"
 #include "options/parallel_options.h"
@@ -788,6 +789,22 @@ bool TheoryEngine::isRelevant(Node lit) const
   return true;
 }
 
+std::vector<Assigner*> TheoryEngine::getActiveAssigners(const Node& lit) const
+{
+  std::vector<Assigner*> ret;
+  std::vector<Assigner*> assigners = d_env.getAssignersFor(lit);
+  for (Assigner * a : ret)
+  {
+    const Node& lit = a->getSatLiteral();
+    bool value;
+    if (hasSatValue(lit, value) && value)
+    {
+      ret.push_back(a);
+    }
+  }
+  return ret;
+}
+  
 theory::Theory::PPAssertStatus TheoryEngine::solve(
     TrustNode tliteral, TrustSubstitutionMap& substitutionOut)
 {

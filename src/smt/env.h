@@ -39,6 +39,8 @@ class StatisticsRegistry;
 class ProofNodeManager;
 class Printer;
 class ResourceManager;
+class AssignerDb;
+class Assigner;
 namespace options {
 enum class OutputTag;
 }
@@ -259,9 +261,11 @@ class Env
   /** get the separation logic data type */
   TypeNode getSepDataType() const;
 
-  /** Get assigner */
-  Assigner* getAssigner(const Node& n);
+  /** Register assigner */
+  Assigner* registerAssigner(const Node& n);
 
+  /** Register assigner */
+  std::vector<Assigner*> getAssignersFor(const Node& lit);
  private:
   /* Private initialization ------------------------------------------------- */
 
@@ -329,6 +333,8 @@ class Env
   /** The separation logic location and data types */
   TypeNode d_sepLocType;
   TypeNode d_sepDataType;
+  /** Assigner db */
+  std::unique_ptr<AssignerDb> d_assignerDb;
 }; /* class Env */
 
 }  // namespace cvc5::internal

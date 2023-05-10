@@ -29,13 +29,13 @@
 namespace cvc5::internal {
 
 class TheoryEngine;
+class Assigner;
 
 namespace theory {
 
 struct Assertion;
 class TheoryModel;
 class SortInference;
-class Assigner;
 
 /**
  * The status of an equality in the current context.
@@ -221,7 +221,7 @@ public:
   /**
    * Get active assigners
    */
-  std::vector<Assigner*> getActiveAssigners() const;
+  std::vector<Assigner*> getActiveAssigners(const Node& lit) const;
   //------------------------------------------- access methods for assertions
   /**
    * The following methods are intended only to be used in limited use cases,

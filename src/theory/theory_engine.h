@@ -225,6 +225,10 @@ class TheoryEngine : protected EnvObj
    */
   bool isRelevant(Node lit) const;
   /**
+   * Get active assigners
+   */
+  std::vector<Assigner*> getActiveAssigners(const Node& lit) const;
+  /**
    * Returns true if the node has a current SAT assignment. If yes, the
    * argument "value" is set to its value.
    *

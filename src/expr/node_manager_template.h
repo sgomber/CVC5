@@ -43,8 +43,6 @@ using Record = std::vector<std::pair<std::string, TypeNode>>;
 class ResourceManager;
 class SkolemManager;
 class BoundVarManager;
-class AssignerDb;
-class Assigner;
 
 class DType;
 class Oracle;
@@ -734,12 +732,6 @@ class NodeManager
    */
   const Oracle& getOracleFor(const Node& n) const;
 
-  /** Register assigner */
-  Assigner* registerAssigner(const Node& n);
-
-  /** Register assigner */
-  std::vector<Assigner*> getAssignersFor(const Node& lit);
-
  private:
   /**
    * Make a set of types representing the given datatypes, which may
@@ -969,8 +961,6 @@ class NodeManager
   std::unique_ptr<SkolemManager> d_skManager;
   /** The bound variable manager */
   std::unique_ptr<BoundVarManager> d_bvManager;
-  /** Assigner db */
-  std::unique_ptr<AssignerDb> d_assignerDb;
 
   NodeValuePool d_nodeValuePool;
 

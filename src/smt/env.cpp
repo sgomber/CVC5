@@ -18,6 +18,7 @@
 
 #include "context/context.h"
 #include "expr/node.h"
+#include "expr/assigner.h"
 #include "options/base_options.h"
 #include "options/printer_options.h"
 #include "options/quantifiers_options.h"
@@ -49,7 +50,8 @@ Env::Env(const Options* opts)
       d_statisticsRegistry(std::make_unique<StatisticsRegistry>(*this)),
       d_options(),
       d_resourceManager(),
-      d_uninterpretedSortOwner(theory::THEORY_UF)
+      d_uninterpretedSortOwner(theory::THEORY_UF),
+      d_assignerDb(new AssignerDb)
 {
   if (opts != nullptr)
   {
@@ -262,6 +264,17 @@ void Env::declareSepHeap(TypeNode locT, TypeNode dataT)
   // remember the types we have set
   d_sepLocType = locT;
   d_sepDataType = dataT;
+}
+
+
+Assigner* Env::registerAssigner(const Node& n)
+{
+  return d_assignerDb->registerAssigner(n);
+}
+
+std::vector<Assigner*> Env::getAssignersFor(const Node& lit)
+{
+  return d_assignerDb->getAssignersFor(lit);
 }
 
 }  // namespace cvc5::internal
