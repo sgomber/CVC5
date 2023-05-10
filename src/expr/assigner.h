@@ -20,6 +20,7 @@
 
 #include <iosfwd>
 #include <memory>
+
 #include "expr/node.h"
 
 namespace cvc5::internal {
@@ -34,7 +35,8 @@ class Assigner
   const std::vector<Node>& getVariables() const;
   const std::vector<std::vector<Node>>& getAssignments() const;
   const std::vector<Node>& getLiterals() const;
-private:
+
+ private:
   bool d_valid;
   std::vector<Node> d_vars;
   std::vector<std::vector<Node>> d_assignments;
@@ -43,11 +45,12 @@ private:
 
 class AssignerDb
 {
-public:
-  AssignerDb(){}
+ public:
+  AssignerDb() {}
   bool registerToDb(const Node& n);
   const Assigner* getAssigner() const;
-private:
+
+ private:
   std::map<Node, std::unique_ptr<Assigner>> d_db;
 };
 

@@ -21,19 +21,21 @@ Assigner::Assigner(const Node& n) {}
 ~Assigner() {}
 bool Assigner::isValid() const { return d_valid; }
 const std::vector<Node>& Assigner::getVariables() const { return d_vars; }
-const std::vector<std::vector<Node>>& Assigner::getAssignments() const { return d_assignments; }
+const std::vector<std::vector<Node>>& Assigner::getAssignments() const
+{
+  return d_assignments;
+}
 const std::vector<Node>& Assigner::getLiterals() const { return d_literals; }
 
-AssignerDb::AssignerDb(){}
+AssignerDb::AssignerDb() {}
 
 bool AssignerDb::registerToDb(const Node& n)
 {
   std::map<Node, std::unique_ptr<Assigner>>::iterator it = d_db.find(n);
-  if (it==d_db.end())
+  if (it == d_db.end())
   {
     d_db[n].init(n);
-    d_db[n].reset(
-        new Assigner(n));
+    d_db[n].reset(new Assigner(n));
     return d_db[n]->isValid();
   }
   return it->second->isValid();
@@ -42,10 +44,8 @@ bool AssignerDb::registerToDb(const Node& n)
 const Assigner* AssignerDb::getAssigner() const
 {
   std::map<Node, std::unique_ptr<Assigner>>::const_iterator it = d_db.find(n);
-  Assert (it!=d_db.end());
+  Assert(it != d_db.end());
   return it->second.get();
 }
 
-
 }  // namespace cvc5::internal
-
