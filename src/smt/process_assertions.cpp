@@ -280,6 +280,7 @@ bool ProcessAssertions::apply(AssertionPipeline& ap)
     applyPass("learned-rewrite", ap);
   }
 
+  // infer assigner subformulas if we attempt to generalize conflicts
   options::ConflictProcessMode cpmode = options().theory.conflictProcessMode;
   if (cpmode == options::ConflictProcessMode::GENERALIZE_ANY
       || cpmode == options::ConflictProcessMode::GENERALIZE_MAJORITY
