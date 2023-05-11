@@ -264,6 +264,9 @@ class Env
   /** Register assigner */
   Assigner* registerAssigner(const Node& n);
 
+  /** Are there any assigners allocated? */
+  bool hasAssigners() const;
+  
   /** Register assigner */
   std::vector<Assigner*> getAssignersFor(const Node& lit);
 

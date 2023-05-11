@@ -226,7 +226,7 @@ class TheoryEngine : protected EnvObj
    */
   bool isRelevant(Node lit) const;
   /**
-   * Get active assigners
+   * Get active assigners for lit
    */
   std::vector<Assigner*> getActiveAssigners(const Node& lit) const;
   /**
@@ -655,7 +655,7 @@ class TheoryEngine : protected EnvObj
   /** The list of modules */
   std::vector<theory::TheoryEngineModule*> d_modules;
   /** Conflict processor */
-  theory::ConflictProcessor d_cp;
+  std::unique_ptr<theory::ConflictProcessor> d_cp;
 }; /* class TheoryEngine */
 
 }  // namespace cvc5::internal

@@ -248,7 +248,7 @@ TheoryEngine::TheoryEngine(Env& env)
       d_interrupted(false),
       d_inPreregister(false),
       d_factsAsserted(context(), false),
-      d_cp(env, this)
+      d_cp(nullptr)
 {
   for(TheoryId theoryId = theory::THEORY_FIRST; theoryId != theory::THEORY_LAST;
       ++ theoryId)
@@ -260,6 +260,10 @@ TheoryEngine::TheoryEngine(Env& env)
   if (options().smt.sortInference)
   {
     d_sortInfer.reset(new SortInference(env));
+  }
+  if (options().theory.conflictProcessMode!=options::ConflictProcessMode::NONE)
+  {
+    d_cp.reset(new ConflictProcessor(env, this));
   }
 
   d_true = NodeManager::currentNM()->mkConst<bool>(true);
@@ -1421,8 +1425,15 @@ void TheoryEngine::lemma(TrustNode tlemma,
          || tlemma.getKind() == TrustNodeKind::CONFLICT);
 
   // minimize or generalize conflict
-  tlemma = d_cp.processLemma(tlemma);
-
+  if (d_cp)
+  {
+    TrustNode tproc = d_cp->processLemma(tlemma);
+    if (!tproc.isNull())
+    {
+      tlemma = tproc;
+    }
+  }
+  
   // get the node
   Node node = tlemma.getNode();
   Node lemma = tlemma.getProven();

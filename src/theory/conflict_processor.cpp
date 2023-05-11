@@ -17,6 +17,7 @@
 
 #include "expr/assigner.h"
 #include "theory/theory_engine.h"
+#include "options/theory_options.h"
 
 using namespace cvc5::internal::kind;
 
@@ -28,6 +29,10 @@ ConflictProcessor::ConflictProcessor(Env& env, TheoryEngine* te)
 {
   NodeManager* nm = NodeManager::currentNM();
   d_true = nm->mkConst(true);
+  options::ConflictProcessMode mode = options().theory.conflictProcessMode;
+  Assert (mode!=options::ConflictProcessMode::NONE);
+  d_generalizeMaj = (mode == options::ConflictProcessMode::GENERALIZE_MAJORITY);
+  d_doGeneralize = (mode==options::ConflictProcessMode::GENERALIZE_ALL || d_generalizeMaj);
 }
 
 TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
@@ -46,12 +51,12 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   {
     Trace("confp") << "Simple conflict for " << lemma << std::endl;
     // NOTE: trusting that it is minimzed here
-    return lem;
+    return TrustNode::null();
   }
   // if we didn't infer a substitution, we are done
   if (s.empty())
   {
-    return lem;
+    return TrustNode::null();
   }
 
   // check if the substitution implies one of the tgtLit, if not, we are done
@@ -66,8 +71,10 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   }
   if (tgtLit.isNull())
   {
-    return lem;
+    return TrustNode::null();
   }
+  // we are minimized if there were multiple target literals and we found a
+  // single one that sufficed
   bool minimized = false;
   if (tgtLits.size()>1)
   {
@@ -75,60 +82,63 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     Trace("confp") << "Target suffices " << tgtLit << " for than one disjunct: " << lemma << std::endl;
   }
 
-  // minimize the substitution
-
   // generalize the conflict
   bool generalized = false;
-  for (std::pair<const Node, Node>& e : varToExp)
+  if (d_doGeneralize && d_env.hasAssigners())
   {
-    Node v = e.first;
-    size_t vindex = s.getIndex(v);
-    Assert(vindex < s.d_vars.size());
-    // can we generalize to an assigner?
-    std::vector<Assigner*> as = d_engine->getActiveAssigners(e.second);
-    if (as.empty())
+    for (std::pair<const Node, Node>& e : varToExp)
     {
-      continue;
-    }
-    Node prev = s.d_subs[vindex];
-    Node stgtLit = tgtLit;
-    // if we have more than one substitution, apply the others
-    if (s.size()>1)
-    {
-      s.d_subs[vindex] = v;
-      stgtLit = s.apply(tgtLit);
-    }
-    Trace("confp") << "Check substitution literal " << e.second
-                   << ", #assigners=" << as.size() << std::endl;
-    for (Assigner* a : as)
-    {
-      if (checkGeneralizes(a, v, prev, stgtLit))
+      Node v = e.first;
+      size_t vindex = s.getIndex(v);
+      Assert(vindex < s.d_vars.size());
+      // can we generalize to an assigner?
+      std::vector<Assigner*> as = d_engine->getActiveAssigners(e.second);
+      if (as.empty())
       {
-        generalized = true;
-        // update the explanation
-        varToExp[v] = a->getSatLiteral();
+        continue;
+      }
+      Node prev = s.d_subs[vindex];
+      Node stgtLit = tgtLit;
+      // if we have more than one substitution, apply the others
+      if (s.size()>1)
+      {
+        s.d_subs[vindex] = v;
+        stgtLit = s.apply(tgtLit);
+      }
+      Trace("confp") << "Check substitution literal " << e.second
+                    << ", #assigners=" << as.size() << std::endl;
+      for (Assigner* a : as)
+      {
+        Node alit = checkGeneralizes(a, v, prev, stgtLit);
+        if (!alit.isNull())
+        {
+          generalized = true;
+          // update the explanation
+          varToExp[v] = alit;
+          break;
+        }
+      }
+      if (generalized)
+      {
         break;
       }
     }
-    if (generalized)
-    {
-      break;
-    }
   }
+  Trace("confp") << "...minimized=" << minimized << ", generalized=" << generalized << std::endl;
   // if we successfully generalized
   if (minimized || generalized)
   {
     NodeManager* nm = NodeManager::currentNM();
-    std::vector<Node> ant;
+    std::vector<Node> clause;
     for (std::pair<const Node, Node>& e : varToExp)
     {
-      ant.push_back(e.second);
+      clause.push_back(e.second.negate());
     }
-    Node genLem = nm->mkNode(IMPLIES, nm->mkAnd(ant), tgtLit);
+    clause.push_back(tgtLit);
+    Node genLem = nm->mkOr(clause);
     return TrustNode::mkTrustLemma(genLem);
   }
-
-  return lem;
+  return TrustNode::null();
 }
 
 bool ConflictProcessor::decomposeLemma(const Node& lem,
@@ -216,10 +226,10 @@ bool ConflictProcessor::checkSubstitution(
   return stgtLit == d_true;
 }
 
-bool ConflictProcessor::checkGeneralizes(Assigner * a, const Node& v, const Node& s, const Node& tgtLit)
+Node ConflictProcessor::checkGeneralizes(Assigner * a, const Node& v, const Node& s, const Node& tgtLit)
 {
   std::tuple<Node, Node, Node> key(v, a->getSatLiteral(), tgtLit);
-  std::map< std::tuple<Node, Node, Node>, bool>::iterator it = d_genCache.find(key);
+  std::map< std::tuple<Node, Node, Node>, Node>::iterator it = d_genCache.find(key);
   if (it!=d_genCache.end())
   {
     return it->second;
@@ -229,6 +239,7 @@ bool ConflictProcessor::checkGeneralizes(Assigner * a, const Node& v, const Node
   const std::vector<Node>& assigns = a->getAssignments(v);
   std::unordered_set<Node> checked;
   checked.insert(s);
+  std::vector<Node> fails;
   for (const Node& ss : assigns)
   {
     if (checked.find(ss) != checked.end())
@@ -239,13 +250,33 @@ bool ConflictProcessor::checkGeneralizes(Assigner * a, const Node& v, const Node
     if (!checkSubstitution(subs, tgtLit))
     {
       Trace("confp") << "Failed for " << ss << std::endl;
-      d_genCache[key] = false;
-      return false;
+      fails.push_back(ss);
+      if (!d_generalizeMaj)
+      {
+        break;
+      }
     }
     checked.insert(ss);
   }
-  d_genCache[key] = true;
-  return true;
+  Node ret;
+  // generalize 
+  if (fails.empty() || (d_generalizeMaj && 2*fails.size()<checked.size()))
+  {
+    ret = a->getSatLiteral();
+    if (!fails.empty())
+    {
+      std::vector<Node> conj;
+      conj.push_back(ret);
+      for (const Node& f : fails)
+      {
+        conj.push_back(v.eqNode(f).notNode());
+      }
+      NodeManager* nm = NodeManager::currentNM();
+      ret = nm->mkAnd(conj);
+    }
+  }
+  d_genCache[key] = ret;
+  return ret;
 }
 
 }  // namespace theory

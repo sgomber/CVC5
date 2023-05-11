@@ -41,22 +41,25 @@ class ConflictProcessor : protected EnvObj
  private:
   TheoryEngine* d_engine;
   Node d_true;
+  bool d_doGeneralize;
+  bool d_generalizeMaj;
+  
   bool decomposeLemma(const Node& lem,
                       Subs& s,
                       std::map<Node, Node>& varToExp,
                       std::vector<TNode>& tgtLits) const;
   bool checkSubstitution(const Subs& s,
                          const Node& tgtLit) const;
-  /**
+  /** 
    * Called when checkSubstitution { v -> s }, tgtLit returns true.
    * Returns true if any assignment s' for v in a is also such that
    * checkSubstitution { v -> s' } tgtLit returns true.
    */
-  bool checkGeneralizes(Assigner * a, const Node& v, const Node& s, const Node& tgtLit);
+  Node checkGeneralizes(Assigner * a, const Node& v, const Node& s, const Node& tgtLit);
   /**
    * Cache of checkGeneralizes, storing (a->getSatLiteral, v, tgtLit)
    */
-  std::map< std::tuple<Node, Node, Node>, bool> d_genCache;
+  std::map< std::tuple<Node, Node, Node>, Node> d_genCache;
 };
 
 }  // namespace theory
