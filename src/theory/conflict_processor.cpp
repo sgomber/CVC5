@@ -32,8 +32,9 @@ ConflictProcessor::ConflictProcessor(Env& env, TheoryEngine* te)
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   Assert(mode != options::ConflictProcessMode::NONE);
   d_generalizeMaj = (mode == options::ConflictProcessMode::GENERALIZE_MAJORITY);
+  d_generalizeAny = (mode == options::ConflictProcessMode::GENERALIZE_ANY);
   d_doGeneralize =
-      (mode == options::ConflictProcessMode::GENERALIZE_ALL || d_generalizeMaj);
+      (mode == options::ConflictProcessMode::GENERALIZE_ALL || d_generalizeMaj || d_generalizeAny);
 }
 
 TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
@@ -280,7 +281,7 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
   }
   Node ret;
   // generalize
-  if (fails.empty() || (d_generalizeMaj && 2 * fails.size() < checked.size()))
+  if (fails.empty() || (d_generalizeMaj && 2 * fails.size() < checked.size()) || (d_generalizeAny && fails.size()+1<checked.size()))
   {
     isConflict = isConflict && fails.empty();
     Trace("confp") << "...generalize with "  << fails.size() << " / " << checked.size() << " literals from assigner" << std::endl;

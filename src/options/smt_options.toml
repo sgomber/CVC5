@@ -42,14 +42,6 @@ name   = "SMT Layer"
   help       = "use static learning (on by default)"
 
 [[option]]
-  name       = "assignerInfer"
-  category   = "regular"
-  long       = "assigner-infer"
-  type       = "bool"
-  default    = "false"
-  help       = "infer assigner predicates during preprocessing"
-
-[[option]]
   name       = "learnedRewrite"
   category   = "regular"
   long       = "learned-rewrite"

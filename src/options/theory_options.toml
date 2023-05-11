@@ -83,7 +83,10 @@ name   = "Theory Layer"
   help = "Do simple minimization for conflicts from theory solvers."
 [[option.mode.GENERALIZE_ALL]]
   name = "gen-all"
-  help = "Do minimization generalization (via assigners) for conflicts from theory solvers."
+  help = "Do minimization and generalization (via assigners) for conflicts from theory solvers."
 [[option.mode.GENERALIZE_MAJORITY]]
   name = "gen-majority"
-  help = "Do minimization generalization (via assigners) for conflicts from theory solvers. Generalize if majority."
+  help = "Do minimization and generalization (via assigners) for conflicts from theory solvers. Generalize if majority."
+[[option.mode.GENERALIZE_ANY]]
+  name = "gen-any"
+  help = "Do minimization and generalization (via assigners) for conflicts from theory solvers. Generalized if any."

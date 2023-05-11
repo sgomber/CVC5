@@ -280,7 +280,10 @@ bool ProcessAssertions::apply(AssertionPipeline& ap)
     applyPass("learned-rewrite", ap);
   }
 
-  if (options().smt.assignerInfer)
+  options::ConflictProcessMode cpmode = options().theory.conflictProcessMode;
+  if (cpmode==options::ConflictProcessMode::GENERALIZE_ANY || 
+    cpmode==options::ConflictProcessMode::GENERALIZE_MAJORITY || 
+    cpmode==options::ConflictProcessMode::GENERALIZE_ALL)
   {
     applyPass("assigner-infer", ap);
   }

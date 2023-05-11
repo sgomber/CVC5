@@ -43,6 +43,7 @@ class ConflictProcessor : protected EnvObj
   Node d_true;
   bool d_doGeneralize;
   bool d_generalizeMaj;
+  bool d_generalizeAny;
 
   bool decomposeLemma(const Node& lem,
                       Subs& s,
