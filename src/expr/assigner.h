@@ -65,6 +65,7 @@ class AssignerDb
   Assigner* registerAssigner(const Node& n);
   bool hasAssigners() const;
   const std::vector<Assigner*>& getAssignersFor(const Node& lit) const;
+
  private:
   void registerLitsForAssigner(const Node& n, Assigner* a);
   std::map<Node, std::unique_ptr<Assigner>> d_db;

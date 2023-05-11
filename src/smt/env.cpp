@@ -271,10 +271,7 @@ Assigner* Env::registerAssigner(const Node& n)
   return d_assignerDb->registerAssigner(n);
 }
 
-bool Env::hasAssigners() const
-{
-  return d_assignerDb->hasAssigners();
-}
+bool Env::hasAssigners() const { return d_assignerDb->hasAssigners(); }
 
 std::vector<Assigner*> Env::getAssignersFor(const Node& lit)
 {

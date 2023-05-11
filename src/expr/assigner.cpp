@@ -188,16 +188,13 @@ Assigner* AssignerDb::registerAssigner(const Node& n)
 void AssignerDb::registerLitsForAssigner(const Node& n, Assigner* a)
 {
   const std::vector<Node>& lits = a->getLiterals();
-  Assert (!lits.empty());
+  Assert(!lits.empty());
   for (const Node& l : lits)
   {
     d_litsToAssigners[l].push_back(a);
   }
 }
-bool AssignerDb::hasAssigners() const
-{
-  return !d_db.empty();
-}
+bool AssignerDb::hasAssigners() const { return !d_db.empty(); }
 
 const std::vector<Assigner*>& AssignerDb::getAssignersFor(const Node& lit) const
 {

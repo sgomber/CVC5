@@ -261,7 +261,8 @@ TheoryEngine::TheoryEngine(Env& env)
   {
     d_sortInfer.reset(new SortInference(env));
   }
-  if (options().theory.conflictProcessMode!=options::ConflictProcessMode::NONE)
+  if (options().theory.conflictProcessMode
+      != options::ConflictProcessMode::NONE)
   {
     d_cp.reset(new ConflictProcessor(env, this));
   }
@@ -1433,7 +1434,7 @@ void TheoryEngine::lemma(TrustNode tlemma,
       tlemma = tproc;
     }
   }
-  
+
   // get the node
   Node node = tlemma.getNode();
   Node lemma = tlemma.getProven();

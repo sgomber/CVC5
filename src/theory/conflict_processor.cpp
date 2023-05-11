@@ -16,8 +16,8 @@
 #include "theory/conflict_processor.h"
 
 #include "expr/assigner.h"
-#include "theory/theory_engine.h"
 #include "options/theory_options.h"
+#include "theory/theory_engine.h"
 
 using namespace cvc5::internal::kind;
 
@@ -30,9 +30,10 @@ ConflictProcessor::ConflictProcessor(Env& env, TheoryEngine* te)
   NodeManager* nm = NodeManager::currentNM();
   d_true = nm->mkConst(true);
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
-  Assert (mode!=options::ConflictProcessMode::NONE);
+  Assert(mode != options::ConflictProcessMode::NONE);
   d_generalizeMaj = (mode == options::ConflictProcessMode::GENERALIZE_MAJORITY);
-  d_doGeneralize = (mode==options::ConflictProcessMode::GENERALIZE_ALL || d_generalizeMaj);
+  d_doGeneralize =
+      (mode == options::ConflictProcessMode::GENERALIZE_ALL || d_generalizeMaj);
 }
 
 TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
@@ -76,10 +77,11 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   // we are minimized if there were multiple target literals and we found a
   // single one that sufficed
   bool minimized = false;
-  if (tgtLits.size()>1)
+  if (tgtLits.size() > 1)
   {
     minimized = true;
-    Trace("confp") << "Target suffices " << tgtLit << " for than one disjunct: " << lemma << std::endl;
+    Trace("confp") << "Target suffices " << tgtLit
+                   << " for than one disjunct: " << lemma << std::endl;
   }
 
   // generalize the conflict
@@ -100,13 +102,13 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
       Node prev = s.d_subs[vindex];
       Node stgtLit = tgtLit;
       // if we have more than one substitution, apply the others
-      if (s.size()>1)
+      if (s.size() > 1)
       {
         s.d_subs[vindex] = v;
         stgtLit = s.apply(tgtLit);
       }
       Trace("confp") << "Check substitution literal " << e.second
-                    << ", #assigners=" << as.size() << std::endl;
+                     << ", #assigners=" << as.size() << std::endl;
       for (Assigner* a : as)
       {
         Node alit = checkGeneralizes(a, v, prev, stgtLit);
@@ -124,7 +126,8 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
       }
     }
   }
-  Trace("confp") << "...minimized=" << minimized << ", generalized=" << generalized << std::endl;
+  Trace("confp") << "...minimized=" << minimized
+                 << ", generalized=" << generalized << std::endl;
   // if we successfully generalized
   if (minimized || generalized)
   {
@@ -218,19 +221,23 @@ bool ConflictProcessor::decomposeLemma(const Node& lem,
   return true;
 }
 
-bool ConflictProcessor::checkSubstitution(
-    const Subs& s, const Node& tgtLit) const
+bool ConflictProcessor::checkSubstitution(const Subs& s,
+                                          const Node& tgtLit) const
 {
   Node stgtLit = s.apply(tgtLit);
   stgtLit = rewrite(stgtLit);
   return stgtLit == d_true;
 }
 
-Node ConflictProcessor::checkGeneralizes(Assigner * a, const Node& v, const Node& s, const Node& tgtLit)
+Node ConflictProcessor::checkGeneralizes(Assigner* a,
+                                         const Node& v,
+                                         const Node& s,
+                                         const Node& tgtLit)
 {
   std::tuple<Node, Node, Node> key(v, a->getSatLiteral(), tgtLit);
-  std::map< std::tuple<Node, Node, Node>, Node>::iterator it = d_genCache.find(key);
-  if (it!=d_genCache.end())
+  std::map<std::tuple<Node, Node, Node>, Node>::iterator it =
+      d_genCache.find(key);
+  if (it != d_genCache.end())
   {
     return it->second;
   }
@@ -259,8 +266,8 @@ Node ConflictProcessor::checkGeneralizes(Assigner * a, const Node& v, const Node
     checked.insert(ss);
   }
   Node ret;
-  // generalize 
-  if (fails.empty() || (d_generalizeMaj && 2*fails.size()<checked.size()))
+  // generalize
+  if (fails.empty() || (d_generalizeMaj && 2 * fails.size() < checked.size()))
   {
     ret = a->getSatLiteral();
     if (!fails.empty())
