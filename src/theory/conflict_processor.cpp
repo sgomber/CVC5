@@ -16,9 +16,9 @@
 #include "theory/conflict_processor.h"
 
 #include "expr/assigner.h"
+#include "expr/skolem_manager.h"
 #include "options/theory_options.h"
 #include "theory/theory_engine.h"
-#include "expr/skolem_manager.h"
 
 using namespace cvc5::internal::kind;
 
@@ -125,7 +125,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     }
   }
   Trace("confp-summary") << "...minimized=" << minimized
-                 << ", generalized=" << generalized << std::endl;
+                         << ", generalized=" << generalized << std::endl;
   // if we successfully generalized
   if (minimized || generalized)
   {
@@ -275,11 +275,11 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
   Subs subs;
   subs.add(v, s);
   const std::vector<Node>& assigns = a->getAssignments(v);
-  Assert (a->getNode().getNumChildren()==assigns.size());
+  Assert(a->getNode().getNumChildren() == assigns.size());
   std::unordered_set<Node> checked;
   checked.insert(s);
   std::vector<size_t> fails;
-  for (size_t i=0, nassigns = assigns.size(); i<nassigns; i++)
+  for (size_t i = 0, nassigns = assigns.size(); i < nassigns; i++)
   {
     Node ss = assigns[i];
     if (checked.find(ss) != checked.end())
@@ -310,13 +310,13 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
     if (!fails.empty())
     {
       NodeManager* nm = NodeManager::currentNM();
-      SkolemManager * skm = nm->getSkolemManager();
+      SkolemManager* skm = nm->getSkolemManager();
       std::vector<Node> conj;
       conj.push_back(ret);
       const Node& anode = a->getNode();
       for (size_t i : fails)
       {
-        Assert (i<anode.getNumChildren());
+        Assert(i < anode.getNumChildren());
         Node adisj = anode[i];
         if (options().theory.assignerProxy)
         {

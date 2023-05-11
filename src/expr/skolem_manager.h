@@ -460,6 +460,7 @@ class SkolemManager
 
   /** Make */
   Node mkProxyLit(const Node& lit);
+
  private:
   /** Cache of skolem functions for mkSkolemFunction above. */
   std::map<std::tuple<SkolemFunId, TypeNode, Node>, Node> d_skolemFuns;

@@ -19,11 +19,11 @@
 #include "preprocessing/passes/assigner_infer.h"
 
 #include "expr/assigner.h"
+#include "expr/skolem_manager.h"
+#include "options/theory_options.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/preprocessing_pass_context.h"
 #include "smt/env.h"
-#include "options/theory_options.h"
-#include "expr/skolem_manager.h"
 
 namespace cvc5::internal {
 namespace preprocessing {
@@ -90,11 +90,11 @@ Node AssignerInfer::convertToAssigner(std::unordered_map<TNode, Node> visited,
           Node conc = cur;
           if (options().theory.assignerProxy)
           {
-            SkolemManager * skm = nm->getSkolemManager();
+            SkolemManager* skm = nm->getSkolemManager();
             std::vector<Node> cdisj;
             for (const Node& cc : cur)
             {
-              Assert (cc.getKind()!=kind::NOT);
+              Assert(cc.getKind() != kind::NOT);
               cdisj.push_back(skm->mkProxyLit(cc));
             }
             conc = nm->mkOr(cdisj);
