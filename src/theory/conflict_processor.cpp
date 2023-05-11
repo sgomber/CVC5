@@ -104,6 +104,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
       Node prev = s.d_subs[vindex];
       Node stgtLit = tgtLit;
       // if we have more than one substitution, apply the others
+      // TODO: parallel substitution
       if (s.size() > 1)
       {
         s.d_subs[vindex] = v;
@@ -258,11 +259,13 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
   Subs subs;
   subs.add(v, s);
   const std::vector<Node>& assigns = a->getAssignments(v);
+  Assert (a->getNode().getNumChildren()==assigns.size());
   std::unordered_set<Node> checked;
   checked.insert(s);
-  std::vector<Node> fails;
-  for (const Node& ss : assigns)
+  std::vector<size_t> fails;
+  for (size_t i=0, nassigns = assigns.size(); i<nassigns; i++)
   {
+    Node ss = assigns[i];
     if (checked.find(ss) != checked.end())
     {
       continue;
@@ -271,7 +274,7 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
     if (!checkSubstitution(subs, tgtLit))
     {
       Trace("confp") << "Failed for " << ss << std::endl;
-      fails.push_back(ss);
+      fails.push_back(i);
       if (!d_generalizeMaj)
       {
         break;
@@ -292,9 +295,11 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
     {
       std::vector<Node> conj;
       conj.push_back(ret);
-      for (const Node& f : fails)
+      const Node& anode = a->getNode();
+      for (size_t i : fails)
       {
-        conj.push_back(v.eqNode(f).notNode());
+        Assert (i<anode.getNumChildren());
+        conj.push_back(anode[i].notNode());
       }
       NodeManager* nm = NodeManager::currentNM();
       ret = nm->mkAnd(conj);
