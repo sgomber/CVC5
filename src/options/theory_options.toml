@@ -79,10 +79,10 @@ name   = "Theory Layer"
   name = "none"
   help = "Do not post-process conflicts from theory solvers."
 [[option.mode.MINIMIZE]]
-  name = "minimize"
+  name = "min"
   help = "Do simple minimization for conflicts from theory solvers."
 [[option.mode.GENERALIZE_ALL]]
-  name = "generalize"
+  name = "gen-all"
   help = "Do minimization generalization (via assigners) for conflicts from theory solvers."
 [[option.mode.GENERALIZE_MAJORITY]]
   name = "gen-majority"

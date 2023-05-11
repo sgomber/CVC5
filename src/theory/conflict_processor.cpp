@@ -44,7 +44,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   std::vector<TNode> tgtLits;
   // decompose lemma into AND( s ) => OR( tgtLits )
   bool ok = decomposeLemma(lemma, s, varToExp, tgtLits);
-  Trace("confp") << "Decomposed lemma " << lemma << std::endl;
+  Trace("confp") << "Decomposed " << lemma << std::endl;
   Trace("confp") << "- Substitution: " << s.toString() << std::endl;
   Trace("confp") << "- Target: " << tgtLits << std::endl;
   // if we encountered a simple conflict, return it
@@ -86,6 +86,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
 
   // generalize the conflict
   bool generalized = false;
+  bool isConflict = lem.getKind()==TrustNodeKind::CONFLICT;
   if (d_doGeneralize && d_env.hasAssigners())
   {
     for (std::pair<const Node, Node>& e : varToExp)
@@ -111,7 +112,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
                      << ", #assigners=" << as.size() << std::endl;
       for (Assigner* a : as)
       {
-        Node alit = checkGeneralizes(a, v, prev, stgtLit);
+        Node alit = checkGeneralizes(a, v, prev, stgtLit, isConflict);
         if (!alit.isNull())
         {
           generalized = true;
@@ -135,10 +136,21 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     std::vector<Node> clause;
     for (std::pair<const Node, Node>& e : varToExp)
     {
-      clause.push_back(e.second.negate());
+      if (e.second.getKind()==AND)
+      {
+        for (const Node& ec : e.second)
+        {
+          clause.push_back(ec.negate());
+        }
+      }
+      else
+      {
+        clause.push_back(e.second.negate());
+      }
     }
     clause.push_back(tgtLit);
     Node genLem = nm->mkOr(clause);
+    //AlwaysAssert(false) << genLem << " for " << lem << std::endl;
     return TrustNode::mkTrustLemma(genLem);
   }
   return TrustNode::null();
@@ -232,7 +244,8 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
 Node ConflictProcessor::checkGeneralizes(Assigner* a,
                                          const Node& v,
                                          const Node& s,
-                                         const Node& tgtLit)
+                                         const Node& tgtLit,
+                                         bool& isConflict)
 {
   std::tuple<Node, Node, Node> key(v, a->getSatLiteral(), tgtLit);
   std::map<std::tuple<Node, Node, Node>, Node>::iterator it =
@@ -269,6 +282,8 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
   // generalize
   if (fails.empty() || (d_generalizeMaj && 2 * fails.size() < checked.size()))
   {
+    isConflict = isConflict && fails.empty();
+    Trace("confp") << "...generalize with "  << fails.size() << " / " << checked.size() << " literals from assigner" << std::endl;
     ret = a->getSatLiteral();
     if (!fails.empty())
     {

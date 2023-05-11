@@ -57,7 +57,8 @@ class ConflictProcessor : protected EnvObj
   Node checkGeneralizes(Assigner* a,
                         const Node& v,
                         const Node& s,
-                        const Node& tgtLit);
+                        const Node& tgtLit,
+                        bool& isConflict);
   /**
    * Cache of checkGeneralizes, storing (a->getSatLiteral, v, tgtLit)
    */
