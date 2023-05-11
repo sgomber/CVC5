@@ -54,10 +54,25 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     return lem;
   }
 
-  // check if the substitution implies the tgtLits, if not, we are done
-  if (!checkSubstitution(s, tgtLits))
+  // check if the substitution implies one of the tgtLit, if not, we are done
+  TNode tgtLit;
+  for (TNode tlit : tgtLits)
+  {
+    if (checkSubstitution(s, tlit))
+    {
+      tgtLit = tlit;
+      break;
+    }
+  }
+  if (tgtLit.isNull())
   {
     return lem;
+  }
+  bool minimized = false;
+  if (tgtLits.size()>1)
+  {
+    minimized = true;
+    Trace("confp") << "Target suffices " << tgtLit << " for than one disjunct: " << lemma << std::endl;
   }
 
   // minimize the substitution
@@ -71,36 +86,27 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     Assert(vindex < s.d_vars.size());
     // can we generalize to an assigner?
     std::vector<Assigner*> as = d_engine->getActiveAssigners(e.second);
+    if (as.empty())
+    {
+      continue;
+    }
+    Node prev = s.d_subs[vindex];
+    Node stgtLit = tgtLit;
+    // if we have more than one substitution, apply the others
+    if (s.size()>1)
+    {
+      s.d_subs[vindex] = v;
+      stgtLit = s.apply(tgtLit);
+    }
     Trace("confp") << "Check substitution literal " << e.second
                    << ", #assigners=" << as.size() << std::endl;
     for (Assigner* a : as)
     {
-      const std::vector<Node>& assigns = a->getAssignments(v);
-      bool success = true;
-      Node prev = s.d_subs[vindex];
-      std::unordered_set<Node> checked;
-      checked.insert(prev);
-      for (const Node& ss : assigns)
+      if (checkGeneralizes(a, v, prev, stgtLit))
       {
-        if (checked.find(ss) != checked.end())
-        {
-          continue;
-        }
-        s.d_subs[vindex] = ss;
-        if (!checkSubstitution(s, tgtLits))
-        {
-          Trace("confp") << "Failed for " << ss << std::endl;
-          s.d_subs[vindex] = prev;
-          success = false;
-          break;
-        }
-        checked.insert(ss);
-      }
-      if (success)
-      {
+        generalized = true;
         // update the explanation
         varToExp[v] = a->getSatLiteral();
-        generalized = true;
         break;
       }
     }
@@ -110,7 +116,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     }
   }
   // if we successfully generalized
-  if (generalized)
+  if (minimized || generalized)
   {
     NodeManager* nm = NodeManager::currentNM();
     std::vector<Node> ant;
@@ -118,7 +124,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     {
       ant.push_back(e.second);
     }
-    Node genLem = nm->mkNode(IMPLIES, nm->mkAnd(ant), nm->mkOr(tgtLits));
+    Node genLem = nm->mkNode(IMPLIES, nm->mkAnd(ant), tgtLit);
     return TrustNode::mkTrustLemma(genLem);
   }
 
@@ -203,18 +209,43 @@ bool ConflictProcessor::decomposeLemma(const Node& lem,
 }
 
 bool ConflictProcessor::checkSubstitution(
-    const Subs& s, const std::vector<TNode>& tgtLits) const
+    const Subs& s, const Node& tgtLit) const
 {
-  for (TNode lit : tgtLits)
+  Node stgtLit = s.apply(tgtLit);
+  stgtLit = rewrite(stgtLit);
+  return stgtLit == d_true;
+}
+
+bool ConflictProcessor::checkGeneralizes(Assigner * a, const Node& v, const Node& s, const Node& tgtLit)
+{
+  std::tuple<Node, Node, Node> key(v, a->getSatLiteral(), tgtLit);
+  std::map< std::tuple<Node, Node, Node>, bool>::iterator it = d_genCache.find(key);
+  if (it!=d_genCache.end())
   {
-    Node slit = s.apply(lit);
-    slit = rewrite(slit);
-    if (slit == d_true)
-    {
-      return true;
-    }
+    return it->second;
   }
-  return false;
+  Subs subs;
+  subs.add(v, s);
+  const std::vector<Node>& assigns = a->getAssignments(v);
+  std::unordered_set<Node> checked;
+  checked.insert(s);
+  for (const Node& ss : assigns)
+  {
+    if (checked.find(ss) != checked.end())
+    {
+      continue;
+    }
+    subs.d_subs[0] = ss;
+    if (!checkSubstitution(subs, tgtLit))
+    {
+      Trace("confp") << "Failed for " << ss << std::endl;
+      d_genCache[key] = false;
+      return false;
+    }
+    checked.insert(ss);
+  }
+  d_genCache[key] = true;
+  return true;
 }
 
 }  // namespace theory
