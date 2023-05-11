@@ -180,6 +180,8 @@ private:
   std::map<TypeNode, bool> d_isHoType;
   /** The care pair argument callback, used for theory combination */
   CarePairArgumentCallback d_cpacb;
+  /** Proxy variables */
+  context::CDHashSet<Node> d_bvarsProcessed;
 };/* class TheoryUF */
 
 }  // namespace uf

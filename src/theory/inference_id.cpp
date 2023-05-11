@@ -516,6 +516,7 @@ const char* toString(InferenceId i)
     case InferenceId::STRINGS_CMI_SPLIT: return "STRINGS_CMI_SPLIT";
 
     case InferenceId::UF_BREAK_SYMMETRY: return "UF_BREAK_SYMMETRY";
+    case InferenceId::UF_PROXY_LIT_EXPAND: return "UF_PROXY_LIT_EXPAND";
     case InferenceId::UF_CARD_CLIQUE: return "UF_CARD_CLIQUE";
     case InferenceId::UF_CARD_COMBINED: return "UF_CARD_COMBINED";
     case InferenceId::UF_CARD_ENFORCE_NEGATIVE: return "UF_CARD_ENFORCE_NEGATIVE";

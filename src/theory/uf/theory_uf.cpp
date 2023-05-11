@@ -56,7 +56,8 @@ TheoryUF::TheoryUF(Env& env,
       d_state(env, valuation),
       d_im(env, *this, d_state, "theory::uf::" + instanceName, false),
       d_notify(d_im, *this),
-      d_cpacb(*this)
+      d_cpacb(*this),
+      d_bvarsProcessed(userContext())
 {
   d_true = NodeManager::currentNM()->mkConst( true );
   // indicate we are using the default theory state and inference managers
@@ -193,6 +194,25 @@ void TheoryUF::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
       }
     }
     break;
+    case kind::BOOLEAN_TERM_VARIABLE:
+    {
+      // if this is a proxy literal, see if we should expand it
+      if (pol && d_bvarsProcessed.find(atom)!=d_bvarsProcessed.end())
+      {
+        d_bvarsProcessed.insert(atom);
+        Node lit;
+        SkolemFunId id;
+        NodeManager * nm = NodeManager::currentNM();
+        SkolemManager * skm = nm->getSkolemManager();
+        if (skm->isSkolemFunction(atom, id, lit) && id==SkolemFunId::PROXY_LIT)
+        {
+          // B => lit where lit is the literal for B
+          Node lem = nm->mkNode(kind::OR, atom.notNode(), lit);
+          d_im.lemma(lem, InferenceId::UF_PROXY_LIT_EXPAND);
+        }
+      }
+    }
+      break;
     default: break;
   }
 }
