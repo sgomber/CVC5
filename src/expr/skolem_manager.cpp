@@ -339,6 +339,13 @@ bool SkolemManager::isAbstractValue(TNode n) const
   return n.getAttribute(ava);
 }
 
+Node SkolemManager::mkProxyLit(const Node& lit)
+{
+  Assert (lit.getType().isBoolean());
+  NodeManager* nm = NodeManager::currentNM();
+  return mkSkolemFunction(SkolemFunId::PROXY_LIT, nm->booleanType(), lit, SKOLEM_BOOL_TERM_VAR);
+}
+
 Node SkolemManager::getWitnessForm(Node k)
 {
   Assert(k.getKind() == SKOLEM);
