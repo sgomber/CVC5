@@ -45,10 +45,11 @@ class ConflictProcessor : protected EnvObj
   bool d_generalizeMaj;
   bool d_generalizeAny;
 
-  bool decomposeLemma(const Node& lem,
+  void decomposeLemma(const Node& lem,
                       Subs& s,
                       std::map<Node, Node>& varToExp,
                       std::vector<TNode>& tgtLits) const;
+  bool hasAssigner(const Node& lit) const;
   bool checkSubstitution(const Subs& s, const Node& tgtLit) const;
   /**
    * Called when checkSubstitution { v -> s }, tgtLit returns true.

@@ -37,6 +37,14 @@ bool Subs::contains(const Node& v) const
   return std::find(d_vars.begin(), d_vars.end(), v) != d_vars.end();
 }
 
+void Subs::erase(const Node& v)
+{
+  Assert (contains(v));
+  size_t index = getIndex(v);
+  d_vars.erase(d_vars.begin()+index);
+  d_subs.erase(d_subs.begin()+index);
+}
+
 Node Subs::getSubs(const Node& v) const
 {
   std::vector<Node>::const_iterator it =

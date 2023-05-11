@@ -45,6 +45,8 @@ class Subs
   size_t getIndex(const Node& v) const;
   /** Does the substitution contain v? */
   bool contains(const Node& v) const;
+  /** Erase the substitution for v */
+  void erase(const Node& v);
   /** Get the substitution for v if it exists, or null otherwise */
   Node getSubs(const Node& v) const;
   /** Find the substitution for v, or return std::nullopt */

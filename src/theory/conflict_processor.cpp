@@ -45,17 +45,10 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   std::map<Node, Node> varToExp;
   std::vector<TNode> tgtLits;
   // decompose lemma into AND( s ) => OR( tgtLits )
-  bool ok = decomposeLemma(lemma, s, varToExp, tgtLits);
+  decomposeLemma(lemma, s, varToExp, tgtLits);
   Trace("confp") << "Decomposed " << lemma << std::endl;
   Trace("confp") << "- Substitution: " << s.toString() << std::endl;
   Trace("confp") << "- Target: " << tgtLits << std::endl;
-  // if we encountered a simple conflict, return it
-  if (!ok)
-  {
-    Trace("confp") << "Simple conflict for " << lemma << std::endl;
-    // NOTE: trusting that it is minimzed here
-    return TrustNode::null();
-  }
   // if we didn't infer a substitution, we are done
   if (s.empty())
   {
@@ -159,11 +152,12 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   return TrustNode::null();
 }
 
-bool ConflictProcessor::decomposeLemma(const Node& lem,
+void ConflictProcessor::decomposeLemma(const Node& lem,
                                        Subs& s,
                                        std::map<Node, Node>& varToExp,
                                        std::vector<TNode>& tgtLits) const
 {
+  std::map<Node, bool> hasAssigners;
   // visit is implicitly negated
   std::unordered_set<TNode> visited;
   std::vector<TNode> visit;
@@ -208,10 +202,27 @@ bool ConflictProcessor::decomposeLemma(const Node& lem,
           if (Assigner::isAssignEq(cur[0], vtmp, ctmp))
           {
             Node cprev = s.getSubs(vtmp);
-            if (!cprev.isNull() && ctmp != cprev)
+            if (!cprev.isNull())
             {
+              if (ctmp == cprev)
+              {
+                // redundant (duplicate equality)
+                continue;
+              }
               Assert(varToExp.find(vtmp) != varToExp.end());
-              return false;
+              Node prevExp = varToExp[vtmp];
+              if (!hasAssigner(prevExp) && hasAssigner(cur[0]))
+              {
+                // replace the previous
+                tgtLits.push_back(prevExp.notNode());
+                s.erase(vtmp);
+              }
+              else
+              {
+                // take this as a target literal
+                tgtLits.push_back(cur);
+                continue;
+              }
             }
             s.add(vtmp, ctmp);
             varToExp[vtmp] = cur[0];
@@ -232,8 +243,11 @@ bool ConflictProcessor::decomposeLemma(const Node& lem,
       tgtLits.push_back(cur);
     }
   } while (!visit.empty());
-  // no simple conflict
-  return true;
+}
+
+bool ConflictProcessor::hasAssigner(const Node& lit) const
+{
+  return !d_env.getAssignersFor(lit).empty();
 }
 
 bool ConflictProcessor::checkSubstitution(const Subs& s,
