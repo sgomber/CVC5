@@ -39,6 +39,7 @@ class Assigner
   const std::vector<Node>& getLiterals() const;
   static bool isAssigner(const Node& n);
   static Node getSatLiteral(const Node& n);
+  static bool isAssignEq(const Node& n, Node& v, Node& c);
 
  private:
   bool init(const Node& n);
@@ -47,7 +48,6 @@ class Assigner
                            std::map<Node, size_t>& varIndex,
                            std::map<Node, std::vector<Node>>& assignments,
                            std::vector<Node>& literals);
-  static bool isAssignEq(const Node& n, Node& v, Node& c);
   bool d_valid;
   Node d_node;
   Node d_satLiteral;

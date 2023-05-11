@@ -794,10 +794,12 @@ std::vector<Assigner*> TheoryEngine::getActiveAssigners(const Node& lit) const
 {
   std::vector<Assigner*> ret;
   std::vector<Assigner*> assigners = d_env.getAssignersFor(lit);
-  for (Assigner* a : ret)
+  Trace("theory::assigners") << "getActiveAssigners, total " << assigners.size() << " for " << lit << std::endl;
+  for (Assigner* a : assigners)
   {
     const Node& l = a->getSatLiteral();
     bool value;
+    Trace("theory::assigners") << "checkLit " << l << std::endl;
     if (hasSatValue(l, value) && value)
     {
       ret.push_back(a);
@@ -1416,6 +1418,10 @@ void TheoryEngine::lemma(TrustNode tlemma,
   // spendResource();
   Assert(tlemma.getKind() == TrustNodeKind::LEMMA
          || tlemma.getKind() == TrustNodeKind::CONFLICT);
+
+  // minimize or generalize conflict
+  tlemma = d_cp.processLemma(tlemma);
+
   // get the node
   Node node = tlemma.getNode();
   Node lemma = tlemma.getProven();

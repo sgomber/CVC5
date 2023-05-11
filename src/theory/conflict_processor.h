@@ -21,6 +21,7 @@
 #include "expr/node.h"
 #include "proof/trust_node.h"
 #include "smt/env_obj.h"
+#include "expr/subs.h"
 
 namespace cvc5::internal {
 
@@ -34,10 +35,13 @@ class ConflictProcessor : protected EnvObj
   ConflictProcessor(Env& env, TheoryEngine* te);
   ~ConflictProcessor() {}
 
-  TrustNode processConflict(const TrustNode& conflict);
+  TrustNode processLemma(const TrustNode& lem);
 
  private:
   TheoryEngine* d_engine;
+  Node d_true;
+  bool decomposeLemma(const Node& lem, Subs& s, std::map<Node, Node>& varToExp, std::vector<TNode>& tgtLits) const;
+  bool checkSubstitution(const Subs& s, const std::vector<TNode>& tgtLits) const;
 };
 
 }  // namespace theory
