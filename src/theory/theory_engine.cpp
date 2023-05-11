@@ -794,7 +794,8 @@ std::vector<Assigner*> TheoryEngine::getActiveAssigners(const Node& lit) const
 {
   std::vector<Assigner*> ret;
   std::vector<Assigner*> assigners = d_env.getAssignersFor(lit);
-  Trace("theory::assigners") << "getActiveAssigners, total " << assigners.size() << " for " << lit << std::endl;
+  Trace("theory::assigners") << "getActiveAssigners, total " << assigners.size()
+                             << " for " << lit << std::endl;
   for (Assigner* a : assigners)
   {
     const Node& l = a->getSatLiteral();

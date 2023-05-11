@@ -19,9 +19,9 @@
 #define CVC5__THEORY__CONFLICT_PROCESSOR_H
 
 #include "expr/node.h"
+#include "expr/subs.h"
 #include "proof/trust_node.h"
 #include "smt/env_obj.h"
-#include "expr/subs.h"
 
 namespace cvc5::internal {
 
@@ -40,8 +40,12 @@ class ConflictProcessor : protected EnvObj
  private:
   TheoryEngine* d_engine;
   Node d_true;
-  bool decomposeLemma(const Node& lem, Subs& s, std::map<Node, Node>& varToExp, std::vector<TNode>& tgtLits) const;
-  bool checkSubstitution(const Subs& s, const std::vector<TNode>& tgtLits) const;
+  bool decomposeLemma(const Node& lem,
+                      Subs& s,
+                      std::map<Node, Node>& varToExp,
+                      std::vector<TNode>& tgtLits) const;
+  bool checkSubstitution(const Subs& s,
+                         const std::vector<TNode>& tgtLits) const;
 };
 
 }  // namespace theory
