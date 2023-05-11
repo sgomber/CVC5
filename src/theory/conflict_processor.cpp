@@ -46,15 +46,15 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   std::vector<TNode> tgtLits;
   // decompose lemma into AND( s ) => OR( tgtLits )
   decomposeLemma(lemma, s, varToExp, tgtLits);
-  Trace("confp") << "Decomposed " << lemma << std::endl;
-  Trace("confp") << "- Substitution: " << s.toString() << std::endl;
-  Trace("confp") << "- Target: " << tgtLits << std::endl;
   // if we didn't infer a substitution, we are done
   if (s.empty())
   {
+    Trace("confp-debug") << "No substitution for " << lemma << std::endl;
     return TrustNode::null();
   }
-
+  Trace("confp") << "Decomposed " << lemma << std::endl;
+  Trace("confp") << "- Substitution: " << s.toString() << std::endl;
+  Trace("confp") << "- Target: " << tgtLits << std::endl;
   // check if the substitution implies one of the tgtLit, if not, we are done
   TNode tgtLit;
   for (TNode tlit : tgtLits)
@@ -67,6 +67,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   }
   if (tgtLit.isNull())
   {
+    Trace("confp-debug") << "No target for " << lemma << std::endl;
     return TrustNode::null();
   }
   // we are minimized if there were multiple target literals and we found a
@@ -123,7 +124,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
       }
     }
   }
-  Trace("confp") << "...minimized=" << minimized
+  Trace("confp-summary") << "...minimized=" << minimized
                  << ", generalized=" << generalized << std::endl;
   // if we successfully generalized
   if (minimized || generalized)
