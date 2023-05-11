@@ -18,6 +18,7 @@
 #include "expr/assigner.h"
 #include "options/theory_options.h"
 #include "theory/theory_engine.h"
+#include "expr/skolem_manager.h"
 
 using namespace cvc5::internal::kind;
 
@@ -293,15 +294,21 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
     ret = a->getSatLiteral();
     if (!fails.empty())
     {
+      NodeManager* nm = NodeManager::currentNM();
+      SkolemManager * skm = nm->getSkolemManager();
       std::vector<Node> conj;
       conj.push_back(ret);
       const Node& anode = a->getNode();
       for (size_t i : fails)
       {
         Assert (i<anode.getNumChildren());
-        conj.push_back(anode[i].notNode());
+        Node adisj = anode[i];
+        if (options().theory.assignerProxy)
+        {
+          adisj = skm->mkProxyLit(adisj);
+        }
+        conj.push_back(adisj.notNode());
       }
-      NodeManager* nm = NodeManager::currentNM();
       ret = nm->mkAnd(conj);
     }
   }

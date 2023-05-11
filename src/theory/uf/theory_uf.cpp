@@ -197,7 +197,7 @@ void TheoryUF::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
     case kind::BOOLEAN_TERM_VARIABLE:
     {
       // if this is a proxy literal, see if we should expand it
-      if (pol && d_bvarsProcessed.find(atom) != d_bvarsProcessed.end())
+      if (pol && d_bvarsProcessed.find(atom) == d_bvarsProcessed.end())
       {
         d_bvarsProcessed.insert(atom);
         Node lit;

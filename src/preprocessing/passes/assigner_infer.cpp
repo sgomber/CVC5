@@ -22,6 +22,8 @@
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/preprocessing_pass_context.h"
 #include "smt/env.h"
+#include "options/theory_options.h"
+#include "expr/skolem_manager.h"
 
 namespace cvc5::internal {
 namespace preprocessing {
@@ -85,7 +87,19 @@ Node AssignerInfer::convertToAssigner(std::unordered_map<TNode, Node> visited,
           Assert(a != nullptr);
           Node lit = a->getSatLiteral();
           visited[cur] = lit;
-          Node lem = nm->mkNode(kind::IMPLIES, lit, cur);
+          Node conc = cur;
+          if (options().theory.assignerProxy)
+          {
+            SkolemManager * skm = nm->getSkolemManager();
+            std::vector<Node> cdisj;
+            for (const Node& cc : cur)
+            {
+              Assert (cc.getKind()!=kind::NOT);
+              cdisj.push_back(skm->mkProxyLit(cc));
+            }
+            conc = nm->mkOr(cdisj);
+          }
+          Node lem = nm->mkNode(kind::IMPLIES, lit, conc);
           lemmas.emplace_back(lem);
           continue;
         }

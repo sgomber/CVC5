@@ -90,3 +90,11 @@ name   = "Theory Layer"
 [[option.mode.GENERALIZE_ANY]]
   name = "gen-any"
   help = "Do minimization and generalization (via assigners) for conflicts from theory solvers. Generalized if any."
+
+[[option]]
+  name       = "assignerProxy"
+  category   = "expert"
+  long       = "assigner-proxy"
+  type       = "bool"
+  default    = "false"
+  help       = "use proxy literals for assign disjuncts"
