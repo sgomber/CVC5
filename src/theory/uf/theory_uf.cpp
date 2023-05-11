@@ -197,14 +197,15 @@ void TheoryUF::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
     case kind::BOOLEAN_TERM_VARIABLE:
     {
       // if this is a proxy literal, see if we should expand it
-      if (pol && d_bvarsProcessed.find(atom)!=d_bvarsProcessed.end())
+      if (pol && d_bvarsProcessed.find(atom) != d_bvarsProcessed.end())
       {
         d_bvarsProcessed.insert(atom);
         Node lit;
         SkolemFunId id;
-        NodeManager * nm = NodeManager::currentNM();
-        SkolemManager * skm = nm->getSkolemManager();
-        if (skm->isSkolemFunction(atom, id, lit) && id==SkolemFunId::PROXY_LIT)
+        NodeManager* nm = NodeManager::currentNM();
+        SkolemManager* skm = nm->getSkolemManager();
+        if (skm->isSkolemFunction(atom, id, lit)
+            && id == SkolemFunId::PROXY_LIT)
         {
           // B => lit where lit is the literal for B
           Node lem = nm->mkNode(kind::OR, atom.notNode(), lit);
@@ -212,7 +213,7 @@ void TheoryUF::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
         }
       }
     }
-      break;
+    break;
     default: break;
   }
 }
