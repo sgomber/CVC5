@@ -33,8 +33,8 @@ ConflictProcessor::ConflictProcessor(Env& env, TheoryEngine* te)
   Assert(mode != options::ConflictProcessMode::NONE);
   d_generalizeMaj = (mode == options::ConflictProcessMode::GENERALIZE_MAJORITY);
   d_generalizeAny = (mode == options::ConflictProcessMode::GENERALIZE_ANY);
-  d_doGeneralize =
-      (mode == options::ConflictProcessMode::GENERALIZE_ALL || d_generalizeMaj || d_generalizeAny);
+  d_doGeneralize = (mode == options::ConflictProcessMode::GENERALIZE_ALL
+                    || d_generalizeMaj || d_generalizeAny);
 }
 
 TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
@@ -87,7 +87,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
 
   // generalize the conflict
   bool generalized = false;
-  bool isConflict = lem.getKind()==TrustNodeKind::CONFLICT;
+  bool isConflict = lem.getKind() == TrustNodeKind::CONFLICT;
   if (d_doGeneralize && d_env.hasAssigners())
   {
     for (std::pair<const Node, Node>& e : varToExp)
@@ -137,7 +137,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     std::vector<Node> clause;
     for (std::pair<const Node, Node>& e : varToExp)
     {
-      if (e.second.getKind()==AND)
+      if (e.second.getKind() == AND)
       {
         for (const Node& ec : e.second)
         {
@@ -151,7 +151,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     }
     clause.push_back(tgtLit);
     Node genLem = nm->mkOr(clause);
-    //AlwaysAssert(false) << genLem << " for " << lem << std::endl;
+    // AlwaysAssert(false) << genLem << " for " << lem << std::endl;
     return TrustNode::mkTrustLemma(genLem);
   }
   return TrustNode::null();
@@ -281,10 +281,12 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
   }
   Node ret;
   // generalize
-  if (fails.empty() || (d_generalizeMaj && 2 * fails.size() < checked.size()) || (d_generalizeAny && fails.size()+1<checked.size()))
+  if (fails.empty() || (d_generalizeMaj && 2 * fails.size() < checked.size())
+      || (d_generalizeAny && fails.size() + 1 < checked.size()))
   {
     isConflict = isConflict && fails.empty();
-    Trace("confp") << "...generalize with "  << fails.size() << " / " << checked.size() << " literals from assigner" << std::endl;
+    Trace("confp") << "...generalize with " << fails.size() << " / "
+                   << checked.size() << " literals from assigner" << std::endl;
     ret = a->getSatLiteral();
     if (!fails.empty())
     {
