@@ -46,7 +46,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   // if we didn't infer a substitution, we are done
   if (s.empty())
   {
-    Trace("confp-debug") << "No substitution for " << lemma << std::endl;
+    Trace("confp-debug") << "...no substitution for " << lemma << std::endl;
     return TrustNode::null();
   }
   ++d_stats.d_lemmas;
@@ -68,6 +68,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     Trace("confp-debug") << "No target for " << lemma << std::endl;
     return TrustNode::null();
   }
+  Node tgtLitFinal = tgtLit;
   // we are minimized if there were multiple target literals and we found a
   // single one that sufficed
   bool minimized = false;
@@ -84,6 +85,36 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   bool isConflict = lem.getKind() == TrustNodeKind::CONFLICT;
   if (d_doGeneralize && d_env.hasAssigners())
   {
+    // generalize the target literal
+    Node tgtLitn = tgtLit.negate();
+    std::vector<Assigner*> ast = d_engine->getActiveAssigners(tgtLitn);
+    Trace("confp-debug") << "Check target literal " << tgtLitn
+                    << ", #assigners=" << ast.size() << std::endl;
+    for (Assigner* a : ast)
+    {
+      Node anode = a->getNode();
+      Trace("confp-debug") << "...check target generalization " << anode << std::endl;
+      // check implies *all* literals
+      bool success = true;
+      for (const Node& l : anode)
+      {
+        Node ln = l.negate();
+        if (!checkSubstitution(s, ln))
+        {
+          Trace("confp-debug") << "...failed for " << ln << std::endl;
+          success = false;
+          break;
+        }
+      }
+      if (success)
+      {
+        Trace("confp-debug") << "...target success!" << std::endl;
+        tgtLit = anode.negate();
+        tgtLitFinal = a->getSatLiteral().negate();
+        generalized = true;
+        break;
+      }
+    }
     for (std::pair<const Node, Node>& e : varToExp)
     {
       Node v = e.first;
@@ -104,8 +135,9 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
         s.d_subs[vindex] = v;
         stgtLit = s.apply(tgtLit);
       }
-      Trace("confp") << "Check substitution literal " << e.second
+      Trace("confp-debug") << "Check substitution literal " << e.second
                      << ", #assigners=" << as.size() << std::endl;
+      Trace("confp-debug2") << "Target literal is " << stgtLit << std::endl;
       for (Assigner* a : as)
       {
         Node alit = checkGeneralizes(a, v, prev, stgtLit, isConflict);
@@ -122,9 +154,10 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
       {
         break;
       }
+      s.d_subs[vindex] = prev;
     }
   }
-  Trace("confp-summary") << "...minimized=" << minimized
+  Trace("confp") << "...minimized=" << minimized
                          << ", generalized=" << generalized << std::endl;
   // if we successfully generalized
   if (minimized || generalized)
@@ -145,7 +178,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
         clause.push_back(e.second.negate());
       }
     }
-    clause.push_back(tgtLit);
+    clause.push_back(tgtLitFinal);
     Node genLem = nm->mkOr(clause);
     // AlwaysAssert(false) << genLem << " for " << lem << std::endl;
     return TrustNode::mkTrustLemma(genLem);
@@ -254,9 +287,38 @@ bool ConflictProcessor::hasAssigner(const Node& lit) const
 bool ConflictProcessor::checkSubstitution(const Subs& s,
                                           const Node& tgtLit) const
 {
-  Node stgtLit = s.apply(tgtLit);
-  stgtLit = rewrite(stgtLit);
-  return stgtLit == d_true;
+  bool expect = true;
+  Node tgtAtom = tgtLit;
+  if (tgtAtom.getKind()==NOT)
+  {
+    tgtAtom = tgtAtom[0];
+    expect = false;
+  }
+  // optimize for (negated) OR, since we may have generalized a target
+  Kind k = tgtAtom.getKind();
+  if (k==OR)
+  {
+    for (const Node& n : tgtAtom)
+    {
+      Node sn = s.apply(n);
+      sn = rewrite(sn);
+      if (!sn.isConst())
+      {
+        if (!expect)
+        {
+          return false;
+        }
+      }
+      else if (sn.getConst<bool>())
+      {
+        return expect;
+      }
+    }
+    return true;
+  }
+  Node stgtAtom = s.apply(tgtAtom);
+  stgtAtom = rewrite(stgtAtom);
+  return stgtAtom.isConst() && stgtAtom.getConst<bool>()==expect;
 }
 
 Node ConflictProcessor::checkGeneralizes(Assigner* a,
@@ -280,18 +342,24 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
   checked.insert(s);
   std::vector<size_t> fails;
   bool success = true;
+  bool successAssign = false;
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   for (size_t i = 0, nassigns = assigns.size(); i < nassigns; i++)
   {
     Node ss = assigns[i];
-    if (checked.find(ss) != checked.end())
+    successAssign = false;
+    if (!ss.isNull())
     {
-      continue;
+      if (checked.find(ss) != checked.end())
+      {
+        continue;
+      }
+      subs.d_subs[0] = ss;
+      successAssign = checkSubstitution(subs, tgtLit);
     }
-    subs.d_subs[0] = ss;
-    if (!checkSubstitution(subs, tgtLit))
+    if (!successAssign)
     {
-      Trace("confp") << "Failed for " << ss << std::endl;
+      Trace("confp-debug") << "Failed for " << ss << std::endl;
       fails.push_back(i);
       // see if we are a failure based on the mode
       switch (mode)

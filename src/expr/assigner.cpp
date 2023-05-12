@@ -16,6 +16,7 @@
 #include "expr/assigner.h"
 
 #include "expr/skolem_manager.h"
+#include "expr/node_algorithm.h"
 
 using namespace cvc5::internal::kind;
 
@@ -47,10 +48,9 @@ const std::vector<Node>& Assigner::getLiterals() const { return d_literals; }
 bool Assigner::isAssigner(const Node& n)
 {
   std::vector<Node> vars;
-  std::map<Node, size_t> varIndex;
   std::map<Node, std::vector<Node>> assignments;
   std::vector<Node> literals;
-  return initInternal(n, vars, varIndex, assignments, literals);
+  return initInternal(n, vars, assignments, literals);
 }
 
 Node Assigner::getSatLiteral(const Node& n)
@@ -62,11 +62,10 @@ Node Assigner::getSatLiteral(const Node& n)
 
 bool Assigner::init(const Node& n)
 {
-  return initInternal(n, d_vars, d_varIndex, d_assignments, d_literals);
+  return initInternal(n, d_vars, d_assignments, d_literals);
 }
 bool Assigner::initInternal(const Node& n,
                             std::vector<Node>& vars,
-                            std::map<Node, size_t>& varIndex,
                             std::map<Node, std::vector<Node>>& assignments,
                             std::vector<Node>& literals)
 {
@@ -88,13 +87,18 @@ bool Assigner::initInternal(const Node& n,
     {
       cc.insert(cc.end(), nc.begin(), nc.end());
     }
-    else if (nck == EQUAL)
+    else
     {
       cc.push_back(nc);
     }
-    else
+    // each cube must be conjunction of theory literals
+    for (const Node& lit : cc)
     {
-      return false;
+      TNode atom = lit.getKind()==NOT ? lit[0] : lit;
+      if (!expr::isTheoryAtom(atom))
+      {
+        return false;
+      }
     }
     if (i == 0)
     {
@@ -102,6 +106,7 @@ bool Assigner::initInternal(const Node& n,
     }
     else if (cc.size() != csize)
     {
+      // TODO: this is a bit hacky. expect same size but maybe not required
       // cube size is not the same for all disjuncts
       return false;
     }
@@ -109,57 +114,63 @@ bool Assigner::initInternal(const Node& n,
   // infer the variables for the first argument
   Node vtmp;
   Node ctmp;
+  std::unordered_set<Node> syms;
   for (size_t i = 0; i < nargs; i++)
   {
     std::vector<Node>& cc = cubes[i];
-    std::unordered_set<Node> varUsed;
-    for (const Node& eq : cc)
+    std::unordered_set<Node> symsTmp;
+    std::unordered_set<TNode> symVisited;
+    for (const Node& lit : cc)
     {
-      // each literal in the cube must be a variable assignment equality
-      if (!isAssignEq(eq, vtmp, ctmp))
+      // Check if the literal in the cube is a variable assignment equality.
+      // If so, then we push to the end of assigns (if we haven't already
+      // found a conflicting assignment).
+      if (isAssignEq(lit, vtmp, ctmp))
       {
-        return false;
-      }
-      if (i == 0)
-      {
-        // all variables in each cube must be unique
-        if (varIndex.find(vtmp) != varIndex.end())
+        std::vector<Node>& assigns = assignments[vtmp];
+        if (assigns.size()<=i)
         {
-          return false;
+          assigns.resize(i);
+          assigns.push_back(ctmp);
         }
-        varIndex[vtmp] = vars.size();
-        vars.push_back(vtmp);
       }
-      else
-      {
-        // must be a previous variable not used already this iteration
-        if (varIndex.find(vtmp) == varIndex.end()
-            || varUsed.find(vtmp) != varUsed.end())
-        {
-          return false;
-        }
-        varUsed.insert(vtmp);
-      }
-      assignments[vtmp].push_back(ctmp);
-      literals.push_back(eq);
+      literals.push_back(lit);
+      // get the free symbols in the literal
+      expr::getSymbols(lit, symsTmp, symVisited);
     }
+    if (i==0)
+    {
+      syms = symsTmp;
+    }
+    else if (syms!=symsTmp)
+    {
+      // not the same free symbols
+      return false;
+    }
+  }
+  // ensure all assignments are resized
+  for(std::pair<const Node, std::vector<Node>> as : assignments)
+  {
+    as.second.resize(nargs);
+    // save the list of assigned variables
+    vars.push_back(as.first);
   }
   return true;
 }
 
 bool Assigner::isAssignEq(const Node& n, Node& v, Node& c)
 {
-  if (n.getKind() != EQUAL)
+  Kind k = n.getKind();
+  if (k == EQUAL)
   {
-    return false;
-  }
-  for (size_t i = 0; i < 2; i++)
-  {
-    if (n[i].isVar() && n[1 - i].isConst())
+    for (size_t i = 0; i < 2; i++)
     {
-      v = n[i];
-      c = n[1 - i];
-      return true;
+      if (n[i].isVar() && n[1 - i].isConst())
+      {
+        v = n[i];
+        c = n[1 - i];
+        return true;
+      }
     }
   }
   return false;

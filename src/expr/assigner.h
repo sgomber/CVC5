@@ -45,14 +45,12 @@ class Assigner
   bool init(const Node& n);
   static bool initInternal(const Node& n,
                            std::vector<Node>& vars,
-                           std::map<Node, size_t>& varIndex,
                            std::map<Node, std::vector<Node>>& assignments,
                            std::vector<Node>& literals);
   bool d_valid;
   Node d_node;
   Node d_satLiteral;
   std::vector<Node> d_vars;
-  std::map<Node, size_t> d_varIndex;
   std::map<Node, std::vector<Node>> d_assignments;
   std::vector<Node> d_literals;
 };
