@@ -15,8 +15,8 @@
 
 #include "expr/assigner.h"
 
-#include "expr/skolem_manager.h"
 #include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
 
 using namespace cvc5::internal::kind;
 
@@ -94,7 +94,7 @@ bool Assigner::initInternal(const Node& n,
     // each cube must be conjunction of theory literals
     for (const Node& lit : cc)
     {
-      TNode atom = lit.getKind()==NOT ? lit[0] : lit;
+      TNode atom = lit.getKind() == NOT ? lit[0] : lit;
       if (!expr::isTheoryAtom(atom))
       {
         return false;
@@ -128,7 +128,7 @@ bool Assigner::initInternal(const Node& n,
       if (isAssignEq(lit, vtmp, ctmp))
       {
         std::vector<Node>& assigns = assignments[vtmp];
-        if (assigns.size()<=i)
+        if (assigns.size() <= i)
         {
           assigns.resize(i);
           assigns.push_back(ctmp);
@@ -138,18 +138,18 @@ bool Assigner::initInternal(const Node& n,
       // get the free symbols in the literal
       expr::getSymbols(lit, symsTmp, symVisited);
     }
-    if (i==0)
+    if (i == 0)
     {
       syms = symsTmp;
     }
-    else if (syms!=symsTmp)
+    else if (syms != symsTmp)
     {
       // not the same free symbols
       return false;
     }
   }
   // ensure all assignments are resized
-  for(std::pair<const Node, std::vector<Node>> as : assignments)
+  for (std::pair<const Node, std::vector<Node>> as : assignments)
   {
     as.second.resize(nargs);
     // save the list of assigned variables

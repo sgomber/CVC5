@@ -89,11 +89,12 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     Node tgtLitn = tgtLit.negate();
     std::vector<Assigner*> ast = d_engine->getActiveAssigners(tgtLitn);
     Trace("confp-debug") << "Check target literal " << tgtLitn
-                    << ", #assigners=" << ast.size() << std::endl;
+                         << ", #assigners=" << ast.size() << std::endl;
     for (Assigner* a : ast)
     {
       Node anode = a->getNode();
-      Trace("confp-debug") << "...check target generalization " << anode << std::endl;
+      Trace("confp-debug") << "...check target generalization " << anode
+                           << std::endl;
       // check implies *all* literals
       bool success = true;
       for (const Node& l : anode)
@@ -136,7 +137,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
         stgtLit = s.apply(tgtLit);
       }
       Trace("confp-debug") << "Check substitution literal " << e.second
-                     << ", #assigners=" << as.size() << std::endl;
+                           << ", #assigners=" << as.size() << std::endl;
       Trace("confp-debug2") << "Target literal is " << stgtLit << std::endl;
       for (Assigner* a : as)
       {
@@ -158,7 +159,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     }
   }
   Trace("confp") << "...minimized=" << minimized
-                         << ", generalized=" << generalized << std::endl;
+                 << ", generalized=" << generalized << std::endl;
   // if we successfully generalized
   if (minimized || generalized)
   {
@@ -289,14 +290,14 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
 {
   bool expect = true;
   Node tgtAtom = tgtLit;
-  if (tgtAtom.getKind()==NOT)
+  if (tgtAtom.getKind() == NOT)
   {
     tgtAtom = tgtAtom[0];
     expect = false;
   }
   // optimize for (negated) OR, since we may have generalized a target
   Kind k = tgtAtom.getKind();
-  if (k==OR)
+  if (k == OR)
   {
     for (const Node& n : tgtAtom)
     {
@@ -318,7 +319,7 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
   }
   Node stgtAtom = s.apply(tgtAtom);
   stgtAtom = rewrite(stgtAtom);
-  return stgtAtom.isConst() && stgtAtom.getConst<bool>()==expect;
+  return stgtAtom.isConst() && stgtAtom.getConst<bool>() == expect;
 }
 
 Node ConflictProcessor::checkGeneralizes(Assigner* a,
@@ -395,7 +396,8 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
   {
     isConflict = isConflict && fails.empty();
     Trace("confp") << "...generalize with " << fails.size() << " / "
-                   << checked.size() << " failed literals from assigner" << std::endl;
+                   << checked.size() << " failed literals from assigner"
+                   << std::endl;
     ret = a->getSatLiteral();
     if (!fails.empty())
     {
