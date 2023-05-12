@@ -397,8 +397,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   Subs subs;
   subs.add(v, s);
   const std::vector<Node>& assigns = a->getAssignments(v);
-  AlwaysAssert(a->getNode().getNumChildren() == assigns.size())
-      << a->getNode() << " " << assigns << std::endl;
+  Assert(a->getNode().getNumChildren() == assigns.size());
   std::vector<size_t> fails;
   bool successAssign = false;
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
