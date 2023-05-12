@@ -29,19 +29,18 @@ bool isFailure(options::ConflictProcessMode mode, size_t ntests, size_t nfails)
 {
   switch (mode)
   {
-    case options::ConflictProcessMode::GENERALIZE_ALL:
-      return nfails>0;
+    case options::ConflictProcessMode::GENERALIZE_ALL: return nfails > 0;
     case options::ConflictProcessMode::GENERALIZE_MAJORITY:
       return 2 * nfails >= ntests;
     case options::ConflictProcessMode::GENERALIZE_ALL_MINUS_ONE:
-      return nfails>1;
+      return nfails > 1;
     case options::ConflictProcessMode::GENERALIZE_ANY:
-      return nfails+2>=ntests;
+      return nfails + 2 >= ntests;
     default: break;
   }
   return false;
 }
-  
+
 ConflictProcessor::ConflictProcessor(Env& env, TheoryEngine* te)
     : EnvObj(env), d_engine(te), d_stats(statisticsRegistry())
 {
@@ -340,10 +339,10 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
 }
 
 Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
-                                         const Node& v,
-                                         const Node& s,
-                                         const Node& tgtLit,
-                                         bool& isConflict)
+                                             const Node& v,
+                                             const Node& s,
+                                             const Node& tgtLit,
+                                             bool& isConflict)
 {
   std::tuple<Node, Node, Node> key(v, a->getSatLiteral(), tgtLit);
   std::map<std::tuple<Node, Node, Node>, Node>::iterator it =
@@ -369,7 +368,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   {
     Node ss = assigns[i];
     itc = checked.find(ss);
-    if (itc==checked.end())
+    if (itc == checked.end())
     {
       successAssign = false;
       if (!ss.isNull())
@@ -400,9 +399,8 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   if (success)
   {
     isConflict = isConflict && fails.empty();
-    Trace("confp") << "...generalize with " << fails.size() << " / "
-                   << nassigns << " failed literals from assigner"
-                   << std::endl;
+    Trace("confp") << "...generalize with " << fails.size() << " / " << nassigns
+                   << " failed literals from assigner" << std::endl;
     ret = a->getSatLiteral();
     if (!fails.empty())
     {
