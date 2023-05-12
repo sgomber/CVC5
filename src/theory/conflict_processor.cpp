@@ -25,6 +25,23 @@ using namespace cvc5::internal::kind;
 namespace cvc5::internal {
 namespace theory {
 
+bool isFailure(options::ConflictProcessMode mode, size_t ntests, size_t nfails)
+{
+  switch (mode)
+  {
+    case options::ConflictProcessMode::GENERALIZE_ALL:
+      return nfails>0;
+    case options::ConflictProcessMode::GENERALIZE_MAJORITY:
+      return 2 * nfails >= ntests;
+    case options::ConflictProcessMode::GENERALIZE_ALL_MINUS_ONE:
+      return nfails>1;
+    case options::ConflictProcessMode::GENERALIZE_ANY:
+      return nfails+2>=ntests;
+    default: break;
+  }
+  return false;
+}
+  
 ConflictProcessor::ConflictProcessor(Env& env, TheoryEngine* te)
     : EnvObj(env), d_engine(te), d_stats(statisticsRegistry())
 {
@@ -141,7 +158,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
       Trace("confp-debug2") << "Target literal is " << stgtLit << std::endl;
       for (Assigner* a : as)
       {
-        Node alit = checkGeneralizes(a, v, prev, stgtLit, isConflict);
+        Node alit = checkSubsGeneralizes(a, v, prev, stgtLit, isConflict);
         if (!alit.isNull())
         {
           generalized = true;
@@ -322,7 +339,7 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
   return stgtAtom.isConst() && stgtAtom.getConst<bool>() == expect;
 }
 
-Node ConflictProcessor::checkGeneralizes(Assigner* a,
+Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
                                          const Node& v,
                                          const Node& s,
                                          const Node& tgtLit,
@@ -339,56 +356,44 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
   subs.add(v, s);
   const std::vector<Node>& assigns = a->getAssignments(v);
   Assert(a->getNode().getNumChildren() == assigns.size());
-  std::unordered_set<Node> checked;
-  checked.insert(s);
   std::vector<size_t> fails;
   bool success = true;
   bool successAssign = false;
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
-  for (size_t i = 0, nassigns = assigns.size(); i < nassigns; i++)
+  size_t nassigns = assigns.size();
+  // note that we may have many duplicate assignments for v e.g. if
+  // (or (and (= v c1) F1) ... (and (= v c1) F{n-1}) (and (= v c2) Fn))
+  std::map<Node, bool> checked;
+  std::map<Node, bool>::iterator itc;
+  for (size_t i = 0; i < nassigns; i++)
   {
     Node ss = assigns[i];
-    successAssign = false;
-    if (!ss.isNull())
+    itc = checked.find(ss);
+    if (itc==checked.end())
     {
-      if (checked.find(ss) != checked.end())
+      successAssign = false;
+      if (!ss.isNull())
       {
-        continue;
+        subs.d_subs[0] = ss;
+        successAssign = checkSubstitution(subs, tgtLit);
       }
-      subs.d_subs[0] = ss;
-      successAssign = checkSubstitution(subs, tgtLit);
+      checked[ss] = successAssign;
+    }
+    else
+    {
+      successAssign = itc->second;
     }
     if (!successAssign)
     {
       Trace("confp-debug") << "Failed for " << ss << std::endl;
       fails.push_back(i);
       // see if we are a failure based on the mode
-      switch (mode)
+      if (isFailure(mode, nassigns, fails.size()))
       {
-        case options::ConflictProcessMode::GENERALIZE_ALL:
-          success = false;
-          break;
-        case options::ConflictProcessMode::GENERALIZE_MAJORITY:
-          success = (2 * fails.size() < assigns.size());
-          break;
-        case options::ConflictProcessMode::GENERALIZE_ALL_MINUS_ONE:
-          success = (fails.size() <= 1);
-          break;
-        case options::ConflictProcessMode::GENERALIZE_ANY:
-          // handled below
-          break;
-        default: Unhandled(); break;
-      }
-      if (!success)
-      {
+        success = false;
         break;
       }
     }
-    checked.insert(ss);
-  }
-  if (mode == options::ConflictProcessMode::GENERALIZE_ANY)
-  {
-    success = (fails.size() + 1 < checked.size());
   }
   Node ret;
   // generalize
@@ -396,7 +401,7 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
   {
     isConflict = isConflict && fails.empty();
     Trace("confp") << "...generalize with " << fails.size() << " / "
-                   << checked.size() << " failed literals from assigner"
+                   << nassigns << " failed literals from assigner"
                    << std::endl;
     ret = a->getSatLiteral();
     if (!fails.empty())

@@ -62,12 +62,17 @@ class ConflictProcessor : protected EnvObj
                       std::vector<TNode>& tgtLits) const;
   bool hasAssigner(const Node& lit) const;
   bool checkSubstitution(const Subs& s, const Node& tgtLit) const;
+  //Node checkTgtGeneralizes(Assigner* a,
+  //                     const Subs& s,
+   //                     bool& isConflict);
   /**
    * Called when checkSubstitution { v -> s }, tgtLit returns true.
-   * Returns true if any assignment s' for v in a is also such that
+   * Returns a node that also implies tgtLit that is weaker than (= v s).
+   * 
+   * if any assignment s' for v in a is also such that
    * checkSubstitution { v -> s' } tgtLit returns true.
    */
-  Node checkGeneralizes(Assigner* a,
+  Node checkSubsGeneralizes(Assigner* a,
                         const Node& v,
                         const Node& s,
                         const Node& tgtLit,
