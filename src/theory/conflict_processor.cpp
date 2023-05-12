@@ -294,19 +294,21 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
       Trace("confp") << "Failed for " << ss << std::endl;
       fails.push_back(i);
       // see if we are a failure based on the mode
-      switch(mode)
+      switch (mode)
       {
-        case options::ConflictProcessMode::GENERALIZE_ALL: success = false;
-        break;
-        case options::ConflictProcessMode::GENERALIZE_MAJORITY: success = (2 * fails.size() < assigns.size());
-        break;
-        case options::ConflictProcessMode::GENERALIZE_ALL_MINUS_ONE: success = (fails.size()<=1); break;
+        case options::ConflictProcessMode::GENERALIZE_ALL:
+          success = false;
+          break;
+        case options::ConflictProcessMode::GENERALIZE_MAJORITY:
+          success = (2 * fails.size() < assigns.size());
+          break;
+        case options::ConflictProcessMode::GENERALIZE_ALL_MINUS_ONE:
+          success = (fails.size() <= 1);
+          break;
         case options::ConflictProcessMode::GENERALIZE_ANY:
           // handled below
           break;
-        default:
-          Unhandled();
-          break;
+        default: Unhandled(); break;
       }
       if (!success)
       {
@@ -315,7 +317,7 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
     }
     checked.insert(ss);
   }
-  if (mode==options::ConflictProcessMode::GENERALIZE_ANY)
+  if (mode == options::ConflictProcessMode::GENERALIZE_ANY)
   {
     success = (fails.size() + 1 < checked.size());
   }
