@@ -23,6 +23,8 @@
 
 #include "preprocessing/preprocessing_pass.h"
 
+#include "util/statistics_stats.h"
+
 namespace cvc5::internal {
 namespace preprocessing {
 
@@ -44,6 +46,8 @@ class AssignerInfer : public PreprocessingPass
   Node convertToAssigner(std::unordered_map<TNode, Node> visited,
                          const Node& n,
                          std::vector<Node>& lemmas);
+    /** Total number of assigners found */
+    IntStat d_numAssigners;
 };
 
 }  // namespace passes

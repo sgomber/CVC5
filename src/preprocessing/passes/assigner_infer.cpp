@@ -30,7 +30,8 @@ namespace preprocessing {
 namespace passes {
 
 AssignerInfer::AssignerInfer(PreprocessingPassContext* preprocContext)
-    : PreprocessingPass(preprocContext, "assigner-infer")
+    : PreprocessingPass(preprocContext, "assigner-infer"),
+      d_numAssigners(statisticsRegistry().registerInt("AssignerInfer::numAssigners"))
 {
 }
 
@@ -82,6 +83,7 @@ Node AssignerInfer::convertToAssigner(std::unordered_map<TNode, Node> visited,
         // variable
         if (Assigner::isAssigner(cur))
         {
+          d_numAssigners++;
           Trace("assigner") << "Found assigner: " << cur << std::endl;
           Assigner* a = d_env.registerAssigner(cur);
           Assert(a != nullptr);

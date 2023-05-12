@@ -26,7 +26,7 @@ namespace cvc5::internal {
 namespace theory {
 
 ConflictProcessor::ConflictProcessor(Env& env, TheoryEngine* te)
-    : EnvObj(env), d_engine(te)
+    : EnvObj(env), d_engine(te), d_stats(statisticsRegistry())
 {
   NodeManager* nm = NodeManager::currentNM();
   d_true = nm->mkConst(true);
@@ -52,6 +52,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     Trace("confp-debug") << "No substitution for " << lemma << std::endl;
     return TrustNode::null();
   }
+  ++d_stats.d_lemmas;
   Trace("confp") << "Decomposed " << lemma << std::endl;
   Trace("confp") << "- Substitution: " << s.toString() << std::endl;
   Trace("confp") << "- Target: " << tgtLits << std::endl;
@@ -76,6 +77,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   if (tgtLits.size() > 1)
   {
     minimized = true;
+  ++d_stats.d_minLemmas;
     Trace("confp") << "Target suffices " << tgtLit
                    << " for than one disjunct: " << lemma << std::endl;
   }
@@ -113,6 +115,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
         if (!alit.isNull())
         {
           generalized = true;
+          ++d_stats.d_genLemmas;
           // update the explanation
           varToExp[v] = alit;
           break;
@@ -330,6 +333,14 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
   d_genCache[key] = ret;
   return ret;
 }
+
+ConflictProcessor::Statistics::Statistics(StatisticsRegistry& sr)
+    : d_lemmas(sr.registerInt("ConflictProcessor::lemmas")),
+      d_minLemmas(sr.registerInt("ConflictProcessor::min_lemmas")),
+      d_genLemmas(sr.registerInt("ConflictProcessor::gen_lemmas"))
+{
+}
+
 
 }  // namespace theory
 }  // namespace cvc5::internal

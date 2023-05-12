@@ -22,6 +22,7 @@
 #include "expr/subs.h"
 #include "proof/trust_node.h"
 #include "smt/env_obj.h"
+#include "util/statistics_stats.h"
 
 namespace cvc5::internal {
 
@@ -39,12 +40,24 @@ class ConflictProcessor : protected EnvObj
   TrustNode processLemma(const TrustNode& lem);
 
  private:
+  /** The parent engine */
   TheoryEngine* d_engine;
   Node d_true;
   bool d_doGeneralize;
   bool d_generalizeMaj;
   bool d_generalizeAny;
-
+  /** Statistics about the conflict processor */
+  struct Statistics
+  {
+    Statistics(StatisticsRegistry& sr);
+    /** Total number of lemmas */
+    IntStat d_lemmas;
+    /** Total number of minimized lemmas */
+    IntStat d_minLemmas;
+    /** Total number of generalized lemmas */
+    IntStat d_genLemmas;
+  };
+  Statistics d_stats;
   void decomposeLemma(const Node& lem,
                       Subs& s,
                       std::map<Node, Node>& varToExp,
