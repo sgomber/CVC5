@@ -24,6 +24,7 @@
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/preprocessing_pass_context.h"
 #include "smt/env.h"
+#include "expr/node_algorithm.h"
 
 namespace cvc5::internal {
 namespace preprocessing {
@@ -69,7 +70,6 @@ Node AssignerInfer::convertToAssigner(std::unordered_map<TNode, Node> visited,
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
-  Kind k;
   do
   {
     cur = visit.back();
@@ -77,8 +77,7 @@ Node AssignerInfer::convertToAssigner(std::unordered_map<TNode, Node> visited,
     it = visited.find(cur);
     if (it == visited.end())
     {
-      k = cur.getKind();
-      if (k == kind::OR)
+      if (expr::isBooleanConnective(cur))
       {
         // if assigner, register to node manager, and replace by its assigner
         // variable
@@ -103,16 +102,15 @@ Node AssignerInfer::convertToAssigner(std::unordered_map<TNode, Node> visited,
             }
             conc = nm->mkOr(cdisj);
           }
-          Node lem = nm->mkNode(kind::IMPLIES, lit, conc);
+          Node lem = nm->mkNode(kind::EQUAL, lit, conc);
           lemmas.emplace_back(lem);
-          continue;
         }
-      }
-      else if (k == kind::AND)
-      {
-        visited[cur] = Node::null();
-        visit.push_back(cur);
-        visit.insert(visit.end(), cur.begin(), cur.end());
+        else
+        {
+          visited[cur] = Node::null();
+          visit.push_back(cur);
+          visit.insert(visit.end(), cur.begin(), cur.end());
+        }
         continue;
       }
       visited[cur] = cur;
