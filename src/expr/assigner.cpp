@@ -98,7 +98,8 @@ bool Assigner::initInternal(const Node& n,
       TNode atom = lit.getKind() == NOT ? lit[0] : lit;
       if (!expr::isTheoryAtom(atom))
       {
-        Trace("assigner-init") << "Not atom " << n << std::endl;
+        Trace("assigner-init") << "Not atom " << atom << std::endl;
+        Trace("assigner-init") << "...from " << n << std::endl;
         return false;
       }
     }
@@ -110,7 +111,8 @@ bool Assigner::initInternal(const Node& n,
     {
       // TODO: this is a bit hacky. expect same size but maybe not required
       // cube size is not the same for all disjuncts
-      Trace("assigner-init") << "Not the same size in " << n << std::endl;
+      Trace("assigner-init") << "Not the same size " << cc.size() << " vs " << csize << " in " << nc << std::endl;
+        Trace("assigner-init") << "...from " << n << std::endl;
       return false;
     }
   }
@@ -147,7 +149,8 @@ bool Assigner::initInternal(const Node& n,
     }
     else if (syms != symsTmp)
     {
-      Trace("assigner-init") << "Not the same variables in " << n << std::endl;
+      Trace("assigner-init") << "Not the same variables in " << n[i] << std::endl;
+      Trace("assigner-init") << "...from " << n << std::endl;
       // not the same free symbols
       return false;
     }
