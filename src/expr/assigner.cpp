@@ -65,6 +65,35 @@ bool Assigner::init(const Node& n)
 {
   return initInternal(n, d_vars, d_assignments, d_literals);
 }
+
+bool Assigner::isLiteralCube(const Node& n, std::vector<Node>& cc)
+{
+  Kind nck = n.getKind();
+  if (nck == AND)
+  {
+    cc.insert(cc.end(), n.begin(), n.end());
+  }
+  else
+  {
+    cc.push_back(n);
+  }
+  // each cube must be conjunction of theory literals
+  for (const Node& lit : cc)
+  {
+    TNode atom = lit.getKind() == NOT ? lit[0] : lit;
+    if (!expr::isTheoryAtom(atom))
+    {
+      return false;
+    }
+  }
+  return true;
+}
+bool Assigner::isLiteralCube(const Node& n)
+{
+  std::vector<Node> cc;
+  return isLiteralCube(n, cc);
+}
+
 bool Assigner::initInternal(const Node& n,
                             std::vector<Node>& vars,
                             std::map<Node, std::vector<Node>>& assignments,
@@ -78,53 +107,23 @@ bool Assigner::initInternal(const Node& n,
   // split to cubes
   std::vector<std::vector<Node>> cubes;
   cubes.resize(nargs);
-  size_t csize = 0;
   for (size_t i = 0; i < nargs; i++)
   {
     const Node& nc = n[i];
     std::vector<Node>& cc = cubes[i];
-    Kind nck = nc.getKind();
-    if (nck == AND)
+    if (!isLiteralCube(nc, cc))
     {
-      cc.insert(cc.end(), nc.begin(), nc.end());
-    }
-    else
-    {
-      cc.push_back(nc);
-    }
-    // each cube must be conjunction of theory literals
-    for (const Node& lit : cc)
-    {
-      TNode atom = lit.getKind() == NOT ? lit[0] : lit;
-      if (!expr::isTheoryAtom(atom))
-      {
-        Trace("assigner-init") << "Not atom " << atom << std::endl;
-        Trace("assigner-init") << "...from " << n << std::endl;
-        return false;
-      }
-    }
-    if (i == 0)
-    {
-      csize = cc.size();
-    }
-    else if (cc.size() != csize)
-    {
-      // TODO: this is a bit hacky. expect same size but maybe not required
-      // cube size is not the same for all disjuncts
-      Trace("assigner-init") << "Not the same size " << cc.size() << " vs " << csize << " in " << nc << std::endl;
-        Trace("assigner-init") << "...from " << n << std::endl;
+      Trace("assigner-init") << "Not atom " << nc << std::endl;
+      Trace("assigner-init") << "...from " << n << std::endl;
       return false;
     }
   }
   // infer the variables for the first argument
   Node vtmp;
   Node ctmp;
-  std::unordered_set<Node> syms;
   for (size_t i = 0; i < nargs; i++)
   {
     std::vector<Node>& cc = cubes[i];
-    std::unordered_set<Node> symsTmp;
-    std::unordered_set<TNode> symVisited;
     for (const Node& lit : cc)
     {
       // Check if the literal in the cube is a variable assignment equality.
@@ -139,21 +138,8 @@ bool Assigner::initInternal(const Node& n,
           assigns.push_back(ctmp);
         }
       }
-      literals.push_back(lit);
-      // get the free symbols in the literal
-      expr::getSymbols(lit, symsTmp, symVisited);
     }
-    if (i == 0)
-    {
-      syms = symsTmp;
-    }
-    else if (syms != symsTmp)
-    {
-      Trace("assigner-init") << "Not the same variables in " << n[i] << std::endl;
-      Trace("assigner-init") << "...from " << n << std::endl;
-      // not the same free symbols
-      return false;
-    }
+    literals.insert(literals.end(), cc.begin(), cc.end());
   }
   // ensure all assignments are resized
   for (std::pair<const Node, std::vector<Node>>& as : assignments)
