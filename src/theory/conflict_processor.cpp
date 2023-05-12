@@ -279,7 +279,7 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
   std::unordered_set<Node> checked;
   checked.insert(s);
   std::vector<size_t> fails;
-  bool success = false;
+  bool success = true;
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   for (size_t i = 0, nassigns = assigns.size(); i < nassigns; i++)
   {
@@ -327,7 +327,7 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
   {
     isConflict = isConflict && fails.empty();
     Trace("confp") << "...generalize with " << fails.size() << " / "
-                   << checked.size() << " literals from assigner" << std::endl;
+                   << checked.size() << " failed literals from assigner" << std::endl;
     ret = a->getSatLiteral();
     if (!fails.empty())
     {
