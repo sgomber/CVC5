@@ -44,8 +44,6 @@ class ConflictProcessor : protected EnvObj
   TheoryEngine* d_engine;
   Node d_true;
   bool d_doGeneralize;
-  bool d_generalizeMaj;
-  bool d_generalizeAny;
   /** Statistics about the conflict processor */
   struct Statistics
   {

@@ -32,10 +32,7 @@ ConflictProcessor::ConflictProcessor(Env& env, TheoryEngine* te)
   d_true = nm->mkConst(true);
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   Assert(mode != options::ConflictProcessMode::NONE);
-  d_generalizeMaj = (mode == options::ConflictProcessMode::GENERALIZE_MAJORITY);
-  d_generalizeAny = (mode == options::ConflictProcessMode::GENERALIZE_ANY);
-  d_doGeneralize = (mode == options::ConflictProcessMode::GENERALIZE_ALL
-                    || d_generalizeMaj || d_generalizeAny);
+  d_doGeneralize = (mode != options::ConflictProcessMode::MINIMIZE);
 }
 
 TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
@@ -77,7 +74,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   if (tgtLits.size() > 1)
   {
     minimized = true;
-  ++d_stats.d_minLemmas;
+    ++d_stats.d_minLemmas;
     Trace("confp") << "Target suffices " << tgtLit
                    << " for than one disjunct: " << lemma << std::endl;
   }
@@ -282,6 +279,8 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
   std::unordered_set<Node> checked;
   checked.insert(s);
   std::vector<size_t> fails;
+  bool success = false;
+  options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   for (size_t i = 0, nassigns = assigns.size(); i < nassigns; i++)
   {
     Node ss = assigns[i];
@@ -294,17 +293,35 @@ Node ConflictProcessor::checkGeneralizes(Assigner* a,
     {
       Trace("confp") << "Failed for " << ss << std::endl;
       fails.push_back(i);
-      if (!d_generalizeMaj)
+      // see if we are a failure based on the mode
+      switch(mode)
+      {
+        case options::ConflictProcessMode::GENERALIZE_ALL: success = false;
+        break;
+        case options::ConflictProcessMode::GENERALIZE_MAJORITY: success = (2 * fails.size() < assigns.size());
+        break;
+        case options::ConflictProcessMode::GENERALIZE_ALL_MINUS_ONE: success = (fails.size()<=1); break;
+        case options::ConflictProcessMode::GENERALIZE_ANY:
+          // handled below
+          break;
+        default:
+          Unhandled();
+          break;
+      }
+      if (!success)
       {
         break;
       }
     }
     checked.insert(ss);
   }
+  if (mode==options::ConflictProcessMode::GENERALIZE_ANY)
+  {
+    success = (fails.size() + 1 < checked.size());
+  }
   Node ret;
   // generalize
-  if (fails.empty() || (d_generalizeMaj && 2 * fails.size() < checked.size())
-      || (d_generalizeAny && fails.size() + 1 < checked.size()))
+  if (success)
   {
     isConflict = isConflict && fails.empty();
     Trace("confp") << "...generalize with " << fails.size() << " / "
@@ -340,7 +357,6 @@ ConflictProcessor::Statistics::Statistics(StatisticsRegistry& sr)
       d_genLemmas(sr.registerInt("ConflictProcessor::gen_lemmas"))
 {
 }
-
 
 }  // namespace theory
 }  // namespace cvc5::internal

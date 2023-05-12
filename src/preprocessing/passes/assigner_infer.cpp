@@ -31,7 +31,8 @@ namespace passes {
 
 AssignerInfer::AssignerInfer(PreprocessingPassContext* preprocContext)
     : PreprocessingPass(preprocContext, "assigner-infer"),
-      d_numAssigners(statisticsRegistry().registerInt("AssignerInfer::numAssigners"))
+      d_numAssigners(
+          statisticsRegistry().registerInt("AssignerInfer::numAssigners"))
 {
 }
 
