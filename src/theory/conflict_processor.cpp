@@ -404,6 +404,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   size_t nassigns = assigns.size();
   // note that we may have many duplicate assignments for v e.g. if
   // (or (and (= v c1) F1) ... (and (= v c1) F{n-1}) (and (= v c2) Fn))
+  // TODO: could cache a count per assignment
   std::map<Node, bool> checked;
   std::map<Node, bool>::iterator itc;
   for (size_t i = 0; i < nassigns; i++)
