@@ -19,12 +19,12 @@
 #include "preprocessing/passes/assigner_infer.h"
 
 #include "expr/assigner.h"
+#include "expr/node_algorithm.h"
 #include "expr/skolem_manager.h"
 #include "options/theory_options.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "preprocessing/preprocessing_pass_context.h"
 #include "smt/env.h"
-#include "expr/node_algorithm.h"
 
 namespace cvc5::internal {
 namespace preprocessing {
