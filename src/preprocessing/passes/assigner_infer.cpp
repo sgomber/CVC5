@@ -85,10 +85,10 @@ Node AssignerInfer::convertToAssigner(std::unordered_map<TNode, Node> visited,
         if (Assigner::isAssigner(cur))
         {
           d_numAssigners++;
-          Trace("assigner") << "Found assigner: " << cur << std::endl;
           Assigner* a = d_env.registerAssigner(cur);
           Assert(a != nullptr);
           Node lit = a->getSatLiteral();
+          Trace("assigner") << "Found assigner: " << lit << " <=> " << cur << std::endl;
           visited[cur] = lit;
           Node conc = cur;
           if (options().theory.assignerProxy)

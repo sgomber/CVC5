@@ -25,6 +25,7 @@ namespace cvc5::internal {
 Assigner::Assigner(const Node& n) : d_node(n)
 {
   d_valid = init(n);
+  Assert(d_valid);
   d_satLiteral = getSatLiteral(n);
 }
 
@@ -149,7 +150,7 @@ bool Assigner::initInternal(const Node& n,
     }
   }
   // ensure all assignments are resized
-  for (std::pair<const Node, std::vector<Node>> as : assignments)
+  for (std::pair<const Node, std::vector<Node>>& as : assignments)
   {
     as.second.resize(nargs);
     // save the list of assigned variables
