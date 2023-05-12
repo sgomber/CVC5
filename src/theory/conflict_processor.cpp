@@ -114,7 +114,8 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
         break;
       }
     }
-    Trace("confp-debug") << "...target generalized=" << generalized << std::endl;
+    Trace("confp-debug") << "...target generalized=" << generalized
+                         << std::endl;
     // generalize the substitution literals
     for (std::pair<const Node, Node>& e : varToExp)
     {
@@ -179,7 +180,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
         clause.push_back(e.second.negate());
       }
     }
-    if (tgtLitFinal.getKind()==OR)
+    if (tgtLitFinal.getKind() == OR)
     {
       clause.insert(clause.end(), tgtLitFinal.begin(), tgtLitFinal.end());
     }
@@ -330,21 +331,21 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
 }
 
 bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
-                            Node& tgtLit,
-                            Node& tgtLitFinal,
+                                            Node& tgtLit,
+                                            Node& tgtLitFinal,
                                             const Subs& s,
                                             bool& isConflict)
 {
   Node anode = a->getNode();
-  Assert (anode.getKind()==OR);
+  Assert(anode.getKind() == OR);
   Trace("confp-debug") << "...check target generalization " << anode
-                        << std::endl;
+                       << std::endl;
   // check implies *all* literals
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   size_t nargs = anode.getNumChildren();
   std::vector<Node> fails;
   std::vector<Node> success;
-  for (size_t i=0; i<nargs; i++)
+  for (size_t i = 0; i < nargs; i++)
   {
     Node ln = anode[i].negate();
     if (!checkSubstitution(s, ln))
@@ -352,7 +353,7 @@ bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
       fails.push_back(anode[i]);
       Trace("confp-debug") << "...failed for " << ln << std::endl;
       // see if we are a failure based on the mode
-      if (isFailure(mode, nargs, i+1-success.size()))
+      if (isFailure(mode, nargs, i + 1 - success.size()))
       {
         return false;
       }
@@ -363,9 +364,9 @@ bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
     }
   }
   Trace("confp-debug") << "...target success!" << std::endl;
-  if (success.size()<nargs)
+  if (success.size() < nargs)
   {
-    NodeManager * nm = NodeManager::currentNM();
+    NodeManager* nm = NodeManager::currentNM();
     isConflict = false;
     tgtLit = nm->mkOr(success).negate();
     fails.push_back(a->getSatLiteral().negate());
@@ -436,7 +437,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   }
   isConflict = isConflict && fails.empty();
   Trace("confp") << "...generalize with " << fails.size() << " / " << nassigns
-                  << " failed literals from assigner" << std::endl;
+                 << " failed literals from assigner" << std::endl;
   Node ret = a->getSatLiteral();
   if (!fails.empty())
   {
