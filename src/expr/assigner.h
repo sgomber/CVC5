@@ -37,6 +37,7 @@ class Assigner
   const std::vector<Node>& getVariables() const;
   const std::vector<Node>& getAssignments(const Node& v) const;
   const std::vector<Node>& getLiterals() const;
+  bool hasVariable(const Node& v) const;
   static bool isAssigner(const Node& n);
   static bool isLiteralCube(const Node& n, std::vector<Node>& cc);
   static bool isLiteralCube(const Node& n);

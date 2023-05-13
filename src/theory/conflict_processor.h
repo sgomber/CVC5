@@ -75,14 +75,13 @@ class ConflictProcessor : protected EnvObj
    * checkSubstitution { v -> s' } tgtLit returns true.
    */
   Node checkSubsGeneralizes(Assigner* a,
-                            const Node& v,
-                            const Node& s,
+                            const std::vector<Node>& vs,
                             const Node& tgtLit,
                             bool& isConflict);
   /**
    * Cache of checkGeneralizes, storing (a->getSatLiteral, v, tgtLit)
    */
-  std::map<std::tuple<Node, Node, Node>, Node> d_genCache;
+  std::map<std::pair<Node, Node>, Node> d_genCache;
 };
 
 }  // namespace theory

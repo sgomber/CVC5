@@ -118,38 +118,76 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     Trace("confp-debug") << "...target generalized=" << generalized
                          << std::endl;
     // generalize the substitution literals
+    std::unordered_set<Assigner*> aprocessed;
+    std::vector<Node> allVars;
     for (std::pair<const Node, Node>& e : varToExp)
     {
+      allVars.push_back(e.first);
+    }
+    for (const Node& v : allVars)
+    {
+      Assert (varToExp.find(v)!=varToExp.end());
       // can we generalize to an assigner?
-      std::vector<Assigner*> as = d_engine->getActiveAssigners(e.second);
+      Node expv = varToExp[v];
+      std::vector<Assigner*> as = d_engine->getActiveAssigners(expv);
       if (as.empty())
       {
         continue;
       }
-      Node v = e.first;
-      size_t vindex = s.getIndex(v);
-      Assert(vindex < s.d_vars.size());
-      Node prev = s.d_subs[vindex];
-      Node stgtLit = tgtLit;
-      // if we have more than one substitution, apply the others
-      // TODO: parallel substitution
-      if (s.size() > 1)
-      {
-        s.d_subs[vindex] = v;
-        stgtLit = s.apply(tgtLit);
-      }
-      Trace("confp-debug") << "Check substitution literal " << e.second
+      // NOTE: maybe don't generalize if multiple assigners?
+      Trace("confp-debug") << "Check substitution literal " << expv
                            << ", #assigners=" << as.size() << std::endl;
-      Trace("confp-debug2") << "Target literal is " << stgtLit << std::endl;
       for (Assigner* a : as)
       {
-        Node genPred = checkSubsGeneralizes(a, v, prev, stgtLit, isConflict);
+        // if we haven't already processed this assigner
+        if (aprocessed.find(a)!=aprocessed.end())
+        {
+          continue;
+        }
+        aprocessed.insert(a);
+        std::vector<Node> vs;
+        Node stgtLit;
+        if (s.size()==1)
+        {
+          // if only one variable in substitution, we will try to generalize it
+          vs.push_back(v);
+          stgtLit = tgtLit;
+        }
+        else
+        {
+          const std::vector<Node>& alits = a->getLiterals();
+          // otherwise, we partition into those that are in the assigner and
+          // those that are not.
+          Subs srem;
+          for (const Node& vv : allVars)
+          {
+            // must check the explanation, not the variable itself
+            if (v==vv || std::find(alits.begin(),alits.end(),varToExp[vv])!=alits.end())
+            {
+              vs.push_back(vv);
+            }
+            else
+            {
+              srem.add(vv, s.getSubs(vv));
+            }
+          }
+          Assert (!vs.empty());
+          // apply the substitution that is not included in this assigner
+          stgtLit = srem.apply(tgtLit);
+        }
+        Trace("confp-debug2") << "Generalize variables are " << vs << std::endl;
+        Trace("confp-debug2") << "Target literal is " << stgtLit << std::endl;
+        Node genPred = checkSubsGeneralizes(a, vs, stgtLit, isConflict);
         if (!genPred.isNull())
         {
           generalized = true;
           ++d_stats.d_genLemmas;
           // update the explanation
           varToExp[v] = genPred;
+          for (size_t i=1; i<vs.size(); i++)
+          {
+            varToExp.erase(vs[i]);
+          }
           break;
         }
       }
@@ -157,7 +195,6 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
       {
         break;
       }
-      s.d_subs[vindex] = prev;
     }
   }
   Trace("confp") << "...minimized=" << minimized
@@ -382,24 +419,28 @@ bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
 }
 
 Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
-                                             const Node& v,
-                                             const Node& s,
+                                             const std::vector<Node>& vs,
                                              const Node& tgtLit,
                                              bool& isConflict)
 {
-  std::tuple<Node, Node, Node> key(v, a->getSatLiteral(), tgtLit);
-  std::map<std::tuple<Node, Node, Node>, Node>::iterator it =
+  Assert (!vs.empty());
+  std::pair<Node, Node> key(a->getSatLiteral(), tgtLit);
+  std::map<std::pair<Node, Node>, Node>::iterator it =
       d_genCache.find(key);
   if (it != d_genCache.end())
   {
     return it->second;
   }
+  size_t nvars = vs.size();
   Subs subs;
-  subs.add(v, s);
-  const std::vector<Node>& assigns = a->getAssignments(v);
-  Assert(a->getNode().getNumChildren() == assigns.size());
+  for (const Node& v : vs)
+  {
+    subs.add(v, v);
+  }
   std::vector<size_t> fails;
   bool successAssign = false;
+  const std::vector<Node>& assigns = a->getAssignments(vs[0]);
+  Assert (assigns.size()==a->getNode().getNumChildren());
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   size_t nassigns = assigns.size();
   // note that we may have many duplicate assignments for v e.g. if
@@ -409,25 +450,39 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   std::map<Node, bool>::iterator itc;
   for (size_t i = 0; i < nassigns; i++)
   {
-    Node ss = assigns[i];
-    itc = checked.find(ss);
-    if (itc == checked.end())
+    // check successful substitution
+    if (nvars==1)
     {
-      successAssign = false;
-      if (!ss.isNull())
+      // if single variable, apply it and we cache.
+      Node ss = assigns[i];
+      itc = checked.find(ss);
+      if (itc == checked.end())
       {
-        subs.d_subs[0] = ss;
-        successAssign = checkSubstitution(subs, tgtLit);
+        successAssign = false;
+        if (!ss.isNull())
+        {
+          subs.d_subs[0] = ss;
+          successAssign = checkSubstitution(subs, tgtLit);
+        }
+        checked[ss] = successAssign;
       }
-      checked[ss] = successAssign;
+      else
+      {
+        successAssign = itc->second;
+      }
     }
     else
     {
-      successAssign = itc->second;
+      // if multiple variables, collect for all and apply, not cached?
+      for (size_t j=0; j<nvars; j++)
+      {
+        Node ss = a->getAssignments(vs[j])[i];
+        subs.d_subs[j] = ss.isNull() ? vs[j] : ss;
+      }
+      successAssign = checkSubstitution(subs, tgtLit);
     }
     if (!successAssign)
     {
-      Trace("confp-debug") << "Failed for " << ss << std::endl;
       fails.push_back(i);
       // see if we are a failure based on the mode
       if (isFailure(mode, nassigns, fails.size()))
