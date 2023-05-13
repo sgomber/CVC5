@@ -48,7 +48,7 @@ const std::vector<Node>& Assigner::getLiterals() const { return d_literals; }
 
 bool Assigner::hasVariable(const Node& v) const
 {
-  return std::find(d_vars.begin(), d_vars.end(), v)!=d_vars.end();
+  return std::find(d_vars.begin(), d_vars.end(), v) != d_vars.end();
 }
 bool Assigner::isAssigner(const Node& n)
 {

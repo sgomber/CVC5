@@ -61,7 +61,6 @@ PreprocessingPassResult AssignerInfer::applyInternal(
   return PreprocessingPassResult::NO_CONFLICT;
 }
 
-
 Node AssignerInfer::getSymbolsHash(const Node& n)
 {
   std::unordered_set<Node> syms;
@@ -74,7 +73,7 @@ Node AssignerInfer::getSymbolsHash(const Node& n)
   }
   std::vector<Node> symvec;
   symvec.insert(symvec.end(), syms.begin(), syms.end());
-  if (symvec.size()==1)
+  if (symvec.size() == 1)
   {
     return symvec[0];
   }
@@ -82,10 +81,9 @@ Node AssignerInfer::getSymbolsHash(const Node& n)
   return NodeManager::currentNM()->mkNode(kind::SEXPR, symvec);
 }
 
-Node AssignerInfer::inferAssigners(const Node& n,
-                         std::vector<Node>& lemmas)
+Node AssignerInfer::inferAssigners(const Node& n, std::vector<Node>& lemmas)
 {
-  Assert (n.getKind()==kind::OR);
+  Assert(n.getKind() == kind::OR);
   std::map<Node, std::vector<Node>> symHashToLits;
   std::vector<Node> resLits;
   for (const Node& nc : n)
@@ -108,12 +106,12 @@ Node AssignerInfer::inferAssigners(const Node& n,
   for (std::pair<const Node, std::vector<Node>>& hl : symHashToLits)
   {
     Node ca;
-    if (hl.second.size()==1)
+    if (hl.second.size() == 1)
     {
       resLits.push_back(hl.second[0]);
       continue;
     }
-    else if (hl.second.size()==n.getNumChildren())
+    else if (hl.second.size() == n.getNumChildren())
     {
       ca = n;
     }
@@ -127,8 +125,8 @@ Node AssignerInfer::inferAssigners(const Node& n,
       Assigner* a = d_env.registerAssigner(ca);
       Assert(a != nullptr);
       Node lit = a->getSatLiteral();
-      Trace("assigner")
-          << "Found assigner: " << lit << " <=> " << ca << std::endl;
+      Trace("assigner") << "Found assigner: " << lit << " <=> " << ca
+                        << std::endl;
       Node conc = ca;
       if (options().theory.assignerProxy)
       {
@@ -178,10 +176,11 @@ Node AssignerInfer::convertToAssigner(std::unordered_map<Node, Node> visited,
         visit.push_back(cur);
         // if assigner, register to node manager, and replace by its assigner
         // variable
-        if (cur.getKind()==kind::OR && processedInferred.find(cur)==processedInferred.end())
+        if (cur.getKind() == kind::OR
+            && processedInferred.find(cur) == processedInferred.end())
         {
           Node cura = inferAssigners(cur, lemmas);
-          if (cura!=cur)
+          if (cura != cur)
           {
             // don't recompute
             processedInferred.insert(cura);
@@ -198,7 +197,7 @@ Node AssignerInfer::convertToAssigner(std::unordered_map<Node, Node> visited,
     else if (it->second.isNull())
     {
       it = visitedPre.find(cur);
-      if (it!=visitedPre.end())
+      if (it != visitedPre.end())
       {
         visited[cur] = visited[it->second];
         continue;

@@ -46,8 +46,7 @@ class AssignerInfer : public PreprocessingPass
                          const Node& n,
                          std::vector<Node>& lemmas);
   static Node getSymbolsHash(const Node& n);
-  Node inferAssigners(const Node& n,
-                         std::vector<Node>& lemmas);
+  Node inferAssigners(const Node& n, std::vector<Node>& lemmas);
   /** Total number of assigners found */
   IntStat d_numAssigners;
 };

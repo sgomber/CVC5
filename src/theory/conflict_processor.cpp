@@ -126,7 +126,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     }
     for (const Node& v : allVars)
     {
-      Assert (varToExp.find(v)!=varToExp.end());
+      Assert(varToExp.find(v) != varToExp.end());
       // can we generalize to an assigner?
       Node expv = varToExp[v];
       std::vector<Assigner*> as = d_engine->getActiveAssigners(expv);
@@ -140,14 +140,14 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
       for (Assigner* a : as)
       {
         // if we haven't already processed this assigner
-        if (aprocessed.find(a)!=aprocessed.end())
+        if (aprocessed.find(a) != aprocessed.end())
         {
           continue;
         }
         aprocessed.insert(a);
         std::vector<Node> vs;
         Node stgtLit;
-        if (s.size()==1)
+        if (s.size() == 1)
         {
           // if only one variable in substitution, we will try to generalize it
           vs.push_back(v);
@@ -162,7 +162,9 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
           for (const Node& vv : allVars)
           {
             // must check the explanation, not the variable itself
-            if (v==vv || std::find(alits.begin(),alits.end(),varToExp[vv])!=alits.end())
+            if (v == vv
+                || std::find(alits.begin(), alits.end(), varToExp[vv])
+                       != alits.end())
             {
               vs.push_back(vv);
             }
@@ -171,7 +173,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
               srem.add(vv, s.getSubs(vv));
             }
           }
-          Assert (!vs.empty());
+          Assert(!vs.empty());
           // apply the substitution that is not included in this assigner
           stgtLit = srem.apply(tgtLit);
         }
@@ -184,7 +186,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
           ++d_stats.d_genLemmas;
           // update the explanation
           varToExp[v] = genPred;
-          for (size_t i=1; i<vs.size(); i++)
+          for (size_t i = 1; i < vs.size(); i++)
           {
             varToExp.erase(vs[i]);
           }
@@ -423,10 +425,9 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
                                              const Node& tgtLit,
                                              bool& isConflict)
 {
-  Assert (!vs.empty());
+  Assert(!vs.empty());
   std::pair<Node, Node> key(a->getSatLiteral(), tgtLit);
-  std::map<std::pair<Node, Node>, Node>::iterator it =
-      d_genCache.find(key);
+  std::map<std::pair<Node, Node>, Node>::iterator it = d_genCache.find(key);
   if (it != d_genCache.end())
   {
     return it->second;
@@ -440,7 +441,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   std::vector<size_t> fails;
   bool successAssign = false;
   const std::vector<Node>& assigns = a->getAssignments(vs[0]);
-  Assert (assigns.size()==a->getNode().getNumChildren());
+  Assert(assigns.size() == a->getNode().getNumChildren());
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   size_t nassigns = assigns.size();
   // note that we may have many duplicate assignments for v e.g. if
@@ -451,7 +452,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   for (size_t i = 0; i < nassigns; i++)
   {
     // check successful substitution
-    if (nvars==1)
+    if (nvars == 1)
     {
       // if single variable, apply it and we cache.
       Node ss = assigns[i];
@@ -474,7 +475,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     else
     {
       // if multiple variables, collect for all and apply, not cached?
-      for (size_t j=0; j<nvars; j++)
+      for (size_t j = 0; j < nvars; j++)
       {
         Node ss = a->getAssignments(vs[j])[i];
         subs.d_subs[j] = ss.isNull() ? vs[j] : ss;
