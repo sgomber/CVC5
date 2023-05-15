@@ -49,6 +49,7 @@
 #include "theory/theory_model.h"
 #include "theory/theory_traits.h"
 #include "theory/uf/equality_engine.h"
+#include "theory/plugin_module.h"
 #include "util/resource_manager.h"
 
 using namespace std;
@@ -2085,7 +2086,10 @@ void TheoryEngine::initializeProofChecker(ProofChecker* pc)
   }
 }
 
-void TheoryEngine::addPlugin(Plugin& p) {}
+void TheoryEngine::addPlugin(Plugin& p) {
+  d_dtypes.push_back(std::unique_ptr<PluginModule>(new PluginModule(d_env,*this, p)));
+  d_modules.push_back(d_userPlugins.back().get());
+}
 
 theory::Rewriter* TheoryEngine::getRewriter() { return d_env.getRewriter(); }
 

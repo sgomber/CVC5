@@ -49,6 +49,7 @@ class Env;
 class ResourceManager;
 class TheoryEngineProofGenerator;
 class Plugin;
+class PluginModule;
 class ProofChecker;
 
 /**
@@ -654,6 +655,8 @@ class TheoryEngine : protected EnvObj
   std::unique_ptr<theory::PartitionGenerator> d_partitionGen;
   /** The list of modules */
   std::vector<theory::TheoryEngineModule*> d_modules;
+  /** User pluging modules */
+  std::vector<std::unique_ptr<PluginModule>> d_userPlugins;
 
 }; /* class TheoryEngine */
 
