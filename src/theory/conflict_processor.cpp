@@ -451,6 +451,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   std::map<std::pair<Node, Node>, Node>::iterator it = d_genCache.find(key);
   if (it != d_genCache.end())
   {
+    Trace("confp") << "...already cached" << std::endl;
     return it->second;
   }
   size_t nvars = vs.size();
