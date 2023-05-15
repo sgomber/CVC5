@@ -356,7 +356,6 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
                                           bool expect) const
 {
   Node tgtAtom = tgtLit;
-  /*
   if (tgtAtom.getKind() == NOT)
   {
     tgtAtom = tgtAtom[0];
@@ -364,28 +363,29 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
   }
   // optimize for OR, since we may have generalized a target
   Kind k = tgtAtom.getKind();
-  if (k == OR)
+  if (k == OR || k==AND)
   {
+    bool hasNonConst = false;
     for (const Node& n : tgtAtom)
     {
       Node sn = evaluate(n, s.d_vars, s.d_subs);
       if (!sn.isConst())
       {
-        // failure if all disjuncts must be false
-        if (!expect)
+        // failure if all children must be a given value
+        if (expect==(k==AND))
         {
           return false;
         }
+        hasNonConst = true;
       }
-      else if (sn.getConst<bool>())
+      else if (sn.getConst<bool>()==(k==OR))
       {
         // success if short circuits to true
-        return expect;
+        return expect==(k==OR);
       }
     }
-    return true;
+    return !hasNonConst;
   }
-  */
   // otherwise, rewrite
   Node stgtAtom = evaluate(tgtAtom, s.d_vars, s.d_subs);
   return stgtAtom.isConst() && stgtAtom.getConst<bool>() == expect;
