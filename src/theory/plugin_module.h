@@ -20,8 +20,8 @@
 
 #include <vector>
 
-#include "theory/theory_engine_module.h"
 #include "expr/plugin.h"
+#include "theory/theory_engine_module.h"
 
 namespace cvc5::internal {
 
@@ -30,17 +30,16 @@ namespace theory {
 class PluginModule : public TheoryEngineModule
 {
  public:
-  PluginModule(Env& env,
-                     TheoryEngine* theoryEngine,
-                     Plugin& p);
+  PluginModule(Env& env, TheoryEngine* theoryEngine, Plugin& p);
 
   /**
    * Check at the given effort.
    */
   void check(Theory::Effort e) override;
+
  private:
-   /** The plugin */
-   Plugin& d_plugin;
+  /** The plugin */
+  Plugin& d_plugin;
 };
 }  // namespace theory
 }  // namespace cvc5::internal

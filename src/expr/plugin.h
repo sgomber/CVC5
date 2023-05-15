@@ -19,6 +19,7 @@
 #define CVC5__EXPR__PLUGIN_H
 
 #include <vector>
+
 #include "expr/node.h"
 
 namespace cvc5::internal {
@@ -30,9 +31,7 @@ class Plugin
 {
  public:
   /** Construct a plugin. */
-  Plugin()
-  {
-  }
+  Plugin() {}
   virtual ~Plugin() {}
   /** Check function, returns the empty vector */
   virtual std::vector<Node> check() = 0;

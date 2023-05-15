@@ -18,21 +18,21 @@
 namespace cvc5::internal {
 namespace theory {
 
-  PluginModule::PluginModule(Env& env,
-                     TheoryEngine* theoryEngine,
-                     Plugin& p) : TheoryEngineModule(env, theoryEngine, "Plugin::" + p.getName()), d_plugin(p){}
+PluginModule::PluginModule(Env& env, TheoryEngine* theoryEngine, Plugin& p)
+    : TheoryEngineModule(env, theoryEngine, "Plugin::" + p.getName()),
+      d_plugin(p)
+{
+}
 
-
-  void PluginModule::check(Theory::Effort e)
+void PluginModule::check(Theory::Effort e)
+{
+  // ignore the effort level?
+  std::vector<Node> lems = d_plugin.check();
+  for (const Node& lem : lems)
   {
-    // ignore the effort level?
-    std::vector<Node> lems = d_plugin.check();
-    for (const Node& lem : lems)
-    {
-      d_out.lemma(lem);
-    }
+    d_out.lemma(lem);
   }
+}
 
 }  // namespace theory
 }  // namespace cvc5::internal
-

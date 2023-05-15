@@ -991,7 +991,7 @@ class CVC5ApiUnsupportedExceptionStream
     throw CVC5ApiException(e.getMessage());            \
   }                                                    \
   catch (const std::invalid_argument& e) { throw CVC5ApiException(e.what()); }
-  
+
 }  // namespace
 
 /* -------------------------------------------------------------------------- */
@@ -1111,11 +1111,11 @@ uint32_t maxArity(Kind k)
 }  // namespace
 
 /**
-  * Class that acts as a converter from an external to an internal plugin.
-  */
+ * Class that acts as a converter from an external to an internal plugin.
+ */
 class PluginInternal : public internal::Plugin
 {
-public:
+ public:
   PluginInternal(cvc5::Plugin& e) : internal::Plugin(), d_external(e) {}
   /** Check method */
   std::vector<internal::Node> check() override
@@ -1125,7 +1125,8 @@ public:
   }
   /** Get name */
   std::string getName() override { return d_external.getName(); }
-private:
+
+ private:
   /** Reference to the external (user-provided) plugin */
   cvc5::Plugin& d_external;
 };
@@ -5182,13 +5183,12 @@ std::ostream& operator<<(std::ostream& out, const Statistics& stats)
   return out;
 }
 
-
 /* -------------------------------------------------------------------------- */
 /* Plugin                                                                     */
 /* -------------------------------------------------------------------------- */
 
-Plugin::Plugin() : d_pExtToInt(new PluginInternal(*this)){}
-Plugin::~Plugin(){}
+Plugin::Plugin() : d_pExtToInt(new PluginInternal(*this)) {}
+Plugin::~Plugin() {}
 
 /* -------------------------------------------------------------------------- */
 /* Solver                                                                     */

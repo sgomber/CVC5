@@ -3271,6 +3271,7 @@ std::ostream& operator<<(std::ostream& out,
 class CVC5_EXPORT Plugin
 {
   friend class Solver;
+
  public:
   Plugin();
   virtual ~Plugin();
@@ -3280,6 +3281,7 @@ class CVC5_EXPORT Plugin
   virtual std::vector<Term> check() = 0;
   /** Get the name of the plugin (for debugging) */
   virtual std::string getName() = 0;
+
  private:
   /** Converter to external */
   std::shared_ptr<cvc5::PluginInternal> d_pExtToInt;
