@@ -283,7 +283,8 @@ bool ProcessAssertions::apply(AssertionPipeline& ap)
   // infer assigner subformulas if we attempt to generalize conflicts
   options::ConflictProcessMode cpmode = options().theory.conflictProcessMode;
   if (cpmode != options::ConflictProcessMode::NONE
-      && cpmode != options::ConflictProcessMode::MINIMIZE)
+      && cpmode != options::ConflictProcessMode::MINIMIZE
+      && cpmode != options::ConflictProcessMode::TEST)
   {
     applyPass("assigner-infer", ap);
   }

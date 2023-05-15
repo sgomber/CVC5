@@ -71,6 +71,10 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   Trace("confp") << "Decomposed " << lemma << std::endl;
   Trace("confp") << "- Substitution: " << s.toString() << std::endl;
   Trace("confp") << "- Target: " << tgtLits << std::endl;
+  if (options().theory.conflictProcessMode==options::ConflictProcessMode::TEST)
+  {
+    return TrustNode::null();
+  }
   // check if the substitution implies one of the tgtLit, if not, we are done
   Node tgtLit;
   for (TNode tlit : tgtLits)
@@ -115,6 +119,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     {
       if (checkTgtGeneralizes(a, tgtLit, tgtLitFinal, s, isConflict))
       {
+        ++d_stats.d_genLemmas;
         generalized = true;
         break;
       }
@@ -186,8 +191,11 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
         Node genPred = checkSubsGeneralizes(a, vs, stgtLit, isConflict);
         if (!genPred.isNull())
         {
-          generalized = true;
-          ++d_stats.d_genLemmas;
+          if (!generalized)
+          {
+            generalized = true;
+            ++d_stats.d_genLemmas;
+          }
           // update the explanation
           varToExp[v] = genPred;
           for (size_t i = 1; i < vs.size(); i++)
@@ -197,6 +205,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
           break;
         }
       }
+      // NOTE: can't generalize across multiple assigners
       if (generalized)
       {
         break;
@@ -356,8 +365,7 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
   {
     for (const Node& n : tgtAtom)
     {
-      Node sn = s.apply(n);
-      sn = rewrite(sn);
+      Node sn = evaluate(n, s.d_vars, s.d_subs);
       if (!sn.isConst())
       {
         // failure if all disjuncts must be false
@@ -375,8 +383,7 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
     return true;
   }
   // otherwise, rewrite
-  Node stgtAtom = s.apply(tgtAtom);
-  stgtAtom = rewrite(stgtAtom);
+  Node stgtAtom = evaluate(tgtAtom, s.d_vars, s.d_subs);
   return stgtAtom.isConst() && stgtAtom.getConst<bool>() == expect;
 }
 
