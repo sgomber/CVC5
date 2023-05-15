@@ -23,9 +23,9 @@
 
 #include <memory>
 
+#include "parser/api/cpp/command.h"
 #include "parser/flex_parser.h"
 #include "parser/parser_antlr.h"
-#include "parser/api/cpp/command.h"
 
 namespace cvc5 {
 namespace parser {

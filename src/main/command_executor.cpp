@@ -58,9 +58,10 @@ CommandExecutor::CommandExecutor(std::unique_ptr<cvc5::Solver>& solver)
 {
   // if applicable, add the lemma loader plugin
   std::string llfile = d_solver->getOptionInfo("lemma-loader").stringValue();
-  if (llfile!="")
+  if (llfile != "")
   {
-    d_lemmaLoader.reset(new LemmaLoader(llfile, d_solver.get(), d_symman.get()));
+    d_lemmaLoader.reset(
+        new LemmaLoader(llfile, d_solver.get(), d_symman.get()));
     d_solver->addPlugin(*d_lemmaLoader.get());
   }
 }

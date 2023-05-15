@@ -21,8 +21,8 @@
 #include <iosfwd>
 #include <string>
 
-#include "parser/api/cpp/symbol_manager.h"
 #include "main/lemma_loader.h"
+#include "parser/api/cpp/symbol_manager.h"
 
 namespace cvc5 {
 

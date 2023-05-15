@@ -21,14 +21,13 @@
 namespace cvc5 {
 namespace main {
 
-LemmaLoader::LemmaLoader(std::string& filename, Solver * s, parser::SymbolManager* sm) : d_filename(filename), d_solver(s), d_symman(sm)
+LemmaLoader::LemmaLoader(std::string& filename,
+                         Solver* s,
+                         parser::SymbolManager* sm)
+    : d_filename(filename), d_solver(s), d_symman(sm)
 {
-  
 }
-LemmaLoader::~LemmaLoader()
-{
-  
-}
+LemmaLoader::~LemmaLoader() {}
 std::vector<Term> LemmaLoader::check()
 {
   std::vector<Term> lemmas;
@@ -40,26 +39,21 @@ std::vector<Term> LemmaLoader::check()
     ip.setFileInput(d_solver->getOption("input-language"), d_filename);
     // reads a list of formulas
     Term lem;
-    for(;;)
+    for (;;)
     {
       lem = ip.nextExpression();
       if (lem.isNull())
       {
         break;
       }
-      Assert (lem.getSort().isBoolean());
+      Assert(lem.getSort().isBoolean());
       lemmas.push_back(lem);
     }
   }
   return lemmas;
 }
-std::string LemmaLoader::getName()
-{
-  return "LemmaLoader";
-}
+std::string LemmaLoader::getName() { return "LemmaLoader"; }
 std::string LemmaLoader::getFileName() { return d_filename; }
-
 
 }  // namespace main
 }  // namespace cvc5
-

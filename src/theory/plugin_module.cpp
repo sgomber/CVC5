@@ -31,7 +31,7 @@ void PluginModule::check(Theory::Effort e)
   // returned vector is taken as lemmas
   for (const Node& lem : lems)
   {
-    Assert (lem.getType().isBoolean());
+    Assert(lem.getType().isBoolean());
     d_out.lemma(lem);
   }
 }

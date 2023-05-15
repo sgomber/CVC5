@@ -268,6 +268,7 @@ class Env
   void addPlugin(Plugin* p);
   /** Get plugins */
   const std::vector<Plugin*>& getPlugins() const;
+
  private:
   /* Private initialization ------------------------------------------------- */
 
@@ -335,7 +336,7 @@ class Env
   /** The separation logic location and data types */
   TypeNode d_sepLocType;
   TypeNode d_sepDataType;
-  /** 
+  /**
    * List of plugins, to be used in any theory engine that uses this
    * environment
    */
