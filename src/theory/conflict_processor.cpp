@@ -493,7 +493,18 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   std::unordered_set<Node> failedAssigns;
   for (const Node& tc : toCheck)
   {
-    // TODO: check if it implies a variable equality. If so, we may be able to
+    // TODO: extract the relevant portion of tc on the original subsitution?
+    /*
+    if (tc.getKind()==AND)
+    {
+      std::vector<Node> disj;
+      for (const Node& tcc : tc)
+      {
+        
+      }
+    }
+    */
+    // check if it implies a variable equality. If so, we may be able to
     // do avoid checking substitution.
     std::vector<Node> entval;
     entval.resize(a->getVariables().size());
