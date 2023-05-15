@@ -79,7 +79,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   Node tgtLit;
   for (TNode tlit : tgtLits)
   {
-    if (checkSubstitution(s, tlit))
+    if (checkSubstitution(s, tlit, nullptr))
     {
       tgtLit = tlit;
       break;
@@ -190,7 +190,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
         }
         Trace("confp-debug2") << "Generalize variables are " << vs << std::endl;
         Trace("confp-debug2") << "Target literal is " << stgtLit << std::endl;
-        Node genPred = checkSubsGeneralizes(a, vs, stgtLit, isConflict);
+        Node genPred = checkSubsGeneralizes(a, vs, stgtLit, atgtGen, isConflict);
         if (!genPred.isNull())
         {
           if (!generalized)
@@ -352,7 +352,8 @@ bool ConflictProcessor::hasAssigner(const Node& lit) const
 }
 
 bool ConflictProcessor::checkSubstitution(const Subs& s,
-                                          const Node& tgtLit) const
+                                          const Node& tgtLit,
+                            Assigner* atgt) const
 {
   bool expect = true;
   Node tgtAtom = tgtLit;
@@ -407,7 +408,7 @@ bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
   for (size_t i = 0; i < nargs; i++)
   {
     Node ln = anode[i].negate();
-    if (!checkSubstitution(s, ln))
+    if (!checkSubstitution(s, ln, nullptr))
     {
       fails.push_back(anode[i]);
       Trace("confp-debug") << "...failed for " << ln << std::endl;
@@ -442,6 +443,7 @@ bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
 Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
                                              const std::vector<Node>& vs,
                                              const Node& tgtLit,
+                                             Assigner* atgt,
                                              bool& isConflict)
 {
   Assert(!vs.empty());
@@ -458,40 +460,36 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     subs.add(v, v);
   }
   std::vector<size_t> fails;
-  bool successAssign = false;
-  const std::vector<Node>& assigns = a->getAssignments(vs[0]);
-  Assert(assigns.size() == a->getNode().getNumChildren());
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
-  size_t nassigns = assigns.size();
-  // note that we may have many duplicate assignments for v e.g. if
-  // (or (and (= v c1) F1) ... (and (= v c1) F{n-1}) (and (= v c2) Fn))
-  // NOTE: could cache a count per assignment
-  std::map<Node, bool> checked;
-  std::map<Node, bool>::iterator itc;
-  for (size_t i = 0; i < nassigns; i++)
+  size_t nassigns = a->getNode().getNumChildren();
+  if (nvars==1)
   {
-    // check successful substitution
-    if (nvars == 1)
+    bool successAssign = false;
+    const std::map<Node, std::vector<size_t>>& amap = a->getAssignmentMap(vs[0]);
+    for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
     {
-      // if single variable, apply it and we cache.
-      Node ss = assigns[i];
-      itc = checked.find(ss);
-      if (itc == checked.end())
+      Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size() << std::endl;
+      successAssign = false;
+      if (!aa.first.isNull())
       {
-        successAssign = false;
-        if (!ss.isNull())
-        {
-          subs.d_subs[0] = ss;
-          successAssign = checkSubstitution(subs, tgtLit);
-        }
-        checked[ss] = successAssign;
+        subs.d_subs[0] = aa.first;
+        successAssign = checkSubstitution(subs, tgtLit, atgt);
       }
-      else
+      if (!successAssign)
       {
-        successAssign = itc->second;
+        fails.insert(fails.end(), aa.second.begin(), aa.second.end());
+        // see if we are a failure based on the mode
+        if (isFailure(mode, nassigns, fails.size()))
+        {
+          d_genCache[key] = Node::null();
+          return Node::null();
+        }
       }
     }
-    else
+  }
+  else
+  {
+    for (size_t i = 0; i < nassigns; i++)
     {
       // if multiple variables, collect for all and apply, not cached?
       for (size_t j = 0; j < nvars; j++)
@@ -499,16 +497,15 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
         Node ss = a->getAssignments(vs[j])[i];
         subs.d_subs[j] = ss.isNull() ? vs[j] : ss;
       }
-      successAssign = checkSubstitution(subs, tgtLit);
-    }
-    if (!successAssign)
-    {
-      fails.push_back(i);
-      // see if we are a failure based on the mode
-      if (isFailure(mode, nassigns, fails.size()))
+      if (!checkSubstitution(subs, tgtLit, atgt))
       {
-        d_genCache[key] = Node::null();
-        return Node::null();
+        fails.push_back(i);
+        // see if we are a failure based on the mode
+        if (isFailure(mode, nassigns, fails.size()))
+        {
+          d_genCache[key] = Node::null();
+          return Node::null();
+        }
       }
     }
   }
