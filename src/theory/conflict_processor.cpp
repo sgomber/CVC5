@@ -80,7 +80,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   Node tgtLit;
   for (TNode tlit : tgtLits)
   {
-    if (checkSubstitution(s, tlit, nullptr))
+    if (checkSubstitution(s, tlit, true))
     {
       tgtLit = tlit;
       break;
@@ -113,7 +113,6 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   {
     // first, try to generalize the target literal
     Node tgtLitn = tgtLit.negate();
-    Assigner* atgtGen = nullptr;
     std::vector<Assigner*> ast = d_engine->getActiveAssigners(tgtLitn);
     Trace("confp-debug") << "Check target literal " << tgtLitn
                          << ", #assigners=" << ast.size() << std::endl;
@@ -123,7 +122,6 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
       {
         ++d_stats.d_genLemmas;
         generalized = true;
-        atgtGen = a;
         break;
       }
     }
@@ -192,7 +190,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
         Trace("confp-debug2") << "Generalize variables are " << vs << std::endl;
         Trace("confp-debug2") << "Target literal is " << stgtLit << std::endl;
         Node genPred =
-            checkSubsGeneralizes(a, vs, stgtLit, atgtGen, isConflict);
+            checkSubsGeneralizes(a, vs, stgtLit, isConflict);
         if (!genPred.isNull())
         {
           if (!generalized)
@@ -355,14 +353,14 @@ bool ConflictProcessor::hasAssigner(const Node& lit) const
 
 bool ConflictProcessor::checkSubstitution(const Subs& s,
                                           const Node& tgtLit,
-                                          Assigner* atgt) const
+                                          bool expect) const
 {
-  bool expect = true;
   Node tgtAtom = tgtLit;
+  /*
   if (tgtAtom.getKind() == NOT)
   {
     tgtAtom = tgtAtom[0];
-    expect = false;
+    expect = !expect;
   }
   // optimize for OR, since we may have generalized a target
   Kind k = tgtAtom.getKind();
@@ -387,6 +385,7 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
     }
     return true;
   }
+  */
   // otherwise, rewrite
   Node stgtAtom = evaluate(tgtAtom, s.d_vars, s.d_subs);
   return stgtAtom.isConst() && stgtAtom.getConst<bool>() == expect;
@@ -409,8 +408,8 @@ bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
   std::vector<Node> success;
   for (size_t i = 0; i < nargs; i++)
   {
-    Node ln = anode[i].negate();
-    if (!checkSubstitution(s, ln, nullptr))
+    Node ln = anode[i];
+    if (!checkSubstitution(s, ln, false))
     {
       fails.push_back(anode[i]);
       Trace("confp-debug") << "...failed for " << ln << std::endl;
@@ -445,7 +444,6 @@ bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
 Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
                                              const std::vector<Node>& vs,
                                              const Node& tgtLit,
-                                             Assigner* atgt,
                                              bool& isConflict)
 {
   Assert(!vs.empty());
@@ -457,51 +455,80 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   }
   size_t nvars = vs.size();
   Subs subs;
-  for (const Node& v : vs)
+  std::map<Node, size_t> vindex;
+  std::vector<size_t> vindexlist;
+  for (size_t i=0; i<nvars; i++)
   {
+    const Node& v = vs[i];
     subs.add(v, v);
-  }
-  std::vector<size_t> vindices;
-  if (nvars > 1)
-  {
-    for (const Node& v : vs)
-    {
-      vindices.push_back(a->variableIndexOf(v));
-    }
+    size_t index = a->variableIndexOf(v);
+    vindex[v] = index;
+    vindexlist.push_back(index);
   }
   std::vector<size_t> fails;
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   size_t nassigns = a->getNode().getNumChildren();
-  bool successAssign = false;
   const std::map<Node, std::vector<size_t>>& amap = a->getAssignmentMap();
-  for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
+  
+  // if we are checking a disjunct (i.e. from a generalized target),
+  // we check per disjunct
+  std::vector<Node> toCheck;
+  bool expect = true;
+  if (tgtLit.getKind()==NOT && tgtLit[0].getKind()==OR)
   {
-    Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size()
-                      << std::endl;
-    successAssign = false;
-    if (nvars == 1)
+    toCheck.insert(toCheck.end(), tgtLit[0].begin(), tgtLit[0].end());
+    expect = false;
+  }
+  else
+  {
+    toCheck.push_back(tgtLit);
+  }
+  std::unordered_set<Node> failedAssigns;
+  for (const Node& tc : toCheck)
+  {
+    // TODO: check if it implies a variable equality. If so, we may be able to
+    // do avoid checking substitution.
+    std::vector<Node> entval;
+    entval.resize(a->getVariables().size());
+    getEntailedEq(tc, vindex, entval);
+    for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
     {
-      Assert(aa.first.getType() == vs[0].getType());
-      subs.d_subs[0] = aa.first;
-    }
-    else
-    {
-      Assert(aa.first.getKind() == SEXPR);
-      for (size_t j = 0; j < nvars; j++)
+      if (failedAssigns.find(aa.first)!=failedAssigns.end())
       {
-        Assert(j < vindices.size());
-        subs.d_subs[j] = aa.first[vindices[j]];
+        continue;
       }
-    }
-    successAssign = checkSubstitution(subs, tgtLit, atgt);
-    if (!successAssign)
-    {
-      fails.insert(fails.end(), aa.second.begin(), aa.second.end());
-      // see if we are a failure based on the mode
-      if (isFailure(mode, nassigns, fails.size()))
+      // if entails different values
+      if (!expect && isAssignmentClashVec(aa.first, entval))
       {
-        d_genCache[key] = Node::null();
-        return Node::null();
+        continue;
+      }
+      Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size()
+                        << std::endl;
+      // construct the substitution
+      if (nvars == 1)
+      {
+        Assert(aa.first.getType() == vs[0].getType());
+        subs.d_subs[0] = aa.first;
+      }
+      else
+      {
+        Assert(aa.first.getKind() == SEXPR);
+        for (size_t j = 0; j < nvars; j++)
+        {
+          Assert (vindexlist[j]<aa.first.getNumChildren());
+          subs.d_subs[j] = aa.first[vindexlist[j]];
+        }
+      }
+      if (!checkSubstitution(subs, tc, expect))
+      {
+        failedAssigns.insert(aa.first);
+        fails.insert(fails.end(), aa.second.begin(), aa.second.end());
+        // see if we are a failure based on the mode
+        if (isFailure(mode, nassigns, fails.size()))
+        {
+          d_genCache[key] = Node::null();
+          return Node::null();
+        }
       }
     }
   }
@@ -538,6 +565,59 @@ ConflictProcessor::Statistics::Statistics(StatisticsRegistry& sr)
       d_minLemmas(sr.registerInt("ConflictProcessor::min_lemmas")),
       d_genLemmas(sr.registerInt("ConflictProcessor::gen_lemmas"))
 {
+}
+
+void ConflictProcessor::getEntailedEq(const Node& tc, const std::map<Node, size_t>& vindex, std::vector<Node>& entval)
+{
+  std::vector<Node> toCheck;
+  Kind k = tc.getKind();
+  if (k==AND)
+  {
+    toCheck.insert(toCheck.end(), tc.begin(), tc.end());
+  }
+  else if (k==EQUAL)
+  {
+    toCheck.push_back(tc);
+  }
+  Node vtmp;
+  Node ctmp;
+  std::map<Node, size_t>::const_iterator it;
+  for (const Node& eq : tc)
+  {
+    if (!Assigner::isAssignEq(eq, vtmp, ctmp))
+    {
+      continue;
+    }
+    it = vindex.find(vtmp);
+    if (it==vindex.end())
+    {
+      continue;
+    }
+    Assert (it->second<subs.size());
+    entval[it->second] = ctmp;
+  }
+}
+
+bool ConflictProcessor::isAssignmentClashVec(const Node& a, const std::vector<Node>& entval)
+{
+  if (entval.size()==1)
+  {
+    return isAssignmentClash(a, entval[0]);
+  }
+  Assert (a.getKind()==SEXPR && a.getNumChildren()==entval.size());
+  for (size_t i=0, nval = entval.size(); i<nval; i++)
+  {
+    if (isAssignmentClash(a[i], entval[i]))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+bool ConflictProcessor::isAssignmentClash(const Node& a, const Node& b)
+{
+  Assert (!a.isNull());
+  return !b.isNull() && a.isConst() && b.isConst() && a!=b;
 }
 
 }  // namespace theory
