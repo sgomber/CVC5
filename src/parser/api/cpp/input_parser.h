@@ -108,7 +108,7 @@ class CVC5_EXPORT InputParser
    */
   std::unique_ptr<Command> nextCommand();
 
-  /** 
+  /**
    * Parse and return the next expression. Requires setting the logic prior
    * to this point.
    */
