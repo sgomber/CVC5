@@ -543,8 +543,8 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     }
   }
   isConflict = isConflict && fails.empty();
-  Trace("confp") << "...generalize with " << fails.size() << " / " << nassigns
-                 << " failed literals" << std::endl;
+  Trace("confp") << "...generalize substitution with " << fails.size() << " / " << nassigns
+                 << " failed assignments" << std::endl;
   Node ret = a->getSatLiteral();
   if (!fails.empty())
   {
