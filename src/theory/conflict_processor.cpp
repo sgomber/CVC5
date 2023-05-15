@@ -499,6 +499,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
       // if entails different values
       if (!expect && isAssignmentClashVec(aa.first, entval))
       {
+        Trace("ajr-temp") << "Clash vec " << aa.first << " vs " << entval << std::endl;
         continue;
       }
       Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size()
