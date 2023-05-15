@@ -244,7 +244,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
       clause.push_back(tgtLitFinal);
     }
     Node genLem = nm->mkOr(clause);
-    Trace("confp") << "...processed lemma = " << lemma << std::endl;
+    Trace("confp") << "...processed lemma is " << genLem << std::endl;
     // AlwaysAssert(false) << genLem << " for " << lem << std::endl;
     return TrustNode::mkTrustLemma(genLem);
   }
