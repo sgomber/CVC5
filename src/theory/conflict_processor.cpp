@@ -53,6 +53,7 @@ ConflictProcessor::ConflictProcessor(Env& env, TheoryEngine* te)
 
 TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
 {
+  ++d_stats.d_initLemmas;
   Node lemma = lem.getProven();
   lemma = rewrite(lemma);
   Subs s;
@@ -85,6 +86,9 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     Trace("confp-debug") << "No target for " << lemma << std::endl;
     return TrustNode::null();
   }
+  // NOTE: could minimize the substitution here?
+  
+  // the form of the target literal as it will appear in the final lemma.
   Node tgtLitFinal = tgtLit;
   // we are minimized if there were multiple target literals and we found a
   // single one that sufficed
@@ -94,7 +98,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     minimized = true;
     ++d_stats.d_minLemmas;
     Trace("confp") << "Target suffices " << tgtLit
-                   << " for than one disjunct: " << lemma << std::endl;
+                   << " for more than one disjunct: " << lemma << std::endl;
   }
 
   // generalize the conflict
@@ -102,7 +106,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   bool isConflict = lem.getKind() == TrustNodeKind::CONFLICT;
   if (d_doGeneralize && d_env.hasAssigners())
   {
-    // generalize the target literal
+    // first, try to generalize the target literal
     Node tgtLitn = tgtLit.negate();
     std::vector<Assigner*> ast = d_engine->getActiveAssigners(tgtLitn);
     Trace("confp-debug") << "Check target literal " << tgtLitn
@@ -117,7 +121,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     }
     Trace("confp-debug") << "...target generalized=" << generalized
                          << std::endl;
-    // generalize the substitution literals
+    // second, try to generalize the substitution literals
     std::unordered_set<Assigner*> aprocessed;
     std::vector<Node> allVars;
     for (std::pair<const Node, Node>& e : varToExp)
@@ -296,17 +300,18 @@ void ConflictProcessor::decomposeLemma(const Node& lem,
               Node prevExp = varToExp[vtmp];
               if (!hasAssigner(prevExp) && hasAssigner(cur[0]))
               {
-                // replace the previous
+                // replace the previous if we have an assigner
                 tgtLits.push_back(prevExp.notNode());
                 s.erase(vtmp);
               }
               else
               {
-                // take this as a target literal
+                // otherwise, just take this as a target literal
                 tgtLits.push_back(cur);
                 continue;
               }
             }
+            // use as a substitution
             s.add(vtmp, ctmp);
             varToExp[vtmp] = cur[0];
             continue;
@@ -314,6 +319,7 @@ void ConflictProcessor::decomposeLemma(const Node& lem,
         }
         else if (k == AND)
         {
+          // negations of children of AND are entailed
           for (const Node& c : cur[0])
           {
             Node cn = c.negate();
@@ -323,6 +329,7 @@ void ConflictProcessor::decomposeLemma(const Node& lem,
           continue;
         }
       }
+      // otherwise, take this as a target literal
       tgtLits.push_back(cur);
     }
   } while (!visit.empty());
@@ -343,7 +350,7 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
     tgtAtom = tgtAtom[0];
     expect = false;
   }
-  // optimize for (negated) OR, since we may have generalized a target
+  // optimize for OR, since we may have generalized a target
   Kind k = tgtAtom.getKind();
   if (k == OR)
   {
@@ -353,6 +360,7 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
       sn = rewrite(sn);
       if (!sn.isConst())
       {
+        // failure if all disjuncts must be false
         if (!expect)
         {
           return false;
@@ -360,11 +368,13 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
       }
       else if (sn.getConst<bool>())
       {
+        // success if short circuits to true
         return expect;
       }
     }
     return true;
   }
+  // otherwise, rewrite
   Node stgtAtom = s.apply(tgtAtom);
   stgtAtom = rewrite(stgtAtom);
   return stgtAtom.isConst() && stgtAtom.getConst<bool>() == expect;
@@ -446,7 +456,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   size_t nassigns = assigns.size();
   // note that we may have many duplicate assignments for v e.g. if
   // (or (and (= v c1) F1) ... (and (= v c1) F{n-1}) (and (= v c2) Fn))
-  // TODO: could cache a count per assignment
+  // NOTE: could cache a count per assignment
   std::map<Node, bool> checked;
   std::map<Node, bool>::iterator itc;
   for (size_t i = 0; i < nassigns; i++)
@@ -521,7 +531,8 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
 }
 
 ConflictProcessor::Statistics::Statistics(StatisticsRegistry& sr)
-    : d_lemmas(sr.registerInt("ConflictProcessor::lemmas")),
+    : d_initLemmas(sr.registerInt("ConflictProcessor::init_lemmas")),
+      d_lemmas(sr.registerInt("ConflictProcessor::lemmas")),
       d_minLemmas(sr.registerInt("ConflictProcessor::min_lemmas")),
       d_genLemmas(sr.registerInt("ConflictProcessor::gen_lemmas"))
 {

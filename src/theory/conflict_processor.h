@@ -49,6 +49,8 @@ class ConflictProcessor : protected EnvObj
   {
     Statistics(StatisticsRegistry& sr);
     /** Total number of lemmas */
+    IntStat d_initLemmas;
+    /** Total number of lemmas */
     IntStat d_lemmas;
     /** Total number of minimized lemmas */
     IntStat d_minLemmas;
