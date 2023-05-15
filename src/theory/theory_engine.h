@@ -49,7 +49,6 @@ class Env;
 class ResourceManager;
 class TheoryEngineProofGenerator;
 class Plugin;
-class PluginModule;
 class ProofChecker;
 
 /**
@@ -86,6 +85,7 @@ namespace theory {
 
 class CombinationEngine;
 class DecisionManager;
+class PluginModule;
 class RelevanceManager;
 class Rewriter;
 class SharedSolver;
@@ -146,10 +146,6 @@ class TheoryEngine : protected EnvObj
   {
     d_propEngine = propEngine;
   }
-  /**
-   * Add plugin
-   */
-  void addPlugin(Plugin& p);
 
   /**
    * Called when all initialization of options/logic is done, after theory
@@ -656,7 +652,7 @@ class TheoryEngine : protected EnvObj
   /** The list of modules */
   std::vector<theory::TheoryEngineModule*> d_modules;
   /** User pluging modules */
-  std::vector<std::unique_ptr<PluginModule>> d_userPlugins;
+  std::vector<std::unique_ptr<theory::PluginModule>> d_userPlugins;
 
 }; /* class TheoryEngine */
 

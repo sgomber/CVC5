@@ -30,7 +30,7 @@ namespace theory {
 class PluginModule : public TheoryEngineModule
 {
  public:
-  PluginModule(Env& env, TheoryEngine* theoryEngine, Plugin& p);
+  PluginModule(Env& env, TheoryEngine* theoryEngine, Plugin* p);
 
   /**
    * Check at the given effort.
@@ -39,7 +39,7 @@ class PluginModule : public TheoryEngineModule
 
  private:
   /** The plugin */
-  Plugin& d_plugin;
+  Plugin* d_plugin;
 };
 }  // namespace theory
 }  // namespace cvc5::internal

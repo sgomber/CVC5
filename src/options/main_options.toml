@@ -180,3 +180,11 @@ name   = "Driver"
   type       = "bool"
   default    = "true"
   help       = "when piping from stdin, feed the input to the parser one line at a time. This avoids potential nontermination in the Flex lexer due to not enabling its interactive setting."
+
+[[option]]
+  name       = "lemmaLoader"
+  category   = "expert"
+  long       = "lemma-loader=FILENAME"
+  type       = "std::string"
+  default    = '""'
+  help       = "filename to query"

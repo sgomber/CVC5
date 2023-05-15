@@ -7543,7 +7543,7 @@ Term Solver::declareOracleFun(
 void Solver::addPlugin(Plugin& p)
 {
   CVC5_API_TRY_CATCH_BEGIN;
-  d_slv->addPlugin(*p.d_pExtToInt.get());
+  d_slv->addPlugin(p.d_pExtToInt.get());
   CVC5_API_TRY_CATCH_END;
 }
 

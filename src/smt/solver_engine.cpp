@@ -968,12 +968,15 @@ void SolverEngine::declareOracleFun(
   assertFormula(q);
 }
 
-void SolverEngine::addPlugin(Plugin& p)
+void SolverEngine::addPlugin(Plugin* p)
 {
-  finishInit();
-  d_ctxManager->doPendingPops();
-  TheoryEngine* te = d_smtSolver->getTheoryEngine();
-  te->addPlugin(p);
+  if (d_state->isFullyInited())
+  {
+    throw ModalException(
+        "Cannot add plugin after the solver has been fully initialized.");
+  }
+  // we do not initialize the solver here.
+  d_env->addPlugin(p);
 }
 
 Node SolverEngine::simplify(const Node& t)

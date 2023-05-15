@@ -22,6 +22,7 @@
 #include <string>
 
 #include "parser/api/cpp/symbol_manager.h"
+#include "main/lemma_loader.h"
 
 namespace cvc5 {
 
@@ -113,6 +114,8 @@ private:
                     parser::SymbolManager* sm,
                     parser::Command* cmd,
                     std::ostream& out);
+  /** Lemma loader plugin */
+  std::unique_ptr<LemmaLoader> d_lemmaLoader;
 }; /* class CommandExecutor */
 
 

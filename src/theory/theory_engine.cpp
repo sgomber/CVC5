@@ -215,6 +215,14 @@ void TheoryEngine::finishInit()
         std::make_unique<PartitionGenerator>(d_env, this, getPropEngine());
     d_modules.push_back(d_partitionGen.get());
   }
+  
+  // add user-provided plugins
+  const std::vector<Plugin*> plugins = d_env.getPlugins();
+  for (Plugin* p : plugins)
+  {
+    d_userPlugins.push_back(std::unique_ptr<PluginModule>(new PluginModule(d_env, this, p)));
+    d_modules.push_back(d_userPlugins.back().get());
+  }
   Trace("theory") << "End TheoryEngine::finishInit" << std::endl;
 }
 
@@ -2084,11 +2092,6 @@ void TheoryEngine::initializeProofChecker(ProofChecker* pc)
       prc->registerTo(pc);
     }
   }
-}
-
-void TheoryEngine::addPlugin(Plugin& p) {
-  d_dtypes.push_back(std::unique_ptr<PluginModule>(new PluginModule(d_env,*this, p)));
-  d_modules.push_back(d_userPlugins.back().get());
 }
 
 theory::Rewriter* TheoryEngine::getRewriter() { return d_env.getRewriter(); }

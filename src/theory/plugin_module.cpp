@@ -18,8 +18,8 @@
 namespace cvc5::internal {
 namespace theory {
 
-PluginModule::PluginModule(Env& env, TheoryEngine* theoryEngine, Plugin& p)
-    : TheoryEngineModule(env, theoryEngine, "Plugin::" + p.getName()),
+PluginModule::PluginModule(Env& env, TheoryEngine* theoryEngine, Plugin* p)
+    : TheoryEngineModule(env, theoryEngine, "Plugin::" + p->getName()),
       d_plugin(p)
 {
 }
@@ -27,9 +27,11 @@ PluginModule::PluginModule(Env& env, TheoryEngine* theoryEngine, Plugin& p)
 void PluginModule::check(Theory::Effort e)
 {
   // ignore the effort level?
-  std::vector<Node> lems = d_plugin.check();
+  std::vector<Node> lems = d_plugin->check();
+  // returned vector is taken as lemmas
   for (const Node& lem : lems)
   {
+    Assert (lem.getType().isBoolean());
     d_out.lemma(lem);
   }
 }

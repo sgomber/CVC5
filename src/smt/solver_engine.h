@@ -472,7 +472,7 @@ class CVC5_EXPORT SolverEngine
    *
    * @param p The plugin to add.
    */
-  void addPlugin(Plugin& p);
+  void addPlugin(Plugin* p);
   /**
    * Simplify a formula without doing "much" work.  Does not involve
    * the SAT Engine in the simplification, but uses the current

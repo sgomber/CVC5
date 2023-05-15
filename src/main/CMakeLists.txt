@@ -19,6 +19,8 @@ set(libmain_src_files
   interactive_shell.cpp
   interactive_shell.h
   main.h
+  lemma_loader.cpp
+  lemma_loader.h
   options.h
   portfolio_driver.cpp
   portfolio_driver.h
