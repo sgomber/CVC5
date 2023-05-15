@@ -152,6 +152,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
         // if we haven't already processed this assigner
         if (aprocessed.find(a) != aprocessed.end())
         {
+          Trace("confp-debug") << "...already processed assigner" << std::endl;
           continue;
         }
         aprocessed.insert(a);
@@ -187,7 +188,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
           // apply the substitution that is not included in this assigner
           stgtLit = srem.apply(tgtLit);
         }
-        Trace("confp-debug2") << "Generalize variables are " << vs << std::endl;
+        Trace("confp-debug") << "Generalize variables are " << vs << std::endl;
         Trace("confp-debug2") << "Target literal is " << stgtLit << std::endl;
         Node genPred = checkSubsGeneralizes(a, vs, stgtLit, isConflict);
         if (!genPred.isNull())
