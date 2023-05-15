@@ -495,6 +495,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     {
       if (failedAssigns.find(aa.first) != failedAssigns.end())
       {
+        // already failed on a different disjunct
         continue;
       }
       // if entails different values
@@ -527,6 +528,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
         // see if we are a failure based on the mode
         if (isFailure(mode, nassigns, fails.size()))
         {
+          Trace("confp") << "...fail with >" << fails.size() << " / " << nassigns << std::endl;
           d_genCache[key] = Node::null();
           return Node::null();
         }
