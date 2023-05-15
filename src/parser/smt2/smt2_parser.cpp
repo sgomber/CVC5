@@ -34,6 +34,11 @@ Smt2Parser::Smt2Parser(Solver* solver,
   d_lex = &d_slex;
 }
 
+void Smt2Parser::setLogic(const std::string& logic)
+{
+  d_state.setLogic(logic);
+}
+
 std::unique_ptr<Command> Smt2Parser::parseNextCommand()
 {
   return d_cmdParser.parseNextCommand();
@@ -47,9 +52,6 @@ Term Smt2Parser::parseNextExpression()
   {
     return Term();
   }
-  // Ensure the logic is set here so that symbols are defined.
-  // This is required for uses of the parser that parse terms directly.
-  d_state.setLogic("ALL");
   // Parse the term.
   return d_termParser.parseTerm();
 }
