@@ -244,6 +244,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
       clause.push_back(tgtLitFinal);
     }
     Node genLem = nm->mkOr(clause);
+    Trace("confp") << "...processed lemma = " << lemma << std::endl;
     // AlwaysAssert(false) << genLem << " for " << lem << std::endl;
     return TrustNode::mkTrustLemma(genLem);
   }
@@ -380,7 +381,7 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
       }
       else if (sn.getConst<bool>() == (k == OR))
       {
-        // success if short circuits to true
+        // success if short circuits to desired value
         return expect == (k == OR);
       }
     }
