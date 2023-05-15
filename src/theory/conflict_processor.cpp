@@ -483,6 +483,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   {
     toCheck.push_back(tgtLit);
   }
+  Trace("confp-debug") << "...decompose into " << toCheck.size() << " target formulas" << std::endl;
   std::unordered_set<Node> failedAssigns;
   for (const Node& tc : toCheck)
   {
@@ -491,7 +492,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     std::vector<Node> entval;
     entval.resize(a->getVariables().size());
     getEntailedEq(tc, vindex, entval);
-    Trace("ajr-temp")  << "Check " << tc << ", entailed = " << entval << std::endl;
+    Trace("confp-debug2")  << "Check " << tc << ", entailed = " << entval << std::endl;
     for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
     {
       if (failedAssigns.find(aa.first) != failedAssigns.end())
@@ -502,7 +503,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
       // if entails different values
       if (!expect && isAssignmentClashVec(aa.first, entval))
       {
-        Trace("ajr-temp") << "Clash vec " << aa.first << " vs " << entval << std::endl;
+        Trace("confp-debug2") << "Clash vec " << aa.first << " vs " << entval << std::endl;
         continue;
       }
       //Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size()
