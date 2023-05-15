@@ -484,6 +484,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   {
     toCheck.push_back(tgtLit);
   }
+  size_t navars = a->getNumVariables().size();
   Trace("confp-debug") << "...decompose into " << toCheck.size() << " target formulas" << std::endl;
   std::unordered_set<Node> failedAssigns;
   for (const Node& tc : toCheck)
@@ -510,7 +511,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
       //Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size()
       //                  << std::endl;
       // construct the substitution
-      if (nvars == 1)
+      if (navars == 1)
       {
         Assert(aa.first.getType() == vs[0].getType());
         subs.d_subs[0] = aa.first;
