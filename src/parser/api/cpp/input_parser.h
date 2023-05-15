@@ -103,11 +103,15 @@ class CVC5_EXPORT InputParser
   void appendIncrementalStringInput(const std::string& input);
 
   /**
-   * Parse and return the next command.
+   * Parse and return the next command. Will initialize the logic to "ALL"
+   * or the forced logic if no logic is set prior to this point.
    */
   std::unique_ptr<Command> nextCommand();
 
-  /** Parse and return the next expression. */
+  /** 
+   * Parse and return the next expression. Requires setting the logic prior
+   * to this point.
+   */
   Term nextExpression();
 
  private:
