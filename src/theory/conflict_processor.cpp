@@ -438,6 +438,8 @@ bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
     tgtLit = anode.negate();
     tgtLitFinal = a->getSatLiteral().negate();
   }
+  Trace("confp") << "...generalize target with " << fails.size() << " / " << nargs
+                 << " failed literals" << std::endl;
   return true;
 }
 
@@ -542,7 +544,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   }
   isConflict = isConflict && fails.empty();
   Trace("confp") << "...generalize with " << fails.size() << " / " << nassigns
-                 << " failed literals from assigner" << std::endl;
+                 << " failed literals" << std::endl;
   Node ret = a->getSatLiteral();
   if (!fails.empty())
   {
