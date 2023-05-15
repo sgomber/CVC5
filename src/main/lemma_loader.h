@@ -16,7 +16,7 @@
 #ifndef CVC5__LEMMA_LOADER_H
 #define CVC5__LEMMA_LOADER_H
 
-#include <cvc5.h>
+#include <cvc5/cvc5.h>
 
 namespace cvc5 {
   
@@ -29,16 +29,18 @@ namespace main {
 class LemmaLoader : public cvc5::Plugin
 {
  public:
-  LemmaLoader(std::string& filename, parser::SymbolManager* sm);
+  LemmaLoader(std::string& filename, Solver * s, parser::SymbolManager* sm);
   ~LemmaLoader();
   std::vector<Term> check() override;
   std::string getName() override;
   std::string getFileName();
  private:
-  /** The symbol manager */
-  parser::SymbolManager* d_symman;
   /** The filename to read from */
   std::string d_filename;
+  /** The solver we are associated with */
+  Solver * d_solver;
+  /** The symbol manager (for parsing) */
+  parser::SymbolManager* d_symman;
 };
 
 }  // namespace main

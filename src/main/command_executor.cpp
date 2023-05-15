@@ -56,12 +56,12 @@ CommandExecutor::CommandExecutor(std::unique_ptr<cvc5::Solver>& solver)
       d_result(),
       d_parseOnly(false)
 {
+  // if applicable, add the lemma loader plugin
   std::string llfile = d_solver->getOptionInfo("lemma-loader").stringValue();
   if (llfile!="")
   {
-    // add the lemma loader plugin
-    d_lemmaLoader.reset(new LemmaLoader(llfile, d_symman.get()));
-    d_solver.addPlugin(*d_lemmaLoader.get());
+    d_lemmaLoader.reset(new LemmaLoader(llfile, d_solver.get(), d_symman.get()));
+    d_solver->addPlugin(*d_lemmaLoader.get());
   }
 }
 CommandExecutor::~CommandExecutor()

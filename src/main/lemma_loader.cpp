@@ -15,10 +15,13 @@
 
 #include "main/lemma_loader.h"
 
+#include "base/check.h"
+#include "parser/api/cpp/input_parser.h"
+
 namespace cvc5 {
 namespace main {
 
-LemmaLoader::LemmaLoader(std::string& filename, parser::SymbolManager* sm) : d_filename(filename), d_symman(sm)
+LemmaLoader::LemmaLoader(std::string& filename, Solver * s, parser::SymbolManager* sm) : d_filename(filename), d_solver(s), d_symman(sm)
 {
   
 }
@@ -29,7 +32,25 @@ LemmaLoader::~LemmaLoader()
 std::vector<Term> LemmaLoader::check()
 {
   std::vector<Term> lemmas;
-  // TODO
+  // TODO: if applicable, create an input parser
+  bool readFromFile = false;
+  if (readFromFile)
+  {
+    parser::InputParser ip(d_solver, d_symman);
+    ip.setFileInput(d_solver->getOption("input-language"), d_filename);
+    // reads a list of formulas
+    Term lem;
+    for(;;)
+    {
+      lem = ip.nextExpression();
+      if (lem.isNull())
+      {
+        break;
+      }
+      Assert (lem.getSort().isBoolean());
+      lemmas.push_back(lem);
+    }
+  }
   return lemmas;
 }
 std::string LemmaLoader::getName()
