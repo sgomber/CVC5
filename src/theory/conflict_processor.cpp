@@ -484,7 +484,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   {
     toCheck.push_back(tgtLit);
   }
-  size_t navars = a->getNumVariables().size();
+  size_t navars = a->getVariables().size();
   Trace("confp-debug") << "...decompose into " << toCheck.size() << " target formulas" << std::endl;
   std::unordered_set<Node> failedAssigns;
   for (const Node& tc : toCheck)
