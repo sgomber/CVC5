@@ -33,10 +33,9 @@ LemmaLoader::~LemmaLoader() {}
 std::vector<Term> LemmaLoader::check()
 {
   std::vector<Term> lemmas;
-  Trace("ajr-temp") << "Check read from file" << std::endl;
-  // TODO: if applicable, read a list of formulas from disk, based on a time
-  // limit.
-  bool readFromFile = true;
+  Trace("lemma-loader") << "LemmaLoader::check" << std::endl;
+  // if applicable, read a list of formulas from disk, based on a time limit.
+  bool readFromFile = false;
   if (readFromFile)
   {
     parser::InputParser ip(d_solver, d_symman);
@@ -44,6 +43,7 @@ std::vector<Term> LemmaLoader::check()
     ip.setFileInput(d_solver->getOption("input-language"), d_filename);
     // set the logic
     // TODO: retreive logic string from solver? (not available currently)
+    // For now, assume "ALL" logic.
     ip.setLogic("ALL");
     // reads a list of formulas
     //   F1 .... Fn
