@@ -36,6 +36,7 @@ class Assigner
   const Node& getSatLiteral() const;
   const std::vector<Node>& getVariables() const;
   const std::vector<Node>& getAssignments(const Node& v) const;
+  const std::map<Node, std::vector<size_t> >& getAssignmentMap(const Node& v) const;
   const std::vector<Node>& getLiterals() const;
   bool hasVariable(const Node& v) const;
   static bool isAssigner(const Node& n);
@@ -56,6 +57,7 @@ class Assigner
   std::vector<Node> d_vars;
   std::map<Node, std::vector<Node>> d_assignments;
   std::vector<Node> d_literals;
+  std::map<Node, std::map<Node, std::vector<size_t> > > d_assignMap;
 };
 
 class AssignerDb

@@ -44,6 +44,13 @@ const std::vector<Node>& Assigner::getAssignments(const Node& v) const
   return it->second;
 }
 
+const std::map<Node, std::vector<size_t> >& Assigner::getAssignmentMap(const Node& v) const
+{
+  std::map<Node, std::map<Node, std::vector<size_t> >>::const_iterator it = d_assignMap.find(v);
+  Assert(it != d_assignMap.end());
+  return it->second;
+}
+
 const std::vector<Node>& Assigner::getLiterals() const { return d_literals; }
 
 bool Assigner::hasVariable(const Node& v) const
@@ -67,7 +74,17 @@ Node Assigner::getSatLiteral(const Node& n)
 
 bool Assigner::init(const Node& n)
 {
-  return initInternal(n, d_vars, d_assignments, d_literals);
+  bool ret = initInternal(n, d_vars, d_assignments, d_literals);
+  // compute assignment map
+  for (const std::pair<const Node, std::vector<Node>>& va : d_assignments)
+  {
+    std::map<Node, std::vector<size_t> >& vam = d_assignMap[va.first];
+    for (size_t i=0, nassigns = va.second.size(); i<nassigns; i++)
+    {
+      vam[va.second[i]].push_back(i);
+    }
+  }
+  return ret;
 }
 
 bool Assigner::isLiteralCube(const Node& n, std::vector<Node>& cc)
