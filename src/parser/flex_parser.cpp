@@ -30,10 +30,7 @@ FlexParser::FlexParser(Solver* solver, SymbolManager* sm)
 {
 }
 
-void FlexParser::setLogic(const std::string& logic)
-{
-  
-}
+void FlexParser::setLogic(const std::string& logic) {}
 
 void FlexParser::setFileInput(const std::string& filename)
 {

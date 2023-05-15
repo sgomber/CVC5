@@ -63,7 +63,7 @@ class CVC5_EXPORT InputParser
   Solver* getSolver();
   /** Get the underlying symbol manager of this input parser */
   SymbolManager* getSymbolManager();
-  /** 
+  /**
    * Set the logic to use. This determines which builtin symbols are included.
    */
   void setLogic(const std::string& str);

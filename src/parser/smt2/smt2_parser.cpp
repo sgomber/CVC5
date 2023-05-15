@@ -34,10 +34,7 @@ Smt2Parser::Smt2Parser(Solver* solver,
   d_lex = &d_slex;
 }
 
-void Smt2Parser::setLogic(const std::string& logic)
-{
-  d_state.setLogic(logic);
-}
+void Smt2Parser::setLogic(const std::string& logic) { d_state.setLogic(logic); }
 
 std::unique_ptr<Command> Smt2Parser::parseNextCommand()
 {

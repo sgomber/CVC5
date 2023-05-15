@@ -44,6 +44,7 @@ class Smt2Parser : public FlexParser
   virtual ~Smt2Parser() {}
   /** Set the logic */
   void setLogic(const std::string& logic) override;
+
  protected:
   /**
    * Parse and return the next command. Will initialize the logic to "ALL"
