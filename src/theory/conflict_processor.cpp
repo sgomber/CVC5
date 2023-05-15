@@ -462,7 +462,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     subs.add(v, v);
   }
   std::vector<size_t> vindices;
-  if (nvars>1)
+  if (nvars > 1)
   {
     for (const Node& v : vs)
     {
@@ -473,24 +473,23 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   size_t nassigns = a->getNode().getNumChildren();
   bool successAssign = false;
-  const std::map<Node, std::vector<size_t>>& amap =
-      a->getAssignmentMap();
+  const std::map<Node, std::vector<size_t>>& amap = a->getAssignmentMap();
   for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
   {
     Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size()
                       << std::endl;
     successAssign = false;
-    if (nvars==1)
+    if (nvars == 1)
     {
-      Assert (aa.first.getType()==vs[0].getType());
+      Assert(aa.first.getType() == vs[0].getType());
       subs.d_subs[0] = aa.first;
     }
     else
     {
-      Assert (aa.first.getKind()==SEXPR);
-      for (size_t j=0; j<nvars; j++)
+      Assert(aa.first.getKind() == SEXPR);
+      for (size_t j = 0; j < nvars; j++)
       {
-        Assert (j<vindices.size());
+        Assert(j < vindices.size());
         subs.d_subs[j] = aa.first[vindices[j]];
       }
     }

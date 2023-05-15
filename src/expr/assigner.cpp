@@ -41,7 +41,7 @@ size_t Assigner::variableIndexOf(const Node& v) const
 {
   std::vector<Node>::const_iterator it =
       std::find(d_vars.begin(), d_vars.end(), v);
-  Assert (it!=d_vars.end());
+  Assert(it != d_vars.end());
   return std::distance(d_vars.begin(), it);
 }
 
@@ -84,7 +84,7 @@ bool Assigner::init(const Node& n)
   // compute assignment map
   std::vector<std::vector<Node>> avec;
   size_t nassigns = 0;
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   for (const Node& v : d_vars)
   {
     const std::vector<Node>& assignments = getAssignments(v);
@@ -93,8 +93,8 @@ bool Assigner::init(const Node& n)
       nassigns = assignments.size();
       avec.resize(nassigns);
     }
-    Assert (assignments.size()==nassigns);
-    for (size_t i=0; i<nassigns; i++)
+    Assert(assignments.size() == nassigns);
+    for (size_t i = 0; i < nassigns; i++)
     {
       Node aa = assignments[i];
       // use variable itself if no substitution
@@ -102,11 +102,11 @@ bool Assigner::init(const Node& n)
       avec[i].push_back(aa);
     }
   }
-  for (size_t i=0; i<nassigns; i++)
+  for (size_t i = 0; i < nassigns; i++)
   {
     std::vector<Node>& ai = avec[i];
-    Assert (!ai.empty());
-    Node ahash = ai.size()==1 ? ai[0] : nm->mkNode(SEXPR, ai);
+    Assert(!ai.empty());
+    Node ahash = ai.size() == 1 ? ai[0] : nm->mkNode(SEXPR, ai);
     d_assignMap[ahash].push_back(i);
   }
   return ret;

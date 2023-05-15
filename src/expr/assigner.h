@@ -59,7 +59,7 @@ class Assigner
   std::map<Node, std::vector<Node>> d_assignments;
   std::vector<Node> d_literals;
   /**
-   * For 
+   * For
    */
   std::map<Node, std::vector<size_t>> d_assignMap;
 };
