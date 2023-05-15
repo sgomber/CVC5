@@ -63,9 +63,7 @@ class ConflictProcessor : protected EnvObj
                       std::map<Node, Node>& varToExp,
                       std::vector<TNode>& tgtLits) const;
   bool hasAssigner(const Node& lit) const;
-  bool checkSubstitution(const Subs& s,
-                         const Node& tgtLit,
-                         bool expect) const;
+  bool checkSubstitution(const Subs& s, const Node& tgtLit, bool expect) const;
   bool checkTgtGeneralizes(Assigner* a,
                            Node& tgtLit,
                            Node& tgtLitFinal,
@@ -86,11 +84,14 @@ class ConflictProcessor : protected EnvObj
    * Cache of checkGeneralizes, storing (a->getSatLiteral, v, tgtLit)
    */
   std::map<std::pair<Node, Node>, Node> d_genCache;
-  /** 
+  /**
    * Get entailed equalities from literal cube tc.
    */
-  static void getEntailedEq(const Node& tc, const std::map<Node, size_t>& vindex, std::vector<Node>& entval);
-  static bool isAssignmentClashVec(const Node& a, const std::vector<Node>& entval);
+  static void getEntailedEq(const Node& tc,
+                            const std::map<Node, size_t>& vindex,
+                            std::vector<Node>& entval);
+  static bool isAssignmentClashVec(const Node& a,
+                                   const std::vector<Node>& entval);
   static bool isAssignmentClash(const Node& a, const Node& b);
 };
 

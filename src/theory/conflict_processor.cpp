@@ -189,8 +189,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
         }
         Trace("confp-debug2") << "Generalize variables are " << vs << std::endl;
         Trace("confp-debug2") << "Target literal is " << stgtLit << std::endl;
-        Node genPred =
-            checkSubsGeneralizes(a, vs, stgtLit, isConflict);
+        Node genPred = checkSubsGeneralizes(a, vs, stgtLit, isConflict);
         if (!genPred.isNull())
         {
           if (!generalized)
@@ -457,7 +456,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   Subs subs;
   std::map<Node, size_t> vindex;
   std::vector<size_t> vindexlist;
-  for (size_t i=0; i<nvars; i++)
+  for (size_t i = 0; i < nvars; i++)
   {
     const Node& v = vs[i];
     subs.add(v, v);
@@ -469,12 +468,12 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   size_t nassigns = a->getNode().getNumChildren();
   const std::map<Node, std::vector<size_t>>& amap = a->getAssignmentMap();
-  
+
   // if we are checking a disjunct (i.e. from a generalized target),
   // we check per disjunct
   std::vector<Node> toCheck;
   bool expect = true;
-  if (tgtLit.getKind()==NOT && tgtLit[0].getKind()==OR)
+  if (tgtLit.getKind() == NOT && tgtLit[0].getKind() == OR)
   {
     toCheck.insert(toCheck.end(), tgtLit[0].begin(), tgtLit[0].end());
     expect = false;
@@ -493,7 +492,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     getEntailedEq(tc, vindex, entval);
     for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
     {
-      if (failedAssigns.find(aa.first)!=failedAssigns.end())
+      if (failedAssigns.find(aa.first) != failedAssigns.end())
       {
         continue;
       }
@@ -515,7 +514,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
         Assert(aa.first.getKind() == SEXPR);
         for (size_t j = 0; j < nvars; j++)
         {
-          Assert (vindexlist[j]<aa.first.getNumChildren());
+          Assert(vindexlist[j] < aa.first.getNumChildren());
           subs.d_subs[j] = aa.first[vindexlist[j]];
         }
       }
@@ -567,15 +566,17 @@ ConflictProcessor::Statistics::Statistics(StatisticsRegistry& sr)
 {
 }
 
-void ConflictProcessor::getEntailedEq(const Node& tc, const std::map<Node, size_t>& vindex, std::vector<Node>& entval)
+void ConflictProcessor::getEntailedEq(const Node& tc,
+                                      const std::map<Node, size_t>& vindex,
+                                      std::vector<Node>& entval)
 {
   std::vector<Node> toCheck;
   Kind k = tc.getKind();
-  if (k==AND)
+  if (k == AND)
   {
     toCheck.insert(toCheck.end(), tc.begin(), tc.end());
   }
-  else if (k==EQUAL)
+  else if (k == EQUAL)
   {
     toCheck.push_back(tc);
   }
@@ -589,23 +590,24 @@ void ConflictProcessor::getEntailedEq(const Node& tc, const std::map<Node, size_
       continue;
     }
     it = vindex.find(vtmp);
-    if (it==vindex.end())
+    if (it == vindex.end())
     {
       continue;
     }
-    Assert (it->second<subs.size());
+    Assert(it->second < subs.size());
     entval[it->second] = ctmp;
   }
 }
 
-bool ConflictProcessor::isAssignmentClashVec(const Node& a, const std::vector<Node>& entval)
+bool ConflictProcessor::isAssignmentClashVec(const Node& a,
+                                             const std::vector<Node>& entval)
 {
-  if (entval.size()==1)
+  if (entval.size() == 1)
   {
     return isAssignmentClash(a, entval[0]);
   }
-  Assert (a.getKind()==SEXPR && a.getNumChildren()==entval.size());
-  for (size_t i=0, nval = entval.size(); i<nval; i++)
+  Assert(a.getKind() == SEXPR && a.getNumChildren() == entval.size());
+  for (size_t i = 0, nval = entval.size(); i < nval; i++)
   {
     if (isAssignmentClash(a[i], entval[i]))
     {
@@ -616,8 +618,8 @@ bool ConflictProcessor::isAssignmentClashVec(const Node& a, const std::vector<No
 }
 bool ConflictProcessor::isAssignmentClash(const Node& a, const Node& b)
 {
-  Assert (!a.isNull());
-  return !b.isNull() && a.isConst() && b.isConst() && a!=b;
+  Assert(!a.isNull());
+  return !b.isNull() && a.isConst() && b.isConst() && a != b;
 }
 
 }  // namespace theory
