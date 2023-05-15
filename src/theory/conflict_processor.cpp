@@ -363,7 +363,7 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
   }
   // optimize for OR, since we may have generalized a target
   Kind k = tgtAtom.getKind();
-  if (k == OR || k==AND)
+  if (k == OR || k == AND)
   {
     bool hasNonConst = false;
     for (const Node& n : tgtAtom)
@@ -372,16 +372,16 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
       if (!sn.isConst())
       {
         // failure if all children must be a given value
-        if (expect==(k==AND))
+        if (expect == (k == AND))
         {
           return false;
         }
         hasNonConst = true;
       }
-      else if (sn.getConst<bool>()==(k==OR))
+      else if (sn.getConst<bool>() == (k == OR))
       {
         // success if short circuits to true
-        return expect==(k==OR);
+        return expect == (k == OR);
       }
     }
     return !hasNonConst;
@@ -400,7 +400,7 @@ bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
   Node anode = a->getNode();
   Assert(anode.getKind() == OR);
   Trace("confp-debug2") << "...check target generalization " << anode
-                       << std::endl;
+                        << std::endl;
   // check implies *all* literals
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   size_t nargs = anode.getNumChildren();
@@ -438,8 +438,8 @@ bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
     tgtLit = anode.negate();
     tgtLitFinal = a->getSatLiteral().negate();
   }
-  Trace("confp") << "...generalize target with " << fails.size() << " / " << nargs
-                 << " failed literals" << std::endl;
+  Trace("confp") << "...generalize target with " << fails.size() << " / "
+                 << nargs << " failed literals" << std::endl;
   return true;
 }
 
@@ -487,7 +487,8 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     toCheck.push_back(tgtLit);
   }
   size_t navars = a->getVariables().size();
-  Trace("confp-debug") << "...decompose into " << toCheck.size() << " target formulas" << std::endl;
+  Trace("confp-debug") << "...decompose into " << toCheck.size()
+                       << " target formulas" << std::endl;
   std::unordered_set<Node> failedAssigns;
   for (const Node& tc : toCheck)
   {
@@ -496,7 +497,8 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     std::vector<Node> entval;
     entval.resize(a->getVariables().size());
     getEntailedEq(tc, vindex, entval);
-    Trace("confp-debug2")  << "Check " << tc << ", entailed = " << entval << std::endl;
+    Trace("confp-debug2") << "Check " << tc << ", entailed = " << entval
+                          << std::endl;
     for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
     {
       if (failedAssigns.find(aa.first) != failedAssigns.end())
@@ -507,12 +509,13 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
       // if entails different values
       if (!expect && isAssignmentClashVec(aa.first, entval))
       {
-        Trace("confp-debug2") << "Clash vec " << aa.first << " vs " << entval << std::endl;
+        Trace("confp-debug2")
+            << "Clash vec " << aa.first << " vs " << entval << std::endl;
         continue;
       }
-      //Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size()
-      //                  << std::endl;
-      // construct the substitution
+      // Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size()
+      //                   << std::endl;
+      //  construct the substitution
       if (navars == 1)
       {
         Assert(aa.first.getType() == vs[0].getType());
@@ -529,13 +532,16 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
       }
       if (!checkSubstitution(subs, tc, expect))
       {
-        Trace("confp-debug2") << "...failed assign to " << subs.toString() << " with " << aa.second.size() << " indices from subs assigner" << std::endl;
+        Trace("confp-debug2")
+            << "...failed assign to " << subs.toString() << " with "
+            << aa.second.size() << " indices from subs assigner" << std::endl;
         failedAssigns.insert(aa.first);
         fails.insert(fails.end(), aa.second.begin(), aa.second.end());
         // see if we are a failure based on the mode
         if (isFailure(mode, nassigns, fails.size()))
         {
-          Trace("confp") << "...fail with >" << fails.size() << " / " << nassigns << std::endl;
+          Trace("confp") << "...fail with >" << fails.size() << " / "
+                         << nassigns << std::endl;
           d_genCache[key] = Node::null();
           return Node::null();
         }
@@ -543,8 +549,8 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     }
   }
   isConflict = isConflict && fails.empty();
-  Trace("confp") << "...generalize substitution with " << fails.size() << " / " << nassigns
-                 << " failed assignments" << std::endl;
+  Trace("confp") << "...generalize substitution with " << fails.size() << " / "
+                 << nassigns << " failed assignments" << std::endl;
   Node ret = a->getSatLiteral();
   if (!fails.empty())
   {
