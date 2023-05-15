@@ -48,11 +48,6 @@ struct UnpurifiedFormAttributeId
 };
 typedef expr::Attribute<UnpurifiedFormAttributeId, Node> UnpurifiedFormAttribute;
 
-struct AbstractValueId
-{
-};
-using AbstractValueAttribute = expr::Attribute<AbstractValueId, bool>;
-
 const char* toString(SkolemFunId id)
 {
   switch (id)
@@ -113,6 +108,7 @@ const char* toString(SkolemFunId id)
     case SkolemFunId::IEVAL_SOME: return "IEVAL_SOME";
     case SkolemFunId::ASSIGNER: return "ASSIGNER";
     case SkolemFunId::PROXY_LIT: return "PROXY_LIT";
+    case SkolemFunId::ABSTRACT_VALUE: return "ABSTRACT_VALUE";
     default: return "?";
   }
 }
@@ -289,7 +285,7 @@ Node SkolemManager::mkSkolemFunction(SkolemFunId id,
   return mkSkolemFunction(id, tn, cacheVal, flags);
 }
 
-bool SkolemManager::isSkolemFunction(const Node& k,
+bool SkolemManager::isSkolemFunction(TNode k,
                                      SkolemFunId& id,
                                      Node& cacheVal) const
 {
@@ -335,8 +331,13 @@ ProofGenerator* SkolemManager::getProofGenerator(Node t) const
 
 bool SkolemManager::isAbstractValue(TNode n) const
 {
-  AbstractValueAttribute ava;
-  return n.getAttribute(ava);
+  SkolemFunId id;
+  Node cacheVal;
+  if (isSkolemFunction(n, id, cacheVal))
+  {
+    return id == SkolemFunId::ABSTRACT_VALUE;
+  }
+  return false;
 }
 
 Node SkolemManager::mkProxyLit(const Node& lit)
@@ -511,12 +512,6 @@ Node SkolemManager::mkSkolemNode(const std::string& prefix,
   }
   n.setAttribute(expr::TypeAttr(), type);
   n.setAttribute(expr::TypeCheckedAttr(), true);
-
-  if ((flags & SKOLEM_ABSTRACT_VALUE) != 0)
-  {
-    AbstractValueAttribute ava;
-    n.setAttribute(ava, true);
-  }
 
   return n;
 }
