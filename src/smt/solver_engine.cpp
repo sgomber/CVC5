@@ -21,6 +21,7 @@
 #include "base/output.h"
 #include "decision/decision_engine.h"
 #include "expr/bound_var_manager.h"
+#include "expr/plugin.h"
 #include "expr/node.h"
 #include "expr/node_algorithm.h"
 #include "expr/subtype_elim_node_converter.h"
@@ -965,6 +966,14 @@ void SolverEngine::declareOracleFun(
       inputs, outputs, assume, constraint, o);
   // assert it
   assertFormula(q);
+}
+
+void SolverEngine::addPlugin(Plugin& p)
+{
+  finishInit();
+  d_ctxManager->doPendingPops();
+  TheoryEngine* te = d_smtSolver->getTheoryEngine();
+  te->addPlugin(p);
 }
 
 Node SolverEngine::simplify(const Node& t)

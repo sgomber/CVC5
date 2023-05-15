@@ -1090,7 +1090,9 @@ libcvc5_add_sources(
   theory/sort_inference.cpp
   theory/sort_inference.h
   theory/partition_generator.cpp
-  theory/partition_generator.h
+  theory/partition_generator.cpp
+  theory/plugin_module.cpp
+  theory/plugin_module.h
   theory/strings/array_solver.cpp
   theory/strings/array_solver.h
   theory/strings/array_core_solver.cpp

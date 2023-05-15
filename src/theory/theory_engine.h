@@ -48,6 +48,7 @@ namespace cvc5::internal {
 class Env;
 class ResourceManager;
 class TheoryEngineProofGenerator;
+class Plugin;
 class ProofChecker;
 
 /**
@@ -144,6 +145,10 @@ class TheoryEngine : protected EnvObj
   {
     d_propEngine = propEngine;
   }
+  /**
+   * Add plugin
+   */
+  void addPlugin(Plugin& p);
 
   /**
    * Called when all initialization of options/logic is done, after theory

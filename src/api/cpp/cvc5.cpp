@@ -7511,6 +7511,26 @@ Term Solver::declareOracleFun(
   CVC5_API_TRY_CATCH_END;
 }
 
+class PluginInternal : public internal::Plugin
+{
+public:
+  PluginInternal(Plugin& e) : internal::Plugin(), d_external(e){}
+  std::vector<Node> check() override
+  {
+    std::vector<Term> lemsExt = d_external.check();
+    return Term::termVectorToNodes(lemsExt);
+  }
+private:
+  Plugin& d_external;
+};
+
+void Solver::addPlugin(Plugin& p)
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  d_slv->addPlugin(*p.d_pExtToInt.get());
+  CVC5_API_TRY_CATCH_END;
+}
+
 void Solver::pop(uint32_t nscopes) const
 {
   CVC5_API_TRY_CATCH_BEGIN;

@@ -70,6 +70,7 @@ class Solver;
 class Statistics;
 struct APIStatistics;
 class Term;
+class PluginInternal;
 
 /* -------------------------------------------------------------------------- */
 /* Exception                                                                  */
@@ -3261,6 +3262,27 @@ std::ostream& operator<<(std::ostream& out,
                          const Statistics& stats) CVC5_EXPORT;
 
 /* -------------------------------------------------------------------------- */
+/* Plugin                                                                     */
+/* -------------------------------------------------------------------------- */
+/**
+ * A cvc5 plugin.
+ */
+class CVC5_EXPORT Plugin
+{
+  friend class Solver;
+  friend class PluginInternal;
+ public:
+  Plugin();
+  virtual ~Plugin(){}
+  /**
+  * Call to check, return vector of lemmas
+  */
+  virtual std::vector<Term> check();
+private:
+  /** Converter to external */
+  std::unique_ptr<PluginInternal> d_pExtToInt;
+};
+/* -------------------------------------------------------------------------- */
 /* Solver                                                                     */
 /* -------------------------------------------------------------------------- */
 
@@ -3276,6 +3298,7 @@ class CVC5_EXPORT Solver
   friend class DatatypeSelector;
   friend class DriverOptions;
   friend class Grammar;
+  friend class Plugin;
   friend class Op;
   friend class parser::Command;
   friend class main::CommandExecutor;
@@ -4619,6 +4642,10 @@ class CVC5_EXPORT Solver
                         const std::vector<Sort>& sorts,
                         const Sort& sort,
                         std::function<Term(const std::vector<Term>&)> fn) const;
+  /**
+   * Add plugin.
+   */
+  void addPlugin(Plugin& p);
   /**
    * Pop (a) level(s) from the assertion stack.
    *
