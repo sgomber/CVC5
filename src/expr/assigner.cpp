@@ -44,9 +44,11 @@ const std::vector<Node>& Assigner::getAssignments(const Node& v) const
   return it->second;
 }
 
-const std::map<Node, std::vector<size_t> >& Assigner::getAssignmentMap(const Node& v) const
+const std::map<Node, std::vector<size_t>>& Assigner::getAssignmentMap(
+    const Node& v) const
 {
-  std::map<Node, std::map<Node, std::vector<size_t> >>::const_iterator it = d_assignMap.find(v);
+  std::map<Node, std::map<Node, std::vector<size_t>>>::const_iterator it =
+      d_assignMap.find(v);
   Assert(it != d_assignMap.end());
   return it->second;
 }
@@ -78,8 +80,8 @@ bool Assigner::init(const Node& n)
   // compute assignment map
   for (const std::pair<const Node, std::vector<Node>>& va : d_assignments)
   {
-    std::map<Node, std::vector<size_t> >& vam = d_assignMap[va.first];
-    for (size_t i=0, nassigns = va.second.size(); i<nassigns; i++)
+    std::map<Node, std::vector<size_t>>& vam = d_assignMap[va.first];
+    for (size_t i = 0, nassigns = va.second.size(); i < nassigns; i++)
     {
       vam[va.second[i]].push_back(i);
     }

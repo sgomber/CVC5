@@ -63,8 +63,9 @@ class ConflictProcessor : protected EnvObj
                       std::map<Node, Node>& varToExp,
                       std::vector<TNode>& tgtLits) const;
   bool hasAssigner(const Node& lit) const;
-  bool checkSubstitution(const Subs& s, const Node& tgtLit,
-                            Assigner* atgt) const;
+  bool checkSubstitution(const Subs& s,
+                         const Node& tgtLit,
+                         Assigner* atgt) const;
   bool checkTgtGeneralizes(Assigner* a,
                            Node& tgtLit,
                            Node& tgtLitFinal,

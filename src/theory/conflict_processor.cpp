@@ -71,7 +71,8 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   Trace("confp") << "Decomposed " << lemma << std::endl;
   Trace("confp") << "- Substitution: " << s.toString() << std::endl;
   Trace("confp") << "- Target: " << tgtLits << std::endl;
-  if (options().theory.conflictProcessMode==options::ConflictProcessMode::TEST)
+  if (options().theory.conflictProcessMode
+      == options::ConflictProcessMode::TEST)
   {
     return TrustNode::null();
   }
@@ -91,7 +92,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     return TrustNode::null();
   }
   // NOTE: could minimize the substitution here?
-  
+
   // the form of the target literal as it will appear in the final lemma.
   Node tgtLitFinal = tgtLit;
   // we are minimized if there were multiple target literals and we found a
@@ -112,7 +113,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   {
     // first, try to generalize the target literal
     Node tgtLitn = tgtLit.negate();
-    Assigner * atgtGen = nullptr;
+    Assigner* atgtGen = nullptr;
     std::vector<Assigner*> ast = d_engine->getActiveAssigners(tgtLitn);
     Trace("confp-debug") << "Check target literal " << tgtLitn
                          << ", #assigners=" << ast.size() << std::endl;
@@ -190,7 +191,8 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
         }
         Trace("confp-debug2") << "Generalize variables are " << vs << std::endl;
         Trace("confp-debug2") << "Target literal is " << stgtLit << std::endl;
-        Node genPred = checkSubsGeneralizes(a, vs, stgtLit, atgtGen, isConflict);
+        Node genPred =
+            checkSubsGeneralizes(a, vs, stgtLit, atgtGen, isConflict);
         if (!genPred.isNull())
         {
           if (!generalized)
@@ -353,7 +355,7 @@ bool ConflictProcessor::hasAssigner(const Node& lit) const
 
 bool ConflictProcessor::checkSubstitution(const Subs& s,
                                           const Node& tgtLit,
-                            Assigner* atgt) const
+                                          Assigner* atgt) const
 {
   bool expect = true;
   Node tgtAtom = tgtLit;
@@ -462,13 +464,15 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   std::vector<size_t> fails;
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   size_t nassigns = a->getNode().getNumChildren();
-  if (nvars==1)
+  if (nvars == 1)
   {
     bool successAssign = false;
-    const std::map<Node, std::vector<size_t>>& amap = a->getAssignmentMap(vs[0]);
+    const std::map<Node, std::vector<size_t>>& amap =
+        a->getAssignmentMap(vs[0]);
     for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
     {
-      Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size() << std::endl;
+      Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size()
+                        << std::endl;
       successAssign = false;
       if (!aa.first.isNull())
       {
