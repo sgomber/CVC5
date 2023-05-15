@@ -398,7 +398,7 @@ bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
 {
   Node anode = a->getNode();
   Assert(anode.getKind() == OR);
-  Trace("confp-debug") << "...check target generalization " << anode
+  Trace("confp-debug2") << "...check target generalization " << anode
                        << std::endl;
   // check implies *all* literals
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
@@ -490,6 +490,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     std::vector<Node> entval;
     entval.resize(a->getVariables().size());
     getEntailedEq(tc, vindex, entval);
+    Trace("ajr-temp")  << "Check " << tc << ", entailed = " << entval << std::endl;
     for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
     {
       if (failedAssigns.find(aa.first) != failedAssigns.end())
@@ -502,8 +503,8 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
         Trace("ajr-temp") << "Clash vec " << aa.first << " vs " << entval << std::endl;
         continue;
       }
-      Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size()
-                        << std::endl;
+      //Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size()
+      //                  << std::endl;
       // construct the substitution
       if (nvars == 1)
       {
@@ -584,7 +585,7 @@ void ConflictProcessor::getEntailedEq(const Node& tc,
   Node vtmp;
   Node ctmp;
   std::map<Node, size_t>::const_iterator it;
-  for (const Node& eq : tc)
+  for (const Node& eq : toCheck)
   {
     if (!Assigner::isAssignEq(eq, vtmp, ctmp))
     {
