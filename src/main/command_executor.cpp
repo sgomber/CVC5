@@ -56,6 +56,14 @@ CommandExecutor::CommandExecutor(std::unique_ptr<cvc5::Solver>& solver)
       d_result(),
       d_parseOnly(false)
 {
+
+}
+CommandExecutor::~CommandExecutor()
+{
+}
+
+void CommandExecutor::storeOptionsAsOriginal()
+{
   // if applicable, add the lemma loader plugin
   std::string llfile = d_solver->getOptionInfo("lemma-loader").stringValue();
   if (llfile != "")
@@ -64,13 +72,7 @@ CommandExecutor::CommandExecutor(std::unique_ptr<cvc5::Solver>& solver)
         new LemmaLoader(llfile, d_solver.get(), d_symman.get()));
     d_solver->addPlugin(*d_lemmaLoader.get());
   }
-}
-CommandExecutor::~CommandExecutor()
-{
-}
-
-void CommandExecutor::storeOptionsAsOriginal()
-{
+  // save the original options
   d_solver->d_originalOptions->copyValues(d_solver->d_slv->getOptions());
   // cache the value of parse-only, which is set by the command line only
   // and thus will not change in a run.

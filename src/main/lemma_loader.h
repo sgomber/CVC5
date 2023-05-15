@@ -26,15 +26,20 @@ class SymbolManager;
 
 namespace main {
 
+/**
+ * The lemma loader pluging, for sending lemmas by reading from disk.
+ */
 class LemmaLoader : public cvc5::Plugin
 {
  public:
   LemmaLoader(std::string& filename, Solver* s, parser::SymbolManager* sm);
   ~LemmaLoader();
+  /** Returns a list of formulas to be sent as lemmas to the internal solver */
   std::vector<Term> check() override;
+  /** Get name, for debugging */
   std::string getName() override;
+  /** The filename we are reading from */
   std::string getFileName();
-
  private:
   /** The filename to read from */
   std::string d_filename;

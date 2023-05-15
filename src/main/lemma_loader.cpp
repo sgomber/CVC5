@@ -16,6 +16,7 @@
 #include "main/lemma_loader.h"
 
 #include "base/check.h"
+#include "base/output.h"
 #include "parser/api/cpp/input_parser.h"
 
 namespace cvc5 {
@@ -28,16 +29,22 @@ LemmaLoader::LemmaLoader(std::string& filename,
 {
 }
 LemmaLoader::~LemmaLoader() {}
+
 std::vector<Term> LemmaLoader::check()
 {
   std::vector<Term> lemmas;
-  // TODO: if applicable, create an input parser
-  bool readFromFile = false;
+  Trace("ajr-temp") << "Check read from file" << std::endl;
+  // TODO: if applicable, read a list of formulas from disk, based on a time
+  // limit.
+  bool readFromFile = true;
   if (readFromFile)
   {
     parser::InputParser ip(d_solver, d_symman);
+    // use the input language specified by the options
     ip.setFileInput(d_solver->getOption("input-language"), d_filename);
     // reads a list of formulas
+    //   F1 .... Fn
+    // each of which will be sent as a lemma
     Term lem;
     for (;;)
     {
@@ -53,6 +60,7 @@ std::vector<Term> LemmaLoader::check()
   return lemmas;
 }
 std::string LemmaLoader::getName() { return "LemmaLoader"; }
+
 std::string LemmaLoader::getFileName() { return d_filename; }
 
 }  // namespace main

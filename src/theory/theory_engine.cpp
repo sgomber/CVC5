@@ -218,6 +218,7 @@ void TheoryEngine::finishInit()
 
   // add user-provided plugins
   const std::vector<Plugin*> plugins = d_env.getPlugins();
+  Trace("theory") << "initialize with " << plugins.size() << " user-provided plugins" << std::endl;
   for (Plugin* p : plugins)
   {
     d_userPlugins.push_back(
