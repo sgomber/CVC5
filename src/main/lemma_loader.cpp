@@ -42,6 +42,8 @@ std::vector<Term> LemmaLoader::check()
     parser::InputParser ip(d_solver, d_symman);
     // use the input language specified by the options
     ip.setFileInput(d_solver->getOption("input-language"), d_filename);
+    // set the logic
+    //ip.setLogic(d_solver->
     // reads a list of formulas
     //   F1 .... Fn
     // each of which will be sent as a lemma

@@ -764,7 +764,8 @@ std::unique_ptr<Command> Smt2CmdParser::parseNextCommand()
     case Token::SET_LOGIC_TOK:
     {
       std::string name = d_tparser.parseSymbol(CHECK_NONE, SYM_SORT);
-      cmd.reset(d_state.setLogic(name));
+      d_state.setLogic(name);
+      cmd.reset(new SetBenchmarkLogicCommand(name));
     }
     break;
     // (set-option <option>)

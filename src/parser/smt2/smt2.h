@@ -221,7 +221,7 @@ class Smt2State : public ParserState
    * @return the command corresponding to setting the logic (if fromCommand
    * is true), and nullptr otherwise.
    */
-  Command* setLogic(std::string name, bool fromCommand = true);
+  void setLogic(std::string name);
 
   /**
    * Get the logic.

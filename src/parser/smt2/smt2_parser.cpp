@@ -47,6 +47,10 @@ Term Smt2Parser::parseNextExpression()
   {
     return Term();
   }
+  // Ensure the logic is set here so that symbols are defined.
+  // This is required for uses of the parser that parse terms directly.
+  d_state.setLogic("ALL");
+  // Parse the term.
   return d_termParser.parseTerm();
 }
 

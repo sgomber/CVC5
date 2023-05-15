@@ -211,7 +211,8 @@ command [std::unique_ptr<cvc5::parser::Command>* cmd]
   : /* set the logic */
     SET_LOGIC_TOK symbol[name,CHECK_NONE,SYM_SORT]
     {
-      cmd->reset(PARSER_STATE->setLogic(name));
+      PARSER_STATE->setLogic(name);
+      cmd->reset(new SetBenchmarkLogicCommand(name));
     }
   | /* set-info */
     SET_INFO_TOK setInfoInternal[cmd]
