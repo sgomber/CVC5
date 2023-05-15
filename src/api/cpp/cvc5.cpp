@@ -53,6 +53,7 @@
 #include "expr/node_algorithm.h"
 #include "expr/node_builder.h"
 #include "expr/node_manager.h"
+#include "expr/plugin.h"
 #include "expr/sequence.h"
 #include "expr/type_node.h"
 #include "options/base_options.h"
@@ -990,7 +991,7 @@ class CVC5ApiUnsupportedExceptionStream
     throw CVC5ApiException(e.getMessage());            \
   }                                                    \
   catch (const std::invalid_argument& e) { throw CVC5ApiException(e.what()); }
-
+  
 }  // namespace
 
 /* -------------------------------------------------------------------------- */
@@ -1108,6 +1109,26 @@ uint32_t maxArity(Kind k)
 }
 
 }  // namespace
+
+/**
+  * Class that acts as a converter from an external to an internal plugin.
+  */
+class PluginInternal : public internal::Plugin
+{
+public:
+  PluginInternal(cvc5::Plugin& e) : internal::Plugin(), d_external(e) {}
+  /** Check method */
+  std::vector<internal::Node> check() override
+  {
+    std::vector<Term> lemsExt = d_external.check();
+    return Term::termVectorToNodes(lemsExt);
+  }
+  /** Get name */
+  std::string getName() override { return d_external.getName(); }
+private:
+  /** Reference to the external (user-provided) plugin */
+  cvc5::Plugin& d_external;
+};
 
 std::string kindToString(Kind k)
 {
@@ -5161,6 +5182,14 @@ std::ostream& operator<<(std::ostream& out, const Statistics& stats)
   return out;
 }
 
+
+/* -------------------------------------------------------------------------- */
+/* Plugin                                                                     */
+/* -------------------------------------------------------------------------- */
+
+Plugin::Plugin() : d_pExtToInt(new PluginInternal(*this)){}
+Plugin::~Plugin(){}
+
 /* -------------------------------------------------------------------------- */
 /* Solver                                                                     */
 /* -------------------------------------------------------------------------- */
@@ -7510,20 +7539,6 @@ Term Solver::declareOracleFun(
   ////////
   CVC5_API_TRY_CATCH_END;
 }
-
-class PluginInternal : public internal::Plugin
-{
- public:
-  PluginInternal(Plugin& e) : internal::Plugin(), d_external(e) {}
-  std::vector<Node> check() override
-  {
-    std::vector<Term> lemsExt = d_external.check();
-    return Term::termVectorToNodes(lemsExt);
-  }
-
- private:
-  Plugin& d_external;
-};
 
 void Solver::addPlugin(Plugin& p)
 {

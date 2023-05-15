@@ -20,12 +20,13 @@ namespace theory {
 
   PluginModule::PluginModule(Env& env,
                      TheoryEngine* theoryEngine,
-                     Plugin& p) : TheoryEngineModule(env, theoryEngine), d_plugin(p){}
+                     Plugin& p) : TheoryEngineModule(env, theoryEngine, "Plugin::" + p.getName()), d_plugin(p){}
 
 
   void PluginModule::check(Theory::Effort e)
   {
-    std::vector<Node> lems = d_plugin.check(e);
+    // ignore the effort level?
+    std::vector<Node> lems = d_plugin.check();
     for (const Node& lem : lems)
     {
       d_out.lemma(lem);

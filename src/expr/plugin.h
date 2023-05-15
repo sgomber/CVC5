@@ -35,13 +35,9 @@ class Plugin
   }
   virtual ~Plugin() {}
   /** Check function, returns the empty vector */
-  virtual std::vector<Node> check() const
-  {
-    return d_emptyVec;
-  }
- private:
-  /** The empty vector */
-  std::vector<Node> d_emptyVec;
+  virtual std::vector<Node> check() = 0;
+  /** Get name */
+  virtual std::string getName() = 0;
 };
 
 }  // namespace cvc5::internal

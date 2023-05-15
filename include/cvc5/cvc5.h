@@ -1113,6 +1113,7 @@ class CVC5_EXPORT Term
   friend class DatatypeSelector;
   friend class Solver;
   friend class Grammar;
+  friend class PluginInternal;
   friend class SynthResult;
   friend struct std::hash<Term>;
 
@@ -3270,19 +3271,18 @@ std::ostream& operator<<(std::ostream& out,
 class CVC5_EXPORT Plugin
 {
   friend class Solver;
-  friend class PluginInternal;
-
  public:
   Plugin();
-  virtual ~Plugin() {}
+  virtual ~Plugin();
   /**
    * Call to check, return vector of lemmas
    */
-  virtual std::vector<Term> check();
-
+  virtual std::vector<Term> check() = 0;
+  /** Get the name of the plugin (for debugging) */
+  virtual std::string getName() = 0;
  private:
   /** Converter to external */
-  std::unique_ptr<PluginInternal> d_pExtToInt;
+  std::shared_ptr<cvc5::PluginInternal> d_pExtToInt;
 };
 /* -------------------------------------------------------------------------- */
 /* Solver                                                                     */
