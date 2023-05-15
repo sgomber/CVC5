@@ -461,55 +461,48 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   {
     subs.add(v, v);
   }
+  std::vector<size_t> vindices;
+  if (nvars>1)
+  {
+    for (const Node& v : vs)
+    {
+      vindices.push_back(a->variableIndexOf(v));
+    }
+  }
   std::vector<size_t> fails;
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   size_t nassigns = a->getNode().getNumChildren();
-  if (nvars == 1)
+  bool successAssign = false;
+  const std::map<Node, std::vector<size_t>>& amap =
+      a->getAssignmentMap();
+  for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
   {
-    bool successAssign = false;
-    const std::map<Node, std::vector<size_t>>& amap =
-        a->getAssignmentMap(vs[0]);
-    for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
+    Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size()
+                      << std::endl;
+    successAssign = false;
+    if (nvars==1)
     {
-      Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size()
-                        << std::endl;
-      successAssign = false;
-      if (!aa.first.isNull())
+      Assert (aa.first.getType()==vs[0].getType());
+      subs.d_subs[0] = aa.first;
+    }
+    else
+    {
+      Assert (aa.first.getKind()==SEXPR);
+      for (size_t j=0; j<nvars; j++)
       {
-        subs.d_subs[0] = aa.first;
-        successAssign = checkSubstitution(subs, tgtLit, atgt);
-      }
-      if (!successAssign)
-      {
-        fails.insert(fails.end(), aa.second.begin(), aa.second.end());
-        // see if we are a failure based on the mode
-        if (isFailure(mode, nassigns, fails.size()))
-        {
-          d_genCache[key] = Node::null();
-          return Node::null();
-        }
+        Assert (j<vindices.size());
+        subs.d_subs[j] = aa.first[vindices[j]];
       }
     }
-  }
-  else
-  {
-    for (size_t i = 0; i < nassigns; i++)
+    successAssign = checkSubstitution(subs, tgtLit, atgt);
+    if (!successAssign)
     {
-      // if multiple variables, collect for all and apply, not cached?
-      for (size_t j = 0; j < nvars; j++)
+      fails.insert(fails.end(), aa.second.begin(), aa.second.end());
+      // see if we are a failure based on the mode
+      if (isFailure(mode, nassigns, fails.size()))
       {
-        Node ss = a->getAssignments(vs[j])[i];
-        subs.d_subs[j] = ss.isNull() ? vs[j] : ss;
-      }
-      if (!checkSubstitution(subs, tgtLit, atgt))
-      {
-        fails.push_back(i);
-        // see if we are a failure based on the mode
-        if (isFailure(mode, nassigns, fails.size()))
-        {
-          d_genCache[key] = Node::null();
-          return Node::null();
-        }
+        d_genCache[key] = Node::null();
+        return Node::null();
       }
     }
   }
