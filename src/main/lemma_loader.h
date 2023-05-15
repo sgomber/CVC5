@@ -40,6 +40,7 @@ class LemmaLoader : public cvc5::Plugin
   std::string getName() override;
   /** The filename we are reading from */
   std::string getFileName();
+
  private:
   /** The filename to read from */
   std::string d_filename;

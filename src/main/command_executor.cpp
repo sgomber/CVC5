@@ -56,7 +56,6 @@ CommandExecutor::CommandExecutor(std::unique_ptr<cvc5::Solver>& solver)
       d_result(),
       d_parseOnly(false)
 {
-
 }
 CommandExecutor::~CommandExecutor()
 {
