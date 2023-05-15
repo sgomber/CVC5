@@ -3271,14 +3271,16 @@ class CVC5_EXPORT Plugin
 {
   friend class Solver;
   friend class PluginInternal;
+
  public:
   Plugin();
-  virtual ~Plugin(){}
+  virtual ~Plugin() {}
   /**
-  * Call to check, return vector of lemmas
-  */
+   * Call to check, return vector of lemmas
+   */
   virtual std::vector<Term> check();
-private:
+
+ private:
   /** Converter to external */
   std::unique_ptr<PluginInternal> d_pExtToInt;
 };

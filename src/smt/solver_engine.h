@@ -469,7 +469,7 @@ class CVC5_EXPORT SolverEngine
       Node var, std::function<std::vector<Node>(const std::vector<Node>&)> fn);
   /**
    * Adds plugin to the theory engine of this solver engine.
-   * 
+   *
    * @param p The plugin to add.
    */
   void addPlugin(Plugin& p);

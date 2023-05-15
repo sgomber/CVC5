@@ -2085,10 +2085,7 @@ void TheoryEngine::initializeProofChecker(ProofChecker* pc)
   }
 }
 
-void TheoryEngine::addPlugin(Plugin& p)
-{
-  
-}
+void TheoryEngine::addPlugin(Plugin& p) {}
 
 theory::Rewriter* TheoryEngine::getRewriter() { return d_env.getRewriter(); }
 

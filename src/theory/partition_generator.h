@@ -20,10 +20,10 @@
 
 #include <vector>
 
+#include "expr/plugin.h"
 #include "proof/trust_node.h"
 #include "theory/theory.h"
 #include "theory/theory_engine_module.h"
-#include "expr/plugin.h"
 
 namespace cvc5::internal {
 
@@ -33,9 +33,7 @@ namespace theory {
 class PartitionGenerator : public TheoryEngineModule
 {
  public:
-  PartitionGenerator(Env& env,
-                     TheoryEngine* theoryEngine,
-                     Plugin& p);
+  PartitionGenerator(Env& env, TheoryEngine* theoryEngine, Plugin& p);
 
   /**
    * Make partitions for parallel solving. e communicates the effort at which

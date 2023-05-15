@@ -7513,14 +7513,15 @@ Term Solver::declareOracleFun(
 
 class PluginInternal : public internal::Plugin
 {
-public:
-  PluginInternal(Plugin& e) : internal::Plugin(), d_external(e){}
+ public:
+  PluginInternal(Plugin& e) : internal::Plugin(), d_external(e) {}
   std::vector<Node> check() override
   {
     std::vector<Term> lemsExt = d_external.check();
     return Term::termVectorToNodes(lemsExt);
   }
-private:
+
+ private:
   Plugin& d_external;
 };
 
