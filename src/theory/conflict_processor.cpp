@@ -526,7 +526,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
       }
       if (!checkSubstitution(subs, tc, expect))
       {
-        Trace("confp-debug2") << "...failed assign to " << aa.first << " with " << aa.second.size() << " indices from subs assigner" << std::endl;
+        Trace("confp-debug2") << "...failed assign to " << subs.toString() << " with " << aa.second.size() << " indices from subs assigner" << std::endl;
         failedAssigns.insert(aa.first);
         fails.insert(fails.end(), aa.second.begin(), aa.second.end());
         // see if we are a failure based on the mode
