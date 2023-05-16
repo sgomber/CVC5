@@ -190,7 +190,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
         }
         Trace("confp-debug") << "Generalize variables are " << vs << std::endl;
         Trace("confp-debug2") << "Target literal is " << stgtLit << std::endl;
-        Node genPred = checkSubsGeneralizes(a, vs, stgtLit, isConflict);
+        Node genPred = checkSubsGeneralizes(a, vs, stgtLit, s, isConflict);
         if (!genPred.isNull())
         {
           if (!generalized)
@@ -447,6 +447,7 @@ bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
 Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
                                              const std::vector<Node>& vs,
                                              const Node& tgtLit,
+                            const Subs& orig,
                                              bool& isConflict)
 {
   Assert(!vs.empty());
@@ -487,30 +488,63 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   {
     toCheck.push_back(tgtLit);
   }
+  // we require that all formulas in toCheck evaluate to `expect`.
   size_t navars = a->getVariables().size();
+  Node vtmp, ctmp;
+  std::map<Node, size_t>::const_iterator itv;
   Trace("confp-debug") << "...decompose into " << toCheck.size()
                        << " target formulas" << std::endl;
   std::unordered_set<Node> failedAssigns;
   for (const Node& tc : toCheck)
   {
-    // TODO: extract the relevant portion of tc on the original subsitution?
-    /*
-    if (tc.getKind()==AND)
-    {
-      std::vector<Node> disj;
-      for (const Node& tcc : tc)
-      {
-        
-      }
-    }
-    */
-    // check if it implies a variable equality. If so, we may be able to
-    // do avoid checking substitution.
+    Node tcp = tc;
     std::vector<Node> entval;
     entval.resize(a->getVariables().size());
-    getEntailedEq(tc, vindex, entval);
-    Trace("confp-debug2") << "Check " << tc << ", entailed = " << entval
-                          << std::endl;
+    // If we only expect one literal to be true, then we 
+    std::vector<Node> tcc;
+    if (!expect && tc.getKind()==AND)
+    {
+      tcc.insert(tcc.end(), tc.begin(), tc.end());
+    }
+    else
+    {
+      tcc.push_back(tc);
+    }
+    // for each conjunct in the cube
+    std::vector<Node> checkLit;
+    for (const Node& l : tcc)
+    {
+      // maybe it is an entailed equality for a variable in the substitution?
+      if (Assigner::isAssignEq(l, vtmp, ctmp))
+      {
+        itv = vindex.find(vtmp);
+        if (itv != vindex.end())
+        {
+          Assert(itv->second < subs.size());
+          entval[itv->second] = ctmp;
+          continue;
+        }
+      }
+      if (tcc.size()==1)
+      {
+        // if only one literal, it should evaluate to false
+        checkLit.push_back(l);
+      }
+      else
+      {
+        // otherwise evaluate on reference substitution. If false, then use
+        // this as a check literal
+        Node ev = evaluate(l, orig.d_vars, orig.d_subs);
+        if (ev.isConst() && ev.getConst<bool>()==expect)
+        {
+          checkLit.push_back(l);
+        }
+      }
+    }
+    // check if it implies a variable equality. If so, we may be able to
+    // do avoid checking substitution.
+    Trace("confp-debug2") << "Check " << tcp << ", entailed = " << a->getVariables() << " -> " << entval
+                          << ", checkLit = " << checkLit << std::endl;
     for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
     {
       if (failedAssigns.find(aa.first) != failedAssigns.end())
@@ -521,8 +555,6 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
       // if entails different values
       if (!expect && isAssignmentClashVec(aa.first, entval))
       {
-        Trace("confp-debug2")
-            << "Clash vec " << aa.first << " vs " << entval << std::endl;
         continue;
       }
       // Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size()
@@ -542,20 +574,25 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
           subs.d_subs[j] = aa.first[vindexlist[j]];
         }
       }
-      if (!checkSubstitution(subs, tc, expect))
+      // check each literal
+      for (const Node& l : checkLit)
       {
-        Trace("confp-debug2")
-            << "...failed assign to " << subs.toString() << " with "
-            << aa.second.size() << " indices from subs assigner" << std::endl;
-        failedAssigns.insert(aa.first);
-        fails.insert(fails.end(), aa.second.begin(), aa.second.end());
-        // see if we are a failure based on the mode
-        if (isFailure(mode, nassigns, fails.size()))
+        if (!checkSubstitution(subs, l, expect))
         {
-          Trace("confp") << "...fail with >" << fails.size() << " / "
-                         << nassigns << std::endl;
-          d_genCache[key] = Node::null();
-          return Node::null();
+          Trace("confp-debug2")
+              << "...failed assign to " << subs.toString() << " with "
+              << aa.second.size() << " indices from subs assigner" << std::endl;
+          failedAssigns.insert(aa.first);
+          fails.insert(fails.end(), aa.second.begin(), aa.second.end());
+          // see if we are a failure based on the mode
+          if (isFailure(mode, nassigns, fails.size()))
+          {
+            Trace("confp") << "...fail with >" << fails.size() << " / "
+                          << nassigns << std::endl;
+            d_genCache[key] = Node::null();
+            return Node::null();
+          }
+          break;
         }
       }
     }

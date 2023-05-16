@@ -79,6 +79,7 @@ class ConflictProcessor : protected EnvObj
   Node checkSubsGeneralizes(Assigner* a,
                             const std::vector<Node>& vs,
                             const Node& tgtLit,
+                            const Subs& orig,
                             bool& isConflict);
   /**
    * Cache of checkGeneralizes, storing (a->getSatLiteral, v, tgtLit)
