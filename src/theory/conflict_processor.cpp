@@ -512,7 +512,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   {
     Node tcp = tc;
     std::vector<Node> entval;
-    entval.resize(a->getVariables().size());
+    entval.resize(vs.size());
     // If we only expect one literal to be true, then we
     std::vector<Node> tcc;
     if (!expect && tc.getKind() == AND)
@@ -557,7 +557,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     // check if it implies a variable equality. If so, we may be able to
     // do avoid checking substitution.
     Trace("confp-debug2") << "Check " << tcp
-                          << ", entailed = " << a->getVariables() << " -> "
+                          << ", entailed = " << vs << " -> "
                           << entval << ", checkLit = " << checkLit
                           << ", expect = " << expect << std::endl;
     for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
