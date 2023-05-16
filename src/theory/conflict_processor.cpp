@@ -504,7 +504,6 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     toCheck.push_back(tgtLit);
   }
   // we require that all formulas in toCheck evaluate to `expect`.
-  size_t navars = a->getVariables().size();
   Node vtmp, ctmp;
   std::map<Node, size_t>::const_iterator itv;
   Trace("confp-debug") << "...decompose into " << toCheck.size()
@@ -579,7 +578,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
       }
       //  construct the substitution if we are checking any literals
       bool ntrivSubs = false;
-      if (navars == 1)
+      if (nvars == 1)
       {
         Assert(aa.first.getType() == vs[0].getType());
         subs.d_subs[0] = aa.first;
