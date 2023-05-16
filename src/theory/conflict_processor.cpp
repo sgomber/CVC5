@@ -447,7 +447,7 @@ bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
 Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
                                              const std::vector<Node>& vs,
                                              const Node& tgtLit,
-                            const Subs& orig,
+                                             const Subs& orig,
                                              bool& isConflict)
 {
   Assert(!vs.empty());
@@ -500,9 +500,9 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     Node tcp = tc;
     std::vector<Node> entval;
     entval.resize(a->getVariables().size());
-    // If we only expect one literal to be true, then we 
+    // If we only expect one literal to be true, then we
     std::vector<Node> tcc;
-    if (!expect && tc.getKind()==AND)
+    if (!expect && tc.getKind() == AND)
     {
       tcc.insert(tcc.end(), tc.begin(), tc.end());
     }
@@ -525,7 +525,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
           continue;
         }
       }
-      if (tcc.size()==1)
+      if (tcc.size() == 1)
       {
         // if only one literal, it should evaluate to false
         checkLit.push_back(l);
@@ -535,7 +535,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
         // otherwise evaluate on reference substitution. If false, then use
         // this as a check literal
         Node ev = evaluate(l, orig.d_vars, orig.d_subs);
-        if (ev.isConst() && ev.getConst<bool>()==expect)
+        if (ev.isConst() && ev.getConst<bool>() == expect)
         {
           checkLit.push_back(l);
         }
@@ -543,8 +543,9 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     }
     // check if it implies a variable equality. If so, we may be able to
     // do avoid checking substitution.
-    Trace("confp-debug2") << "Check " << tcp << ", entailed = " << a->getVariables() << " -> " << entval
-                          << ", checkLit = " << checkLit << std::endl;
+    Trace("confp-debug2") << "Check " << tcp
+                          << ", entailed = " << a->getVariables() << " -> "
+                          << entval << ", checkLit = " << checkLit << std::endl;
     for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
     {
       if (failedAssigns.find(aa.first) != failedAssigns.end())
@@ -588,7 +589,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
           if (isFailure(mode, nassigns, fails.size()))
           {
             Trace("confp") << "...fail with >" << fails.size() << " / "
-                          << nassigns << std::endl;
+                           << nassigns << std::endl;
             d_genCache[key] = Node::null();
             return Node::null();
           }
