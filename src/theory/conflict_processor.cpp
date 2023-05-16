@@ -468,7 +468,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   std::vector<size_t> vindexlist;
   // require projection if variables are different, or if variables are out of
   // order.
-  bool reqProjection = (vs.size()!=a->getVariables().size());
+  bool reqProjection = (vs.size() != a->getVariables().size());
   for (size_t i = 0; i < nvars; i++)
   {
     const Node& v = vs[i];
@@ -566,20 +566,19 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     }
     // check if it implies a variable equality. If so, we may be able to
     // do avoid checking substitution.
-    Trace("confp-debug2") << "Check " << tcp
-                          << ", entailed = " << vs << " -> "
+    Trace("confp-debug2") << "Check " << tcp << ", entailed = " << vs << " -> "
                           << entval << ", checkLit = " << checkLit
                           << ", expect = " << expect << std::endl;
     bool basicCheck = false;
     std::vector<Node> abasic;
-    if (ecount==1 && nvars==1)
+    if (ecount == 1 && nvars == 1)
     {
       // we will only check two assignments: the entailed one and the null one
       basicCheck = true;
-      for (size_t i=0; i<2; i++)
+      for (size_t i = 0; i < 2; i++)
       {
-        Node aa = i==0 ? d_nullNode : entval[0];
-        if (amap.find(aa)!=amap.end())
+        Node aa = i == 0 ? d_nullNode : entval[0];
+        if (amap.find(aa) != amap.end())
         {
           abasic.push_back(aa);
         }
@@ -639,7 +638,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
       if (!successAssign)
       {
         ita = amap.find(aa);
-        Assert (ita!=amap.end());
+        Assert(ita != amap.end());
         Trace("confp-debug2")
             << "...failed assign to " << subs.toString() << " with "
             << ita->second.size() << " indices from subs assigner" << std::endl;
