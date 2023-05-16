@@ -466,7 +466,9 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   std::map<Node, size_t> vindex;
   // the index in the assigner for each vs
   std::vector<size_t> vindexlist;
-  bool reqProjection = false;
+  // require projection if variables are different, or if variables are out of
+  // order.
+  bool reqProjection = (vs.size()!=a->getVariables().size());
   for (size_t i = 0; i < nvars; i++)
   {
     const Node& v = vs[i];
