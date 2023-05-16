@@ -19,6 +19,7 @@
 #include "expr/skolem_manager.h"
 #include "options/theory_options.h"
 #include "theory/theory_engine.h"
+#include "theory/strings/regexp_eval.h"
 
 using namespace cvc5::internal::kind;
 
@@ -352,6 +353,21 @@ bool ConflictProcessor::hasAssigner(const Node& lit) const
   return !d_env.getAssignersFor(lit).empty();
 }
 
+Node ConflictProcessor::evaluateSubstitution(const Subs& s, const Node& tgtLit) const
+{
+  // HACK
+  if (tgtLit.getKind()==STRING_IN_REGEXP && strings::RegExpEval::canEvaluate(tgtLit[1]))
+  {
+    Node v = evaluate(tgtLit[0], s.d_vars, s.d_subs);
+    if (v.isConst())
+    {
+      bool result = strings::RegExpEval::evaluate(v.getConst<String>(), tgtLit[1]);
+      return NodeManager::currentNM()->mkConst(result);
+    }
+  }
+  return evaluate(tgtLit, s.d_vars, s.d_subs);
+}
+
 bool ConflictProcessor::checkSubstitution(const Subs& s,
                                           const Node& tgtLit,
                                           bool expect) const
@@ -369,7 +385,7 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
     bool hasNonConst = false;
     for (const Node& n : tgtAtom)
     {
-      Node sn = evaluate(n, s.d_vars, s.d_subs);
+      Node sn = evaluateSubstitution(s, n);
       if (!sn.isConst())
       {
         // failure if all children must be a given value
@@ -388,7 +404,7 @@ bool ConflictProcessor::checkSubstitution(const Subs& s,
     return !hasNonConst;
   }
   // otherwise, rewrite
-  Node stgtAtom = evaluate(tgtAtom, s.d_vars, s.d_subs);
+  Node stgtAtom = evaluateSubstitution(s, tgtAtom);
   return stgtAtom.isConst() && stgtAtom.getConst<bool>() == expect;
 }
 

@@ -284,7 +284,7 @@ bool RegExpEval::canEvaluate(const Node& r)
   return true;
 }
 
-bool RegExpEval::evaluate(String& s, const Node& r)
+bool RegExpEval::evaluate(const String& s, const Node& r)
 {
   Trace("re-eval") << "Evaluate " << s << " in " << r << std::endl;
   // no intersection, complement, and r must be constant.

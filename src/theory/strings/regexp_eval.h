@@ -53,7 +53,7 @@ class RegExpEval
    * do not compile the NFA to a DFA, which would lead to faster evaluation if
    * testing many strings in the same regular expression.
    */
-  static bool evaluate(String& s, const Node& r);
+  static bool evaluate(const String& s, const Node& r);
 };
 
 }  // namespace strings
