@@ -584,6 +584,8 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
         }
       }
     }
+    std::map<std::pair<Node, Node>, bool> sstatus;
+    std::map<std::pair<Node, Node>, bool>::iterator its;
     const std::vector<Node>& domainu = basicCheck ? abasic : adomain;
     for (const Node& aa : domainu)
     {
@@ -626,9 +628,19 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
       {
         for (const Node& l : checkLit)
         {
-          if (checkSubstitution(subs, l, expect))
+          std::pair<Node, Node> keyc(aa, l);
+          its = sstatus.find(keyc);
+          if (its==sstatus.end())
           {
-            successAssign = true;
+            successAssign = checkSubstitution(subs, l, expect);
+            sstatus[keyc] = successAssign;
+          }
+          else
+          {
+            successAssign = its->second;
+          }
+          if (successAssign)
+          {
             break;
           }
         }
