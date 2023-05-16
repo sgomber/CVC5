@@ -458,7 +458,8 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     Trace("confp") << "...already cached" << std::endl;
     return it->second;
   }
-  Trace("confp-debug2") << "Checking substitution generalization from assigner " << a->getNode() << std::endl;
+  Trace("confp-debug2") << "Checking substitution generalization from assigner "
+                        << a->getNode() << std::endl;
   size_t nvars = vs.size();
   Subs subs;
   std::map<Node, size_t> vindex;
@@ -546,7 +547,8 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     // do avoid checking substitution.
     Trace("confp-debug2") << "Check " << tcp
                           << ", entailed = " << a->getVariables() << " -> "
-                          << entval << ", checkLit = " << checkLit << ", expect = " << expect << std::endl;
+                          << entval << ", checkLit = " << checkLit
+                          << ", expect = " << expect << std::endl;
     for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
     {
       if (failedAssigns.find(aa.first) != failedAssigns.end())
@@ -577,7 +579,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
           Assert(vindexlist[j] < aa.first.getNumChildren());
           Node s = aa.first[vindexlist[j]];
           subs.d_subs[j] = s;
-          ntrivSubs |= (s!= subs.d_vars[j]);
+          ntrivSubs |= (s != subs.d_vars[j]);
         }
       }
       // must find a literal that we succeed on
@@ -593,7 +595,8 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
           }
         }
       }
-      Trace("confp-debug3") << "  ...successAssign = " << successAssign << std::endl;
+      Trace("confp-debug3")
+          << "  ...successAssign = " << successAssign << std::endl;
       if (!successAssign)
       {
         Trace("confp-debug2")
@@ -605,7 +608,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
         if (isFailure(mode, nassigns, fails.size()))
         {
           Trace("confp") << "...fail with >" << fails.size() << " / "
-                          << nassigns << std::endl;
+                         << nassigns << std::endl;
           d_genCache[key] = Node::null();
           return Node::null();
         }
