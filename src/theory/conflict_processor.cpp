@@ -568,29 +568,33 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
         continue;
       }
       Trace("confp-debug3") << "  check assign: " << aa.first << std::endl;
-      // if entails different values
+      // if the conjunct entails a different value for the variable than the
+      // assignment
       if (!expect && isAssignmentClashVec(aa.first, entval))
       {
         Trace("confp-debug3") << "  ...clash entailed" << std::endl;
         continue;
       }
-      //  construct the substitution
+      //  construct the substitution if we are checking any literals
       bool ntrivSubs = false;
-      if (navars == 1)
+      if (!checkLit.empty())
       {
-        Assert(aa.first.getType() == vs[0].getType());
-        subs.d_subs[0] = aa.first;
-        ntrivSubs = (aa.first != subs.d_vars[0]);
-      }
-      else
-      {
-        Assert(aa.first.getKind() == SEXPR);
-        for (size_t j = 0; j < nvars; j++)
+        if (navars == 1)
         {
-          Assert(j < aa.first.getNumChildren());
-          Node s = aa.first[j];
-          subs.d_subs[j] = s;
-          ntrivSubs |= (s != subs.d_vars[j]);
+          Assert(aa.first.getType() == vs[0].getType());
+          subs.d_subs[0] = aa.first;
+          ntrivSubs = (aa.first != subs.d_vars[0]);
+        }
+        else
+        {
+          Assert(aa.first.getKind() == SEXPR);
+          for (size_t j = 0; j < nvars; j++)
+          {
+            Assert(j < aa.first.getNumChildren());
+            Node s = aa.first[j];
+            subs.d_subs[j] = s;
+            ntrivSubs |= (s != subs.d_vars[j]);
+          }
         }
       }
       // must find a literal that we succeed on
