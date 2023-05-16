@@ -693,7 +693,7 @@ void ConflictProcessor::getEntailedEq(const Node& tc,
     {
       continue;
     }
-    Assert(it->second < subs.size());
+    Assert(it->second < entval.size());
     entval[it->second] = ctmp;
   }
 }
