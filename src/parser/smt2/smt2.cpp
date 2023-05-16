@@ -688,10 +688,10 @@ std::unique_ptr<Command> Smt2State::invConstraint(
 
 void Smt2State::setLogic(std::string name)
 {
+  // if logic is already set, this is an error
   if (d_logicSet)
   {
-    // already set, ignore
-    return;
+    parseError("Only one set-logic is allowed.");
   }
   d_logicSet = true;
   d_logic = name;
