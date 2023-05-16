@@ -43,6 +43,7 @@ class ConflictProcessor : protected EnvObj
   /** The parent engine */
   TheoryEngine* d_engine;
   Node d_true;
+  Node d_nullNode;
   bool d_doGeneralize;
   /** Statistics about the conflict processor */
   struct Statistics

@@ -480,13 +480,20 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   }
   // compute the assignment map from the assigner
   std::map<Node, std::vector<size_t>> amapj;
+  std::map<Node, std::vector<size_t>> amapb;
   if (reqProjection)
   {
     amapj = a->getAssignmentMapProjection(vindexlist);
   }
+  std::map<Node, std::vector<size_t>>::const_iterator ita;
   const std::map<Node, std::vector<size_t>>& amap =
       reqProjection ? amapj : a->getAssignmentMap();
-
+  std::vector<Node> adomain;
+  for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
+  {
+    adomain.push_back(aa.first);
+  }
+  // the indices in the assigner that have failed
   std::vector<size_t> fails;
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   size_t nassigns = a->getNode().getNumChildren();
@@ -513,7 +520,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   {
     Node tcp = tc;
     std::vector<Node> entval;
-    entval.resize(vs.size());
+    entval.resize(nvars);
     // If we only expect one literal to be true, then we
     std::vector<Node> tcc;
     if (!expect && tc.getKind() == AND)
@@ -526,6 +533,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     }
     // for each conjunct in the cube
     std::vector<Node> checkLit;
+    size_t ecount = 0;
     for (const Node& l : tcc)
     {
       // maybe it is an entailed equality for a variable in the substitution?
@@ -535,6 +543,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
         if (itv != vindex.end())
         {
           Assert(itv->second < subs.size());
+          ecount += entval[itv->second].isNull() ? 1 : 0;
           entval[itv->second] = ctmp;
           continue;
         }
@@ -561,17 +570,33 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
                           << ", entailed = " << vs << " -> "
                           << entval << ", checkLit = " << checkLit
                           << ", expect = " << expect << std::endl;
-    for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
+    bool basicCheck = false;
+    std::vector<Node> abasic;
+    if (ecount==1 && nvars==1)
     {
-      if (failedAssigns.find(aa.first) != failedAssigns.end())
+      // we will only check two assignments: the entailed one and the null one
+      basicCheck = true;
+      for (size_t i=0; i<2; i++)
+      {
+        Node aa = i==0 ? d_nullNode : entval[0];
+        if (amap.find(aa)!=amap.end())
+        {
+          abasic.push_back(aa);
+        }
+      }
+    }
+    const std::vector<Node>& domainu = basicCheck ? abasic : adomain;
+    for (const Node& aa : domainu)
+    {
+      if (failedAssigns.find(aa) != failedAssigns.end())
       {
         // already failed on a different disjunct
         continue;
       }
-      Trace("confp-debug3") << "  check assign: " << aa.first << std::endl;
+      Trace("confp-debug3") << "  check assign: " << aa << std::endl;
       // if the conjunct entails a different value for the variable than the
       // assignment
-      if (!expect && isAssignmentClashVec(aa.first, entval))
+      if (!expect && isAssignmentClashVec(aa, entval))
       {
         Trace("confp-debug3") << "  ...clash entailed" << std::endl;
         continue;
@@ -580,17 +605,17 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
       bool ntrivSubs = false;
       if (nvars == 1)
       {
-        Assert(aa.first.getType() == vs[0].getType());
-        subs.d_subs[0] = aa.first;
-        ntrivSubs = (aa.first != subs.d_vars[0]);
+        Assert(aa.getType() == vs[0].getType());
+        subs.d_subs[0] = aa;
+        ntrivSubs = (aa != subs.d_vars[0]);
       }
       else
       {
-        Assert(aa.first.getKind() == SEXPR);
+        Assert(aa.getKind() == SEXPR);
         for (size_t j = 0; j < nvars; j++)
         {
-          Assert(j < aa.first.getNumChildren());
-          Node s = aa.first[j];
+          Assert(j < aa.getNumChildren());
+          Node s = aa[j];
           subs.d_subs[j] = s;
           ntrivSubs |= (s != subs.d_vars[j]);
         }
@@ -613,11 +638,13 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
           << "  ...successAssign = " << successAssign << std::endl;
       if (!successAssign)
       {
+        ita = amap.find(aa);
+        Assert (ita!=amap.end());
         Trace("confp-debug2")
             << "...failed assign to " << subs.toString() << " with "
-            << aa.second.size() << " indices from subs assigner" << std::endl;
-        failedAssigns.insert(aa.first);
-        fails.insert(fails.end(), aa.second.begin(), aa.second.end());
+            << ita->second.size() << " indices from subs assigner" << std::endl;
+        failedAssigns.insert(aa);
+        fails.insert(fails.end(), ita->second.begin(), ita->second.end());
         // see if we are a failure based on the mode
         if (isFailure(mode, nassigns, fails.size()))
         {
