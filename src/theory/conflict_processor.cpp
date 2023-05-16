@@ -630,7 +630,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
         {
           std::pair<Node, Node> keyc(aa, l);
           its = sstatus.find(keyc);
-          if (its==sstatus.end())
+          if (its == sstatus.end())
           {
             successAssign = checkSubstitution(subs, l, expect);
             sstatus[keyc] = successAssign;
