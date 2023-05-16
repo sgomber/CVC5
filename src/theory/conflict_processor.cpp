@@ -577,24 +577,21 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
       }
       //  construct the substitution if we are checking any literals
       bool ntrivSubs = false;
-      if (!checkLit.empty())
+      if (navars == 1)
       {
-        if (navars == 1)
+        Assert(aa.first.getType() == vs[0].getType());
+        subs.d_subs[0] = aa.first;
+        ntrivSubs = (aa.first != subs.d_vars[0]);
+      }
+      else
+      {
+        Assert(aa.first.getKind() == SEXPR);
+        for (size_t j = 0; j < nvars; j++)
         {
-          Assert(aa.first.getType() == vs[0].getType());
-          subs.d_subs[0] = aa.first;
-          ntrivSubs = (aa.first != subs.d_vars[0]);
-        }
-        else
-        {
-          Assert(aa.first.getKind() == SEXPR);
-          for (size_t j = 0; j < nvars; j++)
-          {
-            Assert(j < aa.first.getNumChildren());
-            Node s = aa.first[j];
-            subs.d_subs[j] = s;
-            ntrivSubs |= (s != subs.d_vars[j]);
-          }
+          Assert(j < aa.first.getNumChildren());
+          Node s = aa.first[j];
+          subs.d_subs[j] = s;
+          ntrivSubs |= (s != subs.d_vars[j]);
         }
       }
       // must find a literal that we succeed on
