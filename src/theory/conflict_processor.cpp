@@ -64,7 +64,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   // if we didn't infer a substitution, we are done
   if (s.empty())
   {
-    Trace("confp-debug") << "...no substitution for " << lemma << std::endl;
+    Trace("confp-nprocess") << "...no substitution for " << lemma << std::endl;
     return TrustNode::null();
   }
   ++d_stats.d_lemmas;
@@ -458,6 +458,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     Trace("confp") << "...already cached" << std::endl;
     return it->second;
   }
+  Trace("confp-debug2") << "Checking substitution generalization from assigner " << a->getNode() << std::endl;
   size_t nvars = vs.size();
   Subs subs;
   std::map<Node, size_t> vindex;
@@ -545,7 +546,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     // do avoid checking substitution.
     Trace("confp-debug2") << "Check " << tcp
                           << ", entailed = " << a->getVariables() << " -> "
-                          << entval << ", checkLit = " << checkLit << std::endl;
+                          << entval << ", checkLit = " << checkLit << ", expect = " << expect << std::endl;
     for (const std::pair<const Node, std::vector<size_t>>& aa : amap)
     {
       if (failedAssigns.find(aa.first) != failedAssigns.end())
@@ -553,18 +554,20 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
         // already failed on a different disjunct
         continue;
       }
+      Trace("confp-debug3") << "  check assign: " << aa.first << std::endl;
       // if entails different values
       if (!expect && isAssignmentClashVec(aa.first, entval))
       {
+        Trace("confp-debug3") << "  ...clash entailed" << std::endl;
         continue;
       }
-      // Trace("ajr-temp") << "#" << aa.first << " = " << aa.second.size()
-      //                   << std::endl;
       //  construct the substitution
+      bool ntrivSubs = false;
       if (navars == 1)
       {
         Assert(aa.first.getType() == vs[0].getType());
         subs.d_subs[0] = aa.first;
+        ntrivSubs = (aa.first != subs.d_vars[0]);
       }
       else
       {
@@ -572,28 +575,39 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
         for (size_t j = 0; j < nvars; j++)
         {
           Assert(vindexlist[j] < aa.first.getNumChildren());
-          subs.d_subs[j] = aa.first[vindexlist[j]];
+          Node s = aa.first[vindexlist[j]];
+          subs.d_subs[j] = s;
+          ntrivSubs |= (s!= subs.d_vars[j]);
         }
       }
-      // check each literal
-      for (const Node& l : checkLit)
+      // must find a literal that we succeed on
+      bool successAssign = false;
+      if (ntrivSubs)
       {
-        if (!checkSubstitution(subs, l, expect))
+        for (const Node& l : checkLit)
         {
-          Trace("confp-debug2")
-              << "...failed assign to " << subs.toString() << " with "
-              << aa.second.size() << " indices from subs assigner" << std::endl;
-          failedAssigns.insert(aa.first);
-          fails.insert(fails.end(), aa.second.begin(), aa.second.end());
-          // see if we are a failure based on the mode
-          if (isFailure(mode, nassigns, fails.size()))
+          if (checkSubstitution(subs, l, expect))
           {
-            Trace("confp") << "...fail with >" << fails.size() << " / "
-                           << nassigns << std::endl;
-            d_genCache[key] = Node::null();
-            return Node::null();
+            successAssign = true;
+            break;
           }
-          break;
+        }
+      }
+      Trace("confp-debug3") << "  ...successAssign = " << successAssign << std::endl;
+      if (!successAssign)
+      {
+        Trace("confp-debug2")
+            << "...failed assign to " << subs.toString() << " with "
+            << aa.second.size() << " indices from subs assigner" << std::endl;
+        failedAssigns.insert(aa.first);
+        fails.insert(fails.end(), aa.second.begin(), aa.second.end());
+        // see if we are a failure based on the mode
+        if (isFailure(mode, nassigns, fails.size()))
+        {
+          Trace("confp") << "...fail with >" << fails.size() << " / "
+                          << nassigns << std::endl;
+          d_genCache[key] = Node::null();
+          return Node::null();
         }
       }
     }
