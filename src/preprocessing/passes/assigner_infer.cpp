@@ -43,20 +43,20 @@ PreprocessingPassResult AssignerInfer::applyInternal(
   size_t size = assertionsToPreprocess->size();
   std::vector<Node> lemmas;
   std::unordered_map<Node, Node> visited;
+  NodeManager* nm = NodeManager::currentNM();
   for (size_t i = 0; i < size; ++i)
   {
     const Node& assertion = (*assertionsToPreprocess)[i];
     const Node& aa = convertToAssigner(visited, assertion, lemmas);
-    if (aa != assertion)
+    if (aa != assertion || !lemmas.empty())
     {
-      assertionsToPreprocess->replace(i, aa);
+      std::vector<Node> conj;
+      conj.push_back(aa);
+      conj.insert(conj.end(), lemmas.begin(), lemmas.end());
+      Node anew = nm->mkAnd(conj);
+      assertionsToPreprocess->replace(i, anew);
+      lemmas.clear();
     }
-  }
-  if (!lemmas.empty())
-  {
-    NodeManager* nm = NodeManager::currentNM();
-    Node newAssertion = nm->mkAnd(lemmas);
-    assertionsToPreprocess->push_back(newAssertion);
   }
   return PreprocessingPassResult::NO_CONFLICT;
 }
