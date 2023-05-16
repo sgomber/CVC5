@@ -474,7 +474,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
     vindex[v] = i;
     size_t index = a->variableIndexOf(v);
     vindexlist.push_back(index);
-    reqProjection |= (index!=i);
+    reqProjection |= (index != i);
   }
   // compute the assignment map from the assigner
   std::map<Node, std::vector<size_t>> amapj;
@@ -482,9 +482,9 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   {
     amapj = a->getAssignmentMapProjection(vindexlist);
   }
-  const std::map<Node, std::vector<size_t>>& amap = reqProjection ? amapj : a->getAssignmentMap();
-  
-  
+  const std::map<Node, std::vector<size_t>>& amap =
+      reqProjection ? amapj : a->getAssignmentMap();
+
   std::vector<size_t> fails;
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   size_t nassigns = a->getNode().getNumChildren();

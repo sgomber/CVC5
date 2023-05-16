@@ -24,8 +24,9 @@ namespace cvc5::internal {
 
 Node mkHash(const std::vector<Node>& vec)
 {
-  Assert (!vec.empty());
-  return vec.size()==1 ? vec[0] : NodeManager::currentNM()->mkNode(SEXPR, vec);
+  Assert(!vec.empty());
+  return vec.size() == 1 ? vec[0]
+                         : NodeManager::currentNM()->mkNode(SEXPR, vec);
 }
 
 Assigner::Assigner(const Node& n) : d_node(n)
@@ -63,7 +64,8 @@ const std::map<Node, std::vector<size_t>>& Assigner::getAssignmentMap() const
   return d_assignMap;
 }
 
-std::map<Node, std::vector<size_t>> Assigner::getAssignmentMapProjection(const std::vector<size_t>& cols) const
+std::map<Node, std::vector<size_t>> Assigner::getAssignmentMapProjection(
+    const std::vector<size_t>& cols) const
 {
   std::map<Node, std::vector<size_t>> ret;
   for (const std::pair<const Node, std::vector<size_t>>& a : d_assignMap)

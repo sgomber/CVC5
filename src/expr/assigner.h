@@ -38,7 +38,8 @@ class Assigner
   size_t variableIndexOf(const Node& v) const;
   const std::vector<Node>& getAssignments(const Node& v) const;
   const std::map<Node, std::vector<size_t>>& getAssignmentMap() const;
-  std::map<Node, std::vector<size_t>> getAssignmentMapProjection(const std::vector<size_t>& cols) const;
+  std::map<Node, std::vector<size_t>> getAssignmentMapProjection(
+      const std::vector<size_t>& cols) const;
   const std::vector<Node>& getLiterals() const;
   bool hasVariable(const Node& v) const;
   static bool isAssigner(const Node& n);
