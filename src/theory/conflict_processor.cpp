@@ -462,21 +462,32 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
                         << a->getNode() << std::endl;
   size_t nvars = vs.size();
   Subs subs;
+  // mapping vs to the index in vs
   std::map<Node, size_t> vindex;
+  // the index in the assigner for each vs
   std::vector<size_t> vindexlist;
+  bool reqProjection = false;
   for (size_t i = 0; i < nvars; i++)
   {
     const Node& v = vs[i];
     subs.add(v, v);
+    vindex[v] = i;
     size_t index = a->variableIndexOf(v);
-    vindex[v] = index;
     vindexlist.push_back(index);
+    reqProjection |= (index!=i);
   }
+  // compute the assignment map from the assigner
+  std::map<Node, std::vector<size_t>> amapj;
+  if (reqProjection)
+  {
+    amapj = a->getAssignmentMapProjection(vindexlist);
+  }
+  const std::map<Node, std::vector<size_t>>& amap = reqProjection ? amapj : a->getAssignmentMap();
+  
+  
   std::vector<size_t> fails;
   options::ConflictProcessMode mode = options().theory.conflictProcessMode;
   size_t nassigns = a->getNode().getNumChildren();
-  const std::map<Node, std::vector<size_t>>& amap = a->getAssignmentMap();
-
   // if we are checking a disjunct (i.e. from a generalized target),
   // we check per disjunct
   std::vector<Node> toCheck;
@@ -576,14 +587,15 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
         Assert(aa.first.getKind() == SEXPR);
         for (size_t j = 0; j < nvars; j++)
         {
-          Assert(vindexlist[j] < aa.first.getNumChildren());
-          Node s = aa.first[vindexlist[j]];
+          Assert(j < aa.first.getNumChildren());
+          Node s = aa.first[j];
           subs.d_subs[j] = s;
           ntrivSubs |= (s != subs.d_vars[j]);
         }
       }
       // must find a literal that we succeed on
       bool successAssign = false;
+      // try only if the substitution wasn't trivial
       if (ntrivSubs)
       {
         for (const Node& l : checkLit)

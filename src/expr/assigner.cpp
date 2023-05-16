@@ -22,6 +22,12 @@ using namespace cvc5::internal::kind;
 
 namespace cvc5::internal {
 
+Node mkHash(const std::vector<Node>& vec)
+{
+  Assert (!vec.empty());
+  return vec.size()==1 ? vec[0] : NodeManager::currentNM()->mkNode(SEXPR, vec);
+}
+
 Assigner::Assigner(const Node& n) : d_node(n)
 {
   d_valid = init(n);
@@ -57,6 +63,23 @@ const std::map<Node, std::vector<size_t>>& Assigner::getAssignmentMap() const
   return d_assignMap;
 }
 
+std::map<Node, std::vector<size_t>> Assigner::getAssignmentMapProjection(const std::vector<size_t>& cols) const
+{
+  std::map<Node, std::vector<size_t>> ret;
+  for (const std::pair<const Node, std::vector<size_t>>& a : d_assignMap)
+  {
+    std::vector<Node> vec;
+    for (size_t c : cols)
+    {
+      vec.push_back(a.first[c]);
+    }
+    Node h = mkHash(vec);
+    std::vector<size_t>& rvec = ret[h];
+    rvec.insert(rvec.end(), a.second.begin(), a.second.end());
+  }
+  return ret;
+}
+
 const std::vector<Node>& Assigner::getLiterals() const { return d_literals; }
 
 bool Assigner::hasVariable(const Node& v) const
@@ -84,7 +107,6 @@ bool Assigner::init(const Node& n)
   // compute assignment map
   std::vector<std::vector<Node>> avec;
   size_t nassigns = 0;
-  NodeManager* nm = NodeManager::currentNM();
   for (const Node& v : d_vars)
   {
     const std::vector<Node>& assignments = getAssignments(v);
@@ -106,7 +128,7 @@ bool Assigner::init(const Node& n)
   {
     std::vector<Node>& ai = avec[i];
     Assert(!ai.empty());
-    Node ahash = ai.size() == 1 ? ai[0] : nm->mkNode(SEXPR, ai);
+    Node ahash = mkHash(ai);
     d_assignMap[ahash].push_back(i);
   }
   return ret;
