@@ -20,6 +20,7 @@
 #include "options/theory_options.h"
 #include "theory/theory_engine.h"
 #include "theory/strings/regexp_eval.h"
+#include "expr/node_algorithm.h"
 
 using namespace cvc5::internal::kind;
 
@@ -89,22 +90,34 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   }
   if (tgtLit.isNull())
   {
+    // NOTE: could do unification here
     Trace("confp-debug") << "No target for " << lemma << std::endl;
     return TrustNode::null();
   }
-  // NOTE: could minimize the substitution here?
-
+  bool minimized = false;
   // the form of the target literal as it will appear in the final lemma.
   Node tgtLitFinal = tgtLit;
   // we are minimized if there were multiple target literals and we found a
   // single one that sufficed
-  bool minimized = false;
   if (tgtLits.size() > 1)
   {
     minimized = true;
     ++d_stats.d_minLemmas;
     Trace("confp") << "Target suffices " << tgtLit
                    << " for more than one disjunct: " << lemma << std::endl;
+  }
+  // minimize the substitution here
+  std::unordered_set<Node> symbols;
+  expr::getSymbols(tgtLit, symbols);
+  for (const Node& v : s.d_vars)
+  {
+    if (symbols.find(v)==symbols.end())
+    {
+      s.erase(v);
+      minimized = true;
+      Trace("confp") << "Substitution for " << v
+                    << " not necessary in: " << lemma << std::endl;
+    }
   }
 
   // generalize the conflict
