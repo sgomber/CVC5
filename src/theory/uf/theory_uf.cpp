@@ -196,7 +196,7 @@ void TheoryUF::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
     break;
     case kind::BOOLEAN_TERM_VARIABLE:
     {
-      Node lit = pol ? atom : atom.notNode();
+      Node lit = pol ? Node(atom) : atom.notNode();
       // if this is a proxy literal, see if we should expand it
       if (d_bvarsProcessed.find(lit) == d_bvarsProcessed.end())
       {
