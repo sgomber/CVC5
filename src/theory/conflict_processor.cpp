@@ -134,7 +134,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   {
     // first, try to generalize the target literal
     Node tgtLitn = tgtLit.negate();
-    std::vector<Assigner*> ast = d_env.getAssignersFor(tgtLitn);
+    std::vector<Assigner*> ast = d_engine->getActiveAssigners(tgtLitn);
     Trace("confp-debug") << "Check target literal " << tgtLitn
                          << ", #assigners=" << ast.size() << std::endl;
     for (Assigner* a : ast)
@@ -160,7 +160,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
       Assert(varToExp.find(v) != varToExp.end());
       // can we generalize to an assigner?
       Node expv = varToExp[v];
-      std::vector<Assigner*> as = d_env.getAssignersFor(expv);
+      std::vector<Assigner*> as = d_engine->getActiveAssigners(expv);
       if (as.empty())
       {
         continue;
