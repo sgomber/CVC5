@@ -123,10 +123,12 @@ Node AssignerInfer::inferAssigners(const Node& n, std::vector<Node>& lemmas)
     {
       d_numAssigners++;
       Assigner* a = d_env.registerAssigner(ca);
+      SkolemManager* skm = nm->getSkolemManager();
       Assert(a != nullptr);
       Node lit = a->getSatLiteral();
       Trace("assigner") << "Found assigner: " << lit << " <=> " << ca
                         << std::endl;
+      /*
       Node conc = ca;
       if (options().theory.assignerProxy)
       {
@@ -141,6 +143,7 @@ Node AssignerInfer::inferAssigners(const Node& n, std::vector<Node>& lemmas)
       }
       Node lem = nm->mkNode(kind::EQUAL, lit, conc);
       lemmas.emplace_back(lem);
+      */
       resLits.push_back(lit);
       changed = true;
     }

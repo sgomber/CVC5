@@ -100,7 +100,8 @@ Node Assigner::getSatLiteral(const Node& n)
 {
   NodeManager* nm = NodeManager::currentNM();
   SkolemManager* skm = nm->getSkolemManager();
-  return skm->mkSkolemFunction(SkolemFunId::ASSIGNER, nm->booleanType(), n);
+  //return skm->mkSkolemFunction(SkolemFunId::ASSIGNER, nm->booleanType(), n);
+  return skm->mkProxyLit(n);
 }
 
 bool Assigner::init(const Node& n)
