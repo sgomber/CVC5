@@ -35,10 +35,10 @@
 #include "smt/env.h"
 #include "smt/logic_exception.h"
 #include "smt/solver_engine_state.h"
+#include "theory/assigner_infer.h"
 #include "theory/combination_care_graph.h"
 #include "theory/decision_manager.h"
 #include "theory/ee_manager_central.h"
-#include "theory/assigner_infer.h"
 #include "theory/partition_generator.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers_engine.h"
@@ -166,7 +166,7 @@ void TheoryEngine::finishInit()
     d_relManager.reset(new RelevanceManager(d_env, this));
     d_modules.push_back(d_relManager.get());
   }
-  
+
   if (options().theory.assignerInfer && !options().smt.assignerInferPp)
   {
     d_ainfer.reset(new AssignerInference(d_env));

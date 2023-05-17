@@ -196,7 +196,7 @@ void SetDefaults::setDefaultsPre(Options& opts)
   {
     opts.writeTheory().assignerInfer = true;
   }
-      
+
   if (d_isInternalSubsolver)
   {
     // these options must be disabled on internal subsolvers, as they are

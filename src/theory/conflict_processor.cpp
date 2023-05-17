@@ -16,12 +16,12 @@
 #include "theory/conflict_processor.h"
 
 #include "expr/assigner.h"
-#include "expr/skolem_manager.h"
-#include "options/theory_options.h"
-#include "options/smt_options.h"
-#include "theory/theory_engine.h"
-#include "theory/strings/regexp_eval.h"
 #include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
+#include "options/smt_options.h"
+#include "options/theory_options.h"
+#include "theory/strings/regexp_eval.h"
+#include "theory/theory_engine.h"
 
 using namespace cvc5::internal::kind;
 
@@ -108,23 +108,23 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
                    << " for more than one disjunct: " << lemma << std::endl;
   }
   // minimize the substitution here
-  if (s.d_vars.size()>1)
+  if (s.d_vars.size() > 1)
   {
     std::unordered_set<Node> symbols;
     expr::getSymbols(tgtLit, symbols);
     for (const Node& v : s.d_vars)
     {
-      if (symbols.find(v)==symbols.end())
+      if (symbols.find(v) == symbols.end())
       {
         s.erase(v);
         minimized = true;
         Trace("confp") << "Substitution for " << v
-                      << " not necessary in: " << lemma << std::endl;
+                       << " not necessary in: " << lemma << std::endl;
       }
     }
-    Assert (!s.empty());
+    Assert(!s.empty());
     // should still imply target
-    Assert (checkSubstitution(s, tgtLit, true));
+    Assert(checkSubstitution(s, tgtLit, true));
   }
 
   // generalize the conflict
@@ -373,15 +373,18 @@ bool ConflictProcessor::hasAssigner(const Node& lit) const
   return !d_env.getAssignersFor(lit).empty();
 }
 
-Node ConflictProcessor::evaluateSubstitution(const Subs& s, const Node& tgtLit) const
+Node ConflictProcessor::evaluateSubstitution(const Subs& s,
+                                             const Node& tgtLit) const
 {
   // HACK
-  if (tgtLit.getKind()==STRING_IN_REGEXP && strings::RegExpEval::canEvaluate(tgtLit[1]))
+  if (tgtLit.getKind() == STRING_IN_REGEXP
+      && strings::RegExpEval::canEvaluate(tgtLit[1]))
   {
     Node v = evaluate(tgtLit[0], s.d_vars, s.d_subs);
     if (v.isConst())
     {
-      bool result = strings::RegExpEval::evaluate(v.getConst<String>(), tgtLit[1]);
+      bool result =
+          strings::RegExpEval::evaluate(v.getConst<String>(), tgtLit[1]);
       return NodeManager::currentNM()->mkConst(result);
     }
   }
@@ -788,7 +791,7 @@ bool ConflictProcessor::isAssignmentClash(const Node& a, const Node& b)
   return !b.isNull() && a.isConst() && b.isConst() && a != b;
 }
 
-Node ConflictProcessor::getSatLiteralFor(Assigner * a ) const
+Node ConflictProcessor::getSatLiteralFor(Assigner* a) const
 {
   // use the allocated SAT literal if we did preprocessing
   return options().smt.assignerInferPp ? a->getSatLiteral() : a->getNode();
