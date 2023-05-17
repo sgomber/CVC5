@@ -15,20 +15,21 @@
 
 #include "theory/assigner_infer.h"
 
-#include "expr/node_algorithm.h"
 #include "expr/assigner.h"
+#include "expr/node_algorithm.h"
 #include "smt/env.h"
 
 namespace cvc5::internal {
 namespace theory {
 
-AssignerInference::AssignerInference(Env& env) : EnvObj(env),
-    d_numAssigners(
-        statisticsRegistry().registerInt("theory::AssignerInference::numAssigners"))
-    {
-      
-    }
-void AssignerInference::notifyPreprocessedAssertions(const std::vector<Node>& assertions)
+AssignerInference::AssignerInference(Env& env)
+    : EnvObj(env),
+      d_numAssigners(statisticsRegistry().registerInt(
+          "theory::AssignerInference::numAssigners"))
+{
+}
+void AssignerInference::notifyPreprocessedAssertions(
+    const std::vector<Node>& assertions)
 {
   std::unordered_set<Node> visited;
   for (const Node& a : assertions)
@@ -76,7 +77,7 @@ bool AssignerInference::registerAssigner(const Node& n)
     {
       symHash = h;
     }
-    else if (symHash!=h)
+    else if (symHash != h)
     {
       return false;
     }
@@ -93,7 +94,7 @@ bool AssignerInference::registerAssigner(const Node& n)
 }
 
 void AssignerInference::registerAssigners(std::unordered_set<Node>& visited,
-                                      const Node& n)
+                                          const Node& n)
 {
   std::unordered_set<Node>::iterator it;
   std::unordered_set<Node> processedInferred;
@@ -120,7 +121,6 @@ void AssignerInference::registerAssigners(std::unordered_set<Node>& visited,
     }
   } while (!visit.empty());
 }
-  
+
 }  // namespace theory
 }  // namespace cvc5::internal
-

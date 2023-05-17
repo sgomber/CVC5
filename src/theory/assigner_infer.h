@@ -45,10 +45,10 @@ class AssignerInference : protected EnvObj
    * @param assertions The assertions
    */
   void notifyPreprocessedAssertions(const std::vector<Node>& assertions);
+
  private:
   /** convert to assigner */
-  void registerAssigners(std::unordered_set<Node>& visited,
-                         const Node& n);
+  void registerAssigners(std::unordered_set<Node>& visited, const Node& n);
   static Node getSymbolsHash(const Node& n);
   bool registerAssigner(const Node& n);
   /** Total number of assigners found */
