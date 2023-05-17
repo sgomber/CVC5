@@ -188,6 +188,7 @@ void SetDefaults::setDefaultsPre(Options& opts)
       throw OptionException(ss.str());
     }
   }
+  // require assigner inference if trying to generalize conflicts
   options::ConflictProcessMode cpmode = options().theory.conflictProcessMode;
   if (cpmode != options::ConflictProcessMode::NONE
       && cpmode != options::ConflictProcessMode::MINIMIZE
@@ -1276,6 +1277,7 @@ void SetDefaults::widenLogic(LogicInfo& logic, const Options& opts) const
                << std::endl;
     needsUf = true;
   }
+  // assigner inference introduces boolean term variables, which require UF
   if (opts.smt.assignerInfer)
   {
     needsUf = true;
