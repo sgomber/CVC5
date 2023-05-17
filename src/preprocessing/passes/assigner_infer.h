@@ -42,7 +42,7 @@ class AssignerInfer : public PreprocessingPass
   PreprocessingPassResult applyInternal(
       AssertionPipeline* assertionsToPreprocess) override;
   /** convert to assigner */
-  Node convertToAssigner(std::unordered_map<Node, Node> visited,
+  Node convertToAssigner(std::unordered_map<Node, Node>& visited,
                          const Node& n,
                          std::vector<Node>& lemmas);
   static Node getSymbolsHash(const Node& n);

@@ -18,6 +18,7 @@
 #include "expr/assigner.h"
 #include "expr/skolem_manager.h"
 #include "options/theory_options.h"
+#include "options/smt_options.h"
 #include "theory/theory_engine.h"
 #include "theory/strings/regexp_eval.h"
 #include "expr/node_algorithm.h"
@@ -107,17 +108,23 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
                    << " for more than one disjunct: " << lemma << std::endl;
   }
   // minimize the substitution here
-  std::unordered_set<Node> symbols;
-  expr::getSymbols(tgtLit, symbols);
-  for (const Node& v : s.d_vars)
+  if (s.d_vars.size()>1)
   {
-    if (symbols.find(v)==symbols.end())
+    std::unordered_set<Node> symbols;
+    expr::getSymbols(tgtLit, symbols);
+    for (const Node& v : s.d_vars)
     {
-      s.erase(v);
-      minimized = true;
-      Trace("confp") << "Substitution for " << v
-                    << " not necessary in: " << lemma << std::endl;
+      if (symbols.find(v)==symbols.end())
+      {
+        s.erase(v);
+        minimized = true;
+        Trace("confp") << "Substitution for " << v
+                      << " not necessary in: " << lemma << std::endl;
+      }
     }
+    Assert (!s.empty());
+    // should still imply target
+    Assert (checkSubstitution(s, tgtLit, true));
   }
 
   // generalize the conflict
@@ -127,7 +134,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   {
     // first, try to generalize the target literal
     Node tgtLitn = tgtLit.negate();
-    std::vector<Assigner*> ast = d_engine->getActiveAssigners(tgtLitn);
+    std::vector<Assigner*> ast = d_env.getAssignersFor(tgtLitn);
     Trace("confp-debug") << "Check target literal " << tgtLitn
                          << ", #assigners=" << ast.size() << std::endl;
     for (Assigner* a : ast)
@@ -153,7 +160,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
       Assert(varToExp.find(v) != varToExp.end());
       // can we generalize to an assigner?
       Node expv = varToExp[v];
-      std::vector<Assigner*> as = d_engine->getActiveAssigners(expv);
+      std::vector<Assigner*> as = d_env.getAssignersFor(expv);
       if (as.empty())
       {
         continue;
@@ -460,13 +467,13 @@ bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
     NodeManager* nm = NodeManager::currentNM();
     isConflict = false;
     tgtLit = nm->mkOr(success).negate();
-    fails.push_back(a->getSatLiteral().negate());
+    fails.push_back(getSatLiteralFor(a).negate());
     tgtLitFinal = nm->mkOr(fails);
   }
   else
   {
     tgtLit = anode.negate();
-    tgtLitFinal = a->getSatLiteral().negate();
+    tgtLitFinal = getSatLiteralFor(a).negate();
   }
   Trace("confp") << "...generalize target with " << fails.size() << " / "
                  << nargs << " failed literals" << std::endl;
@@ -480,7 +487,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
                                              bool& isConflict)
 {
   Assert(!vs.empty());
-  std::pair<Node, Node> key(a->getSatLiteral(), tgtLit);
+  std::pair<Node, Node> key(getSatLiteralFor(a), tgtLit);
   std::map<std::pair<Node, Node>, Node>::iterator it = d_genCache.find(key);
   if (it != d_genCache.end())
   {
@@ -699,23 +706,17 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   isConflict = isConflict && fails.empty();
   Trace("confp") << "...generalize substitution with " << fails.size() << " / "
                  << nassigns << " failed assignments" << std::endl;
-  Node ret = a->getSatLiteral();
+  Node ret = getSatLiteralFor(a);
   if (!fails.empty())
   {
     NodeManager* nm = NodeManager::currentNM();
-    SkolemManager* skm = nm->getSkolemManager();
     std::vector<Node> conj;
     conj.push_back(ret);
     const Node& anode = a->getNode();
     for (size_t i : fails)
     {
       Assert(i < anode.getNumChildren());
-      Node adisj = anode[i];
-      if (options().theory.assignerProxy)
-      {
-        adisj = skm->mkProxyLit(adisj);
-      }
-      conj.push_back(adisj.notNode());
+      conj.push_back(anode[i].notNode());
     }
     ret = nm->mkAnd(conj);
   }
@@ -785,6 +786,12 @@ bool ConflictProcessor::isAssignmentClash(const Node& a, const Node& b)
 {
   Assert(!a.isNull());
   return !b.isNull() && a.isConst() && b.isConst() && a != b;
+}
+
+Node ConflictProcessor::getSatLiteralFor(Assigner * a ) const
+{
+  // use the allocated SAT literal if we did preprocessing
+  return options().smt.assignerInferPp ? a->getSatLiteral() : a->getNode();
 }
 
 }  // namespace theory

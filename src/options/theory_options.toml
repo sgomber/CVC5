@@ -98,9 +98,9 @@ name   = "Theory Layer"
   help = "Do minimization and generalization (via assigners) for conflicts from theory solvers. Generalized if any."
 
 [[option]]
-  name       = "assignerProxy"
-  category   = "expert"
-  long       = "assigner-proxy"
+  name       = "assignerInfer"
+  category   = "regular"
+  long       = "assigner-infer"
   type       = "bool"
   default    = "false"
-  help       = "use proxy literals for assign disjuncts"
+  help       = "infer assigners"

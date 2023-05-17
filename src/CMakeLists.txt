@@ -546,6 +546,8 @@ libcvc5_add_sources(
   theory/arrays/theory_arrays_type_rules.h
   theory/arrays/type_enumerator.h
   theory/arrays/type_enumerator.cpp
+  theory/assigner_infer.cpp
+  theory/assigner_infer.h
   theory/assertion.cpp
   theory/assertion.h
   theory/atom_requests.cpp

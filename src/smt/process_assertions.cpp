@@ -281,7 +281,7 @@ bool ProcessAssertions::apply(AssertionPipeline& ap)
   }
 
   // infer assigner subformulas if we attempt to generalize conflicts
-  if (options().smt.assignerInfer)
+  if (options().smt.assignerInferPp)
   {
     applyPass("assigner-infer", ap);
   }

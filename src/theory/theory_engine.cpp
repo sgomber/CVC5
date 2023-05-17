@@ -38,6 +38,7 @@
 #include "theory/combination_care_graph.h"
 #include "theory/decision_manager.h"
 #include "theory/ee_manager_central.h"
+#include "theory/assigner_infer.h"
 #include "theory/partition_generator.h"
 #include "theory/quantifiers/first_order_model.h"
 #include "theory/quantifiers_engine.h"
@@ -165,6 +166,11 @@ void TheoryEngine::finishInit()
     d_relManager.reset(new RelevanceManager(d_env, this));
     d_modules.push_back(d_relManager.get());
   }
+  
+  if (options().theory.assignerInfer && !options().smt.assignerInferPp)
+  {
+    d_ainfer.reset(new AssignerInference(d_env));
+  }
 
   // initialize the quantifiers engine
   if (logicInfo().isQuantified())
@@ -230,6 +236,7 @@ TheoryEngine::TheoryEngine(Env& env)
       d_quantEngine(nullptr),
       d_decManager(new DecisionManager(userContext())),
       d_relManager(nullptr),
+      d_ainfer(nullptr),
       d_inConflict(context(), false),
       d_modelUnsound(context(), false),
       d_modelUnsoundTheory(context(), THEORY_BUILTIN),
@@ -920,6 +927,10 @@ void TheoryEngine::notifyPreprocessedAssertions(
   if (d_relManager != nullptr)
   {
     d_relManager->notifyPreprocessedAssertions(assertions, true);
+  }
+  if (d_ainfer != nullptr)
+  {
+    d_ainfer->notifyPreprocessedAssertions(assertions);
   }
 }
 

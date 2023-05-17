@@ -155,7 +155,7 @@ Node AssignerInfer::inferAssigners(const Node& n, std::vector<Node>& lemmas)
   return n;
 }
 
-Node AssignerInfer::convertToAssigner(std::unordered_map<Node, Node> visited,
+Node AssignerInfer::convertToAssigner(std::unordered_map<Node, Node>& visited,
                                       const Node& n,
                                       std::vector<Node>& lemmas)
 {
