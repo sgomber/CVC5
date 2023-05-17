@@ -50,6 +50,14 @@ name   = "SMT Layer"
   help       = "rewrite the input based on learned literals"
 
 [[option]]
+  name       = "assignerInfer"
+  category   = "regular"
+  long       = "assigner-infer"
+  type       = "bool"
+  default    = "false"
+  help       = "infer assigners during preprocessing."
+
+[[option]]
   name       = "produceModels"
   category   = "common"
   short      = "m"

@@ -188,6 +188,14 @@ void SetDefaults::setDefaultsPre(Options& opts)
       throw OptionException(ss.str());
     }
   }
+  options::ConflictProcessMode cpmode = options().theory.conflictProcessMode;
+  if (cpmode != options::ConflictProcessMode::NONE
+      && cpmode != options::ConflictProcessMode::MINIMIZE
+      && cpmode != options::ConflictProcessMode::TEST)
+  {
+    opts.writeSmt().assignerInfer = true;
+  }
+      
   if (d_isInternalSubsolver)
   {
     // these options must be disabled on internal subsolvers, as they are
@@ -1266,6 +1274,10 @@ void SetDefaults::widenLogic(LogicInfo& logic, const Options& opts) const
     // not explicitly set, it is disabled below if UF is not present.
     verbose(1) << "Enabling UF because preSkolemQuantNested requires it."
                << std::endl;
+    needsUf = true;
+  }
+  if (opts.smt.assignerInfer)
+  {
     needsUf = true;
   }
   if (needsUf
