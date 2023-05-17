@@ -810,7 +810,8 @@ std::vector<Assigner*> TheoryEngine::getActiveAssigners(const Node& lit) const
                              << " for " << lit << std::endl;
   for (Assigner* a : assigners)
   {
-    const Node& l = options().smt.assignerInferPp ? a->getSatLiteral() : a->getNode();
+    const Node& l =
+        options().smt.assignerInferPp ? a->getSatLiteral() : a->getNode();
     bool value;
     Trace("theory::assigners") << "checkLit " << l << std::endl;
     if (hasSatValue(l, value) && value)
