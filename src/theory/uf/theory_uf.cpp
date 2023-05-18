@@ -194,7 +194,6 @@ void TheoryUF::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
       }
     }
     break;
-    /*
     case kind::BOOLEAN_TERM_VARIABLE:
     {
       Node lit = pol ? Node(atom) : atom.notNode();
@@ -217,7 +216,6 @@ void TheoryUF::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
       }
     }
     break;
-    */
     default: break;
   }
 }
@@ -269,6 +267,7 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
                                            : arith::eliminateInt2Bv(node);
     return TrustNode::mkTrustRewrite(node, ret);
   }
+  /*
   else if (k == kind::BOOLEAN_TERM_VARIABLE)
   {
     Node def;
@@ -283,6 +282,7 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
       lems.emplace_back(tlem, node);
     }
   }
+  */
   if (isHol)
   {
     TrustNode ret = d_ho->ppRewrite(node, lems);

@@ -878,6 +878,8 @@ enum class InferenceId
   //-------------------------------------- uf theory
   // Clause from the uf symmetry breaker
   UF_BREAK_SYMMETRY,
+  // proxy lit expansion
+  UF_PROXY_LIT_EXPAND,
   //-------------------- cardinality extension to UF
   // The inferences below are described in Reynolds' thesis 2013.
   // conflict of the form (card_T n) => (not (distinct t1 ... tn))

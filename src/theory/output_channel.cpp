@@ -51,6 +51,11 @@ bool isLemmaPropertyNeedsJustify(LemmaProperty p)
   return (p & LemmaProperty::NEEDS_JUSTIFY) != LemmaProperty::NONE;
 }
 
+bool isLemmaPropertySkolemDefinition(LemmaProperty p)
+{
+  return (p & LemmaProperty::SKOLEM_DEFINITION) != LemmaProperty::NONE;
+}
+
 std::ostream& operator<<(std::ostream& out, LemmaProperty p)
 {
   if (p == LemmaProperty::NONE)
