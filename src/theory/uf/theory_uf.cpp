@@ -196,6 +196,7 @@ void TheoryUF::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
     break;
     case kind::BOOLEAN_TERM_VARIABLE:
     {
+      /*
       Node lit = pol ? Node(atom) : atom.notNode();
       // if this is a proxy literal, see if we should expand it
       if (d_bvarsProcessed.find(lit) == d_bvarsProcessed.end())
@@ -214,6 +215,7 @@ void TheoryUF::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
           d_im.lemma(lem, InferenceId::UF_PROXY_LIT_EXPAND);
         }
       }
+      */
     }
     break;
     default: break;
@@ -267,7 +269,6 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
                                            : arith::eliminateInt2Bv(node);
     return TrustNode::mkTrustRewrite(node, ret);
   }
-  /*
   else if (k == kind::BOOLEAN_TERM_VARIABLE)
   {
     Node def;
@@ -282,7 +283,6 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
       lems.emplace_back(tlem, node);
     }
   }
-  */
   if (isHol)
   {
     TrustNode ret = d_ho->ppRewrite(node, lems);
