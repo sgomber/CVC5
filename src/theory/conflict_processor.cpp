@@ -112,19 +112,27 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
   {
     std::unordered_set<Node> symbols;
     expr::getSymbols(tgtLit, symbols);
+    std::vector<Node> toErase;
     for (const Node& v : s.d_vars)
     {
       if (symbols.find(v) == symbols.end())
       {
-        s.erase(v);
-        minimized = true;
-        Trace("confp") << "Substitution for " << v
-                       << " not necessary in: " << lemma << std::endl;
+        toErase.push_back(v);
       }
     }
-    Assert(!s.empty());
-    // should still imply target
-    Assert(checkSubstitution(s, tgtLit, true));
+    if (!toErase.empty())
+    {
+      minimized = true;
+      for (const Node& v : toErase)
+      {
+        Trace("confp") << "Substitution for " << v
+                       << " not necessary in: " << lemma << std::endl;
+        s.erase(v);
+      }
+      Assert(!s.empty());
+      // should still imply target
+      Assert(checkSubstitution(s, tgtLit, true));
+    }
   }
 
   // generalize the conflict
