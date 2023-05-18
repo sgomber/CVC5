@@ -470,13 +470,13 @@ bool ConflictProcessor::checkTgtGeneralizes(Assigner* a,
     NodeManager* nm = NodeManager::currentNM();
     isConflict = false;
     tgtLit = nm->mkOr(success).negate();
-    fails.push_back(getSatLiteralFor(a).negate());
+    fails.push_back(a->getSatLiteral().negate());
     tgtLitFinal = nm->mkOr(fails);
   }
   else
   {
     tgtLit = anode.negate();
-    tgtLitFinal = getSatLiteralFor(a).negate();
+    tgtLitFinal = a->getSatLiteral().negate();
   }
   Trace("confp") << "...generalize target with " << fails.size() << " / "
                  << nargs << " failed literals" << std::endl;
@@ -490,7 +490,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
                                              bool& isConflict)
 {
   Assert(!vs.empty());
-  std::pair<Node, Node> key(getSatLiteralFor(a), tgtLit);
+  std::pair<Node, Node> key(a->getSatLiteral(), tgtLit);
   std::map<std::pair<Node, Node>, Node>::iterator it = d_genCache.find(key);
   if (it != d_genCache.end())
   {
@@ -709,7 +709,7 @@ Node ConflictProcessor::checkSubsGeneralizes(Assigner* a,
   isConflict = isConflict && fails.empty();
   Trace("confp") << "...generalize substitution with " << fails.size() << " / "
                  << nassigns << " failed assignments" << std::endl;
-  Node ret = getSatLiteralFor(a);
+  Node ret = a->getSatLiteral();
   if (!fails.empty())
   {
     NodeManager* nm = NodeManager::currentNM();
@@ -789,12 +789,6 @@ bool ConflictProcessor::isAssignmentClash(const Node& a, const Node& b)
 {
   Assert(!a.isNull());
   return !b.isNull() && a.isConst() && b.isConst() && a != b;
-}
-
-Node ConflictProcessor::getSatLiteralFor(Assigner* a) const
-{
-  // use the allocated SAT literal if we did preprocessing
-  return options().smt.assignerInferPp ? a->getSatLiteral() : a->getNode();
 }
 
 }  // namespace theory

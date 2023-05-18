@@ -194,7 +194,7 @@ void SetDefaults::setDefaultsPre(Options& opts)
       && cpmode != options::ConflictProcessMode::MINIMIZE
       && cpmode != options::ConflictProcessMode::TEST)
   {
-    opts.writeTheory().assignerInfer = true;
+    opts.writeSmt().assignerInfer = true;
   }
 
   if (d_isInternalSubsolver)
@@ -1278,7 +1278,7 @@ void SetDefaults::widenLogic(LogicInfo& logic, const Options& opts) const
     needsUf = true;
   }
   // assigner inference introduces boolean term variables, which require UF
-  if (opts.smt.assignerInferPp)
+  if (opts.smt.assignerInfer)
   {
     needsUf = true;
   }

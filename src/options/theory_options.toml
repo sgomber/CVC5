@@ -96,11 +96,3 @@ name   = "Theory Layer"
 [[option.mode.GENERALIZE_ANY]]
   name = "gen-any"
   help = "Do minimization and generalization (via assigners) for conflicts from theory solvers. Generalized if any."
-
-[[option]]
-  name       = "assignerInfer"
-  category   = "regular"
-  long       = "assigner-infer"
-  type       = "bool"
-  default    = "false"
-  help       = "infer assigners"

@@ -56,8 +56,7 @@ TheoryUF::TheoryUF(Env& env,
       d_state(env, valuation),
       d_im(env, *this, d_state, "theory::uf::" + instanceName, false),
       d_notify(d_im, *this),
-      d_cpacb(*this),
-      d_bvarsProcessed(userContext())
+      d_cpacb(*this)
 {
   d_true = NodeManager::currentNM()->mkConst( true );
   // indicate we are using the default theory state and inference managers
@@ -194,28 +193,6 @@ void TheoryUF::notifyFact(TNode atom, bool pol, TNode fact, bool isInternal)
       }
     }
     break;
-    case kind::BOOLEAN_TERM_VARIABLE:
-    {
-      Node lit = pol ? Node(atom) : atom.notNode();
-      // if this is a proxy literal, see if we should expand it
-      if (d_bvarsProcessed.find(lit) == d_bvarsProcessed.end())
-      {
-        d_bvarsProcessed.insert(lit);
-        Node def;
-        SkolemFunId id;
-        NodeManager* nm = NodeManager::currentNM();
-        SkolemManager* skm = nm->getSkolemManager();
-        if (skm->isSkolemFunction(atom, id, def)
-            && id == SkolemFunId::PROXY_LIT)
-        {
-          def = pol ? def : def.negate();
-          // B => lit where lit is the literal for B
-          Node lem = nm->mkNode(kind::IMPLIES, lit, def);
-          d_im.lemma(lem, InferenceId::UF_PROXY_LIT_EXPAND);
-        }
-      }
-    }
-    break;
     default: break;
   }
 }
@@ -266,6 +243,21 @@ TrustNode TheoryUF::ppRewrite(TNode node, std::vector<SkolemLemma>& lems)
     Node ret = k == kind::BITVECTOR_TO_NAT ? arith::eliminateBv2Nat(node)
                                            : arith::eliminateInt2Bv(node);
     return TrustNode::mkTrustRewrite(node, ret);
+  }
+  else if (k == kind::BOOLEAN_TERM_VARIABLE)
+  {
+    Node def;
+    SkolemFunId id;
+    NodeManager* nm = NodeManager::currentNM();
+    SkolemManager* skm = nm->getSkolemManager();
+    if (skm->isSkolemFunction(node, id, def)
+        && id == SkolemFunId::PROXY_LIT)
+    {
+      // node = def where def is the literal for node
+      Node lem = nm->mkNode(kind::EQUAL, node, def);
+      TrustNode tlem = TrustNode::mkTrustLemma(lem);
+      lems.emplace_back(tlem, node);
+    }
   }
   if (isHol)
   {

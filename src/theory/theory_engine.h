@@ -83,7 +83,6 @@ struct NodeTheoryPairHashFunction {
 /* Forward declarations */
 namespace theory {
 
-class AssignerInference;
 class CombinationEngine;
 class DecisionManager;
 class RelevanceManager;
@@ -553,8 +552,6 @@ class TheoryEngine : protected EnvObj
   std::unique_ptr<theory::DecisionManager> d_decManager;
   /** The relevance manager */
   std::unique_ptr<theory::RelevanceManager> d_relManager;
-  /** The assigner inference */
-  std::unique_ptr<theory::AssignerInference> d_ainfer;
 
   /**
    * Output channels for individual theories.

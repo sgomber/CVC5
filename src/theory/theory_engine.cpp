@@ -167,11 +167,6 @@ void TheoryEngine::finishInit()
     d_modules.push_back(d_relManager.get());
   }
 
-  if (options().theory.assignerInfer && !options().smt.assignerInferPp)
-  {
-    d_ainfer.reset(new AssignerInference(d_env));
-  }
-
   // initialize the quantifiers engine
   if (logicInfo().isQuantified())
   {
@@ -236,7 +231,6 @@ TheoryEngine::TheoryEngine(Env& env)
       d_quantEngine(nullptr),
       d_decManager(new DecisionManager(userContext())),
       d_relManager(nullptr),
-      d_ainfer(nullptr),
       d_inConflict(context(), false),
       d_modelUnsound(context(), false),
       d_modelUnsoundTheory(context(), THEORY_BUILTIN),
@@ -810,8 +804,7 @@ std::vector<Assigner*> TheoryEngine::getActiveAssigners(const Node& lit) const
                              << " for " << lit << std::endl;
   for (Assigner* a : assigners)
   {
-    const Node& l =
-        options().smt.assignerInferPp ? a->getSatLiteral() : a->getNode();
+    const Node& l = a->getSatLiteral();
     bool value;
     Trace("theory::assigners") << "checkLit " << l << std::endl;
     if (hasSatValue(l, value) && value)
@@ -928,10 +921,6 @@ void TheoryEngine::notifyPreprocessedAssertions(
   if (d_relManager != nullptr)
   {
     d_relManager->notifyPreprocessedAssertions(assertions, true);
-  }
-  if (d_ainfer != nullptr)
-  {
-    d_ainfer->notifyPreprocessedAssertions(assertions);
   }
 }
 

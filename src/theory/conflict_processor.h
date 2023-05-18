@@ -96,7 +96,6 @@ class ConflictProcessor : protected EnvObj
   static bool isAssignmentClashVec(const Node& a,
                                    const std::vector<Node>& entval);
   static bool isAssignmentClash(const Node& a, const Node& b);
-  Node getSatLiteralFor(Assigner* a) const;
 };
 
 }  // namespace theory
