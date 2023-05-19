@@ -700,7 +700,7 @@ Node CoreSolver::getConclusion(Node x,
                                PfRule rule,
                                bool isRev,
                                SkolemCache* skc,
-                               std::vector<Node>& newSkolems)
+                               std::vector<Node>& newSkolems, bool useLength)
 {
   Trace("strings-csolver") << "CoreSolver::getConclusion: " << x << " " << y
                            << " " << rule << " " << isRev << std::endl;

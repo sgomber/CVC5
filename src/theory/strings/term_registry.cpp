@@ -77,7 +77,7 @@ uint32_t TermRegistry::getAlphabetCardinality() const { return d_alphaCard; }
 
 void TermRegistry::finishInit(InferenceManager* im) { d_im = im; }
 
-Node TermRegistry::eagerReduce(Node t, SkolemCache* sc, uint32_t alphaCard)
+Node TermRegistry::eagerReduce(Node t, SkolemCache* sc, uint32_t alphaCard, bool useLength)
 {
   NodeManager* nm = NodeManager::currentNM();
   Node lemma;
@@ -85,8 +85,9 @@ Node TermRegistry::eagerReduce(Node t, SkolemCache* sc, uint32_t alphaCard)
   if (tk == STRING_TO_CODE)
   {
     // ite( str.len(s)==1, 0 <= str.code(s) < |A|, str.code(s)=-1 )
+    Node slen = nm->mkNode(STRING_LENGTH, t[0]);
     Node one = nm->mkConstInt(Rational(1));
-    Node code_len = mkLengthConstraintConst(EQUAL, t[0], one, true);
+    Node code_len = mkLengthConstraintInternal(EQUAL, slen, one, useLength);
     Node code_eq_neg1 = t.eqNode(nm->mkConstInt(Rational(-1)));
     Node code_range = utils::mkCodeRange(t, alphaCard);
     lemma = nm->mkNode(ITE, code_len, code_range, code_eq_neg1);
@@ -98,9 +99,10 @@ Node TermRegistry::eagerReduce(Node t, SkolemCache* sc, uint32_t alphaCard)
       Node s = t[0];
       Node n = t[1];
       // start point is greater than or equal zero
+      Node slen = nm->mkNode(STRING_LENGTH, s);
       Node c1 = nm->mkNode(GEQ, n, nm->mkConstInt(0));
       // start point is less than end of string
-      Node c2 = mkLengthConstraintConst(GT, s, n, true);
+      Node c2 = mkLengthConstraintInternal(GT, slen, n, useLength);
       // check whether this application of seq.nth is defined.
       Node cond = nm->mkNode(AND, c1, c2);
       Node code_range = utils::mkCodeRange(t, alphaCard);
@@ -296,7 +298,8 @@ void TermRegistry::registerTermInternal(Node n)
   else if (n.getKind() != STRING_CONTAINS)
   {
     // we don't send out eager reduction lemma for str.contains currently
-    Node eagerRedLemma = eagerReduce(n, &d_skCache, d_alphaCard);
+    bool useLength = options().strings.stringUseLength;
+    Node eagerRedLemma = eagerReduce(n, &d_skCache, d_alphaCard, useLength);
     if (!eagerRedLemma.isNull())
     {
       // if there was an eager reduction, we make the trust node for it
@@ -490,11 +493,10 @@ TrustNode TermRegistry::getRegisterTermAtomicLemma(
   Assert(n.getType().isStringLike());
   NodeManager* nm = NodeManager::currentNM();
   Node emp = Word::mkEmptyWord(n.getType());
-  bool useLength = options().strings.stringUseLength;
   if (s == LENGTH_GEQ_ONE)
   {
     Node neq_empty = n.eqNode(emp).negate();
-    Node len_n_gt_z = mkLengthConstraintConst(GT, n, d_zero, useLength);
+    Node len_n_gt_z = mkLengthConstraintConst(GT, n, d_zero);
     Node len_geq_one = nm->mkNode(AND, neq_empty, len_n_gt_z);
     Trace("strings-lemma") << "Strings::Lemma SK-GEQ-ONE : " << len_geq_one
                            << std::endl;
@@ -504,7 +506,7 @@ TrustNode TermRegistry::getRegisterTermAtomicLemma(
 
   if (s == LENGTH_ONE)
   {
-    Node len_one = mkLengthConstraintConst(EQUAL, n, d_one, useLength);
+    Node len_one = mkLengthConstraintConst(EQUAL, n, d_one);
     Trace("strings-lemma") << "Strings::Lemma SK-ONE : " << len_one
                            << std::endl;
     Trace("strings-assert") << "(assert " << len_one << ")" << std::endl;
@@ -515,7 +517,7 @@ TrustNode TermRegistry::getRegisterTermAtomicLemma(
   // get the positive length lemma
   Node lenLemma = lengthPositive(n);
   // split whether the string is empty
-  Node n_len_eq_z = mkLengthConstraintConst(EQUAL, n, d_zero, useLength);
+  Node n_len_eq_z = mkLengthConstraintConst(EQUAL, n, d_zero);
   Node n_len_eq_z_2 = n.eqNode(emp);
   Node case_empty = nm->mkNode(AND, n_len_eq_z, n_len_eq_z_2);
   Node case_emptyr = rewrite(case_empty);
@@ -671,21 +673,21 @@ const std::set<Node>& TermRegistry::getRelevantTermSet() const
 
 Node TermRegistry::mkLengthConstraintConst(Kind k,
                                            const Node& s,
-                                           const Node& c,
-                                           bool useLength)
+                                           const Node& c) const
 {
   Node ls = NodeManager::currentNM()->mkNode(STRING_LENGTH, s);
+  bool useLength = options().strings.stringUseLength;
   return mkLengthConstraintInternal(k, ls, c, useLength);
 }
 
 Node TermRegistry::mkLengthConstraint(Kind k,
                                       const Node& s,
-                                      const Node& t,
-                                      bool useLength)
+                                      const Node& t) const
 {
   NodeManager* nm = NodeManager::currentNM();
   Node ls = nm->mkNode(STRING_LENGTH, s);
   Node lt = nm->mkNode(STRING_LENGTH, t);
+  bool useLength = options().strings.stringUseLength;
   return mkLengthConstraintInternal(k, ls, lt, useLength);
 }
 Node TermRegistry::mkLengthConstraintInternal(Kind k,
@@ -698,8 +700,8 @@ Node TermRegistry::mkLengthConstraintInternal(Kind k,
   {
     switch (k)
     {
-      case EQUAL: k = STRING_EQ_LENGTH; break;
-      case GT: k = STRING_GT_LENGTH; break;
+      case EQUAL: k = STRING_INT_EQUAL; break;
+      case GT: k = STRING_INT_GT; break;
       default: Unhandled() << "Bad kind " << k << std::endl;
     }
   }

@@ -170,6 +170,9 @@ void TheoryStrings::finishInit()
   d_equalityEngine->addFunctionKind(kind::STRING_TO_LOWER, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_TO_UPPER, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_REV, eagerEval);
+  
+  d_equalityEngine->addFunctionKind(kind::STRING_INT_EQUAL, eagerEval);
+  d_equalityEngine->addFunctionKind(kind::STRING_INT_GT, eagerEval);
 
   // memberships are not relevant for model building
   d_valuation.setIrrelevantKind(kind::STRING_IN_REGEXP);

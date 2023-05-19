@@ -77,7 +77,7 @@ class TermRegistry : protected EnvObj
    * @param alphaCard The cardinality of the alphabet we are assuming
    * @return The eager reduction for t.
    */
-  static Node eagerReduce(Node t, SkolemCache* sc, uint32_t alphaCard);
+  static Node eagerReduce(Node t, SkolemCache* sc, uint32_t alphaCard, bool useLength = true);
   /**
    * Returns a lemma indicating that the length of a term t whose type is
    * string-like has positive length. The exact form of this lemma depends
@@ -255,14 +255,12 @@ class TermRegistry : protected EnvObj
   /**
    * Make length constraint
    */
-  static Node mkLengthConstraintConst(Kind k,
+  Node mkLengthConstraintConst(Kind k,
                                       const Node& s,
-                                      const Node& c,
-                                      bool useLength);
-  static Node mkLengthConstraint(Kind k,
+                                      const Node& c) const;
+  Node mkLengthConstraint(Kind k,
                                  const Node& s,
-                                 const Node& t,
-                                 bool useLength);
+                                 const Node& t) const;
 
  private:
   /** Reference to theory of strings, for computing relevant terms */

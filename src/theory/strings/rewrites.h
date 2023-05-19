@@ -232,7 +232,8 @@ enum class Rewrite : uint32_t
   SEQ_UNIT_EVAL,
   SEQ_NTH_EVAL,
   SEQ_NTH_EVAL_OOB,
-  SEQ_NTH_EVAL_SYM
+  SEQ_NTH_EVAL_SYM,
+  INT_GT_EVAL
 };
 
 /**

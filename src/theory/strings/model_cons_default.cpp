@@ -15,6 +15,7 @@
 
 #include "theory/strings/model_cons_default.h"
 
+#include "options/strings_options.h"
 #include "theory/strings/core_solver.h"
 #include "theory/strings/solver_state.h"
 
@@ -51,16 +52,21 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
                                         std::vector<std::vector<Node>>& cols,
                                         std::vector<Node>& lts)
 {
-  d_state.separateByLength(ns, cols, lts);
-  // look up the values of each length term
-  Valuation& val = d_state.getValuation();
-  for (Node& ll : lts)
+  if (options().strings.stringUseLength)
   {
-    if (!ll.isConst())
+    d_state.separateByLength(ns, cols, lts);
+    // look up the values of each length term
+    Valuation& val = d_state.getValuation();
+    for (Node& ll : lts)
     {
-      ll = val.getCandidateModelValue(ll);
+      if (!ll.isConst())
+      {
+        ll = val.getCandidateModelValue(ll);
+      }
     }
+    return;
   }
+  // otherwise, do custom
 }
 
 std::vector<Node> ModelConsDefault::getNormalForm(Node n)

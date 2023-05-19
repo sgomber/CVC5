@@ -164,6 +164,15 @@ class SolverState : public TheoryState
   /** Get the model constructor */
   ModelCons* getModelConstructor();
 
+  /**
+   * Make length constraint
+   */
+  Node mkLengthConstraintConst(Kind k,
+                                      const Node& s,
+                                      const Node& c);
+  Node mkLengthConstraint(Kind k,
+                                 const Node& s,
+                                 const Node& t);
  private:
   /** Common constants */
   Node d_zero;

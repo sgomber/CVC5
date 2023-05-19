@@ -259,7 +259,7 @@ class CoreSolver : protected EnvObj
                             PfRule rule,
                             bool isRev,
                             SkolemCache* skc,
-                            std::vector<Node>& newSkolems);
+                            std::vector<Node>& newSkolems, bool useLength = true);
   /**
    * Get sufficient non-empty overlap of string constants c and d.
    *

@@ -39,8 +39,8 @@ operator STRING_TO_LOWER 1 "string to lowercase conversion"
 operator STRING_TO_UPPER 1 "string to uppercase conversion"
 operator STRING_REV 1 "string reverse"
 
-operator STRING_EQ_LENGTH 2 "string equal length predicate"
-operator STRING_GT_LENGTH 2 "string greater than length predicate"
+operator STRING_INT_EQUAL 2 "string equal predicate for integers"
+operator STRING_INT_GT 2 "string greater than predicate for integers"
 
 sort STRING_TYPE \
     Cardinality::INTEGERS \
@@ -172,8 +172,8 @@ typerule STRING_PREFIX ::cvc5::internal::theory::strings::StringStrToBoolTypeRul
 typerule STRING_SUFFIX ::cvc5::internal::theory::strings::StringStrToBoolTypeRule
 typerule STRING_REV ::cvc5::internal::theory::strings::StringStrToStrTypeRule
 
-typerule STRING_EQ_LENGTH "SimpleTypeRule<RBool, AInteger, AInteger>"
-typerule STRING_GT_LENGTH "SimpleTypeRule<RBool, AInteger, AInteger>"
+typerule STRING_INT_EQUAL "SimpleTypeRule<RBool, AInteger, AInteger>"
+typerule STRING_INT_GT "SimpleTypeRule<RBool, AInteger, AInteger>"
 
 ### string specific operators
 

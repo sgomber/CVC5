@@ -140,6 +140,12 @@ class SequencesRewriter : public TheoryRewriter
    * { s = t, t = s, true, false }.
    */
   Node rewriteEquality(Node node);
+  /** rewrite equality
+   *
+   * This method returns a formula that is equivalent to the inequality between
+   * integers.
+   */
+  Node rewriteGreaterThan(Node node);
   /** rewrite equality extended
    *
    * This method returns a formula that is equivalent to the equality between

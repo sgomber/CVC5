@@ -56,7 +56,7 @@ StringsEntail& SequencesRewriter::getStringsEntail() { return d_stringsEntail; }
 
 Node SequencesRewriter::rewriteEquality(Node node)
 {
-  Assert(node.getKind() == kind::EQUAL);
+  Assert(node.getKind() == kind::EQUAL || node.getKind() == kind::STRING_INT_EQUAL);
   if (node[0] == node[1])
   {
     return returnRewrite(node, d_true, Rewrite::EQ_REFL);
@@ -68,8 +68,18 @@ Node SequencesRewriter::rewriteEquality(Node node)
   // standard ordering
   if (node[0] > node[1])
   {
-    Node ret = NodeManager::currentNM()->mkNode(kind::EQUAL, node[1], node[0]);
+    Node ret = NodeManager::currentNM()->mkNode(node.getKind(), node[1], node[0]);
     return returnRewrite(node, ret, Rewrite::EQ_SYM);
+  }
+  return node;
+}
+
+Node SequencesRewriter::rewriteGreaterThan(Node node)
+{
+  if (node[0].isConst() && node[1].isConst())
+  {
+    Node ret = NodeManager::currentNM()->mkConst(node[0].getConst<Rational>()>node[1].getConst<Rational>());
+    return returnRewrite(node, ret, Rewrite::INT_GT_EVAL);
   }
   return node;
 }
@@ -1642,7 +1652,7 @@ RewriteResponse SequencesRewriter::postRewrite(TNode node)
   {
     retNode = rewriteConcat(node);
   }
-  else if (nk == kind::EQUAL)
+  else if (nk == kind::EQUAL || nk == kind::STRING_INT_EQUAL)
   {
     retNode = rewriteEquality(node);
   }
