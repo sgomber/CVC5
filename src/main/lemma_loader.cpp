@@ -30,14 +30,17 @@ LemmaLoader::LemmaLoader(std::string& filename,
 }
 LemmaLoader::~LemmaLoader() {}
 
+static bool alreadyReadFromFile = false;
+
 std::vector<Term> LemmaLoader::check()
 {
   std::vector<Term> lemmas;
   Trace("lemma-loader") << "LemmaLoader::check" << std::endl;
   // if applicable, read a list of formulas from disk, based on a time limit.
-  bool readFromFile = false;
+  bool readFromFile = !alreadyReadFromFile;
   if (readFromFile)
   {
+    alreadyReadFromFile = true;
     parser::InputParser ip(d_solver, d_symman);
     // use the input language specified by the options
     ip.setFileInput(d_solver->getOption("input-language"), d_filename);
@@ -58,6 +61,7 @@ std::vector<Term> LemmaLoader::check()
       }
       Assert(lem.getSort().isBoolean());
       lemmas.push_back(lem);
+      Trace("lemma-loader") << "...read lemma " << lem << std::endl;
     }
   }
   return lemmas;
