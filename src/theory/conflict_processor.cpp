@@ -128,6 +128,7 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
         Trace("confp") << "Substitution for " << v
                        << " not necessary in: " << lemma << std::endl;
         s.erase(v);
+        varToExp.erase(v);
       }
       Assert(!s.empty());
       // should still imply target
