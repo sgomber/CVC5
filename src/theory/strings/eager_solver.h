@@ -62,18 +62,18 @@ class EagerSolver : protected EnvObj
    * Returns true if we are in conflict, that is, a conflict was sent via the
    * inference manager.
    */
-  bool addEndpointsToEqcInfo(Node t, Node concat, Node eqc);
+  bool addEndpointsToEqcInfo(const Node& t, const Node& concat, const Node& eqc);
   /**
    * Check for conflict when merging equivalence classes with the given info,
    * return true if we are in conflict.
    */
-  bool checkForMergeConflict(Node a, Node b, EqcInfo* ea, EqcInfo* eb);
+  bool checkForMergeConflict(const Node& a, const Node& b, EqcInfo* ea, EqcInfo* eb);
   /** add endpoint constant, return true if in conflict */
-  bool addEndpointConst(EqcInfo* e, Node t, Node c, bool isSuf);
+  bool addEndpointConst(EqcInfo* e, const Node& t, const Node& c, bool isSuf);
   /** add arithmetic bound, return true if in conflict */
-  bool addArithmeticBound(EqcInfo* e, Node t, bool isLower);
+  bool addArithmeticBound(EqcInfo* e, const Node& t, bool isLower);
   /** get bound for length term or regular expression membership */
-  Node getBoundForLength(Node t, bool isLower) const;
+  Node getBoundForLength(const Node& t, bool isLower) const;
   /** Reference to the solver state */
   SolverState& d_state;
   /** Reference to the term registry */

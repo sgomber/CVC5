@@ -92,7 +92,7 @@ void EagerSolver::eqNotifyMerge(EqcInfo* e1, TNode t1, EqcInfo* e2, TNode t2)
   }
 }
 
-bool EagerSolver::addEndpointsToEqcInfo(Node t, Node concat, Node eqc)
+bool EagerSolver::addEndpointsToEqcInfo(const Node& t, const Node& concat, const Node& eqc)
 {
   Assert(concat.getKind() == STRING_CONCAT
          || concat.getKind() == REGEXP_CONCAT);
@@ -120,8 +120,8 @@ bool EagerSolver::addEndpointsToEqcInfo(Node t, Node concat, Node eqc)
   return false;
 }
 
-bool EagerSolver::checkForMergeConflict(Node a,
-                                        Node b,
+bool EagerSolver::checkForMergeConflict(const Node& a,
+                                        const Node& b,
                                         EqcInfo* ea,
                                         EqcInfo* eb)
 {
@@ -212,7 +212,7 @@ void EagerSolver::notifyFact(TNode atom,
   }
 }
 
-bool EagerSolver::addEndpointConst(EqcInfo* e, Node t, Node c, bool isSuf)
+bool EagerSolver::addEndpointConst(EqcInfo* e, const Node& t, const Node& c, bool isSuf)
 {
   Assert(e != nullptr);
   Assert(!t.isNull());
@@ -226,7 +226,7 @@ bool EagerSolver::addEndpointConst(EqcInfo* e, Node t, Node c, bool isSuf)
   return false;
 }
 
-bool EagerSolver::addArithmeticBound(EqcInfo* e, Node t, bool isLower)
+bool EagerSolver::addArithmeticBound(EqcInfo* e, const Node& t, bool isLower)
 {
   Trace("strings-eager-aconf-debug")
       << "addArithmeticBound " << t << ", isLower = " << isLower << "..."
@@ -286,7 +286,7 @@ bool EagerSolver::addArithmeticBound(EqcInfo* e, Node t, bool isLower)
   return false;
 }
 
-Node EagerSolver::getBoundForLength(Node t, bool isLower) const
+Node EagerSolver::getBoundForLength(const Node& t, bool isLower) const
 {
   if (t.getKind() == STRING_IN_REGEXP)
   {
