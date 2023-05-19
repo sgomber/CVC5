@@ -122,7 +122,11 @@ TrustNode ConflictProcessor::processLemma(const TrustNode& lem)
     }
     if (!toErase.empty())
     {
-      minimized = true;
+      if (!minimized)
+      {
+        minimized = true;
+        ++d_stats.d_minLemmas;
+      }
       for (const Node& v : toErase)
       {
         Trace("confp") << "Substitution for " << v
