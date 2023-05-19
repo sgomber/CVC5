@@ -197,6 +197,7 @@ void TermRegistry::preRegisterTerm(TNode n)
   {
     d_hasSeqUpdate = true;
   }
+  /*
   else if (k == STRING_LENGTH)
   {
     if (!options().strings.stringUseLength)
@@ -205,6 +206,7 @@ void TermRegistry::preRegisterTerm(TNode n)
           "cannot use str.len when option string-use-length is false");
     }
   }
+  */
   if (options().strings.stringEagerReg)
   {
     registerTerm(n);
