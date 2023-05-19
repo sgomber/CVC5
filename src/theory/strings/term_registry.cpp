@@ -85,8 +85,8 @@ Node TermRegistry::eagerReduce(Node t, SkolemCache* sc, uint32_t alphaCard)
   if (tk == STRING_TO_CODE)
   {
     // ite( str.len(s)==1, 0 <= str.code(s) < |A|, str.code(s)=-1 )
-    Node len = nm->mkNode(STRING_LENGTH, t[0]);
-    Node code_len = len.eqNode(nm->mkConstInt(Rational(1)));
+    Node one = nm->mkConstInt(Rational(1));
+    Node code_len = mkLengthConstraintConst(EQUAL, t[0], one, true);
     Node code_eq_neg1 = t.eqNode(nm->mkConstInt(Rational(-1)));
     Node code_range = utils::mkCodeRange(t, alphaCard);
     lemma = nm->mkNode(ITE, code_len, code_range, code_eq_neg1);
@@ -100,7 +100,7 @@ Node TermRegistry::eagerReduce(Node t, SkolemCache* sc, uint32_t alphaCard)
       // start point is greater than or equal zero
       Node c1 = nm->mkNode(GEQ, n, nm->mkConstInt(0));
       // start point is less than end of string
-      Node c2 = nm->mkNode(GT, nm->mkNode(STRING_LENGTH, s), n);
+      Node c2 = mkLengthConstraintConst(GT, s, n, true);
       // check whether this application of seq.nth is defined.
       Node cond = nm->mkNode(AND, c1, c2);
       Node code_range = utils::mkCodeRange(t, alphaCard);
@@ -191,6 +191,14 @@ void TermRegistry::preRegisterTerm(TNode n)
   else if (k == SEQ_NTH || k == STRING_UPDATE)
   {
     d_hasSeqUpdate = true;
+  }
+  else if (k == STRING_LENGTH)
+  {
+    if (!options().strings.stringUseLength)
+    {
+        throw LogicException(
+            "cannot use str.len when option string-use-length is false");
+    }
   }
   if (options().strings.stringEagerReg)
   {
@@ -350,46 +358,49 @@ TrustNode TermRegistry::getRegisterTermLemma(Node n)
     }
   }
   Node sk = d_skCache.mkSkolemCached(n, SkolemCache::SK_PURIFY, "lsym");
-  Node eq = rewrite(sk.eqNode(n));
-  d_proxyVar[n] = sk;
-  // If we are introducing a proxy for a constant or concat term, we do not
-  // need to send lemmas about its length, since its length is already
-  // implied.
-  if (n.isConst() || n.getKind() == STRING_CONCAT)
+  Node ret = rewrite(sk.eqNode(n));
+  if (options().strings.stringUseLength)
   {
-    // do not send length lemma for sk.
-    registerTermAtomic(sk, LENGTH_IGNORE);
-  }
-  Node skl = nm->mkNode(STRING_LENGTH, sk);
-  if (n.getKind() == STRING_CONCAT)
-  {
-    std::vector<Node> nodeVec;
-    NodeNodeMap::const_iterator itl;
-    for (const Node& nc : n)
+    d_proxyVar[n] = sk;
+    // If we are introducing a proxy for a constant or concat term, we do not
+    // need to send lemmas about its length, since its length is already
+    // implied.
+    if (n.isConst() || n.getKind() == STRING_CONCAT)
     {
-      itl = d_proxyVarToLength.find(nc);
-      if (itl != d_proxyVarToLength.end())
-      {
-        nodeVec.push_back(itl->second);
-      }
-      else
-      {
-        Node lni = nm->mkNode(STRING_LENGTH, nc);
-        nodeVec.push_back(lni);
-      }
+      // do not send length lemma for sk.
+      registerTermAtomic(sk, LENGTH_IGNORE);
     }
-    lsum = nm->mkNode(ADD, nodeVec);
-    lsum = rewrite(lsum);
-  }
-  else if (n.isConst())
-  {
-    lsum = nm->mkConstInt(Rational(Word::getLength(n)));
-  }
-  Assert(!lsum.isNull());
-  d_proxyVarToLength[sk] = lsum;
-  Node ceq = rewrite(skl.eqNode(lsum));
+    Node skl = nm->mkNode(STRING_LENGTH, sk);
+    if (n.getKind() == STRING_CONCAT)
+    {
+      std::vector<Node> nodeVec;
+      NodeNodeMap::const_iterator itl;
+      for (const Node& nc : n)
+      {
+        itl = d_proxyVarToLength.find(nc);
+        if (itl != d_proxyVarToLength.end())
+        {
+          nodeVec.push_back(itl->second);
+        }
+        else
+        {
+          Node lni = nm->mkNode(STRING_LENGTH, nc);
+          nodeVec.push_back(lni);
+        }
+      }
+      lsum = nm->mkNode(ADD, nodeVec);
+      lsum = rewrite(lsum);
+    }
+    else if (n.isConst())
+    {
+      lsum = nm->mkConstInt(Rational(Word::getLength(n)));
+    }
+    Assert(!lsum.isNull());
+    d_proxyVarToLength[sk] = lsum;
+    Node ceq = rewrite(skl.eqNode(lsum));
 
-  Node ret = nm->mkNode(AND, eq, ceq);
+    ret = nm->mkNode(AND, ret, ceq);
+  }
 
   // it is a simple rewrite to justify this
   if (d_epg != nullptr)
@@ -478,12 +489,12 @@ TrustNode TermRegistry::getRegisterTermAtomicLemma(
   }
   Assert(n.getType().isStringLike());
   NodeManager* nm = NodeManager::currentNM();
-  Node n_len = nm->mkNode(kind::STRING_LENGTH, n);
   Node emp = Word::mkEmptyWord(n.getType());
+  bool useLength = options().strings.stringUseLength;
   if (s == LENGTH_GEQ_ONE)
   {
     Node neq_empty = n.eqNode(emp).negate();
-    Node len_n_gt_z = nm->mkNode(GT, n_len, d_zero);
+    Node len_n_gt_z = mkLengthConstraintConst(GT, n,  d_zero, useLength);
     Node len_geq_one = nm->mkNode(AND, neq_empty, len_n_gt_z);
     Trace("strings-lemma") << "Strings::Lemma SK-GEQ-ONE : " << len_geq_one
                            << std::endl;
@@ -493,7 +504,7 @@ TrustNode TermRegistry::getRegisterTermAtomicLemma(
 
   if (s == LENGTH_ONE)
   {
-    Node len_one = n_len.eqNode(d_one);
+    Node len_one = mkLengthConstraintConst(EQUAL, n, d_one, useLength);
     Trace("strings-lemma") << "Strings::Lemma SK-ONE : " << len_one
                            << std::endl;
     Trace("strings-assert") << "(assert " << len_one << ")" << std::endl;
@@ -504,7 +515,7 @@ TrustNode TermRegistry::getRegisterTermAtomicLemma(
   // get the positive length lemma
   Node lenLemma = lengthPositive(n);
   // split whether the string is empty
-  Node n_len_eq_z = n_len.eqNode(d_zero);
+  Node n_len_eq_z = mkLengthConstraintConst(EQUAL, n, d_zero, useLength);
   Node n_len_eq_z_2 = n.eqNode(emp);
   Node case_empty = nm->mkNode(AND, n_len_eq_z, n_len_eq_z_2);
   Node case_emptyr = rewrite(case_empty);
@@ -656,6 +667,34 @@ const std::set<Node>& TermRegistry::getRelevantTermSet() const
   // must be in full effort check for relevant terms to be valid
   Assert(d_inFullEffortCheck);
   return d_relevantTerms;
+}
+
+Node TermRegistry::mkLengthConstraintConst(Kind k, const Node& s, const Node& c, bool useLength)
+{
+  Node ls = NodeManager::currentNM()->mkNode(STRING_LENGTH, s);
+  return mkLengthConstraintInternal(k, ls, c, useLength);
+}
+
+Node TermRegistry::mkLengthConstraint(Kind k, const Node& s, const Node& t, bool useLength)
+{
+  NodeManager * nm = NodeManager::currentNM();
+  Node ls = nm->mkNode(STRING_LENGTH, s);
+  Node lt = nm->mkNode(STRING_LENGTH,t);
+  return mkLengthConstraintInternal(k, ls, lt, useLength);
+}
+Node TermRegistry::mkLengthConstraintInternal(Kind k, const Node& s, const Node& t, bool useLength)
+{
+  Assert (k==EQUAL || k==GT);
+  if (!useLength)
+  {
+    switch(k)
+    {
+      case EQUAL: k = STRING_EQ_LENGTH;break;
+      case GT: k = STRING_GT_LENGTH;break;
+      default: Unhandled() << "Bad kind " << k << std::endl;
+    }
+  }
+  return NodeManager::currentNM()->mkNode(k, s, t);
 }
 
 Node TermRegistry::mkNConcat(Node n1, Node n2) const

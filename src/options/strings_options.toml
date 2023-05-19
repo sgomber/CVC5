@@ -243,3 +243,11 @@ name   = "Strings Theory"
   type       = "bool"
   default    = "false"
   help       = "eager reduction of positive membership into concatentation"
+
+[[option]]
+  name       = "stringUseLength"
+  category   = "regular"
+  long       = "strings-use-len"
+  type       = "bool"
+  default    = "true"
+  help       = "use lemmas involving string length to handle string problems without length"

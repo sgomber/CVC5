@@ -252,6 +252,11 @@ class TermRegistry : protected EnvObj
    */
   const std::set<Node>& getRelevantTermSet() const;
 
+  /**
+   * Make length constraint
+   */
+  static Node mkLengthConstraintConst(Kind k, const Node& s, const Node& c, bool useLength);
+  static Node mkLengthConstraint(Kind k, const Node& s, const Node& t, bool useLength);
  private:
   /** Reference to theory of strings, for computing relevant terms */
   Theory& d_theory;
@@ -341,6 +346,8 @@ class TermRegistry : protected EnvObj
                                        std::map<Node, bool>& reqPhase);
   /** register term n, called when it is known n is not already registered */
   void registerTermInternal(Node n);
+  /** Make length constraint internal */
+  static Node mkLengthConstraintInternal(Kind k, const Node& s, const Node& t, bool useLength);
 };
 
 }  // namespace strings
