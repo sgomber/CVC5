@@ -62,12 +62,17 @@ class EagerSolver : protected EnvObj
    * Returns true if we are in conflict, that is, a conflict was sent via the
    * inference manager.
    */
-  bool addEndpointsToEqcInfo(const Node& t, const Node& concat, const Node& eqc);
+  bool addEndpointsToEqcInfo(const Node& t,
+                             const Node& concat,
+                             const Node& eqc);
   /**
    * Check for conflict when merging equivalence classes with the given info,
    * return true if we are in conflict.
    */
-  bool checkForMergeConflict(const Node& a, const Node& b, EqcInfo* ea, EqcInfo* eb);
+  bool checkForMergeConflict(const Node& a,
+                             const Node& b,
+                             EqcInfo* ea,
+                             EqcInfo* eb);
   /** add endpoint constant, return true if in conflict */
   bool addEndpointConst(EqcInfo* e, const Node& t, const Node& c, bool isSuf);
   /** add arithmetic bound, return true if in conflict */

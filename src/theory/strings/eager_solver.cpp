@@ -92,7 +92,9 @@ void EagerSolver::eqNotifyMerge(EqcInfo* e1, TNode t1, EqcInfo* e2, TNode t2)
   }
 }
 
-bool EagerSolver::addEndpointsToEqcInfo(const Node& t, const Node& concat, const Node& eqc)
+bool EagerSolver::addEndpointsToEqcInfo(const Node& t,
+                                        const Node& concat,
+                                        const Node& eqc)
 {
   Assert(concat.getKind() == STRING_CONCAT
          || concat.getKind() == REGEXP_CONCAT);
@@ -212,7 +214,10 @@ void EagerSolver::notifyFact(TNode atom,
   }
 }
 
-bool EagerSolver::addEndpointConst(EqcInfo* e, const Node& t, const Node& c, bool isSuf)
+bool EagerSolver::addEndpointConst(EqcInfo* e,
+                                   const Node& t,
+                                   const Node& c,
+                                   bool isSuf)
 {
   Assert(e != nullptr);
   Assert(!t.isNull());
