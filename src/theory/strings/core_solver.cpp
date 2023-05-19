@@ -700,7 +700,8 @@ Node CoreSolver::getConclusion(Node x,
                                PfRule rule,
                                bool isRev,
                                SkolemCache* skc,
-                               std::vector<Node>& newSkolems, bool useLength)
+                               std::vector<Node>& newSkolems,
+                               bool useLength)
 {
   Trace("strings-csolver") << "CoreSolver::getConclusion: " << x << " " << y
                            << " " << rule << " " << isRev << std::endl;
@@ -733,12 +734,12 @@ Node CoreSolver::getConclusion(Node x,
     }
     // we can assume its length is greater than zero
     Node emp = Word::mkEmptyWord(sk.getType());
-    Node lcons = TermRegistry::mkLengthConstraintInternal(GT, nm->mkNode(STRING_LENGTH, sk), nm->mkConstInt(Rational(0)), useLength);
-    conc = nm->mkNode(
-        AND,
-        conc,
-        sk.eqNode(emp).negate(),
-        lcons);
+    Node lcons =
+        TermRegistry::mkLengthConstraintInternal(GT,
+                                                 nm->mkNode(STRING_LENGTH, sk),
+                                                 nm->mkConstInt(Rational(0)),
+                                                 useLength);
+    conc = nm->mkNode(AND, conc, sk.eqNode(emp).negate(), lcons);
   }
   else if (rule == PfRule::CONCAT_CSPLIT)
   {

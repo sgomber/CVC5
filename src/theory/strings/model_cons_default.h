@@ -35,7 +35,10 @@ class CoreSolver;
 class ModelConsDefault : public ModelCons
 {
  public:
-  ModelConsDefault(Env& env, SolverState& state, TermRegistry& treg, CoreSolver& csolver);
+  ModelConsDefault(Env& env,
+                   SolverState& state,
+                   TermRegistry& treg,
+                   CoreSolver& csolver);
   virtual ~ModelConsDefault() {}
   /**
    * Get string representatives from, which simply takes the representatives

@@ -77,7 +77,10 @@ uint32_t TermRegistry::getAlphabetCardinality() const { return d_alphaCard; }
 
 void TermRegistry::finishInit(InferenceManager* im) { d_im = im; }
 
-Node TermRegistry::eagerReduce(Node t, SkolemCache* sc, uint32_t alphaCard, bool useLength)
+Node TermRegistry::eagerReduce(Node t,
+                               SkolemCache* sc,
+                               uint32_t alphaCard,
+                               bool useLength)
 {
   NodeManager* nm = NodeManager::currentNM();
   Node lemma;

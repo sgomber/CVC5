@@ -167,12 +167,9 @@ class SolverState : public TheoryState
   /**
    * Make length constraint
    */
-  Node mkLengthConstraintConst(Kind k,
-                                      const Node& s,
-                                      const Node& c);
-  Node mkLengthConstraint(Kind k,
-                                 const Node& s,
-                                 const Node& t);
+  Node mkLengthConstraintConst(Kind k, const Node& s, const Node& c);
+  Node mkLengthConstraint(Kind k, const Node& s, const Node& t);
+
  private:
   /** Common constants */
   Node d_zero;
