@@ -25,6 +25,7 @@ namespace strings {
 
 ModelConsDefault::ModelConsDefault(Env& env,
                                    SolverState& state,
+                                   TermRegistry& treg,
                                    CoreSolver& csolver)
     : ModelCons(env), d_state(state), d_csolver(csolver)
 {

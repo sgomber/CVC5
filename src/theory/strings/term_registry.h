@@ -87,7 +87,7 @@ class TermRegistry : protected EnvObj
    * @param t The node to reduce,
    * @return The positive length lemma for t.
    */
-  static Node lengthPositive(Node t);
+  static Node lengthPositive(Node t, bool useLength);
   /**
    * Preregister term, called when TheoryStrings::preRegisterTerm(n) is called.
    * This does the following:
@@ -262,6 +262,11 @@ class TermRegistry : protected EnvObj
                                  const Node& s,
                                  const Node& t) const;
 
+  /** Make length constraint internal */
+  static Node mkLengthConstraintInternal(Kind k,
+                                         const Node& s,
+                                         const Node& t,
+                                         bool useLength);
  private:
   /** Reference to theory of strings, for computing relevant terms */
   Theory& d_theory;
@@ -351,11 +356,6 @@ class TermRegistry : protected EnvObj
                                        std::map<Node, bool>& reqPhase);
   /** register term n, called when it is known n is not already registered */
   void registerTermInternal(Node n);
-  /** Make length constraint internal */
-  static Node mkLengthConstraintInternal(Kind k,
-                                         const Node& s,
-                                         const Node& t,
-                                         bool useLength);
 };
 
 }  // namespace strings

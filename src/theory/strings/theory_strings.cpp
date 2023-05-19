@@ -95,7 +95,7 @@ TheoryStrings::TheoryStrings(Env& env, OutputChannel& out, Valuation valuation)
           options().strings.regExpElim == options::RegExpElimMode::AGG,
           userContext()),
       d_stringsFmf(env, valuation, d_termReg),
-      d_mcd(env, d_state, d_csolver),
+      d_mcd(env, d_state, d_termReg, d_csolver),
       d_strat(d_env),
       d_absModelCounter(0),
       d_strGapModelCounter(0),

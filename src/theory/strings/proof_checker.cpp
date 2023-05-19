@@ -344,7 +344,7 @@ Node StringProofRuleChecker::checkInternal(PfRule id,
     else if (id == PfRule::STRING_LENGTH_POS)
     {
       Assert(args.size() == 1);
-      ret = TermRegistry::lengthPositive(t);
+      ret = TermRegistry::lengthPositive(t, true);
     }
     if (ret.isNull())
     {

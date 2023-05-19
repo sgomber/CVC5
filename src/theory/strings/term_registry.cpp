@@ -156,16 +156,16 @@ Node TermRegistry::eagerReduce(Node t, SkolemCache* sc, uint32_t alphaCard, bool
   return lemma;
 }
 
-Node TermRegistry::lengthPositive(Node t)
+Node TermRegistry::lengthPositive(Node t, bool useLength)
 {
   NodeManager* nm = NodeManager::currentNM();
   Node zero = nm->mkConstInt(Rational(0));
   Node emp = Word::mkEmptyWord(t.getType());
   Node tlen = nm->mkNode(STRING_LENGTH, t);
-  Node tlenEqZero = tlen.eqNode(zero);
+  Node tlenEqZero = mkLengthConstraintInternal(EQUAL, tlen, zero, useLength);
   Node tEqEmp = t.eqNode(emp);
   Node caseEmpty = nm->mkNode(AND, tlenEqZero, tEqEmp);
-  Node caseNEmpty = nm->mkNode(GT, tlen, zero);
+  Node caseNEmpty = mkLengthConstraintInternal(GT, tlen, zero, useLength);
   // (or (and (= (str.len t) 0) (= t "")) (> (str.len t) 0))
   return nm->mkNode(OR, caseEmpty, caseNEmpty);
 }
@@ -515,7 +515,7 @@ TrustNode TermRegistry::getRegisterTermAtomicLemma(
   Assert(s == LENGTH_SPLIT);
 
   // get the positive length lemma
-  Node lenLemma = lengthPositive(n);
+  Node lenLemma = lengthPositive(n, options().strings.stringUseLength);
   // split whether the string is empty
   Node n_len_eq_z = mkLengthConstraintConst(EQUAL, n, d_zero);
   Node n_len_eq_z_2 = n.eqNode(emp);
@@ -690,6 +690,7 @@ Node TermRegistry::mkLengthConstraint(Kind k,
   bool useLength = options().strings.stringUseLength;
   return mkLengthConstraintInternal(k, ls, lt, useLength);
 }
+
 Node TermRegistry::mkLengthConstraintInternal(Kind k,
                                               const Node& s,
                                               const Node& t,
