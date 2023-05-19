@@ -196,8 +196,8 @@ void TermRegistry::preRegisterTerm(TNode n)
   {
     if (!options().strings.stringUseLength)
     {
-        throw LogicException(
-            "cannot use str.len when option string-use-length is false");
+      throw LogicException(
+          "cannot use str.len when option string-use-length is false");
     }
   }
   if (options().strings.stringEagerReg)
@@ -494,7 +494,7 @@ TrustNode TermRegistry::getRegisterTermAtomicLemma(
   if (s == LENGTH_GEQ_ONE)
   {
     Node neq_empty = n.eqNode(emp).negate();
-    Node len_n_gt_z = mkLengthConstraintConst(GT, n,  d_zero, useLength);
+    Node len_n_gt_z = mkLengthConstraintConst(GT, n, d_zero, useLength);
     Node len_geq_one = nm->mkNode(AND, neq_empty, len_n_gt_z);
     Trace("strings-lemma") << "Strings::Lemma SK-GEQ-ONE : " << len_geq_one
                            << std::endl;
@@ -669,28 +669,37 @@ const std::set<Node>& TermRegistry::getRelevantTermSet() const
   return d_relevantTerms;
 }
 
-Node TermRegistry::mkLengthConstraintConst(Kind k, const Node& s, const Node& c, bool useLength)
+Node TermRegistry::mkLengthConstraintConst(Kind k,
+                                           const Node& s,
+                                           const Node& c,
+                                           bool useLength)
 {
   Node ls = NodeManager::currentNM()->mkNode(STRING_LENGTH, s);
   return mkLengthConstraintInternal(k, ls, c, useLength);
 }
 
-Node TermRegistry::mkLengthConstraint(Kind k, const Node& s, const Node& t, bool useLength)
+Node TermRegistry::mkLengthConstraint(Kind k,
+                                      const Node& s,
+                                      const Node& t,
+                                      bool useLength)
 {
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   Node ls = nm->mkNode(STRING_LENGTH, s);
-  Node lt = nm->mkNode(STRING_LENGTH,t);
+  Node lt = nm->mkNode(STRING_LENGTH, t);
   return mkLengthConstraintInternal(k, ls, lt, useLength);
 }
-Node TermRegistry::mkLengthConstraintInternal(Kind k, const Node& s, const Node& t, bool useLength)
+Node TermRegistry::mkLengthConstraintInternal(Kind k,
+                                              const Node& s,
+                                              const Node& t,
+                                              bool useLength)
 {
-  Assert (k==EQUAL || k==GT);
+  Assert(k == EQUAL || k == GT);
   if (!useLength)
   {
-    switch(k)
+    switch (k)
     {
-      case EQUAL: k = STRING_EQ_LENGTH;break;
-      case GT: k = STRING_GT_LENGTH;break;
+      case EQUAL: k = STRING_EQ_LENGTH; break;
+      case GT: k = STRING_GT_LENGTH; break;
       default: Unhandled() << "Bad kind " << k << std::endl;
     }
   }
