@@ -129,7 +129,7 @@ bool SharedSolver::propagateSharedEquality(theory::TheoryId theory,
   Node equality = a.eqNode(b);
   Node req = rewrite(equality);
   // swap if the rewriter specifies to
-  if (req.getKind()==kind::EQUAL && req[0]==b && req[0]==a)
+  if (req.getKind()==kind::EQUAL && req[0]==b && req[1]==a)
   {
     equality = req;
   }
