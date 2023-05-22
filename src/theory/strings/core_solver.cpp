@@ -734,11 +734,8 @@ Node CoreSolver::getConclusion(Node x,
     }
     // we can assume its length is greater than zero
     Node emp = Word::mkEmptyWord(sk.getType());
-    Node lcons =
-        TermRegistry::mkLengthConstraintInternal(GT,
-                                                 sk,
-                                                 nm->mkConstInt(Rational(0)),
-                                                 useLength);
+    Node lcons = TermRegistry::mkLengthConstraintInternal(
+        GT, sk, nm->mkConstInt(Rational(0)), useLength);
     conc = nm->mkNode(AND, conc, sk.eqNode(emp).negate(), lcons);
   }
   else if (rule == PfRule::CONCAT_CSPLIT)

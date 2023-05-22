@@ -71,11 +71,11 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
   }
   // otherwise, do custom
   const context::CDList<TNode>& fterms = d_termReg.getFunctionTerms();
-  std::map<Node, std::map<Kind, std::unordered_set<TNode>> > constraints;
+  std::map<Node, std::map<Kind, std::unordered_set<TNode>>> constraints;
   for (TNode c : fterms)
   {
     Kind k = c.getKind();
-    if (k==STRING_INT_EQUAL || k==STRING_INT_GT)
+    if (k == STRING_INT_EQUAL || k == STRING_INT_GT)
     {
       for (TNode cc : c)
       {

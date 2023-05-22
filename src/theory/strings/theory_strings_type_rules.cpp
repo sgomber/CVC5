@@ -282,9 +282,9 @@ TypeNode StringRelationTypeRule::computeType(NodeManager* nodeManager,
 }
 
 TypeNode StringIntRelationTypeRule::computeType(NodeManager* nodeManager,
-                                             TNode n,
-                                             bool check,
-                                             std::ostream* errOut)
+                                                TNode n,
+                                                bool check,
+                                                std::ostream* errOut)
 {
   if (check)
   {

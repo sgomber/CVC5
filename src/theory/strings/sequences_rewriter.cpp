@@ -65,7 +65,7 @@ Node SequencesRewriter::rewriteEquality(Node node)
   Kind k = node.getKind();
   if (k == kind::STRING_INT_EQUAL)
   {
-    NodeManager * nm = NodeManager::currentNM();
+    NodeManager* nm = NodeManager::currentNM();
     std::vector<Node> echildren;
     bool childrenChanged = false;
     for (const Node& nc : node)
@@ -94,8 +94,7 @@ Node SequencesRewriter::rewriteEquality(Node node)
   // standard ordering
   if (node[0] > node[1])
   {
-    Node ret =
-        NodeManager::currentNM()->mkNode(k, node[1], node[0]);
+    Node ret = NodeManager::currentNM()->mkNode(k, node[1], node[0]);
     return returnRewrite(node, ret, Rewrite::EQ_SYM);
   }
   return node;
