@@ -114,12 +114,14 @@ class SolverState : public TheoryState
   /** shorthand for getLengthExp(t, exp, t, minExp) */
   Node getLength(Node t, std::vector<Node>& exp, bool minExp = true);
   /** are length equal */
+  /*
   bool areLengthEqual(const Node& t,
                       const Node& s,
                       std::vector<Node>& exp,
                       bool minExp = true);
   bool areLengthEqual(const Node& t, const Node& s);
   bool areLengthDisequal(const Node& t, const Node& s);
+  */
   /** explain non-empty
    *
    * This returns an explanation of why string-like term is non-empty in the

@@ -73,6 +73,8 @@ ExtfSolver::ExtfSolver(Env& env,
   d_extt.addFunctionKind(kind::STRING_UNIT);
   d_extt.addFunctionKind(kind::SEQ_UNIT);
   d_extt.addFunctionKind(kind::SEQ_NTH);
+  d_extt.addFunctionKind(kind::STRING_INT_EQUAL);
+  d_extt.addFunctionKind(kind::STRING_INT_GT);
 
   d_true = NodeManager::currentNM()->mkConst(true);
   d_false = NodeManager::currentNM()->mkConst(false);
@@ -150,9 +152,11 @@ void ExtfSolver::doReduction(Node n, int pol)
     Node x = n[0];
     Node s = n[1];
     std::vector<Node> lexp;
+    Node lenx = d_state.getLength(x, lexp);
+    Node lens = d_state.getLength(s, lexp);
     // we use an optimized reduction for negative string contains if the
     // lengths are equal
-    if (d_state.areLengthEqual(x, s, lexp))
+    if (d_state.areEqual(lenx, lens))
     {
       Trace("strings-extf-debug")
           << "  resolve extf : " << n << " based on equal lengths disequality."
@@ -161,7 +165,7 @@ void ExtfSolver::doReduction(Node n, int pol)
       // equal. In other words, len( x ) = len( s ) implies
       //   ~contains( x, s ) reduces to x != s.
       // len( x ) = len( s ) ^ ~contains( x, s ) => x != s
-      lexp.push_back(d_termReg.mkLengthConstraint(EQUAL, x, s));
+      lexp.push_back(lenx.eqNode(lens));
       lexp.push_back(n.negate());
       Node xneqs = x.eqNode(s).negate();
       d_im.sendInference(

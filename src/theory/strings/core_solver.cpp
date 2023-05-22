@@ -2305,7 +2305,9 @@ bool CoreSolver::processSimpleDeq(std::vector<Node>& nfi,
     if (!x.isConst() || !y.isConst())
     {
       std::vector<Node> lenExp;
-      if (d_state.areLengthEqual(x, y, lenExp) && d_state.areDisequal(x, y))
+      Node xLenTerm = d_state.getLength(x, lenExp);
+      Node yLenTerm = d_state.getLength(y, lenExp);
+      if (d_state.areEqual(xLenTerm, yLenTerm) && d_state.areDisequal(x, y))
       {
         // Either `x` or `y` is non-constant, the lengths are equal, and `x`
         // and `y` are disequal in the current context. The disequality is
@@ -2500,17 +2502,23 @@ void CoreSolver::checkNormalFormsDeq()
     }
     if( processed[n[0]].find( n[1] )==processed[n[0]].end() ){
       processed[n[0]][n[1]] = true;
-      if (d_state.areLengthEqual(n[0], n[1]))
+      Node lt[2];
+      for (size_t i = 0; i < 2; i++)
+      {
+        std::vector<Node> exp;
+        lt[i] = d_state.getLength(n[i], exp, false);
+      }
+      if (d_state.areEqual(lt[0], lt[1]))
       {
         // if they have equal lengths, we must process the disequality below
         relevantDeqs.push_back(eq);
-        Trace("str-deq") << "...relevant, lengths equal" << std::endl;
+        Trace("str-deq") << "...relevant, lengths equal (" << lt[0] << " "
+                         << lt[1] << ")" << std::endl;
       }
-      else if (!d_state.areLengthDisequal(n[0], n[1]))
+      else if (!d_state.areDisequal(lt[0], lt[1]))
       {
-        Node lc = d_termReg.mkLengthConstraint(EQUAL, n[0], n[1]);
-        d_im.sendSplit(lc, InferenceId::STRINGS_DEQ_LENGTH_SP);
-        Trace("str-deq") << "...split " << lc << std::endl;
+        d_im.sendSplit(lt[0], lt[1], InferenceId::STRINGS_DEQ_LENGTH_SP);
+        Trace("str-deq") << "...split" << std::endl;
       }
       else
       {

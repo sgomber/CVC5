@@ -364,19 +364,19 @@ TrustNode TermRegistry::getRegisterTermLemma(Node n)
   }
   Node sk = d_skCache.mkSkolemCached(n, SkolemCache::SK_PURIFY, "lsym");
   Node ret = rewrite(sk.eqNode(n));
-  if (options().strings.stringUseLength)
+  d_proxyVar[n] = sk;
+  // If we are introducing a proxy for a constant or concat term, we do not
+  // need to send lemmas about its length, since its length is already
+  // implied.
+  if (n.isConst() || n.getKind() == STRING_CONCAT)
   {
-    d_proxyVar[n] = sk;
-    // If we are introducing a proxy for a constant or concat term, we do not
-    // need to send lemmas about its length, since its length is already
-    // implied.
-    if (n.isConst() || n.getKind() == STRING_CONCAT)
-    {
-      // do not send length lemma for sk.
-      registerTermAtomic(sk, LENGTH_IGNORE);
-    }
-    Node skl = nm->mkNode(STRING_LENGTH, sk);
-    if (n.getKind() == STRING_CONCAT)
+    // do not send length lemma for sk.
+    registerTermAtomic(sk, LENGTH_IGNORE);
+  }
+  if (n.getKind() == STRING_CONCAT)
+  {
+    // optimization
+    if (options().strings.stringUseLength)
     {
       std::vector<Node> nodeVec;
       NodeNodeMap::const_iterator itl;
@@ -396,16 +396,23 @@ TrustNode TermRegistry::getRegisterTermLemma(Node n)
       lsum = nm->mkNode(ADD, nodeVec);
       lsum = rewrite(lsum);
     }
-    else if (n.isConst())
+    else
     {
-      lsum = nm->mkConstInt(Rational(Word::getLength(n)));
+      // otherwise we don't add a length constraint, as it will introduce
+      // arithmetic.
     }
-    Assert(!lsum.isNull());
-    d_proxyVarToLength[sk] = lsum;
-    Node ceq = rewrite(skl.eqNode(lsum));
-
-    ret = nm->mkNode(AND, ret, ceq);
   }
+  else if (n.isConst())
+  {
+    lsum = nm->mkConstInt(Rational(Word::getLength(n)));
+  }
+  // if using a length
+  if (!lsum.isNull())
+  {
+    d_proxyVarToLength[sk] = lsum;
+    Node ceq = mkLengthConstraint(EQUAL, sk, lsum);
+    ret = nm->mkNode(AND, ret, ceq);
+  } 
 
   // it is a simple rewrite to justify this
   if (d_epg != nullptr)

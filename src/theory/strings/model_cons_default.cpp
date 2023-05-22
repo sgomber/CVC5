@@ -69,29 +69,26 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
     }
     return;
   }
-  if (TraceIsOn("strings-model-debug"))
+  std::map<Node, size_t> repToCol;
+  Trace("strings-model-debug")
+      << "ModelConsDefault::separateByLength:" << std::endl;
+  for (size_t i = 0, ncols = cols.size(); i < ncols; i++)
   {
+    const std::vector<Node>& rs = cols[i];
     Trace("strings-model-debug")
-        << "ModelConsDefault::separateByLength:" << std::endl;
-    for (size_t i = 0, ncols = cols.size(); i < ncols; i++)
+        << "  " << lts[i] << " -> " << rs << std::endl;
+    for (const Node& r : rs)
     {
-      Trace("strings-model-debug")
-          << "  " << lts[i] << " -> " << cols[i] << std::endl;
+      repToCol[r] = i;
     }
   }
-  // otherwise, do custom
-  const context::CDList<TNode>& fterms = d_termReg.getFunctionTerms();
-  std::map<Node, std::map<Kind, std::unordered_set<TNode>>> constraints;
-  for (TNode c : fterms)
+  for (size_t i=0, ncols = cols.size(); i<ncols; i++)
   {
-    Kind k = c.getKind();
-    if (k == STRING_INT_GT)
+    const std::vector<Node>& col = cols[i];
+    for (const Node& c : col)
     {
-      for (TNode cc : c)
-      {
-        TNode ccr = d_state.getRepresentative(cc);
-        constraints[ccr][k].insert(c);
-      }
+      std::vector<Node> cnf = getNormalForm(c);
+      
     }
   }
 }
@@ -101,6 +98,7 @@ std::vector<Node> ModelConsDefault::getNormalForm(Node n)
   return d_csolver.getNormalForm(n).d_nf;
 }
 
+  
 }  // namespace strings
 }  // namespace theory
 }  // namespace cvc5::internal
