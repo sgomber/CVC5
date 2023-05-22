@@ -2510,7 +2510,7 @@ void CoreSolver::checkNormalFormsDeq()
       {
         Node lc = d_termReg.mkLengthConstraint(EQUAL, n[0], n[1]);
         d_im.sendSplit(lc, InferenceId::STRINGS_DEQ_LENGTH_SP);
-        Trace("str-deq") << "...split" << std::endl;
+        Trace("str-deq") << "...split " << lc << std::endl;
       }
       else
       {

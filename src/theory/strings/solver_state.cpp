@@ -129,14 +129,16 @@ bool SolverState::areLengthEqual(const Node& t, const Node& s, std::vector<Node>
 bool SolverState::areLengthEqual(const Node& t, const Node& s)
 {
   std::vector<Node> exp;
-  return areLengthEqual(t, s, exp);
+  Node lent = getLength(t, exp, false);
+  Node lens = getLength(s, exp, false);
+  return areEqual(lent, lens);
 }
 
 bool SolverState::areLengthDisequal(const Node& t, const Node& s)
 {
   std::vector<Node> exp;
-  Node lent = getLength(t, exp);
-  Node lens = getLength(s, exp);
+  Node lent = getLength(t, exp, false);
+  Node lens = getLength(s, exp, false);
   return areDisequal(lent, lens);
 }
 

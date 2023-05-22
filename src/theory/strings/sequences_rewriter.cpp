@@ -103,7 +103,7 @@ Node SequencesRewriter::rewriteIntRelation(Node node)
   if (childrenChanged)
   {
     Node ret = nm->mkNode(k, echildren);
-    return returnRewrite(node, d_false, Rewrite::INT_RELATION_CONST_STRING);
+    return returnRewrite(node, ret, Rewrite::INT_RELATION_CONST_STRING);
   }
   if (node[0].isConst() && node[1].isConst())
   {

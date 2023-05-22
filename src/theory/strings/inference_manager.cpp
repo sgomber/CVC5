@@ -230,16 +230,16 @@ void InferenceManager::sendInference(InferInfo& ii, bool asLemma)
 bool InferenceManager::sendSplit(Node a, Node b, InferenceId infer, bool preq)
 {
   Node eq = a.eqNode(b);
-  eq = rewrite(eq);
-  if (eq.isConst())
-  {
-    return false;
-  }
   return sendSplit(eq, infer, preq);
 }
 
 bool InferenceManager::sendSplit(Node eq, InferenceId infer, bool preq)
 {
+  eq = rewrite(eq);
+  if (eq.isConst())
+  {
+    return false;
+  }
   NodeManager* nm = NodeManager::currentNM();
   InferInfo iiSplit(infer);
   iiSplit.d_sim = this;
