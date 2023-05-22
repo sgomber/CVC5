@@ -702,13 +702,15 @@ Node TermRegistry::mkLengthConstraintInternal(Kind k,
     return nm->mkNode(k, su, tu);
   }
   Assert(s.getType().isStringLike());
+  Node su = s.getKind()==STRING_LENGTH ? s[0] : s;
+  Node tu = t.getKind()==STRING_LENGTH ? t[0] : t;
   switch (k)
   {
     case EQUAL: k = STRING_INT_EQUAL; break;
     case GT: k = STRING_INT_GT; break;
     default: Unhandled() << "Bad kind " << k << std::endl;
   }
-  return nm->mkNode(k, s, t);
+  return nm->mkNode(k, su, tu);
 }
 
 Node TermRegistry::mkNConcat(Node n1, Node n2) const

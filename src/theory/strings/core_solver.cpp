@@ -2517,9 +2517,8 @@ void CoreSolver::checkNormalFormsDeq()
       }
       else if (!d_state.areDisequal(lt[0], lt[1]))
       {
-        Node lc = d_termReg.mkLengthConstraint(EQUAL, n[0], n[1]);
+        Node lc = d_termReg.mkLengthConstraint(EQUAL, lt[0], lt[1]);
         d_im.sendSplit(lc, InferenceId::STRINGS_DEQ_LENGTH_SP);
-        Trace("str-deq") << "...split" << std::endl;
       }
       else
       {
