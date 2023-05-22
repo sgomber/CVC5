@@ -145,7 +145,7 @@ class SequencesRewriter : public TheoryRewriter
    * This method returns a formula that is equivalent to the inequality between
    * integers.
    */
-  Node rewriteGreaterThan(Node node);
+  Node rewriteIntRelation(Node node);
   /** rewrite equality extended
    *
    * This method returns a formula that is equivalent to the equality between

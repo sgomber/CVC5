@@ -119,6 +119,27 @@ Node SolverState::getLength(Node t, std::vector<Node>& exp, bool minExp)
   return getLengthExp(t, exp, t, minExp);
 }
 
+bool SolverState::areLengthEqual(const Node& t, const Node& s, std::vector<Node>& exp)
+{
+  Node lent = getLength(t, exp);
+  Node lens = getLength(s, exp);
+  return areEqual(lent, lens);
+}
+
+bool SolverState::areLengthEqual(const Node& t, const Node& s)
+{
+  std::vector<Node> exp;
+  return areLengthEqual(t, s, exp);
+}
+
+bool SolverState::areLengthDisequal(const Node& t, const Node& s)
+{
+  std::vector<Node> exp;
+  Node lent = getLength(t, exp);
+  Node lens = getLength(s, exp);
+  return areDisequal(lent, lens);
+}
+
 Node SolverState::explainNonEmpty(Node s)
 {
   Assert(s.getType().isStringLike());

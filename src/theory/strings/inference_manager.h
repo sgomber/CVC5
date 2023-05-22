@@ -202,6 +202,7 @@ class InferenceManager : public InferenceManagerBuffered
    * otherwise. A split is trivial if a=b rewrites to a constant.
    */
   bool sendSplit(Node a, Node b, InferenceId infer, bool preq = true);
+  bool sendSplit(Node eq, InferenceId infer, bool preq = true);
 
   //----------------------------constructing antecedants
   /**

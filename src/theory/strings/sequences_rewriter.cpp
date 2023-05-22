@@ -56,37 +56,12 @@ StringsEntail& SequencesRewriter::getStringsEntail() { return d_stringsEntail; }
 
 Node SequencesRewriter::rewriteEquality(Node node)
 {
-  Assert(node.getKind() == kind::EQUAL
-         || node.getKind() == kind::STRING_INT_EQUAL);
+  Assert(node.getKind() == kind::EQUAL);
   if (node[0] == node[1])
   {
     return returnRewrite(node, d_true, Rewrite::EQ_REFL);
   }
-  Kind k = node.getKind();
-  if (k == kind::STRING_INT_EQUAL)
-  {
-    NodeManager* nm = NodeManager::currentNM();
-    std::vector<Node> echildren;
-    bool childrenChanged = false;
-    for (const Node& nc : node)
-    {
-      if (nc.getType().isStringLike())
-      {
-        if (nc.isConst())
-        {
-          childrenChanged = true;
-          echildren.push_back(nm->mkConstInt(Word::getLength(nc)));
-          continue;
-        }
-      }
-      echildren.push_back(nc);
-    }
-    if (childrenChanged)
-    {
-      Node ret = nm->mkNode(k, echildren);
-      return returnRewrite(node, d_false, Rewrite::INT_EQ_CONST_STRING);
-    }
-  }
+
   if (node[0].isConst() && node[1].isConst())
   {
     return returnRewrite(node, d_false, Rewrite::EQ_CONST_FALSE);
@@ -94,19 +69,52 @@ Node SequencesRewriter::rewriteEquality(Node node)
   // standard ordering
   if (node[0] > node[1])
   {
-    Node ret = NodeManager::currentNM()->mkNode(k, node[1], node[0]);
+    Node ret = NodeManager::currentNM()->mkNode(EQUAL, node[1], node[0]);
     return returnRewrite(node, ret, Rewrite::EQ_SYM);
   }
   return node;
 }
 
-Node SequencesRewriter::rewriteGreaterThan(Node node)
+Node SequencesRewriter::rewriteIntRelation(Node node)
 {
+  Assert(node.getKind() == kind::STRING_INT_EQUAL || node.getKind()==kind::STRING_INT_GT);
+  NodeManager* nm = NodeManager::currentNM();
+  Kind k = node.getKind();
+  if (node[0] == node[1])
+  {
+    Node ret = nm->mkConst(k==STRING_INT_EQUAL);
+    return returnRewrite(node, ret, Rewrite::INT_RELATION_REFL);
+  }
+  std::vector<Node> echildren;
+  bool childrenChanged = false;
+  for (const Node& nc : node)
+  {
+    if (nc.getType().isStringLike())
+    {
+      if (nc.isConst())
+      {
+        childrenChanged = true;
+        echildren.push_back(nm->mkConstInt(Word::getLength(nc)));
+        continue;
+      }
+    }
+    echildren.push_back(nc);
+  }
+  if (childrenChanged)
+  {
+    Node ret = nm->mkNode(k, echildren);
+    return returnRewrite(node, d_false, Rewrite::INT_RELATION_CONST_STRING);
+  }
   if (node[0].isConst() && node[1].isConst())
   {
-    Node ret = NodeManager::currentNM()->mkConst(
+    if (k==STRING_INT_EQUAL)
+    {
+      return returnRewrite(node, d_false, Rewrite::EQ_CONST_FALSE);
+    }
+    Assert (k==STRING_INT_GT);
+    Node ret = nm->mkConst(
         node[0].getConst<Rational>() > node[1].getConst<Rational>());
-    return returnRewrite(node, ret, Rewrite::INT_GT_EVAL);
+    return returnRewrite(node, ret, Rewrite::INT_RELATION_EVAL);
   }
   return node;
 }
@@ -1679,9 +1687,13 @@ RewriteResponse SequencesRewriter::postRewrite(TNode node)
   {
     retNode = rewriteConcat(node);
   }
-  else if (nk == kind::EQUAL || nk == kind::STRING_INT_EQUAL)
+  else if (nk == kind::EQUAL)
   {
     retNode = rewriteEquality(node);
+  }
+  else if (nk == kind::STRING_INT_EQUAL || nk == kind::STRING_INT_GT)
+  {
+    retNode = rewriteIntRelation(node);
   }
   else if (nk == kind::STRING_LENGTH)
   {

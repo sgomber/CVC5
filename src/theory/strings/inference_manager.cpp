@@ -235,6 +235,11 @@ bool InferenceManager::sendSplit(Node a, Node b, InferenceId infer, bool preq)
   {
     return false;
   }
+  return sendSplit(eq, infer, preq);
+}
+
+bool InferenceManager::sendSplit(Node eq, InferenceId infer, bool preq)
+{
   NodeManager* nm = NodeManager::currentNM();
   InferInfo iiSplit(infer);
   iiSplit.d_sim = this;

@@ -88,9 +88,8 @@ Node TermRegistry::eagerReduce(Node t,
   if (tk == STRING_TO_CODE)
   {
     // ite( str.len(s)==1, 0 <= str.code(s) < |A|, str.code(s)=-1 )
-    Node slen = nm->mkNode(STRING_LENGTH, t[0]);
     Node one = nm->mkConstInt(Rational(1));
-    Node code_len = mkLengthConstraintInternal(EQUAL, slen, one, useLength);
+    Node code_len = mkLengthConstraintInternal(EQUAL, t[0], one, useLength);
     Node code_eq_neg1 = t.eqNode(nm->mkConstInt(Rational(-1)));
     Node code_range = utils::mkCodeRange(t, alphaCard);
     lemma = nm->mkNode(ITE, code_len, code_range, code_eq_neg1);
@@ -102,10 +101,9 @@ Node TermRegistry::eagerReduce(Node t,
       Node s = t[0];
       Node n = t[1];
       // start point is greater than or equal zero
-      Node slen = nm->mkNode(STRING_LENGTH, s);
       Node c1 = nm->mkNode(GEQ, n, nm->mkConstInt(0));
       // start point is less than end of string
-      Node c2 = mkLengthConstraintInternal(GT, slen, n, useLength);
+      Node c2 = mkLengthConstraintInternal(GT, s, n, useLength);
       // check whether this application of seq.nth is defined.
       Node cond = nm->mkNode(AND, c1, c2);
       Node code_range = utils::mkCodeRange(t, alphaCard);
@@ -164,11 +162,10 @@ Node TermRegistry::lengthPositive(Node t, bool useLength)
   NodeManager* nm = NodeManager::currentNM();
   Node zero = nm->mkConstInt(Rational(0));
   Node emp = Word::mkEmptyWord(t.getType());
-  Node tlen = nm->mkNode(STRING_LENGTH, t);
-  Node tlenEqZero = mkLengthConstraintInternal(EQUAL, tlen, zero, useLength);
+  Node tlenEqZero = mkLengthConstraintInternal(EQUAL, t, zero, useLength);
   Node tEqEmp = t.eqNode(emp);
   Node caseEmpty = nm->mkNode(AND, tlenEqZero, tEqEmp);
-  Node caseNEmpty = mkLengthConstraintInternal(GT, tlen, zero, useLength);
+  Node caseNEmpty = mkLengthConstraintInternal(GT, t, zero, useLength);
   // (or (and (= (str.len t) 0) (= t "")) (> (str.len t) 0))
   return nm->mkNode(OR, caseEmpty, caseNEmpty);
 }
@@ -680,7 +677,6 @@ Node TermRegistry::mkLengthConstraint(Kind k,
                                       const Node& s,
                                       const Node& t) const
 {
-  NodeManager* nm = NodeManager::currentNM();
   bool useLength = options().strings.stringUseLength;
   return mkLengthConstraintInternal(k, s, t, useLength);
 }
@@ -691,16 +687,21 @@ Node TermRegistry::mkLengthConstraintInternal(Kind k,
                                               bool useLength)
 {
   Assert(k == EQUAL || k == GT);
-  if (!useLength)
+  NodeManager * nm = NodeManager::currentNM();
+  if (useLength)
   {
-    switch (k)
-    {
-      case EQUAL: k = STRING_INT_EQUAL; break;
-      case GT: k = STRING_INT_GT; break;
-      default: Unhandled() << "Bad kind " << k << std::endl;
-    }
+    Node su = s.getType().isStringLike() ? nm->mkNode(STRING_LENGTH, s) : s;
+    Node tu = t.getType().isStringLike() ? nm->mkNode(STRING_LENGTH, t) : t;
+    return nm->mkNode(k, su, tu);
   }
-  return NodeManager::currentNM()->mkNode(k, s, t);
+  Assert (s.getType().isStringLike());
+  switch (k)
+  {
+    case EQUAL: k = STRING_INT_EQUAL; break;
+    case GT: k = STRING_INT_GT; break;
+    default: Unhandled() << "Bad kind " << k << std::endl;
+  }
+  return nm->mkNode(k, s, t);
 }
 
 Node TermRegistry::mkNConcat(Node n1, Node n2) const
