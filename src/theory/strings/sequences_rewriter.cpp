@@ -77,12 +77,13 @@ Node SequencesRewriter::rewriteEquality(Node node)
 
 Node SequencesRewriter::rewriteIntRelation(Node node)
 {
-  Assert(node.getKind() == kind::STRING_INT_EQUAL || node.getKind()==kind::STRING_INT_GT);
+  Assert(node.getKind() == kind::STRING_INT_EQUAL
+         || node.getKind() == kind::STRING_INT_GT);
   NodeManager* nm = NodeManager::currentNM();
   Kind k = node.getKind();
   if (node[0] == node[1])
   {
-    Node ret = nm->mkConst(k==STRING_INT_EQUAL);
+    Node ret = nm->mkConst(k == STRING_INT_EQUAL);
     return returnRewrite(node, ret, Rewrite::INT_RELATION_REFL);
   }
   std::vector<Node> echildren;
@@ -107,13 +108,13 @@ Node SequencesRewriter::rewriteIntRelation(Node node)
   }
   if (node[0].isConst() && node[1].isConst())
   {
-    if (k==STRING_INT_EQUAL)
+    if (k == STRING_INT_EQUAL)
     {
       return returnRewrite(node, d_false, Rewrite::EQ_CONST_FALSE);
     }
-    Assert (k==STRING_INT_GT);
-    Node ret = nm->mkConst(
-        node[0].getConst<Rational>() > node[1].getConst<Rational>());
+    Assert(k == STRING_INT_GT);
+    Node ret = nm->mkConst(node[0].getConst<Rational>()
+                           > node[1].getConst<Rational>());
     return returnRewrite(node, ret, Rewrite::INT_RELATION_EVAL);
   }
   return node;

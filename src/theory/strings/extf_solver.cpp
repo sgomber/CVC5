@@ -161,7 +161,7 @@ void ExtfSolver::doReduction(Node n, int pol)
       // equal. In other words, len( x ) = len( s ) implies
       //   ~contains( x, s ) reduces to x != s.
       // len( x ) = len( s ) ^ ~contains( x, s ) => x != s
-      lexp.push_back(d_termReg.mkLengthConstraint(EQUAL, x,s));
+      lexp.push_back(d_termReg.mkLengthConstraint(EQUAL, x, s));
       lexp.push_back(n.negate());
       Node xneqs = x.eqNode(s).negate();
       d_im.sendInference(

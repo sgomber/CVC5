@@ -687,14 +687,14 @@ Node TermRegistry::mkLengthConstraintInternal(Kind k,
                                               bool useLength)
 {
   Assert(k == EQUAL || k == GT);
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   if (useLength)
   {
     Node su = s.getType().isStringLike() ? nm->mkNode(STRING_LENGTH, s) : s;
     Node tu = t.getType().isStringLike() ? nm->mkNode(STRING_LENGTH, t) : t;
     return nm->mkNode(k, su, tu);
   }
-  Assert (s.getType().isStringLike());
+  Assert(s.getType().isStringLike());
   switch (k)
   {
     case EQUAL: k = STRING_INT_EQUAL; break;
