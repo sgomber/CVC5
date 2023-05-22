@@ -59,7 +59,6 @@ namespace smt {
 /** Utilities */
 class ContextManager;
 class SolverEngineState;
-class AbstractValues;
 class ResourceOutListener;
 class CheckModels;
 /** Subsolvers */
@@ -885,6 +884,24 @@ class CVC5_EXPORT SolverEngine
   SolverEngine(const SolverEngine&) = delete;
   SolverEngine& operator=(const SolverEngine&) = delete;
 
+  /**
+   * Begin call, which is called before any method that requires initializing
+   * this solver engine and make the state of the internal solver current.
+   *
+   * In particular, this ensures the solver is initialized, the pending pops
+   * on the context are processed, and optionally calls the resource manager
+   * to reset its limits (ResourceManager::beginCall).
+   *
+   * @param needsRLlimit If true, then beginCall() is called on the resource
+   * manager maintained by this class.
+   */
+  void beginCall(bool needsRLlimit = false);
+  /**
+   * End call. Should follow after a call to beginCall where needsRLlimit
+   * was true.
+   */
+  void endCall();
+
   /** Set solver instance that owns this SolverEngine. */
   void setSolver(cvc5::Solver* solver) { d_solver = solver; }
 
@@ -1051,8 +1068,6 @@ class CVC5_EXPORT SolverEngine
    */
   std::unique_ptr<smt::ContextManager> d_ctxManager;
 
-  /** Abstract values */
-  std::unique_ptr<smt::AbstractValues> d_absValues;
   /** Resource out listener */
   std::unique_ptr<smt::ResourceOutListener> d_routListener;
 
