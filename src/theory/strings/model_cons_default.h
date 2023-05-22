@@ -68,6 +68,12 @@ class ModelConsDefault : public ModelCons
   TermRegistry& d_termReg;
   /** The core solver */
   CoreSolver& d_csolver;
+  
+  void processCol(std::unordered_set<size_t>& colsProcessed,
+                  size_t i,
+                  const std::vector<std::vector<Node>>& cols,
+                  std::vector<Node>& lts,
+                  std::map<Node, size_t>& repToCol);
 };
 
 }  // namespace strings

@@ -56,7 +56,7 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
                                         std::vector<Node>& lts)
 {
   d_state.separateByLength(ns, cols, lts);
-  if (options().strings.stringUseLength)
+  if (true || options().strings.stringUseLength)
   {
     // look up the values of each length term
     Valuation& val = d_state.getValuation();
@@ -82,14 +82,10 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
       repToCol[r] = i;
     }
   }
+  std::unordered_set<size_t> colsProcessed;
   for (size_t i=0, ncols = cols.size(); i<ncols; i++)
   {
-    const std::vector<Node>& col = cols[i];
-    for (const Node& c : col)
-    {
-      std::vector<Node> cnf = getNormalForm(c);
-      
-    }
+    processCol(colsProcessed, i, cols, lts, repToCol);
   }
 }
 
@@ -98,6 +94,33 @@ std::vector<Node> ModelConsDefault::getNormalForm(Node n)
   return d_csolver.getNormalForm(n).d_nf;
 }
 
+void ModelConsDefault::processCol(std::unordered_set<size_t>& colsProcessed,
+                                  size_t i,
+                const std::vector<std::vector<Node>>& cols,
+                std::vector<Node>& lts,
+                std::map<Node, size_t>& repToCol)
+{
+  Assert (lts.size()==cols.size() && i<cols.size());
+  if (colsProcessed.find(i)!=colsProcessed.end())
+  {
+    return;
+  }
+  colsProcessed.insert(i);
+  if (lts[i].isConst())
+  {
+    return;
+  }
+  Valuation& val = d_state.getValuation();
+  const std::vector<Node>& col = cols[i];
+  for (const Node& c : col)
+  {
+    std::vector<Node> cnf = getNormalForm(c);
+    for (const Node& cc : cnf)
+    {
+      
+    }
+  }
+}
   
 }  // namespace strings
 }  // namespace theory
