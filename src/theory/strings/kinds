@@ -172,8 +172,8 @@ typerule STRING_PREFIX ::cvc5::internal::theory::strings::StringStrToBoolTypeRul
 typerule STRING_SUFFIX ::cvc5::internal::theory::strings::StringStrToBoolTypeRule
 typerule STRING_REV ::cvc5::internal::theory::strings::StringStrToStrTypeRule
 
-typerule STRING_INT_EQUAL "SimpleTypeRule<RBool, AInteger, AInteger>"
-typerule STRING_INT_GT "SimpleTypeRule<RBool, AInteger, AInteger>"
+typerule STRING_INT_EQUAL ::cvc5::internal::theory::strings::StringIntRelationTypeRule
+typerule STRING_INT_GT ::cvc5::internal::theory::strings::StringIntRelationTypeRule
 
 ### string specific operators
 

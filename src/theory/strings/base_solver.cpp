@@ -821,7 +821,7 @@ void BaseSolver::checkCardinalityType(TypeNode tn,
            itr1 != cols[i].end();
            ++itr1)
       {
-        Node len_eq_lr = d_termReg.mkLengthConstraintConst(EQUAL, *itr1, lr);
+        Node len_eq_lr = d_termReg.mkLengthConstraint(EQUAL, *itr1, lr);
         expn.push_back(len_eq_lr);
       }
       Node len = nm->mkNode(STRING_LENGTH, cols[i][0]);

@@ -19,6 +19,8 @@
 #include "theory/strings/core_solver.h"
 #include "theory/strings/solver_state.h"
 
+using namespace cvc5::internal::kind;
+
 namespace cvc5::internal {
 namespace theory {
 namespace strings {
@@ -27,7 +29,7 @@ ModelConsDefault::ModelConsDefault(Env& env,
                                    SolverState& state,
                                    TermRegistry& treg,
                                    CoreSolver& csolver)
-    : ModelCons(env), d_state(state), d_csolver(csolver)
+    : ModelCons(env), d_state(state), d_termReg(treg), d_csolver(csolver)
 {
 }
 
@@ -53,9 +55,9 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
                                         std::vector<std::vector<Node>>& cols,
                                         std::vector<Node>& lts)
 {
+  d_state.separateByLength(ns, cols, lts);
   if (options().strings.stringUseLength)
   {
-    d_state.separateByLength(ns, cols, lts);
     // look up the values of each length term
     Valuation& val = d_state.getValuation();
     for (Node& ll : lts)
@@ -68,6 +70,20 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
     return;
   }
   // otherwise, do custom
+  const context::CDList<TNode>& fterms = d_termReg.getFunctionTerms();
+  std::map<Node, std::map<Kind, std::unordered_set<TNode>> > constraints;
+  for (TNode c : fterms)
+  {
+    Kind k = c.getKind();
+    if (k==STRING_INT_EQUAL || k==STRING_INT_GT)
+    {
+      for (TNode cc : c)
+      {
+        TNode ccr = d_state.getRepresentative(cc);
+        constraints[ccr][k].insert(c);
+      }
+    }
+  }
 }
 
 std::vector<Node> ModelConsDefault::getNormalForm(Node n)

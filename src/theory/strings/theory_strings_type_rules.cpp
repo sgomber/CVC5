@@ -281,6 +281,26 @@ TypeNode StringRelationTypeRule::computeType(NodeManager* nodeManager,
   return nodeManager->booleanType();
 }
 
+TypeNode StringIntRelationTypeRule::computeType(NodeManager* nodeManager,
+                                             TNode n,
+                                             bool check,
+                                             std::ostream* errOut)
+{
+  if (check)
+  {
+    for (const Node& nc : n)
+    {
+      TypeNode t = nc.getType(check);
+      if (!t.isStringLike() && !t.isInteger())
+      {
+        throw TypeCheckingExceptionPrivate(
+            n, "expecting a string-like or integer term in relation");
+      }
+    }
+  }
+  return nodeManager->booleanType();
+}
+
 TypeNode RegExpRangeTypeRule::computeType(NodeManager* nodeManager,
                                           TNode n,
                                           bool check,

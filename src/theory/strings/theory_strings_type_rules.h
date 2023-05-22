@@ -118,6 +118,15 @@ class StringRelationTypeRule
                               std::ostream* errOut);
 };
 
+class StringIntRelationTypeRule
+{
+ public:
+  static TypeNode computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
+};
+
 class RegExpRangeTypeRule {
 public:
  static TypeNode computeType(NodeManager* nodeManager,

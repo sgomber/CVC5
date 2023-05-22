@@ -258,7 +258,6 @@ class TermRegistry : protected EnvObj
   /**
    * Make length constraint
    */
-  Node mkLengthConstraintConst(Kind k, const Node& s, const Node& c) const;
   Node mkLengthConstraint(Kind k, const Node& s, const Node& t) const;
 
   /** Make length constraint internal */

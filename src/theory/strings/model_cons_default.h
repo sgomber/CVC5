@@ -64,6 +64,8 @@ class ModelConsDefault : public ModelCons
  protected:
   /** The solver state object */
   SolverState& d_state;
+  /** The term registry */
+  TermRegistry& d_termReg;
   /** The core solver */
   CoreSolver& d_csolver;
 };

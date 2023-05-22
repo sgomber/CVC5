@@ -501,7 +501,7 @@ TrustNode TermRegistry::getRegisterTermAtomicLemma(
   if (s == LENGTH_GEQ_ONE)
   {
     Node neq_empty = n.eqNode(emp).negate();
-    Node len_n_gt_z = mkLengthConstraintConst(GT, n, d_zero);
+    Node len_n_gt_z = mkLengthConstraint(GT, n, d_zero);
     Node len_geq_one = nm->mkNode(AND, neq_empty, len_n_gt_z);
     Trace("strings-lemma") << "Strings::Lemma SK-GEQ-ONE : " << len_geq_one
                            << std::endl;
@@ -511,7 +511,7 @@ TrustNode TermRegistry::getRegisterTermAtomicLemma(
 
   if (s == LENGTH_ONE)
   {
-    Node len_one = mkLengthConstraintConst(EQUAL, n, d_one);
+    Node len_one = mkLengthConstraint(EQUAL, n, d_one);
     Trace("strings-lemma") << "Strings::Lemma SK-ONE : " << len_one
                            << std::endl;
     Trace("strings-assert") << "(assert " << len_one << ")" << std::endl;
@@ -522,7 +522,7 @@ TrustNode TermRegistry::getRegisterTermAtomicLemma(
   // get the positive length lemma
   Node lenLemma = lengthPositive(n, options().strings.stringUseLength);
   // split whether the string is empty
-  Node n_len_eq_z = mkLengthConstraintConst(EQUAL, n, d_zero);
+  Node n_len_eq_z = mkLengthConstraint(EQUAL, n, d_zero);
   Node n_len_eq_z_2 = n.eqNode(emp);
   Node case_empty = nm->mkNode(AND, n_len_eq_z, n_len_eq_z_2);
   Node case_emptyr = rewrite(case_empty);
@@ -676,24 +676,13 @@ const std::set<Node>& TermRegistry::getRelevantTermSet() const
   return d_relevantTerms;
 }
 
-Node TermRegistry::mkLengthConstraintConst(Kind k,
-                                           const Node& s,
-                                           const Node& c) const
-{
-  Node ls = NodeManager::currentNM()->mkNode(STRING_LENGTH, s);
-  bool useLength = options().strings.stringUseLength;
-  return mkLengthConstraintInternal(k, ls, c, useLength);
-}
-
 Node TermRegistry::mkLengthConstraint(Kind k,
                                       const Node& s,
                                       const Node& t) const
 {
   NodeManager* nm = NodeManager::currentNM();
-  Node ls = nm->mkNode(STRING_LENGTH, s);
-  Node lt = nm->mkNode(STRING_LENGTH, t);
   bool useLength = options().strings.stringUseLength;
-  return mkLengthConstraintInternal(k, ls, lt, useLength);
+  return mkLengthConstraintInternal(k, s, t, useLength);
 }
 
 Node TermRegistry::mkLengthConstraintInternal(Kind k,

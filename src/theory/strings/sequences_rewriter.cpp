@@ -62,7 +62,32 @@ Node SequencesRewriter::rewriteEquality(Node node)
   {
     return returnRewrite(node, d_true, Rewrite::EQ_REFL);
   }
-  else if (node[0].isConst() && node[1].isConst())
+  Kind k = node.getKind();
+  if (k == kind::STRING_INT_EQUAL)
+  {
+    NodeManager * nm = NodeManager::currentNM();
+    std::vector<Node> echildren;
+    bool childrenChanged = false;
+    for (const Node& nc : node)
+    {
+      if (nc.getType().isStringLike())
+      {
+        if (nc.isConst())
+        {
+          childrenChanged = true;
+          echildren.push_back(nm->mkConstInt(Word::getLength(nc)));
+          continue;
+        }
+      }
+      echildren.push_back(nc);
+    }
+    if (childrenChanged)
+    {
+      Node ret = nm->mkNode(k, echildren);
+      return returnRewrite(node, d_false, Rewrite::INT_EQ_CONST_STRING);
+    }
+  }
+  if (node[0].isConst() && node[1].isConst())
   {
     return returnRewrite(node, d_false, Rewrite::EQ_CONST_FALSE);
   }
@@ -70,7 +95,7 @@ Node SequencesRewriter::rewriteEquality(Node node)
   if (node[0] > node[1])
   {
     Node ret =
-        NodeManager::currentNM()->mkNode(node.getKind(), node[1], node[0]);
+        NodeManager::currentNM()->mkNode(k, node[1], node[0]);
     return returnRewrite(node, ret, Rewrite::EQ_SYM);
   }
   return node;

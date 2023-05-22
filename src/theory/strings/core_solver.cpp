@@ -736,7 +736,7 @@ Node CoreSolver::getConclusion(Node x,
     Node emp = Word::mkEmptyWord(sk.getType());
     Node lcons =
         TermRegistry::mkLengthConstraintInternal(GT,
-                                                 nm->mkNode(STRING_LENGTH, sk),
+                                                 sk,
                                                  nm->mkConstInt(Rational(0)),
                                                  useLength);
     conc = nm->mkNode(AND, conc, sk.eqNode(emp).negate(), lcons);

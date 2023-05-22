@@ -233,6 +233,7 @@ const char* toString(Rewrite r)
     case Rewrite::SEQ_NTH_EVAL_OOB: return "SEQ_NTH_EVAL_OOB";
     case Rewrite::SEQ_NTH_EVAL_SYM: return "SEQ_NTH_EVAL_SYM";
     case Rewrite::INT_GT_EVAL: return "INT_GT_EVAL";
+    case Rewrite::INT_EQ_CONST_STRING: return "INT_EQ_CONST_STRING";
     default: return "?";
   }
 }
