@@ -826,6 +826,7 @@ void BaseSolver::checkCardinalityType(TypeNode tn,
         Node len_eq_lr = d_termReg.mkLengthConstraint(EQUAL, *itr1, lr);
         expn.push_back(len_eq_lr);
       }
+      // FIXME
       Node len = nm->mkNode(STRING_LENGTH, cols[i][0]);
       Node cons = nm->mkNode(GEQ, len, k_node);
       cons = rewrite(cons);

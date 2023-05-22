@@ -461,6 +461,8 @@ const char* toString(InferenceId i)
     case InferenceId::STRINGS_DEQ_LENGTH_SP: return "STRINGS_DEQ_LENGTH_SP";
     case InferenceId::STRINGS_DEQ_EXTENSIONALITY:
       return "STRINGS_DEQ_EXTENSIONALITY";
+    case InferenceId::STRINGS_INT_RELATION:
+      return "STRINGS_INT_RELATION";
     case InferenceId::STRINGS_CODE_PROXY: return "STRINGS_CODE_PROXY";
     case InferenceId::STRINGS_CODE_INJ: return "STRINGS_CODE_INJ";
     case InferenceId::STRINGS_ARRAY_UPDATE_UNIT:

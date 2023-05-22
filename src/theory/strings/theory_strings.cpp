@@ -174,7 +174,10 @@ void TheoryStrings::finishInit()
   d_equalityEngine->addFunctionKind(kind::STRING_INT_EQUAL, eagerEval);
   d_equalityEngine->addFunctionKind(kind::STRING_INT_GT, eagerEval);
 
-  // memberships are not relevant for model building
+  // predicates are not relevant for model building
+  d_valuation.setIrrelevantKind(kind::STRING_INT_EQUAL);
+  d_valuation.setIrrelevantKind(kind::STRING_INT_GT);
+  d_valuation.setIrrelevantKind(kind::STRING_CONTAINS);
   d_valuation.setIrrelevantKind(kind::STRING_IN_REGEXP);
   d_valuation.setIrrelevantKind(kind::STRING_LEQ);
   // seq nth doesn't always evaluate
@@ -871,7 +874,7 @@ void TheoryStrings::preRegisterTerm(TNode n)
 bool TheoryStrings::preNotifyFact(
     TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal)
 {
-  if (atom.getKind() == EQUAL)
+  if (atom.getKind()==EQUAL)
   {
     // this is only required for internal facts, others are already registered
     if (isInternal)
@@ -915,6 +918,35 @@ void TheoryStrings::notifyFact(TNode atom,
     // call the inference manager to send the conflict
     d_im.processConflict(iiPendingConf);
     return;
+  }
+  // eager reduction for int equal/gt
+  Kind k = atom.getKind();
+  switch (k)
+  {
+    case STRING_INT_EQUAL:
+    case STRING_INT_GT:
+    {
+      // implies a length constraint, which we keep as an internal fact
+      if (polarity || k==STRING_INT_EQUAL)
+      {
+        bool eqPol = k==STRING_INT_GT ? false : polarity;
+        std::vector<Node> cc;
+        for (TNode ac : atom)
+        {
+          Node c = ac;
+          if (!ac.getType().isInteger())
+          {
+            c = NodeManager::currentNM()->mkNode(STRING_LENGTH, ac);
+          }
+          cc.push_back(c);
+        }
+        Node eq = rewrite(cc[0].eqNode(cc[1]));
+        d_inferManager->assertInternalFact(eq, eqPol, InferenceId::STRINGS_INT_RELATION, fact);
+      }
+    }
+    break;
+    default:
+      break;
   }
   // if not doing eager registration, we now register all subterms of the atom
   if (!options().strings.stringEagerReg)

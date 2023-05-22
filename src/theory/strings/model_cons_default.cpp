@@ -69,13 +69,21 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
     }
     return;
   }
+  if (TraceIsOn("strings-model-debug"))
+  {
+    Trace("strings-model-debug") << "ModelConsDefault::separateByLength:" << std::endl;
+    for (size_t i=0, ncols = cols.size(); i<ncols; i++)
+    {
+      Trace("strings-model-debug") << "  " << lts[i] << " -> " << cols[i] << std::endl;
+    }
+  }
   // otherwise, do custom
   const context::CDList<TNode>& fterms = d_termReg.getFunctionTerms();
   std::map<Node, std::map<Kind, std::unordered_set<TNode>>> constraints;
   for (TNode c : fterms)
   {
     Kind k = c.getKind();
-    if (k == STRING_INT_EQUAL || k == STRING_INT_GT)
+    if (k == STRING_INT_GT)
     {
       for (TNode cc : c)
       {

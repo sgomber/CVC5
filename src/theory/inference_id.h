@@ -748,6 +748,8 @@ enum class InferenceId
   // x != y => ( seq.len(x) != seq.len(y) or
   //             ( seq.nth(x, d) != seq.nth(y, d) ^ 0 <= d < seq.len(x) ) )
   STRINGS_DEQ_EXTENSIONALITY,
+  //
+  STRINGS_INT_RELATION,
   //-------------------- codes solver
   // str.to_code( v ) = rewrite( str.to_code(c) )
   // where v is the proxy variable for c.
