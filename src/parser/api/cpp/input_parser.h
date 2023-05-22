@@ -65,8 +65,10 @@ class CVC5_EXPORT InputParser
   SymbolManager* getSymbolManager();
   /**
    * Set the logic to use. This determines which builtin symbols are included.
+   *
+   * @param name The name of the logic.
    */
-  void setLogic(const std::string& str);
+  void setLogic(const std::string& name);
   /** Set the input for the given file.
    *
    * @param lang the input language
@@ -104,7 +106,8 @@ class CVC5_EXPORT InputParser
 
   /**
    * Parse and return the next command. Will initialize the logic to "ALL"
-   * or the forced logic if no logic is set prior to this point.
+   * or the forced logic if no logic is set prior to this point and a command
+   * is read that requires initializing the logic.
    */
   std::unique_ptr<Command> nextCommand();
 
