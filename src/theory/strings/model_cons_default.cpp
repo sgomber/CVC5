@@ -71,10 +71,12 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
   }
   if (TraceIsOn("strings-model-debug"))
   {
-    Trace("strings-model-debug") << "ModelConsDefault::separateByLength:" << std::endl;
-    for (size_t i=0, ncols = cols.size(); i<ncols; i++)
+    Trace("strings-model-debug")
+        << "ModelConsDefault::separateByLength:" << std::endl;
+    for (size_t i = 0, ncols = cols.size(); i < ncols; i++)
     {
-      Trace("strings-model-debug") << "  " << lts[i] << " -> " << cols[i] << std::endl;
+      Trace("strings-model-debug")
+          << "  " << lts[i] << " -> " << cols[i] << std::endl;
     }
   }
   // otherwise, do custom

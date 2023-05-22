@@ -874,7 +874,7 @@ void TheoryStrings::preRegisterTerm(TNode n)
 bool TheoryStrings::preNotifyFact(
     TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal)
 {
-  if (atom.getKind()==EQUAL)
+  if (atom.getKind() == EQUAL)
   {
     // this is only required for internal facts, others are already registered
     if (isInternal)
@@ -927,9 +927,9 @@ void TheoryStrings::notifyFact(TNode atom,
     case STRING_INT_GT:
     {
       // implies a length constraint, which we keep as an internal fact
-      if (polarity || k==STRING_INT_EQUAL)
+      if (polarity || k == STRING_INT_EQUAL)
       {
-        bool eqPol = k==STRING_INT_GT ? false : polarity;
+        bool eqPol = k == STRING_INT_GT ? false : polarity;
         std::vector<Node> cc;
         for (TNode ac : atom)
         {
@@ -941,12 +941,12 @@ void TheoryStrings::notifyFact(TNode atom,
           cc.push_back(c);
         }
         Node eq = rewrite(cc[0].eqNode(cc[1]));
-        d_inferManager->assertInternalFact(eq, eqPol, InferenceId::STRINGS_INT_RELATION, fact);
+        d_inferManager->assertInternalFact(
+            eq, eqPol, InferenceId::STRINGS_INT_RELATION, fact);
       }
     }
     break;
-    default:
-      break;
+    default: break;
   }
   // if not doing eager registration, we now register all subterms of the atom
   if (!options().strings.stringEagerReg)
