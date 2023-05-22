@@ -121,7 +121,8 @@ Node SolverState::getLength(Node t, std::vector<Node>& exp, bool minExp)
 
 bool SolverState::areLengthEqual(const Node& t,
                                  const Node& s,
-                                 std::vector<Node>& exp, bool minExp)
+                                 std::vector<Node>& exp,
+                                 bool minExp)
 {
   Node lent = getLength(t, exp, minExp);
   Node lens = getLength(s, exp, minExp);
