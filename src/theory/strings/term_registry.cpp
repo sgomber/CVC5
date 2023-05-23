@@ -406,7 +406,6 @@ TrustNode TermRegistry::getRegisterTermLemma(Node n)
   }
   d_proxyVarToLength[sk] = lsum;
   ret = nm->mkNode(AND, ret, lc);
-   
 
   // it is a simple rewrite to justify this
   if (d_epg != nullptr)
@@ -695,8 +694,8 @@ Node TermRegistry::mkLengthConstraintInternal(Kind k,
     Node tu = t.getType().isStringLike() ? nm->mkNode(STRING_LENGTH, t) : t;
     return nm->mkNode(k, su, tu);
   }
-  Node su = s.getKind()==STRING_LENGTH ? s[0] : s;
-  Node tu = t.getKind()==STRING_LENGTH ? t[0] : t;
+  Node su = s.getKind() == STRING_LENGTH ? s[0] : s;
+  Node tu = t.getKind() == STRING_LENGTH ? t[0] : t;
   switch (k)
   {
     case EQUAL: k = STRING_INT_EQUAL; break;

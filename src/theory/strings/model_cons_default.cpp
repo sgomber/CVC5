@@ -62,8 +62,7 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
   for (size_t i = 0, ncols = cols.size(); i < ncols; i++)
   {
     const std::vector<Node>& rs = cols[i];
-    Trace("strings-model-debug")
-        << "  " << lts[i] << " -> " << rs << std::endl;
+    Trace("strings-model-debug") << "  " << lts[i] << " -> " << rs << std::endl;
     for (const Node& r : rs)
     {
       repToCol[r] = i;
@@ -73,7 +72,7 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
   Valuation& val = d_state.getValuation();
   for (Node& ll : lts)
   {
-    Assert (!ll.isNull());
+    Assert(!ll.isNull());
     if (options().strings.stringUseLength)
     {
       // take the representative
@@ -82,9 +81,9 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
     ll = val.getCandidateModelValue(ll);
   }
   return;
-  
+
   std::unordered_set<size_t> colsProcessed;
-  for (size_t i=0, ncols = cols.size(); i<ncols; i++)
+  for (size_t i = 0, ncols = cols.size(); i < ncols; i++)
   {
     processCol(colsProcessed, i, cols, lts, repToCol);
   }
@@ -97,12 +96,12 @@ std::vector<Node> ModelConsDefault::getNormalForm(Node n)
 
 void ModelConsDefault::processCol(std::unordered_set<size_t>& colsProcessed,
                                   size_t i,
-                const std::vector<std::vector<Node>>& cols,
-                std::vector<Node>& lts,
-                std::map<Node, size_t>& repToCol)
+                                  const std::vector<std::vector<Node>>& cols,
+                                  std::vector<Node>& lts,
+                                  std::map<Node, size_t>& repToCol)
 {
-  Assert (lts.size()==cols.size() && i<cols.size());
-  if (colsProcessed.find(i)!=colsProcessed.end())
+  Assert(lts.size() == cols.size() && i < cols.size());
+  if (colsProcessed.find(i) != colsProcessed.end())
   {
     return;
   }
@@ -118,11 +117,10 @@ void ModelConsDefault::processCol(std::unordered_set<size_t>& colsProcessed,
     std::vector<Node> cnf = getNormalForm(c);
     for (const Node& cc : cnf)
     {
-      
     }
   }
 }
-  
+
 }  // namespace strings
 }  // namespace theory
 }  // namespace cvc5::internal

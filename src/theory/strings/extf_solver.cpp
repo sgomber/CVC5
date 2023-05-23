@@ -115,7 +115,8 @@ bool ExtfSolver::shouldDoReduction(int effort, Node n, int pol)
     return (effort == reffort);
   }
   else if (k == SEQ_UNIT || k == STRING_UNIT || k == STRING_IN_REGEXP
-           || k == STRING_TO_CODE || k == STRING_INT_EQUAL || k == STRING_INT_GT || (n.getType().isBoolean() && pol == 0))
+           || k == STRING_TO_CODE || k == STRING_INT_EQUAL || k == STRING_INT_GT
+           || (n.getType().isBoolean() && pol == 0))
   {
     // never necessary to reduce seq.unit. str.to_code or str.in_re here.
     // also, we do not reduce str.contains that are preregistered but not
