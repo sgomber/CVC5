@@ -260,6 +260,7 @@ void SolverState::separateByLength(const std::vector<Node>& n,
     if (!lt.isNull())
     {
       Node r = d_ee->getRepresentative(lt);
+      Assert (!r.isNull());
       if (eqc_to_leqc.find(r) == eqc_to_leqc.end())
       {
         eqc_to_leqc[r] = leqc_counter;

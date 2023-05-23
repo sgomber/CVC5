@@ -905,8 +905,12 @@ void TheoryStrings::notifyFact(TNode atom,
   {
     d_eagerSolver->notifyFact(atom, polarity, fact, isInternal);
   }
+  if (d_state.isInConflict())
+  {
+    return;
+  }
   // process pending conflicts due to reasoning about endpoints
-  if (!d_state.isInConflict() && d_state.hasPendingConflict())
+  if (d_state.hasPendingConflict())
   {
     InferInfo iiPendingConf(InferenceId::UNKNOWN);
     d_state.getPendingConflict(iiPendingConf);

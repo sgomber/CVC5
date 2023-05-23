@@ -56,19 +56,6 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
                                         std::vector<Node>& lts)
 {
   d_state.separateByLength(ns, cols, lts);
-  if (true || options().strings.stringUseLength)
-  {
-    // look up the values of each length term
-    Valuation& val = d_state.getValuation();
-    for (Node& ll : lts)
-    {
-      if (!ll.isConst())
-      {
-        ll = val.getCandidateModelValue(ll);
-      }
-    }
-    return;
-  }
   std::map<Node, size_t> repToCol;
   Trace("strings-model-debug")
       << "ModelConsDefault::separateByLength:" << std::endl;
@@ -82,6 +69,20 @@ void ModelConsDefault::separateByLength(const std::vector<Node>& ns,
       repToCol[r] = i;
     }
   }
+  // look up the values of each length term
+  Valuation& val = d_state.getValuation();
+  for (Node& ll : lts)
+  {
+    Assert (!ll.isNull());
+    if (options().strings.stringUseLength)
+    {
+      // take the representative
+      ll = d_state.getRepresentative(ll);
+    }
+    ll = val.getCandidateModelValue(ll);
+  }
+  return;
+  
   std::unordered_set<size_t> colsProcessed;
   for (size_t i=0, ncols = cols.size(); i<ncols; i++)
   {

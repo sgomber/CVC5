@@ -373,46 +373,40 @@ TrustNode TermRegistry::getRegisterTermLemma(Node n)
     // do not send length lemma for sk.
     registerTermAtomic(sk, LENGTH_IGNORE);
   }
+  Node lc;
   if (n.getKind() == STRING_CONCAT)
   {
-    // optimization
-    if (options().strings.stringUseLength)
+    // optimization: look up the proxy variables for children if they exist
+    std::vector<Node> nodeVec;
+    NodeNodeMap::const_iterator itl;
+    for (const Node& nc : n)
     {
-      std::vector<Node> nodeVec;
-      NodeNodeMap::const_iterator itl;
-      for (const Node& nc : n)
+      itl = d_proxyVarToLength.find(nc);
+      if (itl != d_proxyVarToLength.end())
       {
-        itl = d_proxyVarToLength.find(nc);
-        if (itl != d_proxyVarToLength.end())
-        {
-          nodeVec.push_back(itl->second);
-        }
-        else
-        {
-          Node lni = nm->mkNode(STRING_LENGTH, nc);
-          nodeVec.push_back(lni);
-        }
+        nodeVec.push_back(itl->second);
       }
-      lsum = nm->mkNode(ADD, nodeVec);
-      lsum = rewrite(lsum);
+      else
+      {
+        Node lni = nm->mkNode(STRING_LENGTH, nc);
+        nodeVec.push_back(lni);
+      }
     }
-    else
-    {
-      // otherwise we don't add a length constraint, as it will introduce
-      // arithmetic.
-    }
+    lsum = nm->mkNode(ADD, nodeVec);
+    lsum = rewrite(lsum);
   }
   else if (n.isConst())
   {
     lsum = nm->mkConstInt(Rational(Word::getLength(n)));
+    lc = mkLengthConstraint(EQUAL, sk, lsum);
   }
-  // if using a length
-  if (!lsum.isNull())
+  if (lc.isNull())
   {
-    d_proxyVarToLength[sk] = lsum;
-    Node ceq = mkLengthConstraint(EQUAL, sk, lsum);
-    ret = nm->mkNode(AND, ret, ceq);
-  } 
+    lc = nm->mkNode(EQUAL, nm->mkNode(STRING_LENGTH, sk), lsum);
+  }
+  d_proxyVarToLength[sk] = lsum;
+  ret = nm->mkNode(AND, ret, lc);
+   
 
   // it is a simple rewrite to justify this
   if (d_epg != nullptr)
@@ -701,7 +695,6 @@ Node TermRegistry::mkLengthConstraintInternal(Kind k,
     Node tu = t.getType().isStringLike() ? nm->mkNode(STRING_LENGTH, t) : t;
     return nm->mkNode(k, su, tu);
   }
-  Assert(s.getType().isStringLike());
   Node su = s.getKind()==STRING_LENGTH ? s[0] : s;
   Node tu = t.getKind()==STRING_LENGTH ? t[0] : t;
   switch (k)
