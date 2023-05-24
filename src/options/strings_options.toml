@@ -50,6 +50,14 @@ name   = "Strings Theory"
   help       = "do registration lemmas for terms during preregistration. If false, do registration lemmas for terms when they appear in asserted literals"
 
 [[option]]
+  name       = "stringDelayReg"
+  category   = "expert"
+  long       = "strings-delay-reg"
+  type       = "bool"
+  default    = "false"
+  help       = "delay registration for some terms in strings"
+
+[[option]]
   name       = "stringCheckEntailLen"
   category   = "regular"
   long       = "strings-check-entail-len"

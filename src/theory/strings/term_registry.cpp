@@ -192,9 +192,20 @@ void TermRegistry::preRegisterTerm(TNode n)
   {
     d_hasSeqUpdate = true;
   }
-  if (options().strings.stringEagerReg)
+  if (options().strings.stringDelayReg)
   {
-    registerTerm(n);
+    if (k==STRING_LENGTH)
+    {
+      // always register the argument now
+      registerTerm(n[0]);
+    }
+  }
+  if (options().strings.stringEagerReg)
+  {      
+    if (!shouldDelayRegister(n))
+    {
+      registerTerm(n);
+    }
   }
   TypeNode tn = n.getType();
   registerType(tn);
@@ -248,7 +259,10 @@ void TermRegistry::registerSubterms(Node n)
     visit.pop_back();
     if (d_registeredTerms.find(cur) == d_registeredTerms.end())
     {
-      registerTermInternal(cur);
+      if (!shouldDelayRegister(cur))
+      {
+        registerTermInternal(cur);
+      }
       Kind k = cur.getKind();
       // only traverse beneath operators belonging to strings
       if (k==EQUAL || theory::kindToTheoryId(k)==THEORY_STRINGS)
@@ -261,6 +275,15 @@ void TermRegistry::registerSubterms(Node n)
   } while (!visit.empty());
 }
 
+bool TermRegistry::shouldDelayRegister(const Node& v) const
+{
+  if (options().strings.stringDelayReg)
+  {
+    return v.isVar();
+  }
+  return true;
+}
+  
 void TermRegistry::registerTerm(Node n)
 {
   if (d_registeredTerms.find(n) != d_registeredTerms.end())

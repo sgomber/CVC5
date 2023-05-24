@@ -2591,19 +2591,23 @@ void CoreSolver::checkNormalFormsDeq()
 
 void CoreSolver::checkLengthsEqc()
 {
-  for (unsigned i = 0; i < d_strings_eqc.size(); i++)
+  for (const Node& r : d_strings_eqc)
   {
-    TypeNode stype = d_strings_eqc[i].getType();
-    NormalForm& nfi = getNormalForm(d_strings_eqc[i]);
+    TypeNode stype = r.getType();
+    NormalForm& nfi = getNormalForm(r);
     Trace("strings-process-debug")
-        << "Process length constraints for " << d_strings_eqc[i] << std::endl;
+        << "Process length constraints for " << r << std::endl;
     // check if there is a length term for this equivalence class
-    EqcInfo* ei = d_state.getOrMakeEqcInfo(d_strings_eqc[i], false);
+    EqcInfo* ei = d_state.getOrMakeEqcInfo(r, false);
     Node llt = ei ? ei->d_lengthTerm : Node::null();
     if (llt.isNull())
     {
       Trace("strings-process-debug")
-          << "No length term for eqc " << d_strings_eqc[i] << std::endl;
+          << "No length term for eqc " << r << std::endl;
+      Assert (r.isVar());
+      AlwaysAssert(false);
+      // register the term
+      d_termReg.registerTerm(r);
       continue;
     }
     // now, check if length normalization has occurred

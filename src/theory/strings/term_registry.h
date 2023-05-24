@@ -123,6 +123,10 @@ class TermRegistry : protected EnvObj
    * Call `registerTerm` for each subterm of n
    */
   void registerSubterms(Node n);
+  /**
+   * Should register at default time.
+   */
+  bool shouldDelayRegister(const Node& v) const;
   /** register length
    *
    * This method is called on non-constant string terms n that are "atomic"
@@ -251,7 +255,6 @@ class TermRegistry : protected EnvObj
    * for the theory of strings.
    */
   const std::set<Node>& getRelevantTermSet() const;
-
  private:
   /** Reference to theory of strings, for computing relevant terms */
   Theory& d_theory;
