@@ -279,7 +279,7 @@ bool TermRegistry::shouldDelayRegister(const Node& v) const
 {
   if (options().strings.stringDelayReg)
   {
-    return v.getType().isStringLike();// && v.getKind()!=STRING_CONCAT;
+    return v.getType().isStringLike() && v.getKind()!=STRING_CONCAT;
   }
   return false;
 }
