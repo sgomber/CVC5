@@ -194,14 +194,14 @@ void TermRegistry::preRegisterTerm(TNode n)
   }
   if (options().strings.stringDelayReg)
   {
-    if (k==STRING_LENGTH)
+    if (k == STRING_LENGTH)
     {
       // always register the argument now
       registerTerm(n[0]);
     }
   }
   if (options().strings.stringEagerReg)
-  {      
+  {
     if (!shouldDelayRegister(n))
     {
       registerTerm(n);
@@ -283,7 +283,7 @@ bool TermRegistry::shouldDelayRegister(const Node& v) const
   }
   return true;
 }
-  
+
 void TermRegistry::registerTerm(Node n)
 {
   if (d_registeredTerms.find(n) != d_registeredTerms.end())
