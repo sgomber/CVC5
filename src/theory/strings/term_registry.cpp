@@ -279,9 +279,9 @@ bool TermRegistry::shouldDelayRegister(const Node& v) const
 {
   if (options().strings.stringDelayReg)
   {
-    return v.isVar();
+    return true;
   }
-  return true;
+  return false;
 }
 
 void TermRegistry::registerTerm(Node n)
