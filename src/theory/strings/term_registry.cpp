@@ -194,7 +194,7 @@ void TermRegistry::preRegisterTerm(TNode n)
   }
   if (options().strings.stringDelayReg)
   {
-    if (k == STRING_LENGTH)
+    if (k == STRING_LENGTH || k == STRING_TO_CODE)
     {
       // always register the argument now
       registerTerm(n[0]);
