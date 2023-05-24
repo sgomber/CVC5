@@ -2604,8 +2604,6 @@ void CoreSolver::checkLengthsEqc()
     {
       Trace("strings-process-debug")
           << "No length term for eqc " << r << std::endl;
-      Assert(r.isVar());
-      AlwaysAssert(false);
       // register the term
       d_termReg.registerTerm(r);
       continue;
