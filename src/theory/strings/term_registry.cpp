@@ -163,6 +163,7 @@ Node TermRegistry::lengthPositive(Node t)
   Node tlenEqZero = tlen.eqNode(zero);
   Node tEqEmp = t.eqNode(emp);
   Node caseEmpty = nm->mkNode(AND, tlenEqZero, tEqEmp);
+  // Node caseEmpty = tEqEmp;
   Node caseNEmpty = nm->mkNode(GT, tlen, zero);
   // (or (and (= (str.len t) 0) (= t "")) (> (str.len t) 0))
   return nm->mkNode(OR, caseEmpty, caseNEmpty);
@@ -309,21 +310,36 @@ void TermRegistry::registerTermInternal(Node n)
     //  for concat/const/replace, introduce proxy var and state length relation
     regTermLem = getRegisterTermLemma(n);
   }
-  else if (n.getKind() != STRING_CONTAINS)
+  else
   {
     // we don't send out eager reduction lemma for str.contains currently
-    Node eagerRedLemma = eagerReduce(n, &d_skCache, d_alphaCard);
-    if (!eagerRedLemma.isNull())
+    bool doEagerReduce = true;
+    Kind k = n.getKind();
+    if (k == STRING_CONTAINS)
     {
-      // if there was an eager reduction, we make the trust node for it
-      if (d_epg != nullptr)
+      doEagerReduce = false;
+    }
+    else if (k == STRING_TO_CODE)
+    {
+      // code for proxy are implied
+      Node c = SkolemManager::getOriginalForm(n[0]);
+      doEagerReduce = !c.isConst();
+    }
+    if (doEagerReduce)
+    {
+      Node eagerRedLemma = eagerReduce(n, &d_skCache, d_alphaCard);
+      if (!eagerRedLemma.isNull())
       {
-        regTermLem = d_epg->mkTrustNode(
-            eagerRedLemma, PfRule::STRING_EAGER_REDUCTION, {}, {n});
-      }
-      else
-      {
-        regTermLem = TrustNode::mkTrustLemma(eagerRedLemma, nullptr);
+        // if there was an eager reduction, we make the trust node for it
+        if (d_epg != nullptr)
+        {
+          regTermLem = d_epg->mkTrustNode(
+              eagerRedLemma, PfRule::STRING_EAGER_REDUCTION, {}, {n});
+        }
+        else
+        {
+          regTermLem = TrustNode::mkTrustLemma(eagerRedLemma, nullptr);
+        }
       }
     }
   }
