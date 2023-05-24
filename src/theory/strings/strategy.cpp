@@ -122,12 +122,12 @@ void Strategy::initializeStrategy()
     addStrategyStep(CHECK_NORMAL_FORMS_EQ_PROP);
     addStrategyStep(CHECK_NORMAL_FORMS_EQ);
     addStrategyStep(CHECK_EXTF_EVAL, 1);
-    addStrategyStep(CHECK_NORMAL_FORMS_DEQ);
-    addStrategyStep(CHECK_CODES);
     if (options().strings.stringLenNorm)
     {
       addStrategyStep(CHECK_LENGTH_EQC);
     }
+    addStrategyStep(CHECK_NORMAL_FORMS_DEQ);
+    addStrategyStep(CHECK_CODES);
     if (options().strings.seqArray != options::SeqArrayMode::NONE)
     {
       addStrategyStep(CHECK_SEQUENCES_ARRAY_CONCAT);
