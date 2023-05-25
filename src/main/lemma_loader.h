@@ -27,7 +27,7 @@ class SymbolManager;
 namespace main {
 
 /**
- * The lemma loader pluging, for sending lemmas by reading from disk.
+ * The lemma loader plugin, for sending lemmas by reading from disk.
  */
 class LemmaLoader : public cvc5::Plugin
 {

@@ -32,11 +32,13 @@ class PluginModule : public TheoryEngineModule
  public:
   PluginModule(Env& env, TheoryEngine* theoryEngine, Plugin* p);
 
-  /**
-   * Check at the given effort.
-   */
+  /** Check at the given effort. */
   void check(Theory::Effort e) override;
-
+  /** Notify lemma */
+  void notifyLemma(TNode n,
+                           theory::LemmaProperty p,
+                           const std::vector<Node>& skAsserts,
+                           const std::vector<Node>& sks) override;
  private:
   /** The plugin */
   Plugin* d_plugin;

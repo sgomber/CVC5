@@ -1123,6 +1123,12 @@ class PluginInternal : public internal::Plugin
     std::vector<Term> lemsExt = d_external.check();
     return Term::termVectorToNodes(lemsExt);
   }
+  /** Notify lemma method */
+  void notifyLemma(const internal::Node& n) override
+  {
+    Term t = Term(internal::NodeManager::currentNM(), n);
+    return d_external.notifyLemma(t);
+  }
   /** Get name */
   std::string getName() override { return d_external.getName(); }
 
@@ -5189,6 +5195,15 @@ std::ostream& operator<<(std::ostream& out, const Statistics& stats)
 
 Plugin::Plugin() : d_pExtToInt(new PluginInternal(*this)) {}
 Plugin::~Plugin() {}
+
+std::vector<Term> Plugin::check()
+{
+  std::vector<Term> ret;
+  return ret;
+}
+void Plugin::notifyLemma(const Term& lem)
+{
+}
 
 /* -------------------------------------------------------------------------- */
 /* Solver                                                                     */

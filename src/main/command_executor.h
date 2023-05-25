@@ -22,6 +22,7 @@
 #include <string>
 
 #include "main/lemma_loader.h"
+#include "main/lemma_saver.h"
 #include "parser/api/cpp/symbol_manager.h"
 
 namespace cvc5 {
@@ -116,6 +117,8 @@ private:
                     std::ostream& out);
   /** Lemma loader plugin */
   std::unique_ptr<LemmaLoader> d_lemmaLoader;
+  /** Lemma saver plugin */
+  std::unique_ptr<LemmaSaver> d_lemmaSaver;
 }; /* class CommandExecutor */
 
 

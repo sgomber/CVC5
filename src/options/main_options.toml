@@ -187,4 +187,12 @@ name   = "Driver"
   long       = "lemma-loader=FILENAME"
   type       = "std::string"
   default    = '""'
-  help       = "filename to query"
+  help       = "filename to load from"
+
+[[option]]
+  name       = "lemmaSaver"
+  category   = "expert"
+  long       = "lemma-saver=FILENAME"
+  type       = "std::string"
+  default    = '""'
+  help       = "filename to save to"

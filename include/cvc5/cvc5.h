@@ -3278,7 +3278,11 @@ class CVC5_EXPORT Plugin
   /**
    * Call to check, return vector of lemmas
    */
-  virtual std::vector<Term> check() = 0;
+  virtual std::vector<Term> check();
+  /** 
+   * Notify lemma.
+   */
+  virtual void notifyLemma(const Term& lem);
   /** Get the name of the plugin (for debugging) */
   virtual std::string getName() = 0;
 

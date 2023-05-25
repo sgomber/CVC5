@@ -71,6 +71,13 @@ void CommandExecutor::storeOptionsAsOriginal()
         new LemmaLoader(llfile, d_solver.get(), d_symman.get()));
     d_solver->addPlugin(*d_lemmaLoader.get());
   }
+  std::string lsfile = d_solver->getOptionInfo("lemma-saver").stringValue();
+  if (lsfile != "")
+  {
+    d_lemmaSaver.reset(
+        new LemmaSaver(lsfile, d_solver.get()));
+    d_solver->addPlugin(*d_lemmaSaver.get());
+  }
   // save the original options
   d_solver->d_originalOptions->copyValues(d_solver->d_slv->getOptions());
   // cache the value of parse-only, which is set by the command line only

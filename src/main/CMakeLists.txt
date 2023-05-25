@@ -21,6 +21,8 @@ set(libmain_src_files
   main.h
   lemma_loader.cpp
   lemma_loader.h
+  lemma_saver.cpp
+  lemma_saver.h
   options.h
   portfolio_driver.cpp
   portfolio_driver.h

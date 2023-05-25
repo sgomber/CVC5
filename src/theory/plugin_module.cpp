@@ -15,6 +15,9 @@
 
 #include "theory/plugin_module.h"
 
+#include "smt/env.h"
+#include "theory/trust_substitutions.h"
+
 namespace cvc5::internal {
 namespace theory {
 
@@ -32,7 +35,27 @@ void PluginModule::check(Theory::Effort e)
   for (const Node& lem : lems)
   {
     Assert(lem.getType().isBoolean());
-    d_out.lemma(lem);
+    // must apply top level substitutions here, since if this lemma was
+    // sent externally, it may not have taken into account the internal
+    // substitutions.
+    Node slem = d_env.getTopLevelSubstitutions().apply(lem);
+    // send the lemma
+    d_out.lemma(slem);
+  }
+}
+
+void PluginModule::notifyLemma(TNode n,
+                          theory::LemmaProperty p,
+                          const std::vector<Node>& skAsserts,
+                          const std::vector<Node>& sks)
+{
+  Trace("ajr-temp") << "Plugin notify " << n << std::endl;
+  // currently ignores the other fields
+  d_plugin->notifyLemma(n);
+  // skolem lemmas
+  for (const Node& kn : skAsserts)
+  {
+    d_plugin->notifyLemma(kn);
   }
 }
 
