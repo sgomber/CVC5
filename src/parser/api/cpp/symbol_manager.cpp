@@ -526,7 +526,7 @@ void SymbolManager::resetAssertions()
   }
 }
 
-void SymbolManager::setLogic(const std::string& logic, bool isForced )
+void SymbolManager::setLogic(const std::string& logic, bool isForced)
 {
   // if already forced and this isn't forced, ignore
   if (!d_logicIsForced || isForced)
@@ -537,9 +537,6 @@ void SymbolManager::setLogic(const std::string& logic, bool isForced )
 }
 bool SymbolManager::isLogicForced() const { return d_logicIsForced; }
 
-const std::string& SymbolManager::getLogic() const
-{
-  return d_logic;
-}
+const std::string& SymbolManager::getLogic() const { return d_logic; }
 
 }  // namespace cvc5::parser

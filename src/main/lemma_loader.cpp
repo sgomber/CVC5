@@ -59,7 +59,8 @@ std::vector<Term> LemmaLoader::check()
       }
       Assert(lem.getSort().isBoolean());
       lemmas.push_back(lem);
-      Trace("lemma-loader-lemma") << "(loader-lemma " << lem << ")" << std::endl;
+      Trace("lemma-loader-lemma")
+          << "(loader-lemma " << lem << ")" << std::endl;
     }
   }
   return lemmas;
