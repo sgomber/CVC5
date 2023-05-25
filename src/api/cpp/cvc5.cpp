@@ -5201,9 +5201,7 @@ std::vector<Term> Plugin::check()
   std::vector<Term> ret;
   return ret;
 }
-void Plugin::notifyLemma(const Term& lem)
-{
-}
+void Plugin::notifyLemma(const Term& lem) {}
 
 /* -------------------------------------------------------------------------- */
 /* Solver                                                                     */

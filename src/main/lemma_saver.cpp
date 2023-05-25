@@ -21,15 +21,12 @@
 namespace cvc5 {
 namespace main {
 
-LemmaSaver::LemmaSaver(std::string& filename,
-                         Solver* s)
+LemmaSaver::LemmaSaver(std::string& filename, Solver* s)
     : d_filename(filename), d_solver(s)
 {
   d_fs.open(filename, std::fstream::out);
 }
-LemmaSaver::~LemmaSaver() {
-  d_fs.close();
-}
+LemmaSaver::~LemmaSaver() { d_fs.close(); }
 
 void LemmaSaver::notifyLemma(const Term& t)
 {

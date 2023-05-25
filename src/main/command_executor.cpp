@@ -74,8 +74,7 @@ void CommandExecutor::storeOptionsAsOriginal()
   std::string lsfile = d_solver->getOptionInfo("lemma-saver").stringValue();
   if (lsfile != "")
   {
-    d_lemmaSaver.reset(
-        new LemmaSaver(lsfile, d_solver.get()));
+    d_lemmaSaver.reset(new LemmaSaver(lsfile, d_solver.get()));
     d_solver->addPlugin(*d_lemmaSaver.get());
   }
   // save the original options

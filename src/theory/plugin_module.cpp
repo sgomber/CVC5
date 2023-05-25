@@ -45,9 +45,9 @@ void PluginModule::check(Theory::Effort e)
 }
 
 void PluginModule::notifyLemma(TNode n,
-                          theory::LemmaProperty p,
-                          const std::vector<Node>& skAsserts,
-                          const std::vector<Node>& sks)
+                               theory::LemmaProperty p,
+                               const std::vector<Node>& skAsserts,
+                               const std::vector<Node>& sks)
 {
   Trace("ajr-temp") << "Plugin notify " << n << std::endl;
   // currently ignores the other fields

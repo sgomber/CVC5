@@ -36,9 +36,10 @@ class PluginModule : public TheoryEngineModule
   void check(Theory::Effort e) override;
   /** Notify lemma */
   void notifyLemma(TNode n,
-                           theory::LemmaProperty p,
-                           const std::vector<Node>& skAsserts,
-                           const std::vector<Node>& sks) override;
+                   theory::LemmaProperty p,
+                   const std::vector<Node>& skAsserts,
+                   const std::vector<Node>& sks) override;
+
  private:
   /** The plugin */
   Plugin* d_plugin;
