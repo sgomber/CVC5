@@ -71,7 +71,7 @@ TptpState::TptpState(ParserStateCallback* psc,
   if (sm->isLogicForced())
   {
     preemptCommand(
-        std::make_unique<SetBenchmarkLogicCommand>(sm->getForcedLogic()));
+        std::make_unique<SetBenchmarkLogicCommand>(sm->getLogic()));
   }
 }
 

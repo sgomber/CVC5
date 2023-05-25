@@ -45,9 +45,7 @@ std::vector<Term> LemmaLoader::check()
     // use the input language specified by the options
     ip.setFileInput(d_solver->getOption("input-language"), d_filename);
     // set the logic
-    // TODO: retreive logic string from solver? (not available currently)
-    // For now, assume "ALL" logic.
-    ip.setLogic("ALL");
+    ip.setLogic(d_symman->getLogic());
     // reads a list of formulas
     //   F1 .... Fn
     // each of which will be sent as a lemma
@@ -61,7 +59,7 @@ std::vector<Term> LemmaLoader::check()
       }
       Assert(lem.getSort().isBoolean());
       lemmas.push_back(lem);
-      Trace("lemma-loader") << "...read lemma " << lem << std::endl;
+      Trace("lemma-loader-lemma") << "(loader-lemma " << lem << ")" << std::endl;
     }
   }
   return lemmas;
