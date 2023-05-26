@@ -15,9 +15,9 @@
 
 #include "theory/plugin_module.h"
 
+#include "expr/skolem_manager.h"
 #include "smt/env.h"
 #include "theory/trust_substitutions.h"
-#include "expr/skolem_manager.h"
 
 namespace cvc5::internal {
 namespace theory {
