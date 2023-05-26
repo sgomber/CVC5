@@ -394,6 +394,7 @@ CRef Solver::reason(Var x) {
   vardata[x] = VarData(
       real_reason, level(x), user_level(x), intro_level(x), trail_index(x));
   clauses_removable.push(real_reason);
+  // AJR: here (line 467)? commented
   attachClause(real_reason);
 
   return real_reason;
@@ -556,6 +557,7 @@ bool Solver::addClause_(vec<Lit>& ps, bool removable, ClauseId& id)
           {
             d_pfManager->registerSatLitAssumption(ps[0]);
           }
+          // AJR (line 647): here
         }
         CRef confl = propagate(CHECK_WITHOUT_THEORY);
         if (!(ok = (confl == CRef_Undef)))
@@ -1567,6 +1569,7 @@ lbool Solver::search(int nof_conflicts)
         CRef cr = ca.alloc(assertionLevelOnly() ? assertionLevel : max_level,
                            learnt_clause,
                            true);
+        // AJR: here (line 1850)
         clauses_removable.push(cr);
         attachClause(cr);
         claBumpActivity(ca[cr]);
@@ -2117,6 +2120,7 @@ CRef Solver::updateLemmas() {
         MinisatSatSolver::toSatClause(ca[lemma_ref], satClause);
         d_proxy->notifyClauseInsertedAtLevel(satClause, clauseLevel);
       }
+      // AJR (line 2441): here
       if (removable) {
         clauses_removable.push(lemma_ref);
       } else {
