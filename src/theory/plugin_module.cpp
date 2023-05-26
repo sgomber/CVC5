@@ -17,6 +17,7 @@
 
 #include "smt/env.h"
 #include "theory/trust_substitutions.h"
+#include "expr/skolem_manager.h"
 
 namespace cvc5::internal {
 namespace theory {
@@ -50,13 +51,16 @@ void PluginModule::notifyLemma(TNode n,
                                const std::vector<Node>& sks)
 {
   Trace("ajr-temp") << "Plugin notify " << n << std::endl;
-  // currently ignores the other fields
-  d_plugin->notifyLemma(n);
-  // skolem lemmas
+  // must take original form as a way to remove internal symbols from the lemma
+  Node on = SkolemManager::getOriginalForm(n);
+  d_plugin->notifyLemma(on);
+  // skolem lemmas are also included
   for (const Node& kn : skAsserts)
   {
-    d_plugin->notifyLemma(kn);
+    Node okn = SkolemManager::getOriginalForm(kn);
+    d_plugin->notifyLemma(okn);
   }
+  // currently ignores the other fields, e.g. property and sks
 }
 
 }  // namespace theory
