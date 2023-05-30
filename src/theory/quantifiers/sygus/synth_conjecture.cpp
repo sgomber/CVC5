@@ -246,7 +246,11 @@ void SynthConjecture::assign(Node q)
     }
     d_checkBody = d_checkBody[0][1].negate();
   }
-  d_checkBody = rewrite(bsubs.apply(d_checkBody));
+  d_checkBody = bsubs.apply(d_checkBody);
+  if (!expr::hasAbstractSubterm(d_checkBody))
+  {
+    d_checkBody = rewrite(d_checkBody);
+  }
   if (!d_embedSideCondition.isNull() && !vars.empty())
   {
     d_embedSideCondition = d_embedSideCondition.substitute(

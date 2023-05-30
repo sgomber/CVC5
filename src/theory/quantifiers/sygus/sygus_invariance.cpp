@@ -110,7 +110,7 @@ bool EquivSygusInvarianceTest::invariant(TermDbSygus* tds, Node nvn, Node x)
 {
   TypeNode tn = nvn.getType();
   Node nbv = tds->sygusToBuiltin(nvn, tn);
-  Node nbvr = d_rewriter->extendedRewrite(nbv);
+  Node nbvr = tds->rewriteNode(nbv);
   Trace("sygus-sb-mexp-debug") << "  min-exp check : " << nbv << " -> " << nbvr
                                << std::endl;
   bool exc_arg = false;
@@ -263,7 +263,7 @@ bool IllTypedSygusInvarianceTest::invariant(TermDbSygus* tds, Node nvn, Node x)
 {
   // check if the builtin version was ill-typed
   Node nbv = tds->sygusToBuiltin(nvn);
-  return nbv.getTypeOrNull().isNull();
+  return nbv.getTypeOrNull(true).isNull();
 }
 
 }  // namespace quantifiers

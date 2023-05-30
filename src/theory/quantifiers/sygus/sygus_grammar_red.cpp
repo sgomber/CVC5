@@ -149,10 +149,7 @@ void SygusRedundantCons::getGenericList(TermDbSygus* tds,
   if (index == dt[c].getNumArgs())
   {
     Node gt = tds->mkGeneric(dt, c, pre);
-    if (!expr::hasAbstractSubterm(gt))
-    {
-      gt = extendedRewrite(gt);
-    }
+    gt = tds->rewriteNode(gt);
     terms.push_back(gt);
     return;
   }

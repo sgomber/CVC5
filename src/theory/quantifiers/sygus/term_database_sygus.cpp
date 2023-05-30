@@ -31,6 +31,7 @@
 #include "theory/quantifiers/quantifiers_state.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/rewriter.h"
+#include "expr/node_algorithm.h"
 
 using namespace cvc5::internal::kind;
 
@@ -760,6 +761,11 @@ SygusTypeInfo& TermDbSygus::getTypeInfo(TypeNode tn)
 Node TermDbSygus::rewriteNode(Node n) const
 {
   Trace("sygus-rewrite") << "Rewrite node: " << n << std::endl;
+  // do not rewrite if we have an abstract subterm
+  if (expr::hasAbstractSubterm(n))
+  {
+    return n;
+  }
   Node res;
   if (options().datatypes.sygusRewriter == options::SygusRewriterMode::EXTENDED)
   {
@@ -1019,7 +1025,7 @@ Node TermDbSygus::evaluateBuiltin(TypeNode tn,
 {
   if (args.empty())
   {
-    return rewrite(bn);
+    return rewriteNode(bn);
   }
   Assert(isRegistered(tn));
   SygusTypeInfo& ti = getTypeInfo(tn);
@@ -1027,7 +1033,7 @@ Node TermDbSygus::evaluateBuiltin(TypeNode tn,
   Assert(varlist.size() == args.size());
 
   Node res;
-  if (tryEval)
+  if (tryEval && !expr::hasAbstractSubterm(bn))
   {
     // Try evaluating, which is much faster than substitution+rewriting.
     // This may fail if there is a subterm of bn under the

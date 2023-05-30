@@ -1063,7 +1063,7 @@ Node SygusExtension::registerSearchValue(Node a,
                             << ", type=" << tn << std::endl;
     Node bv = d_tds->sygusToBuiltin(cnv, tn);
     Trace("sygus-sb-debug") << "  ......builtin is " << bv << std::endl;
-    if (bv.getTypeOrNull().isNull())
+    if (bv.getTypeOrNull(true).isNull())
     {
       quantifiers::IllTypedSygusInvarianceTest itit(d_env.getRewriter());
       Trace("sygus-sb-mexp-debug")
