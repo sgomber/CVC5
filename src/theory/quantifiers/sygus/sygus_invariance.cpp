@@ -263,7 +263,14 @@ bool IllTypedSygusInvarianceTest::invariant(TermDbSygus* tds, Node nvn, Node x)
 {
   // check if the builtin version was ill-typed
   Node nbv = tds->sygusToBuiltin(nvn);
-  return nbv.getTypeOrNull(true).isNull();
+  if (nbv.getTypeOrNull(true).isNull())
+  {
+    Trace("sygus-sb-mexp") << "sb-min-exp : " << tds->sygusToBuiltin(nvn)
+                           << " is ill-typed regardless of the content of "
+                           << tds->sygusToBuiltin(x) << std::endl;
+    return true;
+  }
+  return false;
 }
 
 }  // namespace quantifiers
