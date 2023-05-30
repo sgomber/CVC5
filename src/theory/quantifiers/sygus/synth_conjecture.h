@@ -149,6 +149,7 @@ class SynthConjecture : protected EnvObj
 
   /** exclude the current solution { enums -> values } due to id */
   void excludeCurrentSolution(const std::vector<Node>& values, InferenceId id);
+
  private:
   /** do refinement
    *

@@ -35,32 +35,35 @@ bool SygusModule::isTypeOk(const std::vector<Node>& candidate_values) const
 {
   // check the side condition if we constructed a candidate
   Node quant = d_parent->getConjecture();
-    Trace("sygus-engine-debug")  << "Check types" << std::endl;
-    // check type constraints
-    for (size_t i = 0, size = candidate_values.size(); i < size; i++)
-    {
-    const TypeNode& stn = candidate_values[i].getType().getDType().getSygusType();
+  Trace("sygus-engine-debug") << "Check types" << std::endl;
+  // check type constraints
+  for (size_t i = 0, size = candidate_values.size(); i < size; i++)
+  {
+    const TypeNode& stn =
+        candidate_values[i].getType().getDType().getSygusType();
     if (!stn.isAbstract())
     {
-    continue;
+      continue;
     }
     // check if the type is met
     Node bnv = d_tds->sygusToBuiltin(candidate_values[i]);
     TypeNode expectedRange = quant[0][i].getType();
     if (expectedRange.isFunction())
     {
-    expectedRange = expectedRange.getRangeType();
+      expectedRange = expectedRange.getRangeType();
     }
-    if (bnv.getType()!=expectedRange)
+    if (bnv.getType() != expectedRange)
     {
-    Trace("sygus-engine") << "...failed type " << bnv << " : " << bnv.getType() << ", expected " << expectedRange << std::endl;
-    d_parent->excludeCurrentSolution(candidate_values,
-                            InferenceId::QUANTIFIERS_SYGUS_RETURN_TYPE_EXCLUDE_CURRENT);
-    return false;
+      Trace("sygus-engine")
+          << "...failed type " << bnv << " : " << bnv.getType() << ", expected "
+          << expectedRange << std::endl;
+      d_parent->excludeCurrentSolution(
+          candidate_values,
+          InferenceId::QUANTIFIERS_SYGUS_RETURN_TYPE_EXCLUDE_CURRENT);
+      return false;
     }
-}
-return true;
-
+  }
+  return true;
 }
 
 }  // namespace quantifiers
