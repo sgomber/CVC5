@@ -136,7 +136,8 @@ Node mkSygusTerm(const DType& dt,
     }
   }
   Node ret = mkSygusTerm(opn, children, doBetaReduction);
-  Assert(ret.getTypeOrNull(true).isNull() || ret.getType().isComparableTo(dt.getSygusType()));
+  Assert(ret.getTypeOrNull(true).isNull()
+         || ret.getType().isComparableTo(dt.getSygusType()));
   return ret;
 }
 

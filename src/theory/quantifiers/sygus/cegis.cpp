@@ -70,8 +70,9 @@ bool Cegis::initialize(Node conj, Node n, const std::vector<Node>& candidates)
     {
       TypeNode tn = v.getType();
       // TODO: subfield types
-      Trace("ajr-temp") << "Check " << tn << " " << tn.getDType().getSygusType() << std::endl;
-      Assert (tn.isSygusDatatype());
+      Trace("ajr-temp") << "Check " << tn << " " << tn.getDType().getSygusType()
+                        << std::endl;
+      Assert(tn.isSygusDatatype());
       if (!tn.getDType().getSygusType().isClosedEnumerable())
       {
         d_cexClosedEnum = false;

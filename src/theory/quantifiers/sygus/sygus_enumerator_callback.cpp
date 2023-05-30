@@ -50,7 +50,8 @@ bool SygusEnumeratorCallback::addTerm(const Node& n,
     Trace("sygus-enum-exc") << "Exclude (by type check): " << bn << std::endl;
     return false;
   }
-  Trace("sygus-enum-exc") << "Add term : " << bn << " " << bn.getTypeOrNull(true) << std::endl;
+  Trace("sygus-enum-exc") << "Add term : " << bn << " "
+                          << bn.getTypeOrNull(true) << std::endl;
   Node bnr = d_tds == nullptr ? extendedRewrite(bn) : d_tds->rewriteNode(bn);
   if (d_stats != nullptr)
   {

@@ -1241,7 +1241,8 @@ TypeNode NodeTemplate<ref_count>::getType(bool check) const
     std::stringstream errOutTmp;
     tn = NodeManager::currentNM()->getType(*this, check, &errOutTmp);
     /*
-    AlwaysAssert(false) << "Node failed to type check: " << *this << " with message " << errOutTmp.str();
+    AlwaysAssert(false) << "Node failed to type check: " << *this << " with
+    message " << errOutTmp.str();
     */
     throw TypeCheckingExceptionPrivate(*this, errOutTmp.str());
   }

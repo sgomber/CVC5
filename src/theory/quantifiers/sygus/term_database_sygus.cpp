@@ -19,6 +19,7 @@
 
 #include "base/check.h"
 #include "expr/dtype_cons.h"
+#include "expr/node_algorithm.h"
 #include "expr/skolem_manager.h"
 #include "expr/sygus_datatype.h"
 #include "options/base_options.h"
@@ -31,7 +32,6 @@
 #include "theory/quantifiers/quantifiers_state.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/rewriter.h"
-#include "expr/node_algorithm.h"
 
 using namespace cvc5::internal::kind;
 

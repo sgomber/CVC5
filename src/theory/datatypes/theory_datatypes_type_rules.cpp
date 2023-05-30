@@ -21,13 +21,13 @@
 #include "expr/codatatype_bound_variable.h"
 #include "expr/dtype.h"
 #include "expr/dtype_cons.h"
+#include "expr/node_algorithm.h"
 #include "expr/type_matcher.h"
 #include "theory/datatypes/project_op.h"
-#include "theory/datatypes/theory_datatypes_utils.h"
 #include "theory/datatypes/sygus_datatype_utils.h"
+#include "theory/datatypes/theory_datatypes_utils.h"
 #include "theory/datatypes/tuple_utils.h"
 #include "util/rational.h"
-#include "expr/node_algorithm.h"
 
 namespace cvc5::internal {
 namespace theory {
@@ -489,14 +489,16 @@ TypeNode DtSygusEvalTypeRule::computeType(NodeManager* nodeManager,
     }
   }
   TypeNode tn = dt.getSygusType();
-  // if abstract type, then we consult the builtin equivalent of the first argument.
+  // if abstract type, then we consult the builtin equivalent of the first
+  // argument.
   if (tn.isAbstract())
   {
     Node bn = utils::sygusToBuiltin(n[0]);
     // don't consider abstract subterms
     if (!expr::hasAbstractSubterm(bn))
     {
-      Trace("ajr-temp") << "Type check " << n << " via " << bn << " " << bn.getTypeOrNull(true) << std::endl;
+      Trace("ajr-temp") << "Type check " << n << " via " << bn << " "
+                        << bn.getTypeOrNull(true) << std::endl;
       TypeNode btn = bn.getTypeOrNull(true);
       // if the type cannot be computed, we return the original type below
       if (!btn.isNull())

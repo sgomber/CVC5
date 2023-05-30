@@ -146,7 +146,7 @@ RewriteResponse DatatypesRewriter::postRewrite(TNode in)
       }
       Node ret = sygusToBuiltinEval(ev, args);
       // should not introduce abstract subterms
-      Assert (!expr::hasAbstractSubterm(ret));
+      Assert(!expr::hasAbstractSubterm(ret));
       Trace("dt-sygus-util") << "...got " << ret << "\n";
       Trace("dt-sygus-util") << "Type is " << ret.getType() << std::endl;
       Assert(in.getType().isComparableTo(ret.getType()));
