@@ -117,6 +117,7 @@ void Smt2State::addBitvectorOperators()
   addOperator(BITVECTOR_USUBO, "bvusubo");
   addOperator(BITVECTOR_SSUBO, "bvssubo");
   addOperator(BITVECTOR_SDIVO, "bvsdivo");
+  addOperator(BITVECTOR_ITE, "bvite");
 
   addIndexedOperator(BITVECTOR_EXTRACT, "extract");
   addIndexedOperator(BITVECTOR_REPEAT, "repeat");
@@ -917,6 +918,23 @@ void Smt2State::setLogic(std::string name)
     defineVar("roundTowardZero", d_solver->mkRoundingMode(ROUND_TOWARD_ZERO));
 
     addFloatingPointOperators();
+  }
+
+  if (!strictModeEnabled())
+  {
+    // gradual types
+    defineType("?", d_solver->mkAbstractSort(ABSTRACT_SORT), true);
+    defineType("?Array", d_solver->mkAbstractSort(ARRAY_SORT), true);
+    defineType("?Bag", d_solver->mkAbstractSort(BAG_SORT), true);
+    defineType("?Tuple", d_solver->mkAbstractSort(TUPLE_SORT), true);
+    defineType(
+        "?FiniteField", d_solver->mkAbstractSort(FINITE_FIELD_SORT), true);
+    defineType("?->", d_solver->mkAbstractSort(FUNCTION_SORT), true);
+    defineType("?Seq", d_solver->mkAbstractSort(SEQUENCE_SORT), true);
+    defineType("?Set", d_solver->mkAbstractSort(SET_SORT), true);
+    defineType("?BitVec", d_solver->mkAbstractSort(BITVECTOR_SORT), true);
+    defineType(
+        "?FloatingPoint", d_solver->mkAbstractSort(FLOATINGPOINT_SORT), true);
   }
 
   if (d_logic.isTheoryEnabled(internal::theory::THEORY_FF))
