@@ -1231,7 +1231,9 @@ void SygusExtension::registerSymBreakLemma(TypeNode tn,
   Trace("sygus-sb-debug") << "     size : " << sz << std::endl;
   Assert(!a.isNull());
   SearchCache& sca = d_cache[a];
-  sca.d_sbLemmas[tn][sz].push_back(lem);
+  std::vector<Node>& sbl = sca.d_sbLemmas[tn][sz];
+  sbl.push_back(lem);
+  size_t nlemmas =sbl.size();
   TNode x = getFreeVar( tn );
   unsigned csz = getSearchSizeForAnchor( a );
   int max_depth = ((int)csz)-((int)sz);
@@ -1253,6 +1255,8 @@ void SygusExtension::registerSymBreakLemma(TypeNode tn,
             slem = nm->mkNode(OR, rlv, slem);
           }
           d_im.lemma(slem, InferenceId::DATATYPES_SYGUS_SYM_BREAK);
+          // stays up to date
+          sca.d_sbLemmaProc[tn][sz][t] = nlemmas;
         }
       }
     }
@@ -1294,16 +1298,23 @@ void SygusExtension::addSymBreakLemmasFor(TypeNode tn,
     {
       if (sbls.first <= max_sz)
       {
-        for (const Node& lem : sbls.second)
+        std::map<Node, size_t>& sclp = sca.d_sbLemmaProc[tn][sbls.first];
+        size_t nlemmas = sbls.second.size();
+        size_t startIndex = sclp[t];
+        Trace("sygus-sb-debug2") << "start index " << startIndex << std::endl;
+        for (size_t i = startIndex; i<nlemmas; i++)
         {
-          Node slem = lem.substitute(x, t, cache);
+          Node slem = sbls.second[i].substitute(x, t, cache);
           // add the relevancy condition for t
           if (!rlv.isNull())
           {
             slem = nm->mkNode(OR, rlv, slem);
           }
-          d_im.lemma(slem, InferenceId::DATATYPES_SYGUS_SYM_BREAK);
+          Trace("sygus-sb-debug2") << "...slem is " << slem << std::endl;
+          bool success = d_im.lemma(slem, InferenceId::DATATYPES_SYGUS_SYM_BREAK);
+          AlwaysAssert(success);
         }
+        sclp[t] = nlemmas;
       }
     }
   }
@@ -1501,9 +1512,11 @@ void SygusExtension::incrementCurrentSearchSize(TNode m)
       {
         TypeNode tn = sbl.first;
         TNode x = getFreeVar( tn );
+        std::map<uint64_t, std::map<Node, size_t>> sblp = itc->second.d_sbLemmaProc[tn];
         for (std::pair<const uint64_t, std::vector<Node>>& s : sbl.second)
         {
           unsigned sz = s.first;
+          std::map<Node, size_t>& sblps = sblp[sz];
           int new_depth = ((int)itsz->second->d_curr_search_size) - ((int)sz);
           std::map< unsigned, std::vector< Node > >::iterator itt = itc->second.d_search_terms[tn].find( new_depth );
           if( itt!=itc->second.d_search_terms[tn].end() ){
@@ -1524,6 +1537,7 @@ void SygusExtension::incrementCurrentSearchSize(TNode m)
                   }
                   d_im.lemma(slem, InferenceId::DATATYPES_SYGUS_SYM_BREAK);
                 }
+                sblps[t] = s.second.size();
               }
             }
           }
