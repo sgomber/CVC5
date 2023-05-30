@@ -193,7 +193,8 @@ private:
     std::map< TypeNode, std::map< unsigned, std::vector< Node > > > d_search_terms;
     /** A cache of all symmetry breaking lemma templates for (types, sizes). */
     std::map<TypeNode, std::map<uint64_t, std::vector<Node>>> d_sbLemmas;
-    std::map<TypeNode, std::map<uint64_t, std::map<Node, size_t>>> d_sbLemmaProc;
+    std::map<TypeNode, std::map<uint64_t, std::map<Node, size_t>>>
+        d_sbLemmaProc;
     /** search value
      *
      * For each sygus type, a map from a builtin term to a sygus term for that

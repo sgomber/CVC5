@@ -1233,7 +1233,7 @@ void SygusExtension::registerSymBreakLemma(TypeNode tn,
   SearchCache& sca = d_cache[a];
   std::vector<Node>& sbl = sca.d_sbLemmas[tn][sz];
   sbl.push_back(lem);
-  size_t nlemmas =sbl.size();
+  size_t nlemmas = sbl.size();
   TNode x = getFreeVar( tn );
   unsigned csz = getSearchSizeForAnchor( a );
   int max_depth = ((int)csz)-((int)sz);
@@ -1302,7 +1302,7 @@ void SygusExtension::addSymBreakLemmasFor(TypeNode tn,
         size_t nlemmas = sbls.second.size();
         size_t startIndex = sclp[t];
         Trace("sygus-sb-debug2") << "start index " << startIndex << std::endl;
-        for (size_t i = startIndex; i<nlemmas; i++)
+        for (size_t i = startIndex; i < nlemmas; i++)
         {
           Node slem = sbls.second[i].substitute(x, t, cache);
           // add the relevancy condition for t
@@ -1311,7 +1311,8 @@ void SygusExtension::addSymBreakLemmasFor(TypeNode tn,
             slem = nm->mkNode(OR, rlv, slem);
           }
           Trace("sygus-sb-debug2") << "...slem is " << slem << std::endl;
-          bool success = d_im.lemma(slem, InferenceId::DATATYPES_SYGUS_SYM_BREAK);
+          bool success =
+              d_im.lemma(slem, InferenceId::DATATYPES_SYGUS_SYM_BREAK);
           AlwaysAssert(success);
         }
         sclp[t] = nlemmas;
@@ -1512,7 +1513,8 @@ void SygusExtension::incrementCurrentSearchSize(TNode m)
       {
         TypeNode tn = sbl.first;
         TNode x = getFreeVar( tn );
-        std::map<uint64_t, std::map<Node, size_t>> sblp = itc->second.d_sbLemmaProc[tn];
+        std::map<uint64_t, std::map<Node, size_t>> sblp =
+            itc->second.d_sbLemmaProc[tn];
         for (std::pair<const uint64_t, std::vector<Node>>& s : sbl.second)
         {
           unsigned sz = s.first;
