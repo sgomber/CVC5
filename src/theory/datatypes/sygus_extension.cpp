@@ -1066,8 +1066,8 @@ Node SygusExtension::registerSearchValue(Node a,
     if (bv.getTypeOrNull().isNull())
     {
       quantifiers::IllTypedSygusInvarianceTest itit(d_env.getRewriter());
-      Trace("sygus-sb-mexp-debug") << "Minimize explanation for ill-typedness in "
-                                   << bv << std::endl;
+      Trace("sygus-sb-mexp-debug")
+          << "Minimize explanation for ill-typedness in " << bv << std::endl;
       registerSymBreakLemmaForValue(a, nv, itit, Node::null(), var_count);
       return Node::null();
     }

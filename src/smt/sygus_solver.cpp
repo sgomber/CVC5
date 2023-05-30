@@ -20,6 +20,7 @@
 #include "base/modal_exception.h"
 #include "expr/dtype.h"
 #include "expr/dtype_cons.h"
+#include "expr/node_algorithm.h"
 #include "expr/skolem_manager.h"
 #include "options/base_options.h"
 #include "options/option_exception.h"
@@ -35,7 +36,6 @@
 #include "theory/quantifiers_engine.h"
 #include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
-#include "expr/node_algorithm.h"
 
 using namespace cvc5::internal::theory;
 using namespace cvc5::internal::kind;
