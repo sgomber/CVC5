@@ -485,6 +485,7 @@ bool SynthConjecture::doCheck()
 
   if (constructed_cand)
   {
+    // check the side condition if we constructed a candidate
     if (!checkSideCondition(candidate_values))
     {
       excludeCurrentSolution(candidate_values,

@@ -340,6 +340,8 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
       return ret;
     }
   }
+
+  // check whether the types are ok first before evaluating
   if (!isTypeOk(enum_values))
   {
     return false;

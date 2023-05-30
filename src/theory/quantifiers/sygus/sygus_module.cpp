@@ -33,7 +33,6 @@ SygusModule::SygusModule(Env& env,
 
 bool SygusModule::isTypeOk(const std::vector<Node>& candidate_values) const
 {
-  // check the side condition if we constructed a candidate
   Node quant = d_parent->getConjecture();
   Trace("sygus-engine-debug") << "Check types" << std::endl;
   // check type constraints
