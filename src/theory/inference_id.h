@@ -389,8 +389,8 @@ enum class InferenceId
   //-------------------- sygus solver
   // G or ~G where G is the active guard for a sygus enumerator
   QUANTIFIERS_SYGUS_ENUM_ACTIVE_GUARD_SPLIT,
-  // manual exclusion of a current solution
-  QUANTIFIERS_SYGUS_EXCLUDE_CURRENT,
+  // manual exclusion of a current solution for an actively generated enumerator
+  QUANTIFIERS_SYGUS_ACTIVE_GEN_EXCLUDE_CURRENT,
   // manual exclusion of a current solution for sygus-stream
   QUANTIFIERS_SYGUS_STREAM_EXCLUDE_CURRENT,
   // manual exclusion of a current solution for incremental sygus
@@ -401,6 +401,8 @@ enum class InferenceId
   QUANTIFIERS_SYGUS_NO_VERIFY_EXCLUDE_CURRENT,
   // manual exclusion of a current solution for a repeated counterexample
   QUANTIFIERS_SYGUS_REPEAT_CEX_EXCLUDE_CURRENT,
+  // manual exclusion of a current solution due to a wrong return type
+  QUANTIFIERS_SYGUS_RETURN_TYPE_EXCLUDE_CURRENT,
   // ~Q where Q is a PBE conjecture with conflicting examples
   QUANTIFIERS_SYGUS_EXAMPLE_INFER_CONTRA,
   // infeasible determined by single-invocation solver
