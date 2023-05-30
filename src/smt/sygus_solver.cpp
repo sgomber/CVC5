@@ -35,6 +35,7 @@
 #include "theory/quantifiers_engine.h"
 #include "theory/rewriter.h"
 #include "theory/smt_engine_subsolver.h"
+#include "expr/node_algorithm.h"
 
 using namespace cvc5::internal::theory;
 using namespace cvc5::internal::kind;

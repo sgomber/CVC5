@@ -1063,6 +1063,14 @@ Node SygusExtension::registerSearchValue(Node a,
                             << ", type=" << tn << std::endl;
     Node bv = d_tds->sygusToBuiltin(cnv, tn);
     Trace("sygus-sb-debug") << "  ......builtin is " << bv << std::endl;
+    if (bv.getTypeOrNull().isNull())
+    {
+      quantifiers::IllTypedSygusInvarianceTest itit(d_env.getRewriter());
+      Trace("sygus-sb-mexp-debug") << "Minimize explanation for ill-typedness in "
+                                   << bv << std::endl;
+      registerSymBreakLemmaForValue(a, nv, itit, Node::null(), var_count);
+      return Node::null();
+    }
     Node bvr = d_tds->rewriteNode(bv);
     Trace("sygus-sb-debug") << "  ......search value rewrites to " << bvr << std::endl;
     Trace("dt-sygus") << "  * DT builtin : " << n << " -> " << bvr << std::endl;

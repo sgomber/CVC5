@@ -107,7 +107,7 @@ void SynthConjecture::presolve()
   // a new, next solution in their enumeration.
   if (d_hasSolution)
   {
-    excludeCurrentSolution(d_solutionValues.back());
+    excludeCurrentSolution(d_solutionValues.back(), InferenceId::QUANTIFIERS_SYGUS_INC_EXCLUDE_CURRENT);
     // we don't have a solution yet
     d_hasSolution = false;
     d_computedSolution = false;
@@ -486,7 +486,7 @@ bool SynthConjecture::doCheck()
   {
     if (!checkSideCondition(candidate_values))
     {
-      excludeCurrentSolution(candidate_values);
+      excludeCurrentSolution(candidate_values, InferenceId::QUANTIFIERS_SYGUS_SC_EXCLUDE_CURRENT);
       Trace("sygus-engine") << "...failed side condition" << std::endl;
       return false;
     }
@@ -574,7 +574,7 @@ bool SynthConjecture::doCheck()
     // In the rare case that the subcall is unknown, we simply exclude the
     // solution, without adding a counterexample point. This should only
     // happen if the quantifier free logic is undecidable.
-    excludeCurrentSolution(candidate_values);
+    excludeCurrentSolution(candidate_values, InferenceId::QUANTIFIERS_SYGUS_NO_VERIFY_EXCLUDE_CURRENT);
     // We should set refutation unsound, since an "unsat" answer should not be
     // interpreted as "infeasible", which would make a difference in the rare
     // case where e.g. we had a finite grammar and exhausted the grammar.
@@ -593,7 +593,7 @@ bool SynthConjecture::doCheck()
   if (runExprMiner())
   {
     // excluded due to expression mining
-    excludeCurrentSolution(candidate_values);
+    excludeCurrentSolution(candidate_values, InferenceId::QUANTIFIERS_SYGUS_STREAM_EXCLUDE_CURRENT);
     // streaming means now we immediately are looking for a new solution
     d_hasSolution = false;
     d_computedSolution = false;
@@ -664,7 +664,7 @@ bool SynthConjecture::processCounterexample(const std::vector<Node>& skModel)
                                 << std::endl;
     std::vector<Node> cvals = d_solutionValues.back();
     // something went wrong, exclude the current candidate
-    excludeCurrentSolution(cvals);
+    excludeCurrentSolution(cvals, InferenceId::QUANTIFIERS_SYGUS_REPEAT_CEX_EXCLUDE_CURRENT);
     // Note this happens when evaluation is incapable of disproving a candidate
     // for counterexample point c, but satisfiability checking happened to find
     // the the same point c is indeed a true counterexample. It is sound
@@ -773,8 +773,8 @@ void SynthConjecture::debugPrint(const char* c)
   Trace(c) << "  * Candidate programs : " << d_candidates << std::endl;
   Trace(c) << "  * Counterexample skolems : " << d_innerSks << std::endl;
 }
-
-void SynthConjecture::excludeCurrentSolution(const std::vector<Node>& values)
+ 
+void SynthConjecture::excludeCurrentSolution(const std::vector<Node>& values, InferenceId id)
 {
   Assert(values.size() == d_candidates.size());
   Trace("cegqi-debug") << "Exclude current solution: " << values << std::endl;
@@ -799,9 +799,9 @@ void SynthConjecture::excludeCurrentSolution(const std::vector<Node>& values)
                        ? exp[0]
                        : NodeManager::currentNM()->mkNode(kind::AND, exp);
     exc_lem = exc_lem.negate();
-    Trace("cegqi-lemma") << "Cegqi::Lemma : stream exclude current solution : "
-                         << exc_lem << std::endl;
-    d_qim.lemma(exc_lem, InferenceId::QUANTIFIERS_SYGUS_STREAM_EXCLUDE_CURRENT);
+    Trace("cegqi-lemma") << "Cegqi::Lemma : exclude current solution : "
+                         << exc_lem << " by " << id << std::endl;
+    d_qim.lemma(exc_lem, id);
   }
 }
 

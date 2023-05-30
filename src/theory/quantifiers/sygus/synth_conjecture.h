@@ -329,8 +329,8 @@ class SynthConjecture : protected EnvObj
    */
   bool runExprMiner();
   //-------------------------------- sygus stream
-  /** exclude the current solution { enums -> values } */
-  void excludeCurrentSolution(const std::vector<Node>& values);
+  /** exclude the current solution { enums -> values } due to id */
+  void excludeCurrentSolution(const std::vector<Node>& values, InferenceId id);
   //-------------------------------- end sygus stream
   /** expression miner managers for each function-to-synthesize
    *

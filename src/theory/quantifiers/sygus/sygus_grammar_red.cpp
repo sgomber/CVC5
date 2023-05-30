@@ -20,6 +20,7 @@
 #include "expr/sygus_datatype.h"
 #include "options/quantifiers_options.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
+#include "expr/node_algorithm.h"
 #include "theory/quantifiers/term_util.h"
 #include "theory/rewriter.h"
 
@@ -147,8 +148,11 @@ void SygusRedundantCons::getGenericList(TermDbSygus* tds,
 {
   if (index == dt[c].getNumArgs())
   {
-    Node gt = tds->mkGeneric(dt, c, pre);
-    gt = extendedRewrite(gt);
+    Node gt = tds->mkGeneric(dt, c, pre);      
+    if (!expr::hasAbstractSubterm(gt))
+    {
+      gt = extendedRewrite(gt);
+    }
     terms.push_back(gt);
     return;
   }

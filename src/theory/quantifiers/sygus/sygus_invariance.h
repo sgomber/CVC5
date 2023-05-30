@@ -306,6 +306,25 @@ class NegContainsSygusInvarianceTest : public SygusInvarianceTest
   bool d_isUniversal;
 };
 
+/** IllTypedSygusInvarianceTest
+ *
+ * This class tests whether a sygus term is ill typed
+ *
+ * For example the test for:
+ *    (ite (= x y) x b)
+ * where x is Int and b is (_ BitVec 32) is invariant on the contents of _:
+ *    (ite _ x b)
+ */
+class IllTypedSygusInvarianceTest : public SygusInvarianceTest
+{
+ public:
+  IllTypedSygusInvarianceTest(Rewriter* r) : SygusInvarianceTest(r) {}
+
+ protected:
+  /** checks whether nvn is ill typed. */
+  bool invariant(TermDbSygus* tds, Node nvn, Node x) override;
+};
+
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5::internal

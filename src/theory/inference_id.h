@@ -393,6 +393,14 @@ enum class InferenceId
   QUANTIFIERS_SYGUS_EXCLUDE_CURRENT,
   // manual exclusion of a current solution for sygus-stream
   QUANTIFIERS_SYGUS_STREAM_EXCLUDE_CURRENT,
+  // manual exclusion of a current solution for incremental sygus
+  QUANTIFIERS_SYGUS_INC_EXCLUDE_CURRENT,
+  // manual exclusion of a current solution for a failed side condition
+  QUANTIFIERS_SYGUS_SC_EXCLUDE_CURRENT,
+  // manual exclusion of a current solution for a failed verification
+  QUANTIFIERS_SYGUS_NO_VERIFY_EXCLUDE_CURRENT,
+  // manual exclusion of a current solution for a repeated counterexample
+  QUANTIFIERS_SYGUS_REPEAT_CEX_EXCLUDE_CURRENT,
   // ~Q where Q is a PBE conjecture with conflicting examples
   QUANTIFIERS_SYGUS_EXAMPLE_INFER_CONTRA,
   // infeasible determined by single-invocation solver

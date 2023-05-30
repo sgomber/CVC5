@@ -259,6 +259,13 @@ bool NegContainsSygusInvarianceTest::invariant(TermDbSygus* tds,
   return d_isUniversal;
 }
 
+bool IllTypedSygusInvarianceTest::invariant(TermDbSygus* tds, Node nvn, Node x)
+{
+  // check if the builtin version was ill-typed
+  Node nbv = tds->sygusToBuiltin(nvn);
+  return nbv.getTypeOrNull().isNull();
+}
+
 }  // namespace quantifiers
 }  // namespace theory
 }  // namespace cvc5::internal
