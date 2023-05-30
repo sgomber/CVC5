@@ -45,6 +45,11 @@ bool SygusEnumeratorCallback::addTerm(const Node& n,
                                       std::unordered_set<Node>& bterms)
 {
   Node bn = datatypes::utils::sygusToBuiltin(n);
+  if (bn.getTypeOrNull().isNull())
+  {
+    Trace("sygus-enum-exc") << "Exclude (by type check): " << bn << std::endl;
+    return false;
+  }
   Node bnr = d_tds == nullptr ? extendedRewrite(bn) : d_tds->rewriteNode(bn);
   if (d_stats != nullptr)
   {
