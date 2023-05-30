@@ -233,7 +233,7 @@ void SynthConjecture::assign(Node q)
   // construct base instantiation
   Subs bsubs;
   bsubs.add(vars, d_candidates);
-  d_base_inst = rewrite(bsubs.apply(d_embed_quant[1]));
+  d_base_inst = d_tds->rewriteNode(bsubs.apply(d_embed_quant[1]));
   d_checkBody = d_embed_quant[1];
   if (d_checkBody.getKind() == NOT && d_checkBody[0].getKind() == FORALL)
   {
@@ -247,10 +247,7 @@ void SynthConjecture::assign(Node q)
     d_checkBody = d_checkBody[0][1].negate();
   }
   d_checkBody = bsubs.apply(d_checkBody);
-  if (!expr::hasAbstractSubterm(d_checkBody))
-  {
-    d_checkBody = rewrite(d_checkBody);
-  }
+  d_checkBody = d_tds->rewriteNode(d_checkBody);
   if (!d_embedSideCondition.isNull() && !vars.empty())
   {
     d_embedSideCondition = d_embedSideCondition.substitute(
@@ -456,7 +453,7 @@ bool SynthConjecture::doCheck()
             if (TraceIsOn("sygus-engine-rr"))
             {
               Node bv = d_tds->sygusToBuiltin(nv, tn);
-              bv = rewrite(bv);
+              bv = d_tds->rewriteNode(bv);
               Trace("sygus-engine-rr") << " -> " << bv << std::endl;
             }
           }

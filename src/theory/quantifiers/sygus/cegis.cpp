@@ -63,6 +63,22 @@ bool Cegis::initialize(Node conj, Node n, const std::vector<Node>& candidates)
     }
     d_base_body = d_base_body[0][1];
   }
+  if (d_cexClosedEnum)
+  {
+    // also must consider grammars
+    for (const Node& v : candidates)
+    {
+      TypeNode tn = v.getType();
+      // TODO: subfield types
+      Trace("ajr-temp") << "Check " << tn << " " << tn.getDType().getSygusType() << std::endl;
+      Assert (tn.isSygusDatatype());
+      if (!tn.getDType().getSygusType().isClosedEnumerable())
+      {
+        d_cexClosedEnum = false;
+        break;
+      }
+    }
+  }
 
   // assign the cegis sampler if applicable
   if (options().quantifiers.cegisSample != options::CegisSampleMode::NONE)
@@ -398,7 +414,7 @@ void Cegis::addRefinementLemmaConjunct(unsigned wcounter,
                                        std::vector<Node>& waiting)
 {
   Node lem = waiting[wcounter];
-  lem = rewrite(lem);
+  lem = d_tds->rewriteNode(lem);
   // apply substitution and rewrite if applicable
   if (lem.isConst())
   {
@@ -628,7 +644,7 @@ bool Cegis::checkRefinementEvalLemmas(const std::vector<Node>& vs,
       for (unsigned j = 0, psize = vsProc.size(); j < psize; j++)
       {
         evalVisited[vsProc[j]] = msProc[j];
-        Assert(vsProc[j].getType() == msProc[j].getType());
+        Assert(vsProc[j].getType().isComparableTo(msProc[j].getType()));
       }
     }
   }

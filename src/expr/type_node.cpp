@@ -247,7 +247,7 @@ bool TypeNode::isClosedEnumerable()
   {
     bool ret = true;
     if (isArray() || isUninterpretedSort() || isCodatatype() || isFunction()
-        || isRegExp())
+        || isRegExp() || isAbstract())
     {
       ret = false;
     }

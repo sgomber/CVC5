@@ -279,6 +279,7 @@ void TheoryEngine::preRegister(TNode preprocessed) {
   Trace("theory") << "TheoryEngine::preRegister( " << preprocessed << ")"
                   << std::endl;
   d_preregisterQueue.push(preprocessed);
+  Assert(!expr::hasAbstractSubterm(preprocessed));
 
   if (!d_inPreregister) {
     // We're in pre-register

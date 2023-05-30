@@ -60,11 +60,11 @@ bool EvalSygusInvarianceTest::invariant(TermDbSygus* tds, Node nvn, Node x)
     // Ensure ref counted for now since we are reusing the cache for substitute
     // in this loop
     keep.push_back(conj_subs);
+    Trace("sygus-cref-eval2-debug")
+        << "  ......check unfolding : " << conj_subs << std::endl;
     Node conj_subs_unfold = tds->rewriteNode(conj_subs);
     Trace("sygus-cref-eval2-debug")
-        << "  ...check unfolding : " << conj_subs_unfold << std::endl;
-    Trace("sygus-cref-eval2-debug")
-        << "  ......from : " << conj_subs << std::endl;
+        << "  ...check unfolding rewritten : " << conj_subs_unfold << std::endl;
     if (conj_subs_unfold != d_result)
     {
       if (d_is_conjunctive)
