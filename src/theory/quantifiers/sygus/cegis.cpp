@@ -340,6 +340,10 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
       return ret;
     }
   }
+  if (!isTypeOk(enum_values))
+  {
+    return false;
+  }
 
   // evaluate on refinement lemmas
   bool addedEvalLemmas = addEvalLemmas(enums, enum_values);

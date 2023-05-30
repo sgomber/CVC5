@@ -483,7 +483,6 @@ bool SynthConjecture::doCheck()
     }
   }
 
-  // check the side condition if we constructed a candidate
   if (constructed_cand)
   {
     if (!checkSideCondition(candidate_values))
