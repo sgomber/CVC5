@@ -314,7 +314,7 @@ std::unique_ptr<Command> Smt2CmdParser::parseNextCommand()
       }
       tok = d_lex.peekToken();
       std::string binName;
-      if (tok!=Token::RPAREN_TOK)
+      if (tok != Token::RPAREN_TOK)
       {
         binName = d_tparser.parseSymbol(CHECK_NONE, SYM_VARIABLE);
       }
