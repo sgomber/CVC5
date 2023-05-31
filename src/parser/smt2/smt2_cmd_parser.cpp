@@ -299,7 +299,7 @@ std::unique_ptr<Command> Smt2CmdParser::parseNextCommand()
       d_lex.eatToken(Token::RPAREN_TOK);
     }
     break;
-    // (declare-oracle-fun <symbol>
+    // (declare-oracle-fun <symbol> (<sort>∗) <sort> <symbol>)
     case Token::DECLARE_ORACLE_FUN_TOK:
     {
       d_state.checkThatLogicIsSet();
