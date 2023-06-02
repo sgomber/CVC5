@@ -518,7 +518,7 @@ bool Solver::addClause_(vec<Lit>& ps, bool removable, ClauseId& id)
           }
           SatClause satClause;
           MinisatSatSolver::toSatClause(ca[cr], satClause);
-          d_proxy->notifyClauseInsertedAtLevel(satClause, clauseLevel);
+          d_proxy->notifySatClauseInsertedAtLevel(satClause, clauseLevel);
         }
         if (options().smt.produceUnsatCores || needProof())
         {
@@ -557,7 +557,10 @@ bool Solver::addClause_(vec<Lit>& ps, bool removable, ClauseId& id)
           {
             d_pfManager->registerSatLitAssumption(ps[0]);
           }
-          // AJR (line 647): here
+          // AJR (line 647)
+          SatClause satClause;
+          satClause.push_back(MinisatSatSolver::toSatLiteral(ps[0]));
+          d_proxy->notifySatClause(satClause);
         }
         CRef confl = propagate(CHECK_WITHOUT_THEORY);
         if (!(ok = (confl == CRef_Undef)))
@@ -1569,7 +1572,10 @@ lbool Solver::search(int nof_conflicts)
         CRef cr = ca.alloc(assertionLevelOnly() ? assertionLevel : max_level,
                            learnt_clause,
                            true);
-        // AJR: here (line 1850)
+        // AJR: (line 1850)
+        SatClause satClause;
+        MinisatSatSolver::toSatClause(ca[cr], satClause);
+        d_proxy->notifySatClause(satClause);
         clauses_removable.push(cr);
         attachClause(cr);
         claBumpActivity(ca[cr]);
@@ -2104,6 +2110,8 @@ CRef Solver::updateLemmas() {
       lemma_ref = ca.alloc(clauseLevel, lemma, removable);
       // notify cnf stream that this clause's proof must be saved to resist
       // context-popping
+      SatClause satClause;
+      MinisatSatSolver::toSatClause(ca[lemma_ref], satClause);
       if (needProof() && clauseLevel < assertionLevel)
       {
         if (TraceIsOn("pf::sat"))
@@ -2116,11 +2124,10 @@ CRef Solver::updateLemmas() {
           Trace("pf::sat") << " clause/assert levels " << clauseLevel << " / "
                            << assertionLevel << "\n";
         }
-        SatClause satClause;
-        MinisatSatSolver::toSatClause(ca[lemma_ref], satClause);
-        d_proxy->notifyClauseInsertedAtLevel(satClause, clauseLevel);
+        d_proxy->notifySatClauseInsertedAtLevel(satClause, clauseLevel);
       }
-      // AJR (line 2441): here
+      // AJR (line 2441)
+      d_proxy->notifySatClause(satClause);
       if (removable) {
         clauses_removable.push(lemma_ref);
       } else {

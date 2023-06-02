@@ -31,10 +31,12 @@
 #include "prop/prop_engine.h"
 #include "prop/skolem_def_manager.h"
 #include "prop/zero_level_learner.h"
+#include "expr/skolem_manager.h"
 #include "smt/env.h"
 #include "theory/rewriter.h"
 #include "theory/theory_engine.h"
 #include "util/statistics_stats.h"
+#include "expr/plugin.h"
 
 namespace cvc5::internal {
 namespace prop {
@@ -292,11 +294,35 @@ void TheoryProxy::notifyCurrPropagationInsertedAtLevel(int explLevel)
       explLevel);
 }
 
-void TheoryProxy::notifyClauseInsertedAtLevel(const SatClause& clause,
+void TheoryProxy::notifySatClauseInsertedAtLevel(const SatClause& clause,
                                               int clLevel)
 {
   d_propEngine->getProofCnfStream()->notifyClauseInsertedAtLevel(clause,
                                                                  clLevel);
+}
+
+void TheoryProxy::notifySatClause(const SatClause& clause)
+{
+  const std::vector<Plugin*>& plugins = d_env.getPlugins();
+  if (plugins.empty())
+  {
+    // nothing to do if no plugins
+    return;
+  }
+  // convert to node
+  std::vector<Node> clauseNodes;
+  for (const SatLiteral& l : clause)
+  {
+    clauseNodes.push_back(d_cnfStream->getNode(l));
+  }
+  Node cln = NodeManager::currentNM()->mkOr(clauseNodes);
+  cln = SkolemManager::getOriginalForm(cln);
+  Trace("prop") << "Clause from SAT solver: " << cln << std::endl;
+  // notify the plugins
+  for (Plugin* p : plugins)
+  {
+    p->notifyLemma(cln);
+  }
 }
 
 void TheoryProxy::enqueueTheoryLiteral(const SatLiteral& l) {

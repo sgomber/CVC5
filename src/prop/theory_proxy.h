@@ -122,7 +122,11 @@ class TheoryProxy : protected EnvObj, public Registrar
    * level could be for example a lemma derived at a prior moment whose
    * assertion the SAT solver delayed.
    */
-  void notifyClauseInsertedAtLevel(const SatClause& clause, int clLevel);
+  void notifySatClauseInsertedAtLevel(const SatClause& clause, int clLevel);
+  /**
+   * Notify clause
+   */
+  void notifySatClause(const SatClause& clause);
 
   void theoryPropagate(SatClause& output);
 
