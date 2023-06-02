@@ -151,7 +151,7 @@ class SygusModule : protected EnvObj
   virtual bool usingRepairConst() { return false; }
 
  protected:
-  /** 
+  /**
    * If in assertion build, check whether type constraints are met, throw an
    * assertion failure otherwise
    */

@@ -55,8 +55,9 @@ void SygusModule::checkTypeOk(const std::vector<Node>& candidate_values) const
     {
       expectedRange = expectedRange.getRangeType();
     }
-    Assert (bnv.getType() == expectedRange) << "...failed type " << bnv << " : " << bnv.getType() << ", expected "
-          << expectedRange;
+    Assert(bnv.getType() == expectedRange)
+        << "...failed type " << bnv << " : " << bnv.getType() << ", expected "
+        << expectedRange;
   }
 }
 
