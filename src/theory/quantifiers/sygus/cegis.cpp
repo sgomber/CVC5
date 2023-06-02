@@ -358,11 +358,8 @@ bool Cegis::constructCandidates(const std::vector<Node>& enums,
     }
   }
 
-  // check whether the types are ok first before evaluating
-  if (!isTypeOk(enum_values))
-  {
-    return false;
-  }
+  // for debugging, check if types are ok
+  checkTypeOk(enum_values);
 
   // evaluate on refinement lemmas
   bool addedEvalLemmas = addEvalLemmas(enums, enum_values);

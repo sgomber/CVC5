@@ -31,8 +31,12 @@ SygusModule::SygusModule(Env& env,
 {
 }
 
-bool SygusModule::isTypeOk(const std::vector<Node>& candidate_values) const
+void SygusModule::checkTypeOk(const std::vector<Node>& candidate_values) const
 {
+  if (!Configuration::isAssertionBuild())
+  {
+    return;
+  }
   Node quant = d_parent->getConjecture();
   Trace("sygus-engine-debug") << "Check types" << std::endl;
   // check type constraints
@@ -51,18 +55,9 @@ bool SygusModule::isTypeOk(const std::vector<Node>& candidate_values) const
     {
       expectedRange = expectedRange.getRangeType();
     }
-    if (bnv.getType() != expectedRange)
-    {
-      Trace("sygus-engine")
-          << "...failed type " << bnv << " : " << bnv.getType() << ", expected "
-          << expectedRange << std::endl;
-      d_parent->excludeCurrentSolution(
-          candidate_values,
-          InferenceId::QUANTIFIERS_SYGUS_RETURN_TYPE_EXCLUDE_CURRENT);
-      return false;
-    }
+    Assert (bnv.getType() == expectedRange) << "...failed type " << bnv << " : " << bnv.getType() << ", expected "
+          << expectedRange;
   }
-  return true;
 }
 
 }  // namespace quantifiers

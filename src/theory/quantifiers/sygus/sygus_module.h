@@ -151,8 +151,11 @@ class SygusModule : protected EnvObj
   virtual bool usingRepairConst() { return false; }
 
  protected:
-  /** check whether type constraints are met */
-  bool isTypeOk(const std::vector<Node>& candidate_values) const;
+  /** 
+   * If in assertion build, check whether type constraints are met, throw an
+   * assertion failure otherwise
+   */
+  void checkTypeOk(const std::vector<Node>& candidate_values) const;
   /** Reference to the state of the quantifiers engine */
   QuantifiersState& d_qstate;
   /** Reference to the quantifiers inference manager */

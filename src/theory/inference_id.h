@@ -401,8 +401,6 @@ enum class InferenceId
   QUANTIFIERS_SYGUS_NO_VERIFY_EXCLUDE_CURRENT,
   // manual exclusion of a current solution for a repeated counterexample
   QUANTIFIERS_SYGUS_REPEAT_CEX_EXCLUDE_CURRENT,
-  // manual exclusion of a current solution due to a wrong return type
-  QUANTIFIERS_SYGUS_RETURN_TYPE_EXCLUDE_CURRENT,
   // ~Q where Q is a PBE conjecture with conflicting examples
   QUANTIFIERS_SYGUS_EXAMPLE_INFER_CONTRA,
   // infeasible determined by single-invocation solver
