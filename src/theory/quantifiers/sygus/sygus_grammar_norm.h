@@ -147,7 +147,7 @@ class SygusGrammarNorm : protected EnvObj
    * contained in "tn" have been normalized, since the resolution of datatypes
    * depends on all types involved being defined.
    */
-  TypeNode normalizeSygusType(TypeNode tn, Node sygus_vars);
+  TypeNode normalizeSygusType(TypeNode tn, Node sygus_vars, TypeNode rangeType);
 
   /* Retrives, or, if none, creates, stores and returns, the node for the
    * identity operator (\lambda x. x) for the given type node */

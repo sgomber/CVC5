@@ -122,9 +122,9 @@ void SygusTypeInfo::initialize(TermDbSygus* tds, TypeNode tn)
         TypeNode ct = dt[i].getArgType(j);
         TypeNode cbt = tds->sygusToBuiltinType(ct);
         TypeNode lat = sop[0][j].getType();
-        AlwaysAssert(cbt == lat)
+        AlwaysAssert(cbt.isComparableTo(lat))
             << "In sygus datatype " << dt.getName()
-            << ", argument to a lambda constructor is not " << lat << std::endl;
+            << ", argument to a lambda constructor " << cbt << " is not comparable to " << lat << std::endl;
       }
       // See if it is a builtin kind, possible if the operator is of the form:
       // lambda x1 ... xn. f( x1, ..., xn ) and f is not a parameterized kind

@@ -510,7 +510,7 @@ TypeNode SygusGrammarNorm::normalizeSygusRec(TypeNode tn)
   return normalizeSygusRec(tn, dt, op_pos);
 }
 
-TypeNode SygusGrammarNorm::normalizeSygusType(TypeNode tn, Node sygus_vars)
+TypeNode SygusGrammarNorm::normalizeSygusType(TypeNode tn, Node sygus_vars, TypeNode rangeType)
 {
   /* Normalize all types in tn */
   d_sygus_vars = sygus_vars;
@@ -533,6 +533,25 @@ TypeNode SygusGrammarNorm::normalizeSygusType(TypeNode tn, Node sygus_vars)
     Trace("sygus-grammar-normalize-build") << "\n";
   }
   Assert(d_dt_all.size() == d_unres_t_all.size());
+  // if the top type is not exactly the return type, then we add
+  NodeManager * nm = NodeManager::currentNM();
+  const DType& topLevel = d_dt_all.back();
+  if (topLevel.getSygusType()!=rangeType)
+  {
+    Trace("sygus-grammar-normalize-build") << "Enforce top-level grammar for " << topLevel.getSygusType() << " is " << rangeType << std::endl;
+    Assert (!rangeType.isAbstract());
+    Assert (topLevel.getSygusType().isAbstract());
+    Assert (topLevel.getSygusType().isComparableTo(rangeType));
+    std::stringstream ss;
+    ss << topLevel.getName() << "_typed_lam";
+    SygusDatatype sdttl(ss.str());
+    Node x = nm->mkBoundVar(rangeType);
+    Node lam = nm->mkNode(LAMBDA, nm->mkNode(BOUND_VAR_LIST, x), x);
+    TypeNode ures = nm->mkUnresolvedDatatypeSort(topLevel.getName());
+    sdttl.addConstructor(lam, "typed_lam", {ures});
+    sdttl.initializeDatatype(rangeType, sygus_vars, false, false);
+    d_dt_all.push_back(sdttl.getDatatype());
+  }
   std::vector<TypeNode> types =
       NodeManager::currentNM()->mkMutualDatatypeTypes(d_dt_all);
   Assert(types.size() == d_dt_all.size());

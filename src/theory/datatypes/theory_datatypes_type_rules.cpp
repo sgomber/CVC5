@@ -493,6 +493,7 @@ TypeNode DtSygusEvalTypeRule::computeType(NodeManager* nodeManager,
   // argument.
   if (tn.isAbstract())
   {
+    Trace("ajr-temp") << "Type check " << n << std::endl;
     Node bn = utils::sygusToBuiltin(n[0]);
     // don't consider abstract subterms
     if (!expr::hasAbstractSubterm(bn))

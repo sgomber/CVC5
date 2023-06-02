@@ -48,6 +48,9 @@ Cegis::Cegis(Env& env,
 bool Cegis::initialize(Node conj, Node n, const std::vector<Node>& candidates)
 {
   d_base_body = n;
+  // Compute whether the grammar involves any non-closed enumerable sorts,
+  // which includes abstract sorts. This ensures that the ground solver
+  // can handle refinement lemmas and evaluation unfolding lemmas.
   d_cexClosedEnum = true;
   if (d_base_body.getKind() == NOT && d_base_body[0].getKind() == FORALL)
   {
@@ -69,17 +72,26 @@ bool Cegis::initialize(Node conj, Node n, const std::vector<Node>& candidates)
     for (const Node& v : candidates)
     {
       TypeNode tn = v.getType();
-      // TODO: subfield types
-      Trace("ajr-temp") << "Check " << tn << " " << tn.getDType().getSygusType()
-                        << std::endl;
       Assert(tn.isSygusDatatype());
-      if (!tn.getDType().getSygusType().isClosedEnumerable())
+      // check that the terms encoded by this are closed enumerable, also check subfield types
+      std::unordered_set<TypeNode> sftypes = tn.getDType().getSubfieldTypes();
+      sftypes.insert(tn);
+      for (TypeNode stn : sftypes)
       {
-        d_cexClosedEnum = false;
+        if (!stn.isClosedEnumerable() || (stn.isSygusDatatype() && !stn.getDType().getSygusType().isClosedEnumerable()))
+        {
+          // not closed enumerable since evaluation unfolding would introduce terms of non-closed enumerable sorts
+      d_cexClosedEnum = false;
+      break;
+        }
+      }
+      if (!d_cexClosedEnum)
+      {
         break;
       }
     }
   }
+  Trace("cegis") << "Initialize cegis, closed enumerable is " << d_cexClosedEnum << std::endl;
 
   // assign the cegis sampler if applicable
   if (options().quantifiers.cegisSample != options::CegisSampleMode::NONE)

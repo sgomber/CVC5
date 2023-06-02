@@ -127,6 +127,11 @@ Node CegGrammarConstructor::process(Node q,
     // if non-null, v encodes the syntactic restrictions (via an inductive
     // datatype) on sf from the input.
     Node v = sf.getAttribute(SygusSynthGrammarAttribute());
+    TypeNode rangeType = sf.getType();
+    if (rangeType.isFunction())
+    {
+      rangeType = rangeType.getRangeType();
+    }
     TypeNode preGrammarType;
     if (!v.isNull())
     {
@@ -135,11 +140,7 @@ Node CegGrammarConstructor::process(Node q,
     else
     {
       // otherwise, the grammar is the default for the range of the function
-      preGrammarType = sf.getType();
-      if (preGrammarType.isFunction())
-      {
-        preGrammarType = preGrammarType.getRangeType();
-      }
+      preGrammarType = rangeType;
     }
 
     // the actual sygus datatype we will use (normalized below)
@@ -153,7 +154,7 @@ Node CegGrammarConstructor::process(Node q,
       tn = preGrammarType;
       // normalize type, if user-provided
       SygusGrammarNorm sygus_norm(d_env, d_tds);
-      tn = sygus_norm.normalizeSygusType(tn, sfvl);
+      tn = sygus_norm.normalizeSygusType(tn, sfvl, rangeType);
     }else{
       sfvl = SygusUtils::getSygusArgumentListForSynthFun(sf);
       // check which arguments are irrelevant
