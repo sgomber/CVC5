@@ -1583,6 +1583,7 @@ set(regress_0_tests
   regress0/strings/issue8481.smt2
   regress0/strings/issue8481-2.smt2
   regress0/strings/issue8722-learned-rew.smt2
+  regress0/strings/issue9784.smt2
   regress0/strings/itos-entail.smt2
   regress0/strings/large-model.smt2
   regress0/strings/leadingzero001.smt2
@@ -3589,7 +3590,6 @@ add_test(build_regress_test
     "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" 
     --config "$<CONFIG>" --target build-regress
 )
-set_property(TEST build_regress_test PROPERTY ENVIRONMENT "CMAKE_BUILD_PARALLEL_LEVEL=${CTEST_NTHREADS}")
 set_tests_properties(build_regress_test PROPERTIES FIXTURES_SETUP build_regress_fixture)
 
 macro(cvc5_add_regression_test level file)
