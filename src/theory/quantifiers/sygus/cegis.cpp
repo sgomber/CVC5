@@ -73,16 +73,20 @@ bool Cegis::initialize(Node conj, Node n, const std::vector<Node>& candidates)
     {
       TypeNode tn = v.getType();
       Assert(tn.isSygusDatatype());
-      // check that the terms encoded by this are closed enumerable, also check subfield types
+      // check that the terms encoded by this are closed enumerable, also check
+      // subfield types
       std::unordered_set<TypeNode> sftypes = tn.getDType().getSubfieldTypes();
       sftypes.insert(tn);
       for (TypeNode stn : sftypes)
       {
-        if (!stn.isClosedEnumerable() || (stn.isSygusDatatype() && !stn.getDType().getSygusType().isClosedEnumerable()))
+        if (!stn.isClosedEnumerable()
+            || (stn.isSygusDatatype()
+                && !stn.getDType().getSygusType().isClosedEnumerable()))
         {
-          // not closed enumerable since evaluation unfolding would introduce terms of non-closed enumerable sorts
-      d_cexClosedEnum = false;
-      break;
+          // not closed enumerable since evaluation unfolding would introduce
+          // terms of non-closed enumerable sorts
+          d_cexClosedEnum = false;
+          break;
         }
       }
       if (!d_cexClosedEnum)
@@ -91,7 +95,8 @@ bool Cegis::initialize(Node conj, Node n, const std::vector<Node>& candidates)
       }
     }
   }
-  Trace("cegis") << "Initialize cegis, closed enumerable is " << d_cexClosedEnum << std::endl;
+  Trace("cegis") << "Initialize cegis, closed enumerable is " << d_cexClosedEnum
+                 << std::endl;
 
   // assign the cegis sampler if applicable
   if (options().quantifiers.cegisSample != options::CegisSampleMode::NONE)

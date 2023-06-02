@@ -510,7 +510,9 @@ TypeNode SygusGrammarNorm::normalizeSygusRec(TypeNode tn)
   return normalizeSygusRec(tn, dt, op_pos);
 }
 
-TypeNode SygusGrammarNorm::normalizeSygusType(TypeNode tn, Node sygus_vars, TypeNode rangeType)
+TypeNode SygusGrammarNorm::normalizeSygusType(TypeNode tn,
+                                              Node sygus_vars,
+                                              TypeNode rangeType)
 {
   /* Normalize all types in tn */
   d_sygus_vars = sygus_vars;
@@ -534,14 +536,16 @@ TypeNode SygusGrammarNorm::normalizeSygusType(TypeNode tn, Node sygus_vars, Type
   }
   Assert(d_dt_all.size() == d_unres_t_all.size());
   // if the top type is not exactly the return type, then we add
-  NodeManager * nm = NodeManager::currentNM();
+  NodeManager* nm = NodeManager::currentNM();
   const DType& topLevel = d_dt_all.back();
-  if (topLevel.getSygusType()!=rangeType)
+  if (topLevel.getSygusType() != rangeType)
   {
-    Trace("sygus-grammar-normalize-build") << "Enforce top-level grammar for " << topLevel.getSygusType() << " is " << rangeType << std::endl;
-    Assert (!rangeType.isAbstract());
-    Assert (topLevel.getSygusType().isAbstract());
-    Assert (topLevel.getSygusType().isComparableTo(rangeType));
+    Trace("sygus-grammar-normalize-build")
+        << "Enforce top-level grammar for " << topLevel.getSygusType() << " is "
+        << rangeType << std::endl;
+    Assert(!rangeType.isAbstract());
+    Assert(topLevel.getSygusType().isAbstract());
+    Assert(topLevel.getSygusType().isComparableTo(rangeType));
     std::stringstream ss;
     ss << topLevel.getName() << "_typed_lam";
     SygusDatatype sdttl(ss.str());

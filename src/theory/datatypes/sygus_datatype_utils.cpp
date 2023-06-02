@@ -172,7 +172,7 @@ Node mkSygusTerm(Node op,
       Assert(vars.size() == children.size());
       bool typeOk = true;
       // !!!! temporary
-      for (size_t i=0, nchildren = children.size(); i<nchildren; i++)
+      for (size_t i = 0, nchildren = children.size(); i < nchildren; i++)
       {
         if (!children[i].getType().isComparableTo(vars[i].getType()))
         {
@@ -184,7 +184,8 @@ Node mkSygusTerm(Node op,
       {
         Node ret = op[1].substitute(
             vars.begin(), vars.end(), children.begin(), children.end());
-        Trace("dt-sygus-util") << "...return (beta-reduce) " << ret << std::endl;
+        Trace("dt-sygus-util")
+            << "...return (beta-reduce) " << ret << std::endl;
         return ret;
       }
     }
