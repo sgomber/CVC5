@@ -1,0 +1,8 @@
+(set-logic ALL)
+(declare-oracle-fun is-p (Int) Bool isPrime)
+(synth-fun f ((x Int)) Int
+  ((Start Int))
+  ((Start Int (x 0 1 (+ Start Start)))))
+; f = (lambda ((x Int)) (+ x 1))
+(constraint (and (is-p (f 6)) (not (is-p (f 8)))))
+(check-synth)

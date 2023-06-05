@@ -1,0 +1,8 @@
+(set-logic ALL)
+(declare-oracle-fun is-p (Int) Bool isPrime)
+(synth-fun f ((x Int)) Int
+  ((Start Int))
+  ((Start Int (x 0 1 (+ Start Start)))))
+(declare-var x Int)
+(constraint (=> (and (<= 2 x) (<= x 100)) (and (< (f x) (f (+ x 1))) (not (is-p (f x))))))
+(check-synth)

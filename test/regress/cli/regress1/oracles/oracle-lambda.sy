@@ -1,0 +1,10 @@
+(set-logic HO_ALL)
+(synth-fun f ((x Int)) Int 
+  ((Start Int))
+  ((Start Int ((+ x x)))))
+
+(declare-oracle-fun O ((-> Int Int)) Bool test)
+
+(constraint (O f))
+
+(check-synth)

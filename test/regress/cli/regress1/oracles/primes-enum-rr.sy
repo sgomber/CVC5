@@ -1,0 +1,10 @@
+(set-logic ALL)
+(declare-oracle-fun is-prime (Int) Bool isPrime)
+(synth-fun P ((x Int) (y Int)) Bool
+  ((B Bool)(I Int))
+  ((B Bool (true false (= I I) (>= I I) (not B) (and B B) (or B B) (is-prime I)))
+    (I Int (x y 0 1 7 (+ I I) (div x I) (* I I)))))
+
+
+
+(check-synth)
