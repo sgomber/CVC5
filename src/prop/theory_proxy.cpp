@@ -21,6 +21,8 @@
 #include "decision/decision_engine.h"
 #include "decision/justification_strategy.h"
 #include "expr/node_algorithm.h"
+#include "expr/plugin.h"
+#include "expr/skolem_manager.h"
 #include "options/base_options.h"
 #include "options/decision_options.h"
 #include "options/parallel_options.h"
@@ -31,12 +33,10 @@
 #include "prop/prop_engine.h"
 #include "prop/skolem_def_manager.h"
 #include "prop/zero_level_learner.h"
-#include "expr/skolem_manager.h"
 #include "smt/env.h"
 #include "theory/rewriter.h"
 #include "theory/theory_engine.h"
 #include "util/statistics_stats.h"
-#include "expr/plugin.h"
 
 namespace cvc5::internal {
 namespace prop {
@@ -295,7 +295,7 @@ void TheoryProxy::notifyCurrPropagationInsertedAtLevel(int explLevel)
 }
 
 void TheoryProxy::notifySatClauseInsertedAtLevel(const SatClause& clause,
-                                              int clLevel)
+                                                 int clLevel)
 {
   d_propEngine->getProofCnfStream()->notifyClauseInsertedAtLevel(clause,
                                                                  clLevel);
