@@ -102,14 +102,6 @@ Node getConstantEndpoint(Node e, bool isSuf);
  * function returns base, adds { x1 ... xn } to ss, and { y1 ... yn } to ls.
  */
 Node decomposeSubstrChain(Node s, std::vector<Node>& ss, std::vector<Node>& ls);
-/** make substr chain
- *
- * If ss is { x1 ... xn } and ls is { y1 ... yn }, this returns the term
- * substr( ... substr( base, x1, y1 ) ..., xn, yn ).
- */
-Node mkSubstrChain(Node base,
-                   const std::vector<Node>& ss,
-                   const std::vector<Node>& ls);
 
 /**
  * Make the concatenation of seq.unit chains for a given constant sequence.

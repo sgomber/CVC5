@@ -1820,7 +1820,7 @@ CoreSolver::ProcessLoopResult CoreSolver::processLoop(NormalForm& nfi,
 
   Node str_in_re;
   if (s_zy == t_yz && r == emp && s_zy.isConst()
-      && s_zy.getConst<String>().isRepeated())
+      && Word::isRepeated(s_zy))
   {
     Node rep_c = Word::substr(s_zy, 0, 1);
     Trace("strings-loop") << "Special case (X)=" << vecoi[index] << " "

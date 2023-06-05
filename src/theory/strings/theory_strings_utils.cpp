@@ -205,18 +205,6 @@ Node decomposeSubstrChain(Node s, std::vector<Node>& ss, std::vector<Node>& ls)
   return s;
 }
 
-Node mkSubstrChain(Node base,
-                   const std::vector<Node>& ss,
-                   const std::vector<Node>& ls)
-{
-  NodeManager* nm = NodeManager::currentNM();
-  for (unsigned i = 0, size = ss.size(); i < size; i++)
-  {
-    base = nm->mkNode(STRING_SUBSTR, base, ss[i], ls[i]);
-  }
-  return base;
-}
-
 Node mkConcatForConstSequence(const Node& c)
 {
   Assert(c.getKind() == CONST_SEQUENCE);
