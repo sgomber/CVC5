@@ -81,6 +81,15 @@ class ApplyIndexedSymbolicTypeRule
                               std::ostream* errOut);
 };
 
+class SkolemFunctionTypeRule
+{
+ public:
+  static TypeNode computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
+};
+
 class SortProperties
 {
  public:

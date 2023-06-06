@@ -151,7 +151,7 @@ enum Kind : int32_t
    *
    * - Arity: ``n > 0``
    *
-   *   - ``1..n:`` Terms with same sorts
+   *   - ``1..n:`` Terms
    *
    * - Create Term of this Kind with:
    *
@@ -168,6 +168,32 @@ enum Kind : int32_t
    * \endrst
    */
   SEXPR,
+  /**
+   * An (internal) skolem function.
+   *
+   * This kind is used as a way of importing and exporting internally generated
+   * symbols. It should only be used by expert users.
+   *
+   * - Arity: ``n > 0``
+   *
+   *   - ``1:`` A string denoting the internal identifier for the skolemfunction
+   *   - ``2..n:`` The arguments of the skolem function
+   *
+   * - Create Term of this Kind with:
+   *
+   *   - Solver::mkTerm(Kind, const std::vector<Term>&) const
+   *   - Solver::mkTerm(const Op&, const std::vector<Term>&) const
+   *
+   * - Create Op of this kind with:
+   *
+   *   - Solver::mkOp(Kind, const std::vector<uint32_t>&) const
+   *
+   * \rst
+   * .. warning:: This kind is experimental and may be changed or removed in
+   *              future versions.
+   * \endrst
+   */
+  SKOLEM_FUN,
   /**
    * Lambda expression.
    *

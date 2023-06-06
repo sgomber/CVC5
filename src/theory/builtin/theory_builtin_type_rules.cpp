@@ -146,6 +146,22 @@ TypeNode ApplyIndexedSymbolicTypeRule::computeType(NodeManager* nodeManager,
   // of indexed operator, but we don't do this for simplicity.
   return nodeManager->mkAbstractType(kind::ABSTRACT_TYPE);
 }
+
+TypeNode SkolemFunctionTypeRule::computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut)
+{
+  if (n[0].getKind()!=CONST_STRING)
+  {
+        throw TypeCheckingExceptionPrivate(
+            n,
+            "first argument of skolem function expected to be string identifier");
+  }
+  Node k = TheoryBuiltinRewriter::convertSkolemFunction(n);
+  return k.getType();
+}
+  
 /**
  * Attribute for caching the ground term for each type. Maps TypeNode to the
  * skolem to return for mkGroundTerm.

@@ -339,4 +339,7 @@ parameterized APPLY_INDEXED_SYMBOLIC APPLY_INDEXED_SYMBOLIC_OP 1: "generic index
 typerule APPLY_INDEXED_SYMBOLIC_OP "SimpleTypeRule<RBuiltinOperator>"
 typerule APPLY_INDEXED_SYMBOLIC ::cvc5::internal::theory::builtin::ApplyIndexedSymbolicTypeRule
 
+operator SKOLEM_FUNCTION 1: "the representation of a skolem function"
+typerule SKOLEM_FUNCTION ::cvc5::internal::theory::builtin::SkolemFunctionTypeRule
+
 endtheory

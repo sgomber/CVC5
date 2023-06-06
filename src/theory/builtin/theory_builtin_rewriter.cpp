@@ -159,6 +159,15 @@ Node TheoryBuiltinRewriter::rewriteApplyIndexedSymbolic(TNode node)
   return NodeManager::currentNM()->mkNode(okind, args);
 }
 
+Node TheoryBuiltinRewriter::convertSkolemFunction(const Node& n)
+{
+  SkolemManager* sm = NodeManager::currentNM()->getSkolemManager();
+  std::vector<Node> args;
+  args.insert(args.end(),n.begin()+1, n.end());
+  Node k = sm->getSkolemFun(n[0].getConst<String>(), args);
+  return k.getType();
+}
+
 }  // namespace builtin
 }  // namespace theory
 }  // namespace cvc5::internal

@@ -34,6 +34,10 @@ class TheoryBuiltinRewriter : public TheoryRewriter
 
   RewriteResponse preRewrite(TNode node) override { return doRewrite(node); }
 
+  /**
+   * Convert skolem function
+   */
+  static Node convertSkolemFunction(const Node& n);
  public:
   /**
    * The default rewriter for rewrites that occur at both pre and post rewrite.
