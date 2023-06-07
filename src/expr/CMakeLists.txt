@@ -67,6 +67,7 @@ libcvc5_add_sources(
   oracle.h
   oracle_caller.cpp
   oracle_caller.h
+  plugin.cpp
   plugin.h
   sequence.cpp
   sequence.h

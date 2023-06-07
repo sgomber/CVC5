@@ -10,7 +10,7 @@
  * directory for licensing information.
  * ****************************************************************************
  *
- * Oracle caller
+ * Plugin
  */
 
 #include "cvc5_private.h"
@@ -41,6 +41,8 @@ class Plugin
   virtual void notifyTheoryLemma(const Node& lem) = 0;
   /** Get name */
   virtual std::string getName() = 0;
+  /** Get sharable formula */
+  static Node getSharableFormula(const Node& n);
 };
 
 }  // namespace cvc5::internal

@@ -316,12 +316,15 @@ void TheoryProxy::notifySatClause(const SatClause& clause)
     clauseNodes.push_back(d_cnfStream->getNode(l));
   }
   Node cln = NodeManager::currentNM()->mkOr(clauseNodes);
-  cln = SkolemManager::getOriginalForm(cln);
-  Trace("prop") << "Clause from SAT solver: " << cln << std::endl;
-  // notify the plugins
-  for (Plugin* p : plugins)
+  Node clns = Plugin::getSharableFormula(cln);
+  if (!clns.isNull())
   {
-    p->notifySatClause(cln);
+    Trace("prop") << "Clause from SAT solver: " << clns << std::endl;
+    // notify the plugins
+    for (Plugin* p : plugins)
+    {
+      p->notifySatClause(clns);
+    }
   }
 }
 

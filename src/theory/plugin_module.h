@@ -41,6 +41,8 @@ class PluginModule : public TheoryEngineModule
                    const std::vector<Node>& sks) override;
 
  private:
+  /** Notify lemma internal */
+  void notifyLemmaInternal(const Node& n);
   /** The plugin */
   Plugin* d_plugin;
 };

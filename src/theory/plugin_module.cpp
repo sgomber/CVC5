@@ -52,15 +52,22 @@ void PluginModule::notifyLemma(TNode n,
 {
   Trace("ajr-temp") << "Plugin notify " << n << std::endl;
   // must take original form as a way to remove internal symbols from the lemma
-  Node on = SkolemManager::getOriginalForm(n);
-  d_plugin->notifyTheoryLemma(on);
+  notifyLemmaInternal(n);
   // skolem lemmas are also included
   for (const Node& kn : skAsserts)
   {
-    Node okn = SkolemManager::getOriginalForm(kn);
-    d_plugin->notifyTheoryLemma(okn);
+    notifyLemmaInternal(kn);
   }
   // currently ignores the other fields, e.g. property and sks
+}
+
+void PluginModule::notifyLemmaInternal(const Node& n)
+{
+  Node ns = Plugin::getSharableFormula(n);
+  if (!ns.isNull())
+  {
+    d_plugin->notifyTheoryLemma(ns);
+  }
 }
 
 }  // namespace theory
