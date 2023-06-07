@@ -109,6 +109,11 @@ class ArithCongruenceManager : protected EnvObj
    */
   bool propagate(TNode x);
 
+  /**
+   * Get current 
+   */
+  const std::vector<std::pair<Node, Node>>& getCurrentAssertions() const;
+  void clearCurrentAssertions();
  private:
   context::CDRaised d_inConflict;
   RaiseEqualityEngineConflict d_raiseConflict;
@@ -123,6 +128,9 @@ class ArithCongruenceManager : protected EnvObj
   ArithVarToNodeMap d_watchedEqualities;
 
   context::CDList<Node> d_keepAlive;
+  
+  /** Current buffer */
+  std::vector<std::pair<Node, Node>> d_eees;
 
   /** Store the propagations. */
   context::CDTrailQueue<Node> d_propagatations;

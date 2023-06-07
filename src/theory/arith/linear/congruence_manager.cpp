@@ -507,6 +507,7 @@ void ArithCongruenceManager::assertLitToEqualityEngine(
     d_keepAlive.push_back(reason);
     d_ee->assertEquality(eq, isEquality, reason);
   }
+  d_eees.emplace_back(lit, reason);
 }
 
 void ArithCongruenceManager::assertionToEqualityEngine(
@@ -608,6 +609,15 @@ void ArithCongruenceManager::equalsConstant(ConstraintCP lb, ConstraintCP ub){
 }
 
 bool ArithCongruenceManager::isProofEnabled() const { return d_pnm != nullptr; }
+
+const std::vector<std::pair<Node, Node>>& ArithCongruenceManager::getCurrentAssertions() const
+{
+  return d_eees;
+}
+void ArithCongruenceManager::clearCurrentAssertions()
+{
+  d_eees.clear();
+}
 
 }  // namespace arith
 }  // namespace theory
