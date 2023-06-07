@@ -15,8 +15,8 @@
 
 #include "expr/plugin.h"
 
-#include "expr/skolem_manager.h"
 #include "expr/node_algorithm.h"
+#include "expr/skolem_manager.h"
 
 namespace cvc5::internal {
 
@@ -25,11 +25,11 @@ Node Plugin::getSharableFormula(const Node& n)
   const std::unordered_set<Kind, kind::KindHashFunction> kinds = {
       kind::SKOLEM, kind::BOOLEAN_TERM_VARIABLE};
   Node on = SkolemManager::getOriginalForm(n);
-      if (expr::hasSubtermKinds(kinds, on))
-      {
-        // cannot share formulas with skolems currently
-        return Node::null();
-      }
+  if (expr::hasSubtermKinds(kinds, on))
+  {
+    // cannot share formulas with skolems currently
+    return Node::null();
+  }
   return on;
 }
 
