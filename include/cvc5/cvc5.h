@@ -3220,9 +3220,14 @@ class CVC5_EXPORT Plugin
    */
   virtual std::vector<Term> check();
   /**
-   * Notify lemma.
+   * Notify SAT clause, called when cl is a clause learned by the SAT solver.
    */
-  virtual void notifyLemma(const Term& lem);
+  virtual void notifySatClause(const Term& cl);
+  /**
+   * Notify theory lemma, called when lem is a theory lemma sent by a theory
+   * solver.
+   */
+  virtual void notifyTheoryLemma(const Term& lem);
   /** Get the name of the plugin (for debugging) */
   virtual std::string getName() = 0;
 

@@ -1124,11 +1124,17 @@ class PluginInternal : public internal::Plugin
     std::vector<Term> lemsExt = d_external.check();
     return Term::termVectorToNodes(lemsExt);
   }
-  /** Notify lemma method */
-  void notifyLemma(const internal::Node& n) override
+  /** Notify SAT clause method */
+  void notifySatClause(const internal::Node& n) override
   {
     Term t = Term(internal::NodeManager::currentNM(), n);
-    return d_external.notifyLemma(t);
+    return d_external.notifySatClause(t);
+  }
+  /** Notify theory lemma method */
+  void notifyTheoryLemma(const internal::Node& n) override
+  {
+    Term t = Term(internal::NodeManager::currentNM(), n);
+    return d_external.notifyTheoryLemma(t);
   }
   /** Get name */
   std::string getName() override { return d_external.getName(); }
@@ -4952,7 +4958,8 @@ std::vector<Term> Plugin::check()
   std::vector<Term> ret;
   return ret;
 }
-void Plugin::notifyLemma(const Term& lem) {}
+void Plugin::notifySatClause(const Term& cl) {}
+void Plugin::notifyTheoryLemma(const Term& lem) {}
 
 /* -------------------------------------------------------------------------- */
 /* Solver                                                                     */

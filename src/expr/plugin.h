@@ -35,8 +35,10 @@ class Plugin
   virtual ~Plugin() {}
   /** Check function, returns the empty vector */
   virtual std::vector<Node> check() = 0;
-  /** Notify lemma */
-  virtual void notifyLemma(const Node& lem) = 0;
+  /** Notify SAT clause */
+  virtual void notifySatClause(const Node& lem) = 0;
+  /** Notify theory lemma */
+  virtual void notifyTheoryLemma(const Node& lem) = 0;
   /** Get name */
   virtual std::string getName() = 0;
 };

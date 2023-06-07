@@ -28,9 +28,15 @@ LemmaSaver::LemmaSaver(std::string& filename, Solver* s)
 }
 LemmaSaver::~LemmaSaver() { d_fs.close(); }
 
-void LemmaSaver::notifyLemma(const Term& t)
+void LemmaSaver::notifySatClause(const Term& t)
 {
-  Trace("lemma-saver") << "LemmaSaver::notifyLemma " << t << std::endl;
+  Trace("lemma-saver") << "LemmaSaver::notifySatClause " << t << std::endl;
+  d_fs << t.toString() << " ; SAT" << std::endl;
+}
+
+void LemmaSaver::notifyTheoryLemma(const Term& t)
+{
+  Trace("lemma-saver") << "LemmaSaver::notifyTheoryLemma " << t << std::endl;
   d_fs << t.toString() << std::endl;
 }
 

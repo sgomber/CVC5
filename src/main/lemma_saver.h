@@ -32,7 +32,9 @@ class LemmaSaver : public cvc5::Plugin
   LemmaSaver(std::string& filename, Solver* s);
   ~LemmaSaver();
   /** */
-  void notifyLemma(const Term& t) override;
+  void notifySatClause(const Term& t) override;
+  /** */
+  void notifyTheoryLemma(const Term& t) override;
   /** Get name, for debugging */
   std::string getName() override;
   /** The filename we are saving to */

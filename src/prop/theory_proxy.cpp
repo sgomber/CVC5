@@ -321,7 +321,7 @@ void TheoryProxy::notifySatClause(const SatClause& clause)
   // notify the plugins
   for (Plugin* p : plugins)
   {
-    p->notifyLemma(cln);
+    p->notifySatClause(cln);
   }
 }
 
