@@ -560,7 +560,7 @@ bool Solver::addClause_(vec<Lit>& ps, bool removable, ClauseId& id)
           // AJR (line 647)
           SatClause satClause;
           satClause.push_back(MinisatSatSolver::toSatLiteral(ps[0]));
-          //d_proxy->notifySatClause(satClause);
+          // d_proxy->notifySatClause(satClause);
         }
         CRef confl = propagate(CHECK_WITHOUT_THEORY);
         if (!(ok = (confl == CRef_Undef)))
@@ -2131,7 +2131,7 @@ CRef Solver::updateLemmas() {
         d_proxy->notifySatClauseInsertedAtLevel(satClause, clauseLevel);
       }
       // AJR (line 2441)
-      //d_proxy->notifySatClause(satClause);
+      // d_proxy->notifySatClause(satClause);
       if (removable) {
         clauses_removable.push(lemma_ref);
       } else {
