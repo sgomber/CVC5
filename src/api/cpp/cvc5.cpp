@@ -4571,7 +4571,7 @@ void Grammar::addRule(const Term& ntSymbol, const Term& rule)
                               ntSymbol)
       << "ntSymbol to be one of the non-terminal symbols given in the "
          "predeclaration";
-  CVC5_API_CHECK(ntSymbol.d_node->getType().isInstanceOf(rule.d_node->getType()))
+  CVC5_API_CHECK(rule.d_node->getType().isInstanceOf(ntSymbol.d_node->getType()))
       << "Expected ntSymbol and rule to have the same sort";
   CVC5_API_ARG_CHECK_EXPECTED(!containsFreeVariables(rule), rule)
       << "a term whose free variables are limited to synthFun/synthInv "
@@ -5205,9 +5205,9 @@ Term Solver::synthFunHelper(const std::string& symbol,
     if (grammar)
     {
       CVC5_API_CHECK(
-          *sort.d_type.isInstanceOf(grammar->d_ntSyms[0].d_node->getType().isComparableTo(*sort.d_type)))
+          (*sort.d_type).isInstanceOf(grammar->d_sg->getNtSyms()[0].getType()))
           << "Invalid Start symbol for grammar, Expected Start's sort to be "
-             "comparable to "
+             "equal or more general than "
           << *sort.d_type << " but found "
           << grammar->d_sg->getNtSyms()[0].getType();
     }
