@@ -1480,6 +1480,40 @@ Node SequencesRewriter::rewriteMembership(TNode node)
   else if (r.getKind() == kind::REGEXP_INTER
            || r.getKind() == kind::REGEXP_UNION)
   {
+    if (r.getKind()==REGEXP_UNION)
+    {
+      Node base;
+      StringRewriter sr;
+      bool success = true;
+      Kind testKind = STRING_TO_LOWER;
+      for (const Node& rc : r)
+      {
+        if (rc.getKind()==STRING_TO_REGEXP && rc[0].isConst())
+        {
+          Node srl = nm->mkNode(testKind, rc[0]);
+          srl = sr.rewriteStrConvert(srl);
+          if (base.isNull())
+          {
+            base = srl;
+          }
+          else if (srl!=base)
+          {
+            success = false;
+            break;
+          }
+        }
+        else
+        {
+          success = false;
+          break;
+        }
+      }
+      if (success)
+      {
+        Node ret = nm->mkNode(EQUAL, nm->mkNode(testKind, x), base);
+        return returnRewrite(node, retNode, Rewrite::RE_IN_ANDOR_CONVERT);
+      }
+    }
     std::vector<Node> mvec;
     for (unsigned i = 0; i < r.getNumChildren(); i++)
     {

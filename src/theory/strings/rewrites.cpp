@@ -215,6 +215,7 @@ const char* toString(Rewrite r)
     case Rewrite::RE_IN_RANGE: return "RE_IN_RANGE";
     case Rewrite::RE_IN_CSTRING: return "RE_IN_CSTRING";
     case Rewrite::RE_IN_ANDOR: return "RE_IN_ANDOR";
+    case Rewrite::RE_IN_ANDOR_CONVERT: return "RE_IN_ANDOR_CONVERT";
     case Rewrite::RE_REPEAT_ELIM: return "RE_REPEAT_ELIM";
     case Rewrite::SUF_PREFIX_ELIM: return "SUF_PREFIX_ELIM";
     case Rewrite::STR_LT_ELIM: return "STR_LT_ELIM";
