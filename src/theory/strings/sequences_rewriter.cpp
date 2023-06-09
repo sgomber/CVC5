@@ -1483,7 +1483,7 @@ Node SequencesRewriter::rewriteMembership(TNode node)
     if (r.getKind()==REGEXP_UNION)
     {
       Node base;
-      StringRewriter sr;
+      StringsRewriter sr(d_rr, d_statistics);
       bool success = true;
       Kind testKind = STRING_TO_LOWER;
       for (const Node& rc : r)
@@ -1510,8 +1510,9 @@ Node SequencesRewriter::rewriteMembership(TNode node)
       }
       if (success)
       {
+        // e.g. (str.in_re x (re.union "A" "a")) ---> (str.to_lower x) = "a"
         Node ret = nm->mkNode(EQUAL, nm->mkNode(testKind, x), base);
-        return returnRewrite(node, retNode, Rewrite::RE_IN_ANDOR_CONVERT);
+        return returnRewrite(node, ret, Rewrite::RE_IN_ANDOR_CONVERT);
       }
     }
     std::vector<Node> mvec;
