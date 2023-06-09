@@ -19,9 +19,8 @@
 #include "context/cdhashset.h"
 #include "context/cdlist.h"
 #include "context/cdo.h"
-#include "parser/symbol_table.h"
 #include "parser/api/cpp/oracle_binary_caller.h"
-
+#include "parser/symbol_table.h"
 
 using namespace cvc5::context;
 using namespace cvc5::internal::parser;
@@ -305,7 +304,6 @@ OracleBinaryCaller& SymbolManager::Implementation::getOracleBinaryCaller(
   d_oracleBinCalls[name].reset(new OracleBinaryCaller(slv, sm, name));
   return *d_oracleBinCalls[name].get();
 }
-
 
 void SymbolManager::Implementation::reset()
 {

@@ -26,7 +26,7 @@
 #include <string>
 
 namespace cvc5 {
-  
+
 class OracleBinaryCaller;
 
 namespace internal::parser {
