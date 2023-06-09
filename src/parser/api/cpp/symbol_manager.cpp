@@ -19,8 +19,9 @@
 #include "context/cdhashset.h"
 #include "context/cdlist.h"
 #include "context/cdo.h"
-#include "parser/api/cpp/oracle_binary_caller.h"
 #include "parser/symbol_table.h"
+#include "parser/api/cpp/oracle_binary_caller.h"
+
 
 using namespace cvc5::context;
 using namespace cvc5::internal::parser;
@@ -305,6 +306,7 @@ OracleBinaryCaller& SymbolManager::Implementation::getOracleBinaryCaller(
   return *d_oracleBinCalls[name].get();
 }
 
+
 void SymbolManager::Implementation::reset()
 {
   Trace("sym-manager") << "SymbolManager: reset" << std::endl;
@@ -336,7 +338,7 @@ SymbolManager::SymbolManager(cvc5::Solver* s)
       d_implementation(new SymbolManager::Implementation()),
       d_globalDeclarations(false),
       d_logicIsForced(false),
-      d_forcedLogic()
+      d_logic()
 {
 }
 
@@ -552,17 +554,17 @@ void SymbolManager::resetAssertions()
   }
 }
 
-void SymbolManager::forceLogic(const std::string& logic)
+void SymbolManager::setLogic(const std::string& logic, bool isForced)
 {
-  Assert(!d_logicIsForced);
-  d_logicIsForced = true;
-  d_forcedLogic = logic;
+  // if already forced and this isn't forced, ignore
+  if (!d_logicIsForced || isForced)
+  {
+    d_logicIsForced = isForced;
+    d_logic = logic;
+  }
 }
 bool SymbolManager::isLogicForced() const { return d_logicIsForced; }
 
-const std::string& SymbolManager::getForcedLogic() const
-{
-  return d_forcedLogic;
-}
+const std::string& SymbolManager::getLogic() const { return d_logic; }
 
 }  // namespace cvc5::parser

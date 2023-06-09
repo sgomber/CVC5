@@ -58,6 +58,7 @@ std::vector<Term> OracleBinaryCaller::runOracle(const std::vector<Term>& input)
   iparser.setStreamInput(d_slv->getOption("input-language"),
                          oracle_response_istream,
                          d_parseStreamName);
+  iparser.setLogic(d_sm->getLogic());
   // currently assumes a single output
   std::vector<Term> output;
   Term t = iparser.nextExpression();

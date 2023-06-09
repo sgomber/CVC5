@@ -106,9 +106,6 @@ class CVC5_EXPORT ParserState
 
   bool strictModeEnabled() { return d_strictMode; }
 
-  const std::string& getForcedLogic() const;
-  bool logicIsForced() const;
-
   /** Expose the functionality from SMT/SMT2 parsers, while making
       implementation optional by returning false by default. */
   virtual bool logicIsSet() { return false; }
