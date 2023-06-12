@@ -213,8 +213,8 @@ command [std::unique_ptr<cvc5::parser::Command>* cmd]
     {
       // replace the logic with the forced logic, if applicable.
       std::string lname = SYM_MAN->isLogicForced() 
-                            ? SYM_MAN->getLogic()
-                            : name;
+                          ? SYM_MAN->getLogic()
+                          : name;
       PARSER_STATE->setLogic(lname);
       cmd->reset(new SetBenchmarkLogicCommand(lname));
     }
