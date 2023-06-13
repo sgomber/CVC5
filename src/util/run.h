@@ -16,6 +16,8 @@
 #ifndef CVC5__RUN_H
 #define CVC5__RUN_H
 
+#include <cvc5/cvc5_export.h>
+
 #include <iosfwd>
 #include <string>
 #include <vector>
@@ -49,7 +51,7 @@ int run(const std::string& what,
         const std::vector<std::string>& argv,
         const std::string& std_input,
         std::ostream& std_output,
-        const std::string& std_error);
+        const std::string& std_error) CVC5_EXPORT;
 
 }  // namespace cvc5
 #endif  // CVC5__RUN_H
