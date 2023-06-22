@@ -193,7 +193,13 @@ std::string shell_quote(const std::string& src)
 
   for (const char ch : src)
   {
-    if (ch == '\'') result += "'\\''";
+    if (ch == '\'') {
+      // Special handling for single quote as we need to escape it
+      // because of the surrounding single quotes.
+      result += "'\\''";
+      continue;
+    }
+
     result += ch;
   }
 
