@@ -27,20 +27,18 @@ namespace cvc5 {
 std::vector<Term> OracleBinaryCaller::runOracle(const std::vector<Term>& input)
 {
   std::vector<std::string> sargs;
+
+  // Push the name of the executable binary in args list.
   sargs.push_back(d_binaryName);
 
-  std::ostringstream oss;
-  bool firstTime = true;
+  // Go over the inputs to the binary, convert them to string and
+  // add each of them to the list of args.
   for (const Term& arg : input)
   {
-    if (!firstTime)
-    {
-      oss << " ";
-    }
-    firstTime = false;
+    std::ostringstream oss;
     oss << arg;
+    sargs.push_back(oss.str());
   }
-  sargs.push_back(oss.str());
   // Trace("ajr-temp") << "Input : \"" << oss.str() << "\"" << std::endl;
 
   // Run the oracle binary for `sargs`, which indicates a list of
