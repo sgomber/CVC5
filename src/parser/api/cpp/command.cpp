@@ -2033,7 +2033,7 @@ void GetUnsatCoreCommand::invoke(cvc5::Solver* solver, SymbolManager* sm)
 void GetUnsatCoreCommand::printResult(cvc5::Solver* solver,
                                       std::ostream& out) const
 {
-  if (d_solver->getOption("print-unsat-cores-full") == "true")
+  if (d_solver->getOption("print-cores-full") == "true")
   {
     // use the assertions
     UnsatCore ucr(termVectorToNodes(d_result));
@@ -2162,7 +2162,7 @@ void GetTimeoutCoreCommand::printResult(cvc5::Solver* solver,
   if (res.isUnsat()
       || (res.isUnknown() && res.getUnknownExplanation() == TIMEOUT))
   {
-    if (d_solver->getOption("print-unsat-cores-full") == "true")
+    if (d_solver->getOption("print-cores-full") == "true")
     {
       // use the assertions
       UnsatCore ucr(termVectorToNodes(d_result.second));
